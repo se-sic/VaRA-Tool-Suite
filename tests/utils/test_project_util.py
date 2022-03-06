@@ -21,8 +21,6 @@ from varats.tools.bb_config import create_new_bb_config
 from varats.ts_utils.project_sources import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
-    ProjectBinaryWrapper,
-    BinaryType,
 )
 from varats.utils.settings import create_new_varats_config
 
