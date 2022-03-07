@@ -159,7 +159,9 @@ class VaRA(ResearchTool[VaRACodeBase]):
     })
 
     def __init__(self, base_dir: Path) -> None:
-        super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
+        super().__init__(
+            "VaRA", [BuildType.DEV, BuildType.OPT], VaRACodeBase(base_dir)
+        )
         vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
         save_config()
 

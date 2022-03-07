@@ -246,7 +246,7 @@ def _build_in_container(
     install_prefix: tp.Optional[Path] = None
 ) -> None:
     vara_cfg()["container"]["research_tool"] = tool.name
-    image_name = f"{image_base.image_name}_{build_type.name}"
+    image_name = f"{image_base.image_name}_dev"
 
     if not install_prefix:
         install_prefix = Path(
