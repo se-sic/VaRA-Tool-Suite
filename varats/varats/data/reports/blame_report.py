@@ -35,6 +35,9 @@ class BlameTaintData():
         region_id: tp.Optional[int] = None,
         function_name: tp.Optional[str] = None
     ) -> None:
+        # if region_id is present, so has to be function_name
+        assert (region_id is None) or function_name
+
         self.__is_global: bool = is_global
         self.__region_id: tp.Optional[int] = region_id
         self.__function_name: tp.Optional[str] = function_name
@@ -73,43 +76,39 @@ class BlameTaintData():
         if not isinstance(other, BlameTaintData):
             return NotImplemented
 
-        # global taints
-        if self.__is_global:
-            if not other.__function_name and not other.__region_id:
-                # global or BTS_COMMIT
-                return self.__commit == other.__commit
-            return False
-        if other.__is_global:
-            if not self.__function_name and not self.__region_id:
-                # global or BTS_COMMIT
-                return self.__commit == other.__commit
-            return False
-
-        return self.__commit == other.__commit \
-               and self.__function_name == other.__function_name \
-               and self.__region_id == other.__region_id
+        return not ((self.region_id != other.region_id) or
+                    (self.function_name != other.function_name) or
+                    (self.commit != other.commit))
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, BlameTaintData):
             return NotImplemented
 
         # global taints before other taints
-        if self.__is_global != other.__is_global:
-            return self.__is_global
+        if self.is_global != other.is_global:
+            return self.is_global
 
+        # BTS_COMMIT
+        if not self.function_name:
+            if other.function_name:
+                return True
+            return self.commit < other.commit
+
+        # BTS_COMMIT_IN_FUNCTION
+        if self.region_id is None:
+            if not other.function_name:
+                return False
+            if other.region_id:
+                return True
+            return (
+                self.function_name < other.function_name
+                if self.function_name != other.function_name else
+                self.commit < other.commit
+            )
         # BTS_REGION
-        if self.__region_id:
-            if not other.__region_id:
-                return True
-            return self.__region_id < other.__region_id
-
-        # rest
-        if self.__function_name:
-            if not other.__function_name:
-                return True
-            if self.__function_name != other.__function_name:
-                return self.__function_name < other.__function_name
-        return self.__commit < other.__commit
+        if not other.region_id:
+            return False
+        return self.region_id < other.region_id
 
     def __hash__(self) -> int:
         return hash(
@@ -142,7 +141,7 @@ class BlameInstInteractions():
         document section."""
 
         def create_taint_data(
-            raw_data: tp.Union[str, tp.Dict[str, any]]
+            raw_data: tp.Union[str, tp.Dict[str, tp.Any]]
         ) -> BlameTaintData:
             # be backwards compatible with blame report version 4
             if isinstance(raw_data, str):

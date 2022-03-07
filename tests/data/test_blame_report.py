@@ -15,6 +15,7 @@ from varats.data.reports.blame_report import (
     generate_degree_tuples,
     generate_lib_dependent_degrees,
     gen_base_to_inter_commit_repo_pair_mapping,
+    BlameTaintData,
 )
 from varats.utils.git_util import CommitRepoPair, FullCommitHash
 
@@ -206,6 +207,233 @@ result-map:
         amount:          1
 ...
 """
+
+
+class TestBlameTaintData(unittest.TestCase):
+
+    def test_eq_global(self) -> None:
+        global_taint_a = BlameTaintData.create_taint_data({
+            "is-global": True,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        global_taint_b = BlameTaintData.create_taint_data({
+            "is-global": True,
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(global_taint_a == global_taint_a)
+        self.assertTrue(global_taint_b == global_taint_b)
+        self.assertFalse(global_taint_a == global_taint_b)
+
+    def test_eq_commit(self) -> None:
+        commit_taint_a = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        commit_taint_b = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(commit_taint_a == commit_taint_a)
+        self.assertTrue(commit_taint_b == commit_taint_b)
+        self.assertFalse(commit_taint_a == commit_taint_b)
+
+    def test_eq_commit_in_function(self) -> None:
+        cif_taint_a = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint_b = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+        cif_taint_c = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "baz",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(cif_taint_a == cif_taint_a)
+        self.assertTrue(cif_taint_b == cif_taint_b)
+        self.assertTrue(cif_taint_c == cif_taint_c)
+        self.assertFalse(cif_taint_a == cif_taint_b)
+        self.assertFalse(cif_taint_a == cif_taint_c)
+        self.assertFalse(cif_taint_b == cif_taint_c)
+
+    def test_eq_region(self) -> None:
+        region_taint_a = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint_b = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 2,
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(region_taint_a == region_taint_a)
+        self.assertFalse(region_taint_a == region_taint_b)
+
+    def test_eq_cross_scopes(self) -> None:
+        global_taint = BlameTaintData.create_taint_data({
+            "is-global": True,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        commit_taint = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+
+        self.assertTrue(global_taint == commit_taint)
+        self.assertFalse(global_taint == cif_taint)
+        self.assertFalse(global_taint == region_taint)
+        self.assertFalse(commit_taint == cif_taint)
+        self.assertFalse(commit_taint == region_taint)
+        self.assertFalse(cif_taint == region_taint)
+
+    def test_lower_than_global(self) -> None:
+        global_taint_a = BlameTaintData.create_taint_data({
+            "is-global": True,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        global_taint_b = BlameTaintData.create_taint_data({
+            "is-global": True,
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(global_taint_a < global_taint_b)
+        self.assertFalse(global_taint_b < global_taint_a)
+
+    def test_lower_than_commit(self) -> None:
+        commit_taint_a = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        commit_taint_b = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(commit_taint_a < commit_taint_b)
+        self.assertFalse(commit_taint_b < commit_taint_a)
+
+    def test_lower_than_commit_in_function(self) -> None:
+        cif_taint_a = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint_b = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+        cif_taint_c = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "baz",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(cif_taint_a < cif_taint_b)
+        self.assertFalse(cif_taint_b < cif_taint_a)
+        self.assertTrue(cif_taint_a < cif_taint_c)
+        self.assertFalse(cif_taint_c < cif_taint_a)
+        self.assertTrue(cif_taint_b < cif_taint_c)
+        self.assertFalse(cif_taint_c < cif_taint_b)
+
+    def test_lower_than_region(self) -> None:
+        region_taint_a = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint_b = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 2,
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(region_taint_a < region_taint_b)
+        self.assertFalse(region_taint_b < region_taint_a)
+
+    def test_lower_than_cross_scopes(self) -> None:
+        global_taint = BlameTaintData.create_taint_data({
+            "is-global": True,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        commit_taint = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+
+        self.assertTrue(global_taint < commit_taint)
+        self.assertFalse(commit_taint < global_taint)
+        self.assertTrue(global_taint < cif_taint)
+        self.assertFalse(cif_taint < global_taint)
+        self.assertTrue(global_taint < region_taint)
+        self.assertFalse(region_taint < global_taint)
+        self.assertTrue(commit_taint < cif_taint)
+        self.assertFalse(cif_taint < commit_taint)
+        self.assertTrue(commit_taint < region_taint)
+        self.assertFalse(region_taint < commit_taint)
+        self.assertTrue(cif_taint < region_taint)
+        self.assertFalse(region_taint < cif_taint)
 
 
 class TestBlameInstInteractions(unittest.TestCase):
