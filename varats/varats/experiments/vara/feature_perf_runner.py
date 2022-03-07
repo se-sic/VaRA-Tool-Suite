@@ -71,14 +71,17 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
             with local.cwd(local.path(project.source_of_primary)):
                 print(f"Currenlty at {local.path(project.source_of_primary)}")
                 print(f"Bin path {binary.path}")
-                executable = local[f"{binary.path}"]
+
+                # executable = local[f"{binary.path}"]
+
                 with local.env(
                     VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
                 ):
+
+                    workload = "/tmp/countries-land-1km.geo.json"
+
                     # TODO: figure out how to handle workloads
-                    binary(
-                        "-k", "/scratch/sattlerf/countries-land-1km.geo.json"
-                    )
+                    binary("-k", workload)
 
                     # TODO: figure out how to handle different configs
                     #executable("--slow")
@@ -119,7 +122,8 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
         ]
         # Sets vara tracing flags
         project.cflags += [
-            "-fsanitize=vara", "-fvara-instr=trace_event", "-flto"
+            "-fsanitize=vara", "-fvara-instr=trace_event", "-flto",
+            "-fuse-ld=lld"
         ]
         project.ldflags += ["-flto"]
 
