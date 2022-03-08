@@ -1,9 +1,11 @@
 """Test VaRA Experiment utilities."""
 import os
+import shutil
 import tempfile
 import typing as tp
 import unittest
 import unittest.mock as mock
+from pathlib import Path
 
 import benchbuild.utils.actions as actions
 import benchbuild.utils.settings as s
@@ -255,3 +257,28 @@ class TestVersionExperiment(unittest.TestCase):
         self.assertEqual(sample_gen[0]["test_source"].version, "rev4000000")
         self.assertEqual(len(sample_gen), 1)
         mock_get_tagged_revisions.assert_called()
+
+
+class TestZippedReportFolder(unittest.TestCase):
+    """Test ZippedReportFolder creation."""
+
+    @run_in_test_environment()
+    def test_zipped_result_folder_creation(self):
+        """Checks if a zipped result folder is automatically created."""
+        test_tmp_folder = Path(os.getcwd())
+
+        test_zip = test_tmp_folder / 'FooBar.zip'
+
+        with EU.ZippedReportFolder(test_zip) as output_folder:
+            with open(Path(output_folder) / 'foo.txt', 'w') as output_file:
+                output_file.write('content')
+
+        self.assertTrue(test_zip.exists())
+
+        with tempfile.TemporaryDirectory() as tmp_result_dir:
+            shutil.unpack_archive(test_zip, extract_dir=Path(tmp_result_dir))
+
+            should_be_generated_file = Path(tmp_result_dir) / 'foo.txt'
+            self.assertTrue(should_be_generated_file.exists())
+            with open(should_be_generated_file, 'r') as foo_file:
+                self.assertEqual(foo_file.readline(), 'content')
