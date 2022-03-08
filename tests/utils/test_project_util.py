@@ -21,8 +21,6 @@ from varats.tools.bb_config import create_new_bb_config
 from varats.ts_utils.project_sources import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
-    ProjectBinaryWrapper,
-    BinaryType,
 )
 from varats.utils.settings import create_new_varats_config
 
@@ -274,7 +272,7 @@ class TestProjectBinaryWrapper(unittest.TestCase):
     """Test if we can correctly setup and use the RevisionBinaryMap."""
 
     def test_execution_of_executable(self) -> None:
-        """Check if we can execute a executable bianries."""
+        """Check if we can execute an executable binary."""
         binary = ProjectBinaryWrapper("ls", "/bin/ls", BinaryType.EXECUTABLE)
 
         ret = binary()
@@ -282,7 +280,7 @@ class TestProjectBinaryWrapper(unittest.TestCase):
         self.assertIsInstance(ret, str)
 
     def test_execution_of_libraries(self) -> None:
-        """Check if we don't fail when executing a shared/static library."""
+        """Check whether we fail when executing a shared/static library."""
         static_lib_binary = ProjectBinaryWrapper(
             "ls", "/bin/ls", BinaryType.STATIC_LIBRARY
         )
