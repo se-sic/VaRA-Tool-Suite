@@ -52,7 +52,8 @@ class WorkloadProvider(Provider):
     WORKLOADS = {
         "SimpleLoopedFeature": ["--iterations", "1000", "--sleepms", "5"],
         "xz": ["-k", "-f", "-7e", "--compress", "--threads=8", "--format=xz",
-               "/home/jonask/Repos/WorkloadsForConfigurableSystems/xz/countries-land-1km.geo.json"]
+               "/home/jonask/Repos/WorkloadsForConfigurableSystems/xz/countries-land-1km.geo.json"],
+        "brotli": ["-f", "-k", "-o", "/tmp/brotli_compression_test.br", "--best", "/home/jonask/Repos/WorkloadsForConfigurableSystems/brotli/countries-land-1km.geo.json"]
     }
 
     @classmethod
