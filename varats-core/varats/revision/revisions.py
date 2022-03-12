@@ -4,7 +4,7 @@ Module for handling revision specific files.
 When analyzing a project, result files are generated for specific project
 revisions.  This module provides functionality to manage and access these
 revision specific files, e.g., to get all files of a specific report that have
-been process successfully.
+been processed successfully.
 """
 
 import typing as tp

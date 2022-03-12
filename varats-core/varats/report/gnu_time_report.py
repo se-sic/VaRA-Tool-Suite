@@ -24,7 +24,7 @@ from datetime import timedelta
 from pathlib import Path
 import numpy as np
 
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport, ReportAggregate
 from varats.utils.util import static_vars
 
 
@@ -200,53 +200,8 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         )
 
 
-class TimeReportAggregate:
-    """Groups multiple `TimeReport` and allows us to calculate statistics over
-    them and generate a summary."""
-
-    def __init__(self) -> None:
-        self.__time_reports = dict[str, list[TimeReport]]()
-
-    def add_report(self, binary_name: str, report: TimeReport) -> None:
-        """Adds a `TimeReport`."""
-        assert binary_name
-
-        if not binary_name in self.__time_reports.keys():
-            self.__time_reports[binary_name] = list[TimeReport]()
-
-        self.__time_reports[binary_name].append(report)
-
-    def binary_names(self):
-        return self.__time_reports.keys()
-
-    def mean_runtime(self, binary_name: str):
-        """Mean of wall clock time."""
-        assert binary_name
-        return np.mean([time_report.wall_clock_time.total_seconds() for time_report in self.__time_reports[binary_name]])
-
-    def std_deviation_runtime(self, binary_name: str):
-        """Standard deviation of wall clock time."""
-        assert binary_name
-        return np.std([time_report.wall_clock_time.total_seconds() for time_report in self.__time_reports[binary_name]])
-
-    def min_runtime(self, binary_name: str):
-        """Minimum value of wall clock time."""
-        assert binary_name
-        return np.min([time_report.wall_clock_time.total_seconds() for time_report in self.__time_reports[binary_name]])
-
-    def max_runtime(self, binary_name: str):
-        """Maximum value of wall clock time."""
-        assert binary_name
-        return np.max([time_report.wall_clock_time.total_seconds() for time_report in self.__time_reports[binary_name]])
-
-    def summary(self, binary_name: str) -> str:
-        assert binary_name
-        return f"mean: {self.mean_runtime(binary_name)}\n" \
-            f"std-deviation: {self.std_deviation_runtime(binary_name)}\n" \
-            f"min: {self.min_runtime(binary_name)}\n" \
-            f"max: {self.max_runtime(binary_name)}"
-
-    def summary_to_file(self, binary_name: str, path: Path) -> None:
-        assert binary_name
-        with open(path, 'w') as file:
-            file.write(self.summary(binary_name))
+class TimeReportAggregate(ReportAggregate, shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND, file_type=ReportAggregate.FILE_TYPE):
+    """Aggregates multiple time reports in a single folder."""
+    
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TimeReport)

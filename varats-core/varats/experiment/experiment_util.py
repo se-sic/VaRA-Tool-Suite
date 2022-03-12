@@ -502,13 +502,13 @@ class PrintProgressStep(Step):
             f"Step={self.__step.NAME}"
 
         if self.__current_iterations == 0:
-            print(step_description, " Start")
+            print(f"Started({step_description})")
 
         output = f"Progress {self.__current_iterations}/{self.__total_iterations}"
 
-        print(output)
+        print(output, flush=True)
 
         if self.__current_iterations == self.__total_iterations:
-            print(step_description, " End")
+            print(f"Finished({step_description})")
 
         return StepResult.OK

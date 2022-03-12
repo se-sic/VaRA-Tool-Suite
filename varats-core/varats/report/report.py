@@ -109,7 +109,7 @@ class FileStatusExtension(Enum):
         for fs_enum in FileStatusExtension:
             if status_name.upper(
             ) == fs_enum.name or status_name == fs_enum.value[
-                0] or status_name == fs_enum.nice_name():
+                    0] or status_name == fs_enum.nice_name():
                 return fs_enum
 
         raise ValueError(f"Unknown file status extension name: {status_name}")
@@ -560,3 +560,18 @@ class ReportSpecification():
 
     def __iter__(self) -> tp.Iterator[tp.Type[BaseReport]]:
         return iter(self.report_types)
+
+
+class ReportAggregate(BaseReport, shorthand="Agg", file_type=""):
+    """Aggregates multiple reports in a single folder."""
+
+    def __init__(self, path: Path, report_type: tp.Type[BaseReport]) -> None:
+        """Reads and parses the reports aggregated inside the folder."""
+        super().__init__(path)
+
+        self.__reports = [report_type(file) for file in self.path.iterdir()]
+
+    @property
+    def reports(self) -> list[BaseReport]:
+        """Returns all reports present inside the folder."""
+        return self.__reports
