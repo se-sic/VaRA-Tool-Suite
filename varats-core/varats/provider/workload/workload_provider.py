@@ -51,7 +51,7 @@ class WorkloadProvider(Provider):
 
     WORKLOADS = {
         "SimpleSleepLoop": ["--iterations", "1000", "--sleepms", "5"],
-        "SimpleBusyLoop": ["--iterations", "1000", "--count_to", "10000"],
+        "SimpleBusyLoop": ["--iterations", "1000", "--count_to", "10000000"],
         "xz": ["-k", "-f", "-7e", "--compress", "--threads=8", "--format=xz",
                "/home/jonask/Repos/WorkloadsForConfigurableSystems/xz/countries-land-1km.geo.json"],
         "brotli": ["-f", "-k", "-o", "/tmp/brotli_compression_test.br", "--best", "/home/jonask/Repos/WorkloadsForConfigurableSystems/brotli/countries-land-1km.geo.json"]
