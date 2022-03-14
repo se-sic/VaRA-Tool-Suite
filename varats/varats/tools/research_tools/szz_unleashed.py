@@ -142,7 +142,10 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """Returns true if VaRA's major release version is up to date."""
         raise NotImplementedError
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build SZZUnleashed.
 
@@ -167,11 +170,22 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """
         return (install_location / self.get_jar_name()).exists()
 
-    def add_container_layers(
+    def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for building this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        raise NotImplementedError
+
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context

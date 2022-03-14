@@ -11,6 +11,7 @@ import pygit2
 from benchbuild.utils.cmd import git
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
+from plumbum.commands.modifiers import RETCODE
 
 from varats.project.project_util import (
     get_local_project_git,
@@ -120,6 +121,16 @@ def full_commit_hashes_sorted_by_time_id(
 # Git interaction helpers
 
 
+def is_commit_hash(value: str) -> bool:
+    """
+    Checks if a string is a valid git (sha1) hash.
+
+    Args:
+        value: to check
+    """
+    return re.search("^[a-fA-F0-9]{1,40}$", value) is not None
+
+
 def __get_git_path_arg(repo_folder: tp.Optional[Path] = None) -> tp.List[str]:
     if repo_folder is None or repo_folder == Path(''):
         return []
@@ -189,6 +200,87 @@ def get_all_revisions_between(
         )
     )
     return list(map(hash_type, result))
+
+
+def get_commits_before_timestamp(
+    timestamp: str,
+    repo_folder: tp.Optional[Path] = None
+) -> tp.List[FullCommitHash]:
+    """
+    Get all commits before a specific timestamp (given as a git date format).
+
+    Note: for imprecise timestamps (e.g., only 2020), the day and month will
+    default to today.
+
+    Args:
+        timestamp: before which commits should be collected
+        repo_folder: where the git repository is located
+
+    Returns: list[last_commit_before_timestamp, ..., initial_commits]
+    """
+    return [
+        FullCommitHash(hash_val) for hash_val in git(
+            __get_git_path_arg(repo_folder), "rev-list",
+            f"--before={timestamp}", "HEAD"
+        ).split()
+    ]
+
+
+def get_commits_after_timestamp(
+    timestamp: str,
+    repo_folder: tp.Optional[Path] = None
+) -> tp.List[FullCommitHash]:
+    """
+    Get all commits after a specific timestamp (given as a git date format).
+
+    Note: for imprecise timestamps (e.g., only 2020), the day and month will
+    default to today.
+
+    Args:
+        repo_folder: where the git repository is located
+        timestamp: after which commits should be collected
+
+    Returns: list[newest_commit, ..., last_commit_after_timestamp]
+    """
+    return [
+        FullCommitHash(hash_val) for hash_val in git(
+            __get_git_path_arg(repo_folder), "rev-list", f"--after={timestamp}",
+            "HEAD"
+        ).split()
+    ]
+
+
+def contains_source_code(
+    commit: ShortCommitHash,
+    repo_folder: tp.Optional[Path] = None,
+    churn_config: tp.Optional['ChurnConfig'] = None
+) -> bool:
+    """
+    Check if a commit contains source code of any language specifyed with the
+    churn config.
+
+    Args:
+        commit: to check
+        repo_folder: of the commits repository
+        churn_config: to specify the files that should be considered
+
+    Returns: True, if source code of a language, specified in the churn
+        config, was found in the commit
+    """
+    if not churn_config:
+        churn_config = ChurnConfig.create_c_style_languages_config()
+
+    return_code = git[__get_git_path_arg(repo_folder), "diff", "--exit-code",
+                      "--quiet", f"{commit.hash}~", commit.hash, "--",
+                      churn_config.get_extensions_repr('*.')] & RETCODE
+
+    if return_code == 0:
+        return False
+
+    if return_code == 1:
+        return True
+
+    raise RuntimeError(f"git diff failed with retcode={return_code}")
 
 
 ################################################################################

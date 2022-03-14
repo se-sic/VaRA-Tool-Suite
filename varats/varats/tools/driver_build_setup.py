@@ -1,16 +1,19 @@
 """Driver module for `vara-buildsetup`."""
 
 import os
-import sys
 import typing as tp
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import click
 from plumbum import colors
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
 
-from varats.gui.buildsetup_window import BuildSetup
+from varats.containers.containers import (
+    ImageBase,
+    run_container,
+    BaseImageCreationContext,
+    create_dev_image,
+)
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
@@ -42,6 +45,7 @@ class VaRATSSetup:
     def main(self) -> None:
         """Start VaRA setup GUI."""
         sys.exit(self.app.exec_())
+from varats.utils.settings import save_config, vara_cfg, bb_cfg
 
 
 def update_term(text: str, enable_inline: bool = False) -> None:
@@ -163,10 +167,24 @@ def update(research_tool: str) -> None:
     "research_tool", type=click.Choice(get_supported_research_tool_names())
 )
 @click.option(
+    "--container",
+    type=EnumChoice(ImageBase, case_sensitive=False),
+    help="Build type to use for the tool build configuration."
+)
+@click.option(
     "--install-prefix",
     type=click.Path(path_type=Path),
     required=False,
     help="Tool install folder."
+)
+@click.option(
+    "--source-location",
+    type=click.Path(path_type=Path),
+    required=False,
+    help="Folder to store tool sources."
+)
+@click.option(
+    "--build-folder-suffix", required=False, help="Folder to use for building."
 )
 @click.option(
     "--build-type",
@@ -176,16 +194,25 @@ def update(research_tool: str) -> None:
 )
 @main.command()
 def build(
-    build_type: BuildType, install_prefix: tp.Optional[Path], research_tool: str
+    research_tool: str, build_type: BuildType,
+    build_folder_suffix: tp.Optional[str], source_location: tp.Optional[Path],
+    install_prefix: tp.Optional[Path], container: tp.Optional[ImageBase]
 ) -> None:
     """Build a research tool and all its components."""
-    tool = get_research_tool(research_tool)
+    tool = get_research_tool(research_tool, source_location)
     show_major_release_prompt(tool)
-    tool.build(build_type, __get_install_prefix(tool, install_prefix))
-    if tool.verify_install(__get_install_prefix(tool, install_prefix)):
-        print(f"{tool.name} was correctly installed.")
+
+    if container:
+        _build_in_container(tool, container, build_type, install_prefix)
     else:
-        print(f"Could not install {tool.name} correctly.")
+        tool.build(
+            build_type, __get_install_prefix(tool, install_prefix),
+            build_folder_suffix
+        )
+        if tool.verify_install(__get_install_prefix(tool, install_prefix)):
+            print(f"{tool.name} was correctly installed.")
+        else:
+            print(f"Could not install {tool.name} correctly.")
 
 
 def __build_setup_init(
@@ -228,6 +255,57 @@ def __get_install_prefix(
         install_prefix.mkdir(parents=True)
 
     return install_prefix
+
+
+def _build_in_container(
+    tool: ResearchTool[SpecificCodeBase],
+    image_base: ImageBase,
+    build_type: BuildType,
+    install_prefix: tp.Optional[Path] = None
+) -> None:
+    vara_cfg()["container"]["research_tool"] = tool.name
+    image_name = f"{image_base.image_name}_{build_type.name}"
+
+    if not install_prefix:
+        install_prefix = Path(
+            str(tool.install_location()) + "_" + image_base.name
+        )
+
+    if not install_prefix.exists():
+        install_prefix.mkdir(parents=True)
+
+    source_mount = 'tools_src/'
+    install_mount = 'tools/'
+
+    click.echo("Preparing container image.")
+    create_dev_image(image_base, tool)
+
+    with TemporaryDirectory() as tmpdir:
+        image_context = BaseImageCreationContext(image_base, Path(tmpdir))
+        source_mount = str(image_context.varats_root / source_mount)
+        install_mount = str(image_context.varats_root / install_mount)
+        bb_cfg()["container"]["mounts"].value[:] += [
+            # mount tool src dir
+            [str(tool.source_location()), source_mount],
+            # mount install dir
+            [str(install_prefix), install_mount]
+        ]
+
+    click.echo(
+        f"Building {tool.name} ({build_type.name}) "
+        f"in a container ({image_base.name})."
+    )
+
+    run_container(
+        image_name, f"build_{tool.name}", None, [
+            "build",
+            tool.name.lower(),
+            f"--build-type={build_type.name}",
+            f"--source-location={source_mount}",
+            f"--install-prefix={install_mount}",
+            f"--build-folder-suffix={image_base.name}",
+        ]
+    )
 
 
 if __name__ == '__main__':
