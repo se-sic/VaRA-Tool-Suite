@@ -83,13 +83,16 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                 with local.env(
                     VARA_TRACE_FILE=trace_file_path
                 ):
+
+                    workload = "/tmp/countries-land-1km.geo.json"
+
                     # TODO: figure out how to handle workloads
                     workload = workload_provider.get_workload_parameters(binary)
                     if (workload == None):
                         print(f"No workload defined for project: {project.name} and binary: {binary.name}. Skipping.")
                         continue
 
-                    run_cmd = binary[workload]
+                    run_cmd = binary["-k", workload]
 
                     # TODO: figure out how to handle different configs
                     #executable("--slow")
@@ -161,7 +164,8 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
         # Sets vara tracing flags
         project.cflags += [
             "-fsanitize=vara",
-            "-fvara-instr=usdt" if usdt else "-fvara-instr=trace_event"
+            "-fvara-instr=usdt" if usdt else "-fvara-instr=trace_event", "-flto",
+            "-fuse-ld=lld"
         ]
         # project.ldflags += ["-flto"]
 

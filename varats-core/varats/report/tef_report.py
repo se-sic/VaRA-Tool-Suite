@@ -30,7 +30,7 @@ class TraceEventType(Enum):
 
     @staticmethod
     def parse_event_type(raw_event_type: str) -> 'TraceEventType':
-        """Parses a raw string that represents a trace-format even type and
+        """Parses a raw string that represents a trace-format event type and
         converts it to the corresponding enum value."""
         for trace_event_type in TraceEventType:
             if trace_event_type.value == raw_event_type:
