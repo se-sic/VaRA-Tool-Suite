@@ -9,7 +9,7 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run, time as bbtime
 from benchbuild.utils import actions
 from varats.report.tef_report import TEFReport, TEFReportAggregate
-from benchbuild.utils.cmd import touch, sudo, time, rm
+from benchbuild.utils.cmd import sudo, time, echo, sh
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
@@ -42,6 +42,10 @@ from varats.report.report import FileStatusExtension as FSE
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.data.reports.empty_report import EmptyReport
 from varats.tools.research_tools.vara import VaRA
+
+
+BPFTRACE_SCRIPT_TEMPLATE = "sudo bpftrace -o \"{tef_report_file}\" -q -c " \
+    "\"{run_cmd}\" \"{bpftrace_scipt}\" \"{binary_path}\""
 
 
 class ExecWithTime(actions.Step):  # type: ignore
@@ -120,7 +124,8 @@ class ExecWithTime(actions.Step):  # type: ignore
                 time_report_dir, f"time_iteration_{self.__iteration}.{TimeReport.FILE_TYPE}")
 
             # Execute binary.
-            with local.cwd(local.path(project.source_of_primary)), \
+            source_of_primary: Path = Path(project.source_of_primary)
+            with local.cwd(source_of_primary), \
                     local.env(VARA_TRACE_FILE=tef_report_file):
 
                 run_cmd = binary[workload]
@@ -131,11 +136,17 @@ class ExecWithTime(actions.Step):  # type: ignore
                     bpftrace_script = Path(VaRA.source_location(
                     ), "vara/tools/perf_bpftrace/UsdtTefMarker.bt")
 
-                    run_cmd = sudo["bpftrace"]["-o", tef_report_file,
-                                               "-c", run_cmd,
-                                               "-q",
-                                               bpftrace_script,
-                                               f"{project.source_of_primary}/{binary.path}"]
+                    script_text = BPFTRACE_SCRIPT_TEMPLATE.format(
+                        tef_report_file=tef_report_file,
+                        run_cmd=run_cmd,
+                        bpftrace_script=bpftrace_script,
+                        binary_path=source_of_primary / binary.path
+                    )
+                    
+                    bpftrace_script_path = Path("/tmp/bpftace_run_script.sh")
+                    echo[script_text] > bpftrace_script_path
+
+                    run_cmd = sh[bpftrace_script_path]
 
                 run_cmd = time["-v", "-o", time_report_file, run_cmd]
 
