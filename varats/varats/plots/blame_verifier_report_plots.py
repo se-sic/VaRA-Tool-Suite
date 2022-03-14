@@ -118,6 +118,12 @@ def _load_all_named_dataframes(
     return all_named_dataframes
 
 
+def _build_default_suptitle_str(project_name: str, opt_level: OptLevel) -> str:
+    suptitle_opt_str = "with" if opt_level == OptLevel.OPT else "without"
+    return f'Annotated project revisions {suptitle_opt_str} optimization -' \
+           f' Project {project_name}'
+
+
 def _verifier_plot(
     opt_level: OptLevel, plot_config: PlotConfig, plot_kwargs: tp.Dict[str,
                                                                        tp.Any]
@@ -138,22 +144,26 @@ def _verifier_plot(
     if not final_plot_data:
         raise PlotDataEmpty
 
+    project_name: str = plot_kwargs['case_study'][0].project_name
+    default_fig_suptitle: str = _build_default_suptitle_str(
+        project_name, opt_level
+    )
+
     if len(plot_kwargs["case_study"]) > 1 and len(final_plot_data) > 1:
-        _verifier_plot_multiple(plot_config, final_plot_data)
+        _verifier_plot_multiple(
+            default_fig_suptitle, plot_config, final_plot_data
+        )
     else:
         # Pass the only list item of the plot data
-        _verifier_plot_single(plot_config, plot_kwargs, final_plot_data[0])
+        _verifier_plot_single(
+            default_fig_suptitle, plot_config, final_plot_data[0]
+        )
 
 
 def _verifier_plot_single(
-    plot_config: PlotConfig, plot_kwargs: tp.Dict[str, tp.Any],
-    plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
+    fig_suptitle: str, plot_config: PlotConfig,
+    final_plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
 ) -> None:
-    project_name = plot_kwargs['case_study'][0].project_name
-    default_fig_suptitle = f'Annotated project revisions without optimization' \
-                           f' - Project {project_name}'
-    fig_suptitle = f"{plot_config.fig_title(default_fig_suptitle)}"
-
     fig, main_axis = plt.subplots()
     fig.suptitle(fig_suptitle, fontsize=plot_config.font_size(8))
     main_axis.grid(linestyle='--')
@@ -163,12 +173,12 @@ def _verifier_plot_single(
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
 
     main_axis.stackplot(
-        plot_data[1]["revisions"],
-        plot_data[1]["success_ratio"],
-        plot_data[1]["failure_ratio"],
+        final_plot_data[1]["revisions"],
+        final_plot_data[1]["success_ratio"],
+        final_plot_data[1]["failure_ratio"],
         labels=[
-            f"successes(\u2205 {plot_data[1]['average_success_ratio']}%)",
-            f"failures(\u2205 {plot_data[1]['average_failure_ratio']}%)"
+            f"successes(\u2205 {final_plot_data[1]['average_success_ratio']}%)",
+            f"failures(\u2205 {final_plot_data[1]['average_failure_ratio']}%)"
         ],
         colors=[SUCCESS_COLOR, FAILED_COLOR],
         alpha=0.5
@@ -196,7 +206,7 @@ def _verifier_plot_single(
 
 
 def _verifier_plot_multiple(
-    plot_config: PlotConfig,
+    fig_suptitle: str, plot_config: PlotConfig,
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]]
 ) -> None:
     fig = plt.figure()
@@ -231,9 +241,7 @@ def _verifier_plot_multiple(
             f"{plot_data[0]}(\u2205 {plot_data[1]['average_success_ratio']}%)"
         )
 
-    default_fig_suptitle = f'Annotated project revisions without optimization' \
-                           f' - Project(s): {project_names}'
-    main_axis.title.set_text(f"{plot_config.fig_title(default_fig_suptitle)}")
+    main_axis.title.set_text(f"{plot_config.fig_title(fig_suptitle)}")
 
     plt.setp(
         main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
@@ -313,3 +321,16 @@ class BlameVerifierReportOptPlot(
 
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.OPT, self.plot_config, self.plot_kwargs)
+
+
+class BlameVerifierReportOptPlotGenerator(
+    PlotGenerator,
+    generator_name="verifier-opt-plot",
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates a verifier-opt plot for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            BlameVerifierReportOptPlot(self.plot_config, **self.plot_kwargs)
+        ]
