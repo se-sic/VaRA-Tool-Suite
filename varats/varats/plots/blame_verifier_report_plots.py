@@ -118,10 +118,25 @@ def _load_all_named_dataframes(
     return all_named_dataframes
 
 
-def _build_default_suptitle_str(project_name: str, opt_level: OptLevel) -> str:
-    suptitle_opt_str = "with" if opt_level == OptLevel.OPT else "without"
-    return f'Annotated project revisions {suptitle_opt_str} optimization -' \
-           f' Project {project_name}'
+def _build_default_suptitle_str(
+    plot_kwargs: tp.Dict[str, tp.Any], opt_level: OptLevel
+) -> str:
+    opt_str: str = "with" if opt_level == OptLevel.OPT else "without"
+    suptitle: str = f'Annotated project revisions {opt_str} ' \
+                    f'optimization - '
+    num_cs: int = len(plot_kwargs['case_study'])
+    project_names_str: str = ""
+    delimiter: str = " | "
+
+    for i in range(num_cs):
+        project_names_str += plot_kwargs['case_study'][i].project_name
+        project_names_str += delimiter
+
+    project_names_str = project_names_str[:-len(delimiter)]
+    project_quantity_str = "Projects" if num_cs > 1 else "Project"
+    suptitle += f"{project_quantity_str} {project_names_str}"
+
+    return suptitle
 
 
 def _verifier_plot(
@@ -144,9 +159,8 @@ def _verifier_plot(
     if not final_plot_data:
         raise PlotDataEmpty
 
-    project_name: str = plot_kwargs['case_study'][0].project_name
     default_fig_suptitle: str = _build_default_suptitle_str(
-        project_name, opt_level
+        plot_kwargs, opt_level
     )
 
     if len(plot_kwargs["case_study"]) > 1 and len(final_plot_data) > 1:
@@ -161,11 +175,11 @@ def _verifier_plot(
 
 
 def _verifier_plot_single(
-    fig_suptitle: str, plot_config: PlotConfig,
+    default_fig_suptitle: str, plot_config: PlotConfig,
     final_plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
 ) -> None:
     fig, main_axis = plt.subplots()
-    fig.suptitle(fig_suptitle, fontsize=plot_config.font_size(8))
+    fig.suptitle(default_fig_suptitle, fontsize=plot_config.font_size(8))
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions')
     main_axis.set_ylabel('Success/Failure rate in %')
@@ -206,13 +220,12 @@ def _verifier_plot_single(
 
 
 def _verifier_plot_multiple(
-    fig_suptitle: str, plot_config: PlotConfig,
+    default_fig_suptitle: str, plot_config: PlotConfig,
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]]
 ) -> None:
     fig = plt.figure()
     main_axis = fig.subplots()
     main_axis.set_xlim(0, 1)
-    project_names: str = "| "
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions normalized')
     main_axis.set_ylabel('Success rate in %')
@@ -221,7 +234,6 @@ def _verifier_plot_multiple(
     mean_over_all_project_successes = 0
 
     for plot_data in final_plot_data:
-        project_names += plot_data[0] + " | "
         mean_over_all_project_successes += plot_data[1]["average_success_ratio"
                                                        ] / len(final_plot_data)
 
@@ -241,7 +253,7 @@ def _verifier_plot_multiple(
             f"{plot_data[0]}(\u2205 {plot_data[1]['average_success_ratio']}%)"
         )
 
-    main_axis.title.set_text(f"{plot_config.fig_title(fig_suptitle)}")
+    main_axis.title.set_text(f"{plot_config.fig_title(default_fig_suptitle)}")
 
     plt.setp(
         main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
