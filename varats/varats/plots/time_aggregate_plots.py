@@ -37,7 +37,8 @@ class CaseStudyOverviewPlot(Plot, plot_name="time_boxplot"):
 
             report_files = get_processed_revisions_files(
                 case_study.project_name, TimeReportAggregate,
-                get_case_study_file_name_filter(case_study)
+                get_case_study_file_name_filter(case_study),
+                False
             )
 
             print ("report_files", report_files)
