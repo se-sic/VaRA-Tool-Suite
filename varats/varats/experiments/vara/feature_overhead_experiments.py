@@ -1,7 +1,6 @@
 """Module for experiments that measure the runtime overhead introduced by instrumenting
 binaries produced by a project."""
 import os
-from queue import Empty
 import typing as tp
 from pathlib import Path
 
@@ -9,7 +8,7 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run, time as bbtime
 from benchbuild.utils import actions
 from varats.report.tef_report import TEFReport, TEFReportAggregate
-from benchbuild.utils.cmd import sudo, time, echo, sh
+from benchbuild.utils.cmd import time, echo, sh
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
@@ -17,19 +16,10 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     ExperimentHandle,
     get_varats_result_folder,
-    wrap_unlimit_stack_size,
-    create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     VersionExperiment,
     get_default_compile_error_wrapped,
-    PEErrorHandler,
     PrintProgressStep
-)
-from varats.experiment.wllvm import (
-    get_cached_bc_file_path,
-    BCFileExtensions,
-    RunWLLVM,
-    get_bc_cache_actions,
 )
 from varats.provider.workload.workload_provider import WorkloadProvider
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
@@ -38,14 +28,13 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.report.report import FileStatusExtension, ReportSpecification
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.data.reports.empty_report import EmptyReport
 from varats.tools.research_tools.vara import VaRA
 
 
 BPFTRACE_SCRIPT_TEMPLATE = "sudo bpftrace -o \"{tef_report_file}\" -q -c " \
-    "\"{run_cmd}\" \"{bpftrace_scipt}\" \"{binary_path}\""
+    "\"{run_cmd}\" \"{bpftrace_script}\" \"{binary_path}\""
 
 
 class ExecWithTime(actions.Step):  # type: ignore
@@ -96,7 +85,7 @@ class ExecWithTime(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+                extension_type=FileStatusExtension.SUCCESS
             )
 
             tef_report_dir = Path(
@@ -113,7 +102,7 @@ class ExecWithTime(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+                extension_type=FileStatusExtension.SUCCESS
             )
 
             time_report_dir = Path(
@@ -124,8 +113,7 @@ class ExecWithTime(actions.Step):  # type: ignore
                 time_report_dir, f"time_iteration_{self.__iteration}.{TimeReport.FILE_TYPE}")
 
             # Execute binary.
-            source_of_primary: Path = Path(project.source_of_primary)
-            with local.cwd(source_of_primary), \
+            with local.cwd(project.source_of_primary), \
                     local.env(VARA_TRACE_FILE=tef_report_file):
 
                 run_cmd = binary[workload]
@@ -133,18 +121,18 @@ class ExecWithTime(actions.Step):  # type: ignore
                 # Attach bpftrace script to activate USDT markers.
                 if self.__usdt:
                     # attach bpftrace to binary to allow tracing it via USDT
-                    bpftrace_script = Path(VaRA.source_location(
-                    ), "vara/tools/perf_bpftrace/UsdtTefMarker.bt")
+                    bpftrace_script = Path(VaRA.install_location(
+                    ), "tools/perf_bpftrace/UsdtTefMarker.bt")
 
                     script_text = BPFTRACE_SCRIPT_TEMPLATE.format(
                         tef_report_file=tef_report_file,
                         run_cmd=run_cmd,
                         bpftrace_script=bpftrace_script,
-                        binary_path=source_of_primary / binary.path
+                        binary_path=binary.path
                     )
                     
-                    bpftrace_script_path = Path("/tmp/bpftace_run_script.sh")
-                    echo[script_text] > bpftrace_script_path
+                    bpftrace_script_path = "/tmp/bpftace_run_script.sh"
+                    (echo[script_text] > bpftrace_script_path)()
 
                     run_cmd = sh[bpftrace_script_path]
 
