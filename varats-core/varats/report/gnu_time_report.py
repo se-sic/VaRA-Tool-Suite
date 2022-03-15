@@ -22,16 +22,17 @@ Examples to produce a ``TimeReport``:
 import re
 from datetime import timedelta
 from pathlib import Path
+import numpy as np
 
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport, ReportAggregate
 from varats.utils.util import static_vars
 
 
 class WrongTimeReportFormat(Exception):
-    """Thrown if the a time report could not be parsed."""
+    """Thrown if the time report could not be parsed."""
 
 
-class TimeReport(BaseReport, shorthand="TR", file_type=""):
+class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
     """Report class to access GNU time output."""
 
     def __init__(self, path: Path) -> None:
@@ -63,7 +64,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type=""):
                         TimeReport._parse_wall_clock_time(line)
                     continue
 
-                print("Not matched: ", line)
+                # print("Not matched: ", line)
 
     @property
     def command_name(self) -> str:
@@ -197,3 +198,10 @@ class TimeReport(BaseReport, shorthand="TR", file_type=""):
         raise WrongTimeReportFormat(
             "Could not parse max resident set size: ", line
         )
+
+
+class TimeReportAggregate(ReportAggregate, shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND, file_type=ReportAggregate.FILE_TYPE):
+    """Aggregates multiple time reports in a single folder."""
+    
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TimeReport)

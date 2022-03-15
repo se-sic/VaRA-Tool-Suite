@@ -180,7 +180,7 @@ def get_all_revisions_between(
 ) -> tp.List[CommitHashTy]:
     """
     Returns a list of all revisions between two commits c_start and c_end
-    (inclusive), where c_start comes before c_end.
+    (both inclusive), where c_start comes before c_end.
 
     It is assumed that the current working directory is the git repository.
 
@@ -894,7 +894,7 @@ class RevisionBinaryMap(tp.Container[str]):
         revision_specific_binaries = []
 
         for validity_range, wrapped_binary \
-                in self.__revision_specific_mappings.items():
+                in self.__revision_specific_mappings.items():            
             if revision in get_all_revisions_between(
                 validity_range.id_start, validity_range.id_end, ShortCommitHash,
                 self.__repo_location
