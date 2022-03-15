@@ -121,8 +121,10 @@ class ExecWithTime(actions.Step):  # type: ignore
                 # Attach bpftrace script to activate USDT markers.
                 if self.__usdt:
                     # attach bpftrace to binary to allow tracing it via USDT
-                    bpftrace_script = Path(VaRA.install_location(
-                    ), "tools/perf_bpftrace/UsdtTefMarker.bt")
+                    # bpftrace_script = Path(VaRA.install_location(
+                    # ), "tools/perf_bpftrace/UsdtTefMarker.bt")
+
+                    bpftrace_script = "/home/jonask/Repos/VaRA/tools_src/vara-llvm-project/vara/tools/perf_bpftrace/UsdtTefMarker.bt"
 
                     script_text = BPFTRACE_SCRIPT_TEMPLATE.format(
                         tef_report_file=tef_report_file,
@@ -130,7 +132,7 @@ class ExecWithTime(actions.Step):  # type: ignore
                         bpftrace_script=bpftrace_script,
                         binary_path=binary.path
                     )
-                    
+
                     bpftrace_script_path = "/tmp/bpftace_run_script.sh"
                     (echo[script_text] > bpftrace_script_path)()
 
