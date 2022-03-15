@@ -107,9 +107,9 @@ class FileStatusExtension(Enum):
         <FileStatusExtension.COMPILE_ERROR: ('cerror', <ANSIStyle: Red>)>
         """
         for fs_enum in FileStatusExtension:
-            if status_name.upper(
-            ) == fs_enum.name or status_name == fs_enum.value[
-                    0] or status_name == fs_enum.nice_name():
+            if status_name.upper() == fs_enum.name \
+                    or status_name == fs_enum.value[0] \
+                    or status_name == fs_enum.nice_name():
                 return fs_enum
 
         raise ValueError(f"Unknown file status extension name: {status_name}")

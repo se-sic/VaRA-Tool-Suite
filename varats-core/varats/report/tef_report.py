@@ -130,8 +130,12 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         return [TraceEvent(data_item) for data_item in raw_event_list]
 
 
-class TEFReportAggregate(ReportAggregate, shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND, file_type=ReportAggregate.FILE_TYPE):
+class TEFReportAggregate(
+    ReportAggregate,
+    shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
     """Aggregates multiple TEF reports in a single folder."""
-    
+
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)

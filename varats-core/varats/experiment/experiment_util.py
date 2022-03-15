@@ -511,7 +511,9 @@ class ZippedReportFolder(TempDir):
 class PrintProgressStep(Step):
 
     NAME = "PrintProgress"
-    DESCRIPTION = """Prints progress in terms of number of iterations completed. Useful for experiments which repeat a single step for multiple iterations."""
+    DESCRIPTION = """Prints progress in terms of number of iterations completed.
+     Useful for experiments which repeat a single step for multiple 
+     iterations."""
 
     def __init__(
         self,
@@ -538,7 +540,8 @@ class PrintProgressStep(Step):
         if self.__current_iterations == 0:
             print(f"Started({step_description})")
 
-        output = f"Progress {self.__current_iterations}/{self.__total_iterations}"
+        output = \
+            f"Progress {self.__current_iterations}/{self.__total_iterations}"
 
         print(output, flush=True)
 

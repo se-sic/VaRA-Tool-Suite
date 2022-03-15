@@ -894,7 +894,7 @@ class RevisionBinaryMap(tp.Container[str]):
         revision_specific_binaries = []
 
         for validity_range, wrapped_binary \
-                in self.__revision_specific_mappings.items():            
+                in self.__revision_specific_mappings.items():
             if revision in get_all_revisions_between(
                 validity_range.id_start, validity_range.id_end, ShortCommitHash,
                 self.__repo_location

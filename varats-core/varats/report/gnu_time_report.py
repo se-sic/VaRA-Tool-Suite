@@ -200,8 +200,12 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         )
 
 
-class TimeReportAggregate(ReportAggregate, shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND, file_type=ReportAggregate.FILE_TYPE):
+class TimeReportAggregate(
+        ReportAggregate,
+        shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
+        file_type=ReportAggregate.FILE_TYPE
+):
     """Aggregates multiple time reports in a single folder."""
-    
+
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)
