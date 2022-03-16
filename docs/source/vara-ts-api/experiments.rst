@@ -35,6 +35,7 @@ Tool suite provided experiments
 
    experiments/just_compile
    experiments/blame_report_experiments
+   experiments/szz
 
 Experiment utilities
 --------------------
