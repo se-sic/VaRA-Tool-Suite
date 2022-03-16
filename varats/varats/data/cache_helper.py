@@ -117,9 +117,7 @@ def build_cached_report_table(
         cached_df = optional_cached_df
 
     def is_missing_file(report_file: InDataType) -> bool:
-        return not tp.cast(
-            bool, (cached_df[CACHE_ID_COL] == get_entry_id(report_file)).any()
-        )
+        return not (cached_df[CACHE_ID_COL] == get_entry_id(report_file)).any()
 
     def is_newer_file(report_file: InDataType) -> bool:
         cached_entry = cached_df[cached_df[CACHE_ID_COL] ==
