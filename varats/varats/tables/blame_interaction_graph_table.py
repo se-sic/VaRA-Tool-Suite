@@ -53,7 +53,7 @@ def _generate_graph_table(
             pd.DataFrame.from_dict({
                 project_name: {
                     ("commits", ""):
-                        int(project_git("rev-list", "--count", "HEAD")),
+                        int(project_git("rev-list", "--count", revision.hash)),
                     ("authors", ""):
                         len(
                             project_git("shortlog", "-s", "--all").splitlines()
