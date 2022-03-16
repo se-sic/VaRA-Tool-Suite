@@ -119,12 +119,16 @@ def _load_dataframe_for_report(
         fix_report = load_blame_report(report_paths[0])
         intro_report = load_blame_report(report_paths[1])
         fix_commit = commit_lookup(
-            commit_map.convert_to_full_or_warn(fix_report.head_commit),
-            prj_src.local
+            CommitRepoPair(
+                commit_map.convert_to_full_or_warn(fix_report.head_commit),
+                prj_src.local
+            )
         )
         intro_commit = commit_lookup(
-            commit_map.convert_to_full_or_warn(intro_report.head_commit),
-            prj_src.local
+            CommitRepoPair(
+                commit_map.convert_to_full_or_warn(intro_report.head_commit),
+                prj_src.local
+            )
         )
 
         fix_in, fix_out = get_interacting_commits_for_commit(
