@@ -427,6 +427,10 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
         return self.__function_entries[mangled_function_name]
 
     @property
+    def blame_taint_scope(self) -> BlameTaintScope:
+        return self.__blame_taint_scope
+
+    @property
     def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
         """Iterate over all function entries."""
         return self.__function_entries.values()
@@ -459,6 +463,14 @@ class BlameReportDiff():
         self.__base_head = base_report.head_commit
         self.__prev_head = prev_report.head_commit
         self.__calc_diff_br(base_report, prev_report)
+        assert \
+            base_report.blame_taint_scope == prev_report.blame_taint_scope, \
+            "Cannot diff blame reports with different scopes."
+        self.__blame_taint_scope = base_report.blame_taint_scope
+
+    @property
+    def blame_taint_scope(self) -> BlameTaintScope:
+        return self.__blame_taint_scope
 
     @property
     def base_head_commit(self) -> ShortCommitHash:
@@ -655,12 +667,9 @@ def generate_degree_tuples(
     return list(degree_dict.items())
 
 
-InteractingCommitRepoPairToAmountMapping = tp.Dict[CommitRepoPair, int]
-
-
 def gen_base_to_inter_commit_repo_pair_mapping(
     report: tp.Union[BlameReport, BlameReportDiff]
-) -> tp.Dict[CommitRepoPair, InteractingCommitRepoPairToAmountMapping]:
+) -> tp.Dict[BlameTaintData, tp.Dict[BlameTaintData, int]]:
     """
     Maps the base CommitRepoPair of a blame interaction to each distinct
     interacting CommitRepoPair, which maps to the amount of the interaction.
@@ -672,29 +681,18 @@ def gen_base_to_inter_commit_repo_pair_mapping(
         A mapping from base CommitRepoPairs to a mapping of the corresponding
         interacting CommitRepoPairs to their amount.
     """
-
-    base_to_inter_mapping: tp.Dict[
-        CommitRepoPair,
-        InteractingCommitRepoPairToAmountMapping] = defaultdict(dict)
+    grouped_interactions: tp.Dict[BlameTaintData, tp.Dict[
+        BlameTaintData, int]] = defaultdict(lambda: defaultdict(lambda: 0))
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            amount = interaction.amount
-            base_commit_repo_pair = interaction.base_taint.commit
+            base_taint = interaction.base_taint
 
             for interacting_taint in interaction.interacting_taints:
-                interacting_c_repo_pair = interacting_taint.commit
-                if (
-                    interacting_c_repo_pair
-                    not in base_to_inter_mapping[base_commit_repo_pair]
-                ):
-                    base_to_inter_mapping[base_commit_repo_pair][
-                        interacting_c_repo_pair] = 0
+                grouped_interactions[base_taint][interacting_taint
+                                                ] += interaction.amount
 
-                base_to_inter_mapping[base_commit_repo_pair][
-                    interacting_c_repo_pair] += amount
-
-    return base_to_inter_mapping
+    return grouped_interactions
 
 
 DegreeAmountMappingTy = tp.Dict[int, int]
@@ -830,7 +828,7 @@ def generate_time_delta_distribution_tuples(
             if base_crp.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 continue
 
-            base_commit = commit_lookup(interaction.base_commit)
+            base_commit = commit_lookup(interaction.base_taint.commit)
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
             def translate_to_time_deltas2(

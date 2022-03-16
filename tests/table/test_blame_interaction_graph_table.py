@@ -39,7 +39,7 @@ class TestCSMetricsTable(unittest.TestCase):
 {} & commits & authors & nodes & edges & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
 {} &        mean & median & min &  max &          median & min & max &         median & min & max \\
 \midrule
-\textbf{xz} &    1325 &      28 &   124 &   928 &       14.97 &    8.0 &   1 &  154 &             4.0 &   0 &  64 &            3.0 &   0 &  92 \\
+\textbf{xz} &    1143 &      28 &   124 &   928 &       14.97 &    8.0 &   1 &  154 &             4.0 &   0 &  64 &            3.0 &   0 &  92 \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -64,7 +64,7 @@ class TestCSMetricsTable(unittest.TestCase):
 {} & commits & authors & nodes & edges & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
 {} &        mean & median & min & max &          median & min & max &         median & min & max \\
 \midrule
-\textbf{xz} &    1325 &      28 &     1 &     0 &         0.0 &    0.0 &   0 &   0 &             0.0 &   0 &   0 &            0.0 &   0 &   0 \\
+\textbf{xz} &    1143 &      28 &     1 &     0 &         0.0 &    0.0 &   0 &   0 &             0.0 &   0 &   0 &            0.0 &   0 &   0 \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -89,7 +89,7 @@ class TestCSMetricsTable(unittest.TestCase):
 {} & commits & authors & nodes & edges & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
 {} &        mean & median & min & max &          median & min & max &         median & min & max \\
 \midrule
-\textbf{xz} &    1325 &      28 &   125 &    92 &        1.47 &    1.0 &   0 &  92 &             1.0 &   0 &   1 &            0.0 &   0 &  92 \\
+\textbf{xz} &    1143 &      28 &   125 &    92 &        1.47 &    1.0 &   0 &  92 &             1.0 &   0 &   1 &            0.0 &   0 &  92 \\
 \bottomrule
 \end{tabular}
 """, table_str

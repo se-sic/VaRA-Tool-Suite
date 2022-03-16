@@ -1011,29 +1011,47 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
             self.reports[1]
         )
 
-        elem_e6 = CommitRepoPair(
-            FullCommitHash("e64923e69eab82332c1bed7fe1e80e14c2c5cb7f"),
-            "Elementalist"
+        elem_e6 = BlameTaintData(
+            False,
+            CommitRepoPair(
+                FullCommitHash("e64923e69eab82332c1bed7fe1e80e14c2c5cb7f"),
+                "Elementalist"
+            )
         )
-        elem_5e = CommitRepoPair(
-            FullCommitHash("5e030723d70f4894c21881e32dba4decec815c7e"),
-            "Elementalist"
+        elem_5e = BlameTaintData(
+            False,
+            CommitRepoPair(
+                FullCommitHash("5e030723d70f4894c21881e32dba4decec815c7e"),
+                "Elementalist"
+            )
         )
-        elem_97 = CommitRepoPair(
-            FullCommitHash("97c573ee98a1c2143b6876433697e363c9eca98b"),
-            "Elementalist"
+        elem_97 = BlameTaintData(
+            False,
+            CommitRepoPair(
+                FullCommitHash("97c573ee98a1c2143b6876433697e363c9eca98b"),
+                "Elementalist"
+            )
         )
-        elem_bd = CommitRepoPair(
-            FullCommitHash("bd693d7bc2e4ae5be93e300506ba1efea149e5b7"),
-            "Elementalist"
+        elem_bd = BlameTaintData(
+            False,
+            CommitRepoPair(
+                FullCommitHash("bd693d7bc2e4ae5be93e300506ba1efea149e5b7"),
+                "Elementalist"
+            )
         )
-        water_58 = CommitRepoPair(
-            FullCommitHash("58ec513bd231f384038d9612ffdfb14affa6263f"),
-            "water_lib"
+        water_58 = BlameTaintData(
+            False,
+            CommitRepoPair(
+                FullCommitHash("58ec513bd231f384038d9612ffdfb14affa6263f"),
+                "water_lib"
+            )
         )
-        fire_ea = CommitRepoPair(
-            FullCommitHash("ead5e00960478e1d270aea5f373aece97b4b7e74"),
-            "fire_lib"
+        fire_ea = BlameTaintData(
+            False,
+            CommitRepoPair(
+                FullCommitHash("ead5e00960478e1d270aea5f373aece97b4b7e74"),
+                "fire_lib"
+            )
         )
 
         self.assertEqual(base_inter_mapping[elem_e6][elem_5e], 1)

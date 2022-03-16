@@ -23,7 +23,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
     """Test if blame interaction graphs are constructed correctly."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         initialize_projects()
 
     @run_in_test_environment(
@@ -37,6 +37,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         revision = newest_processed_revision_for_case_study(
             get_paper_config().get_case_studies("xz")[0], BlameReport
         )
+        assert revision
         blame_interaction_graph = create_blame_interaction_graph("xz", revision)
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")
@@ -65,6 +66,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         revision = newest_processed_revision_for_case_study(
             get_paper_config().get_case_studies("xz")[0], BlameReport
         )
+        assert revision
         blame_interaction_graph = create_file_based_interaction_graph(
             "xz", revision
         )
@@ -95,6 +97,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         revision = newest_processed_revision_for_case_study(
             get_paper_config().get_case_studies("xz")[0], BlameReport
         )
+        assert revision
         blame_interaction_graph = create_blame_interaction_graph("xz", revision)
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")
