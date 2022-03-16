@@ -707,10 +707,7 @@ def generate_time_delta_distribution_tuples(
             if interaction.base_commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 continue
 
-            base_commit = commit_lookup(
-                interaction.base_commit.commit_hash,
-                interaction.base_commit.repository_name
-            )
+            base_commit = commit_lookup(interaction.base_commit)
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
             def translate_to_time_deltas2(

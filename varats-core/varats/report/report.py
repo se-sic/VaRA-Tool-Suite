@@ -3,7 +3,6 @@ minimal interface ``BaseReport`` to implement own reports."""
 
 import re
 import typing as tp
-from abc import abstractmethod
 from enum import Enum
 from pathlib import Path, PosixPath
 
