@@ -24,8 +24,22 @@ from datetime import timedelta
 from pathlib import Path
 import numpy as np
 
-from varats.report.report import BaseReport, ReportAggregate
+from benchbuild import Project
+from benchbuild.utils import actions
+from varats.data.reports.empty_report import EmptyReport
+from varats.report.report import (
+    BaseReport,
+    ReportAggregate,
+    FileStatusExtension
+)
+from varats.experiment.experiment_util import (
+    ExperimentHandle,
+    get_varats_result_folder,
+)
 from varats.utils.util import static_vars
+from benchbuild import Project
+from benchbuild.utils import actions
+from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 
 
 class WrongTimeReportFormat(Exception):
@@ -202,6 +216,87 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
 
 class TimeReportAggregate(ReportAggregate, shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND, file_type=ReportAggregate.FILE_TYPE):
     """Aggregates multiple time reports in a single folder."""
-    
+
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)
+
+    @property
+    def wall_clock_time(self) -> list[float]:
+
+        reports: list[TimeReport] = self.reports
+        return [report.wall_clock_time.total_seconds() for report in reports]
+
+    @property
+    def wall_clock_time_mean(self) -> float:
+
+        return np.mean(self.wall_clock_time)
+
+    @property
+    def wall_clock_time_std(self) -> float:
+
+        return np.std(self.wall_clock_time)
+
+    @property
+    def summary(self):
+        return f"mean(wall_clock_time) = {self.wall_clock_time_mean}\n" \
+            f"std(wall_clock_time) = {self.wall_clock_time_std}\n"
+
+
+class PrintTimeReportSummary(actions.Step):  # type: ignore
+
+    NAME = "PrintTimeReportSummary"
+    DESCRIPTION = "Step for experiments to write a summary to an " \
+        "`EmptyReport` for earlier created `TimeReportAggregate`s."
+
+    def __init__(
+        self,
+        project: Project,
+        experiment_handle: ExperimentHandle
+    ):
+        super().__init__(obj=project, action_fn=self.write_summary)
+        self.__experiment_handle = experiment_handle
+
+    def write_summary(self) -> actions.StepResult:
+
+        project: Project = self.obj
+
+        vara_result_folder = get_varats_result_folder(project)
+
+        binary: ProjectBinaryWrapper
+        for binary in project.binaries:
+
+            if binary.type != BinaryType.EXECUTABLE:
+                continue
+
+            time_aggregate_name = self.__experiment_handle.get_file_name(
+                TimeReportAggregate.shorthand(),
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_revision=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=FileStatusExtension.SUCCESS
+            )
+
+            time_aggregate_path = Path(vara_result_folder,
+                                       str(time_aggregate_name))
+
+            if not (time_aggregate_path.exists() and
+                    time_aggregate_path.is_dir()):
+                continue
+
+            time_aggregate = TimeReportAggregate(time_aggregate_path)
+
+            time_summary_name = self.__experiment_handle.get_file_name(
+                EmptyReport.shorthand(),
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_revision=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=FileStatusExtension.SUCCESS
+            )
+
+            with open(Path(vara_result_folder, str(time_summary_name)), "w") \
+                    as summary_file:
+                summary_file.write(time_aggregate.summary)
+
+        return actions.StepResult.OK

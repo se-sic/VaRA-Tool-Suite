@@ -8,15 +8,12 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run, time as bbtime
 from benchbuild.utils import actions
 from varats.report.tef_report import TEFReport, TEFReportAggregate
-from benchbuild.utils.cmd import time, echo, sh
+from benchbuild.utils.cmd import time, sh
 from plumbum import local
-from plumbum.commands.base import BoundCommand
 
 from varats.experiment.experiment_util import (
-    exec_func_with_pe_error_handler,
     ExperimentHandle,
     get_varats_result_folder,
-    create_default_analysis_failure_handler,
     VersionExperiment,
     get_default_compile_error_wrapped,
     PrintProgressStep
@@ -28,7 +25,8 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.report.report import FileStatusExtension, ReportSpecification
-from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
+from varats.report.gnu_time_report import TimeReport, TimeReportAggregate, \
+    PrintTimeReportSummary
 from varats.data.reports.empty_report import EmptyReport
 from varats.tools.research_tools.vara import VaRA
 
@@ -90,7 +88,6 @@ class ExecWithTime(actions.Step):  # type: ignore
 
             tef_report_dir = Path(
                 vara_result_folder, str(tef_report_dir_name))
-            tef_report_dir.mkdir(exist_ok=True)
 
             tef_report_file = Path(
                 tef_report_dir, f"tef_iteration_{self.__iteration}.{TEFReport.FILE_TYPE}")
@@ -107,52 +104,42 @@ class ExecWithTime(actions.Step):  # type: ignore
 
             time_report_dir = Path(
                 vara_result_folder, str(time_report_dir_name))
-            time_report_dir.mkdir(exist_ok=True)
-
+ 
             time_report_file = Path(
                 time_report_dir, f"time_iteration_{self.__iteration}.{TimeReport.FILE_TYPE}")
-
+            
             # Execute binary.
-            with local.cwd(project.source_of_primary), \
-                    local.env(VARA_TRACE_FILE=tef_report_file):
+            source_of_primary = Path(project.source_of_primary)
+            with local.cwd(source_of_primary), \
+                    local.env(VARA_TRACE_FILE=tef_report_file), \
+                    TEFReportAggregate(tef_report_dir), \
+                    TimeReportAggregate(time_report_dir):
 
                 run_cmd = binary[workload]
 
                 # Attach bpftrace script to activate USDT markers.
                 if self.__usdt:
                     # attach bpftrace to binary to allow tracing it via USDT
-                    # bpftrace_script = Path(VaRA.install_location(
-                    # ), "tools/perf_bpftrace/UsdtTefMarker.bt")
-
-                    bpftrace_script = "/home/jonask/Repos/VaRA/tools_src/vara-llvm-project/vara/tools/perf_bpftrace/UsdtTefMarker.bt"
+                    bpftrace_script = Path(
+                        VaRA.source_location(),
+                        "vara-llvm-project/vara/tools/perf_bpftrace/"
+                        "UsdtTefMarker.bt")
 
                     script_text = BPFTRACE_SCRIPT_TEMPLATE.format(
                         tef_report_file=tef_report_file,
                         run_cmd=run_cmd,
                         bpftrace_script=bpftrace_script,
-                        binary_path=binary.path
+                        binary_path=binary.entry_point
                     )
 
                     bpftrace_script_path = "/tmp/bpftace_run_script.sh"
-                    (echo[script_text] > bpftrace_script_path)()
+
+                    with open(bpftrace_script_path, "w") as bpftrace_scipt_file:
+                        bpftrace_scipt_file.write(script_text)
 
                     run_cmd = sh[bpftrace_script_path]
 
-                run_cmd = time["-v", "-o", time_report_file, run_cmd]
-
-                exec_func_with_pe_error_handler(
-                    run_cmd,
-                    create_default_analysis_failure_handler(
-                        self.__experiment_handle, project, EmptyReport,
-                        Path(vara_result_folder)
-                    )
-                )
-
-            # Remove report directories if empty.
-            if not os.listdir(tef_report_dir):
-                tef_report_dir.rmdir()
-            if not os.listdir(time_report_dir):
-                time_report_dir.rmdir()
+                time("-v", "-o", time_report_file, run_cmd)
 
         return actions.StepResult.OK
 
@@ -239,6 +226,10 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
         # print completion of final iteration
         analysis_actions.append(PrintProgressStep(
             project, self, step, num_iterations, num_iterations))
+
+        # mark run as successful
+        analysis_actions.append(
+            PrintTimeReportSummary(project, self.get_handle()))
 
         analysis_actions.append(actions.Clean(project))
 

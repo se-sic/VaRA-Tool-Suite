@@ -1,11 +1,13 @@
 """The Report module implements basic report functionalities and provides a
 minimal interface ``BaseReport`` to implement own reports."""
 
+import os
 import re
 import typing as tp
 from abc import abstractmethod
 from enum import Enum
 from pathlib import Path, PosixPath
+from types import TracebackType
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -568,10 +570,21 @@ class ReportAggregate(BaseReport, shorthand="Agg", file_type=""):
     def __init__(self, path: Path, report_type: tp.Type[BaseReport]) -> None:
         """Reads and parses the reports aggregated inside the folder."""
         super().__init__(path)
+        self.__report_type = report_type
 
-        self.__reports = [report_type(file) for file in self.path.iterdir()]
+    def __enter__(self) -> None:
+        self.path.mkdir(exist_ok=True)
+        return
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        if not os.listdir(self.path):
+            self.path.rmdir()
 
     @property
     def reports(self) -> list[BaseReport]:
         """Returns all reports present inside the folder."""
-        return self.__reports
+        return [self.__report_type(file) for file in self.path.iterdir()]
