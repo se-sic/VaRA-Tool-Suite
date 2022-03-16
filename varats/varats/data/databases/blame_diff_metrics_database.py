@@ -36,6 +36,7 @@ from varats.utils.git_util import (
     calc_code_churn,
     create_commit_lookup_helper,
     ShortCommitHash,
+    FullCommitHash,
 )
 
 
@@ -312,12 +313,14 @@ class BlameDiffMetricsDatabase(
             pred_report = load_blame_report(report_paths[1])
             commit = repo.get(head_report.head_commit.hash)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
+            pred_commit = repo.get(pred_report.head_commit.hash)
 
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)
 
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn(
-                repo, repo.get(pred_report.head_commit.hash), commit,
+                Path(repo.path), FullCommitHash.from_pygit_commit(pred_commit),
+                FullCommitHash.from_pygit_commit(commit),
                 ChurnConfig.create_c_style_languages_config()
             )
             total_churn = code_churn[1] + code_churn[2]
