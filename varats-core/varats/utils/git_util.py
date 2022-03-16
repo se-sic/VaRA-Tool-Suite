@@ -1,14 +1,11 @@
 """Utility module for handling git repos."""
 import abc
-import math
-import os
 import re
 import typing as tp
 from enum import Enum
 from itertools import chain
 from pathlib import Path
 
-import numpy
 import pygit2
 from benchbuild.utils.cmd import git, grep
 from benchbuild.utils.revision_ranges import RevisionRange
