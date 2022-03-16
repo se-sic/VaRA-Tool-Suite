@@ -25,6 +25,7 @@ As a simple example and help to implement your own report, take a look at the :r
     data_reports/empty_report
     data_reports/blame_report
     data_reports/gnu_time_report
+    data_reports/szz_report
 
 Report module
 .............
@@ -64,6 +65,7 @@ You can add new database classes by creating a subclass of :class:`~varats.data.
     data_databases/blame_interaction_degree_database
     data_databases/commit_interaction_database
     data_databases/file_status_database
+    data_databases/szz_quality_metrics_database
 
 
 Module: database
