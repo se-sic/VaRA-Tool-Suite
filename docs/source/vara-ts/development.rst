@@ -115,7 +115,7 @@ Ensure that all branches are in the correct state.
     # Update varats/setup.py and varats-core/setup.py to the next version
     # Update varats/setup.py to depend on the new core version
     git commit -m "Bump version to $NEW_VERSION"
-    git push vara-dev
+    git push origin vara-dev
 
 Integrate the changes from develop into the release branch `vara`.
 
@@ -131,7 +131,7 @@ Build and upload release files with tox and tag the new release, this automatica
     tox -e release
     git tag -s vara-X.Y.Z
 
-    git push vara
+    git push origin vara
     git push origin vara-X.Y.Z
 
 Prepare the next version, by default we assume a small bump.
@@ -142,7 +142,7 @@ Prepare the next version, by default we assume a small bump.
     # Update varats/setup.py and varats-core/setup.py to the next version
     # Update varats/setup.py to depend on the new core version
     git commit -m "Bump version to $NEW_VERSION"
-    git push vara-dev
+    git push origin vara-dev
 
 vara-feature
 ^^^^^^^^^^^^
@@ -152,8 +152,19 @@ Ensure that all branches are in the correct state.
 .. code-block:: console
 
     cd vara-feature
-    git pull vara
-    git pull vara-dev
+    git checkout vara
+    git pull
+    git checkout vara-dev
+    git pull
+
+[Optional]: Update the version numbers, should a larger bump be needed.
+
+.. code-block:: console
+
+    git checkout vara-dev
+    # Update setup.py to the next version
+    git commit --allow-empty -m "Bump version to $NEW_VERSION"
+    git push origin vara-dev
 
 Integrate the changes from develop into the release branch `vara`.
 
@@ -169,7 +180,7 @@ Build and upload release files with tox and tag the new release.
     tox -e release
     git tag -s vara-X.Y.Z
 
-    git push vara
+    git push origin vara
     git push origin vara-X.Y.Z
 
 Prepare the next version.
@@ -179,7 +190,7 @@ Prepare the next version.
     git checkout vara-dev
     # Update setup.py to the next version
     git commit --allow-empty -m "Bump version to $NEW_VERSION"
-    git push vara-dev
+    git push origin vara-dev
 
 VaRA and vara-llvm-project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
