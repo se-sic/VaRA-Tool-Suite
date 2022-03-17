@@ -18,11 +18,11 @@ from varats.utils.git_util import calc_repo_loc
 LOG = logging.Logger(__name__)
 
 
-class CaseStudyMetricsTable(Table):
+class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
     """Table showing some general information about the case studies in a paper
     config."""
 
-    NAME = "cs_metrics"
+    NAME = "cs_metrics_table"
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)

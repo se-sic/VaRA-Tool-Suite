@@ -95,11 +95,11 @@ def filter_report_paths_binary(
     )
 
 
-class PhasarGlobalsDataComparision(Table):
+class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
     """Comparision overview of gathered phasar globals analysis data to compare
     the effect of using gloabls analysis."""
 
-    NAME = "phasar_globals"
+    NAME = "phasar_globals_table"
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)

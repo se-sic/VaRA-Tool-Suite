@@ -8,19 +8,25 @@ from tabulate import tabulate
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat
+from varats.table.tables import (
+    TableFormat,
+    TableGenerator,
+    OPTIONAL_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+    TableConfig,
+)
 
 
-class BugOverviewTable(Table):
+class BugOverviewTable(Table, table_name="bug_overview_table"):
     """Visualizes bug metrics of a project."""
 
-    NAME = "bug_overview"
+    NAME = "bug_overview_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
-        project_name = self.table_kwargs["project"]
+        project_name: str = self.table_kwargs['case_study'].project_name
 
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)
@@ -49,3 +55,14 @@ class BugOverviewTable(Table):
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class BugOverviewTableGenerator(
+    TableGenerator,
+    generator_name="bug-overview-table",
+    options=[OPTIONAL_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates a bug-overview table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [BugOverviewTable(self.table_config, **self.table_kwargs)]
