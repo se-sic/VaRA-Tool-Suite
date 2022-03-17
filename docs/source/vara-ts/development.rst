@@ -102,8 +102,20 @@ Ensure that all branches are in the correct state.
 .. code-block:: console
 
     cd VaRA-Tool-Suite
-    git pull vara
-    git pull vara-dev
+    git checkout vara
+    git pull
+    git checkout vara-dev
+    git pull
+
+[Optional]: Update the version numbers, should a larger bump be needed.
+
+.. code-block:: console
+
+    git checkout vara-dev
+    # Update varats/setup.py and varats-core/setup.py to the next version
+    # Update varats/setup.py to depend on the new core version
+    git commit -m "Bump version to $NEW_VERSION"
+    git push vara-dev
 
 Integrate the changes from develop into the release branch `vara`.
 
@@ -122,7 +134,7 @@ Build and upload release files with tox and tag the new release, this automatica
     git push vara
     git push origin vara-X.Y.Z
 
-Prepare the next version.
+Prepare the next version, by default we assume a small bump.
 
 .. code-block:: console
 
