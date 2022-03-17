@@ -532,18 +532,17 @@ def __casestudy_package(
     help="Only report the newest file for each matched commit hash"
 )
 def __casestudy_view(
-    report_type: str, project: str, commit_hash: ShortCommitHash,
-    newest_only: bool
+    report_type: tp.Type[BaseReport], project: str,
+    commit_hash: ShortCommitHash, newest_only: bool
 ) -> None:
     """View report files."""
-    result_file_type = BaseReport.REPORT_TYPES[report_type]
     try:
-        commit_hash = __init_commit_hash(result_file_type, project, commit_hash)
+        commit_hash = __init_commit_hash(report_type, project, commit_hash)
     except LookupError:
         return
 
     result_files = PCM.get_result_files(
-        result_file_type, project, commit_hash, newest_only
+        report_type, project, commit_hash, newest_only
     )
     result_files.sort(
         key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
