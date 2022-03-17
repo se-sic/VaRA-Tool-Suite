@@ -96,7 +96,8 @@ def generate(only: tp.Optional[str]) -> None:
     Args:
         only: generate only this artefact
     """
-    Artefact.base_output_dir().mkdir(parents=True)
+    if not Artefact.base_output_dir().exists():
+        Artefact.base_output_dir().mkdir(parents=True)
     artefacts: tp.Iterable[Artefact]
 
     if only:
