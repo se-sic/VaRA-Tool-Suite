@@ -13,7 +13,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
-from varats.data.reports.empty_report import EmptyReport as EMPTY
+from varats.data.reports.fta_report import FTAReport as FTAR
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -63,7 +63,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         for binary in project.binaries:
             # Define empty success file
             result_file = self.__experiment_handle.get_file_name(
-                EMPTY.shorthand(),
+                FTAR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
@@ -91,7 +91,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, EMPTY,
+                    self.__experiment_handle, project, FTAR,
                     Path(vara_result_folder)
                 )
             )
@@ -102,7 +102,7 @@ class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
     the call."""
 
     NAME = "PhASARFeatureTaintAnalysis"
-    REPORT_SPEC = ReportSpecification(EMPTY)
+    REPORT_SPEC = ReportSpecification(FTAR)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
