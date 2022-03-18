@@ -129,11 +129,11 @@ class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
 
         fm_provider = FeatureModelProvider.get_provider_for_project(project)
 
-        fm_path = fm_provider.get_feature_model_path
+        fm_path = fm_provider.get_feature_model_path(project.version_of_primary)
 
         project.cflags += [
             "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-feature",
-            "-feature-config=" + str(fm_path)
+            "-fvara-fm-path=" + str(fm_path)
         ]
 
         bc_file_extensions = [
