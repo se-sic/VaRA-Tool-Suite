@@ -135,6 +135,10 @@ class Table:
         >>> p.table_file_name('tex')
         'baz_42_foo.tex'
         """
+        # TODO: Change file name to sth. unique of each case study. This should
+        #       allow us to use the REQUIRE_MULTI_CASE_STUDY for most tables
+        #       without instantly overwriting the generated table with the next
+        #       one.
         table_ident = ''
         if 'case_study' in self.table_kwargs:
             cs: tp.Union[CaseStudy,
