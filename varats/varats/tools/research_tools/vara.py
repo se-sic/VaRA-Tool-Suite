@@ -5,7 +5,6 @@ import math
 import os
 import re
 import shutil
-import subprocess
 import typing as tp
 from pathlib import Path
 
@@ -396,8 +395,6 @@ class VaRA(ResearchTool[VaRACodeBase]):
         phasar_name = self.code_base.get_sub_project("phasar").name.lower()
         status_ok &= (phasar_name in stdout.lower())
 
-        ninja = local["ninja"].with_cwd()
-
         return status_ok
 
     def verify_build(
@@ -418,7 +415,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             LOG.critical(
                 f"BuildType {build_type.name} is not supported by VaRA"
             )
-            return
+            return False
 
         build_folder_path = build_type.build_folder(build_folder_suffix)
         full_path /= build_folder_path
@@ -427,7 +424,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         (ret, _, _) = ninja.run("check-vara")
 
-        return ret == 0
+        return bool(ret == 0)
 
     def container_install_tool(
         self, image_context: 'containers.BaseImageCreationContext'
