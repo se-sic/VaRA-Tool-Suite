@@ -11,12 +11,20 @@ from varats.data.reports.blame_interaction_graph import (
     CIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.project.project_util import get_local_project_gits
 from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
-from varats.table.tables import TableFormat, TableConfig
+from varats.table.tables import (
+    TableFormat,
+    TableConfig,
+    REQUIRE_MULTI_CASE_STUDY,
+    OPTIONAL_REPORT_TYPE,
+    OPTIONAL_TABLE_FORMAT,
+    TableGenerator,
+)
 from varats.utils.git_util import (
     ChurnConfig,
     calc_commit_code_churn,
@@ -38,7 +46,7 @@ class TopCentralCodeCommitsTable(Table):
         super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
-        case_study = self.table_kwargs["table_case_study"]
+        case_study = self.table_kwargs["case_study"]
         num_commits = self.table_kwargs.get("num_commits", 10)
 
         project_name = case_study.project_name
@@ -89,8 +97,9 @@ class TopCentralCodeCommitsTable(Table):
         degree_data.sort_values(["centrality", "commit"],
                                 ascending=[False, True],
                                 inplace=True)
+        table_format: TableFormat = self.table_kwargs["format"]
 
-        if self.format in [
+        if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = degree_data.to_latex(
@@ -100,7 +109,27 @@ class TopCentralCodeCommitsTable(Table):
                 caption=f"Top {num_commits} Central Code Commits"
             )
             return str(table) if table else ""
-        return tabulate(degree_data, degree_data.columns, self.format.value)
+        return tabulate(degree_data, degree_data.columns, table_format.value)
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class TopCentralCodeCommitsTableGenerator(
+    TableGenerator,
+    generator_name="top-central-code-commits-table",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
+):
+    """Generates a top-central-code-commits table for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
+
+        return [
+            TopCentralCodeCommitsTable(
+                self.table_config, case_study=cs, **self.table_kwargs
+            ) for cs in case_studies
+        ]
