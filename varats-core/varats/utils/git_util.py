@@ -783,21 +783,21 @@ def __print_calc_repo_code_churn(
         if churn[0] == 1:
             changed_files = " 1 file changed"
         else:
-            changed_files = " {} files changed".format(churn[0])
+            changed_files = f" {churn[0]} files changed"
 
         if churn[1] == 0:
             insertions = ""
         elif churn[1] == 1:
             insertions = ", 1 insertion(+)"
         else:
-            insertions = ", {} insertions(+)".format(churn[1])
+            insertions = f", {churn[1]} insertions(+)"
 
         if churn[2] == 0:
             deletions = ""
         elif churn[2] == 1:
             deletions = ", 1 deletion(-)"
         else:
-            deletions = ", {} deletions(-)".format(churn[2])
+            deletions = f", {churn[2]} deletions(-)"
 
         if churn[0] > 0 and churn[1] == 0 and churn[2] == 0:
             insertions = ", 0 insertions(+)"

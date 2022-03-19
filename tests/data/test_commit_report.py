@@ -388,7 +388,7 @@ def testing_gen_commit_map() -> CommitMap:
 
     def commit_log_stream() -> tp.Generator[str, None, None]:
         for number, line in enumerate(reversed(RAW_COMMIT_LOG.split('\n'))):
-            yield "{}, {}\n".format(number, line)
+            yield f"{number}, {line}\n"
 
     return CommitMap(commit_log_stream())
 

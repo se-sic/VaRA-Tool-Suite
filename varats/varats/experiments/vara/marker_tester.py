@@ -60,10 +60,9 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         ) as _run:
             res.append(_run())
 
-        opt = local["opt"][
-            "-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
-            "-vara-trace-MTy={MType}".format(MType=self.marker_type), "-S",
-            "-o", "traced.ll", fake_file_name]
+        opt = local["opt"]["-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
+                           f"-vara-trace-MTy={self.marker_type}", "-S", "-o",
+                           "traced.ll", fake_file_name]
         with run.track_execution(opt, self.project, self.experiment) as _run:
             res.append(_run())
 
