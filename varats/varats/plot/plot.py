@@ -142,7 +142,8 @@ class Plot:
         >>> p.plot_file_name('svg')
         'bar_Plot.svg'
         >>> from varats.paper.case_study import CaseStudy
-        >>> p = Plot(PlotConfig.from_kwargs(view=False),project='bar',case_study=CaseStudy('baz', 42))
+        >>> p = Plot(PlotConfig.from_kwargs(view=False),\
+        project='bar',case_study=CaseStudy('baz', 42))
         >>> p.plot_file_name('png')
         'baz_42_Plot.png'
         """
