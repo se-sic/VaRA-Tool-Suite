@@ -169,13 +169,13 @@ def __casestudy_status(
     "blocked revisions will be ignored."
 )
 @click.option(
-    "--no-update", is_flag=True, help="Project repository will not be updated."
+    "--update/--no-update", is_flag=True, default=True ,help="Project repository will not be updated."
 )
 @click.pass_context
 def __casestudy_gen(
     ctx: click.Context, project: str, override: bool, version: int,
     ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool,
-    no_update: bool
+    update: bool
 ) -> None:
     """Generate or extend a CaseStudy Sub commands can be chained to for example
     sample revisions but also add the latest."""
@@ -194,7 +194,7 @@ def __casestudy_gen(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
     ctx.obj['git_path'] = get_local_project_git_path(project)
-    if not no_update:
+    if update:
         pull_current_branch(ctx.obj['git_path'])
 
     if override or not ctx.obj['path'].exists():
