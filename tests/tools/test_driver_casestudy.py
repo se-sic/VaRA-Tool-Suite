@@ -1,5 +1,5 @@
 """Test varats casestudy tool."""
-
+import importlib
 import unittest
 from pathlib import Path
 
@@ -104,6 +104,36 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
 
     @run_in_test_environment()
+    def test_vara_cs_gen_sample_start_before_initial_commit(self):
+        """Check if vara-cs gen select_sample with start timestamp before the
+        initial commit selects the right revisiosn."""
+        runner = CliRunner()
+        Path(vara_cfg()["paper_config"]["folder"].value + "/" +
+             "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        result = runner.invoke(
+            driver_casestudy.main, [
+                'gen', '-p', 'brotli', 'select_sample', '--num-rev', '6',
+                '--start', '1991-01-01', '--end', '2013-10-20',
+                'UniformSamplingMethod'
+            ]
+        )
+
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_gen/brotli_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertEqual(len(case_study.revisions), 1)
+        self.assertTrue(
+            FullCommitHash('e0346c826249368f0f4a68a2b95f4ab5cf1e235b') in
+            case_study.revisions
+        )
+
+    @run_in_test_environment()
     def test_vara_cs_gen_latest(self):
         """Test for vara-cs gen select_latest."""
         runner = CliRunner()
@@ -167,6 +197,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_status"
         save_config()
         load_paper_config()
+
         result = runner.invoke(driver_casestudy.main, ['status', 'JustCompile'])
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertEqual(
@@ -196,9 +227,11 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_error"
         save_config()
         load_paper_config()
-
-        result = runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
-        self.assertEqual(0, result.exit_code, result.exception)
+        importlib.reload(driver_casestudy)
+        result = runner.invoke(
+            driver_casestudy.main, ['cleanup', 'all', '--error']
+        )
+        self.assertEqual(0, result.exit_code, result.stdout)
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
@@ -239,6 +272,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_regex"
         save_config()
         load_paper_config()
+        importlib.reload(driver_casestudy)
         result = runner.invoke(
             driver_casestudy.main, ['cleanup', 'regex', '-f', '.*'], 'y'
         )

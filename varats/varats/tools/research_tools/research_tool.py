@@ -13,7 +13,7 @@ from varats.tools.research_tools.vara_manager import (
     BuildType,
     add_remote,
     branch_has_upstream,
-    checkout_branch,
+    checkout_branch_or_commit,
     checkout_new_branch,
     download_repo,
     fetch_remote,
@@ -277,7 +277,7 @@ class SubProject():
         Args:
             branch_name: name of the branch, should exists in the repo
         """
-        checkout_branch(
+        checkout_branch_or_commit(
             self.__parent_code_base.base_dir / self.path, branch_name
         )
 

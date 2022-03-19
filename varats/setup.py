@@ -10,7 +10,7 @@ with open(base_dir + '/README.md') as f:
 
 setup(
     name='varats',
-    version='11.1.1',
+    version='11.1.3',
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],
@@ -25,6 +25,7 @@ setup(
         "Jinja2>=3.0.1",
         "kaleido>=0.2.1",
         "matplotlib>=3.1.2",
+        "networkx>=2.5",
         "numpy>=1.21",
         "packaging>=20.1",
         "pandas>=0.22.0",
@@ -32,6 +33,7 @@ setup(
         "plumbum>=1.6.6",
         "pygit2>=0.28.2",
         "PyGithub>=1.47",
+        "pygraphviz>=1.7",
         "pygtrie",
         "pylatex>=1.4.1",
         "PyQt5>=5.10.0",
@@ -44,7 +46,7 @@ setup(
         "seaborn>=0.8.0",
         "statsmodels~=0.13.1",
         "tabulate>=0.8.6",
-        "varats-core>=11.1.1",
+        "varats-core>=11.1.3",
         "wllvm>=1.1.4",
     ],
     author="Florian Sattler",
