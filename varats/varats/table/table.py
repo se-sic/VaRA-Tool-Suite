@@ -24,7 +24,8 @@ class Table:
     TABLES: tp.Dict[str, tp.Type['Table']] = {}
 
     # TODO: Create mapping from chosen cli option 'format' to cli option
-    #       'file-type'
+    #       'file_type'. Currently one can choose the 'file type' and 'format'
+    #       independent from each other.
 
     # format_filetypes = {
     #     TableFormat.GITHUB: "md",
