@@ -374,6 +374,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
         status_ok &= (install_location / "bin/opt").exists()
         status_ok &= (install_location / "bin/phasar-llvm").exists()
 
+        # Check that clang++ can display it's version
+        ProcessManager.create_process(
+            "./bin/clang++", ["--version"], install_location
+        )
+
         return status_ok
 
     def container_install_tool(
