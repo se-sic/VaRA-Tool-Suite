@@ -10,9 +10,18 @@ from varats.data.databases.szz_quality_metrics_database import (
 from varats.data.reports.szz_report import SZZTool
 from varats.mapping.commit_map import get_commit_map
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat, TableConfig
+from varats.table.tables import (
+    TableFormat,
+    TableConfig,
+    TableGenerator,
+    REQUIRE_CASE_STUDY,
+    OPTIONAL_REPORT_TYPE,
+    OPTIONAL_TABLE_FORMAT,
+)
 
 
+# TODO: Rename class to something similar to NAME
+# TODO: Add option for SZZ tool
 class BugOverviewTable(Table):
     """Visualizes SZZ quality metrics for a project."""
 
@@ -22,7 +31,7 @@ class BugOverviewTable(Table):
         super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
-        project_name = self.table_kwargs["project"]
+        project_name = self.table_kwargs["case_study"].project_name
         szz_tool_name: tp.Optional[str] = self.table_kwargs.get(
             "szz_tool", None
         )
@@ -52,12 +61,25 @@ class BugOverviewTable(Table):
         data.sort_values("score", inplace=True)
         data.sort_index(level="fix", sort_remaining=False, inplace=True)
 
-        if self.format in [
+        table_format: TableFormat = self.table_kwargs["format"]
+
+        if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
         ]:
             tex_code = data.to_latex(multicolumn_format="c", longtable=True)
             return str(tex_code) if tex_code else ""
-        return tabulate(data, data.columns, self.format.value)
+        return tabulate(data, data.columns, table_format.value)
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class BugOverviewTableGenerator(
+    TableGenerator,
+    generator_name="szz-quality-metrics-table",
+    options=[REQUIRE_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT]
+):
+    """Generates a szz-quality-metrics table for the selected case study."""
+
+    def generate(self) -> tp.List[Table]:
+        return [BugOverviewTable(self.table_config, **self.table_kwargs)]
