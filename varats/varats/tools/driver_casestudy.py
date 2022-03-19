@@ -169,7 +169,10 @@ def __casestudy_status(
     "blocked revisions will be ignored."
 )
 @click.option(
-    "--update/--no-update", is_flag=True, default=True ,help="Project repository will not be updated."
+    "--update/--no-update",
+    is_flag=True,
+    default=True,
+    help="Project repository will not be updated."
 )
 @click.pass_context
 def __casestudy_gen(
