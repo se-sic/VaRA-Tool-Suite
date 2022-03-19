@@ -104,9 +104,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                                str(bc_target_file), "-o", "/dev/null"]
 
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration,
-                        vara_run_cmd] > "{res_folder}/{res_file}".
-                format(res_folder=vara_result_folder, res_file=result_file),
+                timeout[timeout_duration, vara_run_cmd] >
+                f"{vara_result_folder}/{result_file}",
                 PEErrorHandler(
                     vara_result_folder, error_file.filename, timeout_duration
                 )

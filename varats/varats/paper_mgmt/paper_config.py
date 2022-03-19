@@ -257,9 +257,8 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
                 vara_cfg()["paper_config"][
                     "current_config"].value is None:
             raise ConfigurationLookupError(
-                "No paper config was set in VaRA config file {}".format(
-                    vara_cfg()['config_file']
-                )
+                f"No paper config was set in VaRA config file "
+                f"{vara_cfg()['config_file']}"
             )
         config_path = Path(
             str(vara_cfg()["paper_config"]["folder"]) + "/" +

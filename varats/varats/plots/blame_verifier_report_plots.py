@@ -301,9 +301,6 @@ class BlameVerifierReportNoOptPlot(
     optimization."""
     NAME = 'b_verifier_report_no_opt_plot'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.NO_OPT, self.plot_config, self.plot_kwargs)
 
@@ -327,9 +324,6 @@ class BlameVerifierReportOptPlot(
     """Plotting the successful and failed annotations of reports with
     optimization."""
     NAME = 'b_verifier_report_opt_plot'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.OPT, self.plot_config, self.plot_kwargs)
