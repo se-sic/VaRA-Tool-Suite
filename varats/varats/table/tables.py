@@ -93,7 +93,7 @@ class CommonTableOptions():
         self.table_base_dir = Path(str(vara_cfg()['tables']['table_dir']))
         self.table_dir = table_dir
         self.file_type = file_type
-        self.wrapt_table = wrap_table
+        self.wrap_table = wrap_table
         self.dry_run = dry_run
 
     @staticmethod
@@ -632,7 +632,7 @@ class TableGenerator(abc.ABC):
                 # TODO: rename wrap_document to wrap_table
                 table.save(
                     table_dir,
-                    wrap_document=common_options.wrapt_table,
+                    wrap_document=common_options.wrap_table,
                     filetype=common_options.file_type
                 )
 
