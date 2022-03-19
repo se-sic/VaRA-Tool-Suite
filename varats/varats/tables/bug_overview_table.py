@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
+from varats.paper.case_study import CaseStudy
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider
 from varats.table.table import Table, wrap_table_in_document
@@ -14,6 +15,7 @@ from varats.table.tables import (
     OPTIONAL_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
     TableConfig,
+    OPTIONAL_TABLE_FORMAT,
 )
 
 
@@ -43,15 +45,16 @@ class BugOverviewTable(Table):
         ] for pybug in pybugs]
 
         bug_df = pd.DataFrame(columns=variables, data=np.array(data_rows))
+        table_format: TableFormat = self.table_kwargs["format"]
 
-        if self.format in [
+        if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
         ]:
             tex_code = bug_df.to_latex(
                 bold_rows=True, multicolumn_format="c", longtable=True
             )
             return str(tex_code) if tex_code else ""
-        return tabulate(bug_df, bug_df.columns, self.format.value)
+        return tabulate(bug_df, bug_df.columns, table_format.value)
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
@@ -60,9 +63,17 @@ class BugOverviewTable(Table):
 class BugOverviewTableGenerator(
     TableGenerator,
     generator_name="bug-overview-table",
-    options=[OPTIONAL_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
 ):
     """Generates a bug-overview table for the selected case study(ies)."""
 
     def generate(self) -> tp.List[Table]:
-        return [BugOverviewTable(self.table_config, **self.table_kwargs)]
+        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
+
+        return [
+            BugOverviewTable(
+                self.table_config, case_study=cs, **self.table_kwargs
+            ) for cs in case_studies
+        ]
