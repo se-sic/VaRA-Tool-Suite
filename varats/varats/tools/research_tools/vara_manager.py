@@ -20,6 +20,7 @@ from PyQt5.QtCore import QProcess
 
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.git_commands import fetch_remote
+from varats.utils.git_commands import fetch_remote
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
