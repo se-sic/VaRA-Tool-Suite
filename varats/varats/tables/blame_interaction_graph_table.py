@@ -19,7 +19,14 @@ from varats.paper_mgmt.case_study import (
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_git
 from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
-from varats.table.tables import TableFormat, TableConfig
+from varats.table.tables import (
+    TableFormat,
+    TableGenerator,
+    OPTIONAL_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+    TableConfig,
+    OPTIONAL_TABLE_FORMAT,
+)
 from varats.utils.git_util import FullCommitHash
 
 
@@ -107,15 +114,6 @@ class CommitInteractionGraphMetricsTable(Table):
         super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
-        if "project" not in self.table_kwargs:
-            case_studies = get_loaded_paper_config().get_all_case_studies()
-        else:
-            if "table_case_study" in self.table_kwargs:
-                case_studies = [self.table_kwargs["table_case_study"]]
-            else:
-                case_studies = get_loaded_paper_config().get_case_studies(
-                    self.table_kwargs["project"]
-                )
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -123,10 +121,30 @@ class CommitInteractionGraphMetricsTable(Table):
             return create_blame_interaction_graph(project_name, revision
                                                  ).commit_interaction_graph()
 
-        return _generate_graph_table(case_studies, create_graph, self.format)
+        return _generate_graph_table(
+            self.table_kwargs["case_study"], create_graph,
+            self.table_kwargs["format"]
+        )
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class CommitInteractionGraphMetricsTableGenerator(
+    TableGenerator,
+    generator_name="cig-metrics-table",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
+):
+    """Generates a cig-metrics table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            CommitInteractionGraphMetricsTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
 
 
 class AuthorInteractionGraphMetricsTable(Table):

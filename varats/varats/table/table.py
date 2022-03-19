@@ -137,10 +137,14 @@ class Table:
         """
         table_ident = ''
         if 'case_study' in self.table_kwargs:
-            case_study: 'CaseStudy' = self.table_kwargs['case_study']
-            table_ident = f"{case_study.project_name}_{case_study.version}_"
-        elif 'project' in self.table_kwargs:
-            table_ident = f"{self.table_kwargs['project']}_"
+            cs: tp.Union[CaseStudy,
+                         tp.List[CaseStudy]] = self.table_kwargs['case_study']
+
+            if isinstance(cs, list) and len(cs) == 1:
+                cs = cs.pop(0)
+
+            if isinstance(cs, CaseStudy):
+                table_ident = f"{cs.project_name}_{cs.version}_"
 
         sep_stages = ''
         if self.supports_stage_separation(
