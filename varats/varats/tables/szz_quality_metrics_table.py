@@ -9,12 +9,13 @@ from varats.data.databases.szz_quality_metrics_database import (
 )
 from varats.data.reports.szz_report import SZZTool
 from varats.mapping.commit_map import get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import (
     TableFormat,
     TableConfig,
     TableGenerator,
-    REQUIRE_CASE_STUDY,
+    REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
     OPTIONAL_TABLE_FORMAT,
 )
@@ -77,9 +78,17 @@ class BugOverviewTable(Table):
 class BugOverviewTableGenerator(
     TableGenerator,
     generator_name="szz-quality-metrics-table",
-    options=[REQUIRE_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT]
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
 ):
     """Generates a szz-quality-metrics table for the selected case study."""
 
     def generate(self) -> tp.List[Table]:
-        return [BugOverviewTable(self.table_config, **self.table_kwargs)]
+        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
+
+        return [
+            BugOverviewTable(
+                self.table_config, case_study=cs, **self.table_kwargs
+            ) for cs in case_studies
+        ]
