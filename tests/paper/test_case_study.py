@@ -87,7 +87,7 @@ def mocked_create_lazy_commit_map_loader(
 
         def format_stream() -> tp.Generator[str, None, None]:
             for number, line in enumerate(reversed(GIT_LOG_OUT.split('\n'))):
-                yield "{}, {}\n".format(number, line)
+                yield f"{number}, {line}\n"
 
         return CommitMap(format_stream())
 
