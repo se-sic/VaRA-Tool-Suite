@@ -12,7 +12,14 @@ from varats.project.project_util import (
     get_project_cls_by_name,
 )
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat, TableConfig
+from varats.table.tables import (
+    TableFormat,
+    TableConfig,
+    TableGenerator,
+    REQUIRE_MULTI_CASE_STUDY,
+    OPTIONAL_REPORT_TYPE,
+    OPTIONAL_TABLE_FORMAT,
+)
 from varats.utils.git_util import calc_repo_loc
 
 LOG = logging.Logger(__name__)
@@ -68,14 +75,29 @@ class CaseStudyMetricsTable(Table):
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
         df = pd.concat(cs_data).sort_index()
-        if self.format in [
+        table_format: TableFormat = self.table_kwargs["format"]
+
+        if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = df.to_latex(
                 bold_rows=True, multicolumn_format="c", multirow=True
             )
             return str(table) if table else ""
-        return tabulate(df, df.columns, self.format.value)
+        return tabulate(df, df.columns, table_format.value)
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class CaseStudyMetricsTableGenerator(
+    TableGenerator,
+    generator_name="cs-metrics-table",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
+):
+    """Generates a cs-metrics table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [CaseStudyMetricsTable(self.table_config, **self.table_kwargs)]
