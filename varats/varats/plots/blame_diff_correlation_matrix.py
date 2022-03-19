@@ -26,7 +26,6 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
 from varats.plot.plots import (
-    PlotConfig,
     PlotGenerator,
     REQUIRE_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
@@ -210,9 +209,6 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
 
     NAME = "b_correlation_matrix"
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
@@ -281,9 +277,6 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     different independent and dependent variables."""
 
     NAME = "b_distribution_comparison"
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""

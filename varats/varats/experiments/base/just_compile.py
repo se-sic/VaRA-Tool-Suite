@@ -51,9 +51,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                 extension_type=FSE.SUCCESS
             )
 
-            run_cmd = touch["{res_folder}/{res_file}".format(
-                res_folder=vara_result_folder, res_file=result_file
-            )]
+            run_cmd = touch[f"{vara_result_folder}/{result_file}"]
 
             exec_func_with_pe_error_handler(
                 run_cmd,

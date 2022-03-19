@@ -69,14 +69,10 @@ class CSEntry():
         )
 
     def __str__(self) -> str:
-        return "({commit_id}: #{commit_hash})"\
-            .format(commit_hash=self.commit_hash.hash,
-                    commit_id=self.commit_id)
+        return f"({self.commit_id}: #{self.commit_hash.hash})"
 
     def __repr__(self) -> str:
-        return "({commit_id}: #{commit_hash})"\
-            .format(commit_hash=self.commit_hash.hash,
-                    commit_id=self.commit_id)
+        return f"({self.commit_id}: #{self.commit_hash.hash})"
 
 
 class CSStage():
@@ -583,9 +579,7 @@ def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:
                              or a direct path to a `.case_study` file
     """
     if case_study_location.suffix != '.case_study':
-        file_name = "{project_name}_{version}.case_study".format(
-            project_name=case_study.project_name, version=case_study.version
-        )
+        file_name = f"{case_study.project_name}_{case_study.version}.case_study"
         case_study_location /= file_name
 
     __store_case_study_to_file(case_study, case_study_location)

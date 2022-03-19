@@ -51,9 +51,7 @@ def show_status_of_case_studies(
         key=lambda cs: (cs.project_name, cs.version)
     ):
         match = re.match(
-            filter_regex, "{name}_{version}".format(
-                name=case_study.project_name, version=case_study.version
-            )
+            filter_regex, f"{case_study.project_name}_{case_study.version}"
         )
         if match is not None:
             output_case_studies.append(case_study)
@@ -99,14 +97,12 @@ def get_revision_list(case_study: CaseStudy) -> str:
     Returns:
         formated string that lists all revisions
     """
-    res_str = "CS: {project}_{version}:\n".format(
-        project=case_study.project_name, version=case_study.version
-    )
+    res_str = f"CS: {case_study.project_name}_{case_study.version}:\n"
 
     for idx, stage in enumerate(case_study.stages):
-        res_str += "  Stage {idx}\n".format(idx=idx)
+        res_str += f"  Stage {idx}\n"
         for rev in stage.revisions:
-            res_str += "    {rev}\n".format(rev=rev)
+            res_str += f"    {rev}\n"
 
     return res_str
 
@@ -171,13 +167,9 @@ def get_occurrences(
             color = colors.orange3
 
     if color is not None:
-        status += "(" + color["{processed:3}/{total}".format(
-            processed=num_succ_rev, total=num_rev
-        )] + ") processed "
+        status += "(" + color[f"{num_succ_rev:3}/{num_rev}"] + ") processed "
     else:
-        status += "(" + "{processed:3}/{total}".format(
-            processed=num_succ_rev, total=num_rev
-        ) + ") processed "
+        status += "(" + f"{num_succ_rev:3}/{num_rev}" + ") processed "
 
     status += "["
     for file_status in FileStatusExtension:
@@ -242,9 +234,7 @@ def get_short_status(
     Returns:
         a short string representation of a case study
     """
-    status = "CS: {project}_{version}: ".format(
-        project=case_study.project_name, version=case_study.version
-    ) + "".ljust(
+    status = f"CS: {case_study.project_name}_{case_study.version}: " + "".ljust(
         longest_cs_name -
         (len(case_study.project_name) + len(str(case_study.version))), ' '
     )
@@ -306,10 +296,10 @@ def get_status(
     if sep_stages:
         stages = case_study.stages
         for stage_num in range(0, case_study.num_stages):
-            status += "  Stage {idx}".format(idx=stage_num)
+            status += f"  Stage {stage_num}"
             stage_name = stages[stage_num].name
             if stage_name:
-                status += " ({})".format(stage_name)
+                status += f" ({stage_name})"
             status += "\n"
             tagged_revs = _combine_tagged_revs_for_experiment(
                 case_study, experiment_type, stage_num
@@ -317,10 +307,8 @@ def get_status(
             if sort:
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
             for tagged_rev_state in tagged_revs:
-                status += "    {rev} [{status}]\n".format(
-                    rev=tagged_rev_state[0].hash,
-                    status=tagged_rev_state[1].get_colored_status()
-                )
+                status += f"    {tagged_rev_state[0].hash} " \
+                          f"[{tagged_rev_state[1].get_colored_status()}]\n"
     else:
         tagged_revs = list(
             dict.fromkeys(
@@ -332,10 +320,8 @@ def get_status(
         if sort:
             tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
         for tagged_rev_state in tagged_revs:
-            status += "    {rev} [{status}]\n".format(
-                rev=tagged_rev_state[0].hash,
-                status=tagged_rev_state[1].get_colored_status()
-            )
+            status += f"    {tagged_rev_state[0].hash} " \
+                      f"[{tagged_rev_state[1].get_colored_status()}]\n"
 
     return status
 
@@ -386,9 +372,7 @@ def package_paper_config(
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
         match = re.match(
-            cs_filter_regex, "{name}_{version}".format(
-                name=case_study.project_name, version=case_study.version
-            )
+            cs_filter_regex, f"{case_study.project_name}_{case_study.version}"
         )
         if match is not None:
             for report_type in report_types:
