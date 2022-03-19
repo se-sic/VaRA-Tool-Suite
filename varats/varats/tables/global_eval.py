@@ -18,12 +18,18 @@ from varats.jupyterhelper.file import (
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat, TableConfig
+from varats.table.tables import (
+    TableFormat,
+    TableConfig,
+    TableGenerator,
+    REQUIRE_MULTI_CASE_STUDY,
+    OPTIONAL_REPORT_TYPE,
+    OPTIONAL_TABLE_FORMAT,
+)
 
 LOG = logging.Logger(__name__)
 
@@ -105,8 +111,7 @@ class PhasarGlobalsDataComparision(Table):
         super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
-        case_studies: tp.List[CaseStudy] = get_loaded_paper_config(
-        ).get_all_case_studies()
+        case_studies: tp.List[CaseStudy] = self.table_kwargs["case_study"]
 
         cs_data: tp.List[pd.DataFrame] = []
 
@@ -188,7 +193,9 @@ class PhasarGlobalsDataComparision(Table):
 
         mean_stddev = df[df["SDev %"] != '-']["SDev %"].mean()
 
-        if self.format in [
+        table_format: TableFormat = self.table_kwargs["format"]
+
+        if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             caption = (
@@ -197,7 +204,7 @@ class PhasarGlobalsDataComparision(Table):
                 f"is: $\\rho$ = {rho_p[0]:.3f} with a two-sided p-value of "
                 f"{rho_p[1]:.3f}."
                 f" In total we analyzed {len(rggs)} binaries from "
-                f"{len(rggs)-1} different projects. "
+                f"{len(rggs) - 1} different projects. "
                 f"Relative mean stddev {mean_stddev:.1f}$\\%$"
             )
             table = df.to_latex(
@@ -208,7 +215,24 @@ class PhasarGlobalsDataComparision(Table):
                 caption=caption
             )
             return str(table) if table else ""
-        return tabulate(df, df.columns, self.format.value)
+        return tabulate(df, df.columns, table_format.value)
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class PhasarGlobalsDataComparisionGenerator(
+    TableGenerator,
+    generator_name="phasar-globals-table",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
+):
+    """Generates a phasar-globals table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarGlobalsDataComparision(
+                self.table_config, **self.table_kwargs
+            )
+        ]
