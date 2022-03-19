@@ -28,7 +28,6 @@ from varats.plot.plots import (
     PlotGenerator,
     REQUIRE_CASE_STUDY,
     REQUIRE_REVISION,
-    PlotConfig,
 )
 from varats.plots.chord_plot_utils import (
     make_chord_plot,
@@ -51,9 +50,6 @@ from varats.utils.git_util import (
 
 class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
     """Creates a dot file for a commit interaction graph."""
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         # Nothing to do here.
@@ -149,9 +145,6 @@ def _prepare_cig_plotly(
 class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
     """Chord plot for a commit interaction graph."""
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         project_name: str = self.plot_kwargs["case_study"].project_name
         revision = get_commit_map(project_name).convert_to_full_or_warn(
@@ -211,9 +204,6 @@ class CIGChordPlotGenerator(
 
 class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
     """Arc plot for a commit interaction graph."""
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         project_name: str = self.plot_kwargs["case_study"].project_name
@@ -289,9 +279,6 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
     Additional arguments:
       - sort: criteria to sort the revisions [degree, time]
     """
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         sort = self.plot_kwargs["sort"]
@@ -389,9 +376,6 @@ class CIGNodeDegreePlotGenerator(
 class AuthorInteractionGraphNodeDegreePlot(Plot, plot_name='aig_node_degrees'):
     """Plot node degrees of a author interaction graph."""
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["plot_case_study"]
 
@@ -467,9 +451,6 @@ class CommitAuthorInteractionGraphNodeDegreePlot(
     Plot, plot_name='caig_node_degrees'
 ):
     """Plot node degrees of commits in a commit-author interaction graph."""
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["plot_case_study"]

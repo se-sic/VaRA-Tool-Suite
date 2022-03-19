@@ -1345,9 +1345,6 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
 
     NAME = 'b_interaction_degree'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.INTERACTION)
 
@@ -1394,9 +1391,6 @@ class BlameInteractionDegreeMultiLib(
 
     NAME = 'b_interaction_degree_multi_lib'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         self._multi_lib_degree_plot(DegreeType.INTERACTION)
 
@@ -1438,9 +1432,6 @@ class BlameInteractionFractionOverview(
     from all project libraries."""
 
     NAME = 'b_interaction_fraction_overview'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._fraction_overview_plot(DegreeType.INTERACTION)
@@ -1489,7 +1480,7 @@ class BlameLibraryInteractions(
     NAME = 'b_multi_lib_interaction_sankey_plot'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
+        super().__init__(plot_config, **kwargs)
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
@@ -1581,7 +1572,7 @@ class BlameCommitInteractionsGraphviz(
     NAME = 'b_multi_lib_interaction_graphviz'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
+        super().__init__(plot_config, **kwargs)
         self.__figure = Digraph()
 
     def plot(self, view_mode: bool) -> None:
@@ -1677,9 +1668,6 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
 
     NAME = 'b_author_degree'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.AUTHOR)
 
@@ -1727,9 +1715,6 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
 
     NAME = 'b_maxtime_distribution'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.MAX_TIME)
 
@@ -1769,9 +1754,6 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
     interactions."""
 
     NAME = 'b_avgtime_distribution'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.AVG_TIME)
