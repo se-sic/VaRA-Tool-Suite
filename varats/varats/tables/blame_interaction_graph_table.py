@@ -233,7 +233,7 @@ class CommitAuthorInteractionGraphMetricsTableGenerator(
 
 
 class AuthorBlameVsFileDegreesTable(Table):
-    """Table showing authors with highest author interaction graph node
+    """Table showing authors with the highest author interaction graph node
     degrees."""
 
     NAME = "aig_file_vs_blame_degrees_table"
@@ -242,9 +242,9 @@ class AuthorBlameVsFileDegreesTable(Table):
         super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
-        case_study = self.table_kwargs["table_case_study"]
+        case_study: CaseStudy = self.table_kwargs["case_study"]
 
-        project_name = case_study.project_name
+        project_name: str = case_study.project_name
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReport
         )
@@ -286,15 +286,36 @@ class AuthorBlameVsFileDegreesTable(Table):
         file_data.set_index("author", inplace=True)
 
         degree_data = blame_data.join(file_data, how="outer")
+        table_format: TableFormat = self.table_kwargs["format"]
 
-        if self.format in [
+        if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = degree_data.to_latex(
                 index=True, multicolumn_format="c", multirow=True
             )
             return str(table) if table else ""
-        return tabulate(degree_data, degree_data.columns, self.format.value)
+        return tabulate(degree_data, degree_data.columns, table_format.value)
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class AuthorBlameVsFileDegreesTableGenerator(
+    TableGenerator,
+    generator_name="aig-file-vs-blame-degrees-table",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
+):
+    """Generates an aig-file-vs-blame-degrees table for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
+
+        return [
+            AuthorBlameVsFileDegreesTable(
+                self.table_config, case_study=cs, **self.table_kwargs
+            ) for cs in case_studies
+        ]
