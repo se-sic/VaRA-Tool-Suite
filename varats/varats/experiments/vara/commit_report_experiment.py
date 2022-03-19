@@ -107,7 +107,8 @@ class CRAnalysis(actions.Step):  # type: ignore
 
             if interaction_filter_file.is_file():
                 opt_params.append(
-                    f"-vara-cf-interaction-filter={str(interaction_filter_file)}"
+                    f"-vara-cf-interaction-filter="
+                    f"{str(interaction_filter_file)}"
                 )
 
             opt_params.append(str(get_cached_bc_file_path(project, binary)))

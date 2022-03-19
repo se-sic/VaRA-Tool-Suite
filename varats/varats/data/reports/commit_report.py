@@ -197,7 +197,8 @@ class CommitReport(BaseReport, shorthand="CR", file_type="yaml"):
         return total
 
     def __str__(self) -> str:
-        return f"FInfo:\n\t{self.finfos.keys()}\nRegionMappings:\n\t{self.region_mappings.keys()}\n"
+        return f"FInfo:\n\t{self.finfos.keys()}\n" \
+               f"RegionMappings:\n\t{self.region_mappings.keys()}\n"
 
     def __repr__(self) -> str:
         return "CR: " + self.path.name
@@ -328,7 +329,8 @@ class CommitReportMeta():
         return self.__df_ylimit
 
     def __str__(self) -> str:
-        return f"FInfo:\n\t{self.finfos.keys()}\nRegionMappings:\n\t{self.region_mappings.keys()}\n"
+        return f"FInfo:\n\t{self.finfos.keys()}\n" \
+               f"RegionMappings:\n\t{self.region_mappings.keys()}\n"
 
 
 ###############################################################################

@@ -18,7 +18,8 @@ def __check_required_args_impl(
     for arg in required_args:
         if arg not in kwargs:
             raise AssertionError(
-                f"Argument {arg} was not specified but is required for this graph."
+                f"Argument {arg} was not specified"
+                f" but is required for this graph."
             )
 
 

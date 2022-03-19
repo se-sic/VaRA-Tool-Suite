@@ -307,7 +307,8 @@ def get_status(
             if sort:
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
             for tagged_rev_state in tagged_revs:
-                status += f"    {tagged_rev_state[0].hash} [{tagged_rev_state[1].get_colored_status()}]\n"
+                status += f"    {tagged_rev_state[0].hash} " \
+                          f"[{tagged_rev_state[1].get_colored_status()}]\n"
     else:
         tagged_revs = list(
             dict.fromkeys(
@@ -319,7 +320,8 @@ def get_status(
         if sort:
             tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
         for tagged_rev_state in tagged_revs:
-            status += f"    {tagged_rev_state[0].hash} [{tagged_rev_state[1].get_colored_status()}]\n"
+            status += f"    {tagged_rev_state[0].hash} " \
+                      f"[{tagged_rev_state[1].get_colored_status()}]\n"
 
     return status
 

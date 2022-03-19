@@ -1317,11 +1317,13 @@ class BlameDegree(Plot, plot_name=None):
                 rhs_cm = revision
                 if head_cm_neighbours(lhs_cm, rhs_cm):
                     print(
-                        f"Found steep gradient between neighbours {lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
+                        f"Found steep gradient between neighbours"
+                        f" {lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
                     )
                 else:
                     print(
-                        f"Unusual gradient between {lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
+                        f"Unusual gradient between "
+                        f"{lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
                     )
                     new_rev_id = round((
                         commit_map.short_time_id(lhs_cm) +
