@@ -16,7 +16,7 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.project.project_util import get_local_project_gits
 from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
-from varats.table.tables import TableFormat
+from varats.table.tables import TableFormat, TableConfig
 from varats.utils.git_util import (
     ChurnConfig,
     calc_commit_code_churn,
@@ -28,14 +28,16 @@ from varats.utils.git_util import (
 LOG = logging.Logger(__name__)
 
 
-class TopCentralCodeCommitsTable(Table):
+class TopCentralCodeCommitsTable(
+    Table, table_name="top_central_code_commits_table"
+):
     """Table showing commits with highest commit interaction graph node
     degrees."""
 
     NAME = "top_central_code_commits_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         case_study = self.table_kwargs["table_case_study"]

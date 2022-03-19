@@ -19,7 +19,7 @@ from varats.paper_mgmt.case_study import (
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_git
 from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
-from varats.table.tables import TableFormat
+from varats.table.tables import TableFormat, TableConfig
 from varats.utils.git_util import FullCommitHash
 
 
@@ -98,13 +98,13 @@ def _generate_graph_table(
     return tabulate(df, df.columns, table_format.value)
 
 
-class CommitInteractionGraphMetricsTable(Table):
+class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
     """Commit interaction graph statistics in table form."""
 
     NAME = "cig_metrics_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         if "project" not in self.table_kwargs:
@@ -129,13 +129,13 @@ class CommitInteractionGraphMetricsTable(Table):
         return wrap_table_in_document(table=table, landscape=True)
 
 
-class AuthorInteractionGraphMetricsTable(Table):
+class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
     """Author interaction graph statistics in table form."""
 
     NAME = "aig_metrics_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         if "project" not in self.table_kwargs:
@@ -160,13 +160,15 @@ class AuthorInteractionGraphMetricsTable(Table):
         return wrap_table_in_document(table=table, landscape=True)
 
 
-class CommitAuthorInteractionGraphMetricsTable(Table):
+class CommitAuthorInteractionGraphMetricsTable(
+    Table, table_name="caig_metrics_table"
+):
     """Commit-Author interaction graph statistics in table form."""
 
     NAME = "caig_metrics_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         if "project" not in self.table_kwargs:
@@ -192,14 +194,16 @@ class CommitAuthorInteractionGraphMetricsTable(Table):
         return wrap_table_in_document(table=table, landscape=True)
 
 
-class AuthorBlameVsFileDegreesTable(Table):
+class AuthorBlameVsFileDegreesTable(
+    Table, table_name="aig_file_vs_blame_degrees_table"
+):
     """Table showing authors with highest author interaction graph node
     degrees."""
 
     NAME = "aig_file_vs_blame_degrees_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         case_study = self.table_kwargs["table_case_study"]

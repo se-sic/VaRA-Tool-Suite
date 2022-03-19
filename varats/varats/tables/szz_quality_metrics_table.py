@@ -13,7 +13,7 @@ from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import TableFormat
 
 
-class BugOverviewTable(Table):
+class BugOverviewTable(Table, table_name="szz_quality_metrics"):
     """Visualizes SZZ quality metrics for a project."""
 
     NAME = "szz_quality_metrics"

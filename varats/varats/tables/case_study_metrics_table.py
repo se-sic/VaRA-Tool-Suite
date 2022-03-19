@@ -12,7 +12,7 @@ from varats.project.project_util import (
     get_project_cls_by_name,
 )
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat
+from varats.table.tables import TableFormat, TableConfig
 from varats.utils.git_util import calc_repo_loc
 
 LOG = logging.Logger(__name__)
@@ -24,8 +24,8 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
 
     NAME = "cs_metrics_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
