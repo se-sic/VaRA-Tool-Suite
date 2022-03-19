@@ -5,6 +5,7 @@ import math
 import os
 import re
 import shutil
+import subprocess
 import typing as tp
 from pathlib import Path
 
@@ -375,8 +376,27 @@ class VaRA(ResearchTool[VaRACodeBase]):
         status_ok &= (install_location / "bin/phasar-llvm").exists()
 
         # Check that clang++ can display it's version
-        ProcessManager.create_process(
-            "./bin/clang++", ["--version"], install_location
+        proc = subprocess.run(["./bin/clang++", "--version"],
+                              cwd=install_location,
+                              capture_output=True)
+
+        status_ok &= (proc.returncode == 0)
+        status_ok &= (
+            proc.stdout.find(
+                self.code_base.get_sub_project("vara-llvm-project").url.encode()
+            ) == -1
+        )
+
+        # Check that phasar-llvm can display it's version
+        proc = subprocess.run(["./bin/phasar-llvm", "--version"],
+                              cwd=install_location,
+                              capture_output=True)
+
+        status_ok &= (proc.returncode == 0)
+        status_ok &= (
+            proc.stdout.find(
+                self.code_base.get_sub_project("phasar").name.lower().encode()
+            ) == -1
         )
 
         return status_ok
