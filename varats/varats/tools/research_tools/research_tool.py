@@ -324,9 +324,7 @@ class SubProject():
         show_status(self.__parent_code_base.base_dir / self.path)
 
     def __str__(self) -> str:
-        return "{name} [{url}:{remote}] {folder}".format(
-            name=self.name, url=self.url, remote=self.remote, folder=self.path
-        )
+        return f"{self.name} [{self.url}:{self.remote}] {self.path}"
 
     def get_tags(self,
                  extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
