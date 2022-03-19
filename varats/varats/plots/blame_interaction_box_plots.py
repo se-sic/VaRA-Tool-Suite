@@ -17,15 +17,12 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import PlotGenerator
 from varats.utils.git_util import FullCommitHash
 
 
 class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
     """Box plot of commit-author interaction commit node degrees."""
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -112,9 +109,6 @@ class AuthorBlameVsFileDegreesViolinPlot(
     Plot, plot_name='aig_file_vs_blame_authors_box'
 ):
     """Box plot of commit-author interaction commit node degrees."""
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()

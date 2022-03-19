@@ -15,7 +15,6 @@ from varats.plot.plot import Plot
 from varats.plot.plot_utils import find_missing_revisions
 from varats.plot.plots import (
     PlotGenerator,
-    PlotConfig,
     REQUIRE_CASE_STUDY,
     REQUIRE_REPORT_TYPE,
 )
@@ -121,9 +120,6 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
     """Plot showing an overview of all revisions within a case study."""
 
     NAME = 'case_study_overview_plot'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())
