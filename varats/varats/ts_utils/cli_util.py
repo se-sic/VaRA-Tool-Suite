@@ -15,11 +15,7 @@ from rich.traceback import install
 def cli_yn_choice(question: str, default: str = 'y') -> bool:
     """Ask the user to make a y/n decision on the cli."""
     choices = 'Y/n' if default.lower() in ('y', 'yes') else 'y/N'
-    choice: str = str(
-        input(
-            "{message} ({choices}) ".format(message=question, choices=choices)
-        )
-    )
+    choice: str = str(input(f"{question} ({choices}) "))
     values: tp.Union[tp.Tuple[str, str],
                      tp.Tuple[str, str,
                               str]] = ('y', 'yes', ''

@@ -18,8 +18,7 @@ def __check_required_args_impl(
     for arg in required_args:
         if arg not in kwargs:
             raise AssertionError(
-                "Argument {} was not specified but is required for this graph.".
-                format(arg)
+                f"Argument {arg} was not specified but is required for this graph."
             )
 
 
@@ -63,36 +62,20 @@ def find_missing_revisions(
             if are_neighbours(lhs_cm, rhs_cm):
                 print(
                     "Found steep gradient between neighbours " +
-                    "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                        lhs_cm=lhs_cm,
-                        rhs_cm=rhs_cm,
-                        gradient=round(gradient, 5)
-                    )
+                    f"{lhs_cm} - {rhs_cm}: {round(gradient, 5)}"
                 )
-                print(
-                    "Investigate: git -C {git_path} diff {lhs} {rhs}".format(
-                        git_path=git_path, lhs=lhs_cm, rhs=rhs_cm
-                    )
-                )
+                print(f"Investigate: git -C {git_path} diff {lhs_cm} {rhs_cm}")
             else:
                 print(
                     "Unusual gradient between " +
-                    "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                        lhs_cm=lhs_cm,
-                        rhs_cm=rhs_cm,
-                        gradient=round(gradient, 5)
-                    )
+                    f"{lhs_cm} - {rhs_cm}: {round(gradient, 5)}"
                 )
                 new_rev_id = round(
                     (cmap.short_time_id(lhs_cm) + cmap.short_time_id(rhs_cm)) /
                     2.0
                 )
                 new_rev = cmap.c_hash(new_rev_id)
-                print(
-                    "-> Adding {rev} as new revision to the sample set".format(
-                        rev=new_rev
-                    )
-                )
+                print(f"-> Adding {new_rev} as new revision to the sample set")
                 new_revs.add(new_rev)
         last_row = row
     return new_revs
