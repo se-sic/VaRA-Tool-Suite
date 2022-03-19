@@ -39,7 +39,7 @@ class TraceEventType(Enum):
         raise LookupError("Could not find correct trace event type")
 
     def __str__(self) -> str:
-        return self.value[0]
+        return self.value
 
 
 class TraceEvent():
