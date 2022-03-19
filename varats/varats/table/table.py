@@ -23,19 +23,15 @@ class Table:
     NAME = "Table"
     TABLES: tp.Dict[str, tp.Type['Table']] = {}
 
-    # TODO: Create mapping from chosen cli option 'format' to cli option
-    #       'file_type'. Currently one can choose the 'file type' and 'format'
-    #       independent from each other.
-
-    # format_filetypes = {
-    #     TableFormat.GITHUB: "md",
-    #     TableFormat.HTML: "html",
-    #     TableFormat.UNSAFEHTML: "html",
-    #     TableFormat.LATEX: "tex",
-    #     TableFormat.LATEX_RAW: "tex",
-    #     TableFormat.LATEX_BOOKTABS: "tex",
-    #     TableFormat.RST: "rst",
-    # }
+    format_filetypes = {
+        TableFormat.GITHUB: "md",
+        TableFormat.HTML: "html",
+        TableFormat.UNSAFEHTML: "html",
+        TableFormat.LATEX: "tex",
+        TableFormat.LATEX_RAW: "tex",
+        TableFormat.LATEX_BOOKTABS: "tex",
+        TableFormat.RST: "rst",
+    }
 
     def __init__(
         self, name: str, table_config: TableConfig, **kwargs: tp.Any
@@ -121,12 +117,10 @@ class Table:
     def tabulate(self) -> str:
         """Build the table using tabulate."""
 
-    def table_file_name(self, filetype: str) -> str:
+    def table_file_name(self) -> str:
         """
         Get the file name this table; will be stored to when calling save.
-
-        Args:
-            filetype: the file type for the table
+        Automatically deduces this tables' filetype from its format.
 
         Returns:
             the file name the table will be stored to
@@ -153,6 +147,9 @@ class Table:
         ) and self.table_kwargs.get('sep_stages', None):
             sep_stages = 'S'
 
+        filetype: str = self.format_filetypes.get(
+            self.table_kwargs["format"], "txt"
+        )
         return f"{table_ident}{self.name}{sep_stages}.{filetype}"
 
     @abc.abstractmethod
@@ -174,9 +171,7 @@ class Table:
             return
         print(table)
 
-    def save(
-        self, path: Path, wrap_document: bool, filetype: str = 'tex'
-    ) -> None:
+    def save(self, path: Path, wrap_document: bool) -> None:
         """
         Save the current table to a file.
 
@@ -184,7 +179,6 @@ class Table:
             path: the path where the file is stored (excluding file name)
             wrap_document: if enabled wraps the given table inside a proper
                            latex document
-            filetype: the file type of the table
         """
         try:
             table = self.tabulate()
@@ -195,7 +189,7 @@ class Table:
         if wrap_document:
             table = self.wrap_table(table)
 
-        with open(path / self.table_file_name(filetype), "w") as outfile:
+        with open(path / self.table_file_name(), "w") as outfile:
             outfile.write(table)
 
 

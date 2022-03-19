@@ -113,12 +113,6 @@ class CommonTableOptions():
             help="View the table instead of saving it to a file."
         ),
         make_cli_option(
-            "--file-type",
-            type=click.Choice(["txt", "md", "html", "tex", "rst"]),
-            default="tex",
-            help="File type for the table."
-        ),
-        make_cli_option(
             "--table-dir",
             type=click.Path(path_type=Path),
             default=Path("."),
@@ -487,7 +481,8 @@ OPTIONAL_TABLE_FORMAT: CLIOptionTy = make_cli_option(
     type=EnumChoice(TableFormat, case_sensitive=False),
     default=TableFormat.SIMPLE,
     required=False,
-    help="The format of the table."
+    help="The format of the table. The table's file type is automatically "
+    "deduced from it's format."
 )
 
 
@@ -630,11 +625,7 @@ class TableGenerator(abc.ABC):
                 table.show()
             else:
                 # TODO: rename wrap_document to wrap_table
-                table.save(
-                    table_dir,
-                    wrap_document=common_options.wrap_table,
-                    filetype=common_options.file_type
-                )
+                table.save(table_dir, wrap_document=common_options.wrap_table)
 
 
 def _convert_kwargs(
