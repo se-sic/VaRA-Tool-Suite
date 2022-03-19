@@ -516,7 +516,7 @@ class TableGenerator(abc.ABC):
 
         class MyTableGenerator(
             TableGenerator,
-            table_name="my_generator",  # table generator name as shown by CLI
+            generator_name="my_generator",  # table generator name as shown by CLI
             options=[]  # put CLI option declarations here
         ):
             ...

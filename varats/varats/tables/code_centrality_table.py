@@ -28,9 +28,7 @@ from varats.utils.git_util import (
 LOG = logging.Logger(__name__)
 
 
-class TopCentralCodeCommitsTable(
-    Table, table_name="top_central_code_commits_table"
-):
+class TopCentralCodeCommitsTable(Table):
     """Table showing commits with highest commit interaction graph node
     degrees."""
 

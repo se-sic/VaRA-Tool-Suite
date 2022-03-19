@@ -23,7 +23,7 @@ from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat
+from varats.table.tables import TableFormat, TableConfig
 
 LOG = logging.Logger(__name__)
 
@@ -95,14 +95,14 @@ def filter_report_paths_binary(
     )
 
 
-class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
+class PhasarGlobalsDataComparision(Table):
     """Comparision overview of gathered phasar globals analysis data to compare
     the effect of using gloabls analysis."""
 
     NAME = "phasar_globals_table"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         case_studies: tp.List[CaseStudy] = get_loaded_paper_config(

@@ -10,16 +10,16 @@ from varats.data.databases.szz_quality_metrics_database import (
 from varats.data.reports.szz_report import SZZTool
 from varats.mapping.commit_map import get_commit_map
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat
+from varats.table.tables import TableFormat, TableConfig
 
 
-class BugOverviewTable(Table, table_name="szz_quality_metrics"):
+class BugOverviewTable(Table):
     """Visualizes SZZ quality metrics for a project."""
 
     NAME = "szz_quality_metrics"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
         project_name = self.table_kwargs["project"]

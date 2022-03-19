@@ -98,7 +98,7 @@ def _generate_graph_table(
     return tabulate(df, df.columns, table_format.value)
 
 
-class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
+class CommitInteractionGraphMetricsTable(Table):
     """Commit interaction graph statistics in table form."""
 
     NAME = "cig_metrics_table"
@@ -129,7 +129,7 @@ class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
         return wrap_table_in_document(table=table, landscape=True)
 
 
-class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
+class AuthorInteractionGraphMetricsTable(Table):
     """Author interaction graph statistics in table form."""
 
     NAME = "aig_metrics_table"
@@ -160,9 +160,7 @@ class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
         return wrap_table_in_document(table=table, landscape=True)
 
 
-class CommitAuthorInteractionGraphMetricsTable(
-    Table, table_name="caig_metrics_table"
-):
+class CommitAuthorInteractionGraphMetricsTable(Table):
     """Commit-Author interaction graph statistics in table form."""
 
     NAME = "caig_metrics_table"
@@ -194,9 +192,7 @@ class CommitAuthorInteractionGraphMetricsTable(
         return wrap_table_in_document(table=table, landscape=True)
 
 
-class AuthorBlameVsFileDegreesTable(
-    Table, table_name="aig_file_vs_blame_degrees_table"
-):
+class AuthorBlameVsFileDegreesTable(Table):
     """Table showing authors with highest author interaction graph node
     degrees."""
 

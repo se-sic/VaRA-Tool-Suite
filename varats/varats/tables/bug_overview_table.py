@@ -17,7 +17,7 @@ from varats.table.tables import (
 )
 
 
-class BugOverviewTable(Table, table_name="bug_overview_table"):
+class BugOverviewTable(Table):
     """Visualizes bug metrics of a project."""
 
     NAME = "bug_overview_table"

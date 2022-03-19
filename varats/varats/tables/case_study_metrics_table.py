@@ -18,7 +18,7 @@ from varats.utils.git_util import calc_repo_loc
 LOG = logging.Logger(__name__)
 
 
-class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
+class CaseStudyMetricsTable(Table):
     """Table showing some general information about the case studies in a paper
     config."""
 

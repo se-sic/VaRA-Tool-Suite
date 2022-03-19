@@ -44,21 +44,9 @@ class Table:
         self.__saved_extra_args = kwargs
 
     @classmethod
-    def __init_subclass__(
-        cls, table_name: tp.Optional[str], **kwargs: tp.Any
-    ) -> None:
-        """
-        Register concrete tables.
-
-        Args:
-            table_name: name for the table; if ``None``, do not register the
-                        table
-        """
+    def __init_subclass__(cls, **kwargs: tp.Any) -> None:
+        """Register concrete tables."""
         super().__init_subclass__(**kwargs)
-
-        if table_name:
-            cls.NAME = table_name
-            cls.TABLES[table_name] = cls
 
     @staticmethod
     def get_table_types_help_string() -> str:

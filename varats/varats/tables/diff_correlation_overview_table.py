@@ -21,9 +21,7 @@ from varats.table.tables import (
 )
 
 
-class DiffCorrelationOverviewTable(
-    Table, table_name="b_diff_correlation_overview_table"
-):
+class DiffCorrelationOverviewTable(Table):
     """Visualizes the correlations between different `BlameReport` metrics."""
 
     NAME = "b_diff_correlation_overview_table"
