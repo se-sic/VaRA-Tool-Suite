@@ -151,6 +151,8 @@ class Plot:
         >>> p.plot_file_name('png')
         'baz_42_foo.png'
         """
+        # TODO: Adapt naming to plots with multiple case studies, e.g. see func
+        #       table_file_name()
         plot_ident = ''
         if 'case_study' in self.plot_kwargs:
             case_study: 'CaseStudy' = self.plot_kwargs['case_study']
