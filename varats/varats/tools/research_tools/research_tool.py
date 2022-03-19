@@ -492,6 +492,17 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             True, if the tool was correctly installed
         """
 
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        """
+        Verify if the research tool was built correctly for a given build_type.
+
+        Returns:
+            True, if the build was correct.
+        """
+        return True
+
     def container_install_dependencies(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
