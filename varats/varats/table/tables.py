@@ -85,13 +85,15 @@ class CommonTableOptions():
     """
 
     def __init__(
-        self, view: bool, table_dir: Path, file_type: str, dry_run: bool
+        self, view: bool, table_dir: Path, file_type: str, wrap_table: bool,
+        dry_run: bool
     ):
         self.view = view
         # Will be overridden when generating artefacts
         self.table_base_dir = Path(str(vara_cfg()['tables']['table_dir']))
         self.table_dir = table_dir
         self.file_type = file_type
+        self.wrapt_table = wrap_table
         self.dry_run = dry_run
 
     @staticmethod
@@ -99,7 +101,8 @@ class CommonTableOptions():
         """Construct a ``CommonTableOptions`` object from a kwargs dict."""
         return CommonTableOptions(
             kwargs.get("view", False), Path(kwargs.get("table_dir", ".")),
-            kwargs.get("file_type", "tex"), kwargs.get("dry_run", False)
+            kwargs.get("file_type", "tex"), kwargs.get("wrap_table", False),
+            kwargs.get("dry_run", False)
         )
 
     __options = [
@@ -121,6 +124,12 @@ class CommonTableOptions():
             default=Path("."),
             help="Set the directory the tables will be written to "
             "(relative to config value 'tables/table_dir')."
+        ),
+        make_cli_option(
+            "--wrap-table",
+            type=bool,
+            default=False,
+            help="Wrap tables inside a complete latex document."
         ),
         make_cli_option(
             "--dry-run",
@@ -620,8 +629,12 @@ class TableGenerator(abc.ABC):
             if common_options.view:
                 table.show()
             else:
-                # TODO: Add wrap_document parameter
-                table.save(table_dir, filetype=common_options.file_type)
+                # TODO: rename wrap_document to wrap_table
+                table.save(
+                    table_dir,
+                    wrap_document=common_options.wrapt_table,
+                    filetype=common_options.file_type
+                )
 
 
 def _convert_kwargs(
