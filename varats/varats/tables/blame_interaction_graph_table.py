@@ -156,15 +156,6 @@ class AuthorInteractionGraphMetricsTable(Table):
         super().__init__(self.NAME, table_config, **kwargs)
 
     def tabulate(self) -> str:
-        if "project" not in self.table_kwargs:
-            case_studies = get_loaded_paper_config().get_all_case_studies()
-        else:
-            if "table_case_study" in self.table_kwargs:
-                case_studies = [self.table_kwargs["table_case_study"]]
-            else:
-                case_studies = get_loaded_paper_config().get_case_studies(
-                    self.table_kwargs["project"]
-                )
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -172,10 +163,30 @@ class AuthorInteractionGraphMetricsTable(Table):
             return create_blame_interaction_graph(project_name, revision
                                                  ).author_interaction_graph()
 
-        return _generate_graph_table(case_studies, create_graph, self.format)
+        return _generate_graph_table(
+            self.table_kwargs["case_study"], create_graph,
+            self.table_kwargs["format"]
+        )
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
+
+
+class AuthorInteractionGraphMetricsTableGenerator(
+    TableGenerator,
+    generator_name="aig-metrics-table",
+    options=[
+        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
+    ]
+):
+    """Generates an aig-metrics table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            AuthorInteractionGraphMetricsTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
 
 
 class CommitAuthorInteractionGraphMetricsTable(Table):
