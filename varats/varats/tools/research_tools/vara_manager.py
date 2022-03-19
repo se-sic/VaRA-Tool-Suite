@@ -44,11 +44,7 @@ def download_repo(
 ) -> None:
     """Download a repo into the specified folder."""
     if not dl_folder.exists():
-        raise Exception(
-            "Could not find download folder  {dl_folder}".format(
-                dl_folder=dl_folder
-            )
-        )
+        raise Exception(f"Could not find download folder  {dl_folder}")
 
     with local.cwd(dl_folder):
         args = ["clone", "--progress", url]

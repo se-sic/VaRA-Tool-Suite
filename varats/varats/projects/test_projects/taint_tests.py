@@ -61,8 +61,7 @@ class TaintTests(bb.Project):  # type: ignore
         with local.cwd(source):
             for file in self.CPP_FILES:
                 bb.watch(clang)(
-                    "{name}/{file}".format(name=self.NAME, file=file), "-o",
-                    file.replace('.cpp', '')
+                    f"{self.NAME}/{file}", "-o", file.replace('.cpp', '')
                 )
 
 
