@@ -9,25 +9,25 @@ from pathlib import Path
 import distro as distribution
 from benchbuild.utils.cmd import apt, pacman
 
-from varats.tools.research_tools.vara_manager import (
-    BuildType,
-    add_remote,
-    branch_has_upstream,
-    checkout_branch_or_commit,
-    checkout_new_branch,
-    download_repo,
-    fetch_remote,
+from varats.tools.research_tools.vara_manager import BuildType
+from varats.utils.filesystem_util import FolderAlreadyPresentError
+from varats.utils.git_commands import (
     get_branches,
-    has_branch,
-    has_remote_branch,
+    fetch_remote,
+    get_tags,
     init_all_submodules,
+    update_all_submodules,
     pull_current_branch,
     push_current_branch,
+    checkout_branch_or_commit,
+    checkout_new_branch,
+    has_branch,
+    has_remote_branch,
+    download_repo,
+    branch_has_upstream,
+    add_remote,
     show_status,
-    get_tags,
-    update_all_submodules,
 )
-from varats.utils.filesystem_util import FolderAlreadyPresentError
 from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
 
