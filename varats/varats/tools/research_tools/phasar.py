@@ -8,7 +8,6 @@ from pathlib import Path
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
-from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
@@ -123,7 +122,6 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["phasar"]["install_dir"].value is not None
 
-    @check_required_args("install_prefix", "version")
     def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
         """
         Setup the research tool phasar with it's code base. This method sets up
