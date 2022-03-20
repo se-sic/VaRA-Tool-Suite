@@ -16,11 +16,7 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotConfig,
-    PlotGenerator,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator, REQUIRE_MULTI_CASE_STUDY
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
@@ -39,9 +35,6 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
 
     commit size.
     """
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]
@@ -127,9 +120,6 @@ class AuthorInteractionScatterPlot(
 
     number of (surviving) commits.
     """
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]

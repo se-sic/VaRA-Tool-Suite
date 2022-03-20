@@ -4,7 +4,6 @@ import typing as tp
 import benchbuild as bb
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,

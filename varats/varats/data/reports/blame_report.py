@@ -11,7 +11,7 @@ import pygit2
 import yaml
 
 from varats.base.version_header import VersionHeader
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport
 from varats.utils.git_util import (
     map_commits,
     CommitRepoPair,
@@ -80,9 +80,7 @@ class BlameInstInteractions():
         return self.__amount
 
     def __str__(self) -> str:
-        str_representation = "{base_hash} <-(# {amount:4})- [".format(
-            base_hash=self.base_commit, amount=self.amount
-        )
+        str_representation = f"{self.base_commit} <-(# {self.amount:4})- ["
         sep = ""
         for interacting_commit in self.interacting_commits:
             str_representation += sep + str(interacting_commit)
@@ -162,11 +160,9 @@ class BlameResultFunctionEntry():
         return self.__inst_list
 
     def __str__(self) -> str:
-        str_representation = "{name} ({demangled_name})\n".format(
-            name=self.name, demangled_name=self.demangled_name
-        )
+        str_representation = f"{self.name} ({self.demangled_name})\n"
         for inst in self.__inst_list:
-            str_representation += "  - {}".format(inst)
+            str_representation += f"  - {inst}"
         return str_representation
 
 
@@ -818,3 +814,30 @@ def generate_out_head_interactions(
                     head_interactions.append(interaction)
                     break
     return head_interactions
+
+
+def get_interacting_commits_for_commit(
+    report: BlameReport, commit: CommitRepoPair
+) -> tp.Tuple[tp.Set[CommitRepoPair], tp.Set[CommitRepoPair]]:
+    """
+    Get all commits a given commits interacts with separated by incoming and
+    outgoing interactions.
+
+    Args:
+        report: BlameReport to get the interactions from
+        commit: commit to get the interacting commits for
+
+    Returns:
+        two sets for the interacting commits seperated by incoming and outgoing
+        interactions
+    """
+    in_commits: tp.Set[CommitRepoPair] = set()
+    out_commits: tp.Set[CommitRepoPair] = set()
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            if commit == interaction.base_commit:
+                out_commits.update(interaction.interacting_commits)
+            if commit in interaction.interacting_commits:
+                in_commits.add(interaction.base_commit)
+
+    return in_commits, out_commits
