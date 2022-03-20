@@ -18,7 +18,6 @@ from varats.ts_utils.cli_util import (
     CLIOptionTy,
     add_cli_options,
     cli_yn_choice,
-    CLIOptionConverter,
     CLIOptionWithConverter,
     convert_value,
 )

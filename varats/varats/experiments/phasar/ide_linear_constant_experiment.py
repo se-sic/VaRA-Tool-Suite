@@ -5,7 +5,6 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir
 from plumbum import local
 
 from varats.data.reports.empty_report import EmptyReport
@@ -26,7 +25,6 @@ from varats.experiment.wllvm import (
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class IDELinearConstantAnalysis(actions.Step):  # type: ignore
