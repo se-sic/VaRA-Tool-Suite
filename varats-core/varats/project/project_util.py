@@ -9,6 +9,7 @@ from pathlib import Path
 import benchbuild as bb
 import pygit2
 from benchbuild.source import Git
+from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git
 from plumbum import local
 from plumbum.commands.base import BoundCommand
