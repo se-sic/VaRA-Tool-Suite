@@ -189,9 +189,9 @@ class DataManager():
 
 
 def _load_data_class_pool(
-    file_path: Path, DataClassTy: tp.Type[LoadableType]
+    file_path: Path, report_type: tp.Type[LoadableType]
 ) -> LoadableType:
-    return VDM.load_data_class_sync(file_path, DataClassTy)
+    return VDM.load_data_class_sync(file_path, report_type)
 
 
 def load_multiple_reports(
@@ -207,9 +207,9 @@ def load_multiple_reports(
     """
     loaded_reports = []
 
-    with Pool() as p:
-        loaded_reports = p.map(
-            partial(_load_data_class_pool, DataClassTy=report_type), file_paths
+    with Pool() as process_pool:
+        loaded_reports = process_pool.map(
+            partial(_load_data_class_pool, report_type=report_type), file_paths
         )
 
     return loaded_reports
