@@ -186,7 +186,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["vara"]["llvm_install_dir"].value is not None
 
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -195,17 +198,15 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         Args:
             source_folder: location to store the code base in
-            **kwargs:
-                      * version
-                      * install_prefix
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
         cfg = vara_cfg()
         if source_folder:
             cfg["vara"]["llvm_source_dir"] = str(source_folder)
-        cfg["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
-        version = kwargs.get("version")
+        cfg["vara"]["llvm_install_dir"] = str(install_prefix)
         if version:
-            version = int(tp.cast(int, version))
+            version = int(version)
             cfg["vara"]["version"] = version
         else:
             version = cfg["vara"]["version"].value
@@ -217,7 +218,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         self.code_base.clone(self.source_location())
         self.code_base.setup_vara_remotes()
-        self.code_base.checkout_vara_version(version, use_dev_branches)
+        self.code_base.checkout_vara_version(int(version), use_dev_branches)
         self.code_base.setup_submodules()
         self.code_base.setup_build_link()
 
