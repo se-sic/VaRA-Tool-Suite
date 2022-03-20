@@ -1,7 +1,7 @@
 """Test bug overview table."""
 import unittest
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper_mgmt.paper_config import (
     load_paper_config,
     get_loaded_paper_config,
@@ -15,7 +15,7 @@ class TestCSMetricsTable(unittest.TestCase):
     """Test whether case study metrics are collected correctly."""
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_one_case_study_latex_booktabs(self) -> None:
         """Tests the latex booktabs format for the code centrality metrics
