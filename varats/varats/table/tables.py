@@ -7,7 +7,6 @@ from pathlib import Path
 
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
-from varats.plot.plot_utils import check_required_args
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
@@ -125,7 +124,6 @@ def build_table(table_to_build: 'table.Table') -> None:
         )
 
 
-@check_required_args('table_type')
 def prepare_table(**kwargs: tp.Any) -> 'table.Table':
     """
     Instantiate a table with the given args.
