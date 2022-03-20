@@ -23,7 +23,7 @@ import re
 from datetime import timedelta
 from pathlib import Path
 
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport
 from varats.utils.util import static_vars
 
 

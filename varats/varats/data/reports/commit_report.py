@@ -8,7 +8,7 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.mapping.commit_map import CommitMap
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)

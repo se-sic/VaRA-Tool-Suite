@@ -10,7 +10,7 @@ import typing as tp
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt
+from benchbuild.utils.cmd import opt
 
 from varats.data.reports.empty_report import EmptyReport as EMPTY
 from varats.experiment.experiment_util import (
@@ -29,10 +29,8 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     get_cached_bc_file_path,
 )
-from varats.report.report import BaseReport
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class PhASARFTACheck(actions.Step):  # type: ignore
