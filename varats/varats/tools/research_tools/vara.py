@@ -375,25 +375,20 @@ class VaRA(ResearchTool[VaRACodeBase]):
         status_ok &= (install_location / "bin/phasar-llvm").exists()
 
         # Check that clang++ can display it's version
-
         clang = local[str(install_location / "bin/clang++")]
-
-        (ret, stdout, _) = clang.run("--version")
+        ret, stdout, _ = clang.run("--version")
 
         vara_name = self.code_base.get_sub_project("vara-llvm-project").name
-        status_ok &= (ret == 0)
-
-        status_ok &= (vara_name in stdout)
+        status_ok &= ret == 0
+        status_ok &= vara_name in stdout
 
         # Check that phasar-llvm can display it's version
         phasar_llvm = local[str(install_location / "bin/phasar-llvm")]
-
-        (ret, stdout, _) = phasar_llvm.run("--version")
-
-        status_ok &= (ret == 0)
+        ret, stdout, _ = phasar_llvm.run("--version")
+        status_ok &= ret == 0
 
         phasar_name = self.code_base.get_sub_project("phasar").name.lower()
-        status_ok &= (phasar_name in stdout.lower())
+        status_ok &= phasar_name in stdout.lower()
 
         return status_ok
 
@@ -421,9 +416,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         full_path /= build_folder_path
 
         ninja = local["ninja"].with_cwd(full_path)
-
-        (ret, _, _) = ninja.run("check-vara")
-
+        ret, _, _ = ninja.run("check-vara")
         return bool(ret == 0)
 
     def container_install_tool(
