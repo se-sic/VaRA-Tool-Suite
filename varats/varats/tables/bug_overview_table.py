@@ -15,7 +15,6 @@ from varats.table.tables import (
     OPTIONAL_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
     TableConfig,
-    OPTIONAL_TABLE_FORMAT,
 )
 
 
@@ -63,9 +62,7 @@ class BugOverviewTable(Table):
 class BugOverviewTableGenerator(
     TableGenerator,
     generator_name="bug-overview-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates a bug-overview table for the selected case study(ies)."""
 

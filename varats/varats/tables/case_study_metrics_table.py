@@ -18,7 +18,6 @@ from varats.table.tables import (
     TableGenerator,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
-    OPTIONAL_TABLE_FORMAT,
 )
 from varats.utils.git_util import calc_repo_loc
 
@@ -93,9 +92,7 @@ class CaseStudyMetricsTable(Table):
 class CaseStudyMetricsTableGenerator(
     TableGenerator,
     generator_name="cs-metrics-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates a cs-metrics table for the selected case study(ies)."""
 

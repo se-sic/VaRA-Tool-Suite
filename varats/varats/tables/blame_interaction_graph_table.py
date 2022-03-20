@@ -16,7 +16,6 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_git
 from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
 from varats.table.tables import (
@@ -25,7 +24,6 @@ from varats.table.tables import (
     OPTIONAL_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
     TableConfig,
-    OPTIONAL_TABLE_FORMAT,
 )
 from varats.utils.git_util import FullCommitHash
 
@@ -133,9 +131,7 @@ class CommitInteractionGraphMetricsTable(Table):
 class CommitInteractionGraphMetricsTableGenerator(
     TableGenerator,
     generator_name="cig-metrics-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates a cig-metrics table for the selected case study(ies)."""
 
@@ -175,9 +171,7 @@ class AuthorInteractionGraphMetricsTable(Table):
 class AuthorInteractionGraphMetricsTableGenerator(
     TableGenerator,
     generator_name="aig-metrics-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates an aig-metrics table for the selected case study(ies)."""
 
@@ -218,9 +212,7 @@ class CommitAuthorInteractionGraphMetricsTable(Table):
 class CommitAuthorInteractionGraphMetricsTableGenerator(
     TableGenerator,
     generator_name="caig-metrics-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates a caig-metrics table for the selected case study(ies)."""
 
@@ -304,9 +296,7 @@ class AuthorBlameVsFileDegreesTable(Table):
 class AuthorBlameVsFileDegreesTableGenerator(
     TableGenerator,
     generator_name="aig-file-vs-blame-degrees-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates an aig-file-vs-blame-degrees table for the selected case
     study(ies)."""

@@ -28,7 +28,6 @@ from varats.table.tables import (
     TableGenerator,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
-    OPTIONAL_TABLE_FORMAT,
 )
 
 LOG = logging.Logger(__name__)
@@ -224,9 +223,7 @@ class PhasarGlobalsDataComparision(Table):
 class PhasarGlobalsDataComparisionGenerator(
     TableGenerator,
     generator_name="phasar-globals-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates a phasar-globals table for the selected case study(ies)."""
 

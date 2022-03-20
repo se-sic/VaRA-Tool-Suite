@@ -22,7 +22,6 @@ from varats.table.tables import (
     TableConfig,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
-    OPTIONAL_TABLE_FORMAT,
     TableGenerator,
 )
 from varats.utils.git_util import (
@@ -118,9 +117,7 @@ class TopCentralCodeCommitsTable(Table):
 class TopCentralCodeCommitsTableGenerator(
     TableGenerator,
     generator_name="top-central-code-commits-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates a top-central-code-commits table for the selected case
     study(ies)."""

@@ -12,13 +12,17 @@ from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,
     ReportTypeConverter,
+    ConfigOption,
+    OptionType,
+    COGetter,
+    COGetterV,
+    convert_kwargs,
 )
 from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
     add_cli_options,
     cli_yn_choice,
-    CLIOptionWithConverter,
     convert_value,
 )
 from varats.ts_utils.click_param_types import (
@@ -29,9 +33,9 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.settings import vara_cfg
 
 if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol, runtime_checkable, final
+    from typing_extensions import final
 else:
-    from typing import Protocol, runtime_checkable, final
+    from typing import final
 
 if tp.TYPE_CHECKING:
     import varats.plot.plot  # pylint: disable=W0611
@@ -133,149 +137,6 @@ class CommonPlotOptions():
         }
 
 
-OptionType = tp.TypeVar("OptionType")
-
-
-class PlotConfigOption(tp.Generic[OptionType]):
-    """
-    Class representing a plot config option.
-
-    Values can be retrieved via the call operator.
-
-    Args:
-        name: name of the option
-        help_str: help string for this option
-        default: global default value for the option
-        view_default: global default value when in view mode; do not pass if
-                      same value is required in both modes
-        value: user-provided value of the option; do not pass if not set by user
-    """
-
-    def __init__(
-        self,
-        name: str,
-        help_str: str,
-        default: OptionType,
-        view_default: tp.Optional[OptionType] = None,
-        value: tp.Optional[OptionType] = None
-    ) -> None:
-        self.__name = name
-        self.__metavar = name.upper()
-        self.__type = type(default)
-        self.__default = default
-        self.__view_default = view_default
-        self.__value: tp.Optional[OptionType] = value
-        self.__help = f"{help_str} (global default = {default})"
-
-    @property
-    def name(self) -> str:
-        return self.__name
-
-    @property
-    def default(self) -> OptionType:
-        return self.__default
-
-    @property
-    def view_default(self) -> tp.Optional[OptionType]:
-        return self.__view_default
-
-    @property
-    def value(self) -> tp.Optional[OptionType]:
-        return self.__value
-
-    def with_value(self, value: OptionType) -> 'PlotConfigOption[OptionType]':
-        """
-        Create a copy of this option with the given value.
-
-        Args:
-            value: the value for the copied option
-
-        Returns:
-            a copy of the option with the given value
-        """
-        return PlotConfigOption(
-            self.name, self.__help, self.__default, self.__view_default, value
-        )
-
-    def to_cli_option(self) -> CLIOptionTy:
-        """
-        Create a CLI option from this option.
-
-        Returns:
-            a CLI option for this option
-        """
-        if self.__type is bool:
-            return make_cli_option(
-                f"--{self.__name.replace('_', '-')}",
-                is_flag=True,
-                required=False,
-                help=self.__help
-            )
-        return make_cli_option(
-            f"--{self.__name.replace('_', '-')}",
-            metavar=self.__metavar,
-            type=self.__type,
-            required=False,
-            help=self.__help
-        )
-
-    def value_or_default(
-        self,
-        view: bool,
-        default: tp.Optional[OptionType] = None,
-        view_default: tp.Optional[OptionType] = None
-    ) -> OptionType:
-        """
-        Retrieve the value for this option.
-
-        The precedence for values is
-        `user provided value > plot-specific default > global default`.
-
-        This function can also be called via the call operator.
-
-        Args:
-            view: whether view-mode is enabled
-            default: plot-specific default value
-            view_default: plot-specific default value when in view-mode
-
-        Returns:
-            the value for this option
-        """
-        # cannot pass view_default if option has no default for view mode
-        assert not (view_default and not self.__view_default)
-
-        if self.value:
-            return self.value
-        if view:
-            if self.__view_default:
-                return view_default or self.__view_default
-            return default or self.__default
-        return default or self.__default
-
-    def __str__(self) -> str:
-        return f"{self.__name}[default={self.__default}, value={self.value}]"
-
-
-@runtime_checkable
-class PCOGetter(Protocol[OptionType]):
-    """Getter type for options with no view default."""
-
-    def __call__(self, default: tp.Optional[OptionType] = None) -> OptionType:
-        ...
-
-
-@runtime_checkable
-class PCOGetterV(Protocol[OptionType]):
-    """Getter type for options with view default."""
-
-    def __call__(
-        self,
-        default: tp.Optional[OptionType] = None,
-        view_default: tp.Optional[OptionType] = None
-    ) -> OptionType:
-        ...
-
-
 class PlotConfig():
     """
     Class with parameters that influence a plot's appearance.
@@ -283,78 +144,78 @@ class PlotConfig():
     Instances should typically be created with the :func:`from_kwargs` function.
     """
 
-    def __init__(self, view: bool, *options: PlotConfigOption[tp.Any]) -> None:
+    def __init__(self, view: bool, *options: ConfigOption[tp.Any]) -> None:
         self.__view = view
         self.__options = deepcopy(self._option_decls)
         for option in options:
             self.__options[option.name] = option
 
-    _option_decls: tp.Dict[str, PlotConfigOption[tp.Any]] = {
+    _option_decls: tp.Dict[str, ConfigOption[tp.Any]] = {
         decl.name: decl for decl in tp.cast(
-            tp.List[PlotConfigOption[tp.Any]], [
-                PlotConfigOption(
+            tp.List[ConfigOption[tp.Any]], [
+                ConfigOption(
                     "style",
                     default="classic",
                     help_str="Matplotlib style to use."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "fig_title",
                     default="",
                     help_str="The title of the plot figure."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "font_size",
                     default=10,
                     view_default=10,
                     help_str="The font size of the plot figure."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "width",
                     default=1500,
                     view_default=1500,
                     help_str="The width of the resulting plot file."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "height",
                     default=1000,
                     view_default=1000,
                     help_str="The height of the resulting plot file."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "legend_title",
                     default="",
                     help_str="The title of the legend."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "legend_size",
                     default=2,
                     view_default=8,
                     help_str="The size of the legend."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "show_legend",
                     default=False,
                     help_str="If present, show the legend."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "line_width",
                     default=0.25,
                     view_default=1,
                     help_str="The width of the plot line(s)."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "x_tick_size",
                     default=2,
                     view_default=10,
                     help_str="The size of the x-ticks."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "label_size",
                     default=2,
                     view_default=2,
                     help_str="The label size of CVE/bug annotations."
                 ),
-                PlotConfigOption(
+                ConfigOption(
                     "dpi", default=1200, help_str="The dpi of the plot."
                 )
             ]
@@ -362,8 +223,8 @@ class PlotConfig():
     }
 
     def __option_getter(
-        self, option: PlotConfigOption[OptionType]
-    ) -> PCOGetter[OptionType]:
+        self, option: ConfigOption[OptionType]
+    ) -> COGetter[OptionType]:
         """Creates a getter for options with no view default."""
 
         def get_value(default: tp.Optional[OptionType] = None) -> OptionType:
@@ -372,8 +233,8 @@ class PlotConfig():
         return get_value
 
     def __option_getter_v(
-        self, option: PlotConfigOption[OptionType]
-    ) -> PCOGetterV[OptionType]:
+        self, option: ConfigOption[OptionType]
+    ) -> COGetterV[OptionType]:
         """Creates a getter for options with view default."""
 
         def get_value(
@@ -385,51 +246,51 @@ class PlotConfig():
         return get_value
 
     @property
-    def style(self) -> PCOGetter[str]:
+    def style(self) -> COGetter[str]:
         return self.__option_getter(self.__options["style"])
 
     @property
-    def fig_title(self) -> PCOGetter[str]:
+    def fig_title(self) -> COGetter[str]:
         return self.__option_getter(self.__options["fig_title"])
 
     @property
-    def font_size(self) -> PCOGetterV[int]:
+    def font_size(self) -> COGetterV[int]:
         return self.__option_getter_v(self.__options["font_size"])
 
     @property
-    def width(self) -> PCOGetterV[int]:
+    def width(self) -> COGetterV[int]:
         return self.__option_getter_v(self.__options["width"])
 
     @property
-    def height(self) -> PCOGetterV[int]:
+    def height(self) -> COGetterV[int]:
         return self.__option_getter_v(self.__options["height"])
 
     @property
-    def legend_title(self) -> PCOGetter[str]:
+    def legend_title(self) -> COGetter[str]:
         return self.__option_getter(self.__options["legend_title"])
 
     @property
-    def legend_size(self) -> PCOGetterV[int]:
+    def legend_size(self) -> COGetterV[int]:
         return self.__option_getter_v(self.__options["legend_size"])
 
     @property
-    def show_legend(self) -> PCOGetter[bool]:
+    def show_legend(self) -> COGetter[bool]:
         return self.__option_getter(self.__options["show_legend"])
 
     @property
-    def line_width(self) -> PCOGetterV[float]:
+    def line_width(self) -> COGetterV[float]:
         return self.__option_getter_v(self.__options["line_width"])
 
     @property
-    def x_tick_size(self) -> PCOGetterV[int]:
+    def x_tick_size(self) -> COGetterV[int]:
         return self.__option_getter_v(self.__options["x_tick_size"])
 
     @property
-    def label_size(self) -> PCOGetterV[int]:
+    def label_size(self) -> COGetterV[int]:
         return self.__option_getter_v(self.__options["label_size"])
 
     @property
-    def dpi(self) -> PCOGetter[int]:
+    def dpi(self) -> COGetter[int]:
         return self.__option_getter(self.__options["dpi"])
 
     @classmethod
@@ -555,7 +416,7 @@ class PlotGenerator(abc.ABC):
 
         class MyPlotGenerator(
             PlotGenerator,
-            plot_name="my_generator",  # plot generator name as shown by CLI
+            generator_name="my_generator",  # generator name as shown by CLI
             options=[]  # put CLI option declarations here
         ):
             ...
@@ -671,42 +532,6 @@ class PlotGenerator(abc.ABC):
                 plot.save(plot_dir, filetype=common_options.file_type)
 
 
-def _convert_kwargs(
-    plot_generator_type: tp.Type[PlotGenerator],
-    plot_kwargs: tp.Dict[str, tp.Any],
-    to_string: bool = False
-) -> tp.Dict[str, tp.Any]:
-    """
-    Apply conversions to kwargs as specified by plot generator CLI options.
-
-    Args:
-        plot_generator_type: plot generator with CLI option/converter
-                             declarations
-        plot_kwargs: plot kwargs as values or strings
-        to_string: if ``True`` convert to string, otherwise convert to value
-
-    Returns:
-        the kwargs with applied conversions
-    """
-    converter = {
-        decl_converter.name: decl_converter.converter for decl_converter in [
-            tp.cast(CLIOptionWithConverter[tp.Any], cli_decl)
-            for cli_decl in plot_generator_type.OPTIONS
-            if isinstance(cli_decl, CLIOptionWithConverter)
-        ]
-    }
-    kwargs: tp.Dict[str, tp.Any] = {}
-    for key, value in plot_kwargs.items():
-        if key in converter.keys():
-            if to_string:
-                kwargs[key] = converter[key].value_to_string(value)
-            else:
-                kwargs[key] = converter[key].string_to_value(value)
-        else:
-            kwargs[key] = value
-    return kwargs
-
-
 class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
     """
     An artefact defining a :class:`~varats.plot.plot.Plot`.
@@ -776,7 +601,7 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         artefact_dict['plot_config'] = self.__plot_config.get_dict()
         artefact_dict = {
             **self.__common_options.get_dict(),
-            **_convert_kwargs(
+            **convert_kwargs(
                 self.plot_generator_class, self.__plot_kwargs, to_string=True
             ),
             **artefact_dict
@@ -806,7 +631,7 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         )
         return PlotArtefact(
             name, output_dir, plot_generator_type, common_options, plot_config,
-            **_convert_kwargs(
+            **convert_kwargs(
                 PlotGenerator.
                 get_class_for_plot_generator_type(plot_generator_type),
                 kwargs,

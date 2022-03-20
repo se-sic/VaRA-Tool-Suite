@@ -14,7 +14,6 @@ from varats.paper_mgmt.paper_config import get_paper_config
 from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import (
     TableFormat,
-    OPTIONAL_TABLE_FORMAT,
     TableGenerator,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
@@ -69,9 +68,7 @@ class DiffCorrelationOverviewTable(Table):
 class DiffCorrelationOverviewTableGenerator(
     TableGenerator,
     generator_name="diff-correlation-overview-table",
-    options=[
-        REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE, OPTIONAL_TABLE_FORMAT
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
 ):
     """Generates a bug-overview table for the selected case study(ies)."""
 

@@ -13,6 +13,11 @@ from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,
     ReportTypeConverter,
+    ConfigOption,
+    OptionType,
+    COGetter,
+    COGetterV,
+    convert_kwargs,
 )
 from varats.ts_utils.cli_util import (
     make_cli_option,
@@ -20,7 +25,6 @@ from varats.ts_utils.cli_util import (
     CLIOptionTy,
     cli_yn_choice,
     convert_value,
-    CLIOptionWithConverter,
 )
 from varats.ts_utils.click_param_types import (
     create_single_case_study_choice,
@@ -31,12 +35,12 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.settings import vara_cfg
 
 if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol, runtime_checkable, final
+    from typing_extensions import final
 else:
-    from typing import Protocol, runtime_checkable, final
+    from typing import final
 
 if tp.TYPE_CHECKING:
-    from varats.table import table  # pylint: disable=unused-import
+    import varats.table.table  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
 
@@ -72,8 +76,7 @@ class CommonTableOptions():
     """
     Options common to all tables.
 
-    These options are handled by the :class:`TableGenerator` base class
-    and are
+    These options are handled by the :class:`TableGenerator` base class and are
     not passed down to specific table generators.
 
     Args:
@@ -85,14 +88,14 @@ class CommonTableOptions():
     """
 
     def __init__(
-        self, view: bool, table_dir: Path, file_type: str, wrap_table: bool,
-        dry_run: bool
+        self, view: bool, table_dir: Path, table_format: TableFormat,
+        wrap_table: bool, dry_run: bool
     ):
         self.view = view
         # Will be overridden when generating artefacts
         self.table_base_dir = Path(str(vara_cfg()['tables']['table_dir']))
         self.table_dir = table_dir
-        self.file_type = file_type
+        self.table_format = table_format
         self.wrap_table = wrap_table
         self.dry_run = dry_run
 
@@ -101,8 +104,8 @@ class CommonTableOptions():
         """Construct a ``CommonTableOptions`` object from a kwargs dict."""
         return CommonTableOptions(
             kwargs.get("view", False), Path(kwargs.get("table_dir", ".")),
-            kwargs.get("file_type", "tex"), kwargs.get("wrap_table", False),
-            kwargs.get("dry_run", False)
+            kwargs.get("table_format", TableFormat.PLAIN),
+            kwargs.get("wrap_table", False), kwargs.get("dry_run", False)
         )
 
     __options = [
@@ -118,6 +121,12 @@ class CommonTableOptions():
             default=Path("."),
             help="Set the directory the tables will be written to "
             "(relative to config value 'tables/table_dir')."
+        ),
+        make_cli_option(
+            "--table-format",
+            type=EnumChoice(TableFormat, case_sensitive=False),
+            default="PLAIN",
+            help="Format for the table."
         ),
         make_cli_option(
             "--wrap-table",
@@ -161,153 +170,11 @@ class CommonTableOptions():
         """
         return {
             "view": self.view,
-            "file_type": self.file_type,
+            "table_format": self.table_format,
+            "wrap_table": self.wrap_table,
             "table_dir": self.table_dir,
             "dry_run": self.dry_run
         }
-
-
-OptionType = tp.TypeVar("OptionType")
-
-
-class TableConfigOption(tp.Generic[OptionType]):
-    """
-    Class representing a table config option.
-
-    Values can be retrieved via the call operator.
-
-    Args:
-        name: name of the option
-        help_str: help string for this option
-        default: global default value for the option
-        view_default: global default value when in view mode; do not pass if
-                      same value is required in both modes
-        value: user-provided value of the option; do not pass if not set by user
-    """
-
-    def __init__(
-        self,
-        name: str,
-        help_str: str,
-        default: OptionType,
-        view_default: tp.Optional[OptionType] = None,
-        value: tp.Optional[OptionType] = None
-    ) -> None:
-        self.__name = name
-        self.__metavar = name.upper()
-        self.__type = type(default)
-        self.__default = default
-        self.__view_default = view_default
-        self.__value: tp.Optional[OptionType] = value
-        self.__help = f"{help_str} (global default = {default})"
-
-    @property
-    def name(self) -> str:
-        return self.__name
-
-    @property
-    def default(self) -> OptionType:
-        return self.__default
-
-    @property
-    def view_default(self) -> tp.Optional[OptionType]:
-        return self.__view_default
-
-    @property
-    def value(self) -> tp.Optional[OptionType]:
-        return self.__value
-
-    def with_value(self, value: OptionType) -> 'TableConfigOption[OptionType]':
-        """
-        Create a copy of this option with the given value.
-
-        Args:
-            value: the value for the copied option
-
-        Returns:
-            a copy of the option with the given value
-        """
-        return TableConfigOption(
-            self.name, self.__help, self.__default, self.__view_default, value
-        )
-
-    def to_cli_option(self) -> CLIOptionTy:
-        """
-        Create a CLI option from this option.
-
-        Returns:
-            a CLI option for this option
-        """
-        if self.__type is bool:
-            return make_cli_option(
-                f"--{self.__name.replace('_', '-')}",
-                is_flag=True,
-                required=False,
-                help=self.__help
-            )
-        return make_cli_option(
-            f"--{self.__name.replace('_', '-')}",
-            metavar=self.__metavar,
-            type=self.__type,
-            required=False,
-            help=self.__help
-        )
-
-    def value_or_default(
-        self,
-        view: bool,
-        default: tp.Optional[OptionType] = None,
-        view_default: tp.Optional[OptionType] = None
-    ) -> OptionType:
-        """
-        Retrieve the value for this option.
-
-        The precedence for values is
-        `user provided value > table-specific default > global default`.
-
-        This function can also be called via the call operator.
-
-        Args:
-            view: whether view-mode is enabled
-            default: table-specific default value
-            view_default: table-specific default value when in view-mode
-
-        Returns:
-            the value for this option
-        """
-        # cannot pass view_default if option has no default for view mode
-        assert not (view_default and not self.__view_default)
-
-        if self.value:
-            return self.value
-        if view:
-            if self.__view_default:
-                return view_default or self.__view_default
-            return default or self.__default
-        return default or self.__default
-
-    def __str__(self) -> str:
-        return f"{self.__name}[default={self.__default}, value={self.value}]"
-
-
-@runtime_checkable
-class PCOGetter(Protocol[OptionType]):
-    """Getter type for options with no view default."""
-
-    def __call__(self, default: tp.Optional[OptionType] = None) -> OptionType:
-        ...
-
-
-@runtime_checkable
-class PCOGetterV(Protocol[OptionType]):
-    """Getter type for options with view default."""
-
-    def __call__(
-        self,
-        default: tp.Optional[OptionType] = None,
-        view_default: tp.Optional[OptionType] = None
-    ) -> OptionType:
-        ...
 
 
 class TableConfig():
@@ -317,25 +184,25 @@ class TableConfig():
     Instances should typically be created with the :func:`from_kwargs` function.
     """
 
-    def __init__(self, view: bool, *options: TableConfigOption[tp.Any]) -> None:
+    def __init__(self, view: bool, *options: ConfigOption[tp.Any]) -> None:
         self.__view = view
         self.__options = deepcopy(self._option_decls)
         for option in options:
             self.__options[option.name] = option
 
-    _option_decls: tp.Dict[str, TableConfigOption[tp.Any]] = {
+    _option_decls: tp.Dict[str, ConfigOption[tp.Any]] = {
         decl.name: decl for decl in tp.cast(
-            tp.List[TableConfigOption[tp.Any]], [
-                TableConfigOption(
+            tp.List[ConfigOption[tp.Any]], [
+                ConfigOption(
                     "font_size",
                     default=10,
                     view_default=10,
                     help_str="The font size of the table."
                 ),
-                TableConfigOption(
+                ConfigOption(
                     "fig_title", default="", help_str="The title of the table."
                 ),
-                TableConfigOption(
+                ConfigOption(
                     "line_width",
                     default=0.25,
                     view_default=1,
@@ -346,8 +213,8 @@ class TableConfig():
     }
 
     def __option_getter(
-        self, option: TableConfigOption[OptionType]
-    ) -> PCOGetter[OptionType]:
+        self, option: ConfigOption[OptionType]
+    ) -> COGetter[OptionType]:
         """Creates a getter for options with no view default."""
 
         def get_value(default: tp.Optional[OptionType] = None) -> OptionType:
@@ -356,8 +223,8 @@ class TableConfig():
         return get_value
 
     def __option_getter_v(
-        self, option: TableConfigOption[OptionType]
-    ) -> PCOGetterV[OptionType]:
+        self, option: ConfigOption[OptionType]
+    ) -> COGetterV[OptionType]:
         """Creates a getter for options with view default."""
 
         def get_value(
@@ -369,15 +236,15 @@ class TableConfig():
         return get_value
 
     @property
-    def fig_title(self) -> PCOGetter[str]:
+    def fig_title(self) -> COGetter[str]:
         return self.__option_getter(self.__options["fig_title"])
 
     @property
-    def font_size(self) -> PCOGetterV[int]:
+    def font_size(self) -> COGetterV[int]:
         return self.__option_getter_v(self.__options["font_size"])
 
     @property
-    def line_width(self) -> PCOGetterV[float]:
+    def line_width(self) -> COGetterV[float]:
         return self.__option_getter_v(self.__options["line_width"])
 
     @classmethod
@@ -476,14 +343,6 @@ OPTIONAL_REPORT_TYPE: CLIOptionTy = convert_value(
         help="The report type to use for the table."
     )
 )
-OPTIONAL_TABLE_FORMAT: CLIOptionTy = make_cli_option(
-    "--format",
-    type=EnumChoice(TableFormat, case_sensitive=False),
-    default=TableFormat.SIMPLE,
-    required=False,
-    help="The format of the table. The table's file type is automatically "
-    "deduced from it's format."
-)
 
 
 class TableGeneratorFailed(Exception):
@@ -511,7 +370,7 @@ class TableGenerator(abc.ABC):
 
         class MyTableGenerator(
             TableGenerator,
-            generator_name="my_generator",  # table generator name as shown by CLI
+            generator_name="my_generator",  # generator name as shown by CLI
             options=[]  # put CLI option declarations here
         ):
             ...
@@ -628,45 +487,9 @@ class TableGenerator(abc.ABC):
                 table.save(table_dir, wrap_document=common_options.wrap_table)
 
 
-def _convert_kwargs(
-    table_generator_type: tp.Type[TableGenerator],
-    table_kwargs: tp.Dict[str, tp.Any],
-    to_string: bool = False
-) -> tp.Dict[str, tp.Any]:
+class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
     """
-    Apply conversions to kwargs as specified by table generator CLI options.
-
-    Args:
-        table_generator_type: table generator with CLI option/converter
-                             declarations
-        table_kwargs: table kwargs as values or strings
-        to_string: if ``True`` convert to string, otherwise convert to value
-
-    Returns:
-        the kwargs with applied conversions
-    """
-    converter = {
-        decl_converter.name: decl_converter.converter for decl_converter in [
-            tp.cast(CLIOptionWithConverter[tp.Any], cli_decl)
-            for cli_decl in table_generator_type.OPTIONS
-            if isinstance(cli_decl, CLIOptionWithConverter)
-        ]
-    }
-    kwargs: tp.Dict[str, tp.Any] = {}
-    for key, value in table_kwargs.items():
-        if key in converter.keys():
-            if to_string:
-                kwargs[key] = converter[key].value_to_string(value)
-            else:
-                kwargs[key] = converter[key].string_to_value(value)
-        else:
-            kwargs[key] = value
-    return kwargs
-
-
-class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
-    """
-    An artefact defining a :class:`table<varats.tables.table.Table>`.
+    An artefact defining a :class:`~varats.tables.table.Table`.
 
     Args:
         name: name of this artefact
@@ -685,7 +508,8 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
     ) -> None:
         super().__init__(name, output_dir)
         self.__table_generator_type = table_generator_type
-        self.__table_type_class = TableGenerator.get_class_for_table_generator_type(
+        self.__table_type_class = \
+            TableGenerator.get_class_for_table_generator_type(
             self.__table_generator_type
         )
         self.__common_options = common_options
@@ -731,7 +555,7 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
         artefact_dict['table_config'] = self.__table_config.get_dict()
         artefact_dict = {
             **self.__common_options.get_dict(),
-            **_convert_kwargs(
+            **convert_kwargs(
                 self.table_generator_class, self.__table_kwargs, to_string=True
             ),
             **artefact_dict
@@ -762,7 +586,7 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
         return TableArtefact(
             name, output_dir, table_generator_type, common_options,
             table_config,
-            **_convert_kwargs(
+            **convert_kwargs(
                 TableGenerator.
                 get_class_for_table_generator_type(table_generator_type),
                 kwargs,
@@ -809,7 +633,7 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
         )
         return [
             ArtefactFileInfo(
-                table.table_file_name(self.common_options.file_type),
+                table.table_file_name(self.common_options.table_format),
                 table.table_kwargs.get("case_study", None)
             ) for table in generator_instance.generate()
         ]
