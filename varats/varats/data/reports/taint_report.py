@@ -1,6 +1,6 @@
 """Module for all reports generated for taint flow analyses."."""
 
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport
 
 
 class TaintPropagationReport(BaseReport, shorthand="TPR", file_type="txt"):
