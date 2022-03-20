@@ -85,7 +85,7 @@ def create_new_bb_config(
         '.two_libs_one_project_interaction_discrete_libs_single_project'
     ]
     if include_test_projects:
-        projects_conf[:].value += [
+        projects_conf.value[:] += [
             'varats.projects.test_projects.basic_tests',
             'varats.projects.test_projects.bug_provider_test_repos',
             'varats.projects.test_projects.example_test_repos',
