@@ -497,7 +497,7 @@ def count_interacting_authors(
         interaction: BlameInstInteractions
     ) -> tp.Iterable[str]:
         return map_commits(
-            # Issue (se-passau/VaRA#647): improve author uniquifying
+            # Issue (se-sic/VaRA#647): improve author uniquifying
             lambda c: tp.cast(str, c.author.name),
             interaction.interacting_commits,
             commit_lookup
@@ -661,7 +661,7 @@ def generate_author_degree_tuples(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             author_list = map_commits(
-                # Issue (se-passau/VaRA#647): improve author uniquifying
+                # Issue (se-sic/VaRA#647): improve author uniquifying
                 lambda c: tp.cast(str, c.author.name),
                 interaction.interacting_commits,
                 commit_lookup
