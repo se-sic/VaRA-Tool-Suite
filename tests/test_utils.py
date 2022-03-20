@@ -92,7 +92,7 @@ class _TestEnvironment():
         settings._CFG = vara_cfg
         settings.save_config()
 
-        bb_cfg = create_new_bb_config(settings.vara_cfg())
+        bb_cfg = create_new_bb_config(settings.vara_cfg(), True)
         settings.save_bb_config(bb_cfg)
         # pylint: disable=protected-access
         settings._BB_CFG = bb_cfg

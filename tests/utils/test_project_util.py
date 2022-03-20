@@ -253,7 +253,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
         dash."""
 
         varats_cfg = create_new_varats_config()
-        bb_cfg = create_new_bb_config(varats_cfg)
+        bb_cfg = create_new_bb_config(varats_cfg, True)
         loaded_project_paths: tp.List[str] = bb_cfg["plugins"]["projects"].value
 
         loaded_project_names = [
