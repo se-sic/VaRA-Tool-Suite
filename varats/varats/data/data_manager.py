@@ -11,6 +11,8 @@ like in jupyter notebooks, where we sometimes re-execute triggers a file load.
 import hashlib
 import os
 import typing as tp
+from functools import partial
+from multiprocessing import Pool
 from pathlib import Path
 from threading import Lock
 
@@ -117,18 +119,21 @@ class DataManager():
     ) -> LoadableType:
         # pylint: disable=invalid-name
         """Load a DataClass of type <DataClassTy> from a file."""
-        self.loader_lock.acquire()  # pylint: disable=consider-using-with
-        # unlocking in the happy path is performed by the loading function
-
         key = sha256_checksum(file_path)
+
+        self.loader_lock.acquire()  # pylint: disable=consider-using-with
         if key in self.file_map:
             return tp.cast(LoadableType, self.file_map[key].data)
+
+        self.loader_lock.release()
 
         try:
             new_blob = FileBlob(key, file_path, DataClassTy(file_path))
         except Exception as e:
-            self.loader_lock.release()
             raise e
+
+        self.loader_lock.acquire()  # pylint: disable=consider-using-with
+        # unlocking in the happy path is performed by the loading function
         self.file_map[key] = new_blob
 
         return tp.cast(LoadableType, new_blob.data)
@@ -175,8 +180,32 @@ class DataManager():
         self._release_lock()
         return loaded_file
 
+    def clean_cache(self) -> None:
+        self.loader_lock.acquire()
+        self.file_map.clear()
+        self._release_lock()
+
     def _release_lock(self) -> None:
         self.loader_lock.release()
+
+
+def _load_data_class_pool(
+    file_path: Path, DataClassTy: tp.Type[LoadableType]
+) -> LoadableType:
+    return VDM.load_data_class_sync(file_path, DataClassTy)
+
+
+def load_multiple_reports(
+    file_paths: tp.List[Path], report_type: tp.Type[BaseReport]
+) -> tp.List[tp.Any]:
+    loaded_reports = []
+
+    with Pool() as p:
+        loaded_reports = p.map(
+            partial(_load_data_class_pool, DataClassTy=report_type), file_paths
+        )
+
+    return loaded_reports
 
 
 VDM = DataManager()
