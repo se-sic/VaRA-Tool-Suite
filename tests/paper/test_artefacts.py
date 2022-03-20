@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.empty_report import EmptyReport
 from varats.paper_mgmt.artefacts import (
     initialize_artefact_types,
@@ -121,7 +121,7 @@ class TestArtefacts(unittest.TestCase):
             "paper_config_overview_plot.png", file_infos[0].file_name
         )
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_cli_option_converter(self):
         """Test whether CLI option conversion works correctly."""
         # setup config
