@@ -170,6 +170,11 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """
         return (install_location / self.get_jar_name()).exists()
 
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        return True
+
     def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
