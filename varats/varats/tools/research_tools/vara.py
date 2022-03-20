@@ -209,7 +209,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             version = int(version)
             cfg["vara"]["version"] = version
         else:
-            version = cfg["vara"]["version"].value
+            version = int(cfg["vara"]["version"].value)
         save_config()
 
         print(f"Setting up VaRA in {self.source_location()}")
@@ -218,7 +218,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         self.code_base.clone(self.source_location())
         self.code_base.setup_vara_remotes()
-        self.code_base.checkout_vara_version(int(version), use_dev_branches)
+        self.code_base.checkout_vara_version(version, use_dev_branches)
         self.code_base.setup_submodules()
         self.code_base.setup_build_link()
 
