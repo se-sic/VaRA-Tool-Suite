@@ -410,6 +410,22 @@ class VaRA(ResearchTool[VaRACodeBase]):
         phasar_name = self.code_base.get_sub_project("phasar").name.lower()
         status_ok &= phasar_name in stdout.lower()
 
+        # Check that clang++ can display it's version
+        clang = local[str(install_location / "bin/clang++")]
+        ret, stdout, _ = clang.run("--version")
+
+        vara_name = self.code_base.get_sub_project("vara-llvm-project").name
+        status_ok &= ret == 0
+        status_ok &= vara_name in stdout
+
+        # Check that phasar-llvm can display it's version
+        phasar_llvm = local[str(install_location / "bin/phasar-llvm")]
+        ret, stdout, _ = phasar_llvm.run("--version")
+        status_ok &= ret == 0
+
+        phasar_name = self.code_base.get_sub_project("phasar").name.lower()
+        status_ok &= phasar_name in stdout.lower()
+
         return status_ok
 
     def verify_build(
