@@ -11,7 +11,7 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt
+from benchbuild.utils.cmd import opt
 
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiment.experiment_util import (
@@ -30,7 +30,6 @@ from varats.experiment.wllvm import (
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class CRAnalysis(actions.Step):  # type: ignore
