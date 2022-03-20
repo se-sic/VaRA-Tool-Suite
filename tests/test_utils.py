@@ -76,10 +76,10 @@ class RepoFixture(UnitTestFixture):
     The clone uses a local reference to avoid unnecessary traffic.
     """
 
-    def __init__(self, repo_name: str, local: Path, remote: str):
-        self.__repo_name = repo_name
-        self.__local = local
-        self.__remote = remote
+    def __init__(self, source: Git):
+        self.__repo_name = source.local
+        self.__local = source.fetch()
+        self.__remote = source.remote
         self.__lock = Lock()
 
     def copy_to_env(self, path: Path) -> None:
@@ -110,9 +110,13 @@ class UnitTestFixtures():
     # Projects available for testing:
     # BROTLI = RepoFixture.for_project(Brotli)
     TEST_PROJECTS = RepoFixture(
-        "vara_test_repos",
-        Path(str(settings.bb_cfg()["tmp_dir"])) / "vara_test_repos",
-        "https://github.com/se-sic/vara-test-repos"
+        Git(
+            remote="https://github.com/se-sic/vara-test-repos",
+            local="vara_test_repos",
+            refspec="origin/HEAD",
+            shallow=False,
+            limit=None
+        )
     )
 
     @staticmethod
@@ -124,10 +128,12 @@ class UnitTestFixtures():
     def create_project_repo_fixture(project: tp.Type[Project]) -> RepoFixture:
         """Creates a repo fixture for the main source of a project."""
         source = project.SOURCE[0]
-        assert is_git_source(source)
-        local = source.fetch()
-        remote = source.remote
-        return RepoFixture(source.local, local, remote)
+        if not is_git_source(source):
+            raise AssertionError(
+                f"Primary source of project {project.NAME}"
+                "is not a git repository."
+            )
+        return RepoFixture(source)
 
 
 class TestEnvironment():
