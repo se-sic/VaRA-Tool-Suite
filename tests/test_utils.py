@@ -190,7 +190,6 @@ class TestEnvironment():
         settings._CFG = vara_cfg
         settings.save_config()
 
-
         bb_cfg = create_new_bb_config(settings.vara_cfg(), True)
         # make new bb_cfg point to old tmp to avoid multiple git clones
         bb_cfg["tmp_dir"] = str(self.__old_bb_config["tmp_dir"])
