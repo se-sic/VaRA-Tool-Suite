@@ -11,6 +11,7 @@ like in jupyter notebooks, where we sometimes re-execute triggers a file load.
 import hashlib
 import os
 import typing as tp
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
@@ -206,6 +207,33 @@ def load_multiple_reports(
         )
 
     return loaded_reports
+
+
+def load_multiple_reports2(
+    file_paths: tp.List[Path], report_type: tp.Type[BaseReport]
+) -> tp.List[tp.Any]:
+    loaded_reports = []
+    with ThreadPoolExecutor(max_workers=16) as executor:
+        futures = []
+        for file_path in file_paths:
+            futures.append(
+                executor.submit(
+                    VDM.load_data_class_sync, file_path, report_type
+                )
+            )
+
+        loaded_reports = [future.result() for future in futures]
+
+    return loaded_reports
+
+
+def load_multiple_reports3(
+    file_paths: tp.List[Path], report_type: tp.Type[BaseReport]
+) -> tp.List[tp.Any]:
+    return [
+        VDM.load_data_class_sync(file_path, report_type)
+        for file_path in file_paths
+    ]
 
 
 VDM = DataManager()
