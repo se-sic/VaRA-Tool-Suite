@@ -15,7 +15,6 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import (
     PlotGenerator,
-    PlotConfig,
     REQUIRE_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
 )
@@ -235,9 +234,6 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
     """Plot to visualize code churn for a git repository."""
 
     NAME = 'repo_churn'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())
