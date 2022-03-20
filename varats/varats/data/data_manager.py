@@ -11,7 +11,6 @@ like in jupyter notebooks, where we sometimes re-execute triggers a file load.
 import hashlib
 import os
 import typing as tp
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
@@ -182,9 +181,8 @@ class DataManager():
         return loaded_file
 
     def clean_cache(self) -> None:
-        self.loader_lock.acquire()
-        self.file_map.clear()
-        self._release_lock()
+        with self.loader_lock:
+            self.file_map.clear()
 
     def _release_lock(self) -> None:
         self.loader_lock.release()
@@ -199,6 +197,14 @@ def _load_data_class_pool(
 def load_multiple_reports(
     file_paths: tp.List[Path], report_type: tp.Type[BaseReport]
 ) -> tp.List[tp.Any]:
+    """
+
+    Args:
+        file_paths: list of files to load
+        report_type: type of the report class to be loaded
+
+    Returns: a list of loaded reports
+    """
     loaded_reports = []
 
     with Pool() as p:
