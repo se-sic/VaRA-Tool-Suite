@@ -60,7 +60,7 @@ def _get_named_df_for_case_study(
         )
         raise PlotDataEmpty
 
-    named_verifier_df = {
+    named_verifier_df: tp.Dict[str, tp.Union[str, pd.DataFrame]] = {
         "project_name": project_name,
         "dataframe": verifier_plot_df
     }
