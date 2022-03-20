@@ -8,7 +8,7 @@ from click.testing import CliRunner
 from tests.test_utils import (
     run_in_test_environment,
     TEST_INPUTS_DIR,
-    UnitTestInputs,
+    UnitTestFixtures,
 )
 from varats.paper.case_study import load_case_study_from_file
 from varats.paper_mgmt.paper_config import load_paper_config
@@ -186,7 +186,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual(len(case_study.revisions), 2)
 
     @run_in_test_environment(
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
             Path("paper_configs/test_status")
         )
@@ -213,10 +213,10 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "results/brotli", Path("results/brotli")
         ),
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "paper_configs/test_revision_lookup",
             Path("paper_configs/test_cleanup_error")
         )
@@ -255,13 +255,13 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "results/brotli", Path("results/brotli")
         ),
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "results/gravity", Path("results/gravity")
         ),
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "paper_configs/test_revision_lookup",
             Path("paper_configs/test_cleanup_regex")
         )
