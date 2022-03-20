@@ -56,7 +56,7 @@ class VaRACodeBase(CodeBase):
                 "vara-llvm-project"
             ),
             SubProject(
-                self, "VaRA", "git@github.com:se-passau/VaRA.git", "origin",
+                self, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
                 "vara-llvm-project/vara"
             ),
             SubProject(
@@ -74,7 +74,7 @@ class VaRACodeBase(CodeBase):
         """Sets up VaRA specific upstream remotes for projects that were
         forked."""
         self.get_sub_project("vara-llvm-project").add_remote(
-            "origin", "git@github.com:se-passau/vara-llvm-project.git"
+            "origin", "git@github.com:se-sic/vara-llvm-project.git"
         )
 
     def setup_build_link(self) -> None:
@@ -143,7 +143,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
     """
     Research tool implementation for VaRA.
 
-    Find the main repo online on github: https://github.com/se-passau/VaRA
+    Find the main repo online on github: https://github.com/se-sic/VaRA
     """
 
     __DEPENDENCIES = Dependencies({

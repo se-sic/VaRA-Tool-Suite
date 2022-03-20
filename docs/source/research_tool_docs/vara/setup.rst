@@ -10,12 +10,12 @@ If you want to manually install llvm and VaRA see the following instructions.
 Linux
 .....
 To create your own setup or integrate VaRA into LLVM, follow these instructions.
-First, clone our modified version of `llvm's monorepo <https://github.com/se-passau/vara-llvm-project>`_ or patch our modifications into your version of llvm-project.
+First, clone our modified version of `llvm's monorepo <https://github.com/se-sic/vara-llvm-project>`_ or patch our modifications into your version of llvm-project.
 
 .. code-block:: bash
 
   cd where-you-want-llvm-to-live
-  git clone git@github.com:se-passau/vara-llvm-project.git vara-llvm-project
+  git clone git@github.com:se-sic/vara-llvm-project.git vara-llvm-project
   cd vara-llvm-project
   git submodule init && git submodule update --recursive
 
@@ -23,7 +23,7 @@ Second, checkout the VaRA repository as ``vara`` into ``vara-llvm-project``.
 
 .. code-block:: bash
 
-  git clone https://github.com/se-passau/VaRA.git vara
+  git clone https://github.com/se-sic/VaRA.git vara
   git submodule init && git submodule update --recursive
 
 Third, to complete the setup link the prepared VaRA build scripts into a build folder.
