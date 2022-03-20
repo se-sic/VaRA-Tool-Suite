@@ -6,13 +6,18 @@ import tempfile
 import typing as tp
 from functools import wraps
 from pathlib import Path
+from threading import Lock
 
+import benchbuild.source.base as base
 import benchbuild.utils.settings as bb_settings
 import plumbum as pb
-from benchbuild.source import Git, base
+from benchbuild import Project
+from benchbuild.source import Git
+from benchbuild.utils.cmd import git
 
 import varats.utils.settings as settings
 from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
+from varats.project.project_util import is_git_source
 from varats.tools.bb_config import create_new_bb_config
 
 TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
@@ -20,47 +25,126 @@ TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 TestFunctionTy = tp.Callable[..., tp.Any]
 
 
-class UnitTestInputs():
+class UnitTestFixture(tp.Protocol):
+    """A test fixture that can be used with a :class:`TestEnvironment`."""
 
-    class UnitTestInput():
+    def copy_to_env(self, path: Path) -> None:
+        """
+        Called when entering the test environment.
 
-        def __init__(self, src: Path, dst: Path):
-            self.__src = src
-            self.__dst = dst
+        The new configs are already in place and the cwd is the tmp dir.
+        """
+        ...
 
-        def copy_to_path(self, path):
-            dst = path / self.__dst
-            if self.__src.is_dir():
-                shutil.copytree(self.__src, dst)
-            else:
-                shutil.copy(self.__src, dst)
+    def cleanup(self) -> None:
+        """
+        Called when exiting the test environment.
 
-    PAPER_CONFIGS = UnitTestInput(
+        The old configs are in place again, but the cwd is still the tmp dir.
+        """
+        ...
+
+
+class FileFixture(UnitTestFixture):
+    """A file or directory that is copied into the test environment."""
+
+    def __init__(self, src: Path, dst: Path):
+        self.__src = src
+        self.__dst = dst
+
+    def copy_to_env(self, path: Path) -> None:
+        dst = path / self.__dst
+        if self.__src.is_dir():
+            shutil.copytree(self.__src, dst, dirs_exist_ok=True)
+        else:
+            shutil.copy(self.__src, dst)
+
+    def cleanup(self) -> None:
+        pass
+
+
+class RepoFixture(UnitTestFixture):
+    """
+    A git repository that is cloned into the test environment.
+
+    The clone uses a local reference to avoid unnecessary traffic.
+    """
+
+    def __init__(self, repo_name: str, local: Path, remote: str):
+        self.__repo_name = repo_name
+        self.__local = local
+        self.__remote = remote
+        self.__lock = Lock()
+
+    def copy_to_env(self, path: Path) -> None:
+        with self.__lock:
+            bb_tmp = str(path / "benchbuild/tmp")
+            settings.bb_cfg()["tmp_dir"] = bb_tmp
+            base.CFG["tmp_dir"] = bb_tmp
+            git(
+                "clone", "--dissociate", "--recurse-submodules", "--reference",
+                self.__local, self.__remote, f"{bb_tmp}/{self.__repo_name}"
+            )
+
+    def cleanup(self) -> None:
+        bb_tmp = str(settings.bb_cfg()["tmp_dir"])
+        base.CFG["tmp_dir"] = bb_tmp
+
+
+class UnitTestFixtures():
+    """Collection/factory for test fixtures."""
+    PAPER_CONFIGS = FileFixture(
         TEST_INPUTS_DIR / "paper_configs", Path("paper_configs")
     )
-    RESULT_FILES = UnitTestInput(TEST_INPUTS_DIR / "results", Path("results"))
-    PLOTS = UnitTestInput(TEST_INPUTS_DIR / "plots", Path("plots"))
-    TABLES = UnitTestInput(TEST_INPUTS_DIR / "tables", Path("tables"))
-    ARTEFACTS = UnitTestInput(TEST_INPUTS_DIR / "artefacts", Path("artefacts"))
+    RESULT_FILES = FileFixture(TEST_INPUTS_DIR / "results", Path("results"))
+    PLOTS = FileFixture(TEST_INPUTS_DIR / "plots", Path("plots"))
+    TABLES = FileFixture(TEST_INPUTS_DIR / "tables", Path("tables"))
+    ARTEFACTS = FileFixture(TEST_INPUTS_DIR / "artefacts", Path("artefacts"))
+
+    # Projects available for testing:
+    # BROTLI = RepoFixture.for_project(Brotli)
+    TEST_PROJECTS = RepoFixture(
+        "vara_test_repos",
+        Path(str(settings.bb_cfg()["tmp_dir"])) / "vara_test_repos",
+        "https://github.com/se-sic/vara-test-repos"
+    )
 
     @staticmethod
-    def create_test_input(src: Path, dst: Path) -> UnitTestInput:
-        return UnitTestInputs.UnitTestInput(src, dst)
+    def create_file_fixture(src: Path, dst: Path) -> UnitTestFixture:
+        """Creates a file fixture."""
+        return FileFixture(src, dst)
+
+    @staticmethod
+    def create_project_repo_fixture(project: tp.Type[Project]) -> RepoFixture:
+        """Creates a repo fixture for the main source of a project."""
+        source = project.SOURCE[0]
+        assert is_git_source(source)
+        local = source.fetch()
+        remote = source.remote
+        return RepoFixture(source.local, local, remote)
 
 
-class _TestEnvironment():
+class TestEnvironment():
+    """
+    Test environment implementation.
+
+    The wrapped test is run inside a temporary directory that acts as the
+    varats root folder with a fresh default varats and BenchBuild config.
+    The configurations can be accessed via the usual `vara_cfg()` and `bb_cfg()`
+    getters.
+
+    Args:
+        required_test_inputs: test inputs to be copied into the test environment
+    """
 
     def __init__(
-        self, required_test_inputs: tp.Iterable[UnitTestInputs.UnitTestInput]
+        self, required_test_inputs: tp.Iterable[UnitTestFixture]
     ) -> None:
 
         self.__tmp_dir = tempfile.TemporaryDirectory()
         self.__tmp_path = Path(self.__tmp_dir.name)
         self.__cwd = os.getcwd()
-
-        if required_test_inputs:
-            for test_input in required_test_inputs:
-                test_input.copy_to_path(self.__tmp_path)
+        self.__test_inputs = required_test_inputs
 
         # pylint: disable=protected-access
         self.__old_config = settings.vara_cfg()
@@ -93,9 +177,15 @@ class _TestEnvironment():
         settings.save_config()
 
         bb_cfg = create_new_bb_config(settings.vara_cfg())
+        # make new bb_cfg point to old tmp to avoid multiple git clones
+        bb_cfg["tmp_dir"] = str(self.__old_bb_config["tmp_dir"])
+
         settings.save_bb_config(bb_cfg)
         # pylint: disable=protected-access
         settings._BB_CFG = bb_cfg
+
+        for test_input in self.__test_inputs:
+            test_input.copy_to_env(self.__tmp_path)
 
         return self.__tmp_path
 
@@ -104,13 +194,17 @@ class _TestEnvironment():
         settings._CFG = self.__old_config
         # pylint: disable=protected-access
         settings._BB_CFG = self.__old_bb_config
+
+        for test_input in self.__test_inputs:
+            test_input.cleanup()
+
         os.chdir(self.__cwd)
         if self.__tmp_dir:
             self.__tmp_dir.cleanup()
 
 
 def run_in_test_environment(
-    *required_test_inputs: UnitTestInputs.UnitTestInput
+    *required_test_inputs: UnitTestFixture
 ) -> TestFunctionTy:
     """
     Run a test in an isolated test environment.
@@ -128,14 +222,12 @@ def run_in_test_environment(
     """
 
     def wrapper_func(test_func: TestFunctionTy) -> TestFunctionTy:
-        return _TestEnvironment(required_test_inputs)(test_func)
+        return TestEnvironment(required_test_inputs)(test_func)
 
     return wrapper_func
 
 
-def test_environment(
-    *required_test_inputs: UnitTestInputs.UnitTestInput
-) -> _TestEnvironment:
+def test_environment(*required_test_inputs: UnitTestFixture) -> TestEnvironment:
     """
     Context manager that creates an isolated test environment.
 
@@ -147,7 +239,7 @@ def test_environment(
     Args:
         required_test_inputs: test inputs to be copied into the test environment
     """
-    return _TestEnvironment(required_test_inputs)
+    return TestEnvironment(required_test_inputs)
 
 
 class DummyGit(Git):

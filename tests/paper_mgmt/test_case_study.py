@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import varats.paper_mgmt.case_study as MCS
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
 from varats.projects.discover_projects import initialize_projects
@@ -22,7 +22,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         initialize_projects()
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_newest_processed_revision(self) -> None:
         """Check whether the newest processed revision is correctly
@@ -39,7 +39,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             newest_processed
         )
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_newest_processed_revision_no_results(self) -> None:
         """Check None is returned when no results are available."""
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
@@ -52,7 +52,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertIsNone(newest_processed)
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_failed_revisions(self) -> None:
         """Check if we can correctly find all failed revisions of a case
@@ -71,7 +71,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_processed_revisions(self) -> None:
         """Check if we can correctly find all processed revisions of a case
@@ -89,7 +89,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             process_revs
         )
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_get_revisions_status_for_case_study_to_high_stage(self) -> None:
         """Check if we correctly handle look ups where the stage selected is
         larger than the biggest one in the case study."""
@@ -102,7 +102,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             ), []
         )
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_get_revision_not_in_case_study(self) -> None:
         """Check if we correctly handle the lookup of a revision that is not in
         the case study."""
@@ -116,7 +116,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_revisions_in_case_study(self) -> None:
         """Check if we correctly handle the lookup of a revision that is in a
@@ -132,7 +132,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_newest_result_files_for_case_study(self) -> None:
         """Check that when we have two files, the newes one get's selected."""
@@ -168,7 +168,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertTrue(filtered_newest_res_files[0].uuid.endswith('42'))
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_newest_result_files_for_case_study_fail(self) -> None:
         """Check that when we have two files, the newes one get's selected."""
@@ -203,7 +203,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
         self.assertFalse(filtered_newest_res_files[0].uuid.endswith('42'))
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_get_newest_result_files_for_case_study_with_empty_res_dir(
         self
     ) -> None:
