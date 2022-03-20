@@ -20,7 +20,8 @@ LOG = logging.getLogger(__name__)
     type=click.Path(),
     help="Set an alternative BenchBuild root folder."
 )
-def main(bb_root: tp.Optional[str] = None) -> None:
+@click.option("--test-projects", is_flag=True, help="Include test projects")
+def main(bb_root: tp.Optional[str] = None, test_projects: bool = False) -> None:
     """
     Main function for the benchbuild config creator.
 
@@ -50,7 +51,7 @@ def main(bb_root: tp.Optional[str] = None) -> None:
         LOG.info(f"Setting BB path to: {vara_cfg()['benchbuild_root']}")
         save_config()
 
-    bb_cfg = create_new_bb_config(vara_cfg())
+    bb_cfg = create_new_bb_config(vara_cfg(), test_projects)
     save_bb_config(bb_cfg)
 
 
