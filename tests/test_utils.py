@@ -61,7 +61,9 @@ class FileFixture(UnitTestFixture):
     def copy_to_env(self, path: Path) -> None:
         dst = path / self.__dst
         if self.__src.is_dir():
-            shutil.copytree(self.__src, dst, dirs_exist_ok=True)
+            if self.__dst.exists():
+                self.__dst.rmdir()
+            shutil.copytree(self.__src, dst)
         else:
             shutil.copy(self.__src, dst)
 
