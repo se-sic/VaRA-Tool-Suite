@@ -20,7 +20,7 @@ def lorenz_curve(data: pd.Series) -> pd.Series:
         the values of the lorenz curve as a series
     """
     scaled_prefix_sum = data.cumsum() / data.sum()
-    return scaled_prefix_sum
+    return tp.cast(pd.Series, scaled_prefix_sum)
 
 
 def gini_coefficient(distribution: pd.Series) -> float:
