@@ -1,7 +1,7 @@
 """Test bug overview table."""
 import unittest
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper_mgmt.paper_config import (
     load_paper_config,
     get_loaded_paper_config,
@@ -21,7 +21,7 @@ class TestCSMetricsTable(unittest.TestCase):
     """Test whether case study metrics are collected correctly."""
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_cig_metrics_table(self) -> None:
         """Tests the latex booktabs format for the cig metrics table."""
@@ -46,7 +46,7 @@ class TestCSMetricsTable(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_aig_metrics_table(self) -> None:
         """Tests the latex booktabs format for the aig metrics table."""
@@ -71,7 +71,7 @@ class TestCSMetricsTable(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_caig_metrics_table(self) -> None:
         """Tests the latex booktabs format for the caig metrics table."""
@@ -96,7 +96,7 @@ class TestCSMetricsTable(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_aig_file_vs_blame_degrees_table(self) -> None:
         """

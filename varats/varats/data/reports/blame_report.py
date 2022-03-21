@@ -257,11 +257,9 @@ class BlameResultFunctionEntry():
         return self.__inst_list
 
     def __str__(self) -> str:
-        str_representation = "{name} ({demangled_name})\n".format(
-            name=self.name, demangled_name=self.demangled_name
-        )
+        str_representation = f"{self.name} ({self.demangled_name})\n"
         for inst in self.__inst_list:
-            str_representation += "  - {}".format(inst)
+            str_representation += f"  - {inst}"
         return str_representation
 
 
@@ -633,7 +631,7 @@ def count_interacting_authors(
         interaction: BlameInstInteractions
     ) -> tp.Iterable[str]:
         return map_commits(
-            # Issue (se-passau/VaRA#647): improve author uniquifying
+            # Issue (se-sic/VaRA#647): improve author uniquifying
             lambda c: tp.cast(str, c.author.name),
             [btd.commit for btd in interaction.interacting_taints],
             commit_lookup
@@ -785,7 +783,7 @@ def generate_author_degree_tuples(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             author_list = map_commits(
-                # Issue (se-passau/VaRA#647): improve author uniquifying
+                # Issue (se-sic/VaRA#647): improve author uniquifying
                 lambda c: tp.cast(str, c.author.name),
                 [btd.commit for btd in interaction.interacting_taints],
                 commit_lookup
@@ -940,3 +938,30 @@ def generate_out_head_interactions(
                     head_interactions.append(interaction)
                     break
     return head_interactions
+
+
+def get_interacting_commits_for_commit(
+    report: BlameReport, commit: CommitRepoPair
+) -> tp.Tuple[tp.Set[CommitRepoPair], tp.Set[CommitRepoPair]]:
+    """
+    Get all commits a given commits interacts with separated by incoming and
+    outgoing interactions.
+
+    Args:
+        report: BlameReport to get the interactions from
+        commit: commit to get the interacting commits for
+
+    Returns:
+        two sets for the interacting commits seperated by incoming and outgoing
+        interactions
+    """
+    in_commits: tp.Set[CommitRepoPair] = set()
+    out_commits: tp.Set[CommitRepoPair] = set()
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            if commit == interaction.base_commit:
+                out_commits.update(interaction.interacting_commits)
+            if commit in interaction.interacting_commits:
+                in_commits.add(interaction.base_commit)
+
+    return in_commits, out_commits

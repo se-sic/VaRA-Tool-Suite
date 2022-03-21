@@ -11,7 +11,7 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt
+from benchbuild.utils.cmd import opt
 
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiment.experiment_util import (
@@ -30,7 +30,6 @@ from varats.experiment.wllvm import (
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class CRAnalysis(actions.Step):  # type: ignore
@@ -102,16 +101,13 @@ class CRAnalysis(actions.Step):  # type: ignore
 
             opt_params = [
                 "-vara-BD", "-vara-CR", "-vara-init-commits",
-                "-vara-report-outfile={res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_file
-                )
+                f"-vara-report-outfile={vara_result_folder}/{result_file}"
             ]
 
             if interaction_filter_file.is_file():
                 opt_params.append(
-                    "-vara-cf-interaction-filter={}".format(
-                        str(interaction_filter_file)
-                    )
+                    f"-vara-cf-interaction-filter="
+                    f"{str(interaction_filter_file)}"
                 )
 
             opt_params.append(str(get_cached_bc_file_path(project, binary)))

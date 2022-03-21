@@ -16,7 +16,7 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotGenerator, REQUIRE_CASE_STUDY, PlotConfig
+from varats.plot.plots import PlotGenerator, REQUIRE_CASE_STUDY
 from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -32,9 +32,6 @@ LOG = logging.Logger(__name__)
 
 class CodeCentralityPlot(Plot, plot_name='code_centrality'):
     """Plot code centrality."""
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]

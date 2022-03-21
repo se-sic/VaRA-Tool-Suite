@@ -10,8 +10,8 @@ with open(base_dir + '/README.md') as f:
 
 setup(
     name='varats',
-    version='11.1.1',
-    url='https://github.com/se-passau/vara-tool-suite',
+    version='11.1.3',
+    url='https://github.com/se-sic/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],
     setup_requires=["pytest-runner", "setuptools_scm"],
@@ -46,7 +46,7 @@ setup(
         "seaborn>=0.8.0",
         "statsmodels~=0.13.1",
         "tabulate>=0.8.6",
-        "varats-core>=11.1.1",
+        "varats-core>=11.1.3",
         "wllvm>=1.1.4",
     ],
     author="Florian Sattler",

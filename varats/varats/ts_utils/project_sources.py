@@ -22,7 +22,8 @@ class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore
         remote="https://github.com/se-sic/vara-test-repos",
         local="vara_test_repos",
         refspec="origin/HEAD",
-        limit=1
+        shallow=False,
+        limit=None
     )
 
     def fetch(self) -> pb.LocalPath:
@@ -58,7 +59,8 @@ class VaraTestRepoSource(PaperConfigSpecificGit):
         remote="https://github.com/se-sic/vara-test-repos",
         local="vara_test_repos",
         refspec="origin/HEAD",
-        limit=1
+        shallow=False,
+        limit=None
     )
 
     def fetch(self) -> pb.LocalPath:

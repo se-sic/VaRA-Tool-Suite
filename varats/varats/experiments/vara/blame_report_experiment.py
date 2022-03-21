@@ -10,7 +10,7 @@ from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt
+from benchbuild.utils.cmd import opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
 import varats.experiments.vara.blame_experiment as BE

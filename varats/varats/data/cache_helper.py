@@ -117,9 +117,7 @@ def build_cached_report_table(
         cached_df = optional_cached_df
 
     def is_missing_file(report_file: InDataType) -> bool:
-        return not tp.cast(
-            bool, (cached_df[CACHE_ID_COL] == get_entry_id(report_file)).any()
-        )
+        return not (cached_df[CACHE_ID_COL] == get_entry_id(report_file)).any()
 
     def is_newer_file(report_file: InDataType) -> bool:
         cached_entry = cached_df[cached_df[CACHE_ID_COL] ==
@@ -179,10 +177,38 @@ def build_cached_report_table(
 
     cache_dataframe(data_id, project_name, new_df)
 
-    return new_df.loc[:, [
-        col for col in new_df.columns
-        if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
-    ]]
+    return tp.cast(
+        pd.DataFrame, new_df.loc[:, [
+            col for col in new_df.columns
+            if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
+        ]]
+    )
+
+
+GraphTy = tp.TypeVar("GraphTy", bound=nx.Graph)
+
+
+def build_cached_graph(
+    graph_id: str, create_graph: tp.Callable[[], GraphTy]
+) -> GraphTy:
+    """
+    Create an automatically cached networkx graph.
+
+    Args:
+        graph_id: graph cache identifier
+        create_graph: function that creates the graph
+
+    Returns:
+        the cached or created graph
+    """
+    path = Path(str(vara_cfg()["data_cache"])) / f"graph-{graph_id}.gz"
+
+    if path.exists():
+        return tp.cast(GraphTy, nx.read_gpickle(path))
+
+    graph = create_graph()
+    nx.write_gpickle(graph, path)
+    return graph
 
 
 GraphTy = tp.TypeVar("GraphTy", bound=nx.Graph)

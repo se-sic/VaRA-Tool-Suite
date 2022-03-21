@@ -4,7 +4,7 @@ import unittest
 
 import pytest
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     create_file_based_interaction_graph,
@@ -23,11 +23,11 @@ class TestBlameInteractionGraphs(unittest.TestCase):
     """Test if blame interaction graphs are constructed correctly."""
 
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         initialize_projects()
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_blame_interaction_graph(self) -> None:
         """Test whether blame interaction graphs are created correctly."""
@@ -56,7 +56,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
 
     @pytest.mark.slow
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_file_based_interaction_graph(self) -> None:
         """Test whether file-based interaction graphs are created correctly."""
@@ -86,7 +86,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         self.assertEqual(509, len(caig.edges))
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_author_data(self) -> None:
         """Check whether author data is retrieved correctly from the author
