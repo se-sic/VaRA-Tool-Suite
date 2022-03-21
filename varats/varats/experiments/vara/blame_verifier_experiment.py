@@ -10,7 +10,7 @@ import typing as tp
 
 from benchbuild.project import Project
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import opt, mkdir, timeout
+from benchbuild.utils.cmd import opt, timeout
 
 import varats.experiments.vara.blame_experiment as BE
 from varats.data.reports.blame_verifier_report import (
@@ -28,8 +28,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.report.report import FileStatusExtension as FSE
-from varats.report.report import ReportSpecification, BaseReport
-from varats.utils.settings import bb_cfg
+from varats.report.report import ReportSpecification
 
 
 class BlameVerifierReportGeneration(actions.Step):  # type: ignore
@@ -104,9 +103,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                                str(bc_target_file), "-o", "/dev/null"]
 
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration,
-                        vara_run_cmd] > "{res_folder}/{res_file}".
-                format(res_folder=vara_result_folder, res_file=result_file),
+                timeout[timeout_duration, vara_run_cmd] >
+                f"{vara_result_folder}/{result_file}",
                 PEErrorHandler(
                     vara_result_folder, error_file.filename, timeout_duration
                 )

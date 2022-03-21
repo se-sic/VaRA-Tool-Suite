@@ -4,7 +4,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
 from varats.plot.plots import PlotArtefact
 from varats.tools import driver_plot
@@ -15,7 +15,7 @@ class TestDriverPlot(unittest.TestCase):
     """Tests for the driver_plot module."""
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_plot(self):
         """Test whether `vara-plot` generates a plot."""
@@ -37,7 +37,7 @@ class TestDriverPlot(unittest.TestCase):
             (plot_base_dir / "foo" / "paper_config_overview_plot.svg").exists()
         )
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_store_artefact(self):
         """Test whether `vara-plot` can store artefacts."""
         # setup config

@@ -1,14 +1,13 @@
 """Test VaRA project utilities."""
 import typing as tp
 import unittest
-import unittest.mock as mock
 from os.path import isdir
 from pathlib import Path
 
 from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
 
-from tests.test_utils import test_environment
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_loaded_vara_projects,
@@ -22,7 +21,7 @@ from varats.ts_utils.project_sources import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
 )
-from varats.utils.settings import create_new_varats_config
+from varats.utils.settings import create_new_varats_config, bb_cfg
 
 
 class TestProjectLookup(unittest.TestCase):
@@ -60,13 +59,19 @@ class TestVaraTestRepoSource(unittest.TestCase):
     """Test if directories and files of a VaraTestRepoSource and its
     VaraTestRepoSubmodules are correctly set up."""
 
+    revision: tp.ClassVar[str]
+    bb_result_report_path: tp.ClassVar[Path]
+    bb_result_lib_path: tp.ClassVar[Path]
+    elementalist: tp.ClassVar[VaraTestRepoSource]
+    fire_lib: tp.ClassVar[VaraTestRepoSubmodule]
+    water_lib: tp.ClassVar[VaraTestRepoSubmodule]
+
     @classmethod
     def setUp(cls) -> None:
         """Define a multi library example repo."""
 
         cls.revision = "e64923e69e"
 
-        cls.bb_tmp_path = Path("benchbuild/tmp")
         cls.bb_result_report_path = Path(
             "benchbuild/results/GenerateBlameReport"
         )
@@ -111,149 +116,107 @@ class TestVaraTestRepoSource(unittest.TestCase):
             shallow=False,
         )
 
-    @mock.patch('benchbuild.source.base.target_prefix')
-    @mock.patch('varats.ts_utils.project_sources.target_prefix')
-    def test_vara_test_repo_dir_creation(
-        self, mock_tgt_prefix_base, mock_tgt_prefix_project_util
-    ) -> None:
+    @run_in_test_environment(UnitTestFixtures.TEST_PROJECTS)
+    def test_vara_test_repo_dir_creation(self) -> None:
         """Test if the needed directories of the main repo and its submodules
         are present."""
 
-        with test_environment() as tmppath:
-            mock_tgt_prefix_base.return_value = \
-                tmppath / self.bb_tmp_path
-            mock_tgt_prefix_project_util.return_value = \
-                tmppath / self.bb_tmp_path
+        mkdir("-p", self.bb_result_report_path)
 
-            mkdir("-p", self.bb_result_report_path)
-            mkdir(self.bb_tmp_path)
+        self.elementalist.version(
+            f"{self.bb_result_report_path}/"
+            f"TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            f"-cpp_projects@{self.revision}",
+            version=self.revision
+        )
 
-            self.elementalist.fetch()
-            self.elementalist.version(
-                self.bb_result_report_path / Path(
-                    f"TwoLibsOneProjectInteractionDiscreteLibsSingle"
-                    f"Project-cpp_projects@{self.revision}",
-                    version=self.revision
-                )
+        # Are directories present?
+        self.assertTrue(
+            isdir(
+                f"{str(bb_cfg()['tmp_dir'])}/"
+                f"TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             )
+        )
+        self.assertTrue(isdir(self.bb_result_lib_path))
+        self.assertTrue(isdir(self.bb_result_lib_path / "Elementalist"))
+        self.assertTrue(isdir(self.bb_result_lib_path / "fire_lib"))
+        self.assertTrue(isdir(self.bb_result_lib_path / "water_lib"))
+        self.assertTrue(
+            isdir(
+                self.bb_result_lib_path / "Elementalist" / "external" /
+                "fire_lib"
+            )
+        )
+        self.assertTrue(
+            isdir(
+                self.bb_result_lib_path / "Elementalist" / "external" /
+                "water_lib"
+            )
+        )
 
-            # Are directories present?
-            self.assertTrue(
-                isdir(
-                    self.bb_tmp_path /
-                    "TwoLibsOneProjectInteractionDiscreteLibsSingle"
-                    "Project"
-                )
-            )
-            self.assertTrue(isdir(self.bb_result_lib_path))
-            self.assertTrue(isdir(self.bb_result_lib_path / "Elementalist"))
-            self.assertTrue(isdir(self.bb_result_lib_path / "fire_lib"))
-            self.assertTrue(isdir(self.bb_result_lib_path / "water_lib"))
-            self.assertTrue(
-                isdir(
-                    self.bb_result_lib_path / "Elementalist" / "external" /
-                    "fire_lib"
-                )
-            )
-            self.assertTrue(
-                isdir(
-                    self.bb_result_lib_path / "Elementalist" / "external" /
-                    "water_lib"
-                )
-            )
-
-    @mock.patch('benchbuild.source.base.target_prefix')
-    @mock.patch('varats.project.project_util.target_prefix')
-    def test_vara_test_repo_gitted_renaming(
-        self, mock_tgt_prefix_base, mock_tgt_prefix_project_util
-    ) -> None:
+    @run_in_test_environment(UnitTestFixtures.TEST_PROJECTS)
+    def test_vara_test_repo_gitted_renaming(self) -> None:
         """Test if the .gitted files are correctly renamed back to their
         original git name."""
+        self.elementalist.version(
+            f"{self.bb_result_report_path}/"
+            f"TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            f"-cpp_projects@{self.revision}",
+            version=self.revision
+        )
 
-        with test_environment() as tmppath:
-            mock_tgt_prefix_base.return_value = \
-                tmppath / self.bb_tmp_path
-            mock_tgt_prefix_project_util.return_value = \
-                tmppath / self.bb_tmp_path
+        # Are .gitted files correctly renamed?
+        self.assertTrue(
+            isdir(self.bb_result_lib_path / "Elementalist" / ".git")
+        )
+        self.assertTrue(isdir(self.bb_result_lib_path / "fire_lib" / ".git"))
+        self.assertTrue(isdir(self.bb_result_lib_path / "water_lib" / ".git"))
+        self.assertTrue(
+            (self.bb_result_lib_path / "Elementalist" / ".gitmodules").exists()
+        )
 
-            self.elementalist.fetch()
-            self.elementalist.version(
-                self.bb_result_report_path / Path(
-                    f"TwoLibsOneProjectInteractionDiscreteLibsSingle"
-                    f"Project-cpp_projects@{self.revision}",
-                    version=self.revision
-                )
-            )
-
-            # Are .gitted files correctly renamed?
-            self.assertTrue(
-                isdir(self.bb_result_lib_path / "Elementalist" / ".git")
-            )
-            self.assertTrue(
-                isdir(self.bb_result_lib_path / "fire_lib" / ".git")
-            )
-            self.assertTrue(
-                isdir(self.bb_result_lib_path / "water_lib" / ".git")
-            )
-            self.assertTrue(
-                (self.bb_result_lib_path / "Elementalist" /
-                 ".gitmodules").exists()
-            )
-
-    @mock.patch('benchbuild.source.base.target_prefix')
-    @mock.patch('varats.project.project_util.target_prefix')
-    def test_vara_test_repo_lib_checkout(
-        self, mock_tgt_prefix_base, mock_tgt_prefix_project_util
-    ) -> None:
+    @run_in_test_environment(UnitTestFixtures.TEST_PROJECTS)
+    def test_vara_test_repo_lib_checkout(self) -> None:
         """Test if the repositories are checked out at the specified
         revision."""
+        self.elementalist.version(
+            f"{self.bb_result_report_path}/"
+            f"TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            f"-cpp_projects@{self.revision}",
+            version=self.revision
+        )
 
-        with test_environment() as tmppath:
-            mock_tgt_prefix_base.return_value = \
-                tmppath / self.bb_tmp_path
-            mock_tgt_prefix_project_util.return_value = \
-                tmppath / self.bb_tmp_path
-
-            self.elementalist.fetch()
-            self.elementalist.version(
-                self.bb_result_report_path / Path(
-                    f"TwoLibsOneProjectInteractionDiscreteLibsSingle"
-                    f"Project-cpp_projects@{self.revision}",
-                    version=self.revision
-                )
+        # Are repositories checked out at correct commit hash?
+        with local.cwd(self.bb_result_lib_path / "Elementalist"):
+            self.assertEqual(
+                self.revision[:7],
+                git('rev-parse', '--short', 'HEAD').rstrip()
             )
 
-            # Are repositories checked out at correct commit hash?
-            with local.cwd(self.bb_result_lib_path / "Elementalist"):
-                self.assertEqual(
-                    "5e8fe16",
-                    git('rev-parse', '--short', 'HEAD').rstrip()
-                )
+        with local.cwd(self.bb_result_lib_path / "fire_lib"):
+            self.assertEqual(
+                "ead5e00",
+                git('rev-parse', '--short', 'HEAD').rstrip()
+            )
 
-            with local.cwd(self.bb_result_lib_path / "fire_lib"):
-                self.assertEqual(
-                    "ead5e00",
-                    git('rev-parse', '--short', 'HEAD').rstrip()
-                )
+        with local.cwd(self.bb_result_lib_path / "water_lib"):
+            self.assertEqual(
+                "58ec513",
+                git('rev-parse', '--short', 'HEAD').rstrip()
+            )
 
-            with local.cwd(self.bb_result_lib_path / "water_lib"):
-                self.assertEqual(
-                    "58ec513",
-                    git('rev-parse', '--short', 'HEAD').rstrip()
-                )
-
-            with local.cwd(self.bb_result_lib_path / "earth_lib"):
-                self.assertEqual(
-                    "1db6fbe",
-                    git('rev-parse', '--short', 'HEAD').rstrip()
-                )
+        with local.cwd(self.bb_result_lib_path / "earth_lib"):
+            self.assertEqual(
+                "1db6fbe",
+                git('rev-parse', '--short', 'HEAD').rstrip()
+            )
 
     def test_if_project_names_are_well_formed(self) -> None:
-        """Tests if project names are well formed, e.g., they must not contain a
+        """Tests if project names are well-formed, e.g., they must not contain a
         dash."""
 
         varats_cfg = create_new_varats_config()
-        bb_cfg = create_new_bb_config(varats_cfg)
+        bb_cfg = create_new_bb_config(varats_cfg, True)
         loaded_project_paths: tp.List[str] = bb_cfg["plugins"]["projects"].value
 
         loaded_project_names = [
@@ -273,7 +236,9 @@ class TestProjectBinaryWrapper(unittest.TestCase):
 
     def test_execution_of_executable(self) -> None:
         """Check if we can execute a executable bianries."""
-        binary = ProjectBinaryWrapper("ls", "/bin/ls", BinaryType.EXECUTABLE)
+        binary = ProjectBinaryWrapper(
+            "ls", Path("/bin/ls"), BinaryType.EXECUTABLE
+        )
 
         ret = binary()
         self.assertIsNotNone(ret)
@@ -282,11 +247,11 @@ class TestProjectBinaryWrapper(unittest.TestCase):
     def test_execution_of_libraries(self) -> None:
         """Check if we don't fail when executing a shared/static library."""
         static_lib_binary = ProjectBinaryWrapper(
-            "ls", "/bin/ls", BinaryType.STATIC_LIBRARY
+            "ls", Path("/bin/ls"), BinaryType.STATIC_LIBRARY
         )
         self.assertIsNone(static_lib_binary())
 
         shared_lib_binary = ProjectBinaryWrapper(
-            "ls", "/bin/ls", BinaryType.SHARED_LIBRARY
+            "ls", Path("/bin/ls"), BinaryType.SHARED_LIBRARY
         )
         self.assertIsNone(shared_lib_binary())

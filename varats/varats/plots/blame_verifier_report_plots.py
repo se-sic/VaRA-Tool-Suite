@@ -60,7 +60,7 @@ def _get_named_df_for_case_study(
         )
         raise PlotDataEmpty
 
-    named_verifier_df = {
+    named_verifier_df: tp.Dict[str, tp.Union[str, pd.DataFrame]] = {
         "project_name": project_name,
         "dataframe": verifier_plot_df
     }
@@ -70,7 +70,7 @@ def _get_named_df_for_case_study(
 
 def _extract_data_from_named_dataframe(
     named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]]
-) -> tp.Tuple[str, tp.Dict[str, tp.Any]]:
+) -> tp.Tuple[tp.Union[str, pd.DataFrame], tp.Dict[str, tp.Any]]:
     current_verifier_plot_df = tp.cast(
         pd.DataFrame, named_verifier_plot_df['dataframe']
     )
@@ -301,9 +301,6 @@ class BlameVerifierReportNoOptPlot(
     optimization."""
     NAME = 'b_verifier_report_no_opt_plot'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.NO_OPT, self.plot_config, self.plot_kwargs)
 
@@ -327,9 +324,6 @@ class BlameVerifierReportOptPlot(
     """Plotting the successful and failed annotations of reports with
     optimization."""
     NAME = 'b_verifier_report_opt_plot'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.OPT, self.plot_config, self.plot_kwargs)

@@ -80,9 +80,7 @@ class BlameInstInteractions():
         return self.__amount
 
     def __str__(self) -> str:
-        str_representation = "{base_hash} <-(# {amount:4})- [".format(
-            base_hash=self.base_commit, amount=self.amount
-        )
+        str_representation = f"{self.base_commit} <-(# {self.amount:4})- ["
         sep = ""
         for interacting_commit in self.interacting_commits:
             str_representation += sep + str(interacting_commit)
@@ -162,11 +160,9 @@ class BlameResultFunctionEntry():
         return self.__inst_list
 
     def __str__(self) -> str:
-        str_representation = "{name} ({demangled_name})\n".format(
-            name=self.name, demangled_name=self.demangled_name
-        )
+        str_representation = f"{self.name} ({self.demangled_name})\n"
         for inst in self.__inst_list:
-            str_representation += "  - {}".format(inst)
+            str_representation += f"  - {inst}"
         return str_representation
 
 
@@ -501,7 +497,7 @@ def count_interacting_authors(
         interaction: BlameInstInteractions
     ) -> tp.Iterable[str]:
         return map_commits(
-            # Issue (se-passau/VaRA#647): improve author uniquifying
+            # Issue (se-sic/VaRA#647): improve author uniquifying
             lambda c: tp.cast(str, c.author.name),
             interaction.interacting_commits,
             commit_lookup
@@ -665,7 +661,7 @@ def generate_author_degree_tuples(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             author_list = map_commits(
-                # Issue (se-passau/VaRA#647): improve author uniquifying
+                # Issue (se-sic/VaRA#647): improve author uniquifying
                 lambda c: tp.cast(str, c.author.name),
                 interaction.interacting_commits,
                 commit_lookup
