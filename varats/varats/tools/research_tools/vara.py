@@ -12,7 +12,6 @@ from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
-from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
@@ -57,7 +56,7 @@ class VaRACodeBase(CodeBase):
                 "vara-llvm-project"
             ),
             SubProject(
-                self, "VaRA", "git@github.com:se-passau/VaRA.git", "origin",
+                self, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
                 "vara-llvm-project/vara"
             ),
             SubProject(
@@ -75,7 +74,7 @@ class VaRACodeBase(CodeBase):
         """Sets up VaRA specific upstream remotes for projects that were
         forked."""
         self.get_sub_project("vara-llvm-project").add_remote(
-            "origin", "git@github.com:se-passau/vara-llvm-project.git"
+            "origin", "git@github.com:se-sic/vara-llvm-project.git"
         )
 
     def setup_build_link(self) -> None:
@@ -144,7 +143,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
     """
     Research tool implementation for VaRA.
 
-    Find the main repo online on github: https://github.com/se-passau/VaRA
+    Find the main repo online on github: https://github.com/se-sic/VaRA
     """
 
     __DEPENDENCIES = Dependencies({
@@ -187,8 +186,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["vara"]["llvm_install_dir"].value is not None
 
-    @check_required_args("install_prefix", "version")
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -197,20 +198,18 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         Args:
             source_folder: location to store the code base in
-            **kwargs:
-                      * version
-                      * install_prefix
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
         cfg = vara_cfg()
         if source_folder:
             cfg["vara"]["llvm_source_dir"] = str(source_folder)
-        cfg["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
-        version = kwargs.get("version")
+        cfg["vara"]["llvm_install_dir"] = str(install_prefix)
         if version:
-            version = int(tp.cast(int, version))
+            version = int(version)
             cfg["vara"]["version"] = version
         else:
-            version = cfg["vara"]["version"].value
+            version = int(cfg["vara"]["version"].value)
         save_config()
 
         print(f"Setting up VaRA in {self.source_location()}")
