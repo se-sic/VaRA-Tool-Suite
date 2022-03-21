@@ -43,9 +43,9 @@ def check_required_args(
 
 
 def find_missing_revisions(
-    data: tp.Generator[tp.Any, None, None], git_path: Path, cmap: CommitMap,
-    should_insert_revision: tp.Callable[[tp.Any, tp.Any], tp.Tuple[bool,
-                                                                   float]],
+    data: tp.Iterable[tp.Tuple[tp.Any, pd.Series]], git_path: Path,
+    cmap: CommitMap, should_insert_revision: tp.Callable[[tp.Any, tp.Any],
+                                                         tp.Tuple[bool, float]],
     to_commit_hash: tp.Callable[[tp.Any], ShortCommitHash],
     are_neighbours: tp.Callable[[ShortCommitHash, ShortCommitHash], bool]
 ) -> tp.Set[FullCommitHash]:

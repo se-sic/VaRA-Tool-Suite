@@ -40,9 +40,10 @@ class CVEProvider(Provider):
 
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
+        project_name = project.NAME
         if issubclass(project, CVEProviderHook):
             self.__cve_map: CVEDict = generate_cve_map(
-                get_local_project_git_path(project.NAME),
+                get_local_project_git_path(project_name),
                 project.get_cve_product_info()
             )
         else:
