@@ -177,10 +177,12 @@ def build_cached_report_table(
 
     cache_dataframe(data_id, project_name, new_df)
 
-    return new_df.loc[:, [
-        col for col in new_df.columns
-        if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
-    ]]
+    return tp.cast(
+        pd.DataFrame, new_df.loc[:, [
+            col for col in new_df.columns
+            if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
+        ]]
+    )
 
 
 GraphTy = tp.TypeVar("GraphTy", bound=nx.Graph)
