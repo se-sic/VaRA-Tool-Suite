@@ -4,6 +4,7 @@ import functools
 import typing as tp
 from pathlib import Path
 
+import pandas as pd
 from matplotlib.axes import Axes
 
 from varats.mapping.commit_map import CommitMap
