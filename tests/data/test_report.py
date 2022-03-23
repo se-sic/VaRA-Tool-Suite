@@ -67,6 +67,11 @@ class TestReportFilename(unittest.TestCase):
     report_filename: ReportFilename
     broken_report_filename: ReportFilename
 
+    correct_UUID: str
+    raw_filename: str
+    report_filename: ReportFilename
+    broken_report_filename: ReportFilename
+
     @classmethod
     def setUpClass(cls):
         """Setup file and CommitReport."""
