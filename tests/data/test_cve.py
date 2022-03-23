@@ -51,7 +51,7 @@ class TestSecurity(unittest.TestCase):
         self.assertTrue(cve.published == self.REFERENCE_CVE_DATA['published'])
         self.assertTrue(cve.vector == self.REFERENCE_CVE_DATA['vector'])
 
-    @unittest.skip("See se-passau/VaRA#646")
+    @unittest.skip("See se-sic/VaRA#646")
     def test_find_all_cve(self):
         """
         Get all OpenSSL CVE's and check if the Heartbleed CVE-2014-0160 is

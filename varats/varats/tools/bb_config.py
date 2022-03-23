@@ -15,7 +15,10 @@ from varats.tools.tool_util import (
 from varats.utils.settings import add_vara_experiment_options
 
 
-def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
+def create_new_bb_config(
+    varats_cfg: s.Configuration,
+    include_test_projects: bool = False
+) -> s.Configuration:
     """
     Create a new default bb config.
 
@@ -24,6 +27,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
 
     Args:
         varats_cfg: the varats config this bb config is based on
+        include_test_projects: changes whether test projects are included
 
     Returns:
         a new default bb config object
@@ -75,19 +79,21 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
-        'varats.projects.test_projects.test_suite',
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
         '.two_libs_one_project_interaction_discrete_libs_single_project'
     ]
-    projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
-    projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
-    projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
-
-    projects_conf.value[:] += [
-        'varats.projects.perf_tests.feature_perf_cs_collection'
-    ]
+    if include_test_projects:
+        projects_conf.value[:] += [
+            'varats.projects.test_projects.basic_tests',
+            'varats.projects.test_projects.bug_provider_test_repos',
+            'varats.projects.test_projects.example_test_repos',
+            'varats.projects.test_projects.linker_check',
+            'varats.projects.test_projects.taint_tests',
+            'varats.projects.test_projects.test_suite',
+            'varats.projects.perf_tests.feature_perf_cs_collection'
+        ]
 
     # Experiments for VaRA
     projects_conf = new_bb_cfg["plugins"]["experiments"]

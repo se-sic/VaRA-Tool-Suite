@@ -441,7 +441,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """Checks if a install location of the research tool is configured."""
 
     @abc.abstractmethod
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup a research tool with it's code base. This method sets up all
         relevant config variables, downloads repositories via the ``CodeBase``,
@@ -450,6 +453,8 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
         Args:
             source_folder: location to store the code base in
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
 
     @abc.abstractmethod
@@ -488,6 +493,22 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
         Returns:
             True, if the tool was correctly installed
+        """
+
+    @abc.abstractmethod
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        """
+        Verify if the research tool was built correctly for a given build_type.
+
+        Args:
+            build_type: which type of build should be used, e.g., debug,
+                        development or release
+            build_folder_suffix: a suffix that is appended to the build folder
+
+        Returns:
+            True, if the build was correct.
         """
 
     def container_install_dependencies(
