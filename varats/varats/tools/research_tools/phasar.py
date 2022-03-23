@@ -8,7 +8,6 @@ from pathlib import Path
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
-from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
@@ -123,8 +122,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["phasar"]["install_dir"].value is not None
 
-    @check_required_args("install_prefix", "version")
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup the research tool phasar with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -133,14 +134,13 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         Args:
             source_folder: location to store the code base in
-            **kwargs:
-                      * version
-                      * install_prefix
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
         cfg = vara_cfg()
         if source_folder:
             cfg["phasar"]["source_dir"] = str(source_folder)
-        cfg["phasar"]["install_dir"] = str(kwargs["install_prefix"])
+        cfg["phasar"]["install_dir"] = str(install_prefix)
         save_config()
 
         print(f"Setting up phasar in {self.source_location()}")
@@ -223,6 +223,11 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         status_ok &= (install_location / "bin/phasar-llvm").exists()
 
         return status_ok
+
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        return True
 
     def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'

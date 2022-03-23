@@ -472,7 +472,7 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
     NAME = 'bug_relation_graph'
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+        super().__init__(**kwargs)
         self.__szz_tool: str = kwargs.get('szz_tool', 'pydriller')
         self.__figure: gob.Figure = gob.Figure()
 

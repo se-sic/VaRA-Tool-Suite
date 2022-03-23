@@ -3,7 +3,6 @@ minimal interface ``BaseReport`` to implement own reports."""
 
 import re
 import typing as tp
-from abc import abstractmethod
 from enum import Enum
 from pathlib import Path, PosixPath
 
@@ -73,9 +72,7 @@ class FileStatusExtension(Enum):
         """Returns a regex group that can match all file stati."""
         regex_grp = r"(?P<status_ext>("
         for status in FileStatusExtension:
-            regex_grp += r"{status_ext}".format(
-                status_ext=status.get_status_extension()
-            ) + '|'
+            regex_grp += fr"{status.get_status_extension()}" + '|'
 
         # Remove the '|' at the end
         regex_grp = regex_grp[:-1]
