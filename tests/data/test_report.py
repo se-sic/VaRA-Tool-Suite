@@ -19,7 +19,7 @@ class TestFileStatusExtension(unittest.TestCase):
     """Test basic FileStatusExtension functionality."""
 
     def test_status_extension(self):
-        """"""
+        """Tests if we convert a FSE to it's string representation."""
         self.assertEqual(
             FileStatusExtension.SUCCESS.get_status_extension(), "success"
         )
@@ -61,6 +61,11 @@ class TestFileStatusExtension(unittest.TestCase):
 
 class TestReportFilename(unittest.TestCase):
     """Test basic TestReportFilename functionality."""
+
+    correct_UUID: str
+    raw_filename: str
+    report_filename: ReportFilename
+    broken_report_filename: ReportFilename
 
     @classmethod
     def setUpClass(cls):
@@ -150,6 +155,10 @@ class TestReportFilename(unittest.TestCase):
 
 class TestBaseReport(unittest.TestCase):
     """Test basic BaseReport functionality."""
+
+    success_filename_cr: str
+    success_filename: str
+    fail_filename: str
 
     @classmethod
     def setUpClass(cls):

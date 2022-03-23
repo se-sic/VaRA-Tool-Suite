@@ -245,7 +245,7 @@ class TestProjectBinaryWrapper(unittest.TestCase):
         self.assertIsInstance(ret, str)
 
     def test_execution_of_libraries(self) -> None:
-        """Check if we don't fail when executing a shared/static library."""
+        """Check whether we fail when executing a shared/static library."""
         static_lib_binary = ProjectBinaryWrapper(
             "ls", Path("/bin/ls"), BinaryType.STATIC_LIBRARY
         )
