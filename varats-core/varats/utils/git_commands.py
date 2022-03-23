@@ -2,8 +2,7 @@
 import typing as tp
 from pathlib import Path
 
-from benchbuild.utils.cmd import git, grep
-from plumbum import TF, RETCODE
+from benchbuild.utils.cmd import git
 
 from varats.utils.git_util import get_current_branch, CommitHash
 
@@ -28,21 +27,6 @@ def get_branches(
     args += extra_args
 
     return tp.cast(str, git("-C", repo_folder.absolute(), args))
-
-
-def fetch_remote(
-    remote: tp.Optional[str] = None,
-    repo_folder: tp.Optional[Path] = None,
-    extra_args: tp.Optional[tp.List[str]] = None
-) -> None:
-    """Fetches the new changes from the remote."""
-    extra_args = [] if extra_args is None else extra_args
-
-    args = ["fetch"]
-    args += extra_args
-    if remote:
-        args.append(remote)
-    git("-C", repo_folder.absolute(), args)
 
 
 def get_tags(repo_folder: Path,
@@ -75,6 +59,21 @@ def update_all_submodules(folder: Path, recursive: bool = True) -> None:
     if recursive:
         git_params.append("--recursive")
     git("-C", folder, git_params)
+
+
+def fetch_remote(
+    remote: tp.Optional[str] = None,
+    repo_folder: tp.Optional[Path] = None,
+    extra_args: tp.Optional[tp.List[str]] = None
+) -> None:
+    """Fetches the new changes from the remote."""
+    extra_args = [] if extra_args is None else extra_args
+
+    args = ["fetch"]
+    args += extra_args
+    if remote:
+        args.append(remote)
+    git("-C", repo_folder.absolute(), args)
 
 
 def pull_current_branch(repo_folder: Path) -> None:
@@ -128,25 +127,6 @@ def checkout_new_branch(
     git("-C", repo_folder.absolute(), args)
 
 
-def has_branch(repo_folder: Path, branch_name: str) -> bool:
-    """Checks if a branch exists in the local repository."""
-
-    exit_code = git["-C",
-                    repo_folder.absolute(), "rev-parse", "--verify",
-                    branch_name] & TF
-    return tp.cast(bool, exit_code)
-
-
-def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
-    """Checks if a remote branch of a repository exists."""
-    exit_code = (
-        git["-C",
-            repo_folder.absolute(), "ls-remote", "--heads", remote, branch_name]
-        | grep[branch_name]
-    ) & RETCODE
-    return tp.cast(bool, exit_code == 0)
-
-
 def download_repo(
     dl_folder: Path,
     url: str,
@@ -156,11 +136,7 @@ def download_repo(
 ) -> None:
     """Download a repo into the specified folder."""
     if not dl_folder.exists():
-        raise Exception(
-            "Could not find download folder  {dl_folder}".format(
-                dl_folder=dl_folder
-            )
-        )
+        raise Exception(f"Could not find download folder  {dl_folder}")
 
     args = ["clone", "--progress", url]
     if remote_name is not None:
@@ -173,15 +149,3 @@ def download_repo(
     output = git("-C", dl_folder, args)
     for line in output.sep("\n"):
         post_out(line)
-
-
-def branch_has_upstream(
-    repo_folder: Path, branch_name: str, upstream: str = 'origin'
-) -> bool:
-    """Check if a branch has an upstream remote."""
-    exit_code = (
-        git["-C",
-            repo_folder.absolute(), "rev-parse", "--abbrev-ref",
-            branch_name + "@{upstream}"] | grep[upstream]
-    ) & RETCODE
-    return tp.cast(bool, exit_code == 0)

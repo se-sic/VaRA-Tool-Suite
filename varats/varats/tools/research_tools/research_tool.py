@@ -21,14 +21,16 @@ from varats.utils.git_commands import (
     push_current_branch,
     checkout_branch_or_commit,
     checkout_new_branch,
-    has_branch,
-    has_remote_branch,
     download_repo,
-    branch_has_upstream,
     add_remote,
     show_status,
 )
-from varats.utils.git_util import get_current_branch
+from varats.utils.git_util import (
+    get_current_branch,
+    has_branch,
+    has_remote_branch,
+    branch_has_upstream,
+)
 from varats.utils.logger_util import log_without_linesep
 
 if tp.TYPE_CHECKING:
