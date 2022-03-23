@@ -6,21 +6,22 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
-from PyQt5.QtCore import QModelIndex, QDateTime, Qt
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import (
-    QMainWindow,
-    QApplication,
-    QMessageBox,
-    QTableWidgetItem,
-    QStyledItemDelegate,
+from PyQt5.QtCore import (
+    QModelIndex,
+    QDateTime,
+    Qt,
+    QSortFilterProxyModel,
+    QAbstractTableModel,
 )
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.gui.cs_gen.main_window_ui import Ui_MainWindow
 from varats.mapping.commit_map import (
     create_lazy_commit_map_loader,
     get_commit_map,
+    CommitMap,
 )
 from varats.paper.case_study import CaseStudy, store_case_study
 from varats.paper_mgmt.case_study import (
@@ -44,6 +45,7 @@ from varats.utils.git_util import (
     get_all_revisions_between,
     ShortCommitHash,
     create_commit_lookup_helper,
+    FullCommitHash,
 )
 from varats.utils.settings import vara_cfg
 
@@ -58,10 +60,13 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self):
         super().__init__()
+        self.setAttribute(Qt.WA_DeleteOnClose)
         self.selected_commit = None
         self.setupUi(self)
         initialize_projects()
-
+        self.proxy_model = CommitTableFilterModel()
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.revision_list.setModel(self.proxy_model)
         self.selected_project = None
         self.revision_list_project = None
         self.update_project_list()
@@ -73,12 +78,18 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         self.strategie_forms.setCurrentIndex(
             GenerationStrategie.SELECTREVISION.value
         )
-        self.revision_list.cellClicked.connect(self.show_revision_data)
-        self.select_specific.clicked.connect(self.show_revisions_of_project)
+        self.revision_list.clicked.connect(self.show_revision_data)
+        self.select_specific.clicked.connect(self.revisions_of_project)
         self.sample.clicked.connect(self.sample_view)
         self.per_year.clicked.connect(self.revs_per_year_view)
         self.generate.clicked.connect(self.gen)
-        self.search.textChanged.connect(self.update_project_list)
+        self.project_search.textChanged.connect(self.update_project_list)
+        self.revision_list.horizontalHeader().sortIndicatorChanged.connect(
+            self.revision_list.sortByColumn
+        )
+        self.commit_search.textChanged.connect(
+            self.proxy_model.setFilterFixedString
+        )
         self.show()
 
     def update_project_list(self, filter_string: str = ""):
@@ -152,21 +163,21 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         if self.selected_project != project_name:
             self.selected_project = project_name
             project = get_project_cls_by_name(project_name)
-            project_info = f"{project_name.upper()} : \nDomain: {project.DOMAIN}\nSource: {bb.source.primary(*project.SOURCE).remote}"
+            project_info = f"{project_name.upper()} : " \
+                           f"\nDomain: {project.DOMAIN}" \
+                           f"\nSource: " \
+                           f"{bb.source.primary(*project.SOURCE).remote}"
             self.project_details.setText(project_info)
             self.project_details.update()
             if self.strategie_forms.currentIndex(
             ) == GenerationStrategie.SELECTREVISION.value:
-                self.show_revisions_of_project()
+                self.revisions_of_project()
 
-    def show_revisions_of_project(self):
+    def revisions_of_project(self):
         self.strategie_forms.setCurrentIndex(
             GenerationStrategie.SELECTREVISION.value
         )
         if self.selected_project != self.revision_list_project:
-            self.revision_list.clearContents()
-            self.revision_list.setRowCount(0)
-            self.revision_list.repaint()
             self.revision_details.setText("Loading Revisions")
             self.revision_details.repaint()
             get_local_project_git(self.selected_project).remotes[0].fetch()
@@ -174,67 +185,107 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             git_path = get_local_project_git_path(self.selected_project)
             initial_commit = get_initial_commit(git_path).hash
             commits = get_all_revisions_between(
-                initial_commit, 'HEAD', ShortCommitHash, git_path
+                initial_commit, 'HEAD', FullCommitHash, git_path
             )
-            self.revision_list.setRowCount(len(commits))
             commit_lookup_helper = create_commit_lookup_helper(
                 self.selected_project
             )
 
             project = get_project_cls_by_name(self.selected_project)
             cmap = get_commit_map(self.selected_project)
-            for n, commit_hash in enumerate(commits):
-                commit: pygit2.Commit = commit_lookup_helper(commit_hash)
-                self.revision_list.setItem(
-                    n, 0, QTableWidgetItem(commit_hash.hash)
-                )
-                if is_revision_blocked(commit_hash, project):
-                    self.revision_list.item(n, 0).setForeground(
-                        QColor(50, 100, 255)
-                    )
-                    self.revision_list.item(n, 0).setToolTip("Blocked")
-                self.revision_list.setItem(
-                    n, 1, QTableWidgetItem(commit.author.name)
-                )
-                tzinfo = timezone(timedelta(minutes=commit.author.offset))
-                date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
-                table_item = QTableWidgetItem()
-                table_item.setData(Qt.DisplayRole, QDateTime(date))
-                self.revision_list.setItem(n, 2, table_item)
-                time_id_item = QTableWidgetItem()
-                time_id_item.setData(
-                    Qt.DisplayRole, cmap.short_time_id(commit_hash)
-                )
-                self.revision_list.setItem(n, 3, time_id_item)
-            self.revision_list.setItemDelegateForColumn(
-                2, DateDelegate(self.revision_list)
+            commit_model = CommitTableModel(
+                list(map(commit_lookup_helper, commits)), cmap, project
             )
-            self.revision_list.resizeColumnsToContents()
-            self.revision_list.setSortingEnabled(True)
+            self.proxy_model.setSourceModel(commit_model)
+            self.revision_list_project = self.selected_project
             self.revision_details.clear()
             self.revision_details.update()
-            self.revision_list.update()
-            self.revision_list_project = self.selected_project
 
-    def show_revision_data(self, row, column):
-        index = self.revision_list.item(row, 0)
-        commit_hash = ShortCommitHash(index.text())
-        commit_lookup_helper = create_commit_lookup_helper(
-            self.selected_project
-        )
-        commit: pygit2.Commit = commit_lookup_helper(commit_hash)
-        commit_info = f"{commit.hex}\nAuthor:{commit.author.name},{commit.author.email}\nMsg:{commit.message}"
-        self.selected_commit = commit_hash.hash
+    def show_revision_data(self, index: QModelIndex):
+        commit = self.revision_list.model().data(index, Qt.WhatsThisRole)
+        commit_info = f"{commit.hex}\nAuthor:{commit.author.name}," \
+                      f"{commit.author.email}\n" \
+                      f"Msg:{commit.message}"
+        self.selected_commit = commit.hex
         self.revision_details.setText(commit_info)
         self.revision_details.update()
 
 
-class DateDelegate(QStyledItemDelegate):
+class CommitTableFilterModel(QSortFilterProxyModel):
 
-    def displayText(self, value, locale):
-        if isinstance(value, QDateTime):
-            return locale.toString(value, "dd-MM-yyyy")
-        return super().displayText(value, locale)
+    filter_string = ""
+
+    def setFilterFixedString(self, pattern: str) -> None:
+        self.filter_string = pattern
+        self.invalidate()
+
+    def filterAcceptsRow(
+        self, source_row: int, source_parent: QModelIndex
+    ) -> bool:
+        commit_index = self.sourceModel().index(source_row, 0, source_parent)
+        author_index = self.sourceModel().index(source_row, 1, source_parent)
+        return self.sourceModel().data(commit_index,
+                                       Qt.DisplayRole).lower()\
+                   .__contains__(self.filter_string.lower()) \
+               or self.sourceModel().data(author_index,
+                                          Qt.DisplayRole).lower()\
+                   .__contains__(self.filter_string.lower())
+
+
+class CommitTableModel(QAbstractTableModel):
+    header_labels = ["Commit", "Author", "Date", "Time Id"]
+
+    def __init__(
+        self, data: tp.List[pygit2.Commit], cmap: CommitMap,
+        project: tp.Type['bb.Project']
+    ):
+        super().__init__()
+        self._project = project
+        self._data = data
+        self._cmap = cmap
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            return self.header_labels[section]
+        return QAbstractTableModel.headerData(self, section, orientation, role)
+
+    def sort(self, column: int, order: Qt.SortOrder = ...) -> None:
+        self.layoutAboutToBeChanged.emit()
+        self._data.sort(
+            key=lambda x: self.__split_commit_data(x, column),
+            reverse=bool(order)
+        )
+        self.layoutChanged.emit()
+
+    def __split_commit_data(self, commit: pygit2.Commit, column: int) -> tp.Any:
+        if column == 0:
+            return ShortCommitHash(commit.hex).hash
+        if column == 1:
+            return commit.author.name()
+        if column == 2:
+            tzinfo = timezone(timedelta(minutes=commit.author.offset))
+            date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
+            return QDateTime(date)
+        if column == 3:
+            return self._cmap.short_time_id(ShortCommitHash(commit.hex))
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> tp.Any:
+        commit = self._data[index.row()]
+        if role == Qt.DisplayRole:
+            return self.__split_commit_data(commit, index.column())
+        if is_revision_blocked(FullCommitHash(commit.hex), self._project):
+            if role == Qt.ForegroundRole:
+                return QColor(50, 100, 255)
+            if role == Qt.ToolTipRole:
+                return "Blocked"
+        if role == Qt.WhatsThisRole:
+            return commit
+
+    def rowCount(self, parent: QModelIndex = ...) -> int:
+        return len(self._data)
+
+    def columnCount(self, parent: QModelIndex = ...) -> int:
+        return 4
 
 
 class VaRATSGui:

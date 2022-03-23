@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(720, 379)
+        MainWindow.resize(720, 443)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding,
             QtWidgets.QSizePolicy.MinimumExpanding
@@ -68,10 +68,10 @@ class Ui_MainWindow(object):
         self.projects.setObjectName("projects")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.projects)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.search = QtWidgets.QLineEdit(self.projects)
-        self.search.setClearButtonEnabled(True)
-        self.search.setObjectName("search")
-        self.verticalLayout_4.addWidget(self.search)
+        self.project_search = QtWidgets.QLineEdit(self.projects)
+        self.project_search.setClearButtonEnabled(True)
+        self.project_search.setObjectName("project_search")
+        self.verticalLayout_4.addWidget(self.project_search)
         self.project_list = QtWidgets.QListWidget(self.projects)
         self.project_list.setEditTriggers(
             QtWidgets.QAbstractItemView.NoEditTriggers
@@ -94,7 +94,11 @@ class Ui_MainWindow(object):
         self.revisionsPage.setObjectName("revisionsPage")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.revisionsPage)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.revision_list = QtWidgets.QTableWidget(self.revisionsPage)
+        self.commit_search = QtWidgets.QLineEdit(self.revisionsPage)
+        self.commit_search.setClearButtonEnabled(True)
+        self.commit_search.setObjectName("commit_search")
+        self.verticalLayout_3.addWidget(self.commit_search)
+        self.revision_list = QtWidgets.QTableView(self.revisionsPage)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
         )
@@ -118,22 +122,9 @@ class Ui_MainWindow(object):
             QtWidgets.QAbstractItemView.SelectRows
         )
         self.revision_list.setShowGrid(True)
-        self.revision_list.setColumnCount(4)
+        self.revision_list.setSortingEnabled(True)
         self.revision_list.setObjectName("revision_list")
-        self.revision_list.setRowCount(0)
-        item = QtWidgets.QTableWidgetItem()
-        font = QtGui.QFont()
-        font.setFamily("Monospace")
-        item.setFont(font)
-        self.revision_list.setHorizontalHeaderItem(0, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.revision_list.setHorizontalHeaderItem(1, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.revision_list.setHorizontalHeaderItem(2, item)
-        item = QtWidgets.QTableWidgetItem()
-        self.revision_list.setHorizontalHeaderItem(3, item)
         self.revision_list.verticalHeader().setVisible(False)
-        self.revision_list.verticalHeader().setHighlightSections(False)
         self.verticalLayout_3.addWidget(self.revision_list)
         self.revision_details = QtWidgets.QTextBrowser(self.revisionsPage)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -211,14 +202,13 @@ class Ui_MainWindow(object):
         self.per_year.setText(_translate("MainWindow", "Revisions Per Year"))
         self.label_2.setText(_translate("MainWindow", "Casestudy Version"))
         self.generate.setText(_translate("MainWindow", "Generate"))
-        item = self.revision_list.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "Commit Hash"))
-        item = self.revision_list.horizontalHeaderItem(1)
-        item.setText(_translate("MainWindow", "Author"))
-        item = self.revision_list.horizontalHeaderItem(2)
-        item.setText(_translate("MainWindow", "Date"))
-        item = self.revision_list.horizontalHeaderItem(3)
-        item.setText(_translate("MainWindow", "Time ID"))
+        self.projects.setTitle(_translate("MainWindow", "Projects"))
+        self.project_search.setPlaceholderText(
+            _translate("MainWindow", "Search")
+        )
+        self.commit_search.setPlaceholderText(
+            _translate("MainWindow", "Search")
+        )
         self.label.setText(_translate("MainWindow", "Number of Revisions"))
         self.seperate.setText(
             _translate("MainWindow", "Seperate Years into different Stages")
