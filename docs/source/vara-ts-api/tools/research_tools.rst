@@ -6,6 +6,7 @@ Provided research tools
    :caption: List of provided research tools:
 
    research_tools/vara
+   research_tools/szz_unleashed
 
 
 Research Tool API

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport
 
 
 class TimeMeasure():

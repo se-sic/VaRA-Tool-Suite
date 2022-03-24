@@ -6,7 +6,7 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, touch
+from benchbuild.utils.cmd import touch
 
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import (
@@ -51,9 +51,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                 extension_type=FSE.SUCCESS
             )
 
-            run_cmd = touch["{res_folder}/{res_file}".format(
-                res_folder=vara_result_folder, res_file=result_file
-            )]
+            run_cmd = touch[f"{vara_result_folder}/{result_file}"]
 
             exec_func_with_pe_error_handler(
                 run_cmd,

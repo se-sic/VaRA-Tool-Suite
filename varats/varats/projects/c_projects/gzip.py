@@ -43,7 +43,7 @@ class Gzip(VProject, ReleaseProviderHook):
 
     SOURCE = [
         block_revisions([
-            # TODO (se-passau/VaRA#537): glibc < 2.28
+            # TODO (se-sic/VaRA#537): glibc < 2.28
             # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
             RevisionRange(
                 "6ef28aeb035af20818578b1a1bc537f797c27029",

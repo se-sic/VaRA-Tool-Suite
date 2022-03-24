@@ -10,7 +10,7 @@ from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt
+from benchbuild.utils.cmd import opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
 import varats.experiments.vara.blame_experiment as BE
@@ -27,7 +27,6 @@ from varats.experiment.experiment_util import (
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore

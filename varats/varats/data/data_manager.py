@@ -11,6 +11,8 @@ like in jupyter notebooks, where we sometimes re-execute triggers a file load.
 import hashlib
 import os
 import typing as tp
+from functools import partial
+from multiprocessing import Pool
 from pathlib import Path
 from threading import Lock
 
@@ -117,18 +119,21 @@ class DataManager():
     ) -> LoadableType:
         # pylint: disable=invalid-name
         """Load a DataClass of type <DataClassTy> from a file."""
-        self.loader_lock.acquire()  # pylint: disable=consider-using-with
-        # unlocking in the happy path is performed by the loading function
-
         key = sha256_checksum(file_path)
+
+        self.loader_lock.acquire()  # pylint: disable=consider-using-with
         if key in self.file_map:
             return tp.cast(LoadableType, self.file_map[key].data)
+
+        self.loader_lock.release()
 
         try:
             new_blob = FileBlob(key, file_path, DataClassTy(file_path))
         except Exception as e:
-            self.loader_lock.release()
             raise e
+
+        self.loader_lock.acquire()  # pylint: disable=consider-using-with
+        # unlocking in the happy path is performed by the loading function
         self.file_map[key] = new_blob
 
         return tp.cast(LoadableType, new_blob.data)
@@ -175,8 +180,39 @@ class DataManager():
         self._release_lock()
         return loaded_file
 
+    def clean_cache(self) -> None:
+        with self.loader_lock:
+            self.file_map.clear()
+
     def _release_lock(self) -> None:
         self.loader_lock.release()
+
+
+def _load_data_class_pool(
+    file_path: Path, report_type: tp.Type[LoadableType]
+) -> LoadableType:
+    return VDM.load_data_class_sync(file_path, report_type)
+
+
+def load_multiple_reports(
+    file_paths: tp.List[Path], report_type: tp.Type[BaseReport]
+) -> tp.List[tp.Any]:
+    """
+
+    Args:
+        file_paths: list of files to load
+        report_type: type of the report class to be loaded
+
+    Returns: a list of loaded reports
+    """
+    loaded_reports = []
+
+    with Pool() as process_pool:
+        loaded_reports = process_pool.map(
+            partial(_load_data_class_pool, report_type=report_type), file_paths
+        )
+
+    return loaded_reports
 
 
 VDM = DataManager()

@@ -209,6 +209,11 @@ def build(
             build_type, __get_install_prefix(tool, install_prefix),
             build_folder_suffix
         )
+
+        if not tool.verify_build(build_type, build_folder_suffix):
+            print(f"{tool.name} was not built correctly.")
+            return
+
         if tool.verify_install(__get_install_prefix(tool, install_prefix)):
             print(f"{tool.name} was correctly installed.")
         else:

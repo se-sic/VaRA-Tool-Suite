@@ -48,7 +48,7 @@ First, you need to clone the VaRA-Tool-Suite repository.
 
 .. code-block:: console
 
-    git clone git@github.com:se-passau/VaRA-Tool-Suite.git
+    git clone git@github.com:se-sic/VaRA-Tool-Suite.git
     cd VaRA-Tool-Suite
 
 

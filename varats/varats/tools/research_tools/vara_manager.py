@@ -19,7 +19,7 @@ from plumbum import RETCODE, TF, local
 from PyQt5.QtCore import QProcess
 
 from varats.utils.exceptions import ProcessTerminatedError
-from varats.utils.git_util import get_current_branch
+from varats.utils.git_util import get_current_branch, CommitHash
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -44,11 +44,7 @@ def download_repo(
 ) -> None:
     """Download a repo into the specified folder."""
     if not dl_folder.exists():
-        raise Exception(
-            "Could not find download folder  {dl_folder}".format(
-                dl_folder=dl_folder
-            )
-        )
+        raise Exception(f"Could not find download folder  {dl_folder}")
 
     with local.cwd(dl_folder):
         args = ["clone", "--progress", url]
@@ -223,10 +219,12 @@ def fetch_repository(repo_folder: tp.Optional[Path] = None) -> None:
         pass
 
 
-def checkout_branch(repo_folder: Path, branch: str) -> None:
-    """Checks out a branch in the repository."""
+def checkout_branch_or_commit(
+    repo_folder: Path, target: tp.Union[str, CommitHash]
+) -> None:
+    """Checks out a branch or commit in the repository."""
     with ProcessManager.create_process(
-        "git", ["checkout", branch], workdir=repo_folder
+        "git", ["checkout", str(target)], workdir=repo_folder
     ):
         pass
 

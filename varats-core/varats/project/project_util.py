@@ -8,10 +8,12 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
-from benchbuild.source.base import target_prefix
+from benchbuild.source import Git
 from benchbuild.utils.cmd import git
 from plumbum import local
 from plumbum.commands.base import BoundCommand
+
+from varats.utils.settings import bb_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -87,10 +89,16 @@ def get_local_project_git_path(
     else:
         source = get_primary_project_source(project_name)
 
-    if is_git_source(source):
-        source.fetch()
+    if not is_git_source(source):
+        raise AssertionError(f"Project {project_name} does not use git.")
 
-    return Path(target_prefix()) / Path(source.local)
+    base = Path(str(bb_cfg()["tmp_dir"]))
+    git_path: Path = base / source.local
+    if not git_path.exists():
+        git_path = base / source.local.replace(os.sep, "-")
+    if not git_path.exists():
+        git_path = Path(source.fetch())
+    return git_path
 
 
 def get_extended_commit_lookup_source(
@@ -134,6 +142,31 @@ def get_local_project_git(
     git_path = get_local_project_git_path(project_name, git_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
+
+
+def get_local_project_gits(
+    project_name: str
+) -> tp.Dict[str, pygit2.Repository]:
+    """
+    Get the all git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the git repositories for the project's sources
+    """
+    repos: tp.Dict[str, pygit2.Repository] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        if isinstance(source, Git):
+            source_name = os.path.basename(source.local)
+            repos[source_name] = get_local_project_git(
+                project_name, source_name
+            )
+
+    return repos
 
 
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
