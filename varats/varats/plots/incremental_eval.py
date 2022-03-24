@@ -28,7 +28,7 @@ def _round_delta(base_line: float, increment: float) -> float:
 
 
 class PhasarIncRevisionDeltaViolinPlot(Plot, plot_name='psr_inc_rev_deltas'):
-    """Violing plot to visualize incremental speed deltas for all revisions."""
+    """Violin plot to visualize incremental speed deltas for all revisions."""
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, plot_config, **kwargs)
