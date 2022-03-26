@@ -27,24 +27,6 @@ from varats.tools.tool_util import (
 )
 from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
 from varats.ts_utils.click_param_types import EnumChoice
-from varats.utils.settings import save_config
-
-
-class VaRATSSetup:
-    """Start VaRA-TS graphical user interface for setting up VaRA."""
-
-    def __init__(self) -> None:
-        if hasattr(Qt, 'AA_EnableHighDpiScaling'):
-            QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-        if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
-            QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-
-        self.app = QApplication(sys.argv)
-        self.main_window = BuildSetup()
-
-    def main(self) -> None:
-        """Start VaRA setup GUI."""
-        sys.exit(self.app.exec_())
 from varats.utils.settings import save_config, vara_cfg, bb_cfg
 
 

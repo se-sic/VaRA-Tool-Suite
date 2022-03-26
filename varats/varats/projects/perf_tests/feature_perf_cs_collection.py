@@ -29,7 +29,7 @@ class FeaturePerfCSCollection(VProject):
 
     SOURCE = [
         bb.source.Git(
-            remote="https://github.com/Kaufi-Jonas/FeaturePerfCSCollection.git",
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="FeaturePerfCSCollection",
             refspec="origin/HEAD",
             limit=None,
