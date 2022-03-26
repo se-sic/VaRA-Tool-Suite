@@ -6,7 +6,8 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import BaseReport, ReportAggregate
+from varats.report.report import BaseReport
+from varats.report.report_aggregate import ReportAggregate
 
 
 class TraceEventType(Enum):

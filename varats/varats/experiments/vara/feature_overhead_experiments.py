@@ -1,6 +1,5 @@
 """Module for experiments that measure the runtime overhead introduced by instrumenting
 binaries produced by a project."""
-import os
 import typing as tp
 from pathlib import Path
 
@@ -15,18 +14,15 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     get_varats_result_folder,
     VersionExperiment,
-    get_default_compile_error_wrapped,
-    PrintProgressStep
+    get_default_compile_error_wrapped
 )
-from varats.provider.workload.workload_provider import WorkloadProvider
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
     FeatureModelNotFound,
 )
 from varats.report.report import FileStatusExtension, ReportSpecification
-from varats.report.gnu_time_report import TimeReport, TimeReportAggregate, \
-    PrintTimeReportSummary
+from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.data.reports.empty_report import EmptyReport
 from varats.tools.research_tools.vara import VaRA
 
@@ -43,16 +39,24 @@ class ExecWithTime(actions.Step):  # type: ignore
     NAME = "ExecWithTime"
     DESCRIPTION = "Executes each binary and measures its runtime using `time`."
 
+    WORKLOADS = {
+        "SimpleSleepLoop": ["--iterations", "1000", "--sleepms", "5"],
+        "SimpleBusyLoop": ["--iterations", "1000", "--count_to", "10000000"],
+        "xz": ["-k", "-f", "-9e", "--compress", "--threads=8", "--format=xz",
+               "/home/jonask/Repos/WorkloadsForConfigurableSystems/xz/countries-land-1km.geo.json"],
+        "brotli": ["-f", "-k", "-o", "/tmp/brotli_compression_test.br", "--best", "/home/jonask/Repos/WorkloadsForConfigurableSystems/brotli/countries-land-1km.geo.json"]
+    }
+
     def __init__(
         self,
         project: Project,
         experiment_handle: ExperimentHandle,
-        iteration: int,
+        num_iterations: int,
         usdt: bool = False
     ):
         super().__init__(obj=project, action_fn=self.run_perf_tracing)
         self.__experiment_handle = experiment_handle
-        self.__iteration = iteration
+        self.__num_iterations = num_iterations
         self.__usdt = usdt
 
     def run_perf_tracing(self) -> actions.StepResult:
@@ -61,7 +65,6 @@ class ExecWithTime(actions.Step):  # type: ignore
         project: Project = self.obj
 
         vara_result_folder = get_varats_result_folder(project)
-        workload_provider = WorkloadProvider(project)
         binary: ProjectBinaryWrapper
 
         for binary in project.binaries:
@@ -70,13 +73,13 @@ class ExecWithTime(actions.Step):  # type: ignore
                 continue
 
             # Get workload to use.
-            workload = workload_provider.get_workload_parameters(binary)
+            workload = self.WORKLOADS.get(binary.name, None)
             if (workload == None):
                 print(
-                    f"No workload defined for project: {project.name} and binary: {binary.name}. Skipping.")
+                    f"No workload defined for project={project.name} and binary={binary.name}. Skipping.")
                 continue
 
-            # Generate path for TEF report.
+            # Path for TEF report.
             tef_report_dir_name = self.__experiment_handle.get_file_name(
                 TEFReportAggregate.shorthand(),
                 project_name=str(project.name),
@@ -89,10 +92,7 @@ class ExecWithTime(actions.Step):  # type: ignore
             tef_report_dir = Path(
                 vara_result_folder, str(tef_report_dir_name))
 
-            tef_report_file = Path(
-                tef_report_dir, f"tef_iteration_{self.__iteration}.{TEFReport.FILE_TYPE}")
-
-            # Generate path for time report.
+            # Path for time report.
             time_report_dir_name = self.__experiment_handle.get_file_name(
                 TimeReportAggregate.shorthand(),
                 project_name=str(project.name),
@@ -104,42 +104,56 @@ class ExecWithTime(actions.Step):  # type: ignore
 
             time_report_dir = Path(
                 vara_result_folder, str(time_report_dir_name))
- 
-            time_report_file = Path(
-                time_report_dir, f"time_iteration_{self.__iteration}.{TimeReport.FILE_TYPE}")
-            
+
             # Execute binary.
-            source_of_primary = Path(project.source_of_primary)
-            with local.cwd(source_of_primary), \
-                    local.env(VARA_TRACE_FILE=tef_report_file), \
-                    TEFReportAggregate(tef_report_dir), \
-                    TimeReportAggregate(time_report_dir):
+            with TEFReportAggregate(tef_report_dir) as tef_tmp, \
+                    TimeReportAggregate(time_report_dir) as time_tmp:
 
-                run_cmd = binary[workload]
+                for i in range(self.__num_iterations):
 
-                # Attach bpftrace script to activate USDT markers.
-                if self.__usdt:
-                    # attach bpftrace to binary to allow tracing it via USDT
-                    bpftrace_script = Path(
-                        VaRA.source_location(),
-                        "vara-llvm-project/vara/tools/perf_bpftrace/"
-                        "UsdtTefMarker.bt")
+                    # Print progress.
+                    print(
+                        f"Binary={binary.name} Progress "
+                        f"{i}/{self.__num_iterations}",
+                        flush=True)
 
-                    script_text = BPFTRACE_SCRIPT_TEMPLATE.format(
-                        tef_report_file=tef_report_file,
-                        run_cmd=run_cmd,
-                        bpftrace_script=bpftrace_script,
-                        binary_path=binary.entry_point
-                    )
+                    # Generate report file names.
+                    tef_report_file = Path(
+                        tef_tmp,
+                        f"tef_iteration_{i}.{TEFReport.FILE_TYPE}")
+                    time_report_file = Path(
+                        time_tmp,
+                        f"time_iteration_{i}.{TimeReport.FILE_TYPE}")
 
-                    bpftrace_script_path = "/tmp/bpftace_run_script.sh"
+                    # Generate run command.
+                    with local.cwd(project.source_of_primary), \
+                        local.env(VARA_TRACE_FILE=tef_report_file):
+                        run_cmd = binary[workload]
 
-                    with open(bpftrace_script_path, "w") as bpftrace_scipt_file:
-                        bpftrace_scipt_file.write(script_text)
+                        # Attach bpftrace script to activate USDT markers.
+                        if self.__usdt:
+                            # attach bpftrace to binary to allow tracing it via USDT
+                            bpftrace_script = Path(
+                                VaRA.source_location(),
+                                "vara-llvm-project/vara/tools/perf_bpftrace/"
+                                "UsdtTefMarker.bt")
 
-                    run_cmd = sh[bpftrace_script_path]
+                            script_text = BPFTRACE_SCRIPT_TEMPLATE.format(
+                                tef_report_file=tef_report_file,
+                                run_cmd=run_cmd,
+                                bpftrace_script=bpftrace_script,
+                                binary_path=binary.entry_point
+                            )
 
-                time("-v", "-o", time_report_file, run_cmd)
+                            bpftrace_script_path = "/tmp/bpftace_run_script.sh"
+
+                            with open(bpftrace_script_path, "w") as bpftrace_scipt_file:
+                                bpftrace_scipt_file.write(script_text)
+
+                                run_cmd = sh[bpftrace_script_path]
+
+                        # Run.
+                        time("-v", "-o", time_report_file, run_cmd)
 
         return actions.StepResult.OK
 
@@ -208,28 +222,11 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
         )
 
         analysis_actions = []
-
         analysis_actions.append(actions.Compile(project))
 
-        num_iterations = 100
-
-        for i in range(num_iterations):
-
-            step = ExecWithTime(
-                project, self.get_handle(), i,
-                tracing_active and usdt)
-
-            analysis_actions.append(PrintProgressStep(
-                project, self, step, i, num_iterations))
-            analysis_actions.append(step)
-
-        # print completion of final iteration
-        analysis_actions.append(PrintProgressStep(
-            project, self, step, num_iterations, num_iterations))
-
-        # mark run as successful
-        analysis_actions.append(
-            PrintTimeReportSummary(project, self.get_handle()))
+        analysis_actions.append(ExecWithTime(
+            project, self.get_handle(), 2,
+            tracing_active and usdt))
 
         analysis_actions.append(actions.Clean(project))
 

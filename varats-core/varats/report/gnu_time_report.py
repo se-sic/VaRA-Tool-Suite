@@ -29,9 +29,9 @@ from benchbuild.utils import actions
 from varats.data.reports.empty_report import EmptyReport
 from varats.report.report import (
     BaseReport,
-    ReportAggregate,
     FileStatusExtension
 )
+from varats.report.report_aggregate import ReportAggregate
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     get_varats_result_folder,

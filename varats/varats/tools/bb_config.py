@@ -88,7 +88,7 @@ def create_new_bb_config(
         projects_conf.value[:] += [
             'varats.projects.test_projects.basic_tests',
             'varats.projects.test_projects.bug_provider_test_repos',
-            'varats.projects.test_projects.example_test_repos',
+            'varats.projects.test_projects.example_test_repo',
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.test_suite',

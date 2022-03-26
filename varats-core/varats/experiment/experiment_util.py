@@ -496,53 +496,21 @@ class ZippedReportFolder(TempDir):
     def __init__(self, result_report_path: Path) -> None:
         super().__init__()
         self.__result_report_name: Path = result_report_path.with_suffix('')
+        self.__zipfile = result_report_path.with_suffix(".zip")
 
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],
         exc_value: tp.Optional[BaseException],
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
-        shutil.make_archive(
-            str(self.__result_report_name), "zip", Path(self.name)
-        )
+        # Don't create an empty zip archive.
+        if os.listdir(self.name):
+            shutil.make_archive(
+                str(self.__result_report_name), "zip", Path(self.name)
+            )
+
         super().__exit__(exc_type, exc_value, exc_traceback)
 
-
-class PrintProgressStep(Step):
-
-    NAME = "PrintProgress"
-    DESCRIPTION = """Prints progress in terms of number of iterations completed. Useful for experiments which repeat a single step for multiple iterations."""
-
-    def __init__(
-        self,
-        project: Project,
-        experiment: Experiment,
-        step: Step,
-        current_iterations: int,
-        total_iterations: int
-    ):
-        super().__init__(obj=project, action_fn=self.print_progress)
-        self.__experiment = experiment
-        self.__step = step
-        self.__current_iterations = current_iterations
-        self.__total_iterations = total_iterations
-
-    def print_progress(self) -> StepResult:
-
-        project: Project = self.obj
-
-        step_description = f"Experiment={self.__experiment.name} " \
-            f"Project={project.name} " \
-            f"Step={self.__step.NAME}"
-
-        if self.__current_iterations == 0:
-            print(f"Started({step_description})")
-
-        output = f"Progress {self.__current_iterations}/{self.__total_iterations}"
-
-        print(output, flush=True)
-
-        if self.__current_iterations == self.__total_iterations:
-            print(f"Finished({step_description})")
-
-        return StepResult.OK
+    @property
+    def zipfile(self) -> Path:
+        return self.__zipfile
