@@ -225,7 +225,7 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
         analysis_actions.append(actions.Compile(project))
 
         analysis_actions.append(ExecWithTime(
-            project, self.get_handle(), 2,
+            project, self.get_handle(), 100,
             tracing_active and usdt))
 
         analysis_actions.append(actions.Clean(project))
