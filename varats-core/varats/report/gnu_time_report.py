@@ -22,16 +22,19 @@ Examples to produce a ``TimeReport``:
 import re
 from datetime import timedelta
 from pathlib import Path
+import numpy as np
+import typing as tp
 
 from varats.report.report import BaseReport
+from varats.report.report_aggregate import ReportAggregate
 from varats.utils.util import static_vars
 
 
 class WrongTimeReportFormat(Exception):
-    """Thrown if the a time report could not be parsed."""
+    """Thrown if a time report could not be parsed."""
 
 
-class TimeReport(BaseReport, shorthand="TR", file_type=""):
+class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
     """Report class to access GNU time output."""
 
     def __init__(self, path: Path) -> None:
@@ -197,3 +200,35 @@ class TimeReport(BaseReport, shorthand="TR", file_type=""):
         raise WrongTimeReportFormat(
             "Could not parse max resident set size: ", line
         )
+
+
+class TimeReportAggregate(
+        ReportAggregate[TimeReport],
+        shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
+        file_type=ReportAggregate.FILE_TYPE):
+    """Manages multiple time reports in a zip archive."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TimeReport)
+
+    @property
+    def wall_clock_times(self) -> tp.List[float]:
+
+        return [report.wall_clock_time.total_seconds()
+                for report in self.reports]
+
+    @property
+    def wall_clock_time_mean(self) -> float:
+
+        return np.mean(self.wall_clock_times)
+
+    @property
+    def wall_clock_time_std(self) -> float:
+
+        return np.std(self.wall_clock_times)
+
+    @property
+    def summary(self) -> str:
+        return f"num_reports = {self.num_reports}\n" \
+            f"mean(wall_clock_time) = {self.wall_clock_time_mean}\n" \
+            f"std(wall_clock_time) = {self.wall_clock_time_std}\n"

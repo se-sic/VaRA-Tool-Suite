@@ -7,6 +7,7 @@ from enum import Enum
 from pathlib import Path
 
 from varats.report.report import BaseReport
+from varats.report.report_aggregate import ReportAggregate
 
 
 class TraceEventType(Enum):
@@ -128,3 +129,13 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         raw_event_list: tp.List[tp.Dict[str, tp.Any]]
     ) -> tp.List[TraceEvent]:
         return [TraceEvent(data_item) for data_item in raw_event_list]
+
+
+class TEFReportAggregate(
+        ReportAggregate[TEFReport],
+        shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
+        file_type=ReportAggregate.FILE_TYPE):
+    """Manages multiple TEF reports in a zip archive."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TEFReport)
