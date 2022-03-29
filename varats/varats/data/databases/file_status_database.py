@@ -18,8 +18,8 @@ class FileStatusDatabase(
     """
     Provides access to file status data.
 
-    This data is not cached, as most of it would be computed for the
-    cache-integrity check anyways.
+    This data is not cached, as most of it would be computed for the cache-
+    integrity check anyways.
     """
 
     @classmethod

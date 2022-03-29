@@ -19,12 +19,13 @@ Examples to produce a ``TimeReport``:
             time("-v", "-o", f"{report_file}", command_to_measure)
 """
 
+import typing as tp
 import re
 from datetime import timedelta
 from pathlib import Path
-import typing as tp
 
 import numpy as np
+
 from varats.report.report import BaseReport
 from varats.report.report_aggregate import ReportAggregate
 from varats.utils.util import static_vars
@@ -203,9 +204,10 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
 
 
 class TimeReportAggregate(
-        ReportAggregate[TimeReport],
-        shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
-        file_type=ReportAggregate.FILE_TYPE):
+    ReportAggregate[TimeReport],
+    shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
     """Manages multiple time reports in a zip archive."""
 
     def __init__(self, path: Path) -> None:
@@ -214,8 +216,9 @@ class TimeReportAggregate(
     @property
     def wall_clock_times(self) -> tp.List[float]:
 
-        return [report.wall_clock_time.total_seconds()
-                for report in self.reports]
+        return [
+            report.wall_clock_time.total_seconds() for report in self.reports
+        ]
 
     @property
     def wall_clock_time_mean(self) -> float:

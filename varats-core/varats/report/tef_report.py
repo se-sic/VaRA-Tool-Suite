@@ -132,9 +132,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
 
 class TEFReportAggregate(
-        ReportAggregate[TEFReport],
-        shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
-        file_type=ReportAggregate.FILE_TYPE):
+    ReportAggregate[TEFReport],
+    shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
     """Manages multiple TEF reports in a zip archive."""
 
     def __init__(self, path: Path) -> None:

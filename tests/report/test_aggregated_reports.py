@@ -1,8 +1,8 @@
 """Test AggregatedReport."""
+
+import tempfile
 import unittest
 from pathlib import Path
-import tempfile
-
 
 from varats.report.gnu_time_report import TimeReportAggregate
 
@@ -33,7 +33,8 @@ GNU_TIME_OUTPUT = """	Command being timed: "sleep 2"
 
 
 class TestTimeReportAggregate(unittest.TestCase):
-    """Test if we can write time reports to `AggregatedReport.tempdir`, zip the contents and read them again afterwards."""
+    """Test if we can write time reports to `AggregatedReport.tempdir`, zip the
+    contents and read them again afterwards."""
 
     def test_two_equal_reports(self) -> None:
         """Test if we correctly parse duration event types."""
@@ -49,7 +50,9 @@ class TestTimeReportAggregate(unittest.TestCase):
 
                 for i in range(num_reports):
 
-                    with open(time_reports_dir / f"time_report_{i}.txt", "w") as time_report_file:
+                    with open(
+                        time_reports_dir / f"time_report_{i}.txt", "w"
+                    ) as time_report_file:
 
                         time_report_file.write(GNU_TIME_OUTPUT)
 

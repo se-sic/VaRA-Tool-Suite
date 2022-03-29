@@ -1,6 +1,4 @@
-"""
-Simple report module to aggregate multiple reports into a single file.
-"""
+"""Simple report module to aggregate multiple reports into a single file."""
 
 import shutil
 import typing as tp
@@ -16,11 +14,12 @@ T = TypeVar('T', bound=BaseReport)
 
 class ReportAggregate(BaseReport, Generic[T], shorthand="Agg", file_type="zip"):
     """
-    Context Manager for aggregating multiple reports in a zip file. An
-    experiment step can simply put multiple reports into `tempdir`, which will
-    be zipped upon `__exit()`. Existing files are extracted into `tempdir` on
-    `__enter()`. `__enter()` must be called before accessing any properties of
-    this class.
+    Context Manager for aggregating multiple reports in a zip file.
+    
+    An experiment step can simply put multiple reports into `tempdir`, which
+    will be zipped upon `__exit()`. Existing files are extracted into `tempdir`
+    on `__enter()`. `__enter()` must be called before accessing any properties
+    of this class.
     """
 
     def __init__(self, path: Path, report_type: tp.Type[T]) -> None:
