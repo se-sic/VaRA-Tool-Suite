@@ -12,7 +12,7 @@ from varats.experiment.experiment_util import ZippedReportFolder
 from varats.report.report import BaseReport
 
 
-T = TypeVar('T')
+T = TypeVar('T', bound=BaseReport)
 
 class ReportAggregate(BaseReport, Generic[T], shorthand="Agg", file_type="zip"):
     """
@@ -37,7 +37,7 @@ class ReportAggregate(BaseReport, Generic[T], shorthand="Agg", file_type="zip"):
             shutil.unpack_archive(self.path, self.tempdir)
 
         return self.tempdir
- 
+
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],
         exc_value: tp.Optional[BaseException],
