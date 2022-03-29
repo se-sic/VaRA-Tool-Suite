@@ -9,13 +9,13 @@ from typing import TypeVar, Generic
 from varats.experiment.experiment_util import ZippedReportFolder
 from varats.report.report import BaseReport
 
-
 T = TypeVar('T', bound=BaseReport)
+
 
 class ReportAggregate(BaseReport, Generic[T], shorthand="Agg", file_type="zip"):
     """
     Context Manager for aggregating multiple reports in a zip file.
-    
+
     An experiment step can simply put multiple reports into `tempdir`, which
     will be zipped upon `__exit()`. Existing files are extracted into `tempdir`
     on `__enter()`. `__enter()` must be called before accessing any properties

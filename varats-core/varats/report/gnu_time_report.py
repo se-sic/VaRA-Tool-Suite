@@ -19,8 +19,8 @@ Examples to produce a ``TimeReport``:
             time("-v", "-o", f"{report_file}", command_to_measure)
 """
 
-import typing as tp
 import re
+import typing as tp
 from datetime import timedelta
 from pathlib import Path
 
