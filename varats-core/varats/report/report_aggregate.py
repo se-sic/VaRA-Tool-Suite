@@ -1,10 +1,15 @@
+"""
+Simple report module to aggregate multiple reports into a single file.
+"""
+
 import shutil
 import typing as tp
 from pathlib import Path
 from types import TracebackType
+from typing import TypeVar, Generic
+
 from varats.experiment.experiment_util import ZippedReportFolder
 from varats.report.report import BaseReport
-from typing import TypeVar, Generic
 
 
 T = TypeVar('T')
@@ -18,7 +23,7 @@ class ReportAggregate(BaseReport, Generic[T], shorthand="Agg", file_type="zip"):
     this class.
     """
 
-    def __init__(self, path: Path, report_type: tp.Type[BaseReport]) -> None:
+    def __init__(self, path: Path, report_type: tp.Type[T]) -> None:
         super().__init__(path.with_suffix(".zip"))
         self.__zipped_report = ZippedReportFolder(self.path)
         self.__report_type = report_type
@@ -32,7 +37,7 @@ class ReportAggregate(BaseReport, Generic[T], shorthand="Agg", file_type="zip"):
             shutil.unpack_archive(self.path, self.tempdir)
 
         return self.tempdir
-            
+ 
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],
         exc_value: tp.Optional[BaseException],
@@ -40,7 +45,7 @@ class ReportAggregate(BaseReport, Generic[T], shorthand="Agg", file_type="zip"):
     ) -> None:
         """Zips contents in `tempdir`."""
         self.__zipped_report.__exit__(exc_type, exc_value, exc_traceback)
-    
+
     @property
     def tempdir(self) -> Path:
         """Returns the path to the temporary directory to drop reports into."""

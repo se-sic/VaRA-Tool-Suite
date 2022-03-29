@@ -22,9 +22,9 @@ Examples to produce a ``TimeReport``:
 import re
 from datetime import timedelta
 from pathlib import Path
-import numpy as np
 import typing as tp
 
+import numpy as np
 from varats.report.report import BaseReport
 from varats.report.report_aggregate import ReportAggregate
 from varats.utils.util import static_vars
@@ -229,6 +229,6 @@ class TimeReportAggregate(
 
     @property
     def summary(self) -> str:
-        return f"num_reports = {self.num_reports}\n" \
+        return f"num_reports = {len(self.reports)}\n" \
             f"mean(wall_clock_time) = {self.wall_clock_time_mean}\n" \
             f"std(wall_clock_time) = {self.wall_clock_time_std}\n"
