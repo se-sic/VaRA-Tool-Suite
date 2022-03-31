@@ -73,7 +73,7 @@ def fetch_remote(
     args += extra_args
     if remote:
         args.append(remote)
-    git("-C", repo_folder.absolute(), args)
+    git("-C", repo_folder, args)
 
 
 def pull_current_branch(repo_folder: Path) -> None:
@@ -105,7 +105,7 @@ def push_current_branch(
 
 def fetch_repository(repo_folder: tp.Optional[Path] = None) -> None:
     """Pull in changes in a certain branch."""
-    git("-C", repo_folder.absolute(), "fetch")
+    git("-C", repo_folder, "fetch")
 
 
 def checkout_branch_or_commit(
