@@ -1,3 +1,4 @@
+"""Main Window of the case study generation Gui."""
 import sys
 import typing as tp
 from datetime import datetime, timezone, timedelta
@@ -51,12 +52,14 @@ from varats.utils.settings import vara_cfg
 
 
 class GenerationStrategie(Enum):
+    """Enum for the Startegie used when Generating a CaseStudy."""
     SELECTREVISION = 0
     SAMPLE = 1
     REVS_PER_YEAR = 2
 
 
 class CsGenMainWindow(QMainWindow, Ui_MainWindow):
+    """Main Application."""
 
     def __init__(self):
         super().__init__()
@@ -92,7 +95,8 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         )
         self.show()
 
-    def update_project_list(self, filter_string: str = ""):
+    def update_project_list(self, filter_string: str = "") -> None:
+        """Update the project list when a filter is applied."""
         self.project_list.clear()
         filter_string = filter_string.lower()
         projects = get_loaded_vara_projects()
@@ -112,17 +116,21 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         ]
         self.project_list.addItems(self.project_names)
 
-    def revs_per_year_view(self):
+    def revs_per_year_view(self) -> None:
+        """Switch to revision per year strategy view."""
         self.strategie_forms.setCurrentIndex(
             GenerationStrategie.REVS_PER_YEAR.value
         )
         self.strategie_forms.update()
 
     def sample_view(self):
+        """Switch to sampling strategy view."""
         self.strategie_forms.setCurrentIndex(GenerationStrategie.SAMPLE.value)
         self.strategie_forms.update()
 
-    def gen(self):
+    def gen(self) -> None:
+        """Generate the case study using the selected strategy, project and
+        strategy specific arguments."""
         cmap = create_lazy_commit_map_loader(
             self.selected_project, None, 'HEAD', None
         )()
@@ -158,7 +166,8 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             )
         store_case_study(case_study, path)
 
-    def show_project_data(self, index: QModelIndex):
+    def show_project_data(self, index: QModelIndex) -> None:
+        """Update the project data field."""
         project_name = index.data()
         if self.selected_project != project_name:
             self.selected_project = project_name
@@ -173,7 +182,9 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             ) == GenerationStrategie.SELECTREVISION.value:
                 self.revisions_of_project()
 
-    def revisions_of_project(self):
+    def revisions_of_project(self) -> None:
+        """Generate the Revision list for the selected project if select
+        specific is enabled."""
         self.strategie_forms.setCurrentIndex(
             GenerationStrategie.SELECTREVISION.value
         )
@@ -201,7 +212,8 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             self.revision_details.clear()
             self.revision_details.update()
 
-    def show_revision_data(self, index: QModelIndex):
+    def show_revision_data(self, index: QModelIndex) -> None:
+        """Update the revision data field."""
         commit = self.revision_list.model().data(index, Qt.WhatsThisRole)
         commit_info = f"{commit.hex}\nAuthor:{commit.author.name}," \
                       f"{commit.author.email}\n" \
@@ -212,7 +224,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
 
 
 class CommitTableFilterModel(QSortFilterProxyModel):
-
+    """Filter Model for the revision table."""
     filter_string = ""
 
     def setFilterFixedString(self, pattern: str) -> None:
@@ -233,6 +245,7 @@ class CommitTableFilterModel(QSortFilterProxyModel):
 
 
 class CommitTableModel(QAbstractTableModel):
+    """Date Model for the revision Table."""
     header_labels = ["Commit", "Author", "Date", "Time Id"]
 
     def __init__(
