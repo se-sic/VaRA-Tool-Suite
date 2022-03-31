@@ -1,14 +1,13 @@
 import math
 import typing as tp
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotConfig, PlotGenerator, REQUIRE_CASE_STUDY
 from varats.plots.surviving_commits import (
-    get_normalized_lines_per_commit_long,
-    get_normalized_interactions_per_commit_long,
     get_interactions_per_commit_long,
     get_lines_per_commit_long,
 )
@@ -35,11 +34,10 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
             axis=0, how='any', inplace=True, subset=["lines", "interactions"]
         )
         data = data.apply(
-            lambda x: [
-                x['revision'], x['base_hash'], x['interactions'] / x['lines'],
-                x['lines'] / x['interactions']
-            ] if x['base_hash'].startswith(x['revision'].hash) else
-            [math.nan, math.nan, math.nan, math.nan],
+            lambda x:
+            [x['revision'], x['base_hash'], x['lines'], x['interactions']]
+            if x['base_hash'].startswith(x[
+                'revision'].hash) else [math.nan, math.nan, math.nan, math.nan],
             axis=1,
             result_type='broadcast'
         )
@@ -51,8 +49,20 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
         plt.setp(
             axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
         )
-        data.drop(columns=["base_hash", "interactions"]
-                 ).set_index("revision").plot()
+
+        df = data.drop(columns=["base_hash"])
+        ax = axis.twinx()
+        plt.setp(ax.get_yticklabels(), fontsize=self.plot_config.x_tick_size())
+        x_axis = range(len(df['revision']))
+        ax.scatter(x_axis, df['lines'], color="green")
+        axis.scatter(x_axis, df['interactions'], color="orange")
+        lines_legend = mpatches.Patch(color='green', label="Lines")
+        interactions_legend = mpatches.Patch(
+            color="orange", label='Interactions'
+        )
+        plt.legend(handles=[lines_legend, interactions_legend])
+        plt.ticklabel_format(axis='x', useOffset=False)
+        plt.xticks(x_axis, df['revision'], rotation=90)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
