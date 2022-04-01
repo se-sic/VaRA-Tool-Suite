@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from varats.experiment.experiment_util import ZippedReportFolder
 from varats.report.gnu_time_report import TimeReportAggregate
 
 GNU_TIME_OUTPUT = """	Command being timed: "sleep 2"
@@ -46,12 +47,12 @@ class TestTimeReportAggregate(unittest.TestCase):
             # Write time reports to `tempdir`.
             tmp_file = Path(tmp_dir) / "TimeAggregateTwoReportsTest.zip"
             time_aggregate = TimeReportAggregate(tmp_file)
-            with time_aggregate as time_reports_dir:
+            with ZippedReportFolder(tmp_file) as time_reports_dir:
 
                 for i in range(num_reports):
 
                     with open(
-                        time_reports_dir / f"time_report_{i}.txt", "w"
+                        Path(time_reports_dir) / f"time_report_{i}.txt", "w"
                     ) as time_report_file:
 
                         time_report_file.write(GNU_TIME_OUTPUT)

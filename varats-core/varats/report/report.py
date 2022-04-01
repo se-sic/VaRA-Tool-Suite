@@ -2,9 +2,12 @@
 minimal interface ``BaseReport`` to implement own reports."""
 
 import re
+import shutil
 import typing as tp
 from enum import Enum
 from pathlib import Path, PosixPath
+from tempfile import TemporaryDirectory
+from types import TracebackType
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -557,3 +560,45 @@ class ReportSpecification():
 
     def __iter__(self) -> tp.Iterator[tp.Type[BaseReport]]:
         return iter(self.report_types)
+
+
+T = tp.TypeVar('T', bound=BaseReport)
+
+
+class ReportAggregate(
+    BaseReport, tp.Generic[T], shorthand="Agg", file_type="zip"
+):
+    """Context Manager for parsing multiple reports of the same type stored
+    inside a zip file."""
+
+    def __init__(self, path: Path, report_type: tp.Type[T]) -> None:
+        super().__init__(path)
+
+        self.__report_type = report_type
+
+    def __enter__(self) -> None:
+        """Extracts the archive contents into a temporary directory and parses
+        the reports."""
+        self.__tmpdir = TemporaryDirectory()
+
+        if self.path.exists():
+            shutil.unpack_archive(self.path, self.__tmpdir.name)
+
+        self.__reports = [
+            self.__report_type(file)
+            for file in Path(self.__tmpdir.name).iterdir()
+        ]
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        """Cleans up the temporary directory used to extract the zip
+        contents."""
+        self.__tmpdir.cleanup()
+
+    @property
+    def reports(self) -> tp.List[T]:
+        """Returns the list of parsed reports."""
+        return self.__reports

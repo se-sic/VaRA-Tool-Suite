@@ -6,8 +6,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import BaseReport
-from varats.report.report_aggregate import ReportAggregate
+from varats.report.report import BaseReport, ReportAggregate
 
 
 class TraceEventType(Enum):
@@ -136,7 +135,8 @@ class TEFReportAggregate(
     shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
     file_type=ReportAggregate.FILE_TYPE
 ):
-    """Manages multiple TEF reports in a zip archive."""
+    """Context Manager for parsing multiple TEF reports stored inside a zip
+    file."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
