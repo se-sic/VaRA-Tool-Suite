@@ -575,13 +575,12 @@ class ReportAggregate(
         super().__init__(path)
 
         self.__report_type = report_type
-        self.__reports = None
-        self.__tmpdir = None
+        self.__reports: tp.List[T] = []
+        self.__tmpdir = TemporaryDirectory()
 
     def __enter__(self) -> None:
         """Extracts the archive contents into a temporary directory and parses
         the reports."""
-        self.__tmpdir = TemporaryDirectory()
 
         if self.path.exists():
             shutil.unpack_archive(self.path, self.__tmpdir.name)
