@@ -575,7 +575,7 @@ class ReportAggregate(
         super().__init__(path)
 
         self.__report_type = report_type
-        self.__reports = list[T]()
+        self.__reports = None
         self.__tmpdir = None
 
     def __enter__(self) -> None:
