@@ -575,6 +575,8 @@ class ReportAggregate(
         super().__init__(path)
 
         self.__report_type = report_type
+        self.__reports = list[T]()
+        self.__tmpdir = None
 
     def __enter__(self) -> None:
         """Extracts the archive contents into a temporary directory and parses
