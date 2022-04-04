@@ -6,8 +6,10 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
+from benchbuild.utils.cmd import rm
 from benchbuild.utils.cmd import mkdir, touch, time
 from plumbum import local
+from plumbum.cmd import rm
 
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import (
@@ -61,13 +63,16 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 "-{compression}".format(compression=self.compressionLevel),
                 "-k", file_path
             ]
+            file_path_xz = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json.xz"
+            print("Test")
 
             with local.cwd(local.path(project.source_of_primary)):
                 xz_cmd = binary[xz_params]
                 time_xz_cmd = time["-v", "-o",
                                    f"{vara_result_folder}/{result_file}",
                                    xz_cmd]
-
+                rm_cmd = rm[file_path_xz]
+                print(rm_cmd)
                 exec_func_with_pe_error_handler(
                     time_xz_cmd,
                     create_default_analysis_failure_handler(
@@ -76,6 +81,21 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                         Path(vara_result_folder)
                     )
                 )
+                print("Ends time command")
+                exec_func_with_pe_error_handler(
+                    rm_cmd,
+                    create_default_analysis_failure_handler(
+                        self.__experiment_handle, project,
+                        self.__experiment_handle.report_spec().main_report,
+                        Path(vara_result_folder)
+                    )
+                )
+                print("Ends rm command")
+                
+
+
+
+
 
         return actions.StepResult.OK
 
@@ -107,11 +127,14 @@ class xzBlackboxAnalysisReport(VersionExperiment, shorthand="xzB"):
 
         analysis_actions = []
 
+        analysis_actions.append(actions.Compile(project))
+
+
         for x in range(2, 3):
-            analysis_actions.append(actions.Compile(project))
             analysis_actions.append(
                 xzBlackboxAnalysis(project, self.get_handle(), x)
             )
-            analysis_actions.append(actions.Clean(project))
+
+        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
