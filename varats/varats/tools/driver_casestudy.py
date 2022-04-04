@@ -14,7 +14,10 @@ from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.data.reports.szz_report import SZZReport
 from varats.experiment.experiment_util import VersionExperiment
-from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import (
+    create_lazy_commit_map_loader,
+    generate_commit_map,
+)
 from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
@@ -39,6 +42,7 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.tools.research_tools.vara_manager import pull_current_branch
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -164,10 +168,17 @@ def __casestudy_status(
     help="Ignore/Allow revisions that are marked as blocked. By default, "
     "blocked revisions will be ignored."
 )
+@click.option(
+    "--update/--no-update",
+    is_flag=True,
+    default=True,
+    help="Project repository will not be updated."
+)
 @click.pass_context
 def __casestudy_gen(
     ctx: click.Context, project: str, override: bool, version: int,
-    ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool
+    ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool,
+    update: bool
 ) -> None:
     """Generate or extend a CaseStudy Sub commands can be chained to for example
     sample revisions but also add the latest."""
@@ -185,8 +196,10 @@ def __casestudy_gen(
     ctx.obj['path'] = Path(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
-    click.echo(ctx.obj['path'])
     ctx.obj['git_path'] = get_local_project_git_path(project)
+    if update:
+        pull_current_branch(ctx.obj['git_path'])
+
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
         if merge_stage:
@@ -240,10 +253,8 @@ def __casestudy_gen(
 @click.pass_context
 def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
-    get_cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, "HEAD", None
-    )
-    cmap = get_cmap()
+
+    cmap = generate_commit_map(ctx.obj["git_path"])
     case_study: CaseStudy = ctx.obj['case_study']
 
     repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
