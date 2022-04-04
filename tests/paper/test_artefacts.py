@@ -20,6 +20,7 @@ from varats.plot.plots import PlotArtefact, PlotConfig, CommonPlotOptions
 from varats.plots.case_study_overview import CaseStudyOverviewGenerator
 from varats.plots.discover_plots import initialize_plots
 from varats.plots.paper_config_overview import PaperConfigOverviewGenerator
+from varats.tables.discover_tables import initialize_tables
 from varats.utils.settings import vara_cfg, save_config
 
 YAML_ARTEFACTS = """DocType: Artefacts
@@ -48,6 +49,7 @@ class TestArtefacts(unittest.TestCase):
     def setUp(cls):
         """Setup artefacts file from yaml doc."""
         initialize_plots()
+        initialize_tables()
         initialize_artefact_types()
         with NamedTemporaryFile('w') as yaml_file:
             yaml_file.write(YAML_ARTEFACTS)

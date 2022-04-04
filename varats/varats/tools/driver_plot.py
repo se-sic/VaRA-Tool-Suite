@@ -11,6 +11,8 @@ import typing as tp
 
 import click
 
+from varats.data.discover_reports import initialize_reports
+from varats.paper_mgmt.artefacts import initialize_artefact_types
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plots import (
     PlotGenerator,
@@ -21,6 +23,7 @@ from varats.plot.plots import (
 )
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
+from varats.tables.discover_tables import initialize_tables
 from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 
 LOG = logging.getLogger(__name__)
@@ -103,6 +106,8 @@ def main(context: click.Context, **kwargs: tp.Any) -> None:
 
     initialize_cli_tool()
     initialize_projects()
+    initialize_tables()
+    initialize_plots()
 
 
 if __name__ == '__main__':

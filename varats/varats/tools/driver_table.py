@@ -11,7 +11,10 @@ import typing as tp
 
 import click
 
+from varats.data.discover_reports import initialize_reports
+from varats.paper_mgmt.artefacts import initialize_artefact_types
 from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import (
     TableGenerator,
@@ -87,7 +90,8 @@ class TableCLI(click.MultiCommand):
 @click.option(
     "--save-artefact",
     metavar="NAME",
-    help="Save the table specification in the artefact file with the given name."
+    help="Save the table specification in the artefact file with the "
+    "given name."
 )
 @TableConfig.cli_options
 @click.pass_context
@@ -103,6 +107,8 @@ def main(context: click.Context, **kwargs: tp.Any) -> None:
 
     initialize_cli_tool()
     initialize_projects()
+    initialize_tables()
+    initialize_plots()
 
 
 if __name__ == '__main__':

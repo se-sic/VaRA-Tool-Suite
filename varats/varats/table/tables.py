@@ -102,10 +102,14 @@ class CommonTableOptions():
     @staticmethod
     def from_kwargs(**kwargs: tp.Any) -> 'CommonTableOptions':
         """Construct a ``CommonTableOptions`` object from a kwargs dict."""
+        table_format = kwargs.get("table_format", TableFormat.PLAIN)
+        if isinstance(table_format, str):
+            table_format = TableFormat[table_format]
+
         return CommonTableOptions(
             kwargs.get("view", False), Path(kwargs.get("table_dir", ".")),
-            kwargs.get("table_format", TableFormat.PLAIN),
-            kwargs.get("wrap_table", False), kwargs.get("dry_run", False)
+            table_format, kwargs.get("wrap_table", False),
+            kwargs.get("dry_run", False)
         )
 
     __options = [
@@ -170,7 +174,7 @@ class CommonTableOptions():
         """
         return {
             "view": self.view,
-            "table_format": self.table_format,
+            "table_format": self.table_format.name,
             "wrap_table": self.wrap_table,
             "table_dir": self.table_dir,
             "dry_run": self.dry_run

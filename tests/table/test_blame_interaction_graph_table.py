@@ -7,6 +7,7 @@ from varats.paper_mgmt.paper_config import (
     get_loaded_paper_config,
 )
 from varats.projects.discover_projects import initialize_projects
+from varats.table.tables import TableConfig, TableFormat
 from varats.tables.blame_interaction_graph_table import (
     CommitInteractionGraphMetricsTable,
     AuthorInteractionGraphMetricsTable,
@@ -31,7 +32,10 @@ class TestCSMetricsTable(unittest.TestCase):
         load_paper_config()
 
         # latex booktabs is default format
-        table_str = CommitInteractionGraphMetricsTable().tabulate()
+        table_str = CommitInteractionGraphMetricsTable(
+            TableConfig.from_kwargs(view=False),
+            case_study=get_loaded_paper_config().get_all_case_studies()
+        ).tabulate(TableFormat.LATEX_BOOKTABS)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
@@ -56,7 +60,10 @@ class TestCSMetricsTable(unittest.TestCase):
         load_paper_config()
 
         # latex booktabs is default format
-        table_str = AuthorInteractionGraphMetricsTable().tabulate()
+        table_str = AuthorInteractionGraphMetricsTable(
+            TableConfig.from_kwargs(view=False),
+            case_study=get_loaded_paper_config().get_all_case_studies()
+        ).tabulate(TableFormat.LATEX_BOOKTABS)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
@@ -81,7 +88,10 @@ class TestCSMetricsTable(unittest.TestCase):
         load_paper_config()
 
         # latex booktabs is default format
-        table_str = CommitAuthorInteractionGraphMetricsTable().tabulate()
+        table_str = CommitAuthorInteractionGraphMetricsTable(
+            TableConfig.from_kwargs(view=False),
+            case_study=get_loaded_paper_config().get_all_case_studies()
+        ).tabulate(TableFormat.LATEX_BOOKTABS)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
@@ -111,8 +121,9 @@ class TestCSMetricsTable(unittest.TestCase):
 
         # latex booktabs is default format
         table_str = AuthorBlameVsFileDegreesTable(
-            table_case_study=get_loaded_paper_config().get_case_studies("xz")[0]
-        ).tabulate()
+            TableConfig.from_kwargs(view=False),
+            case_study=get_loaded_paper_config().get_case_studies("xz")[0]
+        ).tabulate(TableFormat.LATEX_BOOKTABS)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrr}

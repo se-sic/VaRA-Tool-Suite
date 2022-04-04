@@ -8,16 +8,10 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.mapping.commit_map import get_commit_map
-from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_unique_cs_name
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import (
-    TableFormat,
-    TableGenerator,
-    REQUIRE_MULTI_CASE_STUDY,
-    OPTIONAL_REPORT_TYPE,
-)
+from varats.table.tables import TableFormat, TableGenerator
 
 
 class DiffCorrelationOverviewTable(
@@ -64,15 +58,13 @@ class DiffCorrelationOverviewTable(
 class DiffCorrelationOverviewTableGenerator(
     TableGenerator,
     generator_name="diff-correlation-overview-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[]
 ):
     """Generates a bug-overview table for the selected case study(ies)."""
 
     def generate(self) -> tp.List[Table]:
-        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
-
         return [
             DiffCorrelationOverviewTable(
-                self.table_config, case_study=cs, **self.table_kwargs
-            ) for cs in case_studies
+                self.table_config, **self.table_kwargs
+            )
         ]

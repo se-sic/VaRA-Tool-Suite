@@ -133,12 +133,12 @@ class Table:
         Test:
         >>> p = Table(TableConfig.from_kwargs(view=False), project='bar')
         >>> p.table_file_name(TableFormat.PLAIN)
-        'bar_test.txt'
+        'bar_Table.txt'
         >>> from varats.paper.case_study import CaseStudy
         >>> p = Table(TableConfig.from_kwargs(view=False),\
                       project='bar', case_study=CaseStudy('baz', 42))
         >>> p.table_file_name(TableFormat.LATEX_BOOKTABS)
-        'baz_42_foo.tex'
+        'baz_42_Table.tex'
         """
         table_ident = ''
         if 'case_study' in self.table_kwargs:

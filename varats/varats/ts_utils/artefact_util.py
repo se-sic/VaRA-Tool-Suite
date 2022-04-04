@@ -54,7 +54,7 @@ class CaseStudyConverter(CLIOptionConverter[CaseStudy]):
 
 
 class ReportTypeConverter(CLIOptionConverter[tp.Type[BaseReport]]):
-    """CLI option converter for case studies."""
+    """CLI option converter for reports."""
 
     @staticmethod
     def value_to_string(
@@ -79,17 +79,17 @@ GeneratorTy = tp.TypeVar(
 
 
 def convert_kwargs(
-    table_generator_type: GeneratorTy,
-    table_kwargs: tp.Dict[str, tp.Any],
+    generator_type: GeneratorTy,
+    kwargs: tp.Dict[str, tp.Any],
     to_string: bool = False
 ) -> tp.Dict[str, tp.Any]:
     """
     Apply conversions to kwargs as specified by table generator CLI options.
 
     Args:
-        table_generator_type: table generator with CLI option/converter
+        generator_type: table generator with CLI option/converter
                              declarations
-        table_kwargs: table kwargs as values or strings
+        kwargs: table kwargs as values or strings
         to_string: if ``True`` convert to string, otherwise convert to value
 
     Returns:
@@ -98,20 +98,20 @@ def convert_kwargs(
     converter = {
         decl_converter.name: decl_converter.converter for decl_converter in [
             tp.cast(CLIOptionWithConverter[tp.Any], cli_decl)
-            for cli_decl in table_generator_type.OPTIONS
+            for cli_decl in generator_type.OPTIONS
             if isinstance(cli_decl, CLIOptionWithConverter)
         ]
     }
-    kwargs: tp.Dict[str, tp.Any] = {}
-    for key, value in table_kwargs.items():
+    converted_kwargs: tp.Dict[str, tp.Any] = {}
+    for key, value in kwargs.items():
         if key in converter.keys():
             if to_string:
-                kwargs[key] = converter[key].value_to_string(value)
+                converted_kwargs[key] = converter[key].value_to_string(value)
             else:
-                kwargs[key] = converter[key].string_to_value(value)
+                converted_kwargs[key] = converter[key].string_to_value(value)
         else:
-            kwargs[key] = value
-    return kwargs
+            converted_kwargs[key] = value
+    return converted_kwargs
 
 
 # Plot/Table config options
