@@ -24,7 +24,6 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import (
     TableFormat,
-    TableConfig,
     TableGenerator,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
@@ -100,16 +99,11 @@ def filter_report_paths_binary(
     )
 
 
-class PhasarGlobalsDataComparision(Table):
-    """Comparision overview of gathered phasar globals analysis data to compare
-    the effect of using gloabls analysis."""
+class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
+    """Comparison overview of gathered phasar globals analysis data to compare
+    the effect of using globals analysis."""
 
-    NAME = "phasar_globals_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         case_studies: tp.List[CaseStudy] = self.table_kwargs["case_study"]
 
         cs_data: tp.List[pd.DataFrame] = []
@@ -191,8 +185,6 @@ class PhasarGlobalsDataComparision(Table):
         rho_p = pearsonr(rggs, div_series)
 
         mean_stddev = df[df["SDev %"] != '-']["SDev %"].mean()
-
-        table_format: TableFormat = self.table_kwargs["format"]
 
         if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW

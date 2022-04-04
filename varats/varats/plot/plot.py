@@ -143,12 +143,10 @@ class Plot:
         'bar_Plot.svg'
         >>> from varats.paper.case_study import CaseStudy
         >>> p = Plot(PlotConfig.from_kwargs(view=False),\
-        project='bar',case_study=CaseStudy('baz', 42))
+                     project='bar', case_study=CaseStudy('baz', 42))
         >>> p.plot_file_name('png')
         'baz_42_Plot.png'
         """
-        # TODO: Adapt naming to plots with multiple case studies, e.g. see func
-        #       table_file_name()
         plot_ident = ''
         if 'case_study' in self.plot_kwargs:
             case_study: 'CaseStudy' = self.plot_kwargs['case_study']

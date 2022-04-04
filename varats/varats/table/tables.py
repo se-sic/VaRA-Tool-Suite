@@ -83,7 +83,7 @@ class CommonTableOptions():
         view: if `True`, view the table instead of writing it to a file
         table_dir: directory to write tables to
                   (relative to config value 'tables/table_dir')
-        file_type: the file type for the written table file
+        table_format: the format for the written table file
         dry_run: if ``True``, do not generate any files
     """
 
@@ -289,7 +289,8 @@ class TableConfig():
         Create a dict representation from this table config.
 
         The dict only contains options for which values were explicitly set.
-        It holds that ``config == TableConfig.from_kwargs(**config.get_dict())``.
+        It holds that
+        ``config == TableConfig.from_kwargs(**config.get_dict())``.
 
         Returns:
             a dict representation of this table config
@@ -483,8 +484,11 @@ class TableGenerator(abc.ABC):
             if common_options.view:
                 table.show()
             else:
-                # TODO: rename wrap_document to wrap_table
-                table.save(table_dir, wrap_document=common_options.wrap_table)
+                table.save(
+                    table_dir,
+                    table_format=common_options.table_format,
+                    wrap_document=common_options.wrap_table
+                )
 
 
 class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):

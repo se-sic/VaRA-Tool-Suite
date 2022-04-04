@@ -14,19 +14,13 @@ from varats.table.tables import (
     TableGenerator,
     OPTIONAL_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
-    TableConfig,
 )
 
 
-class BugOverviewTable(Table):
+class BugOverviewTable(Table, table_name="bug_overview_table"):
     """Visualizes bug metrics of a project."""
 
-    NAME = "bug_overview_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         project_name: str = self.table_kwargs['case_study'].project_name
 
         bug_provider = BugProvider.get_provider_for_project(
@@ -44,7 +38,6 @@ class BugOverviewTable(Table):
         ] for pybug in pybugs]
 
         bug_df = pd.DataFrame(columns=variables, data=np.array(data_rows))
-        table_format: TableFormat = self.table_kwargs["format"]
 
         if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS

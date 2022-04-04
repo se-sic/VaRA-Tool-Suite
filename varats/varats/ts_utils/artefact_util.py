@@ -18,7 +18,8 @@ else:
     from typing import Protocol, runtime_checkable
 
 if tp.TYPE_CHECKING:
-    from varats.plot.plots import PlotGenerator  # pylint: disable=unused-import
+    # pylint: disable=unused-import
+    from varats.plot.plots import PlotGenerator
     # pylint: disable=unused-import
     from varats.table.tables import TableGenerator
 
@@ -73,7 +74,7 @@ class ReportTypeConverter(CLIOptionConverter[tp.Type[BaseReport]]):
 
 
 GeneratorTy = tp.TypeVar(
-    "GeneratorTy", tp.Type["PlotGenerator"], tp.Type["TableGenerator"]
+    "GeneratorTy", tp.Type['PlotGenerator'], tp.Type['TableGenerator']
 )
 
 

@@ -14,7 +14,6 @@ from varats.project.project_util import (
 from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import (
     TableFormat,
-    TableConfig,
     TableGenerator,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
@@ -24,16 +23,11 @@ from varats.utils.git_util import calc_repo_loc
 LOG = logging.Logger(__name__)
 
 
-class CaseStudyMetricsTable(Table):
+class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
     """Table showing some general information about the case studies in a paper
     config."""
 
-    NAME = "cs_metrics_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         cs_data: tp.List[pd.DataFrame] = []
@@ -74,7 +68,6 @@ class CaseStudyMetricsTable(Table):
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
         df = pd.concat(cs_data).sort_index()
-        table_format: TableFormat = self.table_kwargs["format"]
 
         if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW

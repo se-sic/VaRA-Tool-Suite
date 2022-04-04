@@ -23,7 +23,6 @@ from varats.table.tables import (
     TableGenerator,
     OPTIONAL_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
-    TableConfig,
 )
 from varats.utils.git_util import FullCommitHash
 
@@ -103,15 +102,10 @@ def _generate_graph_table(
     return tabulate(df, df.columns, table_format.value)
 
 
-class CommitInteractionGraphMetricsTable(Table):
+class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
     """Commit interaction graph statistics in table form."""
 
-    NAME = "cig_metrics_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -120,8 +114,7 @@ class CommitInteractionGraphMetricsTable(Table):
                                                  ).commit_interaction_graph()
 
         return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph,
-            self.table_kwargs["format"]
+            self.table_kwargs["case_study"], create_graph, table_format
         )
 
     def wrap_table(self, table: str) -> str:
@@ -143,15 +136,10 @@ class CommitInteractionGraphMetricsTableGenerator(
         ]
 
 
-class AuthorInteractionGraphMetricsTable(Table):
+class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
     """Author interaction graph statistics in table form."""
 
-    NAME = "aig_metrics_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -160,8 +148,7 @@ class AuthorInteractionGraphMetricsTable(Table):
                                                  ).author_interaction_graph()
 
         return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph,
-            self.table_kwargs["format"]
+            self.table_kwargs["case_study"], create_graph, table_format
         )
 
     def wrap_table(self, table: str) -> str:
@@ -183,15 +170,12 @@ class AuthorInteractionGraphMetricsTableGenerator(
         ]
 
 
-class CommitAuthorInteractionGraphMetricsTable(Table):
+class CommitAuthorInteractionGraphMetricsTable(
+    Table, table_name="caig_metrics_table"
+):
     """Commit-Author interaction graph statistics in table form."""
 
-    NAME = "caig_metrics_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -201,8 +185,7 @@ class CommitAuthorInteractionGraphMetricsTable(Table):
             ).commit_author_interaction_graph()
 
         return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph,
-            self.table_kwargs["format"]
+            self.table_kwargs["case_study"], create_graph, table_format
         )
 
     def wrap_table(self, table: str) -> str:
@@ -224,16 +207,13 @@ class CommitAuthorInteractionGraphMetricsTableGenerator(
         ]
 
 
-class AuthorBlameVsFileDegreesTable(Table):
+class AuthorBlameVsFileDegreesTable(
+    Table, table_name="aig_file_vs_blame_degrees_table"
+):
     """Table showing authors with the highest author interaction graph node
     degrees."""
 
-    NAME = "aig_file_vs_blame_degrees_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         case_study: CaseStudy = self.table_kwargs["case_study"]
 
         project_name: str = case_study.project_name
@@ -278,7 +258,6 @@ class AuthorBlameVsFileDegreesTable(Table):
         file_data.set_index("author", inplace=True)
 
         degree_data = blame_data.join(file_data, how="outer")
-        table_format: TableFormat = self.table_kwargs["format"]
 
         if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW

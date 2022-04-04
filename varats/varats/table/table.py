@@ -7,8 +7,10 @@ from pathlib import Path
 
 from pylatex import Document, Package, NoEscape, UnsafeCommand
 
-from varats.paper.case_study import CaseStudy
 from varats.table.tables import TableFormat, TableConfig
+
+if tp.TYPE_CHECKING:
+    from varats.paper.case_study import CaseStudy  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
 
@@ -33,17 +35,20 @@ class Table:
         TableFormat.RST: "rst",
     }
 
-    def __init__(
-        self, name: str, table_config: TableConfig, **kwargs: tp.Any
-    ) -> None:
-        self.__name = name
+    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
         self.__table_config = table_config
         self.__saved_extra_args = kwargs
 
     @classmethod
-    def __init_subclass__(cls, **kwargs: tp.Any) -> None:
+    def __init_subclass__(
+        cls, table_name: tp.Optional[str], **kwargs: tp.Any
+    ) -> None:
         """Register concrete tables."""
         super().__init_subclass__(**kwargs)
+
+        if table_name:
+            cls.NAME = table_name
+            cls.TABLES[table_name] = cls
 
     @staticmethod
     def get_table_types_help_string() -> str:
@@ -82,10 +87,10 @@ class Table:
         Name of the current table.
 
         Test:
-        >>> Table('test', TableConfig.from_kwargs(view=False)).name
-        'test'
+        >>> Table(TableConfig.from_kwargs(view=False)).name
+        'Table'
         """
-        return self.__name
+        return self.NAME
 
     @property
     def table_config(self) -> TableConfig:
@@ -98,8 +103,8 @@ class Table:
         Access the kwargs passed to the initial table.
 
         Test:
-        >>> p = Table('test', TableConfig.from_kwargs(view=False), foo='bar', \
-                     baz='bazzer')
+        >>> p = Table(TableConfig.from_kwargs(view=False), foo='bar',\
+                      baz='bazzer')
         >>> p.table_kwargs['foo']
         'bar'
         >>> p.table_kwargs['baz']
@@ -114,10 +119,10 @@ class Table:
         return False
 
     @abc.abstractmethod
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         """Build the table using tabulate."""
 
-    def table_file_name(self) -> str:
+    def table_file_name(self, table_format: TableFormat) -> str:
         """
         Get the file name this table; will be stored to when calling save.
         Automatically deduces this tables' filetype from its format.
@@ -126,38 +131,28 @@ class Table:
             the file name the table will be stored to
 
         Test:
-        >>> p = Table('test', TableConfig.from_kwargs(view=False), project='bar')
-        >>> p.table_file_name('txt')
+        >>> p = Table(TableConfig.from_kwargs(view=False), project='bar')
+        >>> p.table_file_name(TableFormat.PLAIN)
         'bar_test.txt'
         >>> from varats.paper.case_study import CaseStudy
-        >>> p = Table('foo', TableConfig.from_kwargs(view=False), project='bar', \
-                     case_study=CaseStudy('baz', 42))
-        >>> p.table_file_name('tex')
+        >>> p = Table(TableConfig.from_kwargs(view=False),\
+                      project='bar', case_study=CaseStudy('baz', 42))
+        >>> p.table_file_name(TableFormat.LATEX_BOOKTABS)
         'baz_42_foo.tex'
         """
-        # TODO: Change file name to sth. unique of each case study. This should
-        #       allow us to use the REQUIRE_MULTI_CASE_STUDY for most tables
-        #       without instantly overwriting the generated table with the next
-        #       one.
         table_ident = ''
         if 'case_study' in self.table_kwargs:
-            cs: tp.Union[CaseStudy,
-                         tp.List[CaseStudy]] = self.table_kwargs['case_study']
-
-            if isinstance(cs, list) and len(cs) == 1:
-                cs = cs.pop(0)
-
-            if isinstance(cs, CaseStudy):
-                table_ident = f"{cs.project_name}_{cs.version}_"
+            case_study: 'CaseStudy' = self.table_kwargs['case_study']
+            table_ident = f"{case_study.project_name}_{case_study.version}_"
+        elif 'project' in self.table_kwargs:
+            table_ident = f"{self.table_kwargs['project']}_"
 
         sep_stages = ''
         if self.supports_stage_separation(
         ) and self.table_kwargs.get('sep_stages', None):
             sep_stages = 'S'
 
-        filetype: str = self.format_filetypes.get(
-            self.table_kwargs["format"], "txt"
-        )
+        filetype = self.format_filetypes.get(table_format, "txt")
         return f"{table_ident}{self.name}{sep_stages}.{filetype}"
 
     @abc.abstractmethod
@@ -173,13 +168,15 @@ class Table:
     def show(self) -> None:
         """Show the current table in console."""
         try:
-            table = self.tabulate()
+            table = self.tabulate(TableFormat.FANCY_GRID)
         except TableDataEmpty:
             LOG.warning("No data for the current project.")
             return
         print(table)
 
-    def save(self, path: Path, wrap_document: bool) -> None:
+    def save(
+        self, path: Path, table_format: TableFormat, wrap_document: bool
+    ) -> None:
         """
         Save the current table to a file.
 
@@ -189,7 +186,7 @@ class Table:
                            latex document
         """
         try:
-            table = self.tabulate()
+            table = self.tabulate(table_format)
         except TableDataEmpty:
             LOG.warning("No data for this table.")
             return
@@ -197,7 +194,7 @@ class Table:
         if wrap_document:
             table = self.wrap_table(table)
 
-        with open(path / self.table_file_name(), "w") as outfile:
+        with open(path / self.table_file_name(table_format), "w") as outfile:
             outfile.write(table)
 
 

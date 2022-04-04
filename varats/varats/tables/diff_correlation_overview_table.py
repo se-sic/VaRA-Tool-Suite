@@ -17,19 +17,15 @@ from varats.table.tables import (
     TableGenerator,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
-    TableConfig,
 )
 
 
-class DiffCorrelationOverviewTable(Table):
+class DiffCorrelationOverviewTable(
+    Table, table_name="b_diff_correlation_overview_table"
+):
     """Visualizes the correlations between different `BlameReport` metrics."""
 
-    NAME = "b_diff_correlation_overview_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         case_studies = get_paper_config().get_all_case_studies()
 
         variables = [
@@ -54,7 +50,7 @@ class DiffCorrelationOverviewTable(Table):
             correlations, axis=1, keys=get_unique_cs_name(case_studies)
         )
 
-        if self.table_kwargs['format'] in [
+        if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = df.to_latex(bold_rows=True, multicolumn_format="c")

@@ -19,7 +19,6 @@ from varats.project.project_util import get_local_project_gits
 from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
 from varats.table.tables import (
     TableFormat,
-    TableConfig,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
     TableGenerator,
@@ -35,16 +34,13 @@ from varats.utils.git_util import (
 LOG = logging.Logger(__name__)
 
 
-class TopCentralCodeCommitsTable(Table):
+class TopCentralCodeCommitsTable(
+    Table, table_name="top_central_code_commits_table"
+):
     """Table showing commits with highest commit interaction graph node
     degrees."""
 
-    NAME = "top_central_code_commits_table"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         case_study = self.table_kwargs["case_study"]
         num_commits = self.table_kwargs.get("num_commits", 10)
 
@@ -96,7 +92,6 @@ class TopCentralCodeCommitsTable(Table):
         degree_data.sort_values(["centrality", "commit"],
                                 ascending=[False, True],
                                 inplace=True)
-        table_format: TableFormat = self.table_kwargs["format"]
 
         if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW

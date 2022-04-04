@@ -13,7 +13,6 @@ from varats.paper.case_study import CaseStudy
 from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import (
     TableFormat,
-    TableConfig,
     TableGenerator,
     REQUIRE_MULTI_CASE_STUDY,
     OPTIONAL_REPORT_TYPE,
@@ -22,15 +21,10 @@ from varats.table.tables import (
 
 # TODO: Rename class to something similar to NAME
 # TODO: Add option for SZZ tool
-class BugOverviewTable(Table):
+class BugOverviewTable(Table, table_name="szz_quality_metrics"):
     """Visualizes SZZ quality metrics for a project."""
 
-    NAME = "szz_quality_metrics"
-
-    def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, table_config, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat) -> str:
         project_name = self.table_kwargs["case_study"].project_name
         szz_tool_name: tp.Optional[str] = self.table_kwargs.get(
             "szz_tool", None
@@ -60,8 +54,6 @@ class BugOverviewTable(Table):
         data.set_index(["fix", "introducer"], inplace=True)
         data.sort_values("score", inplace=True)
         data.sort_index(level="fix", sort_remaining=False, inplace=True)
-
-        table_format: TableFormat = self.table_kwargs["format"]
 
         if table_format in [
             TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
