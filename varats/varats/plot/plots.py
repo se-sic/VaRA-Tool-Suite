@@ -12,15 +12,15 @@ from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,
     ReportTypeConverter,
-    ConfigOption,
-    OptionType,
-    COGetter,
-    COGetterV,
     convert_kwargs,
 )
 from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
+    ConfigOption,
+    OptionType,
+    COGetter,
+    COGetterV,
     add_cli_options,
     cli_yn_choice,
     convert_value,
