@@ -428,9 +428,8 @@ class TableGenerator(abc.ABC):
         Returns:
             a help string that contains all available table names.
         """
-        return "The following table generators are available:\n  " + "\n  ".join(
-            list(TableGenerator.GENERATORS)
-        )
+        return "The following table generators are available:\n  " + \
+               "\n  ".join(list(TableGenerator.GENERATORS))
 
     @staticmethod
     def get_class_for_table_generator_type(

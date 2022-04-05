@@ -34,6 +34,39 @@ from varats.utils.git_util import (
 LOG = logging.Logger(__name__)
 
 
+def _collect_cig_node_data(project_name, revision):
+    churn_config = ChurnConfig.create_c_style_languages_config()
+    cig = create_blame_interaction_graph(project_name,
+                                         revision).commit_interaction_graph()
+    commit_lookup = create_commit_lookup_helper(project_name)
+    repo_lookup = get_local_project_gits(project_name)
+
+    def filter_nodes(node: CommitRepoPair) -> bool:
+        if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
+            return False
+        return bool(commit_lookup(node))
+
+    nodes: tp.List[tp.Dict[str, tp.Any]] = []
+    for node in cig.nodes:
+        node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
+        commit = node_attrs["commit"]
+        if not filter_nodes(commit):
+            continue
+        _, insertions, _ = calc_commit_code_churn(
+            Path(repo_lookup[commit.repository_name].path), commit.commit_hash,
+            churn_config
+        )
+        if insertions == 0:
+            LOG.warning(f"Churn for commit {commit} is 0.")
+            insertions = 1
+        nodes.append(({
+            "commit_hash": commit.commit_hash.hash,
+            "degree": cig.degree(node),
+            "insertions": insertions,
+        }))
+    return nodes
+
+
 class TopCentralCodeCommitsTable(
     Table, table_name="top_central_code_commits_table"
 ):
@@ -51,36 +84,7 @@ class TopCentralCodeCommitsTable(
         if not revision:
             raise TableDataEmpty()
 
-        churn_config = ChurnConfig.create_c_style_languages_config()
-        cig = create_blame_interaction_graph(project_name, revision
-                                            ).commit_interaction_graph()
-        commit_lookup = create_commit_lookup_helper(project_name)
-        repo_lookup = get_local_project_gits(project_name)
-
-        def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
-                return False
-            return bool(commit_lookup(node))
-
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
-        for node in cig.nodes:
-            node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
-            commit = node_attrs["commit"]
-            if not filter_nodes(commit):
-                continue
-            _, insertions, _ = calc_commit_code_churn(
-                Path(repo_lookup[commit.repository_name].path),
-                commit.commit_hash, churn_config
-            )
-            if insertions == 0:
-                LOG.warning(f"Churn for commit {commit} is 0.")
-                insertions = 1
-            nodes.append(({
-                "commit_hash": commit.commit_hash.hash,
-                "degree": cig.degree(node),
-                "insertions": insertions,
-            }))
-
+        nodes = _collect_cig_node_data(project_name, revision)
         data = pd.DataFrame(nodes)
         data["code_centrality"] = data["degree"] - data["insertions"]
         data.set_index("commit_hash", inplace=True)

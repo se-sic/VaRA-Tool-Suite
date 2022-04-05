@@ -104,11 +104,11 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
     the effect of using globals analysis."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_studies: tp.List[CaseStudy] = self.table_kwargs["case_study"]
-
         cs_data: tp.List[pd.DataFrame] = []
 
-        for case_study in sorted(case_studies, key=lambda x: x.project_name):
+        for case_study in sorted(
+            self.table_kwargs["case_study"], key=lambda x: x.project_name
+        ):
             report_files_with = get_processed_revisions_files(
                 case_study.project_name, GlobalsReportWith,
                 get_case_study_file_name_filter(case_study)
@@ -121,15 +121,7 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
             if len(report_files_with) > 1 or len(report_files_without) > 1:
                 LOG.debug(f"report_files_with={report_files_with}")
                 LOG.debug(f"report_files_without={report_files_with}")
-                raise AssertionError("To many report files given!")
-
-            def insert_data_if_present(
-                report: tp.Optional[GlobalsReport], name_id: str,
-                cs_data: tp.List[pd.DataFrame]
-            ) -> None:
-                res = create_df_for_report(report, name_id)
-                if res is not None:
-                    cs_data.append(res)
+                raise AssertionError("Too many report files given!")
 
             if len(case_study.revisions) > 1:
                 LOG.debug(
@@ -138,14 +130,11 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
                     "one are ignored."
                 )
 
-            for binary in case_study.project_cls.binaries_for_revision(
+            binaries = case_study.project_cls.binaries_for_revision(
                 case_study.revisions[0]
-            ):
-                if len(
-                    case_study.project_cls.binaries_for_revision(
-                        case_study.revisions[0]
-                    )
-                ) > 1:
+            )
+            for binary in binaries:
+                if len(binaries) > 1:
                     unique_cs_name = case_study.project_name + "-" + binary.name
                 else:
                     unique_cs_name = case_study.project_name
@@ -161,7 +150,9 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
                         report_files_with_for_binary[0]
                     )
 
-                insert_data_if_present(report_with, unique_cs_name, cs_data)
+                cs_data.append(
+                    create_df_for_report(report_with, unique_cs_name)
+                )
 
                 # Without
                 report_files_without_for_binary = filter_report_paths_binary(
@@ -174,7 +165,9 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
                         report_files_without_for_binary[0]
                     )
 
-                insert_data_if_present(report_without, unique_cs_name, cs_data)
+                cs_data.append(
+                    create_df_for_report(report_without, unique_cs_name)
+                )
 
         df = pd.concat(cs_data)
         df = df.round(2)
@@ -188,7 +181,10 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
 
         kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
         if table_format.is_latex():
-            caption = (
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
+            kwargs["longtable"] = True
+            kwargs["caption"] = (
                 "Pearson correlation coefficient between RGG and Speedup "
                 "(TimeWithout / TimeWith) "
                 f"is: $\\rho$ = {rho_p[0]:.3f} with a two-sided p-value of "
@@ -197,10 +193,6 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
                 f"{len(rggs) - 1} different projects. "
                 f"Relative mean stddev {mean_stddev:.1f}$\\%$"
             )
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
-            kwargs["longtable"] = True
-            kwargs["caption"] = caption
 
         return dataframe_to_table(
             df, table_format, wrap_table, wrap_landscape=True, **kwargs
