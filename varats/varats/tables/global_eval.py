@@ -107,7 +107,8 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
         cs_data: tp.List[pd.DataFrame] = []
 
         for case_study in sorted(
-            self.table_kwargs["case_study"], key=lambda x: x.project_name
+            tp.cast(tp.List[CaseStudy], self.table_kwargs["case_study"]),
+            key=lambda x: x.project_name
         ):
             report_files_with = get_processed_revisions_files(
                 case_study.project_name, GlobalsReportWith,

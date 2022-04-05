@@ -29,12 +29,15 @@ from varats.utils.git_util import (
     create_commit_lookup_helper,
     CommitRepoPair,
     UNCOMMITTED_COMMIT_HASH,
+    FullCommitHash,
 )
 
 LOG = logging.Logger(__name__)
 
 
-def _collect_cig_node_data(project_name, revision):
+def _collect_cig_node_data(
+    project_name: str, revision: FullCommitHash
+) -> tp.List[tp.Dict[str, tp.Any]]:
     churn_config = ChurnConfig.create_c_style_languages_config()
     cig = create_blame_interaction_graph(project_name,
                                          revision).commit_interaction_graph()
