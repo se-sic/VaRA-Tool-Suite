@@ -865,7 +865,7 @@ class RevisionBinaryMap(tp.Container[str]):
             binary_type: the type of binary that is produced
             override_binary_name: overrides the used binary name
             override_entry_point: overrides the executable entry point
-            only_valid_in: additinally specifies a validity range that
+            only_valid_in: additionally specifies a validity range that
                            specifies in which revision range this binary is
                            produced
         """
