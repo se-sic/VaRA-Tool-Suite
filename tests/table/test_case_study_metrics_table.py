@@ -27,7 +27,7 @@ class TestCSMetricsTable(unittest.TestCase):
                 "brotli":
                     FullCommitHash("ce222e317e36aa362e83fc50c7a6226d238e03fd")
             }
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{llrrrl}
@@ -54,7 +54,7 @@ class TestCSMetricsTable(unittest.TestCase):
                 "xz":
                     FullCommitHash("c5c7ceb08a011b97d261798033e2c39613a69eb7")
             }
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{llrrrl}

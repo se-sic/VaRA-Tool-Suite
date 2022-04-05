@@ -71,6 +71,14 @@ class TableFormat(Enum):
     LATEX_BOOKTABS = "latex_booktabs"
     TEXTILE = "textile"
 
+    def is_latex(self) -> bool:
+        return self in [
+            TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
+        ]
+
+    def is_html(self) -> bool:
+        return self in [TableFormat.HTML, TableFormat.UNSAFEHTML]
+
 
 class CommonTableOptions():
     """
@@ -491,7 +499,7 @@ class TableGenerator(abc.ABC):
                 table.save(
                     table_dir,
                     table_format=common_options.table_format,
-                    wrap_document=common_options.wrap_table
+                    wrap_table=common_options.wrap_table
                 )
 
 

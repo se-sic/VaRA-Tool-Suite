@@ -1,8 +1,6 @@
 """Module for writing SZZ quality metrics tables."""
 import typing as tp
 
-from tabulate import tabulate
-
 from varats.data.databases.szz_quality_metrics_database import (
     PyDrillerSZZQualityMetricsDatabase,
     SZZUnleashedQualityMetricsDatabase,
@@ -10,7 +8,8 @@ from varats.data.databases.szz_quality_metrics_database import (
 from varats.data.reports.szz_report import SZZTool
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
-from varats.table.table import Table, wrap_table_in_document
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import (
     TableFormat,
     TableGenerator,
@@ -24,7 +23,7 @@ from varats.table.tables import (
 class BugOverviewTable(Table, table_name="szz_quality_metrics"):
     """Visualizes SZZ quality metrics for a project."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         project_name = self.table_kwargs["case_study"].project_name
         szz_tool_name: tp.Optional[str] = self.table_kwargs.get(
             "szz_tool", None
@@ -55,15 +54,14 @@ class BugOverviewTable(Table, table_name="szz_quality_metrics"):
         data.sort_values("score", inplace=True)
         data.sort_index(level="fix", sort_remaining=False, inplace=True)
 
-        if table_format in [
-            TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
-        ]:
-            tex_code = data.to_latex(multicolumn_format="c", longtable=True)
-            return str(tex_code) if tex_code else ""
-        return tabulate(data, data.columns, table_format.value)
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["multicolumn_format"] = "c"
+            kwargs["longtable"] = True
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        return dataframe_to_table(
+            data, table_format, wrap_table, wrap_landscape=True, **kwargs
+        )
 
 
 class BugOverviewTableGenerator(

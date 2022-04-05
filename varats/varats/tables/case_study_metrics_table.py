@@ -4,14 +4,14 @@ import typing as tp
 
 import pandas as pd
 from benchbuild.utils.cmd import git
-from tabulate import tabulate
 
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
 )
-from varats.table.table import Table, wrap_table_in_document
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import (
     TableFormat,
     TableGenerator,
@@ -27,7 +27,7 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
     """Table showing some general information about the case studies in a paper
     config."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         cs_data: tp.List[pd.DataFrame] = []
@@ -69,17 +69,14 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
 
         df = pd.concat(cs_data).sort_index()
 
-        if table_format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            table = df.to_latex(
-                bold_rows=True, multicolumn_format="c", multirow=True
-            )
-            return str(table) if table else ""
-        return tabulate(df, df.columns, table_format.value)
+        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        if table_format.is_latex():
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        )
 
 
 class CaseStudyMetricsTableGenerator(

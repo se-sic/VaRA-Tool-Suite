@@ -2,7 +2,6 @@
 import typing as tp
 
 import pandas as pd
-from tabulate import tabulate
 
 from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
@@ -10,7 +9,8 @@ from varats.data.databases.blame_diff_metrics_database import (
 from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.case_study import get_unique_cs_name
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.table.table import Table, wrap_table_in_document
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 
 
@@ -19,7 +19,7 @@ class DiffCorrelationOverviewTable(
 ):
     """Visualizes the correlations between different `BlameReport` metrics."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_paper_config().get_all_case_studies()
 
         variables = [
@@ -44,15 +44,13 @@ class DiffCorrelationOverviewTable(
             correlations, axis=1, keys=get_unique_cs_name(case_studies)
         )
 
-        if table_format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            table = df.to_latex(bold_rows=True, multicolumn_format="c")
-            return str(table) if table else ""
-        return tabulate(df, df.columns, TableFormat.GRID.value)
+        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        if table_format.is_latex():
+            kwargs["multicolumn_format"] = "c"
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table)
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=False, **kwargs
+        )
 
 
 class DiffCorrelationOverviewTableGenerator(

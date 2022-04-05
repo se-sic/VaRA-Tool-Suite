@@ -4,7 +4,6 @@ import typing as tp
 from pathlib import Path
 
 import pandas as pd
-from tabulate import tabulate
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -16,7 +15,8 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.project.project_util import get_local_project_gits
-from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
+from varats.table.table import Table, TableDataEmpty
+from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import (
     TableFormat,
     REQUIRE_MULTI_CASE_STUDY,
@@ -40,7 +40,7 @@ class TopCentralCodeCommitsTable(
     """Table showing commits with highest commit interaction graph node
     degrees."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_study = self.table_kwargs["case_study"]
         num_commits = self.table_kwargs.get("num_commits", 10)
 
@@ -93,20 +93,20 @@ class TopCentralCodeCommitsTable(
                                 ascending=[False, True],
                                 inplace=True)
 
-        if table_format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            table = degree_data.to_latex(
-                index=False,
-                multicolumn_format="c",
-                multirow=True,
-                caption=f"Top {num_commits} Central Code Commits"
-            )
-            return str(table) if table else ""
-        return tabulate(degree_data, degree_data.columns, table_format.value)
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["index"] = False
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
+            kwargs["caption"] = f"Top {num_commits} Central Code Commits"
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        return dataframe_to_table(
+            degree_data,
+            table_format,
+            wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
 
 
 class TopCentralCodeCommitsTableGenerator(

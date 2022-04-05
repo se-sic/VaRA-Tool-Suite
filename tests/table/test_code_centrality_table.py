@@ -30,7 +30,7 @@ class TestCSMetricsTable(unittest.TestCase):
         table_str = TopCentralCodeCommitsTable(
             TableConfig.from_kwargs(view=False),
             case_study=get_loaded_paper_config().get_case_studies("xz")[0]
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{table}

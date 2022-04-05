@@ -24,7 +24,7 @@ class TestDiffCorrelationOverviewTable(unittest.TestCase):
         load_paper_config()
         table = diff_correlation_overview_table.DiffCorrelationOverviewTable(
             TableConfig.from_kwargs(view=False)
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         with open("tables/b_diff_correlation_overview.tex") as expected:
             self.assertEqual(table, expected.read())

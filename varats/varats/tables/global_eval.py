@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 from scipy.stats import pearsonr
-from tabulate import tabulate
 
 from varats.data.reports.globals_report import (
     GlobalsReportWith,
@@ -21,7 +20,8 @@ from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
-from varats.table.table import Table, wrap_table_in_document
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import (
     TableFormat,
     TableGenerator,
@@ -103,7 +103,7 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
     """Comparison overview of gathered phasar globals analysis data to compare
     the effect of using globals analysis."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies: tp.List[CaseStudy] = self.table_kwargs["case_study"]
 
         cs_data: tp.List[pd.DataFrame] = []
@@ -186,9 +186,8 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
 
         mean_stddev = df[df["SDev %"] != '-']["SDev %"].mean()
 
-        if table_format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
+        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        if table_format.is_latex():
             caption = (
                 "Pearson correlation coefficient between RGG and Speedup "
                 "(TimeWithout / TimeWith) "
@@ -198,18 +197,14 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
                 f"{len(rggs) - 1} different projects. "
                 f"Relative mean stddev {mean_stddev:.1f}$\\%$"
             )
-            table = df.to_latex(
-                bold_rows=True,
-                multicolumn_format="c",
-                multirow=True,
-                longtable=True,
-                caption=caption
-            )
-            return str(table) if table else ""
-        return tabulate(df, df.columns, table_format.value)
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
+            kwargs["longtable"] = True
+            kwargs["caption"] = caption
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        )
 
 
 class PhasarGlobalsDataComparisionGenerator(

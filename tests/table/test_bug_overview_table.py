@@ -47,7 +47,7 @@ class TestBugOverviewTable(unittest.TestCase):
                        r"&\s*VaRA Tester\s*"
                        r"&\s*None\s*\\\\.*", re.DOTALL)
 
-        table_string = table.tabulate(TableFormat.LATEX_BOOKTABS)
+        table_string = table.tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         result_match = re.search(result_bug_regex, table_string)
         type_match = re.search(type_bug_regex, table_string)

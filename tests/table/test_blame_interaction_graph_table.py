@@ -35,7 +35,7 @@ class TestCSMetricsTable(unittest.TestCase):
         table_str = CommitInteractionGraphMetricsTable(
             TableConfig.from_kwargs(view=False),
             case_study=get_loaded_paper_config().get_all_case_studies()
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
@@ -63,7 +63,7 @@ class TestCSMetricsTable(unittest.TestCase):
         table_str = AuthorInteractionGraphMetricsTable(
             TableConfig.from_kwargs(view=False),
             case_study=get_loaded_paper_config().get_all_case_studies()
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
@@ -91,7 +91,7 @@ class TestCSMetricsTable(unittest.TestCase):
         table_str = CommitAuthorInteractionGraphMetricsTable(
             TableConfig.from_kwargs(view=False),
             case_study=get_loaded_paper_config().get_all_case_studies()
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
@@ -123,7 +123,7 @@ class TestCSMetricsTable(unittest.TestCase):
         table_str = AuthorBlameVsFileDegreesTable(
             TableConfig.from_kwargs(view=False),
             case_study=get_loaded_paper_config().get_case_studies("xz")[0]
-        ).tabulate(TableFormat.LATEX_BOOKTABS)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrr}

@@ -4,7 +4,6 @@ import typing as tp
 import networkx as nx
 import pandas as pd
 from benchbuild.utils.cmd import git
-from tabulate import tabulate
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -17,7 +16,8 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.project.project_util import get_local_project_git
-from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
+from varats.table.table import Table, TableDataEmpty
+from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import (
     TableFormat,
     TableGenerator,
@@ -29,8 +29,8 @@ from varats.utils.git_util import FullCommitHash
 
 def _generate_graph_table(
     case_studies: tp.List[CaseStudy],
-    graph_generator: tp.Callable[[str, FullCommitHash],
-                                 nx.DiGraph], table_format: TableFormat
+    graph_generator: tp.Callable[[str, FullCommitHash], nx.DiGraph],
+    table_format: TableFormat, wrap_table: bool
 ) -> str:
     degree_data: tp.List[pd.DataFrame] = []
     for case_study in case_studies:
@@ -92,20 +92,21 @@ def _generate_graph_table(
         )
 
     df = pd.concat(degree_data).round(2)
-    if table_format in [
-        TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-    ]:
-        table = df.to_latex(
-            bold_rows=True, multicolumn_format="c", multirow=True
-        )
-        return str(table) if table else ""
-    return tabulate(df, df.columns, table_format.value)
+
+    kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+    if table_format.is_latex():
+        kwargs["multicolumn_format"] = "c"
+        kwargs["multirow"] = True
+
+    return dataframe_to_table(
+        df, table_format, wrap_table, wrap_landscape=True, **kwargs
+    )
 
 
 class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
     """Commit interaction graph statistics in table form."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -114,11 +115,9 @@ class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
                                                  ).commit_interaction_graph()
 
         return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format
+            self.table_kwargs["case_study"], create_graph, table_format,
+            wrap_table
         )
-
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
 
 
 class CommitInteractionGraphMetricsTableGenerator(
@@ -139,7 +138,7 @@ class CommitInteractionGraphMetricsTableGenerator(
 class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
     """Author interaction graph statistics in table form."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -148,11 +147,9 @@ class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
                                                  ).author_interaction_graph()
 
         return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format
+            self.table_kwargs["case_study"], create_graph, table_format,
+            wrap_table
         )
-
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
 
 
 class AuthorInteractionGraphMetricsTableGenerator(
@@ -175,7 +172,7 @@ class CommitAuthorInteractionGraphMetricsTable(
 ):
     """Commit-Author interaction graph statistics in table form."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
 
         def create_graph(
             project_name: str, revision: FullCommitHash
@@ -185,11 +182,9 @@ class CommitAuthorInteractionGraphMetricsTable(
             ).commit_author_interaction_graph()
 
         return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format
+            self.table_kwargs["case_study"], create_graph, table_format,
+            wrap_table
         )
-
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
 
 
 class CommitAuthorInteractionGraphMetricsTableGenerator(
@@ -213,7 +208,7 @@ class AuthorBlameVsFileDegreesTable(
     """Table showing authors with the highest author interaction graph node
     degrees."""
 
-    def tabulate(self, table_format: TableFormat) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_study: CaseStudy = self.table_kwargs["case_study"]
 
         project_name: str = case_study.project_name
@@ -259,17 +254,19 @@ class AuthorBlameVsFileDegreesTable(
 
         degree_data = blame_data.join(file_data, how="outer")
 
-        if table_format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            table = degree_data.to_latex(
-                index=True, multicolumn_format="c", multirow=True
-            )
-            return str(table) if table else ""
-        return tabulate(degree_data, degree_data.columns, table_format.value)
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["index"] = True
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        return dataframe_to_table(
+            degree_data,
+            table_format,
+            wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
 
 
 class AuthorBlameVsFileDegreesTableGenerator(
