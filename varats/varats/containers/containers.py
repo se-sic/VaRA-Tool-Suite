@@ -9,6 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from benchbuild.environments import bootstrap
+from benchbuild.environments.adapters.common import buildah_version
 from benchbuild.environments.domain.commands import (
     CreateImage,
     fs_compliant_name,
@@ -217,12 +218,14 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
-
+        mount = f'type=bind,src={src_dir},target={tgt_dir}'
+        if buildah_version() >= (1, 24, 0):
+            mount += ',rw'
         image.run(
             *pip_args,
             str(tgt_dir / 'varats-core'),
             str(tgt_dir / 'varats'),
-            mount=f'type=bind,src={src_dir},target={tgt_dir},rw',
+            mount=mount,
             runtime=crun
         )
 
