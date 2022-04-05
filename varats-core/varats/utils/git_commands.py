@@ -21,10 +21,9 @@ def get_branches(
     repo_folder: Path, extra_args: tp.Optional[tp.List[str]] = None
 ) -> str:
     """Show git branches."""
-    extra_args = [] if extra_args is None else extra_args
-
     args = ["branch"]
-    args += extra_args
+    if extra_args:
+        args += extra_args
 
     return tp.cast(str, git("-C", repo_folder.absolute(), args))
 
@@ -33,9 +32,9 @@ def get_tags(repo_folder: Path,
              extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
     """Get the list of available git tags."""
 
-    extra_args = [] if extra_args is None else extra_args
     args = ["tag"]
-    args += extra_args
+    if extra_args:
+        args += extra_args
 
     git_tag_string: str = git("-C", repo_folder.absolute(), args)
     git_tag_list: tp.List[str] = []
@@ -67,10 +66,9 @@ def fetch_remote(
     extra_args: tp.Optional[tp.List[str]] = None
 ) -> None:
     """Fetches the new changes from the remote."""
-    extra_args = [] if extra_args is None else extra_args
-
     args = ["fetch"]
-    args += extra_args
+    if extra_args:
+        args += extra_args
     if remote:
         args.append(remote)
     git("-C", repo_folder, args)
