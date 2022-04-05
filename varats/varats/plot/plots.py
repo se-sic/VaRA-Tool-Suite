@@ -9,11 +9,7 @@ from pathlib import Path
 import click
 
 from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
-from varats.ts_utils.artefact_util import (
-    CaseStudyConverter,
-    ReportTypeConverter,
-    convert_kwargs,
-)
+from varats.ts_utils.artefact_util import convert_kwargs
 from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
@@ -23,12 +19,6 @@ from varats.ts_utils.cli_util import (
     COGetterV,
     add_cli_options,
     cli_yn_choice,
-    convert_value,
-)
-from varats.ts_utils.click_param_types import (
-    create_multi_case_study_choice,
-    create_single_case_study_choice,
-    create_report_type_choice,
 )
 from varats.utils.settings import vara_cfg
 
@@ -345,50 +335,6 @@ class PlotConfig():
             for option in self.__options.values()
             if option.value
         }
-
-
-REQUIRE_CASE_STUDY: CLIOptionTy = convert_value(
-    "case_study", CaseStudyConverter
-)(
-    make_cli_option(
-        "-cs",
-        "--case-study",
-        type=create_single_case_study_choice(),
-        required=True,
-        metavar="NAME",
-        help="The case study to use for the plot."
-    )
-)
-REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = convert_value(
-    "case_study", CaseStudyConverter
-)(
-    make_cli_option(
-        "-cs",
-        "--case-study",
-        type=create_multi_case_study_choice(),
-        required=True,
-        metavar="NAMES",
-        help="The case study to use for the plot."
-    )
-)
-REQUIRE_REVISION: CLIOptionTy = make_cli_option(
-    "-rev",
-    "--revision",
-    type=str,
-    required=True,
-    metavar="SHORT_COMMIT_HASH",
-    help="The revision to use for the plot."
-)
-REQUIRE_REPORT_TYPE: CLIOptionTy = convert_value(
-    "report_type", ReportTypeConverter
-)(
-    make_cli_option(
-        "--report-type",
-        type=create_report_type_choice(),
-        required=True,
-        help="The report type to use for the plot."
-    )
-)
 
 
 class PlotGeneratorFailed(Exception):

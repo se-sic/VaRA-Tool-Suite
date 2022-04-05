@@ -29,7 +29,8 @@ class TestCSMetricsTable(unittest.TestCase):
         # latex booktabs is default format
         table_str = TopCentralCodeCommitsTable(
             TableConfig.from_kwargs(view=False),
-            case_study=get_loaded_paper_config().get_case_studies("xz")[0]
+            case_study=get_loaded_paper_config().get_case_studies("xz")[0],
+            num_commits=10
         ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(

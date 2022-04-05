@@ -18,12 +18,8 @@ from varats.paper_mgmt.case_study import (
 from varats.project.project_util import get_local_project_git
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import (
-    TableFormat,
-    TableGenerator,
-    OPTIONAL_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import FullCommitHash
 
 
@@ -123,7 +119,7 @@ class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
 class CommitInteractionGraphMetricsTableGenerator(
     TableGenerator,
     generator_name="cig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a cig-metrics table for the selected case study(ies)."""
 
@@ -155,7 +151,7 @@ class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
 class AuthorInteractionGraphMetricsTableGenerator(
     TableGenerator,
     generator_name="aig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates an aig-metrics table for the selected case study(ies)."""
 
@@ -190,7 +186,7 @@ class CommitAuthorInteractionGraphMetricsTable(
 class CommitAuthorInteractionGraphMetricsTableGenerator(
     TableGenerator,
     generator_name="caig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a caig-metrics table for the selected case study(ies)."""
 
@@ -272,7 +268,7 @@ class AuthorBlameVsFileDegreesTable(
 class AuthorBlameVsFileDegreesTableGenerator(
     TableGenerator,
     generator_name="aig-file-vs-blame-degrees-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates an aig-file-vs-blame-degrees table for the selected case
     study(ies)."""

@@ -17,12 +17,9 @@ from varats.paper_mgmt.case_study import (
 from varats.project.project_util import get_local_project_gits
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import (
-    TableFormat,
-    REQUIRE_MULTI_CASE_STUDY,
-    OPTIONAL_REPORT_TYPE,
-    TableGenerator,
-)
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     ChurnConfig,
     calc_commit_code_churn,
@@ -78,7 +75,7 @@ class TopCentralCodeCommitsTable(
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_study = self.table_kwargs["case_study"]
-        num_commits = self.table_kwargs.get("num_commits", 10)
+        num_commits = self.table_kwargs["num_commits"]
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
@@ -116,10 +113,20 @@ class TopCentralCodeCommitsTable(
         )
 
 
+OPTIONAL_NUM_COMMITS: CLIOptionTy = make_cli_option(
+    "--num-commits",
+    type=int,
+    default=10,
+    required=False,
+    metavar="NUM",
+    help="Number of commits in the table."
+)
+
+
 class TopCentralCodeCommitsTableGenerator(
     TableGenerator,
     generator_name="top-central-code-commits-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_NUM_COMMITS]
 ):
     """Generates a top-central-code-commits table for the selected case
     study(ies)."""

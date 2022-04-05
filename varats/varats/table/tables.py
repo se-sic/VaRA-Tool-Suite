@@ -10,11 +10,7 @@ from pathlib import Path
 import click
 
 from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
-from varats.ts_utils.artefact_util import (
-    CaseStudyConverter,
-    ReportTypeConverter,
-    convert_kwargs,
-)
+from varats.ts_utils.artefact_util import convert_kwargs
 from varats.ts_utils.cli_util import (
     make_cli_option,
     add_cli_options,
@@ -24,14 +20,8 @@ from varats.ts_utils.cli_util import (
     COGetter,
     COGetterV,
     cli_yn_choice,
-    convert_value,
 )
-from varats.ts_utils.click_param_types import (
-    create_single_case_study_choice,
-    create_multi_case_study_choice,
-    create_report_type_choice,
-    EnumChoice,
-)
+from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import vara_cfg
 
 if sys.version_info <= (3, 8):
@@ -312,50 +302,6 @@ class TableConfig():
             for option in self.__options.values()
             if option.value
         }
-
-
-REQUIRE_CASE_STUDY: CLIOptionTy = convert_value(
-    "case_study", CaseStudyConverter
-)(
-    make_cli_option(
-        "-cs",
-        "--case-study",
-        type=create_single_case_study_choice(),
-        required=True,
-        metavar="NAME",
-        help="The case study to use for the table."
-    )
-)
-REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = convert_value(
-    "case_study", CaseStudyConverter
-)(
-    make_cli_option(
-        "-cs",
-        "--case-study",
-        type=create_multi_case_study_choice(),
-        required=True,
-        metavar="NAMES",
-        help="The case study to use for the table."
-    )
-)
-REQUIRE_REVISION: CLIOptionTy = make_cli_option(
-    "-rev",
-    "--revision",
-    type=str,
-    required=True,
-    metavar="SHORT_COMMIT_HASH",
-    help="The revision to use for the table."
-)
-OPTIONAL_REPORT_TYPE: CLIOptionTy = convert_value(
-    "report_type", ReportTypeConverter
-)(
-    make_cli_option(
-        "--report-type",
-        type=create_report_type_choice(),
-        required=False,
-        help="The report type to use for the table."
-    )
-)
 
 
 class TableGeneratorFailed(Exception):

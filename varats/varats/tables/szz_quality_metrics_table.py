@@ -10,27 +10,20 @@ from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import (
-    TableFormat,
-    TableGenerator,
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import (
     REQUIRE_MULTI_CASE_STUDY,
-    OPTIONAL_REPORT_TYPE,
+    EnumChoice,
 )
 
 
-# TODO: Rename class to something similar to NAME
-# TODO: Add option for SZZ tool
-class BugOverviewTable(Table, table_name="szz_quality_metrics"):
+class SZZQualityMetricsTable(Table, table_name="szz_quality_metrics"):
     """Visualizes SZZ quality metrics for a project."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         project_name = self.table_kwargs["case_study"].project_name
-        szz_tool_name: tp.Optional[str] = self.table_kwargs.get(
-            "szz_tool", None
-        )
-        if not szz_tool_name:
-            raise ValueError("No szz tool provided")
-        szz_tool = SZZTool[szz_tool_name.upper()]
+        szz_tool: SZZTool = self.table_kwargs["szz_tool"]
 
         commit_map = get_commit_map(project_name)
         columns = {
@@ -47,7 +40,7 @@ class BugOverviewTable(Table, table_name="szz_quality_metrics"):
                 project_name, list(columns.keys()), commit_map
             )
         else:
-            raise ValueError(f"Unknown SZZ tool '{szz_tool_name}'")
+            raise ValueError(f"Unknown SZZ tool '{szz_tool.tool_name}'")
 
         data.rename(columns=columns, inplace=True)
         data.set_index(["fix", "introducer"], inplace=True)
@@ -64,10 +57,18 @@ class BugOverviewTable(Table, table_name="szz_quality_metrics"):
         )
 
 
-class BugOverviewTableGenerator(
+REQUIRE_SZZ_TOOL: CLIOptionTy = make_cli_option(
+    "--szz-tool",
+    type=EnumChoice(SZZTool, case_sensitive=False),
+    required=True,
+    help="The SZZ tool for which to show the data."
+)
+
+
+class SZZQualityMetricsTableGenerator(
     TableGenerator,
     generator_name="szz-quality-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_SZZ_TOOL]
 ):
     """Generates a szz-quality-metrics table for the selected case study."""
 
@@ -75,7 +76,7 @@ class BugOverviewTableGenerator(
         case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
 
         return [
-            BugOverviewTable(
+            SZZQualityMetricsTable(
                 self.table_config, case_study=cs, **self.table_kwargs
             ) for cs in case_studies
         ]

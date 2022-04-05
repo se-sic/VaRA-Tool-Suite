@@ -5,6 +5,7 @@ import typing as tp
 import pandas as pd
 from benchbuild.utils.cmd import git
 
+from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_git,
@@ -12,12 +13,7 @@ from varats.project.project_util import (
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import (
-    TableFormat,
-    TableGenerator,
-    REQUIRE_MULTI_CASE_STUDY,
-    OPTIONAL_REPORT_TYPE,
-)
+from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc
 
 LOG = logging.Logger(__name__)
@@ -33,17 +29,18 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
         cs_data: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
+            commit_map = get_commit_map(project_name)
             project_cls = get_project_cls_by_name(project_name)
             project_repo = get_local_project_git(project_name)
             project_path = project_repo.path[:-5]
             project_git = git["-C", project_path]
 
-            revision = self.table_kwargs.get("revisions", {}).get(
-                case_study.project_name, None
+            revisions = sorted(
+                case_study.revisions,
+                key=lambda x: commit_map.time_id(x),
+                reverse=True
             )
-            revisions = case_study.revisions
-            if not revision and len(revisions) == 1:
-                revision = revisions[0]
+            revision = revisions[0]
             rev_range = revision.hash if revision else "HEAD"
 
             cs_dict = {
@@ -80,9 +77,7 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
 
 
 class CaseStudyMetricsTableGenerator(
-    TableGenerator,
-    generator_name="cs-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    TableGenerator, generator_name="cs-metrics-table", options=[]
 ):
     """Generates a cs-metrics table for the selected case study(ies)."""
 

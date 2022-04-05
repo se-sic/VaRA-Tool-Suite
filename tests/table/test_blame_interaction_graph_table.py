@@ -14,7 +14,6 @@ from varats.tables.blame_interaction_graph_table import (
     CommitAuthorInteractionGraphMetricsTable,
     AuthorBlameVsFileDegreesTable,
 )
-from varats.tables.code_centrality_table import TopCentralCodeCommitsTable
 from varats.utils.settings import vara_cfg
 
 

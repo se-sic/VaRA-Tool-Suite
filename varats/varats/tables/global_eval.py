@@ -22,12 +22,8 @@ from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import (
-    TableFormat,
-    TableGenerator,
-    REQUIRE_MULTI_CASE_STUDY,
-    OPTIONAL_REPORT_TYPE,
-)
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 
 LOG = logging.Logger(__name__)
 
@@ -203,7 +199,7 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
 class PhasarGlobalsDataComparisionGenerator(
     TableGenerator,
     generator_name="phasar-globals-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a phasar-globals table for the selected case study(ies)."""
 

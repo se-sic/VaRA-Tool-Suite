@@ -22,11 +22,7 @@ class TestCSMetricsTable(unittest.TestCase):
 
         # latex booktabs is default format
         table_str = CaseStudyMetricsTable(
-            TableConfig.from_kwargs(view=False),
-            revisions={
-                "brotli":
-                    FullCommitHash("ce222e317e36aa362e83fc50c7a6226d238e03fd")
-            }
+            TableConfig.from_kwargs(view=False)
         ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
@@ -34,7 +30,7 @@ class TestCSMetricsTable(unittest.TestCase):
 \toprule
 {} &       Domain &    LOC &  Commits &  Authors &    Revision \\
 \midrule
-\textbf{brotli} &  Compression &  34833 &     1030 &       87 &  ce222e317e \\
+\textbf{brotli} &  Compression &  34639 &      848 &       40 &  aaa4424d9b \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -49,11 +45,7 @@ class TestCSMetricsTable(unittest.TestCase):
 
         # latex booktabs is default format
         table_str = CaseStudyMetricsTable(
-            TableConfig.from_kwargs(view=False),
-            revisions={
-                "xz":
-                    FullCommitHash("c5c7ceb08a011b97d261798033e2c39613a69eb7")
-            }
+            TableConfig.from_kwargs(view=False)
         ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(

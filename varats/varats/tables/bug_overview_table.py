@@ -9,12 +9,8 @@ from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import (
-    TableFormat,
-    TableGenerator,
-    OPTIONAL_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 
 
 class BugOverviewTable(Table, table_name="bug_overview_table"):
@@ -52,7 +48,7 @@ class BugOverviewTable(Table, table_name="bug_overview_table"):
 class BugOverviewTableGenerator(
     TableGenerator,
     generator_name="bug-overview-table",
-    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_REPORT_TYPE]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a bug-overview table for the selected case study(ies)."""
 
