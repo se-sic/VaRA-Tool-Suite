@@ -36,9 +36,7 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
             project_git = git["-C", project_path]
 
             revisions = sorted(
-                case_study.revisions,
-                key=lambda x: commit_map.time_id(x),
-                reverse=True
+                case_study.revisions, key=commit_map.time_id, reverse=True
             )
             revision = revisions[0]
             rev_range = revision.hash if revision else "HEAD"
