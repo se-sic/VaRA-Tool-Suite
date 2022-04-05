@@ -1,4 +1,3 @@
-import abc
 import math
 import typing as tp
 
@@ -17,7 +16,11 @@ from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_CASE_STUDY
-from varats.utils.git_util import ShortCommitHash, FullCommitHash
+from varats.utils.git_util import (
+    ShortCommitHash,
+    FullCommitHash,
+    create_commit_lookup_helper,
+)
 
 
 def get_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
@@ -124,7 +127,6 @@ def get_normalized_interactions_per_commit_wide(
     case_study: CaseStudy
 ) -> DataFrame:
     data = get_normalized_interactions_per_commit_long(case_study)
-    print(data)
     data = data.pivot(
         index="base_hash", columns="revision", values="interactions"
     )
@@ -162,12 +164,25 @@ def lines_and_interactions(case_study: CaseStudy) -> DataFrame:
     return data.astype(float)
 
 
+def get_author_color_map(case_study: CaseStudy) -> dict[tp.Any, tp.Any]:
+    commit_lookup_helper = create_commit_lookup_helper(case_study.project_name)
+    author_set: set = set()
+    for commit_hash in case_study.revisions:
+        commit = commit_lookup_helper(commit_hash)
+        author_set.add(commit.author.name)
+    author_list = list(author_set)
+    colormap = plt.get_cmap("nipy_spectral")
+    colors = colormap(np.linspace(0, 1, len(author_list)))
+    return dict(zip(author_list, colors))
+
+
 class HeatMapPlot(Plot, plot_name=None):
     colormap = 'RdYlGn'
     vmin = 0
     vmax = 100
     xticklables = 1
     yticklables = 1
+    color_commits = False
 
     def __init__(
         self, name: str, plot_config: PlotConfig,
@@ -179,16 +194,26 @@ class HeatMapPlot(Plot, plot_name=None):
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())
         _, axis = plt.subplots(1, 1)
-
-        data = self.data_function(self.plot_kwargs['case_study'])
-        sns.heatmap(
+        case_study = self.plot_kwargs['case_study']
+        data = self.data_function(case_study)
+        axis = sns.heatmap(
             data,
             cmap=self.colormap,
             vmin=self.vmin,
             vmax=self.vmax,
             xticklabels=self.xticklables,
-            yticklabels=self.yticklables
+            yticklabels=self.yticklables,
+            linecolor="grey",
+            linewidth=1
         )
+        color_map = get_author_color_map(case_study)
+        if self.color_commits:
+            commit_lookup_helper = create_commit_lookup_helper(
+                case_study.project_name
+            )
+            for label in axis.get_yticklabels():
+                commit = commit_lookup_helper(FullCommitHash(label.get_text()))
+                label.set_color(color_map[commit.author.name])
         plt.setp(
             axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
         )
@@ -225,20 +250,12 @@ class HeatMapPlot(Plot, plot_name=None):
                 if head_cm_neighbours(lhs_cm, rhs_cm):
                     print(
                         "Found steep gradient between neighbours " +
-                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                            lhs_cm=lhs_cm,
-                            rhs_cm=rhs_cm,
-                            gradient=round(max(gradient), 5)
-                        )
+                        f"{lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
                     )
                 else:
                     print(
                         "Unusual gradient between " +
-                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                            lhs_cm=lhs_cm,
-                            rhs_cm=rhs_cm,
-                            gradient=round(max(gradient), 5)
-                        )
+                        f"{lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
                     )
                     new_rev_id = round((
                         commit_map.short_time_id(lhs_cm) +
@@ -246,8 +263,7 @@ class HeatMapPlot(Plot, plot_name=None):
                     ) / 2.0)
                     new_rev = commit_map.c_hash(new_rev_id)
                     print(
-                        "-> Adding {rev} as new revision to the sample set".
-                        format(rev=new_rev)
+                        f"-> Adding {new_rev} as new revision to the sample set"
                     )
                     new_revs.add(new_rev)
                 print()
@@ -259,7 +275,6 @@ class HeatMapPlot(Plot, plot_name=None):
 class SurvivingInteractionsPlot(
     HeatMapPlot, plot_name="surviving_interactions_plot"
 ):
-
     NAME = 'surviving_interactions_plot'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
@@ -267,6 +282,7 @@ class SurvivingInteractionsPlot(
             self.NAME, plot_config, get_normalized_interactions_per_commit_wide,
             **kwargs
         )
+        self.color_commits = True
 
 
 class SurvivingLinesPlot(HeatMapPlot, plot_name="surviving_commit_plot"):
@@ -283,6 +299,7 @@ class SurvivingLinesPlot(HeatMapPlot, plot_name="surviving_commit_plot"):
             self.NAME, plot_config, get_normalized_lines_per_commit_wide,
             **kwargs
         )
+        self.color_commits = True
 
 
 class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
@@ -299,6 +316,7 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
             self.NAME, plot_config, lines_and_interactions, **kwargs
         )
         self.yticklables = 3
+        self.color_commits = True
 
 
 class SurvivingCommitPlotGenerator(
