@@ -4,6 +4,7 @@ minimal interface ``BaseReport`` to implement own reports."""
 import re
 import shutil
 import typing as tp
+import weakref
 from enum import Enum
 from pathlib import Path, PosixPath
 from tempfile import TemporaryDirectory
@@ -568,36 +569,30 @@ T = tp.TypeVar('T', bound=BaseReport)
 class ReportAggregate(
     BaseReport, tp.Generic[T], shorthand="Agg", file_type="zip"
 ):
-    """Context Manager for parsing multiple reports of the same type stored
-    inside a zip file."""
+    """Parses multiple reports of the same type stored inside a zip file."""
 
     def __init__(self, path: Path, report_type: tp.Type[T]) -> None:
         super().__init__(path)
 
-        self.__report_type = report_type
-        self.__reports: tp.List[T] = []
-        self.__tmpdir = TemporaryDirectory()  # pylint: disable=R1732
+        # Create a temporary directory for extraction and register finalizer, which will clean it up.
+        self.__tmpdir = TemporaryDirectory()
+        # pylint: disable=R1732
+        self.__finalizer = weakref.finalize(self, self.__tmpdir.cleanup)
 
-    def __enter__(self) -> None:
-        """Extracts the archive contents into a temporary directory and parses
-        the reports."""
-
+        # Extract archive and parse reports.
         if self.path.exists():
             shutil.unpack_archive(self.path, self.__tmpdir.name)
 
         self.__reports = [
-            self.__report_type(file)
-            for file in Path(self.__tmpdir.name).iterdir()
+            report_type(file) for file in Path(self.__tmpdir.name).iterdir()
         ]
 
-    def __exit__(
-        self, exc_type: tp.Optional[tp.Type[BaseException]],
-        exc_value: tp.Optional[BaseException],
-        exc_traceback: tp.Optional[TracebackType]
-    ) -> None:
-        """Cleans up the temporary directory used to extract the zip
-        contents."""
-        self.__tmpdir.cleanup()
+    def remove(self):
+        self.__finalizer()
+
+    @property
+    def removed(self):
+        return not self.__finalizer.alive
 
     @property
     def reports(self) -> tp.List[T]:

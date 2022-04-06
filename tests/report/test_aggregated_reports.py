@@ -43,23 +43,18 @@ class TestTimeReportAggregate(unittest.TestCase):
         num_reports = 2
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-
             # Write time reports to `tempdir`.
             tmp_file = Path(tmp_dir) / "TimeAggregateTwoReportsTest.zip"
             time_aggregate = TimeReportAggregate(tmp_file)
             with ZippedReportFolder(tmp_file) as time_reports_dir:
-
                 for i in range(num_reports):
-
                     with open(
                         Path(time_reports_dir) / f"time_report_{i}.txt", "w"
                     ) as time_report_file:
-
                         time_report_file.write(GNU_TIME_OUTPUT)
 
             # Read time reports.
             time_aggregate = TimeReportAggregate(tmp_file)
-            with time_aggregate:
-                self.assertEqual(len(time_aggregate.reports), num_reports)
-                self.assertEqual(time_aggregate.wall_clock_time_mean, 2.0)
-                self.assertEqual(time_aggregate.wall_clock_time_std, 0)
+            self.assertEqual(len(time_aggregate.reports), num_reports)
+            self.assertEqual(time_aggregate.mean_wall_clock_time, 2.0)
+            self.assertEqual(time_aggregate.std_wall_clock_time, 0)

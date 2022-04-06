@@ -215,23 +215,20 @@ class TimeReportAggregate(
 
     @property
     def wall_clock_times(self) -> tp.List[float]:
-
         return [
             report.wall_clock_time.total_seconds() for report in self.reports
         ]
 
     @property
-    def wall_clock_time_mean(self) -> float:
-
+    def mean_wall_clock_time(self) -> float:
         return np.mean(self.wall_clock_times)
 
     @property
-    def wall_clock_time_std(self) -> float:
-
+    def std_wall_clock_time(self) -> float:
         return np.std(self.wall_clock_times)
 
     @property
     def summary(self) -> str:
         return f"num_reports = {len(self.reports)}\n" \
-            f"mean(wall_clock_time) = {self.wall_clock_time_mean}\n" \
-            f"std(wall_clock_time) = {self.wall_clock_time_std}\n"
+            f"mean(wall_clock_time) = {self.mean_wall_clock_time}\n" \
+            f"std(wall_clock_time) = {self.std_wall_clock_time}\n"
