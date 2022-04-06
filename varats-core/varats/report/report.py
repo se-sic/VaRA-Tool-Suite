@@ -8,7 +8,6 @@ import weakref
 from enum import Enum
 from pathlib import Path, PosixPath
 from tempfile import TemporaryDirectory
-from types import TracebackType
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -563,20 +562,20 @@ class ReportSpecification():
         return iter(self.report_types)
 
 
-T = tp.TypeVar('T', bound=BaseReport)
+ReportTy = tp.TypeVar('ReportTy', bound=BaseReport)
 
 
 class ReportAggregate(
-    BaseReport, tp.Generic[T], shorthand="Agg", file_type="zip"
+    BaseReport, tp.Generic[ReportTy], shorthand="Agg", file_type="zip"
 ):
     """Parses multiple reports of the same type stored inside a zip file."""
 
-    def __init__(self, path: Path, report_type: tp.Type[T]) -> None:
+    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
         super().__init__(path)
 
-        # Create a temporary directory for extraction and register finalizer, which will clean it up.
-        self.__tmpdir = TemporaryDirectory()
-        # pylint: disable=R1732
+        # Create a temporary directory for extraction and register finalizer,
+        # which will clean it up.
+        self.__tmpdir = TemporaryDirectory()  # pylint: disable=R1732
         self.__finalizer = weakref.finalize(self, self.__tmpdir.cleanup)
 
         # Extract archive and parse reports.
@@ -595,6 +594,6 @@ class ReportAggregate(
         return not self.__finalizer.alive
 
     @property
-    def reports(self) -> tp.List[T]:
+    def reports(self) -> tp.List[ReportTy]:
         """Returns the list of parsed reports."""
         return self.__reports
