@@ -587,11 +587,11 @@ class ReportAggregate(
             report_type(file) for file in Path(self.__tmpdir.name).iterdir()
         ]
 
-    def remove(self):
+    def remove(self) -> None:
         self.__finalizer()
 
     @property
-    def removed(self):
+    def removed(self) -> bool:
         return not self.__finalizer.alive
 
     @property
