@@ -64,7 +64,6 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 "-k", file_path
             ]
             file_path_xz = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json.xz"
-            print("Test")
 
             with local.cwd(local.path(project.source_of_primary)):
                 xz_cmd = binary[xz_params]
@@ -73,6 +72,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                                    xz_cmd]
                 rm_cmd = rm[file_path_xz]
                 print(rm_cmd)
+                rm_cmd()
                 exec_func_with_pe_error_handler(
                     time_xz_cmd,
                     create_default_analysis_failure_handler(
@@ -82,16 +82,6 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                     )
                 )
                 print("Ends time command")
-                exec_func_with_pe_error_handler(
-                    rm_cmd,
-                    create_default_analysis_failure_handler(
-                        self.__experiment_handle, project,
-                        self.__experiment_handle.report_spec().main_report,
-                        Path(vara_result_folder)
-                    )
-                )
-                print("Ends rm command")
-                
 
 
 
