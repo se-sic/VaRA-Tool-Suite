@@ -548,7 +548,9 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         artefact_dict = {
             **self.__common_options.get_dict(),
             **convert_kwargs(
-                self.plot_generator_class, self.__plot_kwargs, to_string=True
+                self.plot_generator_class.OPTIONS,
+                self.__plot_kwargs,
+                to_string=True
             ),
             **artefact_dict
         }
@@ -579,7 +581,7 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
             name, output_dir, plot_generator_type, common_options, plot_config,
             **convert_kwargs(
                 PlotGenerator.
-                get_class_for_plot_generator_type(plot_generator_type),
+                get_class_for_plot_generator_type(plot_generator_type).OPTIONS,
                 kwargs,
                 to_string=False
             )

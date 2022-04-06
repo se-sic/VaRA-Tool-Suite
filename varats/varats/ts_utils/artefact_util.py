@@ -4,13 +4,11 @@ import typing as tp
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.report.report import BaseReport
-from varats.ts_utils.cli_util import CLIOptionConverter, CLIOptionWithConverter
-
-if tp.TYPE_CHECKING:
-    # pylint: disable=unused-import
-    from varats.plot.plots import PlotGenerator
-    # pylint: disable=unused-import
-    from varats.table.tables import TableGenerator
+from varats.ts_utils.cli_util import (
+    CLIOptionConverter,
+    CLIOptionWithConverter,
+    CLIOptionTy,
+)
 
 
 class CaseStudyConverter(CLIOptionConverter[CaseStudy]):
@@ -62,13 +60,8 @@ class ReportTypeConverter(CLIOptionConverter[tp.Type[BaseReport]]):
         return BaseReport.REPORT_TYPES[str_value]
 
 
-GeneratorTy = tp.TypeVar(
-    "GeneratorTy", tp.Type['PlotGenerator'], tp.Type['TableGenerator']
-)
-
-
 def convert_kwargs(
-    generator_type: GeneratorTy,
+    cli_options: tp.List[CLIOptionTy],
     kwargs: tp.Dict[str, tp.Any],
     to_string: bool = False
 ) -> tp.Dict[str, tp.Any]:
@@ -76,8 +69,7 @@ def convert_kwargs(
     Apply conversions to kwargs as specified by table generator CLI options.
 
     Args:
-        generator_type: table generator with CLI option/converter
-                             declarations
+        cli_options: CLI option/converter declarations
         kwargs: table kwargs as values or strings
         to_string: if ``True`` convert to string, otherwise convert to value
 
@@ -87,7 +79,7 @@ def convert_kwargs(
     converter = {
         decl_converter.name: decl_converter.converter for decl_converter in [
             tp.cast(CLIOptionWithConverter[tp.Any], cli_decl)
-            for cli_decl in generator_type.OPTIONS
+            for cli_decl in cli_options
             if isinstance(cli_decl, CLIOptionWithConverter)
         ]
     }
