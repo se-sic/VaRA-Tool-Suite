@@ -1,6 +1,7 @@
 import math
 import typing as tp
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -182,13 +183,13 @@ class HeatMapPlot(Plot, plot_name=None):
     vmax = 100
     xticklables = 1
     yticklables = 1
-    color_commits = False
 
     def __init__(
         self, name: str, plot_config: PlotConfig,
         data_function: tp.Callable[[CaseStudy], DataFrame], **kwargs
     ):
         super().__init__(name, plot_config, **kwargs)
+        self.color_commits = False
         self.data_function = data_function
 
     def plot(self, view_mode: bool) -> None:
@@ -204,16 +205,25 @@ class HeatMapPlot(Plot, plot_name=None):
             xticklabels=self.xticklables,
             yticklabels=self.yticklables,
             linecolor="grey",
-            linewidth=1
+            linewidth=0.2
         )
-        color_map = get_author_color_map(case_study)
         if self.color_commits:
+            color_map = get_author_color_map(case_study)
             commit_lookup_helper = create_commit_lookup_helper(
                 case_study.project_name
             )
             for label in axis.get_yticklabels():
                 commit = commit_lookup_helper(FullCommitHash(label.get_text()))
                 label.set_color(color_map[commit.author.name])
+            legend = []
+            for author, color in color_map.items():
+                legend.append(mpatches.Patch(color=color, label=author))
+            plt.legend(
+                handles=legend,
+                bbox_to_anchor=(1.2, 1),
+                loc=2,
+                borderaxespad=0.
+            )
         plt.setp(
             axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
         )
