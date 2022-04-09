@@ -235,7 +235,7 @@ class TestProjectBinaryWrapper(unittest.TestCase):
     """Test if we can correctly setup and use the RevisionBinaryMap."""
 
     def test_execution_of_executable(self) -> None:
-        """Check if we can execute a executable bianries."""
+        """Check if we can execute an executable binary."""
         binary = ProjectBinaryWrapper(
             "ls", Path("/bin/ls"), BinaryType.EXECUTABLE
         )
