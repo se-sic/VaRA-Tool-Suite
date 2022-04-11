@@ -3,8 +3,8 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name='varats-core',
-    version='11.1.1',
-    url='https://github.com/se-passau/vara-tool-suite',
+    version='11.1.3',
+    url='https://github.com/se-sic/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],
     setup_requires=["pytest-runner", "setuptools_scm"],

@@ -26,10 +26,9 @@ from varats.jupyterhelper.file import (
     load_szzunleashed_report,
     load_pydriller_szz_report,
 )
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
@@ -71,6 +70,30 @@ class ExtenderStrategy(Enum):
     PER_YEAR_ADD = 4
     RELEASE_ADD = 5
     ADD_BUGS = 6
+
+
+def newest_processed_revision_for_case_study(
+    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+) -> tp.Optional[FullCommitHash]:
+    """
+    Computes the newest revision of this case study that has been processed.
+
+    Args:
+        case_study: to work on
+        result_file_type: report type of the result files
+
+    Returns:
+        the newest processed revision if available
+    """
+    processed_revisions = processed_revisions_for_case_study(
+        case_study, result_file_type
+    )
+    if not processed_revisions:
+        return None
+
+    commit_map = get_commit_map(case_study.project_name)
+    processed_revisions.sort(key=commit_map.time_id, reverse=True)
+    return processed_revisions[0]
 
 
 def processed_revisions_for_case_study(
@@ -555,7 +578,6 @@ def extend_with_release_revs(
     ], merge_stage)
 
 
-@check_required_args('report_type', 'merge_stage')
 def extend_with_bug_commits(
     case_study: CaseStudy, cmap: CommitMap, report_type: tp.Type['BaseReport'],
     merge_stage: int, ignore_blocked: bool

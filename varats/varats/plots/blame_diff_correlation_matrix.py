@@ -26,11 +26,11 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
 from varats.plot.plots import (
-    PlotConfig,
     PlotGenerator,
     REQUIRE_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
 )
+from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.git_util import FullCommitHash
@@ -209,9 +209,6 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
 
     NAME = "b_correlation_matrix"
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
@@ -275,68 +272,11 @@ class BlameDiffCorrelationMatrixGenerator(
         ]
 
 
-# adapted from https://stackoverflow.com/a/55165689
-def _multivariate_grid(
-    x_col: str,
-    y_col: str,
-    hue: str,
-    data: pd.DataFrame,
-    plot_config: PlotConfig,
-    scatter_alpha: float = .5
-) -> None:
-
-    def colored_scatter(
-        x_data: pd.Series,
-        y_data: pd.Series,
-        color: tp.Optional[str] = None
-    ) -> tp.Callable[[tp.Any, tp.Any], None]:
-
-        def scatter(*args: tp.Any, **kwargs: tp.Any) -> None:
-            args = (x_data, y_data)
-            if color is not None:
-                kwargs['c'] = color
-            kwargs['alpha'] = scatter_alpha
-            sns.scatterplot(*args, **kwargs)
-
-        return scatter
-
-    grid = sns.JointGrid(
-        x=x_col, y=y_col, data=data, xlim=(-0.05, 1.05), ylim=(-0.05, 1.05)
-    )
-    color = None
-    legends = []
-    for name, df_group in data.groupby(hue):
-        legends.append(name)
-        grid.plot_joint(
-            colored_scatter(df_group[x_col], df_group[y_col], color)
-        )
-        sns.kdeplot(df_group[x_col].values, ax=grid.ax_marg_x, color=color)
-        sns.kdeplot(
-            df_group[y_col].values,
-            ax=grid.ax_marg_y,
-            color=color,
-            vertical=True
-        )
-    # Do also global kde:
-    sns.kdeplot(data[x_col].values, ax=grid.ax_marg_x, color='grey')
-    sns.kdeplot(
-        data[y_col].values, ax=grid.ax_marg_y, color='grey', vertical=True
-    )
-    plt.legend(legends)
-
-    plt.subplots_adjust(top=0.9)
-    fig_title_default = f"{x_col} vs. {y_col}"
-    grid.fig.suptitle(plot_config.fig_title(fig_title_default))
-
-
 class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
 
     NAME = "b_distribution_comparison"
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
@@ -356,7 +296,9 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
         def normalize(values: pd.Series) -> pd.Series:
             max_value = values.max()
             min_value = values.min()
-            return (values - min_value) / (max_value - min_value)
+            return tp.cast(
+                pd.Series, (values - min_value) / (max_value - min_value)
+            )
 
         dataframes = []
         for case_study, df in data:
@@ -373,13 +315,7 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
         if "churn" in df:
             df.drop(df[df.churn == 0].index, inplace=True)
 
-        _multivariate_grid(
-            x_col=var_x,
-            y_col=var_y,
-            hue='project',
-            data=df,
-            plot_config=self.plot_config
-        )
+        multivariate_grid(x_col=var_x, y_col=var_y, hue='project', data=df)
 
     def plot_file_name(self, filetype: str) -> str:
         """

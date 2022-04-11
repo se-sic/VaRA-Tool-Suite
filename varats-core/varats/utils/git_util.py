@@ -1,6 +1,5 @@
 """Utility module for handling git repos."""
 import abc
-import os
 import re
 import typing as tp
 from enum import Enum
@@ -14,8 +13,9 @@ from plumbum import local
 from plumbum.commands.modifiers import RETCODE
 
 from varats.project.project_util import (
-    get_local_project_git,
+    get_local_project_gits,
     get_primary_project_source,
+    get_local_project_git_path,
     BinaryType,
     ProjectBinaryWrapper,
 )
@@ -155,6 +155,20 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
     )
 
 
+def get_head_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
+    """
+    Get the current HEAD commit.
+
+    Args:
+        repo_folder:where the git repository is located
+
+    Returns: head commit hash
+    """
+    return FullCommitHash(
+        git(__get_git_path_arg(repo_folder), "rev-parse", "HEAD").strip()
+    )
+
+
 def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
     """
     Get the initial commit of a repository, i.e., the first commit made.
@@ -179,16 +193,15 @@ def get_all_revisions_between(
     repo_folder: tp.Optional[Path] = None
 ) -> tp.List[CommitHashTy]:
     """
-    Returns a list of all revisions between two commits c_start and c_end
-    (inclusive), where c_start comes before c_end.
+    Returns a list of all revisions between two commits c_start and c_end (both
+    inclusive), where c_start comes before c_end.
 
     It is assumed that the current working directory is the git repository.
 
     Args:
-        c_start: first commit of the range
-        c_end: last commit of the range
-        short: shorten revision hashes
-        repo_folder: where the git repository is located
+        c_start: first commit of the range c_end: last commit of the range
+        short: shorten revision hashes repo_folder: where the git repository is
+        located
     """
     result = [c_start]
     result.extend(
@@ -422,90 +435,6 @@ class ChurnConfig():
         return extensions_list
 
 
-CommitLookupTy = tp.Callable[[FullCommitHash, str], pygit2.Commit]
-
-
-def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
-    """
-    Creates a commit lookup function for project repositories.
-
-    Args:
-        project_name: name of the given benchbuild project
-
-    Returns:
-        a Callable that maps a commit hash and repository name to the
-        corresponding commit.
-    """
-
-    # Only used when no git_name is provided
-    primary_project_repo = get_local_project_git(project_name)
-    primary_source_name = os.path.basename(
-        get_primary_project_source(project_name).local
-    )
-    repos: tp.Dict[str, pygit2.Repository] = {}
-
-    # Maps hash to commit within corresponding git_name
-    cache_dict: tp.Dict[str, tp.Dict[FullCommitHash, pygit2.Commit]] = {}
-
-    def get_commit(
-        c_hash: FullCommitHash,
-        git_name: tp.Optional[str] = None
-    ) -> pygit2.Commit:
-        """
-        Gets the commit from a given commit hash within its corresponding
-        repository name.
-
-        Args:
-            c_hash: commit hash of the searched commit
-            git_name: name of the repository, wherein the commit is being
-                      searched. If no git_name is provided, the name of the
-                      primary source is used.
-
-
-        Returns:
-            commit, which corresponds to the given commit hash within the given
-            repository.
-        """
-
-        if git_name == "Unknown":
-            git_name = None
-
-        if not git_name:
-            if primary_source_name not in cache_dict:
-                repos[primary_source_name] = primary_project_repo
-                cache_dict[primary_source_name] = {}
-
-            if c_hash in cache_dict[primary_source_name]:
-                return cache_dict[primary_source_name][c_hash]
-
-            commit = primary_project_repo.get(c_hash.hash)
-            if commit is None:
-                raise LookupError(
-                    f"Could not find commit {c_hash} in {project_name}"
-                )
-            cache_dict[primary_source_name][c_hash] = commit
-            return commit
-
-        if git_name not in cache_dict:
-            current_repo = get_local_project_git(project_name, git_name)
-            repos[git_name] = current_repo
-            cache_dict[git_name] = {}
-
-        if c_hash in cache_dict[git_name]:
-            return cache_dict[git_name][c_hash]
-
-        commit = repos[git_name].get(c_hash.hash)
-        if commit is None:
-            raise LookupError(
-                f"Could not find commit {c_hash} in "
-                f"project {project_name} within git repository {git_name}"
-            )
-        cache_dict[git_name][c_hash] = commit
-        return commit
-
-    return get_commit
-
-
 class CommitRepoPair():
     """Pair of a commit hash and the name of the repository it is based in."""
 
@@ -542,6 +471,77 @@ class CommitRepoPair():
     def __str__(self) -> str:
         return f"{self.repository_name}[{self.commit_hash}]"
 
+    def __repr__(self) -> str:
+        return str(self)
+
+
+CommitLookupTy = tp.Callable[[CommitRepoPair], pygit2.Commit]
+
+
+def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
+    """
+    Creates a commit lookup function for project repositories.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        a Callable that maps a commit hash and repository name to the
+        corresponding commit.
+    """
+
+    repos = get_local_project_gits(project_name)
+
+    def get_commit(crp: CommitRepoPair) -> pygit2.Commit:
+        """
+        Gets the commit from a given ``CommitRepoPair``.
+
+        Args:
+            crp: the ``CommitRepoPair`` for the commit to get
+
+
+        Returns:
+            the commit corresponding to the given CommitRepoPair
+        """
+        commit = repos[crp.repository_name].get(crp.commit_hash.hash)
+        if not commit:
+            raise LookupError(
+                f"Could not find commit {crp} for project {project_name}."
+            )
+
+        return commit
+
+    return get_commit
+
+
+def get_submodule_head(
+    project_name: str, submodule_name: str, commit: FullCommitHash
+) -> FullCommitHash:
+    """
+    Retrieve the checked out commit for a submodule of a project.
+
+    Args:
+        project_name: name of the project
+        submodule_name: name of the submodule
+        commit: commit of the project's main repo
+
+    Returns:
+        checked out commit of the submodule
+    """
+    if submodule_name == get_primary_project_source(project_name).local:
+        return commit
+
+    main_repo = get_local_project_git_path(project_name)
+    submodule_status = git(__get_git_path_arg(main_repo), "ls-tree", commit)
+    commit_pattern = re.compile(
+        r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
+    )
+    match = commit_pattern.search(submodule_status)
+    if match:
+        return FullCommitHash(match.group(1))
+
+    raise AssertionError(f"Unknown submodule {submodule_name}")
+
 
 MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 
@@ -554,7 +554,7 @@ def map_commits(
     """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
-        func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name))
+        func(commit_lookup(cr_pair))
         for cr_pair in cr_pair_list
         if cr_pair.commit_hash != UNCOMMITTED_COMMIT_HASH
     ]
@@ -573,10 +573,10 @@ GIT_DIFF_MATCHER = re.compile(
 
 
 def __calc_code_churn_range_impl(
-    repo_path: str,
+    repo_path: Path,
     churn_config: ChurnConfig,
-    start_range: tp.Optional[str] = None,
-    end_range: tp.Optional[str] = None
+    start_range: tp.Optional[FullCommitHash] = None,
+    end_range: tp.Optional[FullCommitHash] = None
 ) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
@@ -594,20 +594,22 @@ def __calc_code_churn_range_impl(
     """
 
     churn_values: tp.Dict[FullCommitHash, tp.Tuple[int, int, int]] = {}
+    if start_range and start_range == get_initial_commit(repo_path):
+        start_range = None
 
     if start_range is None and end_range is None:
         revision_range = None
     elif start_range is None:
-        revision_range = "..{}".format(end_range)
+        revision_range = f"{end_range.hash}"  # type: ignore
     elif end_range is None:
-        revision_range = "{}~..".format(start_range)
+        revision_range = f"{start_range.hash}~.."
     else:
-        revision_range = "{}~..{}".format(start_range, end_range)
+        revision_range = f"{start_range.hash}~..{end_range.hash}"
 
-    repo_git = git["-C", repo_path]
+    repo_git = git[__get_git_path_arg(repo_path)]
     log_base_params = ["log", "--pretty=%H"]
     diff_base_params = [
-        "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
+        "log", "--pretty=format:'%H'", "--shortstat", "-l0", "--first-parent"
     ]
     if revision_range:
         log_base_params.append(revision_range)
@@ -643,10 +645,10 @@ def __calc_code_churn_range_impl(
 
 
 def calc_code_churn_range(
-    repo: tp.Union[pygit2.Repository, str],
+    repo_path: Path,
     churn_config: tp.Optional[ChurnConfig] = None,
-    start_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None,
-    end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
+    start_range: tp.Optional[FullCommitHash] = None,
+    end_range: tp.Optional[FullCommitHash] = None
 ) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
@@ -655,7 +657,7 @@ def calc_code_churn_range(
     calculated.
 
     Args:
-        repo: git repository
+        repo_path: path to git repository
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -664,23 +666,21 @@ def calc_code_churn_range(
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     return __calc_code_churn_range_impl(
-        repo.path if isinstance(repo, pygit2.Repository) else repo,
-        churn_config, start_range.id
-        if isinstance(start_range, pygit2.Commit) else start_range,
-        end_range.id if isinstance(end_range, pygit2.Commit) else end_range
+        repo_path, churn_config, start_range, end_range
     )
 
 
 def calc_commit_code_churn(
-    repo: pygit2.Repository,
-    commit: pygit2.Commit,
+    repo_path: Path,
+    commit_hash: FullCommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
     """
     Calculates churn of a specific commit.
 
     Args:
-        repo: git repository
+        repo_path: path to git repository
+        commit_hash: commit hash to get churn for
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -688,14 +688,15 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(repo, churn_config, commit, commit)[
-        FullCommitHash.from_pygit_commit(commit)]
+    return calc_code_churn_range(
+        repo_path, churn_config, commit_hash, commit_hash
+    )[commit_hash]
 
 
 def calc_code_churn(
-    repo: pygit2.Repository,
-    commit_a: pygit2.Commit,
-    commit_b: pygit2.Commit,
+    repo_path: Path,
+    commit_a: FullCommitHash,
+    commit_b: FullCommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
     """
@@ -712,11 +713,8 @@ def calc_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    repo_git = git["-C", repo.path]
     diff_base_params = [
-        "diff", "--shortstat", "-l0",
-        str(commit_a.id),
-        str(commit_b.id)
+        "diff", "--shortstat", "-l0", commit_a.hash, commit_b.hash
     ]
 
     if not churn_config.include_everything:
@@ -725,7 +723,7 @@ def calc_code_churn(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    stdout = repo_git(diff_base_params)
+    stdout = git(__get_git_path_arg(repo_path), diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     match = GIT_DIFF_MATCHER.match(stdout)
@@ -745,14 +743,14 @@ def calc_code_churn(
 
 
 def calc_repo_code_churn(
-    repo: pygit2.Repository,
+    repo_path: Path,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates code churn for a repository.
 
     Args:
-        repo: git repository
+        repo: path to git repository
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -760,7 +758,7 @@ def calc_repo_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(repo, churn_config)
+    return calc_code_churn_range(repo_path, churn_config)
 
 
 def __print_calc_repo_code_churn(
@@ -769,7 +767,7 @@ def __print_calc_repo_code_churn(
 ) -> None:
     """Prints calc repo code churn data like git log would do."""
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    churn_map = calc_repo_code_churn(repo, churn_config)
+    churn_map = calc_repo_code_churn(Path(repo.path), churn_config)
 
     for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TIME):
         commit_hash = FullCommitHash.from_pygit_commit(commit)
@@ -784,21 +782,21 @@ def __print_calc_repo_code_churn(
         if churn[0] == 1:
             changed_files = " 1 file changed"
         else:
-            changed_files = " {} files changed".format(churn[0])
+            changed_files = f" {churn[0]} files changed"
 
         if churn[1] == 0:
             insertions = ""
         elif churn[1] == 1:
             insertions = ", 1 insertion(+)"
         else:
-            insertions = ", {} insertions(+)".format(churn[1])
+            insertions = f", {churn[1]} insertions(+)"
 
         if churn[2] == 0:
             deletions = ""
         elif churn[2] == 1:
             deletions = ", 1 deletion(-)"
         else:
-            deletions = ", {} deletions(-)".format(churn[2])
+            deletions = f", {churn[2]} deletions(-)"
 
         if churn[0] > 0 and churn[1] == 0 and churn[2] == 0:
             insertions = ", 0 insertions(+)"
@@ -867,7 +865,7 @@ class RevisionBinaryMap(tp.Container[str]):
             binary_type: the type of binary that is produced
             override_binary_name: overrides the used binary name
             override_entry_point: overrides the executable entry point
-            only_valid_in: additinally specifies a validity range that
+            only_valid_in: additionally specifies a validity range that
                            specifies in which revision range this binary is
                            produced
         """

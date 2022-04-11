@@ -115,7 +115,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
       # or
       sbatch --constraint=kine bb-configs/<report_type>-slurm-<project>.sh
 
-NOTE: If you want to run the same project again (with GenerateBlameReport), you need to empty the BC_files directory, because the path to the git repository will be different. See `#494 <https://github.com/se-passau/VaRA/issues/494>`_
+NOTE: If you want to run the same project again (with GenerateBlameReport), you need to empty the BC_files directory, because the path to the git repository will be different. See `#494 <https://github.com/se-sic/VaRA/issues/494>`_
 
 To use interaction filters, we recommend storing all of them in a separate directory (e.g., benchbuild/interaction_filters) with descriptive names and symlinking them to the place where the experiment expects them.
 
