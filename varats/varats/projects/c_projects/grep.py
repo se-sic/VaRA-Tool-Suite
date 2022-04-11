@@ -7,10 +7,12 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import (
+    project_filter_generator,
+    PaperConfigSpecificGit,
+)
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
@@ -29,13 +31,13 @@ class Grep(VProject):
     DOMAIN = ProjectDomains.UNIX_TOOLS
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="grep",
             remote="https://github.com/vulder/grep.git",
             local="grep",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("grep")
+            shallow=False
         ),
         bb.source.GitSubmodule(
             remote="https://github.com/coreutils/gnulib.git",

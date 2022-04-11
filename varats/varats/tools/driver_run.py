@@ -15,6 +15,7 @@ from subprocess import PIPE
 import click
 from benchbuild.utils.cmd import benchbuild, sbatch
 from plumbum import local
+from plumbum.commands import ProcessExecutionError
 
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
@@ -155,13 +156,16 @@ def main(
     )
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
-        with benchbuild[bb_args].bgrun(stdout=PIPE, stderr=PIPE) as bb_proc:
-            try:
-                _, stdout, _ = tee(bb_proc)
-            except KeyboardInterrupt:
-                # wait for BB to complete when Ctrl-C is pressed
-                retcode, _, _ = tee(bb_proc)
-                sys.exit(retcode)
+        try:
+            with benchbuild[bb_args].bgrun(stdout=PIPE, stderr=PIPE) as bb_proc:
+                try:
+                    _, stdout, _ = tee(bb_proc)
+                except KeyboardInterrupt:
+                    # wait for BB to complete when Ctrl-C is pressed
+                    retcode, _, _ = tee(bb_proc)
+                    sys.exit(retcode)
+        except ProcessExecutionError:
+            sys.exit(1)
 
     if slurm:
         match = __SLURM_SCRIPT_PATTERN.search(stdout)

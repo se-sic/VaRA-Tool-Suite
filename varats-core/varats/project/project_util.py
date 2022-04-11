@@ -7,13 +7,13 @@ from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-import plumbum as pb
 import pygit2
-from benchbuild.source import Git, GitSubmodule
-from benchbuild.source.base import target_prefix
-from benchbuild.utils.cmd import git, mkdir, cp
+from benchbuild.source import Git
+from benchbuild.utils.cmd import git
 from plumbum import local
 from plumbum.commands.base import BoundCommand
+
+from varats.utils.settings import bb_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -89,10 +89,16 @@ def get_local_project_git_path(
     else:
         source = get_primary_project_source(project_name)
 
-    if is_git_source(source):
-        source.fetch()
+    if not is_git_source(source):
+        raise AssertionError(f"Project {project_name} does not use git.")
 
-    return Path(target_prefix()) / Path(source.local)
+    base = Path(str(bb_cfg()["tmp_dir"]))
+    git_path: Path = base / source.local
+    if not git_path.exists():
+        git_path = base / source.local.replace(os.sep, "-")
+    if not git_path.exists():
+        git_path = Path(source.fetch())
+    return git_path
 
 
 def get_extended_commit_lookup_source(
@@ -136,6 +142,31 @@ def get_local_project_git(
     git_path = get_local_project_git_path(project_name, git_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
+
+
+def get_local_project_gits(
+    project_name: str
+) -> tp.Dict[str, pygit2.Repository]:
+    """
+    Get the all git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the git repositories for the project's sources
+    """
+    repos: tp.Dict[str, pygit2.Repository] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        if isinstance(source, Git):
+            source_name = os.path.basename(source.local)
+            repos[source_name] = get_local_project_git(
+                project_name, source_name
+            )
+
+    return repos
 
 
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
@@ -201,7 +232,7 @@ class ProjectBinaryWrapper():
 
         if binary_type is BinaryType.EXECUTABLE:
             self.__entry_point = entry_point
-            if not self.__entry_point:
+            if not self.entry_point:
                 self.__entry_point = self.path
         else:
             self.__entry_point = None
@@ -361,123 +392,3 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         for name in dirs:
             if name == ".gitted":
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
-
-
-class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore
-    """A project source for submodule repositories stored in the vara-test-repos
-    repository."""
-
-    __vara_test_repos_git = Git(
-        remote="https://github.com/se-passau/vara-test-repos",
-        local="vara_test_repos",
-        refspec="origin/HEAD",
-        limit=1
-    )
-
-    def fetch(self) -> pb.LocalPath:
-        """
-        Overrides ``GitSubmodule`` s fetch to
-          1. fetch the vara-test-repos repo
-          2. extract the specified submodule from the vara-test-repos repo
-          3. rename files that were made git_storable (e.g., .gitted) back to
-             their original name (e.g., .git)
-
-        Returns:
-            the path where the inner repo is extracted to
-        """
-        self.__vara_test_repos_git.shallow = self.shallow
-        self.__vara_test_repos_git.clone = self.clone
-
-        vara_test_repos_path = self.__vara_test_repos_git.fetch()
-        submodule_path = vara_test_repos_path / Path(self.remote)
-        submodule_target = local.path(target_prefix()) / Path(self.local)
-
-        # Extract submodule
-        if not os.path.isdir(submodule_target):
-            copy_renamed_git_to_dest(submodule_path, submodule_target)
-
-        return submodule_target
-
-
-class VaraTestRepoSource(Git):  # type: ignore
-    """A project source for repositories stored in the vara-test-repos
-    repository."""
-
-    __vara_test_repos_git = Git(
-        remote="https://github.com/se-passau/vara-test-repos",
-        local="vara_test_repos",
-        refspec="origin/HEAD",
-        limit=1
-    )
-
-    def fetch(self) -> pb.LocalPath:
-        """
-        Overrides ``Git`` s fetch to
-          1. fetch the vara-test-repos repo
-          2. extract the specified repo from the vara-test-repos repo
-          3. rename files that were made git_storable (e.g., .gitted) back to
-             their original name (e.g., .git)
-
-        Returns:
-            the path where the inner repo is extracted to
-        """
-        self.__vara_test_repos_git.shallow = self.shallow
-        self.__vara_test_repos_git.clone = self.clone
-
-        vara_test_repos_path = self.__vara_test_repos_git.fetch()
-        main_src_path = vara_test_repos_path / self.remote
-        main_tgt_path = local.path(target_prefix()) / self.local
-
-        # Extract main repository
-        if not os.path.isdir(main_tgt_path):
-            copy_renamed_git_to_dest(main_src_path, main_tgt_path)
-
-        return main_tgt_path
-
-    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
-        """Overrides ``Git`` s version to create a new git worktree pointing to
-        the requested version."""
-
-        main_repo_src_local = self.fetch()
-        tgt_loc = pb.local.path(target_dir) / self.local
-        vara_test_repos_path = self.__vara_test_repos_git.fetch()
-        main_repo_src_remote = vara_test_repos_path / self.remote
-
-        mkdir('-p', tgt_loc)
-
-        # Extract main repository
-        cp("-r", main_repo_src_local + "/.", tgt_loc)
-
-        # Skip submodule extraction if none exist
-        if not Path(tgt_loc / ".gitmodules").exists():
-            with pb.local.cwd(tgt_loc):
-                git("checkout", "--detach", version)
-            return tgt_loc
-
-        # Extract submodules
-        with pb.local.cwd(tgt_loc):
-
-            # Get submodule entries
-            submodule_url_entry_list = git(
-                "config", "--file", ".gitmodules", "--name-only",
-                "--get-regexp", "url"
-            ).split('\n')
-
-            # Remove empty strings
-            submodule_url_entry_list = list(
-                filter(None, submodule_url_entry_list)
-            )
-
-            for entry in submodule_url_entry_list:
-                relative_submodule_url = Path(
-                    git("config", "--file", ".gitmodules", "--get",
-                        entry).replace('\n', '')
-                )
-                copy_renamed_git_to_dest(
-                    main_repo_src_remote / relative_submodule_url,
-                    relative_submodule_url
-                )
-            git("checkout", "--detach", version)
-            git("submodule", "update")
-
-        return tgt_loc

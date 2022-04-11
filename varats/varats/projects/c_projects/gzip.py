@@ -9,11 +9,13 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import (
+    PaperConfigSpecificGit,
+    project_filter_generator,
+)
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     get_tagged_commits,
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
     get_local_project_git_path,
@@ -41,20 +43,20 @@ class Gzip(VProject, ReleaseProviderHook):
 
     SOURCE = [
         block_revisions([
-            # TODO (se-passau/VaRA#537): glibc < 2.28
+            # TODO (se-sic/VaRA#537): glibc < 2.28
             # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
             RevisionRange(
                 "6ef28aeb035af20818578b1a1bc537f797c27029",
                 "203e40cc4558a80998d05eb74b373a51e796ca8b", "Needs glibc < 2.28"
             )
         ])(
-            bb.source.Git(
+            PaperConfigSpecificGit(
+                project_name="gzip",
                 remote="https://github.com/vulder/gzip.git",
                 local="gzip",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gzip")
+                shallow=False
             )
         ),
         bb.source.GitSubmodule(

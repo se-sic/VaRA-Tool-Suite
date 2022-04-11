@@ -7,10 +7,9 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
     get_local_project_git_path,
@@ -29,13 +28,13 @@ class Lrzip(VProject):
     DOMAIN = ProjectDomains.COMPRESSION
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="lrzip",
             remote="https://github.com/ckolivas/lrzip.git",
             local="lrzip",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("lrzip")
+            shallow=False
         )
     ]
 
@@ -63,9 +62,11 @@ class Lrzip(VProject):
 
         self.cflags += ["-fPIC"]
 
-        clang = bb.compiler.cc(self)
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
         with local.cwd(lrzip_source):
-            with local.env(CC=str(clang)):
+            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(local["./autogen.sh"])()
                 bb.watch(local["./configure"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
