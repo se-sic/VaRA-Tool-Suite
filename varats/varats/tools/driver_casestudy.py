@@ -85,7 +85,8 @@ def main() -> None:
 
 
 @main.command("gen-gui")
-def gen_gui():
+def gen_gui() -> None:
+    """Start a gui for generating CaseStudies."""
     start_gui()
 
 
