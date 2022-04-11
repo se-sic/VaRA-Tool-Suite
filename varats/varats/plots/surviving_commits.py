@@ -205,7 +205,7 @@ class HeatMapPlot(Plot, plot_name=None):
             xticklabels=self.xticklables,
             yticklabels=self.yticklables,
             linecolor="grey",
-            linewidth=0.2
+            linewidth=0.15
         )
         if self.color_commits:
             color_map = get_author_color_map(case_study)
@@ -219,6 +219,7 @@ class HeatMapPlot(Plot, plot_name=None):
             for author, color in color_map.items():
                 legend.append(mpatches.Patch(color=color, label=author))
             plt.legend(
+                fontsize=8,
                 handles=legend,
                 bbox_to_anchor=(1.2, 1),
                 loc=2,

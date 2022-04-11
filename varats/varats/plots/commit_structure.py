@@ -62,7 +62,7 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
         )
         plt.legend(handles=[lines_legend, interactions_legend])
         plt.ticklabel_format(axis='x', useOffset=False)
-        plt.xticks(x_axis, df['revision'], rotation=90)
+        plt.xticks(x_axis, df['revision'])
 
     def calc_missing_revisions(
         self, boundary_gradient: float
