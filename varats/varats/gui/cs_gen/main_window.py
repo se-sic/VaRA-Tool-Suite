@@ -274,7 +274,7 @@ class CommitTableModel(QAbstractTableModel):
         if column == 0:
             return ShortCommitHash(commit.hex).hash
         if column == 1:
-            return commit.author.name()
+            return commit.author.name
         if column == 2:
             tzinfo = timezone(timedelta(minutes=commit.author.offset))
             date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
