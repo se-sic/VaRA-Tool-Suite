@@ -1,4 +1,4 @@
-"""Module for feature performance experiments that instrument and measure the
+"""Module for feature performance eperiments that instrument and measure the
 execution performance of each binary that is produced by a project."""
 import os
 import typing as tp
@@ -30,7 +30,7 @@ from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import BaseReport
 from varats.report.gnu_time_report import TimeReport
 
-# TODO: Refactor to use a bass class for experiments to avoid code duplication
+# TODO: Refactor to use a base class for experiments to avoid code duplication
 # where possible
 
 
@@ -179,6 +179,8 @@ class RunTraced(BaseRunner, shorthand="RTTIME"):
             f"-fvara-fm-path={fm_path.absolute()}",
             "-fsanitize=vara",
             "-fvara-instr=trace_event",
+            "-mllvm",
+            "--vara-optimizer-policy=naive",
         )
 
         return super().actions_for_project(project)
