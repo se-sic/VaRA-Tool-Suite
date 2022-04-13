@@ -154,6 +154,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
         Distro.ARCH: [
             "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl",
             "ninja"
+        ],
+        Distro.FEDORA: [
+            "libsqlite3x-devel", "libcurl-devel", "boost-devel", "papi-devel",
+            "llvm-googletest", "libxml2-devel", "clang"
         ]
     })
 

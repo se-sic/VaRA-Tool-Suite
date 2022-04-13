@@ -82,3 +82,41 @@ class TestAutoclassGenerationForProjects(unittest.TestCase):
             generated_doc_string.split('\n')[0][15:],
             "varats.projects.test_projects.basic_tests.BasicTests"
         )
+
+
+class TestVaRAInstallCommandGeneration(unittest.TestCase):
+    """Tests if we can automatically generate sphinx documentation that shows
+    the commands to install VaRA's dependencies."""
+
+    @run_in_test_environment()
+    def test_generate_vara_install_requirements(self) -> None:
+        """Checks if all the install commands are generated correctly."""
+        with TemporaryDirectory() as tmpdir:
+            du.generate_vara_install_requirements(Path(tmpdir))
+
+            found_debian_intro = False
+            found_sudo_install = False
+            found_cmake_dep = False
+
+            with open(
+                Path(tmpdir) / "vara_install_requirements.inc", "r"
+            ) as install_cmds:
+                for line in install_cmds.readlines():
+                    if "For debian/ubuntu" in line:
+                        found_debian_intro = True
+
+                    if "sudo apt install" in line:
+                        found_sudo_install = True
+
+                    if "cmake" in line:
+                        found_cmake_dep = True
+
+            self.assertTrue(
+                found_debian_intro, "Could not find the debian intro wording"
+            )
+            self.assertTrue(
+                found_sudo_install, "Could not find a sudo install command"
+            )
+            self.assertTrue(
+                found_cmake_dep, "Could not find the dependency cmake"
+            )
