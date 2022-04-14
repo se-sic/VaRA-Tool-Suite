@@ -1,4 +1,4 @@
-"""Report moduel for phasar global analysis reports."""
+"""Report module for phasar global analysis reports."""
 import json
 import typing as tp
 from pathlib import Path
