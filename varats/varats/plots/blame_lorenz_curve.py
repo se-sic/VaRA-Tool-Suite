@@ -16,7 +16,6 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import (
     PlotGenerator,
-    PlotConfig,
     REQUIRE_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
 )
@@ -142,9 +141,6 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
     """Plots the lorenz curve for IN/OUT interactions for a given project."""
 
     NAME = 'b_lorenz_curve'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())
@@ -370,9 +366,6 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
     """
 
     NAME = 'b_gini_overtime'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())

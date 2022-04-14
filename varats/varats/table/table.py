@@ -1,6 +1,7 @@
 """Base table module."""
 
 import abc
+import logging
 import typing as tp
 from pathlib import Path
 
@@ -8,6 +9,12 @@ from pylatex import Document, Package, NoEscape, UnsafeCommand
 
 from varats.paper.case_study import CaseStudy
 from varats.table.tables import TableRegistry, TableFormat
+
+LOG = logging.getLogger(__name__)
+
+
+class TableDataEmpty(Exception):
+    """Throw if there was no input data for the table."""
 
 
 class Table(metaclass=TableRegistry):
@@ -146,7 +153,12 @@ class Table(metaclass=TableRegistry):
             wrap_document: flags whether to wrap the (latex) table code into a
                            complete document.
         """
-        table = self.tabulate()
+        try:
+            table = self.tabulate()
+        except TableDataEmpty:
+            LOG.warning(f"No data for project {self.table_kwargs['project']}.")
+            return
+
         if wrap_document:
             table = self.wrap_table(table)
 

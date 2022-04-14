@@ -48,7 +48,7 @@ First, you need to clone the VaRA-Tool-Suite repository.
 
 .. code-block:: console
 
-    git clone git@github.com:se-passau/VaRA-Tool-Suite.git
+    git clone git@github.com:se-sic/VaRA-Tool-Suite.git
     cd VaRA-Tool-Suite
 
 
@@ -99,23 +99,7 @@ Install VaRA
 
 Required system dependencies for building VaRA.
 
-For ubuntu:
-
-.. code-block:: console
-
-    sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev libssl-dev
-
-For arch:
-
-.. code-block:: console
-
-    sudo pacman -Syu --needed sqlite3 curl boost papi gtest libxml2
-
-For fedora:
-
-.. code-block:: console
-
-    sudo dnf install libsqlite3x-devel libcurl-devel boost-devel papi-devel llvm-googletest libxml2-devel clang
+.. include:: vara_install_requirements.inc
 
 The following example shows how to setup VaRA via command line.
 

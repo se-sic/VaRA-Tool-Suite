@@ -6,7 +6,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import BaseReport
+from varats.report.report import BaseReport, ReportAggregate
 
 
 class TraceEventType(Enum):
@@ -30,7 +30,7 @@ class TraceEventType(Enum):
 
     @staticmethod
     def parse_event_type(raw_event_type: str) -> 'TraceEventType':
-        """Parses a raw string that represents a trace-format even type and
+        """Parses a raw string that represents a trace-format event type and
         converts it to the corresponding enum value."""
         for trace_event_type in TraceEventType:
             if trace_event_type.value == raw_event_type:
@@ -39,7 +39,7 @@ class TraceEventType(Enum):
         raise LookupError("Could not find correct trace event type")
 
     def __str__(self) -> str:
-        return self.value[0]
+        return str(self.value)
 
 
 class TraceEvent():
@@ -47,8 +47,8 @@ class TraceEvent():
     target program."""
 
     def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
-        self.__name = json_trace_event["name"]
-        self.__category = json_trace_event["cat"]
+        self.__name = str(json_trace_event["name"])
+        self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
             json_trace_event["ph"]
         )
@@ -104,7 +104,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         with open(self.path, "r", encoding="utf-8") as json_tef_report:
             data = json.load(json_tef_report)
 
-            self.__display_time_unit = data["displayTimeUnit"]
+            self.__display_time_unit = str(data["displayTimeUnit"])
             self.__trace_events = self._parse_trace_events(data["traceEvents"])
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
@@ -125,6 +125,18 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     @staticmethod
     def _parse_trace_events(
-        raw_event_list: tp.List[str]
+        raw_event_list: tp.List[tp.Dict[str, tp.Any]]
     ) -> tp.List[TraceEvent]:
         return [TraceEvent(data_item) for data_item in raw_event_list]
+
+
+class TEFReportAggregate(
+    ReportAggregate[TEFReport],
+    shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
+    """Context Manager for parsing multiple TEF reports stored inside a zip
+    file."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TEFReport)

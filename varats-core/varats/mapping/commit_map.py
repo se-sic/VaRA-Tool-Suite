@@ -145,7 +145,7 @@ class CommitMap():
             target_file: needs to be a writable stream, i.e., support .write()
         """
         for item in self.__hash_to_id.items():
-            target_file.write("{}, {}\n".format(item[1], item[0]))
+            target_file.write(f"{item[1]}, {item[0]}\n")
 
     def __str__(self) -> str:
         return str(self.__hash_to_id)
@@ -191,7 +191,7 @@ def generate_commit_map(
             for number, line in enumerate(reversed(full_out.split('\n'))):
                 line = line[1:-1]
                 if line in wanted_cm:
-                    yield "{}, {}\n".format(number, line)
+                    yield f"{number}, {line}\n"
 
         git("checkout", old_head)
         return CommitMap(format_stream())

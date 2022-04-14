@@ -1,3 +1,5 @@
+"""Module for feature performance experiments that instrument and measure the
+execution performance of each binary that is produced by a project."""
 import os
 import typing as tp
 
@@ -7,23 +9,12 @@ from benchbuild.utils import actions
 from plumbum import local
 
 from varats.experiment.experiment_util import (
-    exec_func_with_pe_error_handler,
     ExperimentHandle,
     get_varats_result_folder,
-    wrap_unlimit_stack_size,
-    create_default_compiler_error_handler,
-    create_default_analysis_failure_handler,
     VersionExperiment,
     get_default_compile_error_wrapped,
-    PEErrorHandler,
 )
-from varats.experiment.wllvm import (
-    get_cached_bc_file_path,
-    BCFileExtensions,
-    RunWLLVM,
-    get_bc_cache_actions,
-)
-from varats.project.project_util import ProjectBinaryWrapper, BinaryType
+from varats.project.project_util import BinaryType
 from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
     FeatureModelNotFound,
@@ -38,7 +29,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
     configurations, against one or multiple workloads."""
 
     NAME = "ExecBinary"
-    DESCRIPTION = "fobar"  # TODO: fix
+    DESCRIPTION = "Executes each binary and caputres white-box " +\
+        "performance traces."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.run_perf_tracing)
@@ -68,15 +60,20 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
             with local.cwd(local.path(project.source_of_primary)):
                 print(f"Currenlty at {local.path(project.source_of_primary)}")
                 print(f"Bin path {binary.path}")
-                executable = local[f"{binary.path}"]
+
+                # executable = local[f"{binary.path}"]
+
                 with local.env(
                     VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
                 ):
+
+                    workload = "/tmp/countries-land-1km.geo.json"
+
                     # TODO: figure out how to handle workloads
-                    # executable("/home/vulder/vara-root/Selection_050.png")
+                    binary("-k", workload)
 
                     # TODO: figure out how to handle different configs
-                    executable("--slow")
+                    #executable("--slow")
                     # executable()
 
         return actions.StepResult.OK
@@ -113,7 +110,11 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
             "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}"
         ]
         # Sets vara tracing flags
-        project.cflags += ["-fsanitize=vara", "-fvara-instr=trace_event"]
+        project.cflags += [
+            "-fsanitize=vara", "-fvara-instr=trace_event", "-flto",
+            "-fuse-ld=lld"
+        ]
+        project.ldflags += ["-flto"]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \

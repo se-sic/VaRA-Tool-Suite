@@ -2,10 +2,12 @@
 minimal interface ``BaseReport`` to implement own reports."""
 
 import re
+import shutil
 import typing as tp
-from abc import abstractmethod
+import weakref
 from enum import Enum
 from pathlib import Path, PosixPath
+from tempfile import TemporaryDirectory
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -73,9 +75,7 @@ class FileStatusExtension(Enum):
         """Returns a regex group that can match all file stati."""
         regex_grp = r"(?P<status_ext>("
         for status in FileStatusExtension:
-            regex_grp += r"{status_ext}".format(
-                status_ext=status.get_status_extension()
-            ) + '|'
+            regex_grp += fr"{status.get_status_extension()}" + '|'
 
         # Remove the '|' at the end
         regex_grp = regex_grp[:-1]
@@ -560,3 +560,40 @@ class ReportSpecification():
 
     def __iter__(self) -> tp.Iterator[tp.Type[BaseReport]]:
         return iter(self.report_types)
+
+
+ReportTy = tp.TypeVar('ReportTy', bound=BaseReport)
+
+
+class ReportAggregate(
+    BaseReport, tp.Generic[ReportTy], shorthand="Agg", file_type="zip"
+):
+    """Parses multiple reports of the same type stored inside a zip file."""
+
+    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+        super().__init__(path)
+
+        # Create a temporary directory for extraction and register finalizer,
+        # which will clean it up.
+        self.__tmpdir = TemporaryDirectory()  # pylint: disable=R1732
+        self.__finalizer = weakref.finalize(self, self.__tmpdir.cleanup)
+
+        # Extract archive and parse reports.
+        if self.path.exists():
+            shutil.unpack_archive(self.path, self.__tmpdir.name)
+
+        self.__reports = [
+            report_type(file) for file in Path(self.__tmpdir.name).iterdir()
+        ]
+
+    def remove(self) -> None:
+        self.__finalizer()
+
+    @property
+    def removed(self) -> bool:
+        return not self.__finalizer.alive
+
+    @property
+    def reports(self) -> tp.List[ReportTy]:
+        """Returns the list of parsed reports."""
+        return self.__reports

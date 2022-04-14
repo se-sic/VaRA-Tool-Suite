@@ -12,268 +12,268 @@ result-map:
     demangled-name:  args_parse
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          23
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          9
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          15
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          26
   coder_add_filter:
     demangled-name:  coder_add_filter
     num-instructions:  42
     insts:
-      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
+      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
         amount:          19
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
   coder_init:
     demangled-name:  coder_init
     num-instructions:  42
     insts:
-      - base-hash:       fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+      - base-hash:       fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         interacting-hashes:
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
         amount:          1
-      - base-hash:       0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
+      - base-hash:       0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
         interacting-hashes:
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          1
-      - base-hash:       fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+      - base-hash:       fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         interacting-hashes:
-          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
+          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
         amount:          1
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          4
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          3
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          6
-      - base-hash:       da98df54400998be2a6c3876f9655a3c51b93c10
+      - base-hash:       da98df54400998be2a6c3876f9655a3c51b93c10-xz
         interacting-hashes:
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          3
-      - base-hash:       0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
+      - base-hash:       0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
         interacting-hashes:
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          1
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
+          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
         amount:          2
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
+          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
         amount:          4
-      - base-hash:       da98df54400998be2a6c3876f9655a3c51b93c10
+      - base-hash:       da98df54400998be2a6c3876f9655a3c51b93c10-xz
         interacting-hashes:
-          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
+          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
         amount:          5
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          6
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
-          - e114502b2bc371e4a45449832cb69be036360722
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
-          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
+          - 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84-xz
+          - fa3ab0df8ae7a8a1ad55b52266dc0fd387458671-xz
         amount:          3
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
   coder_run:
     demangled-name:  coder_run
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          25
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       9c75b089b4a9e0edcf4cf7970a4383768707d6c8
+      - base-hash:       9c75b089b4a9e0edcf4cf7970a4383768707d6c8-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
-          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
+          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8-xz
         amount:          1
-      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a
+      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
-          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
+          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 4fed98417d1687f5eccccb42a133fde3ec81216a
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
-          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 4fed98417d1687f5eccccb42a133fde3ec81216a-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
+          - 9c75b089b4a9e0edcf4cf7970a4383768707d6c8-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          7
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          3
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          4
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 4fed98417d1687f5eccccb42a133fde3ec81216a
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 4fed98417d1687f5eccccb42a133fde3ec81216a-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          13
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 4fed98417d1687f5eccccb42a133fde3ec81216a
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 4fed98417d1687f5eccccb42a133fde3ec81216a-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          81
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - 4fed98417d1687f5eccccb42a133fde3ec81216a
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 4fed98417d1687f5eccccb42a133fde3ec81216a-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          27
-      - base-hash:       3b34851de1eaf358cf9268922fa0eeed8278d680
+      - base-hash:       3b34851de1eaf358cf9268922fa0eeed8278d680-xz
         interacting-hashes:
-          - 4fed98417d1687f5eccccb42a133fde3ec81216a
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 4fed98417d1687f5eccccb42a133fde3ec81216a-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a
+      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
-      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a
+      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          12
   coder_set_check:
     demangled-name:  coder_set_check
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          2
   coder_set_compression_settings:
     demangled-name:  coder_set_compression_settings
     num-instructions:  42
     insts:
-      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
+      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          13
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
         amount:          24
-      - base-hash:       128586213f77c9bd82b7e9a62927f6d0c3769d85
+      - base-hash:       128586213f77c9bd82b7e9a62927f6d0c3769d85-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 128586213f77c9bd82b7e9a62927f6d0c3769d85
+          - 128586213f77c9bd82b7e9a62927f6d0c3769d85-xz
         amount:          7
-      - base-hash:       ef7890d56453dca1aeb2e12db29b7e418d93dde4
+      - base-hash:       ef7890d56453dca1aeb2e12db29b7e418d93dde4-xz
         interacting-hashes:
-          - 128586213f77c9bd82b7e9a62927f6d0c3769d85
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 128586213f77c9bd82b7e9a62927f6d0c3769d85-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
+      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358-xz
         interacting-hashes:
-          - 128586213f77c9bd82b7e9a62927f6d0c3769d85
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 128586213f77c9bd82b7e9a62927f6d0c3769d85-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          20
-      - base-hash:       128586213f77c9bd82b7e9a62927f6d0c3769d85
+      - base-hash:       128586213f77c9bd82b7e9a62927f6d0c3769d85-xz
         interacting-hashes:
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
         amount:          1
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 128586213f77c9bd82b7e9a62927f6d0c3769d85
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
+          - 128586213f77c9bd82b7e9a62927f6d0c3769d85-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
         amount:          1
   coder_set_extreme:
     demangled-name:  coder_set_extreme
@@ -283,45 +283,45 @@ result-map:
     demangled-name:  coder_set_preset
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          4
   compressed_name:
     demangled-name:  compressed_name
     num-instructions:  42
     insts:
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          11
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          5
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          3
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          49
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          22
-      - base-hash:       fcfb86c7770328cfffa2e83b176af9a1ba2d9128
+      - base-hash:       fcfb86c7770328cfffa2e83b176af9a1ba2d9128-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
   cpucores:
     demangled-name:  cpucores
@@ -343,22 +343,22 @@ result-map:
     demangled-name:  hardware_memlimit_init
     num-instructions:  42
     insts:
-      - base-hash:       bd7ca1dad5c146b6217799ffaa230c32d207a3e5
+      - base-hash:       bd7ca1dad5c146b6217799ffaa230c32d207a3e5-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - bd7ca1dad5c146b6217799ffaa230c32d207a3e5
+          - bd7ca1dad5c146b6217799ffaa230c32d207a3e5-xz
         amount:          9
   hardware_memlimit_set:
     demangled-name:  hardware_memlimit_set
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          2
   hardware_threadlimit_get:
     demangled-name:  hardware_threadlimit_get
@@ -372,74 +372,74 @@ result-map:
     demangled-name:  hardware_threadlimit_set
     num-instructions:  42
     insts:
-      - base-hash:       3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
+      - base-hash:       3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
   io_close:
     demangled-name:  io_close
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          14
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
   io_close_dest:
     demangled-name:  io_close_dest
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          24
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
   io_close_src:
     demangled-name:  io_close_src
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          27
   io_copy_attrs:
     demangled-name:  io_copy_attrs
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          6
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          21
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          57
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         amount:          40
   io_init:
     demangled-name:  io_init
@@ -449,134 +449,134 @@ result-map:
     demangled-name:  io_open
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          23
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          5
   io_open_dest:
     demangled-name:  io_open_dest
     num-instructions:  42
     insts:
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         amount:          2
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          95
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
   io_open_src:
     demangled-name:  io_open_src
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          19
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         amount:          4
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          11
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         amount:          141
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
   io_read:
     demangled-name:  io_read
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          1
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          3
   io_unlink:
     demangled-name:  io_unlink
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          16
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          7
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         amount:          5
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          5
   io_write:
     demangled-name:  io_write
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          14
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          44
   is_empty_filename:
     demangled-name:  is_empty_filename
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          2
   is_tty_stdin:
     demangled-name:  is_tty_stdin
@@ -590,46 +590,46 @@ result-map:
     demangled-name:  main
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          107
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          29
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          1
-      - base-hash:       ae1ad9af54210c9a2be336b1316532da5071516c
+      - base-hash:       ae1ad9af54210c9a2be336b1316532da5071516c-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
   memlimit_too_small:
     demangled-name:  memlimit_too_small
     num-instructions:  42
     insts:
-      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
+      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          5
   message:
     demangled-name:  message
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 0ea98e52ba87453497b1355c51f13bad55c8924a
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 0ea98e52ba87453497b1355c51f13bad55c8924a-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          16
   message_bug:
     demangled-name:  message_bug
@@ -639,51 +639,51 @@ result-map:
     demangled-name:  message_error
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          14
   message_fatal:
     demangled-name:  message_fatal
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          14
   message_filters:
     demangled-name:  message_filters
     num-instructions:  42
     insts:
-      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a
+      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          14
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 4fed98417d1687f5eccccb42a133fde3ec81216a
+          - 4fed98417d1687f5eccccb42a133fde3ec81216a-xz
         amount:          2
   message_help:
     demangled-name:  message_help
     num-instructions:  42
     insts:
-      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a
+      - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          3
   message_init:
     demangled-name:  message_init
     num-instructions:  42
     insts:
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          2
   message_progress_end:
     demangled-name:  message_progress_end
@@ -693,42 +693,42 @@ result-map:
     demangled-name:  message_progress_start
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          5
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          15
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          2
   message_progress_update:
     demangled-name:  message_progress_update
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          15
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          13
   message_set_files:
     demangled-name:  message_set_files
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          2
   message_signal_handler:
     demangled-name:  message_signal_handler
@@ -758,9 +758,9 @@ result-map:
     demangled-name:  message_warning
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          14
   my_exit:
     demangled-name:  my_exit
@@ -774,9 +774,9 @@ result-map:
     demangled-name:  my_time
     num-instructions:  42
     insts:
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          7
   open_stdxxx:
     demangled-name:  open_stdxxx
@@ -786,261 +786,261 @@ result-map:
     demangled-name:  options_delta
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          3
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
   options_lzma:
     demangled-name:  options_lzma
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
-      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04
+      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          4
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          10
-      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04
+      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          6
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          2
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
   options_subblock:
     demangled-name:  options_subblock
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          5
   parse_environment:
     demangled-name:  parse_environment
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          104
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          30
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          4
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
   parse_options:
     demangled-name:  parse_options
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          29
-      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04
+      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          3
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          4
-      - base-hash:       17c36422d4cbc2c70d5c83ec389406f92cd9e85e
+      - base-hash:       17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          14
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
   parse_real:
     demangled-name:  parse_real
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          28
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          42
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          34
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          27
-      - base-hash:       3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
+      - base-hash:       3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
+      - base-hash:       3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          2
-      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
+      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
+      - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       3b34851de1eaf358cf9268922fa0eeed8278d680
+      - base-hash:       3b34851de1eaf358cf9268922fa0eeed8278d680-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 1dcecfb09b55157b8653d747963069c8bed74f04
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 4820f10d0f173864f6a2ea7479663b509ac53358
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 1dcecfb09b55157b8653d747963069c8bed74f04-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 4820f10d0f173864f6a2ea7479663b509ac53358-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          16
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          19
-      - base-hash:       1d924e584b146136989f48c13fff2632896efb3d
+      - base-hash:       1d924e584b146136989f48c13fff2632896efb3d-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          12
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          8
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
   physmem:
     demangled-name:  physmem
@@ -1054,65 +1054,65 @@ result-map:
     demangled-name:  process_file
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          5
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          22
   progress_elapsed:
     demangled-name:  progress_elapsed
     num-instructions:  42
     insts:
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          3
   progress_flush:
     demangled-name:  progress_flush
     num-instructions:  42
     insts:
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          29
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          18
   progress_percentage:
     demangled-name:  progress_percentage
     num-instructions:  42
     insts:
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          24
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          7
   progress_pos:
     demangled-name:  progress_pos
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          1
   progress_remaining:
     demangled-name:  progress_remaining
     num-instructions:  42
     insts:
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          123
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          1
   progress_signal_handler:
     demangled-name:  progress_signal_handler
@@ -1130,54 +1130,54 @@ result-map:
     demangled-name:  progress_speed
     num-instructions:  42
     insts:
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          24
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          19
   progress_time:
     demangled-name:  progress_time
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 68bf7ac2984d3627369a240ef0491934d53f7899
+          - 68bf7ac2984d3627369a240ef0491934d53f7899-xz
         amount:          30
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          11
   read_name:
     demangled-name:  read_name
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          23
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          91
   set_delta:
     demangled-name:  set_delta
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e
+          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
         amount:          2
-      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04
+      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          5
   set_exit_status:
     demangled-name:  set_exit_status
@@ -1187,35 +1187,35 @@ result-map:
     demangled-name:  set_lzma
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e
+          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
         amount:          9
-      - base-hash:       1ea9e7f15afd5d3981e2432710e932320597bca9
+      - base-hash:       1ea9e7f15afd5d3981e2432710e932320597bca9-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          12
-      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04
+      - base-hash:       1dcecfb09b55157b8653d747963069c8bed74f04-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          35
   set_subblock:
     demangled-name:  set_subblock
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e
+          - 17c36422d4cbc2c70d5c83ec389406f92cd9e85e-xz
         amount:          4
   signal_handler:
     demangled-name:  signal_handler
@@ -1241,67 +1241,67 @@ result-map:
     demangled-name:  str_to_uint64
     num-instructions:  42
     insts:
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          58
-      - base-hash:       0ea98e52ba87453497b1355c51f13bad55c8924a
+      - base-hash:       0ea98e52ba87453497b1355c51f13bad55c8924a-xz
         interacting-hashes:
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          10
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - 0ea98e52ba87453497b1355c51f13bad55c8924a
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 0ea98e52ba87453497b1355c51f13bad55c8924a-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          42
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          14
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 0ea98e52ba87453497b1355c51f13bad55c8924a
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 0ea98e52ba87453497b1355c51f13bad55c8924a-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          4
-      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
+      - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9-xz
         interacting-hashes:
-          - 0ea98e52ba87453497b1355c51f13bad55c8924a
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 0ea98e52ba87453497b1355c51f13bad55c8924a-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          6
   suffix_get_dest_name:
     demangled-name:  suffix_get_dest_name
     num-instructions:  42
     insts:
-      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
+      - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          10
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          4
   suffix_set:
     demangled-name:  suffix_set
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          6
   test_suffix:
     demangled-name:  test_suffix
@@ -1311,52 +1311,52 @@ result-map:
     demangled-name:  uncompressed_name
     num-instructions:  42
     insts:
-      - base-hash:       fcfb86c7770328cfffa2e83b176af9a1ba2d9128
+      - base-hash:       fcfb86c7770328cfffa2e83b176af9a1ba2d9128-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          34
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - fcfb86c7770328cfffa2e83b176af9a1ba2d9128
+          - fcfb86c7770328cfffa2e83b176af9a1ba2d9128-xz
         amount:          9
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - fcfb86c7770328cfffa2e83b176af9a1ba2d9128
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - fcfb86c7770328cfffa2e83b176af9a1ba2d9128-xz
         amount:          17
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
-          - fcfb86c7770328cfffa2e83b176af9a1ba2d9128
+          - e114502b2bc371e4a45449832cb69be036360722-xz
+          - fcfb86c7770328cfffa2e83b176af9a1ba2d9128-xz
         amount:          2
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          3
-      - base-hash:       fcfb86c7770328cfffa2e83b176af9a1ba2d9128
+      - base-hash:       fcfb86c7770328cfffa2e83b176af9a1ba2d9128-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - e114502b2bc371e4a45449832cb69be036360722
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
-      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
+      - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          14
   vmessage:
     demangled-name:  vmessage
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 0ea98e52ba87453497b1355c51f13bad55c8924a
-          - 1d924e584b146136989f48c13fff2632896efb3d
-          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
-          - bd137524f2f50e30ba054f42f1f6536cd3cee920
+          - 0ea98e52ba87453497b1355c51f13bad55c8924a-xz
+          - 1d924e584b146136989f48c13fff2632896efb3d-xz
+          - 3084d662d2646ab7eb58daf0dc32cf3f9a74eec7-xz
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
+          - bd137524f2f50e30ba054f42f1f6536cd3cee920-xz
         amount:          6
-      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
+      - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899-xz
         interacting-hashes:
-          - e114502b2bc371e4a45449832cb69be036360722
+          - e114502b2bc371e4a45449832cb69be036360722-xz
         amount:          1
   xrealloc:
     demangled-name:  xrealloc
@@ -1366,8 +1366,8 @@ result-map:
     demangled-name:  xstrdup
     num-instructions:  42
     insts:
-      - base-hash:       e114502b2bc371e4a45449832cb69be036360722
+      - base-hash:       e114502b2bc371e4a45449832cb69be036360722-xz
         interacting-hashes:
-          - 5d018dc03549c1ee4958364712fb0c94e1bf2741
+          - 5d018dc03549c1ee4958364712fb0c94e1bf2741-xz
         amount:          5
 ...

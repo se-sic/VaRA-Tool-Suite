@@ -1,51 +1,19 @@
 """Plot module for util functionality."""
 
-import functools
 import typing as tp
 from pathlib import Path
 
+import pandas as pd
 from matplotlib.axes import Axes
 
 from varats.mapping.commit_map import CommitMap
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 
-def __check_required_args_impl(
-    required_args: tp.List[str], kwargs: tp.Dict[str, tp.Any]
-) -> None:
-    """Implementation to check if all required graph args are passed by the
-    user."""
-    for arg in required_args:
-        if arg not in kwargs:
-            raise AssertionError(
-                "Argument {} was not specified but is required for this graph.".
-                format(arg)
-            )
-
-
-def check_required_args(
-    *required_args: str
-) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Callable[..., tp.Any]]:
-    """Check if all required graph args are passed by the user."""
-
-    def decorator_pp(
-        func: tp.Callable[..., tp.Any]
-    ) -> tp.Callable[..., tp.Any]:
-
-        @functools.wraps(func)
-        def wrapper_func(*args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-            __check_required_args_impl(list(required_args), kwargs)
-            return func(*args, **kwargs)
-
-        return wrapper_func
-
-    return decorator_pp
-
-
 def find_missing_revisions(
-    data: tp.Generator[tp.Any, None, None], git_path: Path, cmap: CommitMap,
-    should_insert_revision: tp.Callable[[tp.Any, tp.Any], tp.Tuple[bool,
-                                                                   float]],
+    data: tp.Iterable[tp.Tuple[tp.Any, pd.Series]], git_path: Path,
+    cmap: CommitMap, should_insert_revision: tp.Callable[[tp.Any, tp.Any],
+                                                         tp.Tuple[bool, float]],
     to_commit_hash: tp.Callable[[tp.Any], ShortCommitHash],
     are_neighbours: tp.Callable[[ShortCommitHash, ShortCommitHash], bool]
 ) -> tp.Set[FullCommitHash]:
@@ -63,36 +31,20 @@ def find_missing_revisions(
             if are_neighbours(lhs_cm, rhs_cm):
                 print(
                     "Found steep gradient between neighbours " +
-                    "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                        lhs_cm=lhs_cm,
-                        rhs_cm=rhs_cm,
-                        gradient=round(gradient, 5)
-                    )
+                    f"{lhs_cm} - {rhs_cm}: {round(gradient, 5)}"
                 )
-                print(
-                    "Investigate: git -C {git_path} diff {lhs} {rhs}".format(
-                        git_path=git_path, lhs=lhs_cm, rhs=rhs_cm
-                    )
-                )
+                print(f"Investigate: git -C {git_path} diff {lhs_cm} {rhs_cm}")
             else:
                 print(
                     "Unusual gradient between " +
-                    "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                        lhs_cm=lhs_cm,
-                        rhs_cm=rhs_cm,
-                        gradient=round(gradient, 5)
-                    )
+                    f"{lhs_cm} - {rhs_cm}: {round(gradient, 5)}"
                 )
                 new_rev_id = round(
                     (cmap.short_time_id(lhs_cm) + cmap.short_time_id(rhs_cm)) /
                     2.0
                 )
                 new_rev = cmap.c_hash(new_rev_id)
-                print(
-                    "-> Adding {rev} as new revision to the sample set".format(
-                        rev=new_rev
-                    )
-                )
+                print(f"-> Adding {new_rev} as new revision to the sample set")
                 new_revs.add(new_rev)
         last_row = row
     return new_revs

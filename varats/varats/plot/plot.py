@@ -26,10 +26,7 @@ class Plot:
     NAME = "Plot"
     PLOTS: tp.Dict[str, tp.Type['Plot']] = {}
 
-    def __init__(
-        self, name: str, plot_config: PlotConfig, **kwargs: tp.Any
-    ) -> None:
-        self.__name = name
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
         self.__plot_config = plot_config
         self.__saved_extra_args = kwargs
 
@@ -86,10 +83,10 @@ class Plot:
         Name of the current plot.
 
         Test:
-        >>> Plot('test', PlotConfig.from_kwargs(view=False)).name
-        'test'
+        >>> Plot(PlotConfig.from_kwargs(view=False)).name
+        'Plot'
         """
-        return self.__name
+        return self.NAME
 
     @property
     def plot_config(self) -> PlotConfig:
@@ -102,8 +99,7 @@ class Plot:
         Access the kwargs passed to the initial plot.
 
         Test:
-        >>> p = Plot('test', PlotConfig.from_kwargs(view=False), foo='bar', \
-                     baz='bazzer')
+        >>> p = Plot(PlotConfig.from_kwargs(view=False),foo='bar',baz='bazzer')
         >>> p.plot_kwargs['foo']
         'bar'
         >>> p.plot_kwargs['baz']
@@ -142,14 +138,14 @@ class Plot:
             the file name the plot will be stored to
 
         Test:
-        >>> p = Plot('test', PlotConfig.from_kwargs(view=False), project='bar')
+        >>> p = Plot(PlotConfig.from_kwargs(view=False),project='bar')
         >>> p.plot_file_name('svg')
-        'bar_test.svg'
+        'bar_Plot.svg'
         >>> from varats.paper.case_study import CaseStudy
-        >>> p = Plot('foo', PlotConfig.from_kwargs(view=False), project='bar', \
-                     case_study=CaseStudy('baz', 42))
+        >>> p = Plot(PlotConfig.from_kwargs(view=False),\
+        project='bar',case_study=CaseStudy('baz', 42))
         >>> p.plot_file_name('png')
-        'baz_42_foo.png'
+        'baz_42_Plot.png'
         """
         plot_ident = ''
         if 'case_study' in self.plot_kwargs:
