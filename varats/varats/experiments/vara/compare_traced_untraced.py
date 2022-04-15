@@ -29,9 +29,7 @@ from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import BaseReport
 from varats.report.gnu_time_report import TimeReport
-
-# TODO: Refactor to use a base class for experiments to avoid code duplication
-# where possible
+from varats.utils.git_util import ShortCommitHash
 
 
 class TimeBinary(actions.Step):
@@ -41,7 +39,7 @@ class TimeBinary(actions.Step):
     DESCRIPTION = "Executes each binary and times it"
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.time_run)  # type: ignore
+        super().__init__(obj=project, action_fn=self.time_run)
         self.__experiment_handle = experiment_handle
 
     def time_run(self) -> actions.StepResult:
@@ -53,7 +51,7 @@ class TimeBinary(actions.Step):
 
         vara_result_folder = get_varats_result_folder(project)
 
-        for binary in project.binaries:  # type: ignore[attr-defined]
+        for binary in project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
@@ -61,7 +59,7 @@ class TimeBinary(actions.Step):
                 TimeReport.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_revision=project.version_of_primary,
+                project_revision=ShortCommitHash(project.version_of_primary),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS,
             )
@@ -69,7 +67,8 @@ class TimeBinary(actions.Step):
             with local.cwd(local.path(project.source_of_primary)):
                 print(f"Currently at {local.path(project.source_of_primary)}")
                 print(f"Bin path {binary.path}")
-                # TODO: In future versions, we can pass arguments to the binary here
+
+                # TODO(d.gusenburger): In future versions, we can pass arguments to the binary here
                 # run_cmd = time_cmd[
                 #     "-o",
                 #     f"{vara_result_folder}/{result_file}",
@@ -79,6 +78,7 @@ class TimeBinary(actions.Step):
                 run_cmd = time_cmd[
                     "-o", f"{vara_result_folder}/{result_file}", "-v", binary.path
                 ]
+
                 # REVIEW: Is this correct ? Copied it from JustCompile
                 exec_func_with_pe_error_handler(
                     run_cmd,
@@ -179,6 +179,7 @@ class RunTraced(BaseRunner, shorthand="RTTIME"):
             f"-fvara-fm-path={fm_path.absolute()}",
             "-fsanitize=vara",
             "-fvara-instr=trace_event",
+            # Temporary. Instructions to enable instrumentation placement optimization
             "-mllvm",
             "--vara-optimizer-policy=naive",
         )
