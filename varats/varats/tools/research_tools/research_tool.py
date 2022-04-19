@@ -37,8 +37,11 @@ if tp.TYPE_CHECKING:
 
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
+    value: str
+
     DEBIAN = "debian"
     ARCH = "arch"
+    FEDORA = "fedora"
 
     @staticmethod
     def get_current_distro() -> tp.Optional['Distro']:
@@ -47,12 +50,18 @@ class Distro(Enum):
             return Distro.DEBIAN
         if distribution.id() == "arch":
             return Distro.ARCH
+        if distribution.id() == "fedora":
+            return Distro.FEDORA
         return None
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 _install_commands = {
     Distro.DEBIAN: "apt install -y",
-    Distro.ARCH: "pacman -S --noconfirm"
+    Distro.ARCH: "pacman -S --noconfirm",
+    Distro.FEDORA: "dnf install"
 }
 
 _checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
@@ -65,6 +74,10 @@ class Dependencies:
 
     def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
         self.__dependencies = dependencies
+
+    @property
+    def distros(self) -> tp.List[Distro]:
+        return list(self.__dependencies.keys())
 
     def has_dependencies_for_distro(self, distro: Distro) -> bool:
         """
@@ -110,6 +123,14 @@ class Dependencies:
             a list containing all not installed dependencies
         """
         not_installed: tp.List[str] = []
+
+        if distro not in _checker_commands or \
+                distro not in _expected_check_output:
+            raise NotImplementedError(
+                "Check/Expected commands are currently " +
+                f"not implemented for {distro}"
+            )
+
         base_command = _checker_commands[distro]
         for package in self.__dependencies[distro]:
             output = base_command(package)
