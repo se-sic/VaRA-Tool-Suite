@@ -13,7 +13,7 @@ from varats.tools.research_tools.vara_manager import (
     BuildType,
     add_remote,
     branch_has_upstream,
-    checkout_branch,
+    checkout_branch_or_commit,
     checkout_new_branch,
     download_repo,
     fetch_remote,
@@ -37,8 +37,11 @@ if tp.TYPE_CHECKING:
 
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
+    value: str
+
     DEBIAN = "debian"
     ARCH = "arch"
+    FEDORA = "fedora"
 
     @staticmethod
     def get_current_distro() -> tp.Optional['Distro']:
@@ -47,12 +50,18 @@ class Distro(Enum):
             return Distro.DEBIAN
         if distribution.id() == "arch":
             return Distro.ARCH
+        if distribution.id() == "fedora":
+            return Distro.FEDORA
         return None
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 _install_commands = {
     Distro.DEBIAN: "apt install -y",
-    Distro.ARCH: "pacman -S --noconfirm"
+    Distro.ARCH: "pacman -S --noconfirm",
+    Distro.FEDORA: "dnf install"
 }
 
 _checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
@@ -65,6 +74,10 @@ class Dependencies:
 
     def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
         self.__dependencies = dependencies
+
+    @property
+    def distros(self) -> tp.List[Distro]:
+        return list(self.__dependencies.keys())
 
     def has_dependencies_for_distro(self, distro: Distro) -> bool:
         """
@@ -110,6 +123,14 @@ class Dependencies:
             a list containing all not installed dependencies
         """
         not_installed: tp.List[str] = []
+
+        if distro not in _checker_commands or \
+                distro not in _expected_check_output:
+            raise NotImplementedError(
+                "Check/Expected commands are currently " +
+                f"not implemented for {distro}"
+            )
+
         base_command = _checker_commands[distro]
         for package in self.__dependencies[distro]:
             output = base_command(package)
@@ -277,7 +298,7 @@ class SubProject():
         Args:
             branch_name: name of the branch, should exists in the repo
         """
-        checkout_branch(
+        checkout_branch_or_commit(
             self.__parent_code_base.base_dir / self.path, branch_name
         )
 
@@ -324,9 +345,7 @@ class SubProject():
         show_status(self.__parent_code_base.base_dir / self.path)
 
     def __str__(self) -> str:
-        return "{name} [{url}:{remote}] {folder}".format(
-            name=self.name, url=self.url, remote=self.remote, folder=self.path
-        )
+        return f"{self.name} [{self.url}:{self.remote}] {self.path}"
 
     def get_tags(self,
                  extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
@@ -443,7 +462,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """Checks if a install location of the research tool is configured."""
 
     @abc.abstractmethod
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup a research tool with it's code base. This method sets up all
         relevant config variables, downloads repositories via the ``CodeBase``,
@@ -452,6 +474,8 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
         Args:
             source_folder: location to store the code base in
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
 
     @abc.abstractmethod
@@ -468,7 +492,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """Upgrade the research tool to a newer version."""
 
     @abc.abstractmethod
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile the research tool in the specified ``build_type`` and
         install it to the specified ``install_location``.
@@ -477,6 +504,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             build_type: which type of build should be used, e.g., debug,
                         development or release
             install_location: location to install the research tool into
+            build_folder_suffix: a suffix that is appended to the build folder
         """
 
     @abc.abstractmethod
@@ -489,11 +517,47 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
-    def add_container_layers(
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        """
+        Verify if the research tool was built correctly for a given build_type.
+
+        Args:
+            build_type: which type of build should be used, e.g., debug,
+                        development or release
+            build_folder_suffix: a suffix that is appended to the build folder
+
+        Returns:
+            True, if the build was correct.
+        """
+
+    def container_install_dependencies(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for installing this research tool's dependencies to the given
+        container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        if self.get_dependencies().has_dependencies_for_distro(
+            image_context.base.distro
+        ):
+            image_context.layers.run(
+                *(
+                    self.get_dependencies().
+                    get_install_command(image_context.base.distro).split(" ")
+                )
+            )
+
+    @abc.abstractmethod
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context

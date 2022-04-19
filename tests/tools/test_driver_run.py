@@ -6,7 +6,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper_mgmt.paper_config import load_paper_config
 from varats.tools import driver_run, driver_container
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
@@ -17,7 +17,7 @@ class TestDriverRun(unittest.TestCase):
 
     __NUM_ACTIONS_PATTERN = re.compile(r"Number of actions to execute: (\d*)")
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_bb_run_select_project(self) -> None:
         runner = CliRunner()
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
@@ -33,9 +33,9 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("44", match.group(1))
+        self.assertEqual("43", match.group(1))
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_bb_run_select_revision(self) -> None:
         runner = CliRunner()
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
@@ -51,9 +51,9 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("12", match.group(1))
+        self.assertEqual("11", match.group(1))
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_bb_run_all(self) -> None:
         runner = CliRunner()
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
@@ -67,9 +67,9 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("52", match.group(1))
+        self.assertEqual("51", match.group(1))
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     @mock.patch("varats.tools.driver_run.sbatch")
     @mock.patch("varats.tools.driver_container.__build_images")
     def test_bb_run_slurm_and_container(

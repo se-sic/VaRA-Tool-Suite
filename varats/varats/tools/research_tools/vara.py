@@ -12,7 +12,6 @@ from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
-from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
@@ -57,7 +56,7 @@ class VaRACodeBase(CodeBase):
                 "vara-llvm-project"
             ),
             SubProject(
-                self, "VaRA", "git@github.com:se-passau/VaRA.git", "origin",
+                self, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
                 "vara-llvm-project/vara"
             ),
             SubProject(
@@ -75,7 +74,7 @@ class VaRACodeBase(CodeBase):
         """Sets up VaRA specific upstream remotes for projects that were
         forked."""
         self.get_sub_project("vara-llvm-project").add_remote(
-            "origin", "git@github.com:se-passau/vara-llvm-project.git"
+            "origin", "git@github.com:se-sic/vara-llvm-project.git"
         )
 
     def setup_build_link(self) -> None:
@@ -144,16 +143,21 @@ class VaRA(ResearchTool[VaRACodeBase]):
     """
     Research tool implementation for VaRA.
 
-    Find the main repo online on github: https://github.com/se-passau/VaRA
+    Find the main repo online on github: https://github.com/se-sic/VaRA
     """
 
     __DEPENDENCIES = Dependencies({
         Distro.DEBIAN: [
             "libboost-all-dev", "libpapi-dev", "googletest", "libsqlite3-dev",
-            "libxml2-dev", "libcurl4-openssl-dev"
+            "libxml2-dev", "libcurl4-openssl-dev", "cmake", "ninja-build"
         ],
         Distro.ARCH: [
-            "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl"
+            "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl",
+            "ninja"
+        ],
+        Distro.FEDORA: [
+            "libsqlite3x-devel", "libcurl-devel", "boost-devel", "papi-devel",
+            "llvm-googletest", "libxml2-devel", "clang"
         ]
     })
 
@@ -186,8 +190,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["vara"]["llvm_install_dir"].value is not None
 
-    @check_required_args("install_prefix", "version")
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -196,20 +202,18 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         Args:
             source_folder: location to store the code base in
-            **kwargs:
-                      * version
-                      * install_prefix
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
         cfg = vara_cfg()
         if source_folder:
             cfg["vara"]["llvm_source_dir"] = str(source_folder)
-        cfg["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
-        version = kwargs.get("version")
+        cfg["vara"]["llvm_install_dir"] = str(install_prefix)
         if version:
-            version = int(tp.cast(int, version))
+            version = int(version)
             cfg["vara"]["version"] = version
         else:
-            version = cfg["vara"]["version"].value
+            version = int(cfg["vara"]["version"].value)
         save_config()
 
         print(f"Setting up VaRA in {self.source_location()}")
@@ -297,7 +301,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         self.code_base.pull()
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile VaRA in the specified ``build_type``. This method leaves
         VaRA in a finished state, i.e., being ready to be installed.
@@ -313,19 +320,19 @@ class VaRA(ResearchTool[VaRACodeBase]):
             )
             return
 
-        full_path /= build_type.build_folder()
+        build_folder_path = build_type.build_folder(build_folder_suffix)
+        full_path /= build_folder_path
+        build_args = [str(build_folder_path)] if build_folder_suffix else None
 
         # Setup configured build folder
         print(" - Setting up build folder.")
         if not os.path.exists(full_path):
             try:
                 os.makedirs(full_path.parent, exist_ok=True)
-                build_script = "./build_cfg/build-{build_type}.sh".format(
-                    build_type=str(build_type)
-                )
+                build_script = f"./build_cfg/build-{str(build_type)}.sh"
 
                 with ProcessManager.create_process(
-                    build_script, workdir=full_path.parent
+                    build_script, args=build_args, workdir=full_path.parent
                 ) as proc:
                     proc.setProcessChannelMode(QProcess.MergedChannels)
                     proc.readyReadStandardOutput.connect(
@@ -370,32 +377,71 @@ class VaRA(ResearchTool[VaRACodeBase]):
         status_ok &= (install_location / "bin/opt").exists()
         status_ok &= (install_location / "bin/phasar-llvm").exists()
 
+        # Check that clang++ can display it's version
+        clang = local[str(install_location / "bin/clang++")]
+        ret, stdout, _ = clang.run("--version")
+
+        vara_name = self.code_base.get_sub_project("vara-llvm-project").name
+        status_ok &= ret == 0
+        status_ok &= vara_name in stdout
+
+        # Check that phasar-llvm can display it's version
+        phasar_llvm = local[str(install_location / "bin/phasar-llvm")]
+        ret, stdout, _ = phasar_llvm.run("--version")
+        status_ok &= ret == 0
+
+        phasar_name = self.code_base.get_sub_project("phasar").name.lower()
+        status_ok &= phasar_name in stdout.lower()
+
         return status_ok
 
-    def add_container_layers(
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        """
+        Verifies whether vara was built correctly for the given target.
+
+        Args:
+            build_type: which type of build should be used, e.g., debug,
+                        development or release
+
+        Returns:
+            True iff all tests from check_vara pass
+        """
+        full_path = self.code_base.base_dir / "vara-llvm-project" / "build/"
+        if not self.is_build_type_supported(build_type):
+            LOG.critical(
+                f"BuildType {build_type.name} is not supported by VaRA"
+            )
+            return False
+
+        build_folder_path = build_type.build_folder(build_folder_suffix)
+        full_path /= build_folder_path
+
+        ninja = local["ninja"].with_cwd(full_path)
+        ret, _, _ = ninja.run("check-vara")
+        return bool(ret == 0)
+
+    def container_install_tool(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context
         """
-        if not self.verify_install(self.install_location()):
+        img_name = image_context.base.name
+        vara_install_dir = str(self.install_location()) + "_" + img_name
+        if not self.verify_install(Path(vara_install_dir)):
             raise AssertionError(
-                "VaRA is not correctly installed on your system."
+                f"Could not find VaRA build for base container {img_name}.\n"
+                f"Run 'vara-buildsetup build vara --container={img_name}' "
+                f"to compile VaRA for this base image."
             )
 
-        container_vara_dir = image_context.varats_root / "tools/VaRA"
-        if self.get_dependencies().has_dependencies_for_distro(
-            image_context.distro
-        ):
-            image_context.layers.run(
-                *(
-                    self.get_dependencies().
-                    get_install_command(image_context.distro).split(" ")
-                )
-            )
-        image_context.layers.copy_([str(self.install_location())],
-                                   str(container_vara_dir))
+        container_vara_dir = image_context.varats_root / (
+            "tools/VaRA_" + img_name
+        )
+        image_context.layers.copy_([vara_install_dir], str(container_vara_dir))
         image_context.append_to_env("PATH", [str(container_vara_dir / 'bin')])

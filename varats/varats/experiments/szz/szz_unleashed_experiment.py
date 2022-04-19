@@ -9,11 +9,15 @@ import yaml
 from benchbuild import Project, source
 from benchbuild.experiment import ProjectT
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import java, mkdir
+from benchbuild.utils.cmd import java
 from plumbum import local
 
 from varats.base.version_header import VersionHeader
-from varats.data.reports.szz_report import SZZReport, SZZUnleashedReport
+from varats.data.reports.szz_report import (
+    SZZReport,
+    SZZUnleashedReport,
+    SZZTool,
+)
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -25,7 +29,6 @@ from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 from varats.tools.research_tools.szz_unleashed import SZZUnleashed
-from varats.utils.settings import bb_cfg
 
 
 class PrepareSZZUnleashedData(actions.Step):  # type: ignore
@@ -46,7 +49,7 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
         project: Project = self.obj
         run_dir = Path(project.source_of_primary).parent
 
-        bug_provider = BugProvider.get_provider_for_project(project)
+        bug_provider = BugProvider.get_provider_for_project(type(project))
         bugs = bug_provider.find_pygit_bugs()
 
         fixers_dict = {}
@@ -137,7 +140,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
             bugs.setdefault(result_entry[0], set())
             bugs[result_entry[0]].add(result_entry[1])
         raw_szz_report = {
-            "szz_tool": "SZZUnleashed",
+            "szz_tool": SZZTool.SZZ_UNLEASHED.tool_name,
             "bugs": {k: sorted(list(v)) for k, v in bugs.items()}
         }
 
@@ -164,9 +167,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class SZZUnleashedExperiment(
-    VersionExperiment, shorthand="SZZUnleashed"
-):  # type: ignore
+class SZZUnleashedExperiment(VersionExperiment, shorthand="SZZUnleashed"):
     """
     Generates a SZZUnleashed report.
 

@@ -84,19 +84,22 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["szzunleashed"]["install_dir"].value is not None
 
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup the research tool SZZUnleashed with it's code base.
 
         Args:
             source_folder: location to store the code base in
-            **kwargs:
-                      * install_prefix
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
         cfg = vara_cfg()
         if source_folder:
             cfg["szzunleashed"]["source_dir"] = str(source_folder)
-        cfg["szzunleashed"]["install_dir"] = str(kwargs["install_prefix"])
+        cfg["szzunleashed"]["install_dir"] = str(install_prefix)
         save_config()
 
         print(f"Setting up SZZUnleashed in {self.source_location()}")
@@ -142,7 +145,10 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """Returns true if VaRA's major release version is up to date."""
         raise NotImplementedError
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build SZZUnleashed.
 
@@ -167,11 +173,27 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """
         return (install_location / self.get_jar_name()).exists()
 
-    def add_container_layers(
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        return True
+
+    def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for building this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        raise NotImplementedError
+
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context

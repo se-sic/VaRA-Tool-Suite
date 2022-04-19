@@ -9,11 +9,17 @@ from pathlib import Path
 import click
 
 from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
+from varats.ts_utils.artefact_util import (
+    CaseStudyConverter,
+    ReportTypeConverter,
+)
 from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
     add_cli_options,
     cli_yn_choice,
+    CLIOptionWithConverter,
+    convert_value,
 )
 from varats.ts_utils.click_param_types import (
     create_multi_case_study_choice,
@@ -480,21 +486,29 @@ class PlotConfig():
         }
 
 
-REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
-    "-cs",
-    "--case-study",
-    type=create_single_case_study_choice(),
-    required=True,
-    metavar="NAME",
-    help="The case study to use for the plot."
+REQUIRE_CASE_STUDY: CLIOptionTy = convert_value(
+    "case_study", CaseStudyConverter
+)(
+    make_cli_option(
+        "-cs",
+        "--case-study",
+        type=create_single_case_study_choice(),
+        required=True,
+        metavar="NAME",
+        help="The case study to use for the plot."
+    )
 )
-REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = make_cli_option(
-    "-cs",
-    "--case-study",
-    type=create_multi_case_study_choice(),
-    required=True,
-    metavar="NAMES",
-    help="The case study to use for the plot."
+REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = convert_value(
+    "case_study", CaseStudyConverter
+)(
+    make_cli_option(
+        "-cs",
+        "--case-study",
+        type=create_multi_case_study_choice(),
+        required=True,
+        metavar="NAMES",
+        help="The case study to use for the plot."
+    )
 )
 REQUIRE_REVISION: CLIOptionTy = make_cli_option(
     "-rev",
@@ -504,11 +518,15 @@ REQUIRE_REVISION: CLIOptionTy = make_cli_option(
     metavar="SHORT_COMMIT_HASH",
     help="The revision to use for the plot."
 )
-REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
-    "--report-type",
-    type=create_report_type_choice(),
-    required=True,
-    help="The report type to use for the plot."
+REQUIRE_REPORT_TYPE: CLIOptionTy = convert_value(
+    "report_type", ReportTypeConverter
+)(
+    make_cli_option(
+        "--report-type",
+        type=create_report_type_choice(),
+        required=True,
+        help="The report type to use for the plot."
+    )
 )
 
 
@@ -569,9 +587,7 @@ class PlotGenerator(abc.ABC):
             plot:           plot class used by the generator
             options:        command line options needed by the generator
         """
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(**kwargs)  # type: ignore
+        super().__init_subclass__(**kwargs)
         cls.NAME = generator_name
         cls.OPTIONS = options
         cls.GENERATORS[generator_name] = cls
@@ -655,6 +671,42 @@ class PlotGenerator(abc.ABC):
                 plot.save(plot_dir, filetype=common_options.file_type)
 
 
+def _convert_kwargs(
+    plot_generator_type: tp.Type[PlotGenerator],
+    plot_kwargs: tp.Dict[str, tp.Any],
+    to_string: bool = False
+) -> tp.Dict[str, tp.Any]:
+    """
+    Apply conversions to kwargs as specified by plot generator CLI options.
+
+    Args:
+        plot_generator_type: plot generator with CLI option/converter
+                             declarations
+        plot_kwargs: plot kwargs as values or strings
+        to_string: if ``True`` convert to string, otherwise convert to value
+
+    Returns:
+        the kwargs with applied conversions
+    """
+    converter = {
+        decl_converter.name: decl_converter.converter for decl_converter in [
+            tp.cast(CLIOptionWithConverter[tp.Any], cli_decl)
+            for cli_decl in plot_generator_type.OPTIONS
+            if isinstance(cli_decl, CLIOptionWithConverter)
+        ]
+    }
+    kwargs: tp.Dict[str, tp.Any] = {}
+    for key, value in plot_kwargs.items():
+        if key in converter.keys():
+            if to_string:
+                kwargs[key] = converter[key].value_to_string(value)
+            else:
+                kwargs[key] = converter[key].string_to_value(value)
+        else:
+            kwargs[key] = value
+    return kwargs
+
+
 class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
     """
     An artefact defining a :class:`~varats.plot.plot.Plot`.
@@ -724,7 +776,9 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         artefact_dict['plot_config'] = self.__plot_config.get_dict()
         artefact_dict = {
             **self.__common_options.get_dict(),
-            **self.__plot_kwargs,
+            **_convert_kwargs(
+                self.plot_generator_class, self.__plot_kwargs, to_string=True
+            ),
             **artefact_dict
         }
         artefact_dict.pop("plot_dir")  # duplicate of Artefact's output_path
@@ -752,7 +806,12 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         )
         return PlotArtefact(
             name, output_dir, plot_generator_type, common_options, plot_config,
-            **kwargs
+            **_convert_kwargs(
+                PlotGenerator.
+                get_class_for_plot_generator_type(plot_generator_type),
+                kwargs,
+                to_string=False
+            )
         )
 
     @staticmethod
