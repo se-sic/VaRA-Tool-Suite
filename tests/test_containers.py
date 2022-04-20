@@ -5,6 +5,7 @@ import unittest.mock as mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from benchbuild.environments.adapters.common import buildah_version
 from benchbuild.environments.domain.model import (
     Layer,
     FromLayer,
@@ -120,7 +121,10 @@ class TestContainerSupport(unittest.TestCase):
             "install", "--ignore-installed", "/varats/varats-core",
             "/varats/varats"
         ), varats_install_layer.args)
-        self.assertIn(("mount", "type=bind,src=varats_src,target=/varats,rw"),
+        mounting_parameters = "type=bind,src=varats_src,target=/varats"
+        if buildah_version() >= (1, 24, 0):
+            mounting_parameters += ",rm"
+        self.assertIn(("mount", mounting_parameters),
                       varats_install_layer.kwargs)
 
     @run_in_test_environment()
