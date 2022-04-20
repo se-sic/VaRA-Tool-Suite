@@ -145,5 +145,5 @@ def download_repo(
         args.append(repo_name)
 
     output = git("-C", dl_folder, args)
-    for line in output.sep("\n"):
+    for line in output.split("\n"):
         post_out(line)
