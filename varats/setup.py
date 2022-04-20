@@ -18,7 +18,7 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.3.0",
+        "benchbuild>=6.3.1",
         "click>=8.0.1",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
