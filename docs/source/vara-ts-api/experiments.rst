@@ -8,6 +8,8 @@ For example, how a specific project is compiled is the responsibility of the pro
 .. note::
   Details on how to run experiments can be found :ref:`here<Running experiments with BenchBuild>`.
 
+How to add a new experiment to VaRA-TS
+--------------------------------------
 Designing a new ``Experiment`` is also quite simple.
 
 * First, create a new python module in the ``experiments`` directory and add an experiment class which inherits from ``benchbuild.experiment.Experiment``.

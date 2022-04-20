@@ -45,6 +45,13 @@ How-Tos
    tutorials/visualizing_data
    tutorials/container_guide
 
+* :ref:`How to add a new project to VaRA-TS`
+* :ref:`How to add a new experiment to VaRA-TS`
+
+.. toctree::
+   :maxdepth: 1
+
+   tutorials/FAQ
 
 VaRA-TS Docs
 ============

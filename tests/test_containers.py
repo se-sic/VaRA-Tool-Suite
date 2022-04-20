@@ -156,10 +156,10 @@ class TestContainerSupport(unittest.TestCase):
         )
 
     @run_in_test_environment()
-    @mock.patch("varats.tools.research_tools.vara.VaRA.verify_install")
-    def test_vara_install(self, mock_verify_install) -> None:
+    @mock.patch("varats.tools.research_tools.vara.VaRA.install_exists")
+    def test_vara_install(self, mock_install_exists) -> None:
         """Test VaRA install inside container."""
-        mock_verify_install.return_value = True
+        mock_install_exists.return_value = True
         vara_cfg()["container"]["research_tool"] = "vara"
         vara_cfg()["vara"]["llvm_source_dir"] = "tools_src/vara-llvm-project"
         vara_cfg()["vara"]["llvm_install_dir"] = "tools/VaRA"
