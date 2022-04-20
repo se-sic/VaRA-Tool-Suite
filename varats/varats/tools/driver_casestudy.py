@@ -14,7 +14,7 @@ from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.data.reports.szz_report import SZZReport
 from varats.experiment.experiment_util import VersionExperiment
-from varats.gui.cs_gen.main_window import start_gui
+from varats.gui.cs_gen.case_study_generation import start_gui
 from varats.mapping.commit_map import (
     create_lazy_commit_map_loader,
     generate_commit_map,

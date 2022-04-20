@@ -18,6 +18,7 @@ pyuic5 -x AuthorDateMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorD
 pyuic5 -x AuthorDateMaxFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateMaxFilter.py
 pyuic5 -x CommitDateMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_CommitDateMinFilter.py
 pyuic5 -x CommitDateMaxFilter.ui -o ${scriptpath}/../varats/gui/views/ui_CommitDateMaxFilter.py
+pyuic5 -x CaseStudyGeneration.ui -o ${scriptpath}/../varats/gui/cs_gen/case_study_generation_ui.py
 pyuic5 --import-from varats.gui -x AuthorDateDeltaMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateDeltaMinFilter.py
 pyuic5 --import-from varats.gui -x AuthorDateDeltaMaxFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateDeltaMaxFilter.py
 pyuic5 --import-from varats.gui -x CommitDateDeltaMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_CommitDateDeltaMinFilter.py

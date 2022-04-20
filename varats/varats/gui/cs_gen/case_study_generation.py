@@ -18,7 +18,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
 
 from varats.base.sampling_method import NormalSamplingMethod
-from varats.gui.cs_gen.main_window_ui import Ui_MainWindow
+from varats.gui.cs_gen.case_study_generation_ui import Ui_MainWindow
 from varats.mapping.commit_map import (
     create_lazy_commit_map_loader,
     get_commit_map,
@@ -53,7 +53,7 @@ from varats.utils.settings import vara_cfg
 
 class GenerationStrategie(Enum):
     """Enum for the Startegie used when Generating a CaseStudy."""
-    SELECTREVISION = 0
+    SELECT_REVISION = 0
     SAMPLE = 1
     REVS_PER_YEAR = 2
 
