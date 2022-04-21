@@ -127,7 +127,7 @@ class RunAnalysisBase(actions.Step):
             extension_type=FSE.SUCCESS
         )
         with ZippedReportFolder(
-            vara_result_folder / result_file_name
+            vara_result_folder / result_file_name.filename
         ) as result_dir:
             params += ["--out", result_dir]
 
