@@ -2,11 +2,11 @@
 VaRA
 ****
 
-VaRA is an analysis framework that enables users to build static and dynamic analyses for analyzing high-level concepts, using advanced compiler and analysis technology in the background.
-Our goal is to enable the user to build these analyses by only focusing on the highlevel conceptual information that should be analyzed, without worrying about low-level details, such as, building complicated compiler modifications or configuring precise but difficult to use static analyses.
+VaRA is an analysis framework that enables users to build static and dynamic analyses for analyzing high-level concepts using advanced compiler and analysis technology in the background.
+Our goal is to enable the user to build these analyses by only focusing on the high-level conceptual information that should be analyzed without worrying about low-level details, such as building complicated compiler modifications or configuring precise but difficult to use static analyses.
 
 The figure below, gives a rough overview of VaRA and the analysis process.
-In general, VaRA and our modified clang compiler take in source code together with highlevel conceptual information and either directly analyze it, using various static analyses, or generate an instrumened binary, which can run different dynamic analyses.
+In general, VaRA and our modified clang compiler take as input source code together with high-level conceptual information and either directly analyze it, using various static analyses, or generate an instrumented binary, which can run different dynamic analyses.
 
 .. figure:: VaRA_pipeline_overview.svg
 

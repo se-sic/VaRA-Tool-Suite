@@ -1,16 +1,16 @@
 Feature Performance Analysis
 ============================
 
-VaRA's feature performance analysis is build to make the impact of software features measurable.
+VaRA's feature performance analysis is built to make the impact of software features measurable.
 By only specifying where control variables are, our analysis pipeline detects feature-dependent code parts and instruments them for further run-time analysis.
 
 
-How to setup and use the feature performance analysis
+How to set up and use the feature performance analysis
 -----------------------------------------------------
 
 Setting up our analysis is simple and can be done in a few steps.
 
-1) Setup VaRA by following our :ref:`setup guide<Build VaRA with vara-buildsetup>`.
+1) Set up VaRA by following our :ref:`setup guide<Build VaRA with vara-buildsetup>`.
 ***********************************************************************************
 
 
@@ -27,7 +27,7 @@ Setting up our analysis is simple and can be done in a few steps.
 ************************************************************************
 
 Enable the automatic feature detection (`-fvara-feature`) and select the desired instrumentation code (`-fvara-instr=`).
-The different instrumentation options can be found here :ref:`Instrumentations`.
+The different instrumentation options can be found :ref:`here<Instrumentations>`.
 
 .. code-block:: console
 
@@ -35,7 +35,7 @@ The different instrumentation options can be found here :ref:`Instrumentations`.
 
 
 (Recommended) Configure your project to use link-time optimization (LTO) for more precise analysis results.
-Without LTO, only within translation unit analysis is possible, hence, cross translation unit feature usage is not possible.
+Without LTO, the analysis can only run within a translation unit, hence, features that are used across different translation units can not be correctly analyzed.
 
 .. code-block:: console
 
@@ -71,7 +71,7 @@ Instrumentations
 ----------------
 
 * `print`: Print entry/exit messages when entring a feature specific code
-* `clock`: Add hw-clock based measurements that determine the time spend in a feature
+* `clock`: Add hw-clock based measurements that determine the time spent in a feature
 * `trace_event`: Add trace event markers that generate catapult (trace event format) files
-* `instr_verify`: Add verifier instrumentation that check if regions are correctly opened/closed
+* `instr_verify`: Add verifier instrumentation that checks if feature regions are correctly opened/closed
 * `usdt`: Add feature specific usdt probes

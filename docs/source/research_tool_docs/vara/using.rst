@@ -2,7 +2,7 @@
 How to use VaRA (Overview)
 **************************
 
-Overall, VaRA is build for two different usage scenarios:
+Overall, VaRA is built for two different usage scenarios:
 
 * Running a static analysis to directly generate analysis result either during compile time or in a post processing step.
 * Running a dynamic analysis, by instrumeting the binary during compile time and then later producing the analysis data during execution.
