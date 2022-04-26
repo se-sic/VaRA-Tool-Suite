@@ -6,12 +6,12 @@ By only specifying where control variables are, our analysis pipeline detects fe
 
 
 How to set up and use the feature performance analysis
------------------------------------------------------
+------------------------------------------------------
 
 Setting up our analysis is simple and can be done in a few steps.
 
 1) Set up VaRA by following our :ref:`setup guide<Build VaRA with vara-buildsetup>`.
-***********************************************************************************
+************************************************************************************
 
 
 2) Specify our modified compiler as `CC` or `CXX`.
@@ -43,7 +43,9 @@ Without LTO, the analysis can only run within a translation unit, hence, feature
     LDFLAGS="-fuse-ld=lld"
 
 
-(Optional) Pass in the location of the feature model with `-fvara-fm-path=`
+(Optional) Pass in the location of the feature model with `-fvara-fm-path=`.
+The feature model defines high-level software features ein their dependencies, together with a mapping to the variables that control the functionality in the program.
+For more information, see our `collection of feature models <https://github.com/se-sic/ConfigurableSystems>`_ for different configurable software system or our `feature library <https://github.com/se-sic/vara-feature>`_.
 
 .. code-block:: console
 
@@ -51,6 +53,7 @@ Without LTO, the analysis can only run within a translation unit, hence, feature
 
 
 Or, specify feature location within your code direclty.
+We can mark variables as feature variable to tell the analysis that this specific variable controls the activation of feature code, in cases where the software does not provide a feature model or the developers want to explicitly encode this information.
 
 .. code-block:: cpp
 
