@@ -173,14 +173,14 @@ class SubProject():
         URL: str,
         remote: str,
         sub_path: str,
-        auto_clone: bool = True
+        is_submodule: bool = True
     ):
         self.__name = name
         self.__parent_code_base = parent_code_base
         self.__url = URL
         self.__remote = remote
         self.__sub_path = Path(sub_path)
-        self.__auto_clone = auto_clone
+        self.__is_submodule = is_submodule
 
     @property
     def name(self) -> str:
@@ -210,15 +210,15 @@ class SubProject():
         return self.__sub_path
 
     @property
-    def auto_clone(self) -> bool:
+    def is_submodule(self) -> bool:
         """
-        Determine if this project should be automatically cloned when a
-        `CodeBase` is initialized.
+        Determine if this project is a submodule and shouldn't be cloned and
+        pulled automatically when a `CodeBase` is initialized or updated.
 
         Returns:
             True, if it should be automatically cloned
         """
-        return self.__auto_clone
+        return self.__is_submodule
 
     def init_and_update_submodules(self) -> None:
         """
@@ -397,17 +397,26 @@ class CodeBase():
         """
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
-            if sub_project.auto_clone:
+            if sub_project.is_submodule:
                 sub_project.clone()
 
-    def map_sub_projects(self, func: tp.Callable[[SubProject], None]) -> None:
+    def map_sub_projects(
+        self,
+        func: tp.Callable[[SubProject], None],
+        exclude_submodules: bool = False
+    ) -> None:
         """
         Execute a callable ``func`` on all sub projects of the code base.
 
         Args:
             func: function to execute on the sub projects
+            exclude_submodules: if True sub projects that
+                                are managed using git submodules will be
+                                excluded
         """
         for sub_project in self.__sub_projects:
+            if exclude_submodules and sub_project.is_submodule:
+                continue
             func(sub_project)
 
 
