@@ -16,20 +16,20 @@ For ubuntu:
 
 .. code-block:: console
 
-    sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev git
+    sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev git graphviz-dev
     sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
 
 For arch:
 
 .. code-block:: console
 
-    sudo pacman -Syu --needed python tk python-psutil psutils ninja python-pip python-statsmodels autoconf cmake ruby curl time libyaml python-coverage
+    sudo pacman -Syu --needed python tk python-psutil psutils ninja python-pip python-statsmodels autoconf cmake ruby curl time libyaml python-coverage graphviz
 
 For fedora:
 
 .. code-block:: console
 
-    sudo dnf install python3-devel python3-tkinter python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-devel gcc-c++ libgit2-devel gcc-gfortran openblas-devel
+    sudo dnf install python3-devel python3-tkinter python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-devel gcc-c++ libgit2-devel gcc-gfortran openblas-devel graphviz-devel
 
 Install to varats with pip
 **************************
