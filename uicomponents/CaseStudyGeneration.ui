@@ -169,7 +169,7 @@
        <number>0</number>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="revisionsPage">
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -245,23 +245,46 @@
        </layout>
       </widget>
       <widget class="QWidget" name="sample_page">
-       <layout class="QFormLayout" name="formLayout">
-        <item row="0" column="0" colspan="2">
-         <widget class="QComboBox" name="sampling_method"/>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="3" column="0" colspan="2">
+         <widget class="QCheckBox" name="code_commits">
+          <property name="toolTip">
+           <string>Only sample commits which add lines of code</string>
+          </property>
+          <property name="text">
+           <string>Only Code Commits</string>
+          </property>
+         </widget>
         </item>
-        <item row="1" column="1">
+        <item row="2" column="0">
          <widget class="QSpinBox" name="num_revs">
           <property name="value">
            <number>10</number>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
+        <item row="2" column="1">
          <widget class="QLabel" name="label">
           <property name="text">
            <string>Number of Revisions</string>
           </property>
          </widget>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QComboBox" name="sampling_method"/>
+        </item>
+        <item row="4" column="0">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>

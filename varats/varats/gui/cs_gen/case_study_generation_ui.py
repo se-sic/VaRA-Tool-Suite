@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Mainwindow.ui'
+# Form implementation generated from reading ui file 'CaseStudyGeneration.ui'
 #
 # Created by: PyQt5 UI code generator 5.13.2
 #
@@ -94,6 +94,9 @@ class Ui_MainWindow(object):
         self.revisionsPage.setObjectName("revisionsPage")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.revisionsPage)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.revisions = QtWidgets.QLabel(self.revisionsPage)
+        self.revisions.setObjectName("revisions")
+        self.verticalLayout_3.addWidget(self.revisions)
         self.commit_search = QtWidgets.QLineEdit(self.revisionsPage)
         self.commit_search.setClearButtonEnabled(True)
         self.commit_search.setObjectName("commit_search")
@@ -143,24 +146,26 @@ class Ui_MainWindow(object):
         self.strategie_forms.addWidget(self.revisionsPage)
         self.sample_page = QtWidgets.QWidget()
         self.sample_page.setObjectName("sample_page")
-        self.formLayout = QtWidgets.QFormLayout(self.sample_page)
-        self.formLayout.setObjectName("formLayout")
-        self.sampling_method = QtWidgets.QComboBox(self.sample_page)
-        self.sampling_method.setObjectName("sampling_method")
-        self.formLayout.setWidget(
-            0, QtWidgets.QFormLayout.SpanningRole, self.sampling_method
-        )
+        self.gridLayout_2 = QtWidgets.QGridLayout(self.sample_page)
+        self.gridLayout_2.setObjectName("gridLayout_2")
+        self.code_commits = QtWidgets.QCheckBox(self.sample_page)
+        self.code_commits.setObjectName("code_commits")
+        self.gridLayout_2.addWidget(self.code_commits, 3, 0, 1, 2)
         self.num_revs = QtWidgets.QSpinBox(self.sample_page)
         self.num_revs.setProperty("value", 10)
         self.num_revs.setObjectName("num_revs")
-        self.formLayout.setWidget(
-            1, QtWidgets.QFormLayout.FieldRole, self.num_revs
-        )
+        self.gridLayout_2.addWidget(self.num_revs, 2, 0, 1, 1)
         self.label = QtWidgets.QLabel(self.sample_page)
         self.label.setObjectName("label")
-        self.formLayout.setWidget(
-            1, QtWidgets.QFormLayout.LabelRole, self.label
+        self.gridLayout_2.addWidget(self.label, 2, 1, 1, 1)
+        self.sampling_method = QtWidgets.QComboBox(self.sample_page)
+        self.sampling_method.setObjectName("sampling_method")
+        self.gridLayout_2.addWidget(self.sampling_method, 1, 0, 1, 2)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding
         )
+        self.gridLayout_2.addItem(spacerItem2, 4, 0, 1, 1)
         self.strategie_forms.addWidget(self.sample_page)
         self.per_year_page = QtWidgets.QWidget()
         self.per_year_page.setObjectName("per_year_page")
@@ -188,7 +193,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.strategie_forms.setCurrentIndex(0)
+        self.strategie_forms.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -206,9 +211,16 @@ class Ui_MainWindow(object):
         self.project_search.setPlaceholderText(
             _translate("MainWindow", "Search")
         )
+        self.revisions.setText(_translate("MainWindow", "Revisions"))
         self.commit_search.setPlaceholderText(
             _translate("MainWindow", "Search")
         )
+        self.code_commits.setToolTip(
+            _translate(
+                "MainWindow", "Only sample commits which add lines of code"
+            )
+        )
+        self.code_commits.setText(_translate("MainWindow", "Only Code Commits"))
         self.label.setText(_translate("MainWindow", "Number of Revisions"))
         self.seperate.setText(
             _translate("MainWindow", "Seperate Years into different Stages")

@@ -39,7 +39,6 @@ from varats.project.project_util import (
 from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import is_revision_blocked
 from varats.tools.research_tools.vara_manager import ProcessManager
-from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.utils import settings
 from varats.utils.git_util import (
     get_initial_commit,
@@ -79,7 +78,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             for x in NormalSamplingMethod.normal_sampling_method_types()
         ])
         self.strategie_forms.setCurrentIndex(
-            GenerationStrategie.SELECTREVISION.value
+            GenerationStrategie.SELECT_REVISION.value
         )
         self.revision_list.clicked.connect(self.show_revision_data)
         self.select_specific.clicked.connect(self.revisions_of_project)
@@ -148,10 +147,10 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             )
             extend_with_distrib_sampling(
                 case_study, cmap, sampling_method(), 0, self.num_revs.value(),
-                True
+                True, self.code_commits.clicked
             )
         elif self.strategie_forms.currentIndex(
-        ) == GenerationStrategie.SELECTREVISION.value:
+        ) == GenerationStrategie.SELECT_REVISION.value:
             selected_rows = self.revision_list.selectionModel().selectedRows(0)
             selected_commits = [row.data() for row in selected_rows]
             extend_with_extra_revs(case_study, cmap, selected_commits, 0)
@@ -179,14 +178,14 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             self.project_details.setText(project_info)
             self.project_details.update()
             if self.strategie_forms.currentIndex(
-            ) == GenerationStrategie.SELECTREVISION.value:
+            ) == GenerationStrategie.SELECT_REVISION.value:
                 self.revisions_of_project()
 
     def revisions_of_project(self) -> None:
         """Generate the Revision list for the selected project if select
         specific is enabled."""
         self.strategie_forms.setCurrentIndex(
-            GenerationStrategie.SELECTREVISION.value
+            GenerationStrategie.SELECT_REVISION.value
         )
         if self.selected_project != self.revision_list_project:
             self.revision_details.setText("Loading Revisions")
@@ -344,7 +343,6 @@ class VaRATSGui:
 
 def start_gui() -> None:
     """Start VaRA-TS driver and run application."""
-    initialize_cli_tool()
     driver = VaRATSGui()
     driver.main()
 
