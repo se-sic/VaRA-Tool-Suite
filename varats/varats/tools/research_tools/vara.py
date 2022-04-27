@@ -65,7 +65,7 @@ class VaRACodeBase(CodeBase):
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin",
                 "vara-llvm-project/phasar",
-                is_submodule=False
+                is_submodule=True
             )
         ]
         super().__init__(base_dir, sub_projects)

@@ -173,7 +173,7 @@ class SubProject():
         URL: str,
         remote: str,
         sub_path: str,
-        is_submodule: bool = True
+        is_submodule: bool = False
     ):
         self.__name = name
         self.__parent_code_base = parent_code_base
@@ -397,7 +397,7 @@ class CodeBase():
         """
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
-            if sub_project.is_submodule:
+            if not sub_project.is_submodule:
                 sub_project.clone()
 
     def map_sub_projects(
