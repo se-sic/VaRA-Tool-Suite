@@ -7,7 +7,6 @@ import numpy as np
 import seaborn as sns
 from matplotlib import style
 from pandas import DataFrame
-from pygtrie import CharTrie
 
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
@@ -30,35 +29,16 @@ def get_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
         project_name, ["revision", "commit_hash", "lines"],
         get_commit_map(project_name), case_study
     )
-
-    def cs_filter(data_frame: DataFrame) -> DataFrame:
-        """Filter out all commits that are not in the case study if one was
-        selected."""
-        if case_study is None or data_frame.empty:
-            return data_frame
-        # use a trie for fast prefix lookup
-        revisions = CharTrie()
-        for revision in case_study.revisions:
-            revisions[revision.hash] = True
-        return data_frame[data_frame["commit_hash"].
-                          apply(lambda x: revisions.has_node(x) != 0)]
-
-    return cs_filter(data)
+    return data
 
 
 def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
     data = get_lines_per_commit_long(case_study)
-    starting_lines = {
-        commit_hash: lines
-        for revision, commit_hash, lines in data.itertuples(index=False)
-        if revision == FullCommitHash(commit_hash).to_short_commit_hash() and
-        lines is not math.nan
-    }
+    max_lines = data.drop(columns=["revision"]).groupby("commit_hash").max()
     data = data.apply(
         lambda x: [
             x['revision'], x['commit_hash'],
-            (x['lines'] * 100 / starting_lines[x['commit_hash']])
-            if starting_lines.__contains__(x['commit_hash']) else math.nan
+            (x['lines'] * 100 / max_lines['lines'][x['commit_hash']])
         ],
         axis=1,
         result_type='broadcast'
@@ -78,6 +58,7 @@ def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
     case_study_data = case_study_data.sort_index(
         axis=1, key=lambda x: x.map(cmap.short_time_id)
     )
+
     return case_study_data.astype(float)
 
 
@@ -90,25 +71,14 @@ def get_interactions_per_commit_long(case_study: CaseStudy):
     data = data.groupby(["base_hash", "revision"],
                         sort=False).sum().reset_index()
 
-    def cs_filter(data_frame: DataFrame) -> DataFrame:
-        """Filter out all commits that are not in the case study if one was
-        selected."""
-        if case_study is None or data_frame.empty:
-            return data_frame
-        # use a trie for fast prefix lookup
-        revisions = CharTrie()
-        for revision in case_study.revisions:
-            revisions[revision.hash] = True
-        return data_frame[
-            data_frame["base_hash"].apply(lambda x: revisions.has_node(x) != 0)]
-
-    return cs_filter(data)
+    return data
 
 
 def get_normalized_interactions_per_commit_long(
     case_study: CaseStudy
 ) -> DataFrame:
     data = get_interactions_per_commit_long(case_study)
+    print(data)
     max_interactions = data.drop(columns=["revision"]
                                 ).groupby("base_hash").max()
     data = data.apply(
@@ -165,11 +135,11 @@ def lines_and_interactions(case_study: CaseStudy) -> DataFrame:
     return data.astype(float)
 
 
-def get_author_color_map(case_study: CaseStudy) -> dict[tp.Any, tp.Any]:
+def get_author_color_map(data, case_study) -> dict[tp.Any, tp.Any]:
     commit_lookup_helper = create_commit_lookup_helper(case_study.project_name)
     author_set: set = set()
-    for commit_hash in case_study.revisions:
-        commit = commit_lookup_helper(commit_hash)
+    for commit_hash in data.index.get_level_values(0):
+        commit = commit_lookup_helper(FullCommitHash(commit_hash))
         author_set.add(commit.author.name)
     author_list = list(author_set)
     colormap = plt.get_cmap("nipy_spectral")
@@ -208,7 +178,7 @@ class HeatMapPlot(Plot, plot_name=None):
             linewidth=0.15
         )
         if self.color_commits:
-            color_map = get_author_color_map(case_study)
+            color_map = get_author_color_map(data, case_study)
             commit_lookup_helper = create_commit_lookup_helper(
                 case_study.project_name
             )
