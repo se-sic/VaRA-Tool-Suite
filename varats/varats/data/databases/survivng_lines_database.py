@@ -23,31 +23,33 @@ class SurvivingLinesDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Dict[str, tp.Any]
     ) -> pd.DataFrame:
         data_frame = load_cached_df_or_none(cls.CACHE_ID, project_name)
+        project_repo = get_local_project_git(case_study.project_name)
+        revisions = case_study.revisions if case_study else [
+            FullCommitHash.from_pygit_commit(commit) for commit in
+            project_repo.walk(project_repo.head.target, GIT_SORT_TOPOLOGICAL)
+        ]
+        data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
+        cached_revisions = data_frame.groupby("revision").groups.values(
+        ) if data_frame else set()
+        revisions = set(revisions).difference(cached_revisions)
+        for revision in revisions:
+            lines_per_commit = calc_surviving_lines(project_repo, revision)
+
+            def build_dataframe_row(hash: FullCommitHash,
+                                    lines: int) -> tp.Dict[str, tp.Any]:
+                data_dict: tp.Dict[str, tp.Any] = {
+                    'revision': revision.to_short_commit_hash().hash,
+                    'time_id': commit_map.time_id(revision),
+                    'commit_hash': hash.hash,
+                    'lines': lines
+                }
+                return data_dict
+
+            for entry in lines_per_commit.items():
+                data_dicts.append(build_dataframe_row(entry[0], entry[1]))
         if data_frame is None:
-            project_repo = get_local_project_git(case_study.project_name)
-            data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
-            revisions = [
-                FullCommitHash.from_pygit_commit(commit)
-                for commit in project_repo.
-                walk(project_repo.head.target, GIT_SORT_TOPOLOGICAL)
-            ]
-            for revision in revisions:
-                lines_per_commit = calc_surviving_lines(
-                    project_repo, revision, revisions
-                )
-
-                def build_dataframe_row(hash: FullCommitHash,
-                                        lines: int) -> tp.Dict[str, tp.Any]:
-                    data_dict: tp.Dict[str, tp.Any] = {
-                        'revision': revision.to_short_commit_hash().hash,
-                        'time_id': commit_map.time_id(revision),
-                        'commit_hash': hash.hash,
-                        'lines': lines
-                    }
-                    return data_dict
-
-                for entry in lines_per_commit.items():
-                    data_dicts.append(build_dataframe_row(entry[0], entry[1]))
             data_frame = pd.DataFrame(data_dicts)
-            cache_dataframe(cls.CACHE_ID, project_name, data_frame)
+        else:
+            data_frame = pd.DataFrame.append(pd.DataFrame(data_dicts))
+        cache_dataframe(cls.CACHE_ID, project_name, data_frame)
         return data_frame
