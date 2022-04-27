@@ -2,10 +2,13 @@
 
 import os
 import random
+import shutil
+import tempfile
 import traceback
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
+from types import TracebackType
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
@@ -24,6 +27,11 @@ from varats.report.report import (
 from varats.revision.revisions import get_tagged_revisions
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
+
+if tp.TYPE_CHECKING:
+    TempDir = tempfile.TemporaryDirectory[str]
+else:
+    TempDir = tempfile.TemporaryDirectory
 
 
 def get_varats_result_folder(project: Project) -> Path:
@@ -472,3 +480,32 @@ def get_tagged_experiment_specific_revisions(
     return get_tagged_revisions(
         project_cls, result_file_type, tag_blocked, experiment_filter
     )
+
+
+class ZippedReportFolder(TempDir):
+    """
+    Context manager for creating a folder report, i.e., a report file which is
+    actually a folder containing multiple files and other folders.
+
+    Example usage: An experiment step can, with this context manager, simply
+    create a folder into which all kinds of data is dropped into. After the
+    completion of the step (leaving the context manager), all files dropped into
+    the folder will be compressed and stored as a single report.
+    """
+
+    def __init__(self, result_report_path: Path) -> None:
+        super().__init__()
+        self.__result_report_name: Path = result_report_path.with_suffix('')
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        # Don't create an empty zip archive.
+        if os.listdir(self.name):
+            shutil.make_archive(
+                str(self.__result_report_name), "zip", Path(self.name)
+            )
+
+        super().__exit__(exc_type, exc_value, exc_traceback)

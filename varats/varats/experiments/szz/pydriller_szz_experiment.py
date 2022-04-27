@@ -6,16 +6,18 @@ import yaml
 from benchbuild import Experiment, Project, source
 from benchbuild.experiment import ProjectT
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir
 from pygit2 import Commit
 
 from varats.base.version_header import VersionHeader
-from varats.data.reports.szz_report import SZZReport, PyDrillerSZZReport
+from varats.data.reports.szz_report import (
+    SZZReport,
+    PyDrillerSZZReport,
+    SZZTool,
+)
 from varats.experiment.experiment_util import get_varats_result_folder
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
@@ -48,7 +50,10 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
             bugs[commit_to_hash(bug.fixing_commit)] = sorted([
                 commit_to_hash(commit) for commit in bug.introducing_commits
             ])
-        raw_szz_report = {"szz_tool": "PyDrillerSZZ", "bugs": bugs}
+        raw_szz_report = {
+            "szz_tool": SZZTool.PYDRILLER_SZZ.tool_name,
+            "bugs": bugs
+        }
 
         result_file = PyDrillerSZZReport.get_file_name(
             "PyDrSZZ",

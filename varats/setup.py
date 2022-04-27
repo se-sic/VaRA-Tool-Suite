@@ -10,21 +10,22 @@ with open(base_dir + '/README.md') as f:
 
 setup(
     name='varats',
-    version='11.1.1',
-    url='https://github.com/se-passau/vara-tool-suite',
+    version='11.1.3',
+    url='https://github.com/se-sic/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],
     setup_requires=["pytest-runner", "setuptools_scm"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.3.0",
+        "benchbuild>=6.3.1",
         "click>=8.0.1",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
         "Jinja2>=3.0.1",
         "kaleido>=0.2.1",
         "matplotlib>=3.1.2",
+        "networkx>=2.5",
         "numpy>=1.21",
         "packaging>=20.1",
         "pandas>=0.22.0",
@@ -32,6 +33,7 @@ setup(
         "plumbum>=1.6.6",
         "pygit2>=0.28.2",
         "PyGithub>=1.47",
+        "pygraphviz>=1.7",
         "pygtrie",
         "pylatex>=1.4.1",
         "PyQt5>=5.10.0",
@@ -44,7 +46,7 @@ setup(
         "seaborn>=0.8.0",
         "statsmodels~=0.13.1",
         "tabulate>=0.8.6",
-        "varats-core>=11.1.1",
+        "varats-core>=11.1.3",
         "wllvm>=1.1.4",
     ],
     author="Florian Sattler",
@@ -55,6 +57,7 @@ setup(
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.tools.driver_graph_view:main',
+            'vara-buildsetup-gui = varats.tools.driver_build_setup_gui:main',
         ],
         "console_scripts": [
             'vara-art = varats.tools.driver_artefacts:main',
