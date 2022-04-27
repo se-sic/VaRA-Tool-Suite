@@ -95,6 +95,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.revisionsPage)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.revisions = QtWidgets.QLabel(self.revisionsPage)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(
+            self.revisions.sizePolicy().hasHeightForWidth()
+        )
+        self.revisions.setSizePolicy(sizePolicy)
         self.revisions.setObjectName("revisions")
         self.verticalLayout_3.addWidget(self.revisions)
         self.commit_search = QtWidgets.QLineEdit(self.revisionsPage)
@@ -103,10 +112,10 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.commit_search)
         self.revision_list = QtWidgets.QTableView(self.revisionsPage)
         sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
         sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setVerticalStretch(10)
         sizePolicy.setHeightForWidth(
             self.revision_list.sizePolicy().hasHeightForWidth()
         )
@@ -193,7 +202,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.strategie_forms.setCurrentIndex(1)
+        self.strategie_forms.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

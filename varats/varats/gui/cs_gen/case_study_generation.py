@@ -35,6 +35,7 @@ from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_git,
     get_project_cls_by_name,
+    get_primary_project_source,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import is_revision_blocked
@@ -46,6 +47,7 @@ from varats.utils.git_util import (
     ShortCommitHash,
     create_commit_lookup_helper,
     FullCommitHash,
+    CommitRepoPair,
 )
 from varats.utils.settings import vara_cfg
 
@@ -191,7 +193,6 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             self.revision_details.setText("Loading Revisions")
             self.revision_details.repaint()
             get_local_project_git(self.selected_project).remotes[0].fetch()
-
             git_path = get_local_project_git_path(self.selected_project)
             initial_commit = get_initial_commit(git_path).hash
             commits = get_all_revisions_between(
@@ -200,8 +201,12 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             commit_lookup_helper = create_commit_lookup_helper(
                 self.selected_project
             )
-
             project = get_project_cls_by_name(self.selected_project)
+            repo_name = get_primary_project_source(self.selected_project).local
+            commits = map(
+                lambda commit: CommitRepoPair(commit, repo_name), commits
+            )
+
             cmap = get_commit_map(self.selected_project)
             commit_model = CommitTableModel(
                 list(map(commit_lookup_helper, commits)), cmap, project
@@ -236,10 +241,10 @@ class CommitTableFilterModel(QSortFilterProxyModel):
         commit_index = self.sourceModel().index(source_row, 0, source_parent)
         author_index = self.sourceModel().index(source_row, 1, source_parent)
         return self.sourceModel().data(commit_index,
-                                       Qt.DisplayRole).lower()\
+                                       Qt.DisplayRole).lower() \
                    .__contains__(self.filter_string.lower()) \
                or self.sourceModel().data(author_index,
-                                          Qt.DisplayRole).lower()\
+                                          Qt.DisplayRole).lower() \
                    .__contains__(self.filter_string.lower())
 
 
