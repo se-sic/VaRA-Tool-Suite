@@ -382,7 +382,7 @@ class PlotGenerator(abc.ABC):
 
     @classmethod
     def __init_subclass__(
-        cls, generator_name: str, options: tp.List[CLIOptionTy],
+        cls, *, generator_name: str, options: tp.List[CLIOptionTy],
         **kwargs: tp.Any
     ) -> None:
         """

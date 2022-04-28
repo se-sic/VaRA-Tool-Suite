@@ -32,7 +32,7 @@ class Plot:
 
     @classmethod
     def __init_subclass__(
-        cls, plot_name: tp.Optional[str], **kwargs: tp.Any
+        cls, *, plot_name: tp.Optional[str], **kwargs: tp.Any
     ) -> None:
         """
         Register concrete plots.

@@ -39,7 +39,7 @@ class Table:
 
     @classmethod
     def __init_subclass__(
-        cls, table_name: tp.Optional[str], **kwargs: tp.Any
+        cls, *, table_name: tp.Optional[str], **kwargs: tp.Any
     ) -> None:
         """Register concrete tables."""
         super().__init_subclass__(**kwargs)
