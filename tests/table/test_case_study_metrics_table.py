@@ -4,6 +4,7 @@ import unittest
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper_mgmt.paper_config import load_paper_config
 from varats.projects.discover_projects import initialize_projects
+from varats.table.tables import TableFormat, TableConfig
 from varats.tables.case_study_metrics_table import CaseStudyMetricsTable
 from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import vara_cfg
@@ -21,18 +22,15 @@ class TestCSMetricsTable(unittest.TestCase):
 
         # latex booktabs is default format
         table_str = CaseStudyMetricsTable(
-            revisions={
-                "brotli":
-                    FullCommitHash("ce222e317e36aa362e83fc50c7a6226d238e03fd")
-            }
-        ).tabulate()
+            TableConfig.from_kwargs(view=False)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{llrrrl}
 \toprule
 {} &       Domain &    LOC &  Commits &  Authors &    Revision \\
 \midrule
-\textbf{brotli} &  Compression &  34833 &     1030 &       87 &  ce222e317e \\
+\textbf{brotli} &  Compression &  34639 &      848 &       40 &  aaa4424d9b \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -47,11 +45,8 @@ class TestCSMetricsTable(unittest.TestCase):
 
         # latex booktabs is default format
         table_str = CaseStudyMetricsTable(
-            revisions={
-                "xz":
-                    FullCommitHash("c5c7ceb08a011b97d261798033e2c39613a69eb7")
-            }
-        ).tabulate()
+            TableConfig.from_kwargs(view=False)
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{tabular}{llrrrl}

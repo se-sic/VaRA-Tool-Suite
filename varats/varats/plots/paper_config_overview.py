@@ -15,10 +15,11 @@ import varats.paper_mgmt.paper_config as PC
 from varats.data.reports.empty_report import EmptyReport
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_REPORT_TYPE
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, BaseReport
 # colors taken from seaborn's default palette
+from varats.ts_utils.click_param_types import REQUIRE_REPORT_TYPE
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR: npt.NDArray[np.float64] = np.asarray(

@@ -4,7 +4,11 @@ import typing as tp
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.report.report import BaseReport
-from varats.ts_utils.cli_util import CLIOptionConverter
+from varats.ts_utils.cli_util import (
+    CLIOptionConverter,
+    CLIOptionWithConverter,
+    CLIOptionTy,
+)
 
 
 class CaseStudyConverter(CLIOptionConverter[CaseStudy]):
@@ -37,7 +41,7 @@ class CaseStudyConverter(CLIOptionConverter[CaseStudy]):
 
 
 class ReportTypeConverter(CLIOptionConverter[tp.Type[BaseReport]]):
-    """CLI option converter for case studies."""
+    """CLI option converter for reports."""
 
     @staticmethod
     def value_to_string(
@@ -54,3 +58,38 @@ class ReportTypeConverter(CLIOptionConverter[tp.Type[BaseReport]]):
         if isinstance(str_value, tp.List):
             raise ValueError("Conversion for lists not implemented.")
         return BaseReport.REPORT_TYPES[str_value]
+
+
+def convert_kwargs(
+    cli_options: tp.List[CLIOptionTy],
+    kwargs: tp.Dict[str, tp.Any],
+    to_string: bool = False
+) -> tp.Dict[str, tp.Any]:
+    """
+    Apply conversions to kwargs as specified by table generator CLI options.
+
+    Args:
+        cli_options: CLI option/converter declarations
+        kwargs: table kwargs as values or strings
+        to_string: if ``True`` convert to string, otherwise convert to value
+
+    Returns:
+        the kwargs with applied conversions
+    """
+    converter = {
+        decl_converter.name: decl_converter.converter for decl_converter in [
+            tp.cast(CLIOptionWithConverter[tp.Any], cli_decl)
+            for cli_decl in cli_options
+            if isinstance(cli_decl, CLIOptionWithConverter)
+        ]
+    }
+    converted_kwargs: tp.Dict[str, tp.Any] = {}
+    for key, value in kwargs.items():
+        if key in converter.keys():
+            if to_string:
+                converted_kwargs[key] = converter[key].value_to_string(value)
+            else:
+                converted_kwargs[key] = converter[key].string_to_value(value)
+        else:
+            converted_kwargs[key] = value
+    return converted_kwargs

@@ -13,17 +13,17 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import find_missing_revisions
-from varats.plot.plots import (
-    PlotGenerator,
-    REQUIRE_CASE_STUDY,
-    REQUIRE_REPORT_TYPE,
-)
+from varats.plot.plots import PlotGenerator
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
 )
 from varats.report.report import FileStatusExtension, BaseReport
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import (
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_CASE_STUDY,
+)
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)

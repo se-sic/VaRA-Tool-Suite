@@ -32,7 +32,7 @@ class Plot:
 
     @classmethod
     def __init_subclass__(
-        cls, plot_name: tp.Optional[str], **kwargs: tp.Any
+        cls, *, plot_name: tp.Optional[str], **kwargs: tp.Any
     ) -> None:
         """
         Register concrete plots.
@@ -143,7 +143,7 @@ class Plot:
         'bar_Plot.svg'
         >>> from varats.paper.case_study import CaseStudy
         >>> p = Plot(PlotConfig.from_kwargs(view=False),\
-        project='bar',case_study=CaseStudy('baz', 42))
+                     project='bar', case_study=CaseStudy('baz', 42))
         >>> p.plot_file_name('png')
         'baz_42_Plot.png'
         """
