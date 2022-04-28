@@ -16,7 +16,7 @@ from varats.ts_utils.cli_util import (
     add_cli_options,
     CLIOptionTy,
     ConfigOption,
-    OptionType,
+    OptionTy,
     COGetter,
     COGetterV,
     cli_yn_choice,
@@ -214,25 +214,24 @@ class TableConfig():
         )
     }
 
-    def __option_getter(
-        self, option: ConfigOption[OptionType]
-    ) -> COGetter[OptionType]:
+    def __option_getter(self,
+                        option: ConfigOption[OptionTy]) -> COGetter[OptionTy]:
         """Creates a getter for options with no view default."""
 
-        def get_value(default: tp.Optional[OptionType] = None) -> OptionType:
+        def get_value(default: tp.Optional[OptionTy] = None) -> OptionTy:
             return option.value_or_default(self.__view, default)
 
         return get_value
 
     def __option_getter_v(
-        self, option: ConfigOption[OptionType]
-    ) -> COGetterV[OptionType]:
+        self, option: ConfigOption[OptionTy]
+    ) -> COGetterV[OptionTy]:
         """Creates a getter for options with view default."""
 
         def get_value(
-            default: tp.Optional[OptionType] = None,
-            view_default: tp.Optional[OptionType] = None
-        ) -> OptionType:
+            default: tp.Optional[OptionTy] = None,
+            view_default: tp.Optional[OptionTy] = None
+        ) -> OptionTy:
             return option.value_or_default(self.__view, default, view_default)
 
         return get_value

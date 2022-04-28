@@ -218,10 +218,10 @@ def convert_value(
 # ------------------------------------------------------------------------------
 # Plot/Table config options
 # ------------------------------------------------------------------------------
-OptionType = tp.TypeVar("OptionType")
+OptionTy = tp.TypeVar("OptionTy")
 
 
-class ConfigOption(tp.Generic[OptionType]):
+class ConfigOption(tp.Generic[OptionTy]):
     """
     Class representing a plot/table config option.
 
@@ -240,16 +240,16 @@ class ConfigOption(tp.Generic[OptionType]):
         self,
         name: str,
         help_str: str,
-        default: OptionType,
-        view_default: tp.Optional[OptionType] = None,
-        value: tp.Optional[OptionType] = None
+        default: OptionTy,
+        view_default: tp.Optional[OptionTy] = None,
+        value: tp.Optional[OptionTy] = None
     ) -> None:
         self.__name = name
         self.__metavar = name.upper()
         self.__type = type(default)
         self.__default = default
         self.__view_default = view_default
-        self.__value: tp.Optional[OptionType] = value
+        self.__value: tp.Optional[OptionTy] = value
         self.__help = f"{help_str} (global default = {default})"
 
     @property
@@ -257,18 +257,18 @@ class ConfigOption(tp.Generic[OptionType]):
         return self.__name
 
     @property
-    def default(self) -> OptionType:
+    def default(self) -> OptionTy:
         return self.__default
 
     @property
-    def view_default(self) -> tp.Optional[OptionType]:
+    def view_default(self) -> tp.Optional[OptionTy]:
         return self.__view_default
 
     @property
-    def value(self) -> tp.Optional[OptionType]:
+    def value(self) -> tp.Optional[OptionTy]:
         return self.__value
 
-    def with_value(self, value: OptionType) -> 'ConfigOption[OptionType]':
+    def with_value(self, value: OptionTy) -> 'ConfigOption[OptionTy]':
         """
         Create a copy of this option with the given value.
 
@@ -307,9 +307,9 @@ class ConfigOption(tp.Generic[OptionType]):
     def value_or_default(
         self,
         view: bool,
-        default: tp.Optional[OptionType] = None,
-        view_default: tp.Optional[OptionType] = None
-    ) -> OptionType:
+        default: tp.Optional[OptionTy] = None,
+        view_default: tp.Optional[OptionTy] = None
+    ) -> OptionTy:
         """
         Retrieve the value for this option.
 
@@ -342,22 +342,22 @@ class ConfigOption(tp.Generic[OptionType]):
 
 
 @runtime_checkable
-class COGetter(Protocol[OptionType]):
+class COGetter(Protocol[OptionTy]):
     """Getter type for options with no view default."""
 
-    def __call__(self, default: tp.Optional[OptionType] = None) -> OptionType:
+    def __call__(self, default: tp.Optional[OptionTy] = None) -> OptionTy:
         ...
 
 
 @runtime_checkable
-class COGetterV(Protocol[OptionType]):
+class COGetterV(Protocol[OptionTy]):
     """Getter type for options with view default."""
 
     def __call__(
         self,
-        default: tp.Optional[OptionType] = None,
-        view_default: tp.Optional[OptionType] = None
-    ) -> OptionType:
+        default: tp.Optional[OptionTy] = None,
+        view_default: tp.Optional[OptionTy] = None
+    ) -> OptionTy:
         ...
 
 
