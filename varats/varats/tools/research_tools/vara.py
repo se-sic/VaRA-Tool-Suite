@@ -65,7 +65,7 @@ class VaRACodeBase(CodeBase):
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin",
                 "vara-llvm-project/phasar",
-                auto_clone=False
+                is_submodule=True
             )
         ]
         super().__init__(base_dir, sub_projects)
@@ -113,7 +113,7 @@ class VaRACodeBase(CodeBase):
 
     def pull(self) -> None:
         """Pull and update all ``SubProject`` s."""
-        self.map_sub_projects(lambda prj: prj.pull())
+        self.map_sub_projects(lambda prj: prj.pull(), exclude_submodules=True)
         self.setup_submodules()
 
     def fetch(

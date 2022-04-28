@@ -42,7 +42,6 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
-from varats.tools.research_tools.vara_manager import pull_current_branch
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -57,6 +56,7 @@ from varats.ts_utils.click_param_types import (
     EnumChoice,
     create_multi_case_study_choice,
 )
+from varats.utils.git_commands import pull_current_branch
 from varats.utils.git_util import (
     get_initial_commit,
     is_commit_hash,
