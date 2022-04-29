@@ -133,12 +133,12 @@ class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
 
         project.cflags += [
             "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-feature",
-            "-fvara-fm-path=" + str(fm_path)
+            "-fvara-fm-path=" + str(fm_path), "-g"
         ]
 
         bc_file_extensions = [
             BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-            BCFileExtensions.FEATURE
+            BCFileExtensions.FEATURE, BCFileExtensions.DEBUG
         ]
 
         analysis_actions = []
