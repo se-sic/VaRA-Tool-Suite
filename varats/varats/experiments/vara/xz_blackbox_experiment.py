@@ -1,5 +1,5 @@
 """Implements an empty experiment that just compiles the project."""
-
+import tempfile
 import typing as tp
 from pathlib import Path
 
@@ -18,10 +18,10 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
-    get_varats_result_folder,
+    get_varats_result_folder, ZippedReportFolder,
 )
 from varats.experiment.wllvm import RunWLLVM
-from varats.report.gnu_time_report import TimeReport
+from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
@@ -65,22 +65,33 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
             ]
             file_path_xz = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json.xz"
 
+            number_of_repetition = 3
+
             with local.cwd(local.path(project.source_of_primary)):
                 xz_cmd = binary[xz_params]
                 time_xz_cmd = time["-v", "-o",
                                    f"{vara_result_folder}/{result_file}",
                                    xz_cmd]
                 rm_cmd = rm[file_path_xz]
-                print(rm_cmd)
-                rm_cmd()
-                exec_func_with_pe_error_handler(
-                    time_xz_cmd,
-                    create_default_analysis_failure_handler(
-                        self.__experiment_handle, project,
-                        self.__experiment_handle.report_spec().main_report,
-                        Path(vara_result_folder)
-                    )
-                )
+
+                with tempfile.TemporaryDirectory() as tmp_dir:
+
+                    tmp_file = Path(tmp_dir) / "TimeAggregateXZReport.zip"
+                    time_aggregate = TimeReportAggregate(tmp_file)
+
+                    print(f"timeReportStarts")
+
+                    with ZippedReportFolder(tmp_file) as time_reports_dir:
+                        for i in range(number_of_repetition):
+                            rm_cmd()
+                            exec_func_with_pe_error_handler(
+                                time_xz_cmd,
+                                create_default_analysis_failure_handler(
+                                    self.__experiment_handle, project,
+                                    self.__experiment_handle.report_spec().main_report,
+                                    Path(time_reports_dir) / f"time_report_{i}.txt",
+                                )
+                            )
                 print("Ends time command")
 
 
