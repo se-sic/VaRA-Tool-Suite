@@ -72,15 +72,15 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 rm_cmd = rm[file_path_xz]
 
                 with tempfile.TemporaryDirectory() as tmp_dir:
-                    ls_cmd = ls[Path(tmp_dir)]
+                    #ls_cmd = ls[Path(tmp_dir)]
                     print("----------------------------------")
 
-                    tmp_file = Path(tmp_dir) / "TimeAggregateXZReport.zip"
-                    time_aggregate = TimeReportAggregate(tmp_file)
+                    #tmp_file = Path(tmp_dir) / "TimeAggregateXZReport.zip"
+                    #time_aggregate = TimeReportAggregate(tmp_file)
 
                     print(f"timeReportStarts")
 
-                    with ZippedReportFolder(tmp_file) as time_reports_dir:
+                    with ZippedReportFolder(vara_result_folder / result_file.filename) as time_reports_dir:
                         print(Path(time_reports_dir))
                         for i in range(number_of_repetition):
                             print(Path(time_reports_dir) / f"time_report_{i}.txt")
@@ -96,7 +96,6 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                                     Path(time_reports_dir),
                                 )
                             )
-                            ls_cmd()
                 print("Ends time command")
 
 
