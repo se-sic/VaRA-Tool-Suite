@@ -32,20 +32,19 @@ from varats.data.databases.blame_library_interactions_database import (
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotGenerator,
-    PlotConfig,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_CASE_STUDY,
-    REQUIRE_REVISION,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
-from varats.ts_utils.click_param_types import EnumChoice
+from varats.ts_utils.click_param_types import (
+    EnumChoice,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REVISION,
+)
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -1345,8 +1344,6 @@ class BlameDegree(Plot, plot_name=None):
 class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
     """Plotting the degree of blame interactions."""
 
-    NAME = 'b_interaction_degree'
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.INTERACTION)
 
@@ -1391,8 +1388,6 @@ class BlameInteractionDegreeMultiLib(
     inter_lib=Bar
     """
 
-    NAME = 'b_interaction_degree_multi_lib'
-
     def plot(self, view_mode: bool) -> None:
         self._multi_lib_degree_plot(DegreeType.INTERACTION)
 
@@ -1432,8 +1427,6 @@ class BlameInteractionFractionOverview(
 ):
     """Plotting the fraction distribution of in-/outgoing blame interactions
     from all project libraries."""
-
-    NAME = 'b_interaction_fraction_overview'
 
     def plot(self, view_mode: bool) -> None:
         self._fraction_overview_plot(DegreeType.INTERACTION)
@@ -1478,8 +1471,6 @@ class BlameLibraryInteractions(
     To plot in interactive mode, select view_mode=True and pass the selected
     revision as key-value pair after the plot name. E.g., revision=Foo
     """
-
-    NAME = 'b_multi_lib_interaction_sankey_plot'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(plot_config, **kwargs)
@@ -1570,8 +1561,6 @@ class BlameCommitInteractionsGraphviz(
     engine fdp is chosen, the additional graph attributes 'splines=True',
     'overlap=False', and 'nodesep=1' are added.
     """
-
-    NAME = 'b_multi_lib_interaction_graphviz'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(plot_config, **kwargs)
@@ -1668,8 +1657,6 @@ class GraphvizLibraryInteractionsGeneratorCS(
 class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
     """Plotting the degree of authors for all blame interactions."""
 
-    NAME = 'b_author_degree'
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.AUTHOR)
 
@@ -1715,8 +1702,6 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
     """Plotting the degree of max times differences for all blame
     interactions."""
 
-    NAME = 'b_maxtime_distribution'
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.MAX_TIME)
 
@@ -1754,8 +1739,6 @@ class BlameMaxTimeDistributionGenerator(
 class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
     """Plotting the degree of avg times differences for all blame
     interactions."""
-
-    NAME = 'b_avgtime_distribution'
 
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.AVG_TIME)

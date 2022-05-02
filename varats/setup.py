@@ -20,6 +20,7 @@ setup(
         "argparse-utils>=1.2.0",
         "benchbuild>=6.3.1",
         "click>=8.0.1",
+        "Cryptography<37.0.0",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
         "Jinja2>=3.0.1",

@@ -7,6 +7,7 @@ from varats.paper_mgmt.paper_config import (
     get_loaded_paper_config,
 )
 from varats.projects.discover_projects import initialize_projects
+from varats.table.tables import TableConfig, TableFormat
 from varats.tables.code_centrality_table import TopCentralCodeCommitsTable
 from varats.utils.settings import vara_cfg
 
@@ -27,8 +28,10 @@ class TestCSMetricsTable(unittest.TestCase):
 
         # latex booktabs is default format
         table_str = TopCentralCodeCommitsTable(
-            table_case_study=get_loaded_paper_config().get_case_studies("xz")[0]
-        ).tabulate()
+            TableConfig.from_kwargs(view=False),
+            case_study=get_loaded_paper_config().get_case_studies("xz")[0],
+            num_commits=10
+        ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
             r"""\begin{table}

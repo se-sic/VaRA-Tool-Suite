@@ -1,97 +1,112 @@
-"""Driver module for `vara-table`."""
+"""
+Driver module for `vara-table`.
 
-import argparse
+This module automatically detects table generators and creates a separate
+subcommand for each generator. For this to work, table generators must be placed
+in the module `varats.table.tables`.
+"""
+
 import logging
 import typing as tp
 
-from argparse_utils import enum_action
+import click
 
-from varats.data.discover_reports import initialize_reports
+from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
-from varats.table.tables import TableRegistry, build_tables, TableFormat
+from varats.table.tables import (
+    TableGenerator,
+    CommonTableOptions,
+    TableConfig,
+    TableArtefact,
+    TableGeneratorFailed,
+)
 from varats.tables.discover_tables import initialize_tables
-from varats.ts_utils.cli_util import initialize_cli_tool
+from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 
 LOG = logging.getLogger(__name__)
 
 
-def main() -> None:
-    """
-    Main function for the table generator.
+class TableCLI(click.MultiCommand):
+    """Command factory for tables."""
 
-    `vara-table`
-    """
+    def __init__(self, **attrs: tp.Any):
+        initialize_tables()
+        super().__init__(**attrs)
+
+    def list_commands(self, ctx: click.Context) -> tp.List[str]:
+        return list(TableGenerator.GENERATORS.keys())
+
+    def get_command(self, ctx: click.Context,
+                    cmd_name: str) -> tp.Optional[click.Command]:
+
+        generator_cls = TableGenerator.GENERATORS[cmd_name]
+
+        @click.pass_context
+        def command_template(context: click.Context, **kwargs: tp.Any) -> None:
+            # extract common arguments and table config from context
+            common_options: CommonTableOptions = context.obj["common_options"]
+            table_config: TableConfig = context.obj["table_config"]
+            artefact_name: str = context.obj["save_artefact"]
+
+            try:
+                generator_instance = generator_cls(table_config, **kwargs)
+                if artefact_name:
+                    paper_config = get_paper_config()
+                    if paper_config.artefacts.get_artefact(artefact_name):
+                        LOG.info(
+                            f"Updating existing artefact '{artefact_name}'."
+                        )
+                    else:
+                        LOG.info(f"Creating new artefact '{artefact_name}'.")
+                    artefact = TableArtefact.from_generator(
+                        artefact_name, generator_instance, common_options
+                    )
+                    paper_config.add_artefact(artefact)
+                    paper_config.store_artefacts()
+                else:
+                    generator_instance(common_options)
+            except TableGeneratorFailed as ex:
+                print(
+                    f"Failed to create table generator {generator_cls.NAME}: "
+                    f"{ex.message}"
+                )
+
+        # return command wrapped with options specified in the generator class
+        command_definition = add_cli_options(
+            command_template, *generator_cls.OPTIONS
+        )
+        return click.command(cmd_name)(command_definition)
+
+
+@click.command(
+    cls=TableCLI,
+    help="Generate tables.",
+    context_settings={"help_option_names": ['-h', '--help']}
+)
+@CommonTableOptions.cli_options
+@click.option(
+    "--save-artefact",
+    metavar="NAME",
+    help="Save the table specification in the artefact file with the "
+    "given name."
+)
+@TableConfig.cli_options
+@click.pass_context
+def main(context: click.Context, **kwargs: tp.Any) -> None:
+    """Entry point for the table generation tool."""
+    # store common options in context so they can be passed to subcommands
+    common_options = CommonTableOptions.from_kwargs(**kwargs)
+    table_config = TableConfig.from_kwargs(**kwargs)
+    context.ensure_object(dict)
+    context.obj["common_options"] = common_options
+    context.obj["table_config"] = table_config
+    context.obj["save_artefact"] = kwargs["save_artefact"]
+
     initialize_cli_tool()
     initialize_projects()
-    initialize_reports()
     initialize_tables()
-    parser = argparse.ArgumentParser("vara-table")
-    parser.add_argument(
-        "table_type",
-        help="Table to generate." + TableRegistry.get_table_types_help_string()
-    )
-    parser.add_argument(
-        "-r", "--result-output", help="Folder with result files"
-    )
-    parser.add_argument("-p", "--project", help="Project name")
-    parser.add_argument(
-        "-v",
-        "--view",
-        help="Print the table to the console instead of saving it",
-        action='store_true',
-        default=False
-    )
-    parser.add_argument("--cs-path", help="Path to case_study", default=None)
-    parser.add_argument(
-        "--paper-config",
-        help="Generate tables for all case studies in the current paper config",
-        action='store_true',
-        default=False
-    )
-    parser.add_argument(
-        "--wrap-document",
-        help="Wrap the table in a full compilable document (for latex tables)",
-        action='store_true',
-        default=False
-    )
-    parser.add_argument(
-        "--report-type",
-        help="The report type to generate the table for."
-        "Tables may ignore this option.",
-        default="EmptyReport"
-    )
-    parser.add_argument(
-        "--output-format",
-        help="The format the table should have",
-        action=enum_action(TableFormat)
-    )
-    parser.add_argument(
-        "extra_args",
-        metavar="KEY=VALUE",
-        nargs=argparse.REMAINDER,
-        help=(
-            "Provide additional arguments that will be passed to the table "
-            "class. (do not put spaces before or after the '=' sign). "
-            "If a value contains spaces, you should define it "
-            'with double quotes: foo="bar baz".'
-        )
-    )
-
-    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
-    __table(args)
-
-
-def __table(args: tp.Dict[str, tp.Any]) -> None:
-    if 'extra_args' in args.keys():
-        extra_args = {
-            e[0].replace('-', '_'): e[1]
-            for e in [arg.split("=") for arg in args['extra_args']]
-        }
-    else:
-        extra_args = {}
-
-    build_tables(**args, **extra_args)
+    initialize_plots()
 
 
 if __name__ == '__main__':
