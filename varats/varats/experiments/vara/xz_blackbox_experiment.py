@@ -69,9 +69,6 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
             with local.cwd(local.path(project.source_of_primary)):
                 xz_cmd = binary[xz_params]
-                time_xz_cmd = time["-v", "-o",
-                                   f"{vara_result_folder}/{result_file}",
-                                   xz_cmd]
                 rm_cmd = rm[file_path_xz]
 
                 with tempfile.TemporaryDirectory() as tmp_dir:
@@ -83,6 +80,9 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
                     with ZippedReportFolder(tmp_file) as time_reports_dir:
                         for i in range(number_of_repetition):
+                            time_xz_cmd = time["-v", "-o",
+                                               Path(time_reports_dir) / f"time_report_{i}.txt",
+                                               xz_cmd]
                             rm_cmd()
                             exec_func_with_pe_error_handler(
                                 time_xz_cmd,
