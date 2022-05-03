@@ -66,6 +66,7 @@ setup(
             'vara-config = varats.tools.driver_config:main',
             'vara-container = varats.tools.driver_container:main',
             'vara-cs = varats.tools.driver_casestudy:main',
+            'vara-cs-gui = varats.tools.driver_casestudy_gui:main',
             'vara-develop = varats.tools.driver_develop:main',
             'vd = varats.tools.driver_develop:main',
             'vara-gen-bbconfig = '
