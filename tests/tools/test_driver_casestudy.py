@@ -212,7 +212,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         load_paper_config()
         result = runner.invoke(
             driver_casestudy.main, [
-                'gen', '-p', 'xz', '--new-stage', 'select_specific',
+                'gen', '-p', 'xz', 'select_specific',
                 '6c6da57ae2aa962aabde6892442227063d87e88c'
             ]
         )
@@ -233,7 +233,45 @@ class TestDriverCaseStudy(unittest.TestCase):
                 FullCommitHash('6c6da57ae2aa962aabde6892442227063d87e88c')
             )
         )
+        self.assertEqual(1, case_study.num_stages)
+
+    @run_in_test_environment(
+        UnitTestFixtures.create_file_fixture(
+            TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
+            Path("paper_configs/test_ext")
+        )
+    )
+    def test_vara_cs_gen_to_extend_new_stage(self):
+        """Test the extend-functionality of vara-cs gen."""
+        runner = CliRunner()
+        vara_cfg()["paper_config"]["current_config"] = "test_ext"
+        save_config()
+        load_paper_config()
+        result = runner.invoke(
+            driver_casestudy.main, [
+                'gen', '-p', 'xz', '--new-stage', '--merge-stage', 'test',
+                'select_specific', '6c6da57ae2aa962aabde6892442227063d87e88c'
+            ]
+        )
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_ext/xz_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertTrue(
+            case_study.revisions.__contains__(
+                FullCommitHash('ef364d3abc5647111c5424ea0d83a567e184a23b')
+            )
+        )
+        self.assertTrue(
+            case_study.revisions.__contains__(
+                FullCommitHash('6c6da57ae2aa962aabde6892442227063d87e88c')
+            )
+        )
         self.assertEqual(2, case_study.num_stages)
+        self.assertEqual('test', case_study.stages[1].name)
 
     @run_in_test_environment(
         UnitTestFixtures.create_file_fixture(

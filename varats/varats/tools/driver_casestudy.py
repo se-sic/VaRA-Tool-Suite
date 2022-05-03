@@ -192,7 +192,7 @@ def __casestudy_gen(
             "You need to create a paper config first"
             " using vara-pc create"
         )
-        return
+        raise click.Abort()
     ctx.obj['path'] = Path(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
@@ -245,7 +245,10 @@ def __casestudy_gen(
             ctx.obj['merge_stage'] = stage_index
 
         else:
-            ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
+            if new_stage:
+                ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
+            else:
+                ctx.obj['merge_stage'] = max(case_study.num_stages - 1, 0)
     ctx.obj['case_study'] = case_study
 
 
