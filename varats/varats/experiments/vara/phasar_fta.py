@@ -13,7 +13,9 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
-from varats.data.reports.fta_report import FTAReport as FTAR
+from varats.data.reports.feature_analysis_report import (
+    FeatureAnalysisReport as FAR,
+)
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -63,7 +65,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         for binary in project.binaries:
             # Define empty success file
             result_file = self.__experiment_handle.get_file_name(
-                FTAR.shorthand(),
+                FAR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
@@ -77,21 +79,22 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             )
 
             opt_params = [
-                "-vara-PFA", "-S",
-                str(bc_target_file), "-o", "/dev/null"
+                "-vara-PFA",
+                "-S",
+                "-vara-FAR",
+                f"-vara-report-outfile={vara_result_folder}/{result_file}",
+                str(bc_target_file),
             ]
 
             run_cmd = opt[opt_params]
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
 
-            run_cmd = run_cmd > f"{vara_result_folder}/{result_file}"
-
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, FTAR,
+                    self.__experiment_handle, project, FAR,
                     Path(vara_result_folder)
                 )
             )
@@ -102,7 +105,7 @@ class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
     the call."""
 
     NAME = "PhASARFeatureTaintAnalysis"
-    REPORT_SPEC = ReportSpecification(FTAR)
+    REPORT_SPEC = ReportSpecification(FAR)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
