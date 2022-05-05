@@ -71,36 +71,27 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 xz_cmd = binary[xz_params]
                 rm_cmd = rm[file_path_xz]
 
-                with tempfile.TemporaryDirectory() as tmp_dir:
-                    #ls_cmd = ls[Path(tmp_dir)]
-                    print("----------------------------------")
-
-                    #tmp_file = Path(tmp_dir) / "TimeAggregateXZReport.zip"
-                    #time_aggregate = TimeReportAggregate(tmp_file)
-
-                    print(f"timeReportStarts")
-
-                    with ZippedReportFolder(vara_result_folder / result_file.filename) as time_reports_dir:
-                        print(Path(time_reports_dir))
-                        for i in range(number_of_repetition):
-                            print(Path(time_reports_dir) / f"time_report_{i}.txt")
-                            time_xz_cmd = time["-v", "-o",
-                                               Path(time_reports_dir) / f"time_report_{i}.txt",
-                                               xz_cmd]
-                            rm_cmd()
-                            exec_func_with_pe_error_handler(
-                                time_xz_cmd,
-                                create_default_analysis_failure_handler(
-                                    self.__experiment_handle, project,
-                                    self.__experiment_handle.report_spec().main_report,
-                                    Path(time_reports_dir),
-                                )
+                with ZippedReportFolder(vara_result_folder / result_file.filename) as time_reports_dir:
+                    print(Path(time_reports_dir))
+                    for i in range(number_of_repetition):
+                        print(Path(time_reports_dir) / f"time_report_{i}.txt")
+                        time_xz_cmd = time["-v", "-o",
+                                           Path(time_reports_dir) / f"time_report_{i}.txt",
+                                           xz_cmd]
+                        rm_cmd()
+                        exec_func_with_pe_error_handler(
+                            time_xz_cmd,
+                            create_default_analysis_failure_handler(
+                                self.__experiment_handle, project,
+                                self.__experiment_handle.report_spec().main_report,
+                                Path(time_reports_dir),
                             )
-                print("Ends time command")
+                        )
+                time_aggregate = TimeReportAggregate(vara_result_folder / result_file.filename)
 
-
-
-
+                print("------------------------------------")
+                print(f"Num reports {time_aggregate.reports}")
+                print(f"Mean of all results {time_aggregate.mean_wall_clock_time}")
 
         return actions.StepResult.OK
 
