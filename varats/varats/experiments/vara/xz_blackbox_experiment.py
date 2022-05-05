@@ -89,7 +89,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
                 print(vara_result_folder / result_file.filename)
                 pre, ext = os.path.splitext(vara_result_folder / result_file.filename)
-                result_zip_path = pre + '.zip'
+                result_zip_path = Path((pre + '.zip'))
                 print("------------------------------------")
                 print(result_zip_path)
 
