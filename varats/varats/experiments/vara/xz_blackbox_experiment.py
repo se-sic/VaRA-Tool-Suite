@@ -1,4 +1,5 @@
 """Implements an empty experiment that just compiles the project."""
+import os.path
 import tempfile
 import typing as tp
 from pathlib import Path
@@ -87,8 +88,8 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                         )
 
                 print(vara_result_folder / result_file.filename)
-                result_zip_path = vara_result_folder / result_file.filename
-                result_zip_path.rename(result_zip_path.with_suffix('.zip'))
+                pre, ext = os.path.splitext(vara_result_folder / result_file.filename)
+                result_zip_path = pre + '.zip'
                 print("------------------------------------")
                 print(result_zip_path)
 
