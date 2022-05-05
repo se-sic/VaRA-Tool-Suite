@@ -85,16 +85,16 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                                 Path(time_reports_dir),
                             )
                         )
-                time_aggregate = TimeReportAggregate(vara_result_folder / result_file.filename)
 
+                print(vara_result_folder / result_file.filename)
                 result_zip_path = vara_result_folder / result_file.filename
                 result_zip_path.rename(result_zip_path.with_suffix('.zip'))
-
+                print("------------------------------------")
                 print(result_zip_path)
 
-                ls_cmd = ls[vara_result_folder]
-                ls_cmd()
-
+                #ls_cmd = ls[vara_result_folder]
+                #ls_cmd()
+                time_aggregate = TimeReportAggregate(result_zip_path)
                 print("------------------------------------")
                 print(f"Num reports {time_aggregate.reports}")
                 print(f"Mean of all results {time_aggregate.mean_wall_clock_time}")
