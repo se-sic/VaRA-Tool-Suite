@@ -72,7 +72,6 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 rm_cmd = rm[file_path_xz]
 
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as time_reports_dir:
-                    print(Path(time_reports_dir))
                     for i in range(number_of_repetition):
                         time_xz_cmd = time["-v", "-o",
                                            Path(time_reports_dir) / f"time_report_{i}.txt",
@@ -90,7 +89,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
                 print(vara_result_folder / result_file.filename)
 
-                ls_cmd = ls[vara_result_folder / result_file.filename]
+                ls_cmd = ls[vara_result_folder]
                 ls_cmd()
 
                 print("------------------------------------")
