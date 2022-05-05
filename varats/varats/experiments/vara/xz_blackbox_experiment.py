@@ -87,7 +87,10 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                         )
                 time_aggregate = TimeReportAggregate(vara_result_folder / result_file.filename)
 
-                print(vara_result_folder / result_file.filename)
+                result_zip_path = vara_result_folder / result_file.filename
+                result_zip_path.rename(result_zip_path.with_suffix('.zip'))
+
+                print(result_zip_path)
 
                 ls_cmd = ls[vara_result_folder]
                 ls_cmd()
