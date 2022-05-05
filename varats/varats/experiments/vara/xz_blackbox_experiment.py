@@ -74,7 +74,6 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as time_reports_dir:
                     print(Path(time_reports_dir))
                     for i in range(number_of_repetition):
-                        print(Path(time_reports_dir) / f"time_report_{i}.txt")
                         time_xz_cmd = time["-v", "-o",
                                            Path(time_reports_dir) / f"time_report_{i}.txt",
                                            xz_cmd]
@@ -88,6 +87,11 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                             )
                         )
                 time_aggregate = TimeReportAggregate(vara_result_folder / result_file.filename)
+
+                print(vara_result_folder / result_file.filename)
+
+                ls_cmd = ls[vara_result_folder / result_file.filename]
+                ls_cmd()
 
                 print("------------------------------------")
                 print(f"Num reports {time_aggregate.reports}")
