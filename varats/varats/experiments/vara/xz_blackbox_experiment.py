@@ -87,18 +87,15 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                             )
                         )
 
-                print(vara_result_folder / result_file.filename)
                 pre, ext = os.path.splitext(vara_result_folder / result_file.filename)
                 result_zip_path = Path((pre + '.zip'))
-                print("------------------------------------")
-                print(result_zip_path)
 
-                #ls_cmd = ls[vara_result_folder]
-                #ls_cmd()
-                time_aggregate = TimeReportAggregate(result_zip_path)
-                print("------------------------------------")
-                print(f"Num reports {time_aggregate.reports}")
-                print(f"Mean of all results {time_aggregate.mean_wall_clock_time}")
+                with open(vara_result_folder / f"aggregated result {self.compressionLevel}.txt", "w") as f:
+
+                    time_aggregate = TimeReportAggregate(result_zip_path)
+                    f.write(f"Num reports: {len(time_aggregate.reports)}")
+                    f.write(f"Mean of all results: {time_aggregate.mean_wall_clock_time}")
+                    f.write(time_aggregate.summary)
 
         return actions.StepResult.OK
 
