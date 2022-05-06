@@ -228,7 +228,12 @@ class TimeReportAggregate(
         return np.std(self.wall_clock_times)
 
     @property
+    def var_wall_clock_time(self) -> float:
+        return np.var(self.wall_clock_times)
+
+    @property
     def summary(self) -> str:
         return f"num_reports = {len(self.reports)}\n" \
             f"mean(wall_clock_time) = {self.mean_wall_clock_time}\n" \
-            f"std(wall_clock_time) = {self.std_wall_clock_time}\n"
+            f"std(wall_clock_time) = {self.std_wall_clock_time}\n" \
+            f"variance(wall_clock_time) = {self.var_wall_clock_time} \n"

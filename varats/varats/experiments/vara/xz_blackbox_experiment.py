@@ -93,7 +93,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 with open(vara_result_folder / f"aggregated-result-{self.compressionLevel}.txt", "w") as f:
 
                     time_aggregate = TimeReportAggregate(result_zip_path)
-                    f.write(f"Num reports: {len(time_aggregate.reports)} \n")
+                    #f.write(f"Num reports: {len(time_aggregate.reports)} \n")
                     #f.write(f"Mean of all results: {time_aggregate.mean_wall_clock_time}\n")
                     f.write(time_aggregate.summary)
 
