@@ -1,5 +1,4 @@
-"""Implements experiment which collects the source code locations of
-instrumentation points of VaRA's feature regions."""
+"""Implements experiment for VaRA's InstrumentationPointPrinter utility pass."""
 
 import typing as tp
 from pathlib import Path
@@ -9,7 +8,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
-from varats.data.reports.empty_report import EmptyReport
+from varats.data.reports.vara_ipp_report import VaraIPPReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -32,7 +31,7 @@ from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
-class CollectInstrumentationPoints(actions.Step):
+class CollectInstrumentationPoints(actions.Step):  # type: ignore
     NAME = "CollectInstrumentationPoints"
     DESCRIPTION = "Runs utility pass on LLVM-IR to extract instrumentation point information."
 
@@ -41,15 +40,13 @@ class CollectInstrumentationPoints(actions.Step):
         self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
-        if not self.obj:
-            return actions.StepResult.ERROR
         project = self.obj
 
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
             result_file = self.__experiment_handle.get_file_name(
-                EmptyReport.shorthand(),
+                VaraIPPReport.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
@@ -76,7 +73,7 @@ class CollectInstrumentationPoints(actions.Step):
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, EmptyReport,
+                    self.__experiment_handle, project, VaraIPPReport,
                     Path(vara_result_folder)
                 )
             )
@@ -84,13 +81,14 @@ class CollectInstrumentationPoints(actions.Step):
         return actions.StepResult.OK
 
 
-class InstrumentationPrinterRunner(VersionExperiment, shorthand="IP"):
-    """Experiment to collect the source code locations of instrumentation points
-    of VaRA's feature regions."""
+class InstrumentationPointPrinter(VersionExperiment, shorthand="IPP"):
+    """Experiment, which uses VaRA's InstrumentationPointPrinter utility pass to
+    collect source code locations of instrumentation points of VaRA's feature
+    regions."""
 
-    NAME = "InstrumentationPrinter"
+    NAME = "VaraIPP"
 
-    REPORT_SPEC = ReportSpecification(EmptyReport)
+    REPORT_SPEC = ReportSpecification(VaraIPPReport)
 
     def actions_for_project(
         self, project: Project
