@@ -32,15 +32,15 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
     NAME = "xzBlackboxAnalysis"
     DESCRIPTION = "Runs xz as a blackbox."
-    compressionLevel = 0
+    compression_level = 0
 
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
-        compressionLvl
+        compression_lvl
     ):
         super().__init__(obj=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
-        self.compressionLevel = compressionLvl
+        self.compression_level = compression_lvl
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
@@ -61,7 +61,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
             file_path = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json"
             xz_params = [
-                "-{compression}".format(compression=self.compressionLevel),
+                "-{compression}".format(compression=self.compression_level),
                 "-k", file_path
             ]
             file_path_xz = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json.xz"
@@ -71,31 +71,30 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
             with local.cwd(local.path(project.source_of_primary)):
                 xz_cmd = binary[xz_params]
                 rm_cmd = rm[file_path_xz]
+                with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
+                    for x in range(2, 10):
+                        with ZippedReportFolder(aggregated_time_reports_dir / Path(f"XZCompressionLevel{x}")) as time_reports_dir:
+                            for i in range(number_of_repetition):
+                                time_xz_cmd = time["-v", "-o",
+                                                   Path(time_reports_dir) / f"time_report_compression_{x}_{i}.txt",
+                                                   xz_cmd]
+                                rm_cmd()
+                                exec_func_with_pe_error_handler(
+                                    time_xz_cmd,
+                                    create_default_analysis_failure_handler(
+                                        self.__experiment_handle, project,
+                                        self.__experiment_handle.report_spec().main_report,
+                                        Path(time_reports_dir),
+                                    )
+                                )
 
-                with ZippedReportFolder(vara_result_folder / result_file.filename) as time_reports_dir:
-                    for i in range(number_of_repetition):
-                        time_xz_cmd = time["-v", "-o",
-                                           Path(time_reports_dir) / f"time_report_{i}.txt",
-                                           xz_cmd]
-                        rm_cmd()
-                        exec_func_with_pe_error_handler(
-                            time_xz_cmd,
-                            create_default_analysis_failure_handler(
-                                self.__experiment_handle, project,
-                                self.__experiment_handle.report_spec().main_report,
-                                Path(time_reports_dir),
-                            )
-                        )
+                        pre, ext = os.path.splitext(aggregated_time_reports_dir / Path(f"XZCompressionLevel{x}"))
+                        result_zip_path = Path((pre + '.zip'))
 
-                pre, ext = os.path.splitext(vara_result_folder / result_file.filename)
-                result_zip_path = Path((pre + '.zip'))
+                        with open(vara_result_folder/ "xzAggregatedResults" / f"aggregated-result-{self.compression_level}.txt", "w") as f:
 
-                with open(vara_result_folder / f"aggregated-result-{self.compressionLevel}.txt", "w") as f:
-
-                    time_aggregate = TimeReportAggregate(result_zip_path)
-                    #f.write(f"Num reports: {len(time_aggregate.reports)} \n")
-                    #f.write(f"Mean of all results: {time_aggregate.mean_wall_clock_time}\n")
-                    f.write(time_aggregate.summary)
+                            time_aggregate = TimeReportAggregate(result_zip_path)
+                            f.write(time_aggregate.summary)
 
         return actions.StepResult.OK
 

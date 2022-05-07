@@ -597,3 +597,6 @@ class ReportAggregate(
     def reports(self) -> tp.List[ReportTy]:
         """Returns the list of parsed reports."""
         return self.__reports
+
+
+
