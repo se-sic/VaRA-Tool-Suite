@@ -32,14 +32,20 @@ from varats.report.report import ReportSpecification
 
 
 class CollectInstrumentationPoints(actions.Step):  # type: ignore
+    """Runs utility pass on LLVM-IR to extract instrumentation point
+    information."""
+
     NAME = "CollectInstrumentationPoints"
-    DESCRIPTION = "Runs utility pass on LLVM-IR to extract instrumentation point information."
+    DESCRIPTION = "Runs utility pass on LLVM-IR to extract instrumentation " \
+        "point information."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
+        """Run VaRA-IPP utility pass and extract instrumentation point
+        information."""
         project = self.obj
 
         vara_result_folder = get_varats_result_folder(project)
