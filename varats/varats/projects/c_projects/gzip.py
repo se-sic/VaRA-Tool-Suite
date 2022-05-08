@@ -3,7 +3,7 @@ import re
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, mkdir
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -80,7 +80,7 @@ class Gzip(VProject, ReleaseProviderHook):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Gzip.NAME))
 
-        binary_map.specify_binary("gzip", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("build/gzip", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -91,18 +91,23 @@ class Gzip(VProject, ReleaseProviderHook):
         """Compile the project."""
         gzip_version_source = local.path(self.source_of_primary)
 
+        # Build binaries in separate dir because executing the binary with path 'gzip' will execute '/usr/bin/gzip' independent of the current working directory.
+        mkdir("-p", gzip_version_source / "build")
+
         self.cflags += [
             "-Wno-error=string-plus-int", "-Wno-error=shift-negative-value",
             "-Wno-string-plus-int", "-Wno-shift-negative-value"
         ]
 
-        clang = bb.compiler.cc(self)
         with local.cwd(gzip_version_source):
-            with local.env(CC=str(clang)):
-                bb.watch(local["./bootstrap"])()
-                bb.watch(local["./configure"])()
+            bb.watch(local["./bootstrap"])()
+
+        clang = bb.compiler.cc(self)
+        with local.cwd(gzip_version_source / "build"), local.env(CC=str(clang)):
+            bb.watch(local["../configure"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
+        with local.cwd(gzip_version_source):
             verify_binaries(self)
 
     @classmethod
