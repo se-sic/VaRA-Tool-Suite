@@ -29,17 +29,20 @@ class SurvivingLinesDatabase(
             project_repo.walk(project_repo.head.target, GIT_SORT_TOPOLOGICAL)
         ]
         data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
-        cached_revisions = data_frame.groupby("revision").groups.values(
-        ) if data_frame else set()
-        revisions = set(revisions).difference(cached_revisions)
-        for revision in revisions:
+        cached_revisions = data_frame.groupby("revision").groups.keys(
+        ) if data_frame is not None else set()
+        revisions_to_compute = set(
+            map(lambda r: r.hash, revisions)
+        ) - cached_revisions
+
+        for revision in revisions_to_compute:
             lines_per_commit = calc_surviving_lines(project_repo, revision)
 
             def build_dataframe_row(hash: FullCommitHash,
                                     lines: int) -> tp.Dict[str, tp.Any]:
                 data_dict: tp.Dict[str, tp.Any] = {
-                    'revision': revision.to_short_commit_hash().hash,
-                    'time_id': commit_map.time_id(revision),
+                    'revision': revision,
+                    'time_id': commit_map.time_id(FullCommitHash(revision)),
                     'commit_hash': hash.hash,
                     'lines': lines
                 }
@@ -50,6 +53,6 @@ class SurvivingLinesDatabase(
         if data_frame is None:
             data_frame = pd.DataFrame(data_dicts)
         else:
-            data_frame = pd.DataFrame.append(pd.DataFrame(data_dicts))
+            data_frame = data_frame.append(pd.DataFrame(data_dicts))
         cache_dataframe(cls.CACHE_ID, project_name, data_frame)
         return data_frame

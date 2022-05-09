@@ -7,6 +7,7 @@ import numpy as np
 import seaborn as sns
 from matplotlib import style
 from pandas import DataFrame
+from pygtrie import CharTrie
 
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
@@ -15,11 +16,15 @@ from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
 from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_CASE_STUDY
+from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.project.project_util import get_primary_project_source
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import (
     ShortCommitHash,
     FullCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
     create_commit_lookup_helper,
+    CommitRepoPair,
 )
 
 
@@ -29,12 +34,26 @@ def get_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
         project_name, ["revision", "commit_hash", "lines"],
         get_commit_map(project_name), case_study
     )
-    return data
+
+    def cs_filter(data_frame: DataFrame) -> DataFrame:
+        """Filter out all commits that are not in the case study if one was
+        selected."""
+        if case_study is None or data_frame.empty:
+            return data_frame
+        # use a trie for fast prefix lookup
+        revisions = CharTrie()
+        for revision in case_study.revisions:
+            revisions[revision.hash] = True
+        return data_frame[data_frame["commit_hash"].
+                          apply(lambda x: revisions.has_node(x) != 0)]
+
+    return cs_filter(data)
 
 
 def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
     data = get_lines_per_commit_long(case_study)
     max_lines = data.drop(columns=["revision"]).groupby("commit_hash").max()
+    print(data)
     data = data.apply(
         lambda x: [
             x['revision'], x['commit_hash'],
@@ -65,20 +84,38 @@ def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
 def get_interactions_per_commit_long(case_study: CaseStudy):
     project_name = case_study.project_name
     data: DataFrame = BlameLibraryInteractionsDatabase().get_data_for_project(
-        project_name, ["base_hash", "amount", "revision"],
+        project_name, ["base_hash", "amount", "revision", "base_lib"],
         get_commit_map(project_name), case_study
     )
+    data = data[
+        data["base_lib"].apply(lambda x: x.startswith(case_study.project_name))]
+    data.drop(columns=['base_lib'])
     data = data.groupby(["base_hash", "revision"],
                         sort=False).sum().reset_index()
 
-    return data
+    def cs_filter(data_frame: DataFrame) -> DataFrame:
+        """Filter out all commits that are not in the case study if one was
+        selected."""
+        if case_study is None or data_frame.empty:
+            return data_frame
+        # use a trie for fast prefix lookup
+        revisions = CharTrie()
+        for revision in case_study.revisions:
+            revisions[revision.hash] = True
+        return data_frame[
+            data_frame["base_hash"].apply(lambda x: revisions.has_node(x) != 0)]
+
+    return cs_filter(data)
 
 
 def get_normalized_interactions_per_commit_long(
     case_study: CaseStudy
 ) -> DataFrame:
     data = get_interactions_per_commit_long(case_study)
-    print(data)
+    data.drop(
+        data[data.base_hash == UNCOMMITTED_COMMIT_HASH.hash].index,
+        inplace=True
+    )
     max_interactions = data.drop(columns=["revision"]
                                 ).groupby("base_hash").max()
     data = data.apply(
@@ -139,7 +176,10 @@ def get_author_color_map(data, case_study) -> dict[tp.Any, tp.Any]:
     commit_lookup_helper = create_commit_lookup_helper(case_study.project_name)
     author_set: set = set()
     for commit_hash in data.index.get_level_values(0):
-        commit = commit_lookup_helper(FullCommitHash(commit_hash))
+        repo = get_primary_project_source(case_study.project_name).local
+        commit = commit_lookup_helper(
+            CommitRepoPair(FullCommitHash(commit_hash), repo)
+        )
         author_set.add(commit.author.name)
     author_list = list(author_set)
     colormap = plt.get_cmap("nipy_spectral")
@@ -151,14 +191,16 @@ class HeatMapPlot(Plot, plot_name=None):
     colormap = 'RdYlGn'
     vmin = 0
     vmax = 100
-    xticklables = 1
-    yticklables = 1
+    xticklabels = 1
+    yticklabels = 1
+    XLABEL = "Sampled revisions"
+    YLABEL = None
 
     def __init__(
-        self, name: str, plot_config: PlotConfig,
+        self, plot_config: PlotConfig,
         data_function: tp.Callable[[CaseStudy], DataFrame], **kwargs
     ):
-        super().__init__(name, plot_config, **kwargs)
+        super().__init__(plot_config, **kwargs)
         self.color_commits = False
         self.data_function = data_function
 
@@ -172,19 +214,27 @@ class HeatMapPlot(Plot, plot_name=None):
             cmap=self.colormap,
             vmin=self.vmin,
             vmax=self.vmax,
-            xticklabels=self.xticklables,
-            yticklabels=self.yticklables,
-            linecolor="grey",
-            linewidth=0.15
+            xticklabels=self.xticklabels,
+            yticklabels=self.yticklabels,
+            linewidth=0.15,
+            linecolor="grey"
         )
+        if self.XLABEL:
+            axis.set_xlabel(self.XLABEL)
+        if self.YLABEL:
+            axis.set_ylabel(self.YLABEL)
         if self.color_commits:
             color_map = get_author_color_map(data, case_study)
             commit_lookup_helper = create_commit_lookup_helper(
                 case_study.project_name
             )
+            repo = get_primary_project_source(case_study.project_name).local
             for label in axis.get_yticklabels():
-                commit = commit_lookup_helper(FullCommitHash(label.get_text()))
+                commit = commit_lookup_helper(
+                    CommitRepoPair(FullCommitHash(label.get_text()), repo)
+                )
                 label.set_color(color_map[commit.author.name])
+                label.set_text(ShortCommitHash(label.get_text()).hash)
             legend = []
             for author, color in color_map.items():
                 legend.append(mpatches.Patch(color=color, label=author))
@@ -196,10 +246,14 @@ class HeatMapPlot(Plot, plot_name=None):
                 borderaxespad=0.
             )
         plt.setp(
-            axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
+            axis.get_xticklabels(),
+            fontsize=self.plot_config.x_tick_size(),
+            family='monospace'
         )
         plt.setp(
-            axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
+            axis.get_yticklabels(),
+            fontsize=self.plot_config.x_tick_size(),
+            family='monospace'
         )
 
     def calc_missing_revisions(
@@ -257,11 +311,11 @@ class SurvivingInteractionsPlot(
     HeatMapPlot, plot_name="surviving_interactions_plot"
 ):
     NAME = 'surviving_interactions_plot'
+    YLABEL = "Surviving Interactions"
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            self.NAME, plot_config, get_normalized_interactions_per_commit_wide,
-            **kwargs
+            plot_config, get_normalized_interactions_per_commit_wide, **kwargs
         )
         self.color_commits = True
 
@@ -273,12 +327,12 @@ class SurvivingLinesPlot(HeatMapPlot, plot_name="surviving_commit_plot"):
     ) -> tp.Set[FullCommitHash]:
         pass
 
-    NAME = 'surviving_commit_plot'
+    NAME = 'surviving_lines_plot'
+    YLABEL = "Surviving Lines"
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            self.NAME, plot_config, get_normalized_lines_per_commit_wide,
-            **kwargs
+            plot_config, get_normalized_lines_per_commit_wide, **kwargs
         )
         self.color_commits = True
 
@@ -292,10 +346,10 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
 
     NAME = 'compare_survival'
 
+    YLABEL = "Commit Interactions v Lines"
+
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(
-            self.NAME, plot_config, lines_and_interactions, **kwargs
-        )
+        super().__init__(plot_config, lines_and_interactions, **kwargs)
         self.yticklables = 3
         self.color_commits = True
 

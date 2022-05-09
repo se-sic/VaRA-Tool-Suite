@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 from pandas import DataFrame
 
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotConfig, PlotGenerator, REQUIRE_CASE_STUDY
+from varats.plot.plots import PlotConfig, PlotGenerator
 from varats.plots.surviving_commits import (
     get_interactions_per_commit_long,
     get_lines_per_commit_long,
 )
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import FullCommitHash
 
 
@@ -70,7 +71,7 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
         pass
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
+        super().__init__(plot_config, **kwargs)
 
 
 class CommitStructurePlotGenerator(
