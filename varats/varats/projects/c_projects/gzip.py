@@ -91,7 +91,9 @@ class Gzip(VProject, ReleaseProviderHook):
         """Compile the project."""
         gzip_version_source = local.path(self.source_of_primary)
 
-        # Build binaries in separate dir because executing the binary with path 'gzip' will execute '/usr/bin/gzip' independent of the current working directory.
+        # Build binaries in separate dir because executing the binary with path
+        # 'gzip' will execute '/usr/bin/gzip' independent of the current working
+        # directory.
         mkdir("-p", gzip_version_source / "build")
 
         self.cflags += [
@@ -102,8 +104,9 @@ class Gzip(VProject, ReleaseProviderHook):
         with local.cwd(gzip_version_source):
             bb.watch(local["./bootstrap"])()
 
-        clang = bb.compiler.cc(self)
-        with local.cwd(gzip_version_source / "build"), local.env(CC=str(clang)):
+        c_compiler = bb.compiler.cc(self)
+        with local.cwd(gzip_version_source / "build"
+                      ), local.env(CC=str(c_compiler)):
             bb.watch(local["../configure"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 

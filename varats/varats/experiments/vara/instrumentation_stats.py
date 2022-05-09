@@ -1,4 +1,4 @@
-"""Module for experiment that measures statistics about the traced execution of
+"""Module for experiment which measures statistics about the traced execution of
 a binary using VaRA's instrumented USDT probes."""
 import typing as tp
 from pathlib import Path
@@ -12,7 +12,7 @@ from benchbuild.utils.cmd import bpftrace
 from plumbum import BG, FG, local
 from plumbum.commands.modifiers import Future
 
-from varats.data.reports.usdt_stats_report import VaraUsdtStatsReport
+from varats.data.reports.usdt_stats_report import VaraInstrumentationStatsReport
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     get_varats_result_folder,
@@ -29,9 +29,13 @@ from varats.report.report import FileStatusExtension, ReportSpecification
 from varats.tools.research_tools.vara import VaRA
 
 
-class GenerateUsdtStats(actions.Step):  # type: ignore
-    NAME = "WriteUsdtStats"
-    DESCRIPTION = "Executes each binary and collects runtime statistics using VaRA's probes and a bpftrace script."
+class CaptureInstrumentationStats(actions.Step):  # type: ignore
+    """Executes each binary and collects runtime statistics about
+    instrumentation using VaRA's USDT probes and a bpftrace script."""
+
+    NAME = "CaptureInstrumentationStats"
+    DESCRIPTION = "Executes each binary and collects runtime statistics about" \
+        " instrumentation using VaRA's USDT probes and a bpftrace script."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.run)
@@ -48,20 +52,28 @@ class GenerateUsdtStats(actions.Step):  # type: ignore
                 continue
 
             # Get workload to use.
-            # TODO Change this.
+            # TODO (se-sic/VaRA#841): refactor to bb workloads if possible
             workload_provider = WorkloadProvider.create_provider_for_project(
                 project
             )
-            workload = workload_provider.get_workload_for_binary(binary.name)
-            if (workload == None):
+            if workload_provider == None:
                 print(
-                    f"No workload for project={project.name} binary={binary.name}. Skipping."
+                    f"No workload provider for project={project.name}. " \
+                    "Skipping."
+                )
+                return actions.StepResult.CAN_CONTINUE
+
+            workload = workload_provider.get_workload_for_binary(binary.name)
+            if workload == None:
+                print(
+                    f"No workload for project={project.name} " \
+                        "binary={binary.name}. Skipping."
                 )
                 continue
 
             # Assemble Path for report.
             report_file_name = self.__experiment_handle.get_file_name(
-                VaraUsdtStatsReport.shorthand(),
+                VaraInstrumentationStatsReport.shorthand(),
                 project_name=project.name,
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
@@ -81,7 +93,8 @@ class GenerateUsdtStats(actions.Step):  # type: ignore
                     "tools/perf_bpf_tracing/UsdtExecutionStats.bt"
                 )
 
-                # Assertion: Can be run without sudo password prompt. To guarentee this, add an entry to /etc/sudoers.
+                # Assertion: Can be run without sudo password prompt. To
+                # guarentee this, add an entry to /etc/sudoers.
                 bpftrace_cmd = bpftrace["-o", report_file, bpftrace_script,
                                         binary.path]
 
@@ -89,7 +102,7 @@ class GenerateUsdtStats(actions.Step):  # type: ignore
                 with local.as_root():
                     bpftrace_runner = bpftrace_cmd & BG
 
-                sleep(1)  # give bpftrace time to start up
+                sleep(3)  # give bpftrace time to start up
 
                 # Run.
                 run_cmd & FG
@@ -100,13 +113,13 @@ class GenerateUsdtStats(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class UsdtExecStats(VersionExperiment, shorthand="VUS"):
-    """Runner for capturing tracing execution statistics using VaRA's USDT based
-    instrumentation."""
+class InstrumentationStatsRunner(VersionExperiment, shorthand="IS"):
+    """Runner for measuring statistics about the traced execution of a binary
+    using VaRA's instrumented USDT probes."""
 
-    NAME = "VaraUS"
+    NAME = "VaraIS"
 
-    REPORT_SPEC = ReportSpecification(VaraUsdtStatsReport)
+    REPORT_SPEC = ReportSpecification(VaraInstrumentationStatsReport)
 
     def actions_for_project(
         self, project: Project
@@ -147,13 +160,15 @@ class UsdtExecStats(VersionExperiment, shorthand="VUS"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, VaraUsdtStatsReport
+            self.get_handle(), project, VaraInstrumentationStatsReport
         )
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
 
-        analysis_actions.append(GenerateUsdtStats(project, self.get_handle()))
+        analysis_actions.append(
+            CaptureInstrumentationStats(project, self.get_handle())
+        )
 
         analysis_actions.append(actions.Clean(project))
 

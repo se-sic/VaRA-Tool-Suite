@@ -1,11 +1,11 @@
 """
 Module for the :class:`WorkloadProvider`.
 
-TODO Won't work on other computers since we are using hard-coded paths. Replace
-this with proper implementation for workloads.
+TODO (se-sic/VaRA#841): replace with bb workloads if possible
 """
 
 import typing as tp
+from pathlib import Path
 
 from benchbuild.project import Project
 
@@ -17,34 +17,38 @@ from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,
 )
 from varats.provider.provider import Provider
+from varats.utils.settings import vara_cfg
 
 
 class WorkloadProvider(Provider):
     """Provider for a list of arguments to execute binaries in a project
     with."""
 
+    WORKLOADS_BASE_DIR = Path(
+        vara_cfg()["experiment"]["workloads_base_location"].value
+    )
     WORKLOADS = {
         f"{FeaturePerfCSCollection.NAME},SimpleSleepLoop": [
-            "--iterations", "100000", "--sleepns", "50000"
+            "--iterations", "100", "--sleepms", "10"
         ],
         f"{FeaturePerfCSCollection.NAME},SimpleBusyLoop": [
             "--iterations", "100000", "--count_to", "100000"
         ],
         f"{Xz.NAME},xz": [
             "-k", "-f", "-9e", "--compress", "--threads=8", "--format=xz",
-            "/home/jonask/Repos/WorkloadsForConfigurableSystems/compression/countries-land-1km.geo.json"
+            WORKLOADS_BASE_DIR / "compression/countries-land-1km.geo.json"
         ],
         f"{Brotli.NAME},brotli": [
             "-f", "-o", "/tmp/brotli_compression_test.br",
-            "/home/jonask/Repos/WorkloadsForConfigurableSystems/compression/countries-land-1km.geo.json"
+            WORKLOADS_BASE_DIR / "compression/countries-land-1km.geo.json"
         ],
         f"{Bzip2.NAME},bzip2": [
             "--compress", "--best", "--verbose", "--keep", "--force",
-            "/home/jonask/Repos/WorkloadsForConfigurableSystems/compression/countries-land-1m.geo.json"
+            WORKLOADS_BASE_DIR / "compression/countries-land-1m.geo.json"
         ],
         f"{Gzip.NAME},gzip": [
             "--force", "--keep", "--name", "--recursive", "--verbose", "--best",
-            "/home/jonask/Repos/WorkloadsForConfigurableSystems/compression/countries-land-10km.geo.json"
+            WORKLOADS_BASE_DIR / "compression/countries-land-10km.geo.json"
         ],
     }
 
@@ -75,7 +79,8 @@ class WorkloadProvider(Provider):
             "All usages should be covered by the project specific provider."
         )
 
-    def get_workload_for_binary(self, binary_name: str) -> tp.List[str]:
+    def get_workload_for_binary(self,
+                                binary_name: str) -> tp.Optional[tp.List[str]]:
         """Get a list of arguments to execute the given binary with."""
         key = f"{self.project.NAME},{binary_name}"
         return self.WORKLOADS.get(key, None)
