@@ -53,7 +53,6 @@ class SurvivingLinesDatabase(
         if data_frame is None:
             data_frame = pd.DataFrame(data_dicts)
         else:
-            data_frame = pd.concat([pd.DataFrame(data_dicts), data_frame],
-                                   ignore_index=True)
+            data_frame = data_frame.append(pd.DataFrame(data_dicts))
         cache_dataframe(cls.CACHE_ID, project_name, data_frame)
         return data_frame
