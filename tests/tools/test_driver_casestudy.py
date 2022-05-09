@@ -210,11 +210,11 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_ext"
         save_config()
         load_paper_config()
+        old_commit = 'ef364d3abc5647111c5424ea0d83a567e184a23b'
+        new_commit = '6c6da57ae2aa962aabde6892442227063d87e88c'
         result = runner.invoke(
-            driver_casestudy.main, [
-                'gen', '-p', 'xz', 'select_specific',
-                '6c6da57ae2aa962aabde6892442227063d87e88c'
-            ]
+            driver_casestudy.main,
+            ['gen', '-p', 'xz', 'select_specific', new_commit]
         )
         self.assertEqual(0, result.exit_code, result.exception)
         case_study_path = Path(
@@ -224,14 +224,10 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertTrue(case_study_path.exists())
         case_study = load_case_study_from_file(case_study_path)
         self.assertTrue(
-            case_study.revisions.__contains__(
-                FullCommitHash('ef364d3abc5647111c5424ea0d83a567e184a23b')
-            )
+            case_study.revisions.__contains__(FullCommitHash(old_commit))
         )
         self.assertTrue(
-            case_study.revisions.__contains__(
-                FullCommitHash('6c6da57ae2aa962aabde6892442227063d87e88c')
-            )
+            case_study.revisions.__contains__(FullCommitHash(new_commit))
         )
         self.assertEqual(1, case_study.num_stages)
 
@@ -247,10 +243,12 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_ext"
         save_config()
         load_paper_config()
+        old_commit = 'ef364d3abc5647111c5424ea0d83a567e184a23b'
+        new_commit = '6c6da57ae2aa962aabde6892442227063d87e88c'
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'xz', '--new-stage', '--merge-stage', 'test',
-                'select_specific', '6c6da57ae2aa962aabde6892442227063d87e88c'
+                'select_specific', new_commit
             ]
         )
         self.assertEqual(0, result.exit_code, result.exception)
@@ -261,14 +259,10 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertTrue(case_study_path.exists())
         case_study = load_case_study_from_file(case_study_path)
         self.assertTrue(
-            case_study.revisions.__contains__(
-                FullCommitHash('ef364d3abc5647111c5424ea0d83a567e184a23b')
-            )
+            case_study.revisions.__contains__(FullCommitHash(old_commit))
         )
         self.assertTrue(
-            case_study.revisions.__contains__(
-                FullCommitHash('6c6da57ae2aa962aabde6892442227063d87e88c')
-            )
+            case_study.revisions.__contains__(FullCommitHash(new_commit))
         )
         self.assertEqual(2, case_study.num_stages)
         self.assertEqual('test', case_study.stages[1].name)
