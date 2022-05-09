@@ -90,7 +90,7 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
                 # attach bpftrace to binary to allow tracing it via USDT
                 bpftrace_script = Path(
                     VaRA.install_location(),
-                    "tools/perf_bpf_tracing/UsdtExecutionStats.bt"
+                    "share/vara/perf_bpf_tracing/UsdtExecutionStats.bt"
                 )
 
                 # Assertion: Can be run without sudo password prompt. To
