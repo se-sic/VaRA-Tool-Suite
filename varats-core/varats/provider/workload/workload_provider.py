@@ -25,7 +25,7 @@ class WorkloadProvider(Provider):
     with."""
 
     WORKLOADS_BASE_DIR = Path(
-        vara_cfg()["experiment"]["workloads_base_location"].value
+        str(vara_cfg()["experiment"]["workloads_base_location"])
     )
     WORKLOADS = {
         f"{FeaturePerfCSCollection.NAME},SimpleSleepLoop": [
@@ -36,19 +36,21 @@ class WorkloadProvider(Provider):
         ],
         f"{Xz.NAME},xz": [
             "-k", "-f", "-9e", "--compress", "--threads=8", "--format=xz",
-            WORKLOADS_BASE_DIR / "compression/countries-land-1km.geo.json"
+            str(WORKLOADS_BASE_DIR / "compression/countries-land-1km.geo.json")
         ],
         f"{Brotli.NAME},brotli": [
             "-f", "-o", "/tmp/brotli_compression_test.br",
-            WORKLOADS_BASE_DIR / "compression/countries-land-1km.geo.json"
+            str(WORKLOADS_BASE_DIR / "compression/countries-land-1km.geo.json")
         ],
         f"{Bzip2.NAME},bzip2": [
             "--compress", "--best", "--verbose", "--keep", "--force",
-            WORKLOADS_BASE_DIR / "compression/countries-land-1m.geo.json"
+            str(WORKLOADS_BASE_DIR / "compression/countries-land-1m.geo.json")
         ],
         f"{Gzip.NAME},gzip": [
             "--force", "--keep", "--name", "--recursive", "--verbose", "--best",
-            WORKLOADS_BASE_DIR / "compression/countries-land-10km.geo.json"
+            str(
+                WORKLOADS_BASE_DIR / "compression/countries-land-10km.geo.json"
+            )
         ],
     }
 

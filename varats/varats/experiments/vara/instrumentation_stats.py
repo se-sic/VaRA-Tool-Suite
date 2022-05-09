@@ -42,6 +42,8 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
         self.__experiment_handle = experiment_handle
 
     def run(self) -> actions.StepResult:
+        """Capture instrumentation stats by running the binary with a workload
+        and attaching the UsdtExecutionStats.bt."""
         project: Project = self.obj
 
         vara_result_folder = get_varats_result_folder(project)
@@ -56,15 +58,14 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
             workload_provider = WorkloadProvider.create_provider_for_project(
                 project
             )
-            if workload_provider == None:
+            if not workload_provider:
                 print(
                     f"No workload provider for project={project.name}. " \
                     "Skipping."
                 )
                 return actions.StepResult.CAN_CONTINUE
-
             workload = workload_provider.get_workload_for_binary(binary.name)
-            if workload == None:
+            if workload is None:
                 print(
                     f"No workload for project={project.name} " \
                         "binary={binary.name}. Skipping."
