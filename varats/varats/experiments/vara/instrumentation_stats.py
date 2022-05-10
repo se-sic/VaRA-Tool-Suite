@@ -106,7 +106,7 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
                 sleep(3)  # give bpftrace time to start up
 
                 # Run.
-                run_cmd & FG
+                run_cmd & FG  # pylint: disable=W0104
 
                 # Wait for bpftrace running in background to exit.
                 bpftrace_runner.wait()
