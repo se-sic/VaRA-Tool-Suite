@@ -282,15 +282,9 @@ def contains_source_code(
     if not churn_config:
         churn_config = ChurnConfig.create_c_style_languages_config()
 
-    if commit == get_initial_commit(repo_folder).to_short_commit_hash():
-        return_code = git[__get_git_path_arg(repo_folder), "diff",
-                          "--exit-code", "--quiet", commit.hash, "--",
-                          churn_config.get_extensions_repr('*.')] & RETCODE
-    else:
-        return_code = git[__get_git_path_arg(repo_folder), "diff",
-                          "--exit-code", "--quiet", f"{commit.hash}~",
-                          commit.hash, "--",
-                          churn_config.get_extensions_repr('*.')] & RETCODE
+    return_code = git[__get_git_path_arg(repo_folder), "diff", "--exit-code",
+                      "--quiet", f"{commit.hash}~", commit.hash, "--",
+                      churn_config.get_extensions_repr('*.')] & RETCODE
 
     if return_code == 0:
         return False
@@ -918,6 +912,37 @@ class RevisionBinaryMap(tp.Container[str]):
                     return True
 
         return False
+
+
+def has_branch(repo_folder: Path, branch_name: str) -> bool:
+    """Checks if a branch exists in the local repository."""
+
+    exit_code = git["-C",
+                    repo_folder.absolute(), "rev-parse", "--verify",
+                    branch_name] & TF
+    return tp.cast(bool, exit_code)
+
+
+def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
+    """Checks if a remote branch of a repository exists."""
+    exit_code = (
+        git["-C",
+            repo_folder.absolute(), "ls-remote", "--heads", remote, branch_name]
+        | grep[branch_name]
+    ) & RETCODE
+    return tp.cast(bool, exit_code == 0)
+
+
+def branch_has_upstream(
+    repo_folder: Path, branch_name: str, upstream: str = 'origin'
+) -> bool:
+    """Check if a branch has an upstream remote."""
+    exit_code = (
+        git["-C",
+            repo_folder.absolute(), "rev-parse", "--abbrev-ref",
+            branch_name + "@{upstream}"] | grep[upstream]
+    ) & RETCODE
+    return tp.cast(bool, exit_code == 0)
 
 
 def has_branch(repo_folder: Path, branch_name: str) -> bool:
