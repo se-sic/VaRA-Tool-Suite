@@ -3,6 +3,7 @@ import typing as tp
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import seaborn as sns
 from matplotlib import style
@@ -233,8 +234,13 @@ class HeatMapPlot(Plot, plot_name=None):
                 commit = commit_lookup_helper(
                     CommitRepoPair(FullCommitHash(label.get_text()), repo)
                 )
-                label.set_color(color_map[commit.author.name])
-                label.set_text(ShortCommitHash(label.get_text()).hash)
+                label.set(color=color_map[commit.author.name])
+            axis.yaxis.set_major_formatter(
+                mticker.FuncFormatter(
+                    lambda x, pos: axis.get_yticklabels()[pos - 1].get_text()
+                    [:ShortCommitHash.hash_length()]
+                )
+            )
             legend = []
             for author, color in color_map.items():
                 legend.append(mpatches.Patch(color=color, label=author))
@@ -346,11 +352,11 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
 
     NAME = 'compare_survival'
 
-    YLABEL = "Commit Interactions v Lines"
+    YLABEL = "Commit Interactions vs. Lines"
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(plot_config, lines_and_interactions, **kwargs)
-        self.yticklables = 3
+        self.yticklabels = 3
         self.color_commits = True
 
 
