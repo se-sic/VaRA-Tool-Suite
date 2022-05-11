@@ -50,7 +50,11 @@ class FeatureTaintedInstruction():
 
     def __eq__(self, other: tp.Any) -> bool:
         if isinstance(other, FeatureTaintedInstruction):
-            return self.instruction == other.instruction and self.location == other.location and self.feature_taints == other.feature_taints
+            return (
+                self.instruction == other.instruction and
+                self.location == other.location and
+                self.feature_taints == other.feature_taints
+            )
 
         return False
 
