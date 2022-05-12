@@ -49,6 +49,7 @@ def create_new_bb_config(
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.file',
+        'varats.projects.c_projects.findutils',
         'varats.projects.c_projects.gawk',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.glib',
