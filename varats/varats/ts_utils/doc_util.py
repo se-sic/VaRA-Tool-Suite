@@ -7,6 +7,7 @@ import pandas
 import tabulate as tb
 
 from varats.project.project_util import get_loaded_vara_projects
+from varats.tools.research_tools.vara import VaRA
 
 
 def _strip_python_class_decorations(raw_class_string: str) -> str:
@@ -104,3 +105,23 @@ def generate_project_groups_autoclass_directives(project_group: str) -> str:
             f"{_strip_python_class_decorations(str(project_type))}\n"
 
     return autoclass_refs_for_group
+
+
+def generate_vara_install_requirements(output_folder: Path) -> None:
+    """Generates dependency install commands for vara."""
+    with open(output_folder / "vara_install_requirements.inc", "w") as req_file:
+        vara_deps = VaRA.get_dependencies()
+        for distro in vara_deps.distros:
+            distro_name = str(distro)
+            if distro_name == "debian":
+                distro_name += "/ubuntu"
+
+            req_file.write(
+                f"""For {distro_name}:
+
+.. code-block:: console
+
+    sudo {vara_deps.get_install_command(distro)}
+
+"""
+            )

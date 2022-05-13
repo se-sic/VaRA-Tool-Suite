@@ -9,26 +9,28 @@ from pathlib import Path
 import distro as distribution
 from benchbuild.utils.cmd import apt, pacman
 
-from varats.tools.research_tools.vara_manager import (
-    BuildType,
-    add_remote,
-    branch_has_upstream,
+from varats.tools.research_tools.vara_manager import BuildType
+from varats.utils.filesystem_util import FolderAlreadyPresentError
+from varats.utils.git_commands import (
+    get_branches,
+    fetch_remote,
+    get_tags,
+    init_all_submodules,
+    update_all_submodules,
+    pull_current_branch,
+    push_current_branch,
     checkout_branch_or_commit,
     checkout_new_branch,
     download_repo,
-    fetch_remote,
-    get_branches,
+    add_remote,
+    show_status,
+)
+from varats.utils.git_util import (
+    get_current_branch,
     has_branch,
     has_remote_branch,
-    init_all_submodules,
-    pull_current_branch,
-    push_current_branch,
-    show_status,
-    get_tags,
-    update_all_submodules,
+    branch_has_upstream,
 )
-from varats.utils.filesystem_util import FolderAlreadyPresentError
-from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
 
 if tp.TYPE_CHECKING:
@@ -37,8 +39,11 @@ if tp.TYPE_CHECKING:
 
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
+    value: str
+
     DEBIAN = "debian"
     ARCH = "arch"
+    FEDORA = "fedora"
 
     @staticmethod
     def get_current_distro() -> tp.Optional['Distro']:
@@ -47,12 +52,18 @@ class Distro(Enum):
             return Distro.DEBIAN
         if distribution.id() == "arch":
             return Distro.ARCH
+        if distribution.id() == "fedora":
+            return Distro.FEDORA
         return None
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 _install_commands = {
     Distro.DEBIAN: "apt install -y",
-    Distro.ARCH: "pacman -S --noconfirm"
+    Distro.ARCH: "pacman -S --noconfirm",
+    Distro.FEDORA: "dnf install"
 }
 
 _checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
@@ -65,6 +76,10 @@ class Dependencies:
 
     def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
         self.__dependencies = dependencies
+
+    @property
+    def distros(self) -> tp.List[Distro]:
+        return list(self.__dependencies.keys())
 
     def has_dependencies_for_distro(self, distro: Distro) -> bool:
         """
@@ -110,6 +125,14 @@ class Dependencies:
             a list containing all not installed dependencies
         """
         not_installed: tp.List[str] = []
+
+        if distro not in _checker_commands or \
+                distro not in _expected_check_output:
+            raise NotImplementedError(
+                "Check/Expected commands are currently " +
+                f"not implemented for {distro}"
+            )
+
         base_command = _checker_commands[distro]
         for package in self.__dependencies[distro]:
             output = base_command(package)
@@ -150,14 +173,14 @@ class SubProject():
         URL: str,
         remote: str,
         sub_path: str,
-        auto_clone: bool = True
+        is_submodule: bool = False
     ):
         self.__name = name
         self.__parent_code_base = parent_code_base
         self.__url = URL
         self.__remote = remote
         self.__sub_path = Path(sub_path)
-        self.__auto_clone = auto_clone
+        self.__is_submodule = is_submodule
 
     @property
     def name(self) -> str:
@@ -187,15 +210,15 @@ class SubProject():
         return self.__sub_path
 
     @property
-    def auto_clone(self) -> bool:
+    def is_submodule(self) -> bool:
         """
-        Determine if this project should be automatically cloned when a
-        `CodeBase` is initialized.
+        Determine if this project is a submodule and shouldn't be cloned and
+        pulled automatically when a `CodeBase` is initialized or updated.
 
         Returns:
             True, if it should be automatically cloned
         """
-        return self.__auto_clone
+        return self.__is_submodule
 
     def init_and_update_submodules(self) -> None:
         """
@@ -374,17 +397,26 @@ class CodeBase():
         """
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
-            if sub_project.auto_clone:
+            if not sub_project.is_submodule:
                 sub_project.clone()
 
-    def map_sub_projects(self, func: tp.Callable[[SubProject], None]) -> None:
+    def map_sub_projects(
+        self,
+        func: tp.Callable[[SubProject], None],
+        exclude_submodules: bool = False
+    ) -> None:
         """
         Execute a callable ``func`` on all sub projects of the code base.
 
         Args:
             func: function to execute on the sub projects
+            exclude_submodules: if True sub projects that
+                                are managed using git submodules will be
+                                excluded
         """
         for sub_project in self.__sub_projects:
+            if exclude_submodules and sub_project.is_submodule:
+                continue
             func(sub_project)
 
 

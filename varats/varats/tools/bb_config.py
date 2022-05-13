@@ -88,7 +88,7 @@ def create_new_bb_config(
         projects_conf.value[:] += [
             'varats.projects.test_projects.basic_tests',
             'varats.projects.test_projects.bug_provider_test_repos',
-            'varats.projects.test_projects.example_test_repos',
+            'varats.projects.test_projects.example_test_repo',
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.test_suite',
@@ -102,6 +102,8 @@ def create_new_bb_config(
         'varats.experiments.base.just_compile',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.commit_report_experiment',
+        'varats.experiments.vara.feature_perf_runner',
+        'varats.experiments.vara.instrumentation_point_printer',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',

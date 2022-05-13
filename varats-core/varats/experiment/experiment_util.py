@@ -502,7 +502,10 @@ class ZippedReportFolder(TempDir):
         exc_value: tp.Optional[BaseException],
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
-        shutil.make_archive(
-            str(self.__result_report_name), "zip", Path(self.name)
-        )
+        # Don't create an empty zip archive.
+        if os.listdir(self.name):
+            shutil.make_archive(
+                str(self.__result_report_name), "zip", Path(self.name)
+            )
+
         super().__exit__(exc_type, exc_value, exc_traceback)

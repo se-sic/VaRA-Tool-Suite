@@ -7,10 +7,9 @@ from itertools import chain
 from pathlib import Path
 
 import pygit2
-from benchbuild.utils.cmd import git
+from benchbuild.utils.cmd import git, grep
 from benchbuild.utils.revision_ranges import RevisionRange
-from plumbum import local
-from plumbum.commands.modifiers import RETCODE
+from plumbum import local, TF, RETCODE
 
 from varats.project.project_util import (
     get_local_project_gits,
@@ -193,16 +192,15 @@ def get_all_revisions_between(
     repo_folder: tp.Optional[Path] = None
 ) -> tp.List[CommitHashTy]:
     """
-    Returns a list of all revisions between two commits c_start and c_end
-    (inclusive), where c_start comes before c_end.
+    Returns a list of all revisions between two commits c_start and c_end (both
+    inclusive), where c_start comes before c_end.
 
     It is assumed that the current working directory is the git repository.
 
     Args:
-        c_start: first commit of the range
-        c_end: last commit of the range
-        short: shorten revision hashes
-        repo_folder: where the git repository is located
+        c_start: first commit of the range c_end: last commit of the range
+        short: shorten revision hashes repo_folder: where the git repository is
+        located
     """
     result = [c_start]
     result.extend(
@@ -866,7 +864,7 @@ class RevisionBinaryMap(tp.Container[str]):
             binary_type: the type of binary that is produced
             override_binary_name: overrides the used binary name
             override_entry_point: overrides the executable entry point
-            only_valid_in: additinally specifies a validity range that
+            only_valid_in: additionally specifies a validity range that
                            specifies in which revision range this binary is
                            produced
         """
@@ -914,3 +912,34 @@ class RevisionBinaryMap(tp.Container[str]):
                     return True
 
         return False
+
+
+def has_branch(repo_folder: Path, branch_name: str) -> bool:
+    """Checks if a branch exists in the local repository."""
+
+    exit_code = git["-C",
+                    repo_folder.absolute(), "rev-parse", "--verify",
+                    branch_name] & TF
+    return tp.cast(bool, exit_code)
+
+
+def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
+    """Checks if a remote branch of a repository exists."""
+    exit_code = (
+        git["-C",
+            repo_folder.absolute(), "ls-remote", "--heads", remote, branch_name]
+        | grep[branch_name]
+    ) & RETCODE
+    return tp.cast(bool, exit_code == 0)
+
+
+def branch_has_upstream(
+    repo_folder: Path, branch_name: str, upstream: str = 'origin'
+) -> bool:
+    """Check if a branch has an upstream remote."""
+    exit_code = (
+        git["-C",
+            repo_folder.absolute(), "rev-parse", "--abbrev-ref",
+            branch_name + "@{upstream}"] | grep[upstream]
+    ) & RETCODE
+    return tp.cast(bool, exit_code == 0)
