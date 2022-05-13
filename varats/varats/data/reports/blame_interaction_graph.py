@@ -406,7 +406,6 @@ class FileBasedInteractionGraph(InteractionGraph):
                         if match.group(2):
                             nodes.add(
                                 BlameTaintData(
-                                    False,
                                     CommitRepoPair(
                                         FullCommitHash(match.group(1)),
                                         repo_name

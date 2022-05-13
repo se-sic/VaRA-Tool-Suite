@@ -30,7 +30,6 @@ class BlameTaintData():
 
     def __init__(
         self,
-        is_global: bool,
         commit: CommitRepoPair,
         region_id: tp.Optional[int] = None,
         function_name: tp.Optional[str] = None
@@ -38,7 +37,6 @@ class BlameTaintData():
         # if region_id is present, so has to be function_name
         assert (region_id is None) or function_name
 
-        self.__is_global: bool = is_global
         self.__region_id: tp.Optional[int] = region_id
         self.__function_name: tp.Optional[str] = function_name
         self.__commit: CommitRepoPair = commit
@@ -52,13 +50,9 @@ class BlameTaintData():
             raw_taint_data["repository"]
         )
         return BlameTaintData(
-            raw_taint_data["is-global"], commit, raw_taint_data.get("region"),
+            commit, raw_taint_data.get("region"),
             raw_taint_data.get("function")
         )
-
-    @property
-    def is_global(self) -> bool:
-        return self.__is_global
 
     @property
     def region_id(self) -> tp.Optional[int]:
@@ -84,10 +78,6 @@ class BlameTaintData():
         if not isinstance(other, BlameTaintData):
             return NotImplemented
 
-        # global taints before other taints
-        if self.is_global != other.is_global:
-            return self.is_global
-
         # BTS_COMMIT
         if not self.function_name:
             if other.function_name:
@@ -111,9 +101,7 @@ class BlameTaintData():
         return self.region_id < other.region_id
 
     def __hash__(self) -> int:
-        return hash(
-            (self.is_global, self.commit, self.region_id, self.function_name)
-        )
+        return hash((self.commit, self.region_id, self.function_name))
 
 
 class BlameInstInteractions():
@@ -149,7 +137,7 @@ class BlameInstInteractions():
                 crp = CommitRepoPair(
                     FullCommitHash(commit_hash), repo[0] if repo else "Unknown"
                 )
-                return BlameTaintData(False, crp)
+                return BlameTaintData(crp)
             return BlameTaintData.create_taint_data(raw_data)
 
         base_taint = create_taint_data(raw_inst_entry['base-hash'])
@@ -175,9 +163,7 @@ class BlameInstInteractions():
         return self.__amount
 
     def __str__(self) -> str:
-        str_representation = "{base_hash} <-(# {amount:4})- [".format(
-            base_hash=self.base_taint, amount=self.amount
-        )
+        str_representation = f"{self.base_taint} <-(# {self.amount:4})- ["
         sep = ""
         for interacting_taint in self.interacting_taints:
             str_representation += sep + str(interacting_taint)
@@ -959,9 +945,12 @@ def get_interacting_commits_for_commit(
     out_commits: tp.Set[CommitRepoPair] = set()
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if commit == interaction.base_commit:
-                out_commits.update(interaction.interacting_commits)
-            if commit in interaction.interacting_commits:
-                in_commits.add(interaction.base_commit)
+            interacting_commits = [
+                taint.commit for taint in interaction.interacting_taints
+            ]
+            if commit == interaction.base_taint.commit:
+                out_commits.update(interacting_commits)
+            if commit in interacting_commits:
+                in_commits.add(interaction.base_taint.commit)
 
     return in_commits, out_commits
