@@ -64,7 +64,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
-                    for x in range(2, 10):
+                    for x in range(1, 10):
                         self.compression_level = x
                         xz_params = [
                             "-{compression}".format(compression=self.compression_level),
@@ -111,8 +111,7 @@ class xzBlackboxAnalysisReport(VersionExperiment, shorthand="xzB"):
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM() \
-            << run.WithTimeout()
+            << RunWLLVM()
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
