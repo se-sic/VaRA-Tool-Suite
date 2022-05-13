@@ -348,15 +348,14 @@ class BlameReportMetaData():
 
 
 class BlameTaintScope(Enum):
-    GLOBAL = 0
-    REGION = 1
-    COMMIT_IN_FUNCTION = 2
-    COMMIT = 3
+    """The scope that was used for computing commit interactions."""
+    REGION = 0
+    COMMIT_IN_FUNCTION = 1
+    COMMIT = 2
 
     @staticmethod
     def from_string(value: str) -> 'BlameTaintScope':
         return {
-            "GLOBAL": BlameTaintScope.GLOBAL,
             "REGION": BlameTaintScope.REGION,
             "COMMIT_IN_FUNCTION": BlameTaintScope.COMMIT_IN_FUNCTION,
             "COMMIT": BlameTaintScope.COMMIT,
