@@ -59,7 +59,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
             file_path = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json"
             file_path_xz = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json.xz"
-
+            path_to_xz = Path(file_path_xz)
             number_of_repetition = 30
 
             with local.cwd(local.path(project.source_of_primary)):
@@ -77,7 +77,8 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                                 time_xz_cmd = time["-v", "-o",
                                                    Path(time_reports_dir) / f"time_report_compression_{x}_{i}.txt",
                                                    xz_cmd]
-                                rm_cmd()
+                                if path_to_xz.is_file():
+                                    rm_cmd()
                                 exec_func_with_pe_error_handler(
                                     time_xz_cmd,
                                     create_default_analysis_failure_handler(
