@@ -87,6 +87,8 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                                         Path(time_reports_dir),
                                     )
                                 )
+                                if path_to_xz.is_file():
+                                    rm_cmd()
 
                         pre, ext = os.path.splitext(aggregated_time_reports_dir / Path(f"XZCompressionLevel{x}"))
                         result_zip_path = Path((pre + '.zip'))
