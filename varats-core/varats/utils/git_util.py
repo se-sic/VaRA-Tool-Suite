@@ -282,8 +282,8 @@ def contains_source_code(
     if not churn_config:
         churn_config = ChurnConfig.create_c_style_languages_config()
 
-    return_code = git[__get_git_path_arg(repo_folder), "diff", "--exit-code",
-                      "--quiet", f"{commit.hash}~", commit.hash, "--",
+    return_code = git[__get_git_path_arg(repo_folder), "show", "--exit-code",
+                      "-m", "--quiet", commit.hash, "--",
                       churn_config.get_extensions_repr('*.')] & RETCODE
 
     if return_code == 0:
