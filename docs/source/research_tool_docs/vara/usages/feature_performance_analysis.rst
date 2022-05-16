@@ -14,8 +14,8 @@ Setting up our analysis is simple and can be done in a few steps.
 ************************************************************************************
 
 
-2) Specify our modified compiler as `CC` or `CXX`.
-**************************************************
+2) Specify our modified compiler as ``CC`` or ``CXX``.
+******************************************************
 
 .. code-block:: console
 
@@ -23,10 +23,10 @@ Setting up our analysis is simple and can be done in a few steps.
     CXX=$PATH_TO_VARA_ROOT/tools/VaRA/bin/clang++
 
 
-3) Set the feature specific compile flags as (`C_FLAGS` or `CXX_FLAGS`).
-************************************************************************
+3) Set the feature specific compile flags as (``C_FLAGS`` or ``CXX_FLAGS``).
+****************************************************************************
 
-Enable the automatic feature detection (`-fvara-feature`) and select the desired instrumentation code (`-fvara-instr=`).
+Enable the automatic feature detection (``-fvara-feature``) and select the desired instrumentation code (``-fvara-instr=``).
 The different instrumentation options can be found :ref:`here<Instrumentations>`.
 
 .. code-block:: console
@@ -43,7 +43,7 @@ Without LTO, the analysis can only run within a translation unit, hence, feature
     LDFLAGS="-fuse-ld=lld"
 
 
-(Optional) Pass in the location of the feature model with `-fvara-fm-path=`.
+(Optional) Pass in the location of the feature model with ``-fvara-fm-path=``.
 The feature model defines high-level software features ein their dependencies, together with a mapping to the variables that control the functionality in the program.
 For more information, see our `collection of feature models <https://github.com/se-sic/ConfigurableSystems>`_ for different configurable software system or our `feature library <https://github.com/se-sic/vara-feature>`_.
 
@@ -63,18 +63,8 @@ We can mark variables as feature variable to tell the analysis that this specifi
 4) Done. Compile your project and utilize the measurements.
 ***********************************************************
 
-You can adapt the tracefile name by specifying `VARA_TRACE_FILE` in the environment.
+You can adapt the tracefile name by specifying ``VARA_TRACE_FILE`` in the environment.
 
 .. code-block:: console
 
     export VARA_TRACE_FILE=my_little_tracefile.json
-
-
-Instrumentations
-----------------
-
-* `print`: Print entry/exit messages when entring a feature specific code
-* `clock`: Add hw-clock based measurements that determine the time spent in a feature
-* `trace_event`: Add trace event markers that generate catapult (trace event format) files
-* `instr_verify`: Add verifier instrumentation that checks if feature regions are correctly opened/closed
-* `usdt`: Add feature specific usdt probes
