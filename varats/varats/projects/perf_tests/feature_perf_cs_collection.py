@@ -54,6 +54,20 @@ class FeaturePerfCSCollection(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("162db88346", "master")
         )
+        binary_map.specify_binary(
+            "build/bin/SimpleSleepLoop",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            )
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleBusyLoop",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            )
+        )
 
         return binary_map[revision]
 
