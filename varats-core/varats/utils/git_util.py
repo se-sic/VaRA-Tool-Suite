@@ -992,6 +992,7 @@ def calc_surviving_lines(
     )
 
     lines_per_revision: dict = {}
+    old_state = repo.head
     with local.cwd(project_path):
         git("checkout", revision)
         files = git("ls-tree", "-r", "--name-only", revision).splitlines()
@@ -1012,4 +1013,5 @@ def calc_surviving_lines(
                                 ] = lines_per_revision[last_change] + 1
                             else:
                                 lines_per_revision[last_change] = 1
+        git("checkout", old_state.name)
     return lines_per_revision

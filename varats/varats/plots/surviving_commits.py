@@ -207,7 +207,11 @@ class HeatMapPlot(Plot, plot_name=None):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())
-        _, axis = plt.subplots(1, 1)
+        fig, axis = plt.subplots(1, 1)
+        fig.set_size_inches(
+            self.plot_config.width() / self.plot_config.dpi(),
+            self.plot_config.height() / self.plot_config.dpi()
+        )
         case_study = self.plot_kwargs['case_study']
         data = self.data_function(case_study)
         axis = sns.heatmap(
@@ -217,8 +221,9 @@ class HeatMapPlot(Plot, plot_name=None):
             vmax=self.vmax,
             xticklabels=self.xticklabels,
             yticklabels=self.yticklabels,
-            linewidth=0.15,
-            linecolor="grey"
+            linewidth=0.1,
+            linecolor="grey",
+            square=True
         )
         if self.XLABEL:
             axis.set_xlabel(self.XLABEL)
@@ -237,8 +242,8 @@ class HeatMapPlot(Plot, plot_name=None):
                 label.set(color=color_map[commit.author.name])
             axis.yaxis.set_major_formatter(
                 mticker.FuncFormatter(
-                    lambda x, pos: axis.get_yticklabels()[pos - 1].get_text()
-                    [:ShortCommitHash.hash_length()]
+                    lambda x, pos: axis.get_yticklabels()[pos].get_text()
+                    [:ShortCommitHash.hash_length()] + " █"
                 )
             )
             legend = []
@@ -247,14 +252,14 @@ class HeatMapPlot(Plot, plot_name=None):
             plt.legend(
                 fontsize=8,
                 handles=legend,
-                bbox_to_anchor=(1.2, 1),
-                loc=2,
+                bbox_to_anchor=(0.5, 1.02),
+                loc=8,
                 borderaxespad=0.
             )
         plt.setp(
             axis.get_xticklabels(),
-            fontsize=self.plot_config.x_tick_size(),
-            family='monospace'
+            fontsize=self.plot_config.x_tick_size() - 1,
+            family='monospace',
         )
         plt.setp(
             axis.get_yticklabels(),
