@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import mkdir, make, echo
+from benchbuild.utils.cmd import mkdir, make
 from benchbuild.utils.revision_ranges import RevisionRange, block_revisions
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
