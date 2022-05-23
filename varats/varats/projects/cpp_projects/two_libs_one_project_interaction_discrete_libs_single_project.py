@@ -11,15 +11,16 @@ from plumbum import local
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    VaraTestRepoSource,
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
-    VaraTestRepoSubmodule,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
+from varats.ts_utils.project_sources import (
+    VaraTestRepoSource,
+    VaraTestRepoSubmodule,
+)
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
@@ -34,6 +35,8 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="TwoLibsOneProjectInteraction"
+            "DiscreteLibsSingleProject",
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
@@ -41,10 +44,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(VProject):
             "/Elementalist",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator(
-                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            )
+            shallow=False
         ),
         VaraTestRepoSubmodule(
             remote="LibraryAnalysisRepos"

@@ -8,7 +8,6 @@ from pathlib import Path
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
-from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
@@ -123,8 +122,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["phasar"]["install_dir"].value is not None
 
-    @check_required_args("install_prefix", "version")
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup the research tool phasar with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -133,14 +134,13 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         Args:
             source_folder: location to store the code base in
-            **kwargs:
-                      * version
-                      * install_prefix
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
         cfg = vara_cfg()
         if source_folder:
             cfg["phasar"]["source_dir"] = str(source_folder)
-        cfg["phasar"]["install_dir"] = str(kwargs["install_prefix"])
+        cfg["phasar"]["install_dir"] = str(install_prefix)
         save_config()
 
         print(f"Setting up phasar in {self.source_location()}")
@@ -155,7 +155,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Upgrade the research tool to a newer version."""
         self.code_base.pull()
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile phasar in the specified ``build_type``. This method leaves
         phasar in a finished state, i.e., being ready to be installed.
@@ -168,7 +171,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             "phasar"
         ).path / "build"
 
-        build_path /= build_type.build_folder()
+        build_path /= build_type.build_folder(build_folder_suffix)
 
         # Setup configured build folder
         print(" - Setting up build folder.")
@@ -221,11 +224,27 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         return status_ok
 
-    def add_container_layers(
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        return True
+
+    def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for building this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        raise NotImplementedError
+
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context
@@ -236,15 +255,6 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             )
 
         container_phasar_dir = image_context.varats_root / "tools/phasar"
-        if self.get_dependencies().has_dependencies_for_distro(
-            image_context.distro
-        ):
-            image_context.layers.run(
-                *(
-                    self.get_dependencies().
-                    get_install_command(image_context.distro).split(" ")
-                )
-            )
         image_context.layers.copy_([str(self.install_location())],
                                    str(container_phasar_dir))
         image_context.append_to_env("PATH", [str(container_phasar_dir / 'bin')])

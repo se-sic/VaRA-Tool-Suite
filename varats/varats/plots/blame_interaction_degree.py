@@ -32,20 +32,19 @@ from varats.data.databases.blame_library_interactions_database import (
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotGenerator,
-    PlotConfig,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_CASE_STUDY,
-    REQUIRE_REVISION,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
-from varats.ts_utils.click_param_types import EnumChoice
+from varats.ts_utils.click_param_types import (
+    EnumChoice,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REVISION,
+)
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -312,7 +311,7 @@ def _filter_data_frame(
     interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
                                               degree_type.value]
 
-    degree_levels = sorted(np.unique(interaction_plot_df.degree))
+    degree_levels = sorted(interaction_plot_df.degree.unique())
     interaction_plot_df = interaction_plot_df.set_index(['revision', 'degree'])
 
     def aggregate_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -350,11 +349,11 @@ def _filter_data_frame(
 
 
 def _get_distinct_base_lib_names(df: pd.DataFrame) -> tp.List[str]:
-    return list(np.unique([str(base_lib) for base_lib in df.base_lib]))
+    return [str(base_lib) for base_lib in df.base_lib.unique()]
 
 
 def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
-    return list(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
+    return [str(inter_lib) for inter_lib in df.inter_lib.unique()]
 
 
 def _generate_degree_stackplot(
@@ -388,7 +387,7 @@ def _generate_degree_stackplot(
             cm.get_cmap(plot_kwargs['colormap'].value
                        )(np.linspace(0, 1, len(sub_df_list)))
         ),
-        labels=sorted(np.unique(df['degree'])),  # type: ignore
+        labels=sorted(df['degree'].unique()),
         linewidth=plot_config.line_width()
     )
     legend = main_axis.legend(
@@ -1306,7 +1305,9 @@ class BlameDegree(Plot, plot_name=None):
                        axis=1)
         df["revision"] = unique_revisions
         df = df.set_index("revision")
-        df_iter = df.iterrows()
+        df_iter = tp.cast(
+            tp.Iterable[tp.Tuple[FullCommitHash, pd.Series]], df.iterrows()
+        )
         last_revision, last_row = next(df_iter)
         for revision, row in df_iter:
             # compute gradient for each degree value and see if any gradient
@@ -1317,21 +1318,13 @@ class BlameDegree(Plot, plot_name=None):
                 rhs_cm = revision
                 if head_cm_neighbours(lhs_cm, rhs_cm):
                     print(
-                        "Found steep gradient between neighbours " +
-                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                            lhs_cm=lhs_cm,
-                            rhs_cm=rhs_cm,
-                            gradient=round(max(gradient), 5)
-                        )
+                        f"Found steep gradient between neighbours"
+                        f" {lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
                     )
                 else:
                     print(
-                        "Unusual gradient between " +
-                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                            lhs_cm=lhs_cm,
-                            rhs_cm=rhs_cm,
-                            gradient=round(max(gradient), 5)
-                        )
+                        f"Unusual gradient between "
+                        f"{lhs_cm} - {rhs_cm}: {round(max(gradient), 5)}"
                     )
                     new_rev_id = round((
                         commit_map.short_time_id(lhs_cm) +
@@ -1339,8 +1332,7 @@ class BlameDegree(Plot, plot_name=None):
                     ) / 2.0)
                     new_rev = commit_map.c_hash(new_rev_id)
                     print(
-                        "-> Adding {rev} as new revision to the sample set".
-                        format(rev=new_rev)
+                        f"-> Adding {new_rev} as new revision to the sample set"
                     )
                     new_revs.add(new_rev)
                 print()
@@ -1351,11 +1343,6 @@ class BlameDegree(Plot, plot_name=None):
 
 class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
     """Plotting the degree of blame interactions."""
-
-    NAME = 'b_interaction_degree'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.INTERACTION)
@@ -1401,11 +1388,6 @@ class BlameInteractionDegreeMultiLib(
     inter_lib=Bar
     """
 
-    NAME = 'b_interaction_degree_multi_lib'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         self._multi_lib_degree_plot(DegreeType.INTERACTION)
 
@@ -1445,11 +1427,6 @@ class BlameInteractionFractionOverview(
 ):
     """Plotting the fraction distribution of in-/outgoing blame interactions
     from all project libraries."""
-
-    NAME = 'b_interaction_fraction_overview'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._fraction_overview_plot(DegreeType.INTERACTION)
@@ -1495,10 +1472,8 @@ class BlameLibraryInteractions(
     revision as key-value pair after the plot name. E.g., revision=Foo
     """
 
-    NAME = 'b_multi_lib_interaction_sankey_plot'
-
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
+        super().__init__(plot_config, **kwargs)
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
@@ -1587,10 +1562,8 @@ class BlameCommitInteractionsGraphviz(
     'overlap=False', and 'nodesep=1' are added.
     """
 
-    NAME = 'b_multi_lib_interaction_graphviz'
-
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
+        super().__init__(plot_config, **kwargs)
         self.__figure = Digraph()
 
     def plot(self, view_mode: bool) -> None:
@@ -1684,11 +1657,6 @@ class GraphvizLibraryInteractionsGeneratorCS(
 class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
     """Plotting the degree of authors for all blame interactions."""
 
-    NAME = 'b_author_degree'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.AUTHOR)
 
@@ -1734,11 +1702,6 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
     """Plotting the degree of max times differences for all blame
     interactions."""
 
-    NAME = 'b_maxtime_distribution'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.MAX_TIME)
 
@@ -1776,11 +1739,6 @@ class BlameMaxTimeDistributionGenerator(
 class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
     """Plotting the degree of avg times differences for all blame
     interactions."""
-
-    NAME = 'b_avgtime_distribution'
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.AVG_TIME)

@@ -3,7 +3,7 @@ blame experiments that have a similar experiment setup."""
 
 import typing as tp
 
-from benchbuild import Experiment, Project
+from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 

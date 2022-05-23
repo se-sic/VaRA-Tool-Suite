@@ -2,9 +2,11 @@
 import re
 import unittest
 
+from varats.paper.case_study import CaseStudy
 from varats.projects.test_projects.bug_provider_test_repos import (
     BasicBugDetectionTestRepo,
 )
+from varats.table.tables import TableConfig, TableFormat
 from varats.tables.bug_overview_table import BugOverviewTable
 
 
@@ -12,12 +14,15 @@ class TestBugOverviewTable(unittest.TestCase):
     """Test whether bug provider data gets displayed correctly for different
     formats of the table."""
 
-    def test_basic_repo_latex_booktabs(self):
+    def test_basic_repo_latex_booktabs(self) -> None:
         """"Tests the latex booktabs format of the basic bug detection test
         repo."""
 
         # latex booktabs is default format
-        table = BugOverviewTable(project=BasicBugDetectionTestRepo.NAME)
+        table = BugOverviewTable(
+            TableConfig.from_kwargs(view=False),
+            case_study=CaseStudy(BasicBugDetectionTestRepo.NAME, 1)
+        )
 
         # each bug must be matched separately since order is unclear
         result_bug_regex =\
@@ -42,7 +47,7 @@ class TestBugOverviewTable(unittest.TestCase):
                        r"&\s*VaRA Tester\s*"
                        r"&\s*None\s*\\\\.*", re.DOTALL)
 
-        table_string = table.tabulate()
+        table_string = table.tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         result_match = re.search(result_bug_regex, table_string)
         type_match = re.search(type_bug_regex, table_string)

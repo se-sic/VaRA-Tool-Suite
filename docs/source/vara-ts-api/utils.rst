@@ -4,9 +4,11 @@ Utility and helper modules
 Utilities overview
 ------------------
 * :ref:`Module: cli_util`
+* :ref:`Module: html_util`
 * :ref:`Module: util`
 * :ref:`Module: exceptions`
 * :ref:`Module: git_util`
+* :ref:`Module: github_util`
 * :ref:`Module: experiment_util`
 * :ref:`Module: project_util`
 * :ref:`Module: filesystem_util`
@@ -17,6 +19,18 @@ Module: cli_util
 ................
 
 .. automodule:: varats.ts_utils.cli_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. raw:: html
+
+    <hr>
+
+Module: html_util
+.................
+
+.. automodule:: varats.ts_utils.html_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -53,6 +67,18 @@ Module: git_util
 ................
 
 .. automodule:: varats.utils.git_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. raw:: html
+
+    <hr>
+
+Module: github_util
+...................
+
+.. automodule:: varats.utils.github_util
     :members:
     :undoc-members:
     :show-inheritance:

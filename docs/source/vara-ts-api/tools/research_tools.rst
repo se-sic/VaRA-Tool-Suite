@@ -6,14 +6,15 @@ Provided research tools
    :caption: List of provided research tools:
 
    research_tools/vara
+   research_tools/szz_unleashed
 
 
 Research Tool API
 -----------------
 VaRA-TS offers an abstraction to implement research tools that makes it easy to add a new tool and automatically deploy it, and it's experiments, via the tool suite.
 To add a new research tool one has to implement two classes.
-The research tool it self must inherit from ``ResearchTool`` and implement the specified abstract methods to setup, upgrade, build, and install the research tool.
-In addition, one needs to implement a ``CodeBase`` to specify the repository layout of the research tools code.
+The research tool itself must inherit from ``ResearchTool`` and implement the specified abstract methods to setup, upgrade, build, and install the research tool.
+In addition, one needs to implement a ``CodeBase`` to specify the repository layout of the research tool's code.
 The ``CodeBase`` makes it convenient to interact with the repository (or repositories) of a research tool to setup and manage the code.
 Furthmore, the tool suite provides different helper functions and services that depend on the ``CodeBase`` abstraction, e.g., :ref:`vara-develop`.
 

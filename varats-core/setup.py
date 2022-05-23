@@ -3,20 +3,17 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name='varats-core',
-    use_scm_version={
-        'root': '..',
-        "relative_to": __file__,
-        "fallback_version": '11.0.0'
-    },
-    url='https://github.com/se-passau/vara-tool-suite',
+    version='11.1.3',
+    url='https://github.com/se-sic/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],
     setup_requires=["pytest-runner", "setuptools_scm"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
-        "benchbuild>=6.2.7",
+        "benchbuild>=6.3.1",
         "plumbum>=1.6.6",
         "PyGithub>=1.47",
+        "Cryptography<37.0.0",
         "PyDriller>=2.0",
         "tabulate>=0.8.6",
         "requests>=2.23.0",
