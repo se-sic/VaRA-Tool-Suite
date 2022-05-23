@@ -1,0 +1,326 @@
+---
+DocType:         BlameReport
+Version:         4
+...
+---
+funcs-in-module: 69
+insts-in-module: 1071
+...
+---
+result-map:
+  _GLOBAL__sub_I_elementalist.cpp:
+    demangled-name:  _GLOBAL__sub_I_elementalist.cpp
+    num-instructions: 2
+    insts:           []
+  _GLOBAL__sub_I_fire.cpp:
+    demangled-name:  _GLOBAL__sub_I_fire.cpp
+    num-instructions: 2
+    insts:           []
+  _GLOBAL__sub_I_water.cpp:
+    demangled-name:  _GLOBAL__sub_I_water.cpp
+    num-instructions: 2
+    insts:           []
+  _Z14get_fire_spellB5cxx11v:
+    demangled-name:  'get_fire_spell[abi:cxx11]()'
+    num-instructions: 28
+    insts:
+      - base-hash:       ead5e00960478e1d270aea5f373aece97b4b7e74-fire_lib
+        interacting-hashes:
+          - 5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        amount:          2
+  _Z15get_water_spellB5cxx11v:
+    demangled-name:  'get_water_spell[abi:cxx11]()'
+    num-instructions: 28
+    insts:
+      - base-hash:       58ec513bd231f384038d9612ffdfb14affa6263f-water_lib
+        interacting-hashes:
+          - 5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+        amount:          2
+  _Z25handle_elementalist_stuffv:
+    demangled-name:  'handle_elementalist_stuff()'
+    num-instructions: 270
+    insts:
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+        amount:          8
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - ead5e00960478e1d270aea5f373aece97b4b7e74-fire_lib
+        amount:          4
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - 58ec513bd231f384038d9612ffdfb14affa6263f-water_lib
+        amount:          4
+      - base-hash:       97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+        interacting-hashes:
+          - bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+        amount:          8
+      - base-hash:       97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+        interacting-hashes:
+          - 58ec513bd231f384038d9612ffdfb14affa6263f-water_lib
+        amount:          4
+      - base-hash:       e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        interacting-hashes:
+          - ead5e00960478e1d270aea5f373aece97b4b7e74-fire_lib
+        amount:          4
+  _Z9get_shoutNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE:
+    demangled-name:  'get_shout(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'
+    num-instructions: 5
+    insts:
+      - base-hash:       bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+        interacting-hashes:
+          - 5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+        amount:          3
+  _ZN9__gnu_cxx13new_allocatorIcE10deallocateEPcm:
+    demangled-name:  '__gnu_cxx::new_allocator<char>::deallocate(char*, unsigned long)'
+    num-instructions: 10
+    insts:           []
+  _ZN9__gnu_cxx13new_allocatorIcEC2ERKS1_:
+    demangled-name:  '__gnu_cxx::new_allocator<char>::new_allocator(__gnu_cxx::new_allocator<char> const&)'
+    num-instructions: 6
+    insts:           []
+  _ZN9__gnu_cxx13new_allocatorIcEC2Ev:
+    demangled-name:  '__gnu_cxx::new_allocator<char>::new_allocator()'
+    num-instructions: 4
+    insts:           []
+  _ZN9__gnu_cxx13new_allocatorIcED2Ev:
+    demangled-name:  '__gnu_cxx::new_allocator<char>::~new_allocator()'
+    num-instructions: 4
+    insts:           []
+  _ZN9__gnu_cxx17__is_null_pointerIKcEEbPT_:
+    demangled-name:  'bool __gnu_cxx::__is_null_pointer<char const>(char const*)'
+    num-instructions: 5
+    insts:           []
+  _ZNKSt5ctypeIcE5widenEc:
+    demangled-name:  'std::ctype<char>::widen(char) const'
+    num-instructions: 28
+    insts:           []
+  _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE11_M_is_localEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_is_local() const'
+    num-instructions: 7
+    insts:           []
+  _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE13_M_local_dataEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_local_data() const'
+    num-instructions: 8
+    insts:           []
+  _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE4dataEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::data() const'
+    num-instructions: 9
+    insts:           []
+  _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE4sizeEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::size() const'
+    num-instructions: 6
+    insts:           []
+  _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE6lengthEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::length() const'
+    num-instructions: 6
+    insts:           []
+  _ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE7_M_dataEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_data() const'
+    num-instructions: 7
+    insts:           []
+  _ZNKSt9basic_iosIcSt11char_traitsIcEE5widenEc:
+    demangled-name:  'std::basic_ios<char, std::char_traits<char> >::widen(char) const'
+    num-instructions: 11
+    insts:           []
+  _ZNKSt9basic_iosIcSt11char_traitsIcEE7rdstateEv:
+    demangled-name:  'std::basic_ios<char, std::char_traits<char> >::rdstate() const'
+    num-instructions: 7
+    insts:           []
+  _ZNSaIcEC2ERKS_:
+    demangled-name:  'std::allocator<char>::allocator(std::allocator<char> const&)'
+    num-instructions: 10
+    insts:           []
+  _ZNSaIcEC2Ev:
+    demangled-name:  'std::allocator<char>::allocator()'
+    num-instructions: 6
+    insts:           []
+  _ZNSaIcED2Ev:
+    demangled-name:  'std::allocator<char>::~allocator()'
+    num-instructions: 6
+    insts:           []
+  _ZNSolsEPFRSoS_E:
+    demangled-name:  'std::ostream::operator<<(std::ostream& (*)(std::ostream&))'
+    num-instructions: 8
+    insts:           []
+  _ZNSt11char_traitsIcE4copyEPcPKcm:
+    demangled-name:  'std::char_traits<char>::copy(char*, char const*, unsigned long)'
+    num-instructions: 21
+    insts:           []
+  _ZNSt11char_traitsIcE6assignERcRKc:
+    demangled-name:  'std::char_traits<char>::assign(char&, char const&)'
+    num-instructions: 9
+    insts:           []
+  _ZNSt11char_traitsIcE6lengthEPKc:
+    demangled-name:  'std::char_traits<char>::length(char const*)'
+    num-instructions: 5
+    insts:           []
+  _ZNSt14pointer_traitsIPKcE10pointer_toERS0_:
+    demangled-name:  'std::pointer_traits<char const*>::pointer_to(char const&)'
+    num-instructions: 5
+    insts:           []
+  _ZNSt14pointer_traitsIPcE10pointer_toERc:
+    demangled-name:  'std::pointer_traits<char*>::pointer_to(char&)'
+    num-instructions: 5
+    insts:           []
+  _ZNSt16allocator_traitsISaIcEE10deallocateERS0_Pcm:
+    demangled-name:  'std::allocator_traits<std::allocator<char> >::deallocate(std::allocator<char>&, char*, unsigned long)'
+    num-instructions: 12
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_destroyEm:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_destroy(unsigned long)'
+    num-instructions: 22
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_disposeEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose()'
+    num-instructions: 11
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE11_M_capacityEm:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_capacity(unsigned long)'
+    num-instructions: 10
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_Alloc_hiderC2EPcOS3_:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_Alloc_hider::_Alloc_hider(char*, std::allocator<char>&&)'
+    num-instructions: 15
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_Alloc_hiderC2EPcRKS3_:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_Alloc_hider::_Alloc_hider(char*, std::allocator<char> const&)'
+    num-instructions: 14
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPKcEEvT_S8_:
+    demangled-name:  'void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*)'
+    num-instructions: 12
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructIPKcEEvT_S8_St20forward_iterator_tag:
+    demangled-name:  'void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag)'
+    num-instructions: 73
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE13_M_local_dataEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_local_data()'
+    num-instructions: 8
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE13_M_set_lengthEm:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_set_length(unsigned long)'
+    num-instructions: 16
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE13_S_copy_charsEPcPKcS7_:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_S_copy_chars(char*, char const*, char const*)'
+    num-instructions: 19
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE16_M_construct_auxIPKcEEvT_S8_St12__false_type:
+    demangled-name:  'void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct_aux<char const*>(char const*, char const*, std::__false_type)'
+    num-instructions: 19
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE16_M_get_allocatorEv:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_get_allocator()'
+    num-instructions: 6
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE7_M_dataEPc:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_data(char*)'
+    num-instructions: 10
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE7_S_copyEPcPKcm:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_S_copy(char*, char const*, unsigned long)'
+    num-instructions: 19
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_lengthEm:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_length(unsigned long)'
+    num-instructions: 9
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EOS4_:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&&)'
+    num-instructions: 58
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string(char const*, std::allocator<char> const&)'
+    num-instructions: 40
+    insts:           []
+  _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED2Ev:
+    demangled-name:  'std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::~basic_string()'
+    num-instructions: 20
+    insts:           []
+  _ZNSt9basic_iosIcSt11char_traitsIcEE8setstateESt12_Ios_Iostate:
+    demangled-name:  'std::basic_ios<char, std::char_traits<char> >::setstate(std::_Ios_Iostate)'
+    num-instructions: 10
+    insts:           []
+  _ZSt10__distanceIPKcENSt15iterator_traitsIT_E15difference_typeES3_S3_St26random_access_iterator_tag:
+    demangled-name:  'std::iterator_traits<char const*>::difference_type std::__distance<char const*>(char const*, char const*, std::random_access_iterator_tag)'
+    num-instructions: 11
+    insts:           []
+  _ZSt11__addressofIKcEPT_RS1_:
+    demangled-name:  'char const* std::__addressof<char const>(char const&)'
+    num-instructions: 4
+    insts:           []
+  _ZSt11__addressofIcEPT_RS0_:
+    demangled-name:  'char* std::__addressof<char>(char&)'
+    num-instructions: 4
+    insts:           []
+  _ZSt13__check_facetISt5ctypeIcEERKT_PS3_:
+    demangled-name:  'std::ctype<char> const& std::__check_facet<std::ctype<char> >(std::ctype<char> const*)'
+    num-instructions: 9
+    insts:           []
+  _ZSt19__iterator_categoryIPKcENSt15iterator_traitsIT_E17iterator_categoryERKS3_:
+    demangled-name:  'std::iterator_traits<char const*>::iterator_category std::__iterator_category<char const*>(char const* const&)'
+    num-instructions: 3
+    insts:           []
+  _ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_:
+    demangled-name:  'std::basic_ostream<char, std::char_traits<char> >& std::endl<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&)'
+    num-instructions: 16
+    insts:           []
+  _ZSt4moveIRSaIcEEONSt16remove_referenceIT_E4typeEOS3_:
+    demangled-name:  'std::remove_reference<std::allocator<char>&>::type&& std::move<std::allocator<char>&>(std::allocator<char>&)'
+    num-instructions: 4
+    insts:           []
+  _ZSt5flushIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_:
+    demangled-name:  'std::basic_ostream<char, std::char_traits<char> >& std::flush<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&)'
+    num-instructions: 5
+    insts:           []
+  _ZSt8distanceIPKcENSt15iterator_traitsIT_E15difference_typeES3_S3_:
+    demangled-name:  'std::iterator_traits<char const*>::difference_type std::distance<char const*>(char const*, char const*)'
+    num-instructions: 11
+    insts:           []
+  _ZSt9addressofIKcEPT_RS1_:
+    demangled-name:  'char const* std::addressof<char const>(char const&)'
+    num-instructions: 5
+    insts:           []
+  _ZSt9addressofIcEPT_RS0_:
+    demangled-name:  'char* std::addressof<char>(char&)'
+    num-instructions: 5
+    insts:           []
+  _ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_PKc:
+    demangled-name:  'std::basic_ostream<char, std::char_traits<char> >& std::operator<<<std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*)'
+    num-instructions: 26
+    insts:           []
+  _ZStlsIcSt11char_traitsIcESaIcEERSt13basic_ostreamIT_T0_ES7_RKNSt7__cxx1112basic_stringIS4_S5_T1_EE:
+    demangled-name:  'std::basic_ostream<char, std::char_traits<char> >& std::operator<<<char, std::char_traits<char>, std::allocator<char> >(std::basic_ostream<char, std::char_traits<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+    num-instructions: 11
+    insts:           []
+  _ZStorSt12_Ios_IostateS_:
+    demangled-name:  'std::operator|(std::_Ios_Iostate, std::_Ios_Iostate)'
+    num-instructions: 8
+    insts:           []
+  __clang_call_terminate:
+    demangled-name:  __clang_call_terminate
+    num-instructions: 3
+    insts:           []
+  __cxx_global_var_init:
+    demangled-name:  __cxx_global_var_init
+    num-instructions: 3
+    insts:           []
+  __cxx_global_var_init.2:
+    demangled-name:  __cxx_global_var_init.2
+    num-instructions: 3
+    insts:           []
+  __cxx_global_var_init.20:
+    demangled-name:  __cxx_global_var_init.20
+    num-instructions: 3
+    insts:           []
+  main:
+    demangled-name:  main
+    num-instructions: 4
+    insts:           []
+...

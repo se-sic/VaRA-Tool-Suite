@@ -1,11 +1,11 @@
 # VaRA Tool Suite
 
-## Project Status [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a52d7d5380a24733b2540e0f6d8a6112)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=se-passau/VaRA-Tool-Suite&amp;utm_campaign=Badge_Grade) [![codecov](https://codecov.io/gh/se-passau/VaRA-Tool-Suite/branch/vara-dev/graph/badge.svg)](https://codecov.io/gh/se-passau/VaRA-Tool-Suite) [![Documentation Status](https://readthedocs.org/projects/vara/badge/?version=vara-dev)](https://vara.readthedocs.io/en/vara-dev/?badge=vara-dev)
+## Project Status [![codecov](https://codecov.io/gh/se-sic/VaRA-Tool-Suite/branch/vara-dev/graph/badge.svg)](https://codecov.io/gh/se-sic/VaRA-Tool-Suite) [![Documentation Status](https://readthedocs.org/projects/vara/badge/?version=vara-dev)](https://vara.readthedocs.io/en/vara-dev/?badge=vara-dev)
 
-| branch   | status                                                                                                                                  |
+| branch   | build status                                                                                                                            |
 | :----    | :---:                                                                                                                                   |
-| vara     | [![Build Status](https://travis-ci.com/se-passau/VaRA-Tool-Suite.svg?branch=vara)](https://travis-ci.com/se-passau/VaRA-Tool-Suite)     |
-| vara-dev | [![Build Status](https://travis-ci.com/se-passau/VaRA-Tool-Suite.svg?branch=vara-dev)](https://travis-ci.com/se-passau/VaRA-Tool-Suite) |
+| vara     | ![Python CI](https://github.com/se-sic/VaRA-Tool-Suite/workflows/Python%20CI/badge.svg?branch=vara)                                     |
+| vara-dev | ![Python CI](https://github.com/se-sic/VaRA-Tool-Suite/workflows/Python%20CI/badge.svg?branch=vara-dev)                                 |
 
 ## Using VaRA with VaRA-TS
 VaRA is a variability-aware framework to analyze interactions between code regions that convey a semantic meaning for the researcher, e.g., `CommitRegions` represent blocks of code that belongs to the same commit.
@@ -22,7 +22,7 @@ For ubuntu, you can use the following command to install them (your system has t
 have at least `python3.6`):
 
 ```bash
-sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev
+sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev git
 sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
 ```
 

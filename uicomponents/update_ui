@@ -4,21 +4,22 @@ script=$(readlink -f "$0")
 scriptpath=$(dirname "${script}")
 cd ${scriptpath}
 
-pyuic5 -x MainWindow.ui -o ${scriptpath}/../varats/gui/ui_MainWindow.py
-pyuic5 -x ExampleView.ui -o ${scriptpath}/../varats/gui/views/ui_ExampleView.py
-pyuic5 -x CR-BarView.ui -o ${scriptpath}/../varats/gui/views/ui_CRBarView.py
-pyuic5 -x BuildMenu.ui -o ${scriptpath}/../varats/gui/views/ui_BuildMenu.py
-pyuic5 --import-from varats.gui -x FilterMain.ui -o ${scriptpath}/../varats/gui/views/ui_FilterMain.py
-pyuic5 -x FilterProperties.ui -o ${scriptpath}/../varats/gui/views/ui_FilterProperties.py
-pyuic5 -x FilterNodeProperties.ui -o ${scriptpath}/../varats/gui/views/ui_FilterNodeProperties.py
-pyuic5 -x FilterUnaryWarning.ui -o ${scriptpath}/../varats/gui/views/ui_FilterUnaryWarning.py
-pyuic5 -x AuthorFilterProperties.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorFilterProperties.py
-pyuic5 -x CommitterFilterProperties.ui -o ${scriptpath}/../varats/gui/views/ui_CommitterFilterProperties.py
-pyuic5 -x AuthorDateMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateMinFilter.py
-pyuic5 -x AuthorDateMaxFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateMaxFilter.py
-pyuic5 -x CommitDateMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_CommitDateMinFilter.py
-pyuic5 -x CommitDateMaxFilter.ui -o ${scriptpath}/../varats/gui/views/ui_CommitDateMaxFilter.py
-pyuic5 --import-from varats.gui -x AuthorDateDeltaMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateDeltaMinFilter.py
-pyuic5 --import-from varats.gui -x AuthorDateDeltaMaxFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateDeltaMaxFilter.py
-pyuic5 --import-from varats.gui -x CommitDateDeltaMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_CommitDateDeltaMinFilter.py
-pyuic5 --import-from varats.gui -x CommitDateDeltaMaxFilter.ui -o ${scriptpath}/../varats/gui/views/ui_CommitDateDeltaMaxFilter.py
+pyuic5 -x MainWindow.ui -o ${scriptpath}/../varats/varats/gui/ui_MainWindow.py
+pyuic5 -x ExampleView.ui -o ${scriptpath}/../varats/varats/gui/views/ui_ExampleView.py
+pyuic5 -x CR-BarView.ui -o ${scriptpath}/../varats/varats/gui/views/ui_CRBarView.py
+pyuic5 -x BuildMenu.ui -o ${scriptpath}/../varats/varats/gui/views/ui_BuildMenu.py
+pyuic5 --import-from varats.gui -x FilterMain.ui -o ${scriptpath}/../varats/varats/gui/views/ui_FilterMain.py
+pyuic5 -x FilterProperties.ui -o ${scriptpath}/../varats/varats/gui/views/ui_FilterProperties.py
+pyuic5 -x FilterNodeProperties.ui -o ${scriptpath}/../varats/varats/gui/views/ui_FilterNodeProperties.py
+pyuic5 -x FilterUnaryWarning.ui -o ${scriptpath}/../varats/varats/gui/views/ui_FilterUnaryWarning.py
+pyuic5 -x AuthorFilterProperties.ui -o ${scriptpath}/../varats/varats/gui/views/ui_AuthorFilterProperties.py
+pyuic5 -x CommitterFilterProperties.ui -o ${scriptpath}/../varats/varats/gui/views/ui_CommitterFilterProperties.py
+pyuic5 -x AuthorDateMinFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_AuthorDateMinFilter.py
+pyuic5 -x AuthorDateMaxFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_AuthorDateMaxFilter.py
+pyuic5 -x CommitDateMinFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_CommitDateMinFilter.py
+pyuic5 -x CommitDateMaxFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_CommitDateMaxFilter.py
+pyuic5 -x CaseStudyGeneration.ui -o ${scriptpath}/../varats/varats/gui/cs_gen/case_study_generation_ui.py
+pyuic5 --import-from varats.gui -x AuthorDateDeltaMinFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_AuthorDateDeltaMinFilter.py
+pyuic5 --import-from varats.gui -x AuthorDateDeltaMaxFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_AuthorDateDeltaMaxFilter.py
+pyuic5 --import-from varats.gui -x CommitDateDeltaMinFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_CommitDateDeltaMinFilter.py
+pyuic5 --import-from varats.gui -x CommitDateDeltaMaxFilter.ui -o ${scriptpath}/../varats/varats/gui/views/ui_CommitDateDeltaMaxFilter.py

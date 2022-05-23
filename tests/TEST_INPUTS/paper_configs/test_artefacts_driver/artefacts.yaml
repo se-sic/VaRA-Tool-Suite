@@ -1,0 +1,24 @@
+DocType: Artefacts
+Version: 2
+---
+artefacts:
+- artefact_type: plot
+  artefact_type_version: 2
+  dry_run: false
+  file_type: png
+  name: "Paper Config Overview"
+  output_dir: .
+  plot_config: {}
+  plot_generator: pc-overview-plot
+  report_type: EmptyReport
+  view: false
+- artefact_type: table
+  artefact_type_version: 2
+  dry_run: false
+  name: "Correlation Table"
+  output_dir: .
+  table_config: {}
+  table_format: PLAIN
+  table_generator: diff-correlation-overview-table
+  view: false
+  wrap_table: false

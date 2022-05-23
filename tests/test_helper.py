@@ -2,16 +2,29 @@
 
 import typing as tp
 
-import attr
 import plumbum as pb
-from benchbuild.source import Variant, BaseSource
+from benchbuild.source import Variant, FetchableSource
 
 
-@attr.s
-class BBTestSource(BaseSource):
+class BBTestSource(FetchableSource):
     """Source test fixture class."""
 
-    test_versions: tp.List[str] = attr.ib()
+    test_versions: tp.List[str]
+
+    def __init__(
+        self, test_versions: tp.List[str], local: str,
+        remote: tp.Union[str, tp.Dict[str, str]]
+    ):
+        super().__init__(local, remote)
+        self.test_versions = test_versions
+
+    @property
+    def local(self) -> str:
+        return "test_source"
+
+    @property
+    def remote(self) -> tp.Union[str, tp.Dict[str, str]]:
+        return "test_remote"
 
     @property
     def default(self) -> Variant:

@@ -1,10 +1,12 @@
 [run]
-include = */varats/*
-
-[paths]
 source =
+  tests/
   varats/varats/
-  */site-packages/varats/
+  varats-core/varats/
+
+source_pkgs = varats
+
+parallel = True
 
 [report]
 ignore_errors = True

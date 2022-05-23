@@ -3,8 +3,8 @@ Projects
 
 A *project* is an abstraction of a software project containing information on
 how to build and execute that software project.
-The tool suite already ships with some project,
-but also also allows yoy to add new projects.
+The tool suite already ships with some projects,
+but also allows you to add new ones.
 
 * :ref:`How to add a new project to VaRA-TS`
 * :ref:`List of supported projects`
@@ -29,11 +29,12 @@ template for your own project::
     from benchbuild.utils.settings import get_number_of_jobs
     from plumbum import local
 
-    from varats.paper_mgmt.paper_config import project_filter_generator
+    from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
     from varats.utils.settings import bb_cfg
     from varats.project.project_util import (
         ProjectBinaryWrapper,
         wrap_paths_to_binaries,
+        verify_binaries,
     )
 
     class Gravity(bb.Project, CVEProviderHook):  # type: ignore
@@ -44,13 +45,13 @@ template for your own project::
         DOMAIN = 'language'   # The application domain of this project
 
         SOURCE = [
-            bb.source.Git(
-                remote="https://github.com/marcobambini/gravity.git",
-                local="gravity",
-                refspec="HEAD",
-                limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gravity")
+            PaperConfigSpecificGit(
+              "gravity",
+              remote="https://github.com/marcobambini/gravity.git",
+              local="gravity",
+              refspec="origin/HEAD",
+              limit=None,
+              shallow=False
             )
         ]
 
@@ -72,6 +73,8 @@ template for your own project::
                 with local.env(CC=str(clang)):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
+                verify_binaries(self)
+
 
 .. note::
 
@@ -81,6 +84,32 @@ template for your own project::
     For an example, have a look at the real
     :class:`Gravity<varats.projects.c_projects.gravity.Gravity>` project.
 
+
+Specifying Project Binaries
+...........................
+
+The :func:`~varats.project.project_util.ProjectBinaryWrapper.binaries` property
+of a ``Project`` exports a list of binaries built by the project, specifying
+the relative path from the project root to the created binary.  When queried by
+an analysis, a list of
+:class:`~varats.project.project_util.ProjectBinaryWrapper`\ s is returned,
+where every wrapper specifies the name, location of the binary, and the
+:class:`~varats.project.project_util.BinaryType`.
+To guarantee that all specified binaries were produced during compilation, one
+should add a :func:`~varats.project.project_util.verify_binaries` call after
+the compilation is done.
+In our example, the :func:`~varats.project.project_util.verify_binaries` call
+is directly after the call to `make` and still located within the
+`gravity_version_source` context, meaning the execution is still in the
+projects source folder.
+
+Binary wrappers can be created automatically with the provided helper functions
+:class:`~varats.project.project_util.wrap_paths_to_binaries` or
+:class:`~varats.project.project_util.wrap_paths_to_binaries_with_name`.
+
+Furthermore, keep in mind that, for some projects, binary locations change during
+project life time.  To specify a specific binary locations for a range of
+project revisions use ``benchbuild.utils.revision_ranges``.
 
 Blocking revisions
 ..................
@@ -133,13 +162,13 @@ To block revisions, just add the ``block_revisions`` decorator around a git sour
                             ["09e59da4deff9b35224f4784fae9d0f132be9cea"],
                             "missing -lbsd"),
         ])(
-            bb.source.Git(
+            PaperConfigSpecificGit(
+                "gravity",
                 remote="https://github.com/marcobambini/gravity.git",
                 local="gravity",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gravity")
+                shallow=False
             )
         )
     ]
@@ -163,28 +192,44 @@ also makes it easier to see whether a block can be fixed in the future
 environment).
 
 
+Using Containers
+................
+
+To use :ref:`BenchBuild's container support <Running BenchBuild in a container>`, a project has to declare what container image to use.
+This can be done by assigning a container image to the `CONTAINER` class variable::
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+
+To ensure that the container already contains everything required by BenchBuild, you should use one of our base images using the function :func:`~varats.containers.containers.get_base_image()`. You can then add additional layers to the image using BenchBuild's buildah API.
+For example, you can create a container based on our Debian 10 base image and install `wget` like this::
+
+    get_base_image(ImageBase.DEBIAN_10).run("apt", "install", "-y", "wget")
+
+For some projects, you may want to use different container images based on the project revision.
+This can be achieved by assigning `CONTAINER` a list of `(RevisionRange, ContainerImage)` tuples.
+
+
 List of supported projects
 --------------------------
 
-C - Projects
-............
+.. table::
+   :align: left
+   :widths: auto
 
-.. autoclass:: varats.projects.c_projects.busybox.Busybox
-.. autoclass:: varats.projects.c_projects.coreutils.Coreutils
-.. autoclass:: varats.projects.c_projects.git.Git
-.. autoclass:: varats.projects.c_projects.gravity.Gravity
-.. autoclass:: varats.projects.c_projects.gzip.Gzip
-.. autoclass:: varats.projects.c_projects.libvpx.Libvpx
-.. autoclass:: varats.projects.c_projects.lrzip.Lrzip
-.. autoclass:: varats.projects.c_projects.openssl.OpenSSL
-.. autoclass:: varats.projects.c_projects.opus.Opus
-.. autoclass:: varats.projects.c_projects.qemu.Qemu
-.. autoclass:: varats.projects.c_projects.tmux.Tmux
-.. autoclass:: varats.projects.c_projects.vim.Vim
-.. autoclass:: varats.projects.c_projects.x264.X264
-.. autoclass:: varats.projects.c_projects.xz.Xz
+   .. include:: ProjectOverviewTable.inc
 
-C++ - Projects
-..............
 
-.. autoclass:: varats.projects.cpp_projects.doxygen.Doxygen
+C - Project Details
+...................
+
+.. include:: Autoclass_c_projects.inc
+
+C++ - Project Details
+.....................
+
+.. include:: Autoclass_cpp_projects.inc
+
+Test - Project Details
+......................
+
+.. include:: Autoclass_test_projects.inc

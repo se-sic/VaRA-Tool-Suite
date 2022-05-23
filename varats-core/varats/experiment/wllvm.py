@@ -13,9 +13,9 @@ from enum import Enum
 from os import getenv, path
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild.extensions import base
 from benchbuild.project import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import cp, extract_bc, mkdir
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
@@ -30,9 +30,27 @@ from varats.utils.settings import bb_cfg
 
 
 class BCFileExtensions(Enum):
+    """
+    List of possible extensions that specify the way a BC file was created.
+
+    An extension should be requested when a BC file needs to fulfill certain
+    requirements, e.g., was compiled with debug metadata or compiled with
+    optimizations.
+    """
+    value: str  # pylint: disable=invalid-name
+
     DEBUG = 'dbg'
     NO_OPT = 'O0'
     OPT = 'O2'
+    TBAA = "TBAA"
+    FEATURE = 'feature'
+    BLAME = "blame"
+
+    def __lt__(self, other: tp.Any) -> bool:
+        if isinstance(other, BCFileExtensions):
+            return self.value < other.value
+
+        return False
 
 
 class RunWLLVM(base.Extension):  # type: ignore
@@ -51,15 +69,15 @@ class RunWLLVM(base.Extension):  # type: ignore
             wllvm = local["wllvm"]
 
         env = bb_cfg()["env"].value
-        path = path_to_list(getenv("PATH", ""))
-        path.extend(env.get("PATH", []))
+        env_path_list = path_to_list(getenv("PATH", ""))
+        env_path_list = env.get("PATH", []) + env_path_list
 
         libs_path = path_to_list(getenv("LD_LIBRARY_PATH", ""))
-        libs_path.extend(env.get("LD_LIBRARY_PATH", []))
+        libs_path = env.get("LD_LIBRARY_PATH", []) + libs_path
 
         wllvm = wllvm.with_env(
             LLVM_COMPILER="clang",
-            PATH=list_to_path(path),
+            PATH=list_to_path(env_path_list),
             LD_LIBRARY_PATH=list_to_path(libs_path)
         )
 
@@ -103,7 +121,7 @@ class Extract(actions.Step):  # type: ignore
             experiment_bc_file_ext = '-'
 
             ext_sep = ""
-            for ext in bc_file_extensions:
+            for ext in sorted(bc_file_extensions):
                 experiment_bc_file_ext += (ext_sep + ext.value)
                 ext_sep = '_'
         else:
@@ -230,7 +248,7 @@ def get_bc_cache_actions(
 
     Args:
         project: the project to compile
-        required_bc_file_extensions: list of required file extensions
+        bc_file_extensions: list of bc file extensions
         extraction_error_handler: error handler to report errors during
                                   the extraction step
         bc_action_creator: alternative BC cache actions creation callback

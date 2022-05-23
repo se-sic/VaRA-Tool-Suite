@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "benchbuild",
+            "type": "python",
+            "request": "launch",
+            "program": "~/.local/bin/benchbuild",
+            "cwd": "${workspaceFolder}/../vara-root/benchbuild",
+            "args": [
+                "run",
+                "-E",
+                "JustCompile",
+                "gzip"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        }
+    ]
+}
+// This configuration needs vara-root next to VaRA-Tool-Suite.
+// You can pick any experiment instead of JustCompile and any project for gzip.
+// Set a breakpoint with F9 (for this example) in experiments/base/just_compile.py.
+// Press F5 to run benchbuild with the defined args[].

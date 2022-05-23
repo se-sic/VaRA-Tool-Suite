@@ -77,8 +77,51 @@ autodoc_member_order = "bysource"
 add_function_parentheses = True
 add_module_names = True
 
+# Import pandas without the type checking flag to avoid import errors.
+# The exact reason for these errors is unknown but might be related to
+# incompatible cython versions (https://github.com/cython/cython/issues/1953)
+import pandas  # isort:skip
+import numpy.typing as npt  # isort:skip
+
+# The autodocs typehints plugin does not resolve circular imports caused by type
+# annotations, so we have to manually break the circles.
+import rich.console  # isort:skip
+import cryptography.hazmat.backends  # isort:skip
+import click  # isort:skip
+import git  # isort:skip
+
+import typing as tp  # isort:skip
+
+tp.TYPE_CHECKING = True
+import varats.mapping.commit_map  # isort:skip
+import varats.plot.plot  # isort:skip
+import varats.table.table  # isort:skip
+import varats.containers.containers  # isort:skip
+
+tp.TYPE_CHECKING = False
+
+# set the type checking flag so all types can be resolved in the docs
 set_type_checking_flag = True
 
 # -- Prevent import warnings -------------------------------------------------
 
 benchbuild.utils.LOG.setLevel(logging.ERROR)
+
+# -- Generate files ----------------------------------------------------------
+
+from pathlib import Path
+
+from varats.projects.discover_projects import initialize_projects
+from varats.ts_utils.doc_util import (
+    generate_project_overview_table_file,
+    generate_projects_autoclass_files,
+    generate_vara_install_requirements,
+)
+
+initialize_projects()
+
+generate_project_overview_table_file(
+    Path("vara-ts-api/ProjectOverviewTable.inc")
+)
+generate_projects_autoclass_files(Path("vara-ts-api"))
+generate_vara_install_requirements(Path("vara-ts"))

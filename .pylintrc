@@ -7,7 +7,7 @@ extension-pkg-whitelist=
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore=CVS,gui,filtertree_data.py
+ignore=CVS,gui,filtertree_data.py,.eggs
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
@@ -140,7 +140,10 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,
         bad-continuation,
-        logging-fstring-interpolation
+        logging-fstring-interpolation,
+        import_pickle,
+        pickle,
+        unspecified-encoding
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -251,10 +254,14 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma.
-good-names=i,
+good-names=a,
+           b,
+           i,
            j,
            k,
            n,
+           x,
+           y,
            ax,
            ex,
            Run,
@@ -345,7 +352,7 @@ ignored-classes=optparse.Values,thread._local,_thread._local
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis). It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=benchbuild,matplotlib,seaborn,plumbum,yaml,PyQt5,pandas,numpy,pygit2,scipy,sklearn,argparse_utils,mock,requests_cache,tabulate,requests,packaging,pytest,rich,pygtrie
+ignored-modules=benchbuild,matplotlib,seaborn,plumbum,yaml,PyQt5,PyQt5.QtCore,PyQt5.QtWidgets,pandas,numpy,pygit2,scipy,sklearn,argparse_utils,mock,requests_cache,tabulate,requests,packaging,pytest,rich,pygtrie
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.
@@ -372,10 +379,10 @@ ignore-comments=yes
 ignore-docstrings=yes
 
 # Ignore imports when computing similarities.
-ignore-imports=no
+ignore-imports=yes
 
 # Minimum lines number of a similarity.
-min-similarity-lines=4
+min-similarity-lines=8
 
 
 [FORMAT]

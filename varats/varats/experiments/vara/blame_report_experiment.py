@@ -8,9 +8,9 @@ BlameReport.
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
-from benchbuild import Project  # type: ignore
-from benchbuild.utils.cmd import mkdir, opt
+from benchbuild import Project
+from benchbuild.utils import actions
+from benchbuild.utils.cmd import opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
 import varats.experiments.vara.blame_experiment as BE
@@ -18,13 +18,15 @@ from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
+    ExperimentHandle,
+    get_varats_result_folder,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.report.report import FileStatusExtension as FSE
-from varats.utils.settings import bb_cfg
+from varats.report.report import ReportSpecification
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore
@@ -33,13 +35,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
     NAME = "BlameReportGeneration"
     DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
-    def __init__(
-        self,
-        project: Project,
-    ):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """
@@ -51,26 +49,22 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = BR.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                BR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             opt_params = [
@@ -78,7 +72,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary, [BCFileExtensions.NO_OPT]
+                    project, binary, [
+                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                        BCFileExtensions.BLAME
+                    ]
                 )
             ]
 
@@ -86,30 +83,29 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
 
-            timeout_duration = '24h'
-            from benchbuild.utils.cmd import timeout  # pylint: disable=C0415
-
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd],
+                run_cmd,
                 create_default_analysis_failure_handler(
-                    project,
-                    BR,
-                    Path(vara_result_folder),
-                    timeout_duration=timeout_duration
+                    self.__experiment_handle, project, BR,
+                    Path(vara_result_folder)
                 )
             )
 
+        return actions.StepResult.OK
 
-class BlameReportExperiment(VersionExperiment):
+
+class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     """Generates a commit flow report (CFR) of the project(s) specified in the
     call."""
 
     NAME = "GenerateBlameReport"
 
-    REPORT_TYPE = BR
+    REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
@@ -117,27 +113,30 @@ class BlameReportExperiment(VersionExperiment):
         Args:
             project: to analyze
         """
-
-        BE.setup_basic_blame_experiment(
-            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
-        )
-
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
-        project.cflags += ["-O0"]
-        bc_file_extensions = [BCFileExtensions.NO_OPT]
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+            BCFileExtensions.BLAME,
+        ]
+
+        BE.setup_basic_blame_experiment(self, project, BR)
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_TYPE
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
-        analysis_actions.append(BlameReportGeneration(project))
+        analysis_actions.append(
+            BlameReportGeneration(project, self.get_handle())
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

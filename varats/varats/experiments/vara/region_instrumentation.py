@@ -1,7 +1,7 @@
 """Experiment that adds tracing markers for highlight regions."""
 import typing as tp
 
-from benchbuild import Experiment, Project  # type: ignore
+from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.actions import Step
 
@@ -13,7 +13,7 @@ class RegionAnalyser(Experiment):  # type: ignore
 
     NAME = "RegionAnalyser"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """
         Defines the actions, which should be run on a project.
 
@@ -30,5 +30,5 @@ class RegionAnalyser(Experiment):  # type: ignore
         project.ldflags = ["-lTrace"]
         project.cflags = ["-fvara-handleRM=High", "-mllvm", "-vara-tracer"]
 
-        actns: tp.List[Step] = self.default_runtime_actions(project)
+        actns: tp.MutableSequence[Step] = self.default_runtime_actions(project)
         return actns

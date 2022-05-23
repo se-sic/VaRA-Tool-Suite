@@ -1,4 +1,6 @@
 """Test VaRA Experiment utilities."""
+import os
+import shutil
 import tempfile
 import typing as tp
 import unittest
@@ -11,17 +13,31 @@ from benchbuild.project import Project
 
 import varats.experiment.experiment_util as EU
 from tests.test_helper import BBTestSource
-from tests.test_utils import get_test_config, replace_config, get_bb_test_config
+from tests.test_utils import run_in_test_environment
 from varats.data.reports.commit_report import CommitReport as CR
-from varats.report.report import FileStatusExtension
+from varats.report.gnu_time_report import TimeReport
+from varats.report.report import FileStatusExtension, ReportSpecification
+from varats.utils.git_util import ShortCommitHash
+from varats.utils.settings import vara_cfg, bb_cfg
 
 
-class MockExperiment(EU.VersionExperiment):
+class MockExperiment(EU.VersionExperiment, shorthand="mock"):
     """Small MockExperiment to be used as a replacement for actual
     experiments."""
 
     NAME = "CommitReportExperiment"
-    REPORT_TYPE = CR
+    REPORT_SPEC = ReportSpecification(CR)
+
+    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+        return []
+
+
+class MockExperimentMultiReport(EU.VersionExperiment, shorthand="mock"):
+    """Small MockExperiment to be used as a replacement for actual experiments
+    that "produces" multiple reports."""
+
+    NAME = "CommitReportExperiment"
+    REPORT_SPEC = ReportSpecification(CR, TimeReport)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         return []
@@ -35,9 +51,12 @@ class BBTestProject(Project):
     GROUP = "debug"
     SOURCE = [
         BBTestSource(
-            test_versions=['rev1', 'rev2', 'rev3', 'rev4', 'rev5'],
-            local="test_source",
-            remote="test_remote"
+            test_versions=[
+                'rev1000000', 'rev2000000', 'rev3000000', 'rev4000000',
+                'rev5000000'
+            ],
+            local="/dev/null",
+            remote="/dev/null"
         )
     ]
 
@@ -57,6 +76,24 @@ class BBTestProject(Project):
         pass
 
 
+class TestResultFolderAccess(unittest.TestCase):
+    """Test result folder access."""
+
+    @run_in_test_environment()
+    def test_result_folder_creation(self):
+        """Checks if we get the correct result folder back."""
+        test_tmp_folder = str(os.getcwd())
+
+        bb_cfg()["varats"]["outfile"] = test_tmp_folder + "/results"
+
+        result_folder = EU.get_varats_result_folder(BBTestProject())
+        self.assertEqual(
+            test_tmp_folder + "/results/" + BBTestProject.NAME,
+            str(result_folder)
+        )
+        self.assertTrue(result_folder.exists())
+
+
 class TestVersionExperiment(unittest.TestCase):
     """Test VersionExperiments sampling behaviour."""
 
@@ -65,174 +102,183 @@ class TestVersionExperiment(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Load and parse function infos from yaml file."""
-        cls.tmp_path = tempfile.TemporaryDirectory()
-        cls.test_config = get_test_config(Path(cls.tmp_path.name))
-        cls.test_config['experiment'] = {
-            "file_status_blacklist": {
-                "default": [],
-            },
-            "file_status_whitelist": {
-                "default": [],
-            },
-            "random_order": {
-                "default": False,
-            },
-            "sample_limit": {
-                "default": None,
-            },
-        }
-        s.setup_config(cls.test_config)
-        cls.test_bb_config = get_bb_test_config()
         cls.vers_expr = MockExperiment()
-        cls.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.tmp_path.cleanup()
+        cls.rev_list = [
+            'rev1000000', 'rev2000000', 'rev3000000', 'rev4000000', 'rev5000000'
+        ]
 
     def setUp(self):
         """Set config to initial values."""
-        self.test_config["experiment"]["sample_limit"] = None
-        self.test_config["experiment"]["random_order"] = False
-        self.test_config["experiment"]["file_status_whitelist"] = []
-        self.test_config["experiment"]["file_status_blacklist"] = []
-        self.test_bb_config["versions"]["full"] = False
-        self.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
+        self.rev_list = [
+            'rev1000000', 'rev2000000', 'rev3000000', 'rev4000000', 'rev5000000'
+        ]
+
+    @staticmethod
+    def prepare_vara_config(vara_cfg: s.Configuration) -> None:
+        vara_cfg["experiment"]["sample_limit"] = None
+        vara_cfg["experiment"]["random_order"] = False
+        vara_cfg["experiment"]["file_status_whitelist"] = []
+        vara_cfg["experiment"]["file_status_blacklist"] = []
 
     @staticmethod
     def generate_get_tagged_revisions_output(
-    ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+    ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""
-        return [('rev1', FileStatusExtension.Success),
-                ('rev2', FileStatusExtension.Blocked),
-                ('rev3', FileStatusExtension.CompileError),
-                ('rev4', FileStatusExtension.Failed),
-                ('rev5', FileStatusExtension.Missing)]
+        return [
+            (ShortCommitHash('rev1000000'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('rev2000000'), FileStatusExtension.BLOCKED),
+            (ShortCommitHash('rev3000000'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('rev4000000'), FileStatusExtension.FAILED),
+            (ShortCommitHash('rev5000000'), FileStatusExtension.MISSING)
+        ]
 
+    @run_in_test_environment()
     def test_sample_limit(self):
         """Test if base_hash is loaded correctly."""
-        with replace_config(vara_config=self.test_config) as config:
-            self.assertEqual(config["experiment"]["sample_limit"].value, None)
-            self.assertEqual(
-                # pylint: disable=protected-access
-                self.vers_expr._sample_num_versions(self.rev_list),
-                self.rev_list
-            )
+        self.prepare_vara_config(vara_cfg())
+        self.assertEqual(vara_cfg()["experiment"]["sample_limit"].value, None)
+        self.assertEqual(
+            # pylint: disable=protected-access
+            self.vers_expr._sample_num_versions(self.rev_list),
+            self.rev_list
+        )
 
-            config["experiment"]["sample_limit"] = 3
-            self.assertEqual(
-                len(self.vers_expr._sample_num_versions(self.rev_list)), 3
-            )
+        vara_cfg()["experiment"]["sample_limit"] = 3
+        self.assertEqual(
+            len(self.vers_expr._sample_num_versions(self.rev_list)), 3
+        )
 
+    @run_in_test_environment()
     def test_without_versions(self):
         """Test if we get the correct revision if no VaRA modifications are
         enabled."""
+        bb_cfg()["versions"]["full"] = False
         sample_gen = self.vers_expr.sample(BBTestProject)
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
         self.assertEqual(len(sample_gen), 1)
 
+    @run_in_test_environment()
     @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
     def test_only_whitelisting_one(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
-        with replace_config(
-            replace_bb_config=True, vara_config=self.test_config
-        ) as (config, bb_config):
-            bb_config["versions"]["full"] = True
-            # Revision not in set
-            mock_get_tagged_revisions.return_value = \
-                self.generate_get_tagged_revisions_output()
+        self.prepare_vara_config(vara_cfg())
+        bb_cfg()["versions"]["full"] = True
+        # Revision not in set
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
-            config["experiment"]["file_status_whitelist"] = ['success']
+        vara_cfg()["experiment"]["file_status_whitelist"] = ['success']
 
-            sample_gen = self.vers_expr.sample(BBTestProject)
+        sample_gen = self.vers_expr.sample(BBTestProject)
 
-            self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
-            self.assertEqual(len(sample_gen), 1)
-            mock_get_tagged_revisions.assert_called()
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
+        self.assertEqual(len(sample_gen), 1)
+        mock_get_tagged_revisions.assert_called()
 
+    @run_in_test_environment()
     @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
     def test_only_whitelisting_many(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
-        with replace_config(
-            replace_bb_config=True, vara_config=self.test_config
-        ) as (config, bb_config):
-            bb_config["versions"]["full"] = True
-            # Revision not in set
-            mock_get_tagged_revisions.return_value = \
-                self.generate_get_tagged_revisions_output()
+        self.prepare_vara_config(vara_cfg())
+        bb_cfg()["versions"]["full"] = True
+        # Revision not in set
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
-            config["experiment"]["file_status_whitelist"] = [
-                'success', 'Failed', 'Missing'
-            ]
+        vara_cfg()["experiment"]["file_status_whitelist"] = [
+            'success', 'Failed', 'Missing'
+        ]
 
-            sample_gen = self.vers_expr.sample(BBTestProject)
+        sample_gen = self.vers_expr.sample(BBTestProject)
 
-            self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
-            self.assertEqual(sample_gen[1]["test_source"].version, "rev4")
-            self.assertEqual(sample_gen[2]["test_source"].version, "rev5")
-            self.assertEqual(len(sample_gen), 3)
-            mock_get_tagged_revisions.assert_called()
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
+        self.assertEqual(sample_gen[1]["test_source"].version, "rev4000000")
+        self.assertEqual(sample_gen[2]["test_source"].version, "rev5000000")
+        self.assertEqual(len(sample_gen), 3)
+        mock_get_tagged_revisions.assert_called()
 
+    @run_in_test_environment()
     @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_one(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
-        with replace_config(
-            replace_bb_config=True, vara_config=self.test_config
-        ) as (config, bb_config):
-            bb_config["versions"]["full"] = True
-            # Revision not in set
-            mock_get_tagged_revisions.return_value = \
-                self.generate_get_tagged_revisions_output()
+        self.prepare_vara_config(vara_cfg())
+        bb_cfg()["versions"]["full"] = True
+        # Revision not in set
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
-            config["experiment"]["file_status_blacklist"] = ['success']
+        vara_cfg()["experiment"]["file_status_blacklist"] = ['success']
 
-            sample_gen = self.vers_expr.sample(BBTestProject)
+        sample_gen = self.vers_expr.sample(BBTestProject)
 
-            self.assertEqual(sample_gen[0]["test_source"].version, "rev2")
-            self.assertEqual(sample_gen[1]["test_source"].version, "rev3")
-            self.assertEqual(sample_gen[2]["test_source"].version, "rev4")
-            self.assertEqual(sample_gen[3]["test_source"].version, "rev5")
-            self.assertEqual(len(sample_gen), 4)
-            mock_get_tagged_revisions.assert_called()
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev2000000")
+        self.assertEqual(sample_gen[1]["test_source"].version, "rev3000000")
+        self.assertEqual(sample_gen[2]["test_source"].version, "rev4000000")
+        self.assertEqual(sample_gen[3]["test_source"].version, "rev5000000")
+        self.assertEqual(len(sample_gen), 4)
+        mock_get_tagged_revisions.assert_called()
 
+    @run_in_test_environment()
     @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_many(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
-        with replace_config(
-            replace_bb_config=True, vara_config=self.test_config
-        ) as (config, bb_config):
-            bb_config["versions"]["full"] = True
-            # Revision not in set
-            mock_get_tagged_revisions.return_value = \
-                self.generate_get_tagged_revisions_output()
+        self.prepare_vara_config(vara_cfg())
+        bb_cfg()["versions"]["full"] = True
+        # Revision not in set
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
-            config["experiment"]["file_status_blacklist"] = [
-                'success', 'Failed', 'Blocked'
-            ]
+        vara_cfg()["experiment"]["file_status_blacklist"] = [
+            'success', 'Failed', 'Blocked'
+        ]
 
-            sample_gen = self.vers_expr.sample(BBTestProject)
+        sample_gen = self.vers_expr.sample(BBTestProject)
 
-            self.assertEqual(sample_gen[0]["test_source"].version, "rev3")
-            self.assertEqual(sample_gen[1]["test_source"].version, "rev5")
-            self.assertEqual(len(sample_gen), 2)
-            mock_get_tagged_revisions.assert_called()
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev3000000")
+        self.assertEqual(sample_gen[1]["test_source"].version, "rev5000000")
+        self.assertEqual(len(sample_gen), 2)
+        mock_get_tagged_revisions.assert_called()
 
+    @run_in_test_environment()
     @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
     def test_white_overwrite_blacklisting(self, mock_get_tagged_revisions):
         """Test if whitelist overwrites blacklist."""
-        with replace_config(
-            replace_bb_config=True, vara_config=self.test_config
-        ) as (config, bb_config):
-            bb_config["versions"]["full"] = True
-            # Revision not in set
-            mock_get_tagged_revisions.return_value = \
-                self.generate_get_tagged_revisions_output()
+        self.prepare_vara_config(vara_cfg())
+        bb_cfg()["versions"]["full"] = True
+        # Revision not in set
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
-            config["experiment"]["file_status_blacklist"] = ['Failed']
-            config["experiment"]["file_status_whitelist"] = ['Failed']
+        vara_cfg()["experiment"]["file_status_blacklist"] = ['Failed']
+        vara_cfg()["experiment"]["file_status_whitelist"] = ['Failed']
 
-            sample_gen = self.vers_expr.sample(BBTestProject)
+        sample_gen = self.vers_expr.sample(BBTestProject)
 
-            self.assertEqual(sample_gen[0]["test_source"].version, "rev4")
-            self.assertEqual(len(sample_gen), 1)
-            mock_get_tagged_revisions.assert_called()
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev4000000")
+        self.assertEqual(len(sample_gen), 1)
+        mock_get_tagged_revisions.assert_called()
+
+
+class TestZippedReportFolder(unittest.TestCase):
+    """Test ZippedReportFolder creation."""
+
+    @run_in_test_environment()
+    def test_zipped_result_folder_creation(self):
+        """Checks if a zipped result folder is automatically created."""
+        test_tmp_folder = Path(os.getcwd())
+
+        test_zip = test_tmp_folder / 'FooBar.zip'
+
+        with EU.ZippedReportFolder(test_zip) as output_folder:
+            with open(Path(output_folder) / 'foo.txt', 'w') as output_file:
+                output_file.write('content')
+
+        self.assertTrue(test_zip.exists())
+
+        with tempfile.TemporaryDirectory() as tmp_result_dir:
+            shutil.unpack_archive(test_zip, extract_dir=Path(tmp_result_dir))
+
+            should_be_generated_file = Path(tmp_result_dir) / 'foo.txt'
+            self.assertTrue(should_be_generated_file.exists())
+            with open(should_be_generated_file, 'r') as foo_file:
+                self.assertEqual(foo_file.readline(), 'content')

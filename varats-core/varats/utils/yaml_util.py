@@ -18,8 +18,12 @@ def store_as_yaml(file_path: Path, objects: tp.Iterable[tp.Any]) -> None:
         file_path: The file to store the objects in.
         objects: The objects to store.
     """
-    with open(file_path, "w") as artefacts_file:
-        artefacts_file.write(yaml.dump_all([obj.get_dict() for obj in objects]))
+    with open(file_path, "w") as yaml_file:
+        yaml_file.write(
+            yaml.dump_all([obj.get_dict() for obj in objects],
+                          explicit_start=True,
+                          explicit_end=True)
+        )
 
 
 def load_yaml(file_path: Path) -> tp.Iterator[tp.Any]:

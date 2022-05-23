@@ -175,8 +175,6 @@ def show_dev_branches(code_base: CodeBase) -> None:
     code_base.map_sub_projects(__handle_sub_project)
 
     print("Feature Branches:")
-    for branch_name in found_branches.keys():
+    for branch_name, repos in found_branches.items():
         print(("  {branch_name:" + str(max_branch_chars + 4) +
-               "s} {repos}").format(
-                   branch_name=branch_name, repos=found_branches[branch_name]
-               ))
+               "s} {repos}").format(branch_name=branch_name, repos=repos))

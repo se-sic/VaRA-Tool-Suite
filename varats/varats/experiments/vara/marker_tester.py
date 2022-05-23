@@ -3,7 +3,7 @@ entry/exits."""
 
 import typing as tp
 
-from benchbuild import Experiment, Project  # type: ignore
+from benchbuild import Experiment, Project
 from benchbuild.extensions import base, compiler
 from benchbuild.utils import run
 from benchbuild.utils.actions import Step
@@ -32,7 +32,7 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         else:
             self.extra_ldflags = extra_ldflags
 
-        super(TraceBinaryCreator, self).__init__(*extensions, config=config)
+        super().__init__(*extensions, config=config)
 
     def __call__(
         self,
@@ -60,10 +60,9 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         ) as _run:
             res.append(_run())
 
-        opt = local["opt"][
-            "-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
-            "-vara-trace-MTy={MType}".format(MType=self.marker_type), "-S",
-            "-o", "traced.ll", fake_file_name]
+        opt = local["opt"]["-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
+                           f"-vara-trace-MTy={self.marker_type}", "-S", "-o",
+                           "traced.ll", fake_file_name]
         with run.track_execution(opt, self.project, self.experiment) as _run:
             res.append(_run())
 
@@ -87,7 +86,7 @@ class PrintMarkerInstTest(Experiment):  # type: ignore
 
     NAME = "PrintMarkerInstTest"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """
         Defines the actions, which should be run on a project.
 
@@ -100,9 +99,8 @@ class PrintMarkerInstTest(Experiment):  # type: ignore
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project
-        )
+        project_actions: tp.MutableSequence[
+            Step] = self.default_compiletime_actions(project)
 
         return project_actions
 
@@ -112,7 +110,7 @@ class PapiMarkerInstTest(Experiment):  # type: ignore
 
     NAME = "PapiMarkerInstTest"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """
         Defines the actions, which should be run on a project.
 
@@ -130,9 +128,8 @@ class PapiMarkerInstTest(Experiment):  # type: ignore
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project
-        )
+        project_actions: tp.MutableSequence[
+            Step] = self.default_compiletime_actions(project)
 
         return project_actions
 
@@ -142,7 +139,7 @@ class CheckMarkerInstTest(Experiment):  # type: ignore
 
     NAME = "CheckMarkerInstTest"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """
         Defines the actions, which should be run on a project.
 
@@ -155,8 +152,7 @@ class CheckMarkerInstTest(Experiment):  # type: ignore
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project
-        )
+        project_actions: tp.MutableSequence[
+            Step] = self.default_compiletime_actions(project)
 
         return project_actions

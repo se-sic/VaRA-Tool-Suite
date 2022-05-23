@@ -9,9 +9,21 @@ from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
 from pygtrie import CharTrie
 
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import (
+    get_local_project_git_path,
+    get_primary_project_source,
+)
+from varats.utils.git_util import (
+    get_current_branch,
+    FullCommitHash,
+    ShortCommitHash,
+)
 
 LOG = logging.getLogger(__name__)
+
+
+class AmbiguousCommitHash(Exception):
+    """Raised if an ambiguous commit hash is encountered."""
 
 
 class CommitMap():
@@ -23,7 +35,41 @@ class CommitMap():
             slices = line.strip().split(', ')
             self.__hash_to_id[slices[1]] = int(slices[0])
 
-    def time_id(self, c_hash: str) -> int:
+    def convert_to_full_or_warn(
+        self, short_commit: ShortCommitHash
+    ) -> FullCommitHash:
+        """
+        Warn if a short-form commit hash is ambiguous.
+
+        Args:
+            short_commit: the short-form commit hash to complete
+
+        Returns:
+            a full-length commit hash that starts with the short-form hash
+        """
+        full_commits = self.complete_c_hash(short_commit)
+        if len(full_commits) > 1:
+            LOG.warning(f"Short commit hash is ambiguous: {short_commit.hash}.")
+        return next(iter(full_commits))
+
+    def convert_to_full_or_raise(
+        self, short_commit: ShortCommitHash
+    ) -> FullCommitHash:
+        """
+        Raise an exception if a short-form commit hash is ambiguous.
+
+        Args:
+            short_commit: the short-form commit hash to complete
+
+        Returns:
+            a full-length commit hash that starts with the short-form hash
+        """
+        full_commits = self.complete_c_hash(short_commit)
+        if len(full_commits):
+            raise AmbiguousCommitHash
+        return next(iter(full_commits))
+
+    def time_id(self, c_hash: FullCommitHash) -> int:
         """
         Convert a commit hash to a time id that allows a total order on the
         commits, based on the c_map, e.g., created from the analyzed git
@@ -35,15 +81,15 @@ class CommitMap():
         Returns:
             unique time-ordered id
         """
-        return tp.cast(int, self.__hash_to_id[c_hash])
+        return tp.cast(int, self.__hash_to_id[c_hash.hash])
 
-    def short_time_id(self, c_hash: str) -> int:
+    def short_time_id(self, c_hash: ShortCommitHash) -> int:
         """
         Convert a short commit hash to a time id that allows a total order on
         the commits, based on the c_map, e.g., created from the analyzed git
         history.
 
-        The first time id is returend where the hash belonging to it starts
+        The first time id is returned where the hash belonging to it starts
         with the short hash.
 
         Args:
@@ -52,14 +98,9 @@ class CommitMap():
         Returns:
             unique time-ordered id
         """
-        subtrie = self.__hash_to_id.items(prefix=c_hash)
-        if subtrie:
-            if len(subtrie) > 1:
-                LOG.warning(f"Short commit hash is ambiguous: {c_hash}.")
-            return tp.cast(int, subtrie[0][1])
-        raise KeyError
+        return self.time_id(self.convert_to_full_or_warn(c_hash))
 
-    def c_hash(self, time_id: int) -> str:
+    def c_hash(self, time_id: int) -> FullCommitHash:
         """
         Get the hash belonging to the time id.
 
@@ -71,7 +112,25 @@ class CommitMap():
         """
         for c_hash, t_id in self.__hash_to_id.items():
             if t_id == time_id:
-                return tp.cast(str, c_hash)
+                return FullCommitHash(tp.cast(str, c_hash))
+        raise KeyError
+
+    def complete_c_hash(
+        self, short_commit: ShortCommitHash
+    ) -> tp.Set[FullCommitHash]:
+        """
+        Get a set of all commit hashes that start with a given short-form hash.
+
+        Args:
+            short_commit: the short-form commit hash to complete
+
+        Returns:
+            a set of full-length commit hashes that start with the short-form
+            commit hash
+        """
+        subtrie = self.__hash_to_id.items(prefix=short_commit.hash)
+        if subtrie:
+            return {FullCommitHash(c_hash) for c_hash, _ in subtrie}
         raise KeyError
 
     def mapping_items(self) -> tp.ItemsView[str, int]:
@@ -86,19 +145,30 @@ class CommitMap():
             target_file: needs to be a writable stream, i.e., support .write()
         """
         for item in self.__hash_to_id.items():
-            target_file.write("{}, {}\n".format(item[1], item[0]))
+            target_file.write(f"{item[1]}, {item[0]}\n")
 
     def __str__(self) -> str:
         return str(self.__hash_to_id)
 
 
 def generate_commit_map(
-    path: Path, end: str = "HEAD", start: tp.Optional[str] = None
+    path: Path,
+    end: str = "HEAD",
+    start: tp.Optional[str] = None,
+    refspec: str = "HEAD"
 ) -> CommitMap:
     """
     Generate a commit map for a repository including the commits.
 
     Range of commits that get included in the map: `]start..end]`
+
+    Args:
+        path: to the repository
+        end: last commit that should be included
+        start: parent of the first commit that should be included
+        refspec: that should be checked out
+
+    Returns: initalized ``CommitMap``
     """
     search_range = ""
     if start is not None:
@@ -106,6 +176,8 @@ def generate_commit_map(
     search_range += end
 
     with local.cwd(path):
+        old_head = get_current_branch()
+        git("checkout", refspec)
         full_out = git("--no-pager", "log", "--pretty=format:'%H'")
         wanted_out = git(
             "--no-pager", "log", "--pretty=format:'%H'", search_range
@@ -119,8 +191,9 @@ def generate_commit_map(
             for number, line in enumerate(reversed(full_out.split('\n'))):
                 line = line[1:-1]
                 if line in wanted_cm:
-                    yield "{}, {}\n".format(number, line)
+                    yield f"{number}, {line}\n"
 
+        git("checkout", old_head)
         return CommitMap(format_stream())
 
 
@@ -159,8 +232,12 @@ def get_commit_map(
     """
     if cmap_path is None:
         project_git_path = get_local_project_git_path(project_name)
+        primary_source = get_primary_project_source(project_name)
+        refspec = "HEAD"
+        if hasattr(primary_source, "refspec"):
+            refspec = primary_source.refspec
 
-        return generate_commit_map(project_git_path, end, start)
+        return generate_commit_map(project_git_path, end, start, refspec)
 
     return load_commit_map_from_path(cmap_path)
 

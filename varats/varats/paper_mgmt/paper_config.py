@@ -7,9 +7,11 @@ analyzed. Furthermore, it allows other users to reproduce the exact same set of
 projects and revisions, either with the old experiment automatically or with a
 new experiment to compare the results.
 """
-
+import logging
 import typing as tp
 from pathlib import Path
+
+import benchbuild as bb
 
 from varats.paper.case_study import (
     CaseStudy,
@@ -20,11 +22,13 @@ from varats.paper_mgmt.artefacts import (
     Artefact,
     Artefacts,
     load_artefacts_from_file,
-    store_artefacts,
+    store_artefacts_to_file,
 )
-from varats.projects.discover_projects import initialize_projects
 from varats.utils.exceptions import ConfigurationLookupError
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
+
+LOG = logging.getLogger(__name__)
 
 
 class PaperConfig():
@@ -37,9 +41,11 @@ class PaperConfig():
         folder_path: path to the paper config folder
     """
 
+    __ARTEFACTS_FILE_NAME = 'artefacts.yaml'
+
     def __init__(self, folder_path: Path) -> None:
         self.__path = Path(folder_path)
-        self.__case_studies: tp.Dict[str, tp.List[CaseStudy]] = dict()
+        self.__case_studies: tp.Dict[str, tp.List[CaseStudy]] = {}
         for case_study_path in \
                 [x for x in self.__path.iterdir()
                  if x.suffix == ".case_study"]:
@@ -48,12 +54,7 @@ class PaperConfig():
                 self.__case_studies[case_study.project_name].append(case_study)
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
-        if (self.__path / 'artefacts.yaml').exists():
-            self.__artefacts = load_artefacts_from_file(
-                self.__path / 'artefacts.yaml'
-            )
-        else:
-            self.__artefacts = Artefacts([])
+        self.__artefacts: tp.Optional[Artefacts] = None
 
     @property
     def path(self) -> Path:
@@ -63,6 +64,14 @@ class PaperConfig():
     @property
     def artefacts(self) -> Artefacts:
         """The artefacts of this paper config."""
+        if not self.__artefacts:
+            if (self.path / self.__ARTEFACTS_FILE_NAME).exists():
+                self.__artefacts = load_artefacts_from_file(
+                    self.path / self.__ARTEFACTS_FILE_NAME
+                )
+            else:
+                self.__artefacts = Artefacts([])
+
         return self.__artefacts
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
@@ -91,9 +100,7 @@ class PaperConfig():
 
     def get_all_artefacts(self) -> tp.Iterable[Artefact]:
         """Returns an iterable of the artefacts of this paper config."""
-        if self.__artefacts:
-            return self.__artefacts
-        return []
+        return self.artefacts
 
     def has_case_study(self, cs_name: str) -> bool:
         """
@@ -130,7 +137,7 @@ class PaperConfig():
 
             def multi_case_study_rev_filter(revision: str) -> bool:
                 for rev_filter in rev_filters:
-                    if rev_filter(revision):
+                    if rev_filter(ShortCommitHash(revision)):
                         return True
                 return False
 
@@ -154,7 +161,14 @@ class PaperConfig():
         Args:
             artefact: the artefact to add
         """
-        self.__artefacts.add_artefact(artefact)
+        self.artefacts.add_artefact(artefact)
+
+    def store_artefacts(self) -> None:
+        """Store artefacts to file."""
+        if self.artefacts:
+            store_artefacts_to_file(
+                self.artefacts, self.path / self.__ARTEFACTS_FILE_NAME
+            )
 
     def store(self) -> None:
         """Persist the current state of the paper config saving all case studies
@@ -162,8 +176,7 @@ class PaperConfig():
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
-        if self.__artefacts:
-            store_artefacts(self.__artefacts, self.__path)
+        self.store_artefacts()
 
     def __str__(self) -> str:
         string = "Loaded case studies:\n"
@@ -201,7 +214,6 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
             )
         )
 
-    initialize_projects()
     return get_paper_config().get_filter_for_case_study(project_name)
 
 
@@ -245,9 +257,8 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
                 vara_cfg()["paper_config"][
                     "current_config"].value is None:
             raise ConfigurationLookupError(
-                "No paper config was set in VaRA config file {}".format(
-                    vara_cfg()['config_file']
-                )
+                f"No paper config was set in VaRA config file "
+                f"{vara_cfg()['config_file']}"
             )
         config_path = Path(
             str(vara_cfg()["paper_config"]["folder"]) + "/" +
@@ -269,3 +280,26 @@ def get_paper_config() -> PaperConfig:
     if _G_PAPER_CONFIG is None:
         load_paper_config()
     return get_loaded_paper_config()
+
+
+class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
+    """
+    Paper config specific git to reduce the available versions.
+
+    The paper-config git filters out all revisions that are not specified in one
+    of the case studies.
+    """
+
+    def __init__(
+        self, project_name: str, *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.__project_name = project_name
+
+    def versions(self) -> tp.List[bb.source.base.Variant]:
+        proj_filter = project_filter_generator(self.__project_name)
+
+        return [
+            variant for variant in super().versions()
+            if proj_filter(variant.version)
+        ]
