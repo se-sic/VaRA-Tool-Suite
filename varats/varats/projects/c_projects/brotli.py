@@ -64,7 +64,15 @@ class Brotli(VProject):
             "out/brotli",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
-                "5814438791fb2d4394b46e5682a96b68cd092803", "HEAD"
+                "03739d2b113afe60638069c4e1604dc2ac27380d", "HEAD"
+            )
+        )
+        binary_map.specify_binary(
+            "out/bro",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "5814438791fb2d4394b46e5682a96b68cd092803",
+                "03739d2b113afe60638069c4e1604dc2ac27380d"
             )
         )
         binary_map.specify_binary(
