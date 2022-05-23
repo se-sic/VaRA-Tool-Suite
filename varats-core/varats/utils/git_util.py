@@ -1,15 +1,16 @@
 """Utility module for handling git repos."""
 import abc
+import math
 import re
 import typing as tp
 from enum import Enum
 from itertools import chain
 from pathlib import Path
 
+import numpy
 import pygit2
 from benchbuild.utils.cmd import git, grep
 from benchbuild.utils.revision_ranges import RevisionRange
-from plumbum import local
 from plumbum import local, TF, RETCODE
 
 from varats.project.project_util import (
@@ -316,7 +317,7 @@ class ChurnConfig():
         value: tp.Set[str]  # pylint: disable=invalid-name
 
         C = {"h", "c"}
-        CPP = {"h", "hxx", "hpp", "cxx", "cpp"}
+        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}
 
     def __init__(self) -> None:
         self.__enabled_languages: tp.List[ChurnConfig.Language] = []
@@ -946,10 +947,7 @@ def branch_has_upstream(
     return tp.cast(bool, exit_code == 0)
 
 
-def calc_surviving_lines(
-    repo: pygit2.Repository, revision: [str, FullCommitHash],
-    revisions: tp.List[FullCommitHash]
-) -> dict[FullCommitHash, int]:
+def calc_surviving_lines(repo: pygit2.Repository, revision) -> dict[str, int]:
     """
 
     :param repo: repository to analyze
@@ -962,7 +960,7 @@ def calc_surviving_lines(
         "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
     )
 
-    lines_per_revision: dict = {k: numpy.NaN for k in revisions}
+    lines_per_revision: dict = {}
     with local.cwd(project_path):
         git("checkout", revision)
         files = git("ls-tree", "-r", "--name-only", revision).splitlines()
@@ -974,9 +972,7 @@ def calc_surviving_lines(
                     if line:
                         last_change = line[:FullCommitHash.hash_length()]
                         last_change = FullCommitHash(last_change)
-                        if lines_per_revision.keys().__contains__(
-                            last_change
-                        ) and not math.isnan(lines_per_revision[last_change]):
+                        if lines_per_revision.keys().__contains__(last_change):
                             lines_per_revision[
                                 last_change
                             ] = lines_per_revision[last_change] + 1
