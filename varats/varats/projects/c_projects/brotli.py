@@ -99,6 +99,7 @@ class Brotli(VProject):
                 "5814438791fb2d4394b46e5682a96b68cd092803", ShortCommitHash
             )
         c_compiler = bb.compiler.cc(self)
+
         if brotli_version in configure_revisions:
             with local.cwd(brotli_version_source):
                 with local.env(CC=str(c_compiler)):
