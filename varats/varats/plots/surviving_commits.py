@@ -3,6 +3,7 @@ import typing as tp
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import seaborn as sns
 from matplotlib import style
@@ -206,7 +207,7 @@ class HeatMapPlot(Plot, plot_name=None):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())
-        _, axis = plt.subplots(1, 1)
+        fig, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
         data = self.data_function(case_study)
         axis = sns.heatmap(
@@ -216,8 +217,9 @@ class HeatMapPlot(Plot, plot_name=None):
             vmax=self.vmax,
             xticklabels=self.xticklabels,
             yticklabels=self.yticklabels,
-            linewidth=0.15,
-            linecolor="grey"
+            linewidth=0.1,
+            linecolor="grey",
+            square=True
         )
         if self.XLABEL:
             axis.set_xlabel(self.XLABEL)
@@ -233,22 +235,27 @@ class HeatMapPlot(Plot, plot_name=None):
                 commit = commit_lookup_helper(
                     CommitRepoPair(FullCommitHash(label.get_text()), repo)
                 )
-                label.set_color(color_map[commit.author.name])
-                label.set_text(ShortCommitHash(label.get_text()).hash)
+                label.set(color=color_map[commit.author.name])
+            axis.yaxis.set_major_formatter(
+                mticker.FuncFormatter(
+                    lambda x, pos: axis.get_yticklabels()[pos].get_text()
+                    [:ShortCommitHash.hash_length()] + " █"
+                )
+            )
             legend = []
             for author, color in color_map.items():
                 legend.append(mpatches.Patch(color=color, label=author))
             plt.legend(
                 fontsize=8,
                 handles=legend,
-                bbox_to_anchor=(1.2, 1),
-                loc=2,
+                bbox_to_anchor=(0.5, 1.02),
+                loc=8,
                 borderaxespad=0.
             )
         plt.setp(
             axis.get_xticklabels(),
-            fontsize=self.plot_config.x_tick_size(),
-            family='monospace'
+            fontsize=self.plot_config.x_tick_size() - 1,
+            family='monospace',
         )
         plt.setp(
             axis.get_yticklabels(),
@@ -346,11 +353,11 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
 
     NAME = 'compare_survival'
 
-    YLABEL = "Commit Interactions v Lines"
+    YLABEL = "Commit Interactions vs. Lines"
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(plot_config, lines_and_interactions, **kwargs)
-        self.yticklables = 3
+        self.yticklabels = 3
         self.color_commits = True
 
 
