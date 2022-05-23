@@ -3,7 +3,11 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import mkdir, make
-from benchbuild.utils.revision_ranges import RevisionRange, block_revisions
+from benchbuild.utils.revision_ranges import (
+    RevisionRange,
+    block_revisions,
+    SingleRevision,
+)
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -36,8 +40,12 @@ class Brotli(VProject):
         block_revisions([
             RevisionRange(
                 '8f30907d0f2ef354c2b31bdee340c2b11dda0fb0',
-                '378485b097fd7b80a5e404a3cb912f7b18f78cdb',
-                "building not unified"
+                'e1739826c04a9944672b99b98249dda021bdeb36',
+                'Encoder and Decoder don\'t have a shared Makefile'
+            ),
+            SingleRevision(
+                "378485b097fd7b80a5e404a3cb912f7b18f78cdb",
+                "Missing required build files"
             )
         ])(
             PaperConfigSpecificGit(
@@ -83,6 +91,14 @@ class Brotli(VProject):
                 "5814438791fb2d4394b46e5682a96b68cd092803"
             )
         )
+        binary_map.specify_binary(
+            "tools/bro",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "e1739826c04a9944672b99b98249dda021bdeb36",
+                "378485b097fd7b80a5e404a3cb912f7b18f78cdb"
+            )
+        )
         return binary_map[revision]
 
     def run_tests(self) -> None:
@@ -98,13 +114,22 @@ class Brotli(VProject):
                 "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
                 "5814438791fb2d4394b46e5682a96b68cd092803", ShortCommitHash
             )
+            simple_make_revisions = get_all_revisions_between(
+                "e1739826c04a9944672b99b98249dda021bdeb36",
+                "378485b097fd7b80a5e404a3cb912f7b18f78cdb", ShortCommitHash
+            )
         c_compiler = bb.compiler.cc(self)
 
-        if brotli_version in configure_revisions:
+        if brotli_version in simple_make_revisions:
+            with local.cwd(brotli_version_source / "tools"):
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+        elif brotli_version in configure_revisions:
             with local.cwd(brotli_version_source):
                 with local.env(CC=str(c_compiler)):
                     bb.watch(local["./configure"])()
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
         else:
             mkdir(brotli_version_source / "out")
             with local.cwd(brotli_version_source / "out"):
