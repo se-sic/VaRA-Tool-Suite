@@ -9,6 +9,7 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
+from plumbum.cmd import rm, ls
 
 from varats.experiment.experiment_util import (
     ExperimentHandle,
@@ -24,7 +25,6 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.tef_report import TEFReport
-from plumbum.cmd import rm, ls
 
 
 class ExecAndTraceBinary(actions.Step):  # type: ignore
@@ -76,9 +76,9 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                     if Path(file_path_xz).is_file():
                         rm_cmd()
 
-                    # TODO: figure out how to handle workloads
-                    binary(5, "-k", workload)
-
+                    xz_cmd = binary[5, "-k", workload]
+                    xz_cmd()
+                    
                     # TODO: figure out how to handle different configs
                     #executable("--slow")
                     # executable()
