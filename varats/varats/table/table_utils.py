@@ -82,6 +82,6 @@ def dataframe_to_table(
     elif table_format.is_html():
         table = data.to_html(**kwargs)
     else:
-        tabulate(data, data.columns, table_format.value)
+        table = tabulate(data, data.columns, table_format.value)
 
     return table
