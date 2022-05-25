@@ -56,5 +56,4 @@ class TestTimeReportAggregate(unittest.TestCase):
             # Read time reports.
             time_aggregate = TimeReportAggregate(tmp_file)
             self.assertEqual(len(time_aggregate.reports), num_reports)
-            self.assertEqual(time_aggregate.mean_wall_clock_time, 2.0)
-            self.assertEqual(time_aggregate.std_wall_clock_time, 0)
+            self.assertEqual(time_aggregate.mean_std_wall_clock_time, (2.0, 0))
