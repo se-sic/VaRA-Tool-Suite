@@ -66,7 +66,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                         TimeReport._parse_wall_clock_time(line)
                     continue
 
-                print("Not matched: ", line)
+                # print("Not matched: ", line)
 
     @property
     def command_name(self) -> str:

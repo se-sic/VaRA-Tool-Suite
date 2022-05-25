@@ -20,6 +20,7 @@ setup(
         "argparse-utils>=1.2.0",
         "benchbuild>=6.3.1",
         "click>=8.0.1",
+        "Cryptography<37.0.0",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
         "Jinja2>=3.0.1",
@@ -65,6 +66,7 @@ setup(
             'vara-config = varats.tools.driver_config:main',
             'vara-container = varats.tools.driver_container:main',
             'vara-cs = varats.tools.driver_casestudy:main',
+            'vara-cs-gui = varats.tools.driver_casestudy_gui:main',
             'vara-develop = varats.tools.driver_develop:main',
             'vd = varats.tools.driver_develop:main',
             'vara-gen-bbconfig = '

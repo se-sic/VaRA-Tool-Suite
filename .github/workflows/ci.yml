@@ -48,9 +48,8 @@ jobs:
         coverage run -p -m pytest varats varats-core tests
         rm -rf benchbuild
 
-    - name: Run integration tests
+    - name: Combine Coverage
       run: |
-        ./run_extra_tests.sh
         coverage combine -a --rcfile=.coveragerc
         coverage xml
     - name: Upload coverage report

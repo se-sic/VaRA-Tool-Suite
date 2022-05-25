@@ -9,10 +9,18 @@ import click
 from varats.data.discover_reports import initialize_reports
 from varats.experiment.experiment_util import VersionExperiment
 from varats.experiments.discover_experiments import initialize_experiments
-from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.report.report import BaseReport
+from varats.ts_utils.artefact_util import (
+    CaseStudyConverter,
+    ReportTypeConverter,
+)
+from varats.ts_utils.cli_util import CLIOptionTy, convert_value, make_cli_option
 from varats.utils.exceptions import ConfigurationLookupError
+
+if tp.TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from varats.paper.case_study import CaseStudy
 
 ChoiceTy = tp.TypeVar("ChoiceTy")
 
@@ -93,7 +101,7 @@ class EnumChoice(click.Choice, tp.Generic[EnumTy]):
         return value
 
 
-def create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
+def create_multi_case_study_choice() -> TypedMultiChoice['CaseStudy']:
     """
     Create a choice parameter type that allows selecting multiple case studies
     from the current paper config.
@@ -104,7 +112,7 @@ def create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
     try:
         paper_config = get_paper_config()
     except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {}
+        empty_cs_dict: tp.Dict[str, tp.List['CaseStudy']] = {}
         return TypedMultiChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": [cs]
@@ -114,13 +122,13 @@ def create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
     return TypedMultiChoice(value_dict)
 
 
-def create_single_case_study_choice() -> TypedChoice[CaseStudy]:
+def create_single_case_study_choice() -> TypedChoice['CaseStudy']:
     """Create a choice parameter type that allows selecting exactly one case
     study from the current paper config."""
     try:
         paper_config = get_paper_config()
     except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, CaseStudy] = {}
+        empty_cs_dict: tp.Dict[str, 'CaseStudy'] = {}
         return TypedChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": cs
@@ -152,3 +160,61 @@ def create_experiment_type_choice() -> TypedChoice[tp.Type[VersionExperiment]]:
         for k, v in bb.experiment.ExperimentRegistry.experiments.items()
         if not is_experiment_excluded(k)
     })
+
+
+# ------------------------------------------------------------------------------
+# Predefined CLI Options
+# ------------------------------------------------------------------------------
+
+REQUIRE_CASE_STUDY: CLIOptionTy = convert_value(
+    "case_study", CaseStudyConverter
+)(
+    make_cli_option(
+        "-cs",
+        "--case-study",
+        type=create_single_case_study_choice(),
+        required=True,
+        metavar="NAME",
+        help="The case study to use."
+    )
+)
+REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = convert_value(
+    "case_study", CaseStudyConverter
+)(
+    make_cli_option(
+        "-cs",
+        "--case-study",
+        type=create_multi_case_study_choice(),
+        required=True,
+        metavar="NAMES",
+        help="One or more case studies to use."
+    )
+)
+REQUIRE_REVISION: CLIOptionTy = make_cli_option(
+    "-rev",
+    "--revision",
+    type=str,
+    required=True,
+    metavar="SHORT_COMMIT_HASH",
+    help="The revision to use."
+)
+REQUIRE_REPORT_TYPE: CLIOptionTy = convert_value(
+    "report_type", ReportTypeConverter
+)(
+    make_cli_option(
+        "--report-type",
+        type=create_report_type_choice(),
+        required=True,
+        help="The report type to use."
+    )
+)
+OPTIONAL_REPORT_TYPE: CLIOptionTy = convert_value(
+    "report_type", ReportTypeConverter
+)(
+    make_cli_option(
+        "--report-type",
+        type=create_report_type_choice(),
+        required=False,
+        help="The report type to use."
+    )
+)
