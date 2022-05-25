@@ -34,6 +34,7 @@ LOG = logging.getLogger(__name__)
 class ImageBase(Enum):
     """Container image bases that can be used by projects."""
     DEBIAN_10 = ("localhost/debian:10_varats", Distro.DEBIAN)
+    DEBIAN_11 = ("localhost/debian:11_varats", Distro.DEBIAN)
 
     def __init__(self, name: str, distro: Distro):
         self.__name = name
@@ -57,6 +58,18 @@ class ImageBase(Enum):
 _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[], ContainerImage]] = {
     ImageBase.DEBIAN_10:
         lambda: ContainerImage().from_("docker.io/library/debian:10").
+        run('apt', 'update').run(
+            'apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+            'software-properties-common', 'python3', 'python3-dev',
+            'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
+            'libffi-dev', 'libyaml-dev', 'graphviz-dev'
+        ).run('wget', 'https://apt.llvm.org/llvm.sh').
+        run('chmod', '+x', './llvm.sh').run('./llvm.sh', '13', 'all').run(
+            'ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang'
+        ).run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++'
+             ).run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld'),
+    ImageBase.DEBIAN_11:
+        lambda: ContainerImage().from_("docker.io/library/debian:11").
         run('apt', 'update').run(
             'apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
             'software-properties-common', 'python3', 'python3-dev',

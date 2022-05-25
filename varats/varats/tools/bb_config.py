@@ -73,6 +73,7 @@ def create_new_bb_config(
         'varats.projects.c_projects.opus',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
+        'varats.projects.c_projects.soft_ether_vpn',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
