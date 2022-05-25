@@ -123,13 +123,11 @@ class Brotli(VProject):
         if brotli_version in simple_make_revisions:
             with local.cwd(brotli_version_source / "tools"):
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
         elif brotli_version in configure_revisions:
             with local.cwd(brotli_version_source):
                 with local.env(CC=str(c_compiler)):
                     bb.watch(local["./configure"])()
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
         else:
             mkdir(brotli_version_source / "out")
             with local.cwd(brotli_version_source / "out"):
