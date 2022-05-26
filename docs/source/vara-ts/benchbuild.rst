@@ -10,7 +10,7 @@ In order to execute an experiment on a project we use `BenchBuild <https://githu
 
 Setup: Configuring BenchBuild
 -----------------------------
-First, we need to generate a folder with a configuration file for BenchBuild in the vara root directory. This is done with:
+First, we need to generate a folder with a configuration file for BenchBuild in the VaRA-TS root directory. This is done with:
 
 .. code-block:: bash
 
@@ -25,7 +25,7 @@ Second, we change into the benchbuild folder and run an experiment that generate
   cd $VARA_ROOT/benchbuild
   benchbuild -vv run -E GenerateBlameReport gzip
 
-The generated result files are place in the ``vara/results/$PROJECT_NAME`` folder and can be further visualized with VaRA-TS graph generators.
+The generated result files are placed in the ``varats/results/$PROJECT_NAME`` folder and can later be visualized with :ref:`plots or tables<Visualizing Data>`.
 
 Running BenchBuild outside the ``$VARA_ROOT/benchbuild`` directory
 ------------------------------------------------------------------
@@ -34,9 +34,9 @@ To execute BenchBuild from another directory the ``VARA_ROOT`` environment varia
 .. code-block:: bash
 
   # temporary:
-  export VARA_ROOT=/path/to/your/vara/root/directory
+  export VARA_ROOT=/path/to/your/varats/root/directory
   # permanent:
-  echo 'export VARA_ROOT=/path/to/your/vara/root/directory' >> ~/.$(basename $0)rc
+  echo 'export VARA_ROOT=/path/to/your/varats/root/directory' >> ~/.$(basename $0)rc
 
 How-to configure BenchBuild yourself
 ------------------------------------
@@ -95,6 +95,10 @@ To adapt and tune BenchBuild further, you can modify the different configuration
 Running BenchBuild in a Container
 ---------------------------------
 
+.. note::
+
+  In this section, every occurrence of ``$VARATS_ROOT`` should be replaced with the path to your VaRA-TS root directory.
+
 BenchBuild can run its experiments inside a container.
 This allows to customize the execution environment on a per-project(-version) and per-experiment level.
 
@@ -104,27 +108,30 @@ Configuring the Container Support
 To use BenchBuild's container support, you first need to setup `buildah <https://github.com/containers/buildah/blob/master/install.md>`_ and `podman <https://podman.io/getting-started/installation>`_ on your system.
 Please follow their install instructions on how to setup both tools.
 We highly recommend to use buildah and podman in rootless mode.
-Keep in mind that you have to set a subuid and subgid mapping on all machines that need to run containers.
+Keep in mind that you have to set up a subuid and subgid mapping on all machines and for all users that need to run containers.
 You also need to install `crun` on those machines.
 For debian, this can be don with the following command::
 
     sudo apt install crun
 
-Then, make sure that the following parameters in the :ref:`BenchBuild config <How-to configure BenchBuild yourself>` are set.
-If you generated your configuration via :ref:`vara-gen-bbconfig`, these options were automatically set.
+Then, make sure that the following parameters are set in the :ref:`BenchBuild config <How-to configure BenchBuild yourself>`.
+If you generated your configuration via :ref:`vara-gen-bbconfig`, these options were set automatically.
 
 .. code-block:: yaml
 
   container:
     export:
       desc: Export path for container images.
-      value: !create-if-needed '<path-to-varats-root>/containers/export'
+      value: !create-if-needed '$VARATS_ROOT/containers/export'
     from_source:
       desc: Install BenchBuild from source or from pip (default)
       value: false
     import:
       desc: Import path for container images.
-      value: !create-if-needed '<path-to-varats-root>/containers/export'
+      value: !create-if-needed '$VARATS_ROOT/containers/export'
+    interactive:
+      desc: Drop into an interactive shell for all container runs.
+      value: false
     keep:
       desc: Keep failed image builds at their last known good state.
       value: false
@@ -134,18 +141,24 @@ If you generated your configuration via :ref:`vara-gen-bbconfig`, these options 
     mounts:
       desc: List of paths that will be mounted inside the container.
       value:
-        - [<path-to-varats-root>/results, /varats_root/results]
-        - [<path-to-varats-root>/benchbuild/BC_files, /varats_root/BC_files]
-        - [<path-to-varats-root>/vara/paper_configs, /varats_root/paper_configs]
+        - [$VARATS_ROOT/results, /varats_root/results]
+        - [$VARATS_ROOT/benchbuild/BC_files, /varats_root/BC_files]
+        - [$VARATS_ROOT/varats/paper_configs, /varats_root/paper_configs]
+    replace:
+      desc: Replace existing container images.
+      value: false
     root:
       desc: Permanent storage for container images
-      value: !create-if-needed '<path-to-varats-root>/containers/lib'
+      value: !create-if-needed '$VARATS_ROOT/containers/lib'
     runroot:
       desc: Runtime storage for containers
-      value: !create-if-needed '<path-to-varats-root>/containers/run'
+      value: !create-if-needed '$VARATS_ROOT/containers/run'
     runtime:
       desc: Default container runtime used by podman
       value: /usr/bin/crun
+    shell:
+      desc: Command string that should be used as shell command.
+      value: /bin/bash
     source:
       desc: Path to benchbuild's source directory
       value: '</path/to/benchbuild>'
@@ -156,10 +169,9 @@ Executing Experiments in a Container
 
 If your experiment makes use of a :ref:`research tool <Provided research tools>`, the next step is to set up the correct research tool for your experiment.
 Afterwards, you need to build the base containers.
-First, you need to build the desired research tool for each base image required by your experiments (e.g., :ref:`VaRA Container build`).
-Then, you can select the desired research tool and afterwards build the base images with the :ref:`vara-container` tool.
+This process is explained step-by-step in our :ref:`container guide<Container Guide>`.
 
-You can now run your experiments in a container simply by replacing the ``run`` in your BenchBuild command with ``container run``, for example, like this:
+You can now run your experiments in a container using ``vara-run --container`` or,  when using BenchBuild directly, by replacing the ``run`` in your BenchBuild command with ``container run``, for example, like this:
 
 .. code-block:: bash
 
@@ -179,12 +191,28 @@ Using buildah and podman on the Commandline
 For more advanced users, it might be useful to work with buildah and podman directly from the commandline, e.g., when debugging container images.
 In these situations, it can come in handy to create some shell aliases that set the correct `root` and `runroot` to for the buildah and podman commands::
 
-    alias bbuildah='buildah --root <path-to-varats-root>/containers/lib --runroot <path-to-varats-root>/containers/run'
-    alias bpodman='podman --root <path-to-varats-root>/containers/lib --runroot <path-to-varats-root>/containers/run'
+    alias bbuildah='buildah --root $VARATS_ROOT/containers/lib --runroot $VARATS_ROOT/containers/run'
+    alias bpodman='podman --root $VARATS_ROOT/containers/lib --runroot $VARATS_ROOT/containers/run'
 
 
-For debugging purposes, it can be useful to mount the file system of a container image.
-This can be done with the following steps:
+Debugging Container Images
+..........................
+
+BenchBuild has some configuration options that support debugging container images.
+If you set the config option ``container/keep`` to ``true`` you will be dropped into buildah build container if building an image fails.
+
+.. code-block:: yaml
+
+  container:
+    keep:
+      desc: Keep failed image builds at their last known good state.
+      value: true
+    keep_suffix:
+      desc: Suffix to add to failed image builds, if we keep them.
+      value: failed
+
+
+As an alternative, you can also mount the file system of a container image by following these steps:
 
 1. Create a buildah unshare session with
 
