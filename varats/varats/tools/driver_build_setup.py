@@ -151,7 +151,7 @@ def update(research_tool: str) -> None:
 @click.option(
     "--container",
     type=EnumChoice(ImageBase, case_sensitive=False),
-    help="Build type to use for the tool build configuration."
+    help="Build the tool in a container using the specified base image."
 )
 @click.option(
     "--install-prefix",
