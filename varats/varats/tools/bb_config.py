@@ -91,7 +91,7 @@ def create_new_bb_config(
             'varats.projects.test_projects.bug_provider_test_repos',
             'varats.projects.test_projects.example_test_repo',
             'varats.projects.test_projects.linker_check',
-            'varats.projects.test_projects.taint_tests',
+            'varats.projects.test_projects.taint_tests'y,
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection'
         ]
@@ -109,6 +109,8 @@ def create_new_bb_config(
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
+        'varats.experiments.vara.xz_blackbox_experiment',
+        'varats.experiments.vara.xz_whitebox_experiment',
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.szz.szz_unleashed_experiment',

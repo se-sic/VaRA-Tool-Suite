@@ -57,10 +57,10 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 extension_type=FSE.SUCCESS,
             )
 
-            file_path = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json"
-            file_path_xz = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json.xz"
+            file_path = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json"
+            file_path_xz = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json.xz"
             path_to_xz = Path(file_path_xz)
-            number_of_repetition = 30
+            number_of_repetition = 1
 
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
