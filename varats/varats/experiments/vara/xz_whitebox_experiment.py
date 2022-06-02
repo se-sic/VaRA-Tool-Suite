@@ -70,8 +70,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                     VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
                 ):
 
-                    workload = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json"
-                    file_path_xz = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json.xz"
+                    workload = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json"
+                    file_path_xz = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json.xz"
                     rm_cmd = rm[file_path_xz]
                     if Path(file_path_xz).is_file():
                         rm_cmd()
