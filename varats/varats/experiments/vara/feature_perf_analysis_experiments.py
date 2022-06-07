@@ -223,6 +223,9 @@ class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
 
             project.cflags += ["-flto", "-fuse-ld=lld"]
             project.ldflags += ["-flto"]
+        # Enable compiler optimizations for case without instrumentation.
+        else:
+            project.cflags += ["-O3"]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
