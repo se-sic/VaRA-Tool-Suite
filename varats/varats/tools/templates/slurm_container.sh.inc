@@ -54,7 +54,7 @@ flock -x 9 && {
     echo "$(date) [$(hostname)] prepare local node"
     mkdir -p '{{ prefix }}'
   fi
-  rm '${lockfile}'
+  rm ${lockfile}
 }
 exec 9>&-
 # End of prepare cluster node
@@ -89,8 +89,8 @@ EOF
   _inner_file=$(mktemp -q) && {
     cat << EOF > $_inner_file
 #!/bin/bash
-if [ ! -f '${clean_lockfile}' ]; then
-  touch '${clean_lockfile}'
+if [ ! -f ${clean_lockfile} ]; then
+  touch ${clean_lockfile}
   echo "$(date) [$(hostname)] clean for $(hostname)"
   sbatch --time="15:00" --job-name="$(hostname)-cleanup" \
     -A {{ slurm_account }} -p {{ slurm_partition }} \
@@ -110,7 +110,7 @@ export XDG_RUNTIME_DIR=${node_dir}
 export HOME=${node_dir}
 export BB_CONTAINER_ROOT="${node_dir}/containers/lib"
 export BB_CONTAINER_RUNROOT="${node_dir}/containers/run"
-pushd '${node_dir}' > /dev/null
+pushd ${node_dir} > /dev/null
 _project=$(echo ${_project} | sed -e "s/-/\//")
 {{ node_command }}
 popd > /dev/null
