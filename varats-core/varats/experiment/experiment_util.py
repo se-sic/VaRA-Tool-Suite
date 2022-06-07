@@ -280,7 +280,7 @@ class ExperimentHandle():
     steps to utilize experiment specific data."""
 
     def __init__(self, experiment: 'VersionExperiment') -> None:
-        self._experiment = experiment
+        self.__experiment = experiment
 
     def get_file_name(
         self,
@@ -307,20 +307,19 @@ class ExperimentHandle():
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return self.experiment.report_spec(
+        return self.__experiment.report_spec(
         ).get_report_type(report_shorthand).get_file_name(
-            self.experiment.shorthand(), project_name, binary_name,
+            self.__experiment.shorthand(), project_name, binary_name,
             project_revision, project_uuid, extension_type
         )
 
-    @property
-    def experiment(self) -> 'VersionExperiment':
-        """Experiment this handle is for."""
-        return self._experiment
-
     def report_spec(self) -> ReportSpecification:
         """Experiment report specification."""
-        return self.experiment.report_spec()
+        return self.__experiment.report_spec()
+
+    def shorthand(self) -> str:
+        """Experiment shorthand."""
+        return self.__experiment.shorthand()
 
 
 class VersionExperiment(Experiment):  # type: ignore

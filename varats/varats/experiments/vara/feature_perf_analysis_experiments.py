@@ -65,10 +65,8 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
             binaries_dir = Path("/tmp/traced_feature_perf_binaries")
             mkdir("-p", binaries_dir)
             cp(
-                Path(project.source_of_primary, binary.path), binaries_dir / (
-                    f"{binary.name}_" +
-                    self._experiment_handle.experiment.SHORTHAND
-                )
+                Path(project.source_of_primary, binary.path), binaries_dir /
+                (f"{binary.name}_" + self._experiment_handle.shorthand())
             )
 
             # Get workload to use.
