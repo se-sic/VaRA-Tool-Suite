@@ -43,12 +43,12 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
         project: Project,
         experiment_handle: ExperimentHandle,
         num_iterations: int,
-        usdt: bool = False
+        attach_bpf: bool = False
     ):
         super().__init__(obj=project, action_fn=self.run)
         self._experiment_handle = experiment_handle
         self._num_iterations = num_iterations
-        self._usdt = usdt
+        self._attach_bpf = attach_bpf
 
     def run(self) -> actions.StepResult:
         """Action function for this step."""
@@ -142,7 +142,7 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
 
                         # Attach bcc script to activate USDT probes.
                         bcc_runner: Future
-                        if self._usdt:
+                        if self._attach_bpf:
                             bcc_runner = \
                                 TraceFeaturePerfWithTime.attach_bcc_tef_script(
                                     tef_report_file, binary.path
@@ -152,7 +152,7 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
                         run_cmd & FG  # pylint: disable=W0104
 
                         # Wait for bcc running in background to exit.
-                        if self._usdt:
+                        if self._attach_bpf:
                             bcc_runner.wait()
 
         return actions.StepResult.OK
@@ -182,9 +182,17 @@ class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
 
     REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
 
-    # Indicate whether to trace binaries and whether USDT markers should be used
-    TRACE_BINARIES = False
-    USE_USDT = False
+    def __init__(
+        self,
+        *args: tp.Any,
+        trace_binaries: bool = False,
+        instrument_usdt: bool = False,
+        **kwargs: tp.Any
+    ):
+        super().__init__(*args, **kwargs)
+
+        self._trace_binaries = trace_binaries
+        self._instrument_usdt = instrument_usdt
 
     def actions_for_project(
         self, project: Project
@@ -198,7 +206,7 @@ class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
         """
 
         # Add tracing markers.
-        if self.TRACE_BINARIES or self.USE_USDT:
+        if self._trace_binaries or self._instrument_usdt:
             fm_provider = FeatureModelProvider.create_provider_for_project(
                 project
             )
@@ -216,9 +224,9 @@ class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
                 "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
                 "-fsanitize=vara"
             ]
-            if self.USE_USDT:
+            if self._instrument_usdt:
                 project.cflags += ["-fvara-instr=usdt"]
-            elif self.TRACE_BINARIES:
+            elif self._trace_binaries:
                 project.cflags += ["-fvara-instr=trace_event"]
 
             project.cflags += ["-flto", "-fuse-ld=lld"]
@@ -239,8 +247,8 @@ class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             TraceFeaturePerfWithTime(
-                project, self.get_handle(), 1, self.TRACE_BINARIES and
-                self.USE_USDT
+                project, self.get_handle(), 1, self._trace_binaries and
+                self._instrument_usdt
             )
         )
 
@@ -257,8 +265,10 @@ class FeaturePerfAnalysisDryUsdt(
 
     NAME = "FeaturePerfAnalysisDryUsdt"
 
-    TRACE_BINARIES = False
-    USE_USDT = True
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any):
+        super().__init__(
+            *args, trace_binaries=False, instrument_usdt=True, **kwargs
+        )
 
 
 class FeaturePerfAnalysisTef(FeaturePerfAnalysisDry, shorthand="FPA_TEF"):
@@ -266,8 +276,10 @@ class FeaturePerfAnalysisTef(FeaturePerfAnalysisDry, shorthand="FPA_TEF"):
 
     NAME = "FeaturePerfAnalysisTef"
 
-    TRACE_BINARIES = True
-    USE_USDT = False
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any):
+        super().__init__(
+            *args, trace_binaries=True, instrument_usdt=False, **kwargs
+        )
 
 
 class FeaturePerfAnalysisTefUsdt(
@@ -278,5 +290,7 @@ class FeaturePerfAnalysisTefUsdt(
 
     NAME = "FeaturePerfAnalysisTefUsdt"
 
-    TRACE_BINARIES = True
-    USE_USDT = True
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any):
+        super().__init__(
+            *args, trace_binaries=True, instrument_usdt=True, **kwargs
+        )
