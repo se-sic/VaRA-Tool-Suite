@@ -294,7 +294,7 @@ def _build_in_container(
         image_name, f"build_{tool.name}", None, [
             "build",
             tool.name.lower(),
-            f"--no-update-prompt",
+            "--no-update-prompt",
             f"--build-type={build_type.name}",
             f"--source-location={source_mount}",
             f"--install-prefix={install_mount}",
