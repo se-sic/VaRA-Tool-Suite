@@ -250,7 +250,7 @@ class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
 
 
 class FeaturePerfAnalysisDryUsdt(
-    FeaturePerfAnalysisDry, shorthand="FPA_DryUSDT"
+    FeaturePerfAnalysisDry, shorthand="FPA_Dry_USDT"
 ):
     """Captures baseline runtime for inactive probes instrumented by VaRA's USDT
     feature performance analysis instrumentation."""
@@ -270,11 +270,13 @@ class FeaturePerfAnalysisTef(FeaturePerfAnalysisDry, shorthand="FPA_TEF"):
     USE_USDT = False
 
 
-class FeaturePerfAnalysisBPF(FeaturePerfAnalysisDry, shorthand="FPA_BPF"):
-    """Traces feature performance using VaRA's TEF instrumentation and a BPF
-    program attached to the probes."""
+class FeaturePerfAnalysisTefUsdt(
+    FeaturePerfAnalysisDry, shorthand="FPA_TEF_USDT"
+):
+    """Traces feature performance using VaRA's USDT instrumentation and attaches
+    to these probes via a BPF script to generate a TEF."""
 
-    NAME = "FeaturePerfAnalysisBPF"
+    NAME = "FeaturePerfAnalysisTefUsdt"
 
     TRACE_BINARIES = True
     USE_USDT = True
