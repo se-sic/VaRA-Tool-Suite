@@ -1,5 +1,5 @@
-"""Module for feature performance experiments that instrument and measure the
-execution performance of each binary that is produced by a project."""
+"""Experiment that instruments a project with verification instrumentation that
+is used during execution to check if regions are correctly opend/closed."""
 import os
 import typing as tp
 
@@ -7,11 +7,19 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
 
+from varats.data.reports.instrumentation_verifier_report import (
+    InstrVerifierReport,
+)
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
+)
+from varats.experiment.wllvm import (
+    RunWLLVM,
+    BCFileExtensions,
+    get_bc_cache_actions,
 )
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
@@ -21,25 +29,22 @@ from varats.provider.feature.feature_model_provider import (
 )
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
-from varats.report.tef_report import TEFReport
 from varats.utils.git_util import ShortCommitHash
 
 
-class ExecAndTraceBinary(actions.Step):  # type: ignore
-    """Executes the specified binaries of the project, in specific
-    configurations, against one or multiple workloads."""
+class RunAndVerifyInstrumentedProject(actions.Step):  #type: ignore
 
-    NAME = "ExecBinary"
-    DESCRIPTION = "Executes each binary and caputres white-box " +\
-        "performance traces."
+    NAME = "RunAndVerifyInstrumentedProject"
+    DESCRIPTION = "foo"
 
-    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run_perf_tracing)
+    def __init__(
+        self, project: VProject, experiment_handle: ExperimentHandle
+    ) -> None:
+        super().__init__(obj=project, action_fn=self.run_verifier)
         self.__experiment_handle = experiment_handle
 
-    def run_perf_tracing(self) -> actions.StepResult:
-        """Execute the specified binaries of the project, in specific
-        configurations, against one or multiple workloads."""
+    def run_verifier(self) -> actions.StepResult:
+
         project: VProject = self.obj
 
         print(f"PWD {os.getcwd()}")
@@ -68,7 +73,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                     VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
                 ):
 
-                    workload = "/tmp/countries-land-1km.geo.json"
+                    workload = "/home/vulder/vara-root/countries-land-1km.geo.json"
 
                     # TODO: figure out how to handle workloads
                     binary("-k", workload)
@@ -80,12 +85,12 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
+class RunInstrVerifier(VersionExperiment, shorthand="RIV"):
     """Test runner for feature performance."""
 
-    NAME = "RunFeaturePerf"
+    NAME = "RunInstrVerifier"
 
-    REPORT_SPEC = ReportSpecification(TEFReport)
+    REPORT_SPEC = ReportSpecification(InstrVerifierReport)
 
     def actions_for_project(
         self, project: VProject
@@ -97,7 +102,7 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
         Args:
             project: to analyze
         """
-        instr_type = "instr_verify"  # trace_event
+        instr_type = "instr_verify"
 
         fm_provider = FeatureModelProvider.create_provider_for_project(
             type(project)
@@ -118,7 +123,7 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
             "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
             "-fuse-ld=lld"
         ]
-        project.ldflags += ["-flto"]
+        project.ldflags += ["-flto", "-Wl", "-plugin-opt=save-temps"]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -130,13 +135,15 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, TEFReport
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(ExecAndTraceBinary(project, self.get_handle()))
+        analysis_actions.append(
+            RunAndVerifyInstrumentedProject(project, self.get_handle())
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
