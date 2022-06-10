@@ -8,7 +8,9 @@ from pathlib import Path
 import yaml
 
 from varats.data.reports.feature_analysis_report import (
+    FeatureAnalysisGroundTruth,
     FeatureAnalysisReport,
+    FeatureAnalysisReportEval,
     FeatureAnalysisReportMetaData,
     FeatureAnalysisResultFunctionEntry,
     FeatureTaintedInstruction,
@@ -23,6 +25,7 @@ Version:         1
 YAML_DOC_FAR_METADATA = """---
 funcs-in-module: 3
 insts-in-module: 21
+br-switch-insts-in-module: 9
 ...
 """
 
@@ -44,9 +47,25 @@ result-map:
           - foo
           - test
           - feature
+      - inst:       'switch i32 %2, label %sw.epilog [\n    i32 0, label %sw.bb\n  ], !dbg !1945'
+        location:   'src/path/example.cpp:50'
+        taints:
+          - feature
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
     feature-related-insts: []
+...
+"""
+
+YAML_DOC_GT_1 = """---
+foo:
+    - 'src/path/example.cpp:42'
+    - 'src/path/example.cpp:70'
+test:
+    - 'src/path/example.cpp:24'
+    - 'src/path/file.cpp:9'
+feature:
+    - 'src/path/example.cpp:42'
 ...
 """
 
@@ -57,6 +76,7 @@ class TestFeatureTaintedInstruction(unittest.TestCase):
 
     feature_tainted_inst_1: FeatureTaintedInstruction
     feature_tainted_inst_2: FeatureTaintedInstruction
+    feature_tainted_inst_3: FeatureTaintedInstruction
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -74,6 +94,10 @@ class TestFeatureTaintedInstruction(unittest.TestCase):
                     create_feature_tainted_instruction(next(insts_iter))
                 )
                 cls.feature_tainted_inst_2 = (
+                    FeatureTaintedInstruction.
+                    create_feature_tainted_instruction(next(insts_iter))
+                )
+                cls.feature_tainted_inst_3 = (
                     FeatureTaintedInstruction.
                     create_feature_tainted_instruction(next(insts_iter))
                 )
@@ -107,6 +131,12 @@ class TestFeatureTaintedInstruction(unittest.TestCase):
         self.assertEqual(feature_taints_2[0], 'feature')
         self.assertEqual(feature_taints_2[1], 'foo')
         self.assertEqual(feature_taints_2[2], 'test')
+
+    def test_is_br_switch(self) -> None:
+        """Test if br and switch instructions are correctly identified."""
+        self.assertFalse(self.feature_tainted_inst_1.is_br_switch())
+        self.assertTrue(self.feature_tainted_inst_2.is_br_switch())
+        self.assertTrue(self.feature_tainted_inst_3.is_br_switch())
 
 
 class TestFeatureAnalysisResultFunctionEntry(unittest.TestCase):
@@ -150,7 +180,7 @@ class TestFeatureAnalysisResultFunctionEntry(unittest.TestCase):
     def test_tainted_insts(self) -> None:
         """Test if all feature tainted instructions are found."""
         inst_list_1 = self.func_entry_1.feature_tainted_insts
-        self.assertEqual(len(inst_list_1), 2)
+        self.assertEqual(len(inst_list_1), 3)
         self.assertEqual(
             inst_list_1[0].instruction, '%foo = alloca i8, align 1, !FVar !4224'
         )
@@ -188,15 +218,20 @@ class TestFeatureAnalysisReportMetaData(unittest.TestCase):
                     yaml_doc
                 )
 
-    def test_num_functions_are_parsed_correctly(self) -> None:
+    def test_num_functions_is_parsed_correctly(self) -> None:
         """Tests if the number of functions is correctly parsed from the
         file."""
         self.assertEqual(self.meta_data.num_functions, 3)
 
-    def test_num_instructions_are_parsed_correctly(self) -> None:
+    def test_num_instructions_is_parsed_correctly(self) -> None:
         """Tests if the number of instructions is correctly parsed from the
         file."""
         self.assertEqual(self.meta_data.num_instructions, 21)
+
+    def test_num_br_switch_instructions_is_parsed_correctly(self) -> None:
+        """Tests if the number of branch and switch instructions is correctly
+        parsed from the file."""
+        self.assertEqual(self.meta_data.num_br_switch_insts, 9)
 
 
 class TestFeatureAnalysisReport(unittest.TestCase):
@@ -227,6 +262,7 @@ class TestFeatureAnalysisReport(unittest.TestCase):
         meta_data = self.report.meta_data
         self.assertEqual(meta_data.num_functions, 3)
         self.assertEqual(meta_data.num_instructions, 21)
+        self.assertEqual(meta_data.num_br_switch_insts, 9)
 
     def test_iter_function_entries(self) -> None:
         """Test if we can iterate over all function entries."""
@@ -257,7 +293,7 @@ class TestFeatureAnalysisReport(unittest.TestCase):
         self.assertNotEqual(func_entry_2.name, 'adjust_assignment_expression')
         self.assertNotEqual(func_entry_2.name, '_Z7doStuffii')
         insts_2 = func_entry_2.feature_tainted_insts
-        self.assertEqual(len(insts_2), 2)
+        self.assertEqual(len(insts_2), 3)
         self.assertEqual(
             insts_2[0].instruction, '%foo = alloca i8, align 1, !FVar !4224'
         )
@@ -277,3 +313,106 @@ class TestFeatureAnalysisReport(unittest.TestCase):
         self.assertEqual(func_entry_3.demangled_name, 'doStuff(int, int)')
         self.assertEqual(func_entry_3.feature_tainted_insts, [])
         self.assertNotEqual(func_entry_3.name, 'bool_exec')
+
+    def test_get_feature_locations_dict(self) -> None:
+        """Test if mapping of features to locations is correct."""
+        feat_loc_dict = self.report.get_feature_locations_dict()
+        self.assertEqual(len(feat_loc_dict), 3)
+        self.assertEqual(feat_loc_dict['foo'], {'src/path/example.cpp:42'})
+        self.assertEqual(
+            feat_loc_dict['feature'],
+            {'src/path/example.cpp:42', 'src/path/example.cpp:50'}
+        )
+        self.assertEqual(feat_loc_dict['test'], {'src/path/example.cpp:42'})
+
+
+class TestFeatureAnalysisGroundTruth(unittest.TestCase):
+    """Test if a feature analysis ground truth is correctly reconstructed from
+    yaml."""
+
+    ground_truth: FeatureAnalysisGroundTruth
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Load and parse location infos from yaml file."""
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_GT_1)
+        ):
+            cls.ground_truth = FeatureAnalysisGroundTruth(
+                Path('fake_file_path')
+            )
+
+    def test_get_feature_locations(self):
+        """Test if the feature locations are correctly parsed."""
+        foo_locations = self.ground_truth.get_feature_locations('foo')
+        self.assertEqual(
+            foo_locations,
+            {'src/path/example.cpp:42', 'src/path/example.cpp:70'}
+        )
+
+        test_locations = self.ground_truth.get_feature_locations('test')
+        self.assertEqual(
+            test_locations, {'src/path/example.cpp:24', 'src/path/file.cpp:9'}
+        )
+
+        feature_locations = self.ground_truth.get_feature_locations('feature')
+        self.assertEqual(feature_locations, {'src/path/example.cpp:42'})
+
+    def test_get_features(self):
+        """Test if we get the correct features."""
+        features = self.ground_truth.get_features()
+        self.assertTrue('foo' in features)
+        self.assertTrue('test' in features)
+        self.assertTrue('feature' in features)
+
+
+class TestFeatureAnalysisReportEval(unittest.TestCase):
+    """Test if the evaluation of a feature analysis report is correctly
+    executed."""
+
+    eval_1: FeatureAnalysisReportEval
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Load and parse function infos from yaml file."""
+        report: FeatureAnalysisReport
+        with mock.patch(
+            "builtins.open",
+            new=mock.mock_open(
+                read_data=YAML_DOC_HEADER + YAML_DOC_FAR_METADATA +
+                YAML_DOC_FAR_1
+            )
+        ):
+            loaded_report = FeatureAnalysisReport(Path('fake_file_path'))
+            report = loaded_report
+        """Load and parse location infos from yaml file."""
+        ground_truth: FeatureAnalysisGroundTruth
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_GT_1)
+        ):
+            ground_truth = FeatureAnalysisGroundTruth(Path('fake_file_path'))
+
+        cls.eval_1 = FeatureAnalysisReportEval(
+            report, ground_truth, ['foo', 'test', 'feature']
+        )
+
+    def test_evaluation(self) -> None:
+        self.assertEqual(self.eval_1.get_true_pos('foo'), 1)
+        self.assertEqual(self.eval_1.get_false_pos('foo'), 0)
+        self.assertEqual(self.eval_1.get_false_neg('foo'), 1)
+        self.assertEqual(self.eval_1.get_true_neg('foo'), 7)
+
+        self.assertEqual(self.eval_1.get_true_pos('test'), 0)
+        self.assertEqual(self.eval_1.get_false_pos('test'), 1)
+        self.assertEqual(self.eval_1.get_false_neg('test'), 2)
+        self.assertEqual(self.eval_1.get_true_neg('test'), 6)
+
+        self.assertEqual(self.eval_1.get_true_pos('feature'), 1)
+        self.assertEqual(self.eval_1.get_false_pos('feature'), 1)
+        self.assertEqual(self.eval_1.get_false_neg('feature'), 0)
+        self.assertEqual(self.eval_1.get_true_neg('feature'), 7)
+
+        self.assertEqual(self.eval_1.get_true_pos(), 2)
+        self.assertEqual(self.eval_1.get_false_pos(), 2)
+        self.assertEqual(self.eval_1.get_false_neg(), 3)
+        self.assertEqual(self.eval_1.get_true_neg(), 20)

@@ -1,5 +1,6 @@
 """Module for FeatureAnalysisReport."""
 
+import re
 import typing as tp
 from pathlib import Path
 
@@ -48,15 +49,9 @@ class FeatureTaintedInstruction():
         """List of features related to the instruction."""
         return self.__feature_taints
 
-    def __eq__(self, other: tp.Any) -> bool:
-        if isinstance(other, FeatureTaintedInstruction):
-            return (
-                self.instruction == other.instruction and
-                self.location == other.location and
-                self.feature_taints == other.feature_taints
-            )
-
-        return False
+    def is_br_switch(self) -> bool:
+        br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
+        return br_regex.search(self.__instruction) is not None
 
 
 class FeatureAnalysisResultFunctionEntry():
@@ -114,12 +109,12 @@ class FeatureAnalysisReportMetaData():
     generate this ``FeatureAnalysisReport``."""
 
     def __init__(
-        self,
-        num_functions: int,
-        num_instructions: int,
+        self, num_functions: int, num_instructions: int,
+        num_br_switch_insts: int
     ) -> None:
         self.__number_of_functions_in_module = num_functions
         self.__number_of_instructions_in_module = num_instructions
+        self.__number_of_branch_and_switch_ints_in_module = num_br_switch_insts
 
     @property
     def num_functions(self) -> int:
@@ -131,6 +126,12 @@ class FeatureAnalysisReportMetaData():
         """Number of instructions processed in the analyzed llvm::Module."""
         return self.__number_of_instructions_in_module
 
+    @property
+    def num_br_switch_insts(self) -> int:
+        """Number of branch and switch instructions processed in the analyzed
+        llvm::Module."""
+        return self.__number_of_branch_and_switch_ints_in_module
+
     @staticmethod
     def create_feature_analysis_report_meta_data(
         raw_document: tp.Dict[str, tp.Any]
@@ -139,8 +140,11 @@ class FeatureAnalysisReportMetaData():
         document."""
         num_functions = int(raw_document['funcs-in-module'])
         num_instructions = int(raw_document['insts-in-module'])
+        num_br_switch_insts = int(raw_document['br-switch-insts-in-module'])
 
-        return FeatureAnalysisReportMetaData(num_functions, num_instructions)
+        return FeatureAnalysisReportMetaData(
+            num_functions, num_instructions, num_br_switch_insts
+        )
 
 
 class FeatureAnalysisReport(BaseReport, shorthand="FAR", file_type="yaml"):
@@ -196,3 +200,145 @@ class FeatureAnalysisReport(BaseReport, shorthand="FAR", file_type="yaml"):
             mangled_function_name: mangled name of the function to look up
         """
         return self.__function_entries[mangled_function_name]
+
+    def get_feature_locations_dict(self) -> tp.Dict[str, tp.Set[str]]:
+        """Returns a dictionary that maps a feature name to a list of all
+        locations of tainted br and switch instructions."""
+        feat_loc_dict: tp.Dict[str, tp.Set[str]] = {}
+        for function_entry in self.__function_entries.values():
+            for tainted_inst in function_entry.feature_tainted_insts:
+                for feature in tainted_inst.feature_taints:
+                    if tainted_inst.is_br_switch():
+                        if feature not in feat_loc_dict:
+                            feat_loc_dict[feature] = set()
+                        feat_loc_dict[feature].add(tainted_inst.location)
+        return feat_loc_dict
+
+
+class FeatureAnalysisGroundTruth():
+    """Data Class that gives access to a loaded ground truth of a
+    `FeatureAnalysisReport`."""
+
+    def __init__(self, gt_path: Path) -> None:
+        with open(gt_path, 'r') as stream:
+            documents = yaml.load_all(stream, Loader=yaml.CLoader)
+            self.__locations: tp.Dict[str, tp.List[str]] = (next(documents))
+
+    def get_feature_locations(self, feature: str) -> tp.Set[str]:
+        """Get the locations of a specific feature."""
+        return set(self.__locations[feature])
+
+    def get_features(self) -> tp.List[str]:
+        """Get a list of all features in the ground truth."""
+        return list(self.__locations.keys())
+
+
+class FeatureAnalysisReportEval():
+    """
+    Class that evaluates a `FeatureAnalysisReport` with a
+    `FeatureAnalysisGroundTruth`.
+
+    Can be given a list of features for providing feature-specific evaluation
+    information.
+    """
+
+    def __init__(
+        self,
+        fa_report: FeatureAnalysisReport,
+        ground_truth: FeatureAnalysisGroundTruth,
+        features: tp.List[str] = None
+    ) -> None:
+        self.__initialize_eval_data(features)
+        self.__evaluate(fa_report, ground_truth)
+
+    def __initialize_eval_data(self, features: tp.List[str]) -> None:
+        self.__evaluation_data: tp.Dict[str, tp.Dict[str, int]] = {}
+        features.append('Total')
+        for feature in features:
+            self.__evaluation_data[feature] = {
+                'true_pos': 0,
+                'false_pos': 0,
+                'false_neg': 0,
+                'true_neg': 0
+            }
+
+    def __evaluate(
+        self, fa_report: FeatureAnalysisReport,
+        ground_truth: FeatureAnalysisGroundTruth
+    ) -> None:
+        true_pos, false_pos, false_neg, true_neg = (0, 0, 0, 0)
+
+        gt_features = ground_truth.get_features()
+        for feature in gt_features:
+            feat_true_pos, feat_false_pos, feat_false_neg, feat_true_neg = (
+                0, 0, 0, 0
+            )
+
+            gt_locations = ground_truth.get_feature_locations(feature)
+            fta_locations = fa_report.get_feature_locations_dict()[feature]
+
+            feat_true_pos = len(gt_locations.intersection(fta_locations))
+            feat_false_pos = len(fta_locations.difference(gt_locations))
+            feat_false_neg = len(gt_locations.difference(fta_locations))
+            feat_true_neg = fa_report.meta_data.num_br_switch_insts - feat_true_pos - feat_false_pos - feat_false_neg
+
+            true_pos += feat_true_pos
+            false_pos += feat_false_pos
+            false_neg += feat_false_neg
+            true_neg += feat_true_neg
+
+            if feature in self.__evaluation_data:
+
+                self.__evaluation_data[feature]['true_pos'] = feat_true_pos
+                self.__evaluation_data[feature]['false_pos'] = feat_false_pos
+                self.__evaluation_data[feature]['false_neg'] = feat_false_neg
+                self.__evaluation_data[feature]['true_neg'] = feat_true_neg
+
+        self.__evaluation_data['Total']['true_pos'] = true_pos
+        self.__evaluation_data['Total']['false_pos'] = false_pos
+        self.__evaluation_data['Total']['false_neg'] = false_neg
+        self.__evaluation_data['Total']['true_neg'] = true_neg
+
+    def get_true_pos(self, entry: str = 'Total') -> int:
+        """
+        Get the number of true positive taints either for a specific feature or
+        the whole report.
+
+        Args:
+            feature : str, deafult 'Total'
+                The name of the entry to look up.
+        """
+        return self.__evaluation_data[entry]['true_pos']
+
+    def get_false_pos(self, entry: str = 'Total') -> int:
+        """
+        Get the number of false positive taints either for a specific feature or
+        the whole report.
+
+        Args:
+            feature : str, deafult 'Total'
+                The name of the entry to look up.
+        """
+        return self.__evaluation_data[entry]['false_pos']
+
+    def get_false_neg(self, entry: str = 'Total') -> int:
+        """
+        Get the number of false negative taints either for a specific feature or
+        the whole report.
+
+        Args:
+            feature : str, deafult 'Total'
+                The name of the entry to look up.
+        """
+        return self.__evaluation_data[entry]['false_neg']
+
+    def get_true_neg(self, entry: str = 'Total') -> int:
+        """
+        Get the number of true negative taints either for a specific feature or
+        the whole report.
+
+        Args:
+            feature : str, deafult 'Total'
+                The name of the entry to look up.
+        """
+        return self.__evaluation_data[entry]['true_neg']
