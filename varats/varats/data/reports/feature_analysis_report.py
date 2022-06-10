@@ -243,10 +243,8 @@ class FeatureAnalysisReportEval():
     """
 
     def __init__(
-        self,
-        fa_report: FeatureAnalysisReport,
-        ground_truth: FeatureAnalysisGroundTruth,
-        features: tp.List[str] = None
+        self, fa_report: FeatureAnalysisReport,
+        ground_truth: FeatureAnalysisGroundTruth, features: tp.List[str]
     ) -> None:
         self.__initialize_eval_data(features)
         self.__evaluate(fa_report, ground_truth)
@@ -280,7 +278,10 @@ class FeatureAnalysisReportEval():
             feat_true_pos = len(gt_locations.intersection(fta_locations))
             feat_false_pos = len(fta_locations.difference(gt_locations))
             feat_false_neg = len(gt_locations.difference(fta_locations))
-            feat_true_neg = fa_report.meta_data.num_br_switch_insts - feat_true_pos - feat_false_pos - feat_false_neg
+            feat_true_neg = (
+                fa_report.meta_data.num_br_switch_insts - feat_true_pos -
+                feat_false_pos - feat_false_neg
+            )
 
             true_pos += feat_true_pos
             false_pos += feat_false_pos
