@@ -218,8 +218,7 @@ class HeatMapPlot(Plot, plot_name=None):
             xticklabels=self.xticklabels,
             yticklabels=self.yticklabels,
             linewidth=0.1,
-            linecolor="grey",
-            square=True
+            linecolor="grey"
         )
         if self.XLABEL:
             axis.set_xlabel(self.XLABEL)
@@ -248,8 +247,8 @@ class HeatMapPlot(Plot, plot_name=None):
             plt.legend(
                 fontsize=8,
                 handles=legend,
-                bbox_to_anchor=(0.5, 1.02),
-                loc=8,
+                bbox_to_anchor=(1.2, 0.5),
+                loc=2,
                 borderaxespad=0.
             )
         plt.setp(
