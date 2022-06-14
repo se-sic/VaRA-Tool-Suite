@@ -108,6 +108,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             self.__trace_events = self._parse_trace_events(data["traceEvents"])
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
+        self.feature_time_accumulator()
 
     @property
     def display_time_unit(self) -> str:
@@ -129,6 +130,23 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     ) -> tp.List[TraceEvent]:
         return [TraceEvent(data_item) for data_item in raw_event_list]
 
+    def feature_time_accumulator(self):
+        feature_dict = dict()
+        time_dict = dict()
+        for trace_event in self.trace_events:
+            if feature_dict.get(trace_event) is None:
+                feature_dict.setdefault(trace_event.name, 0)
+                time_dict.setdefault(trace_event.name, [0, 0])
+            if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
+                time_dict[trace_event.name][0] += trace_event.timestamp
+            elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
+                time_dict[trace_event.name][1] += trace_event.timestamp
+            #ToDo raise error for unexpcted event type
+        for name in feature_dict.keys():
+            time_taken = time_dict[name][1] - time_dict[name][0]
+            feature_dict[name] = time_taken
+        with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
+            json.dump(feature_dict, file)
 
 class TEFReportAggregate(
     ReportAggregate[TEFReport],
