@@ -342,6 +342,10 @@ class TestFeatureAnalysisGroundTruth(unittest.TestCase):
                 Path('fake_file_path')
             )
 
+    def test_path(self) -> None:
+        """Test if the path is saved correctly."""
+        self.assertEqual(self.ground_truth.path, Path("fake_file_path"))
+
     def test_get_feature_locations(self):
         """Test if the feature locations are correctly parsed."""
         foo_locations = self.ground_truth.get_feature_locations('foo')

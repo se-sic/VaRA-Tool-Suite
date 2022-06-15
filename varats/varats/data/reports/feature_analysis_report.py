@@ -220,9 +220,15 @@ class FeatureAnalysisGroundTruth():
     `FeatureAnalysisReport`."""
 
     def __init__(self, gt_path: Path) -> None:
+        self.__path = gt_path
         with open(gt_path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             self.__locations: tp.Dict[str, tp.List[str]] = (next(documents))
+
+    @property
+    def path(self) -> Path:
+        """Path to ground truth file."""
+        return self.__path
 
     def get_feature_locations(self, feature: str) -> tp.Set[str]:
         """Get the locations of a specific feature."""
@@ -238,7 +244,7 @@ class FeatureAnalysisReportEval():
     Class that evaluates a `FeatureAnalysisReport` with a
     `FeatureAnalysisGroundTruth`.
 
-    Can be given a list of features for providing feature-specific evaluation
+    Is given a list of features for providing feature-specific evaluation
     information.
     """
 
