@@ -108,7 +108,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             self.__trace_events = self._parse_trace_events(data["traceEvents"])
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
-        self.feature_time_accumulator()
 
     @property
     def display_time_unit(self) -> str:
