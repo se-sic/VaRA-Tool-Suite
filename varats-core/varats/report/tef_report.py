@@ -5,6 +5,7 @@ import json
 import typing as tp
 from enum import Enum
 from pathlib import Path
+import numpy as np
 
 from varats.report.report import BaseReport, ReportAggregate
 
@@ -136,17 +137,22 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         for trace_event in self.trace_events:
             if feature_dict.get(trace_event) is None:
                 feature_dict.setdefault(trace_event.name, 0)
-                time_dict.setdefault(trace_event.name, [0, 0])
+                time_dict.setdefault(trace_event.name, [0, 0, 0])
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
                 time_dict[trace_event.name][0] += trace_event.timestamp
+                time_dict[trace_event.name][2] += 1
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
                 time_dict[trace_event.name][1] += trace_event.timestamp
             #ToDo raise error for unexpcted event type
-        for name in feature_dict.keys():
-            time_taken = time_dict[name][1] - time_dict[name][0]
-            feature_dict[name] = time_taken
-        with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
-            json.dump(feature_dict, file)
+
+        with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.txt", "w", encoding="utf-8") as file:
+            for name in feature_dict.keys():
+                # Converting time into MS
+                time_taken = (time_dict[name][1] - time_dict[name][0]) / 1000
+                feature_dict[name] = time_taken
+                file.write(f"Overall Time for feature {feature_dict[0]}:" + f"{feature_dict[1]}")
+                file.write(f"Mean for feature {feature_dict[0]}:" + f"{feature_dict[1]/time_dict[name][2]}")
+
         print("Leave calls accumulator")
 
 

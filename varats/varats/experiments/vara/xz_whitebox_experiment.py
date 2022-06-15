@@ -153,7 +153,7 @@ class FeaturePerfRunner(VersionExperiment, shorthand="xzW"):
 
         tefReport = TEFReport(Path("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/test.json"))
         tefReport.feature_time_accumulator()
-        
+
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
