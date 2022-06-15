@@ -3,57 +3,17 @@ Running with Slurm
 
 This page describes how benchbuild/VaRA experiments can be run on the chair's cluster using slurm.
 
-As no home directories are available on the cluster nodes, you must use ``scratch`` instead.
-Setup up a ``virtualenv`` with the tool suite in ``scratch/<user>``.
+1. As no home directories are available on the cluster nodes, you must use ``scratch`` instead.
+   Set up VaRA-TS as described :ref:`here<Installing VaRA Tool-Suite>` and make sure that the venv and the tool suite's install location are located under ``/scratch/<username>``.
 
-.. code-block:: bash
+   This guide assumes that your VaRA-TS root directory is ``/scratch/<user>/varats``:
 
-  cd /scratch/<user>/
-  virtualenv -p /usr/bin/python3 vara-virt
+   .. code-block:: bash
 
-Furthermore, this guide assumes that your vara-root directory is ``/scratch/<user>/varats``.
+      VARATS_ROOT=/scratch/<user>/varats
+      cd $VARATS_ROOT
 
-.. code-block:: bash
-
-   cd /scratch/<user>/varats
-
-1. Clone Tool-Suite and set up VaRA
-
-   We assume that VaRA is installed to ``/scratch/<user>/varats/tools/VaRA``
-
-2. Edit ``.varats.yaml`` and set options:
-
-.. code-block:: yaml
-
-   - result_dir: /scratch/<user>/varats/results
-   - paper_config:
-     - current_config: <your_config>
-     - folder: /scratch/<user>/varats/paper_configs
-
-3. Create benchbuild config (``vara-gen-bbconfig``)
-
-4. Edit benchbuild config (``/scratch/<user>/varats/benchbuild/.benchbuild.yml``) as needed:
-
-   - set benchbuild directories to point to scratch:
-
-   .. code-block:: yaml
-
-      build_dir:
-         value: /scratch/<user>/varats/benchbuild/results
-      tmp_dir:
-         value: /scratch/<user>/varats/benchbuild/tmp
-
-   - set environment variables to point to scratch:
-
-   .. code-block:: yaml
-
-      env:
-        value:
-            PATH:
-            - /scratch/<user>/varats/tools/VaRA/bin/
-            HOME: /scratch/<user>/
-
-   - configure slurm related parameters:
+2. Set slurm related parameters in the benchbuild config (``$VARATS_ROOT/benchbuild/.benchbuild.yml``) as needed:
 
    .. code-block:: yaml
 
@@ -68,22 +28,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
           timelimit:
               value: 'hh:mm:ss'
 
-   - set vara related options:
-
-   .. code-block:: yaml
-
-      varats:
-          outfile: /scratch/<user>/varats/results
-          result: BC_files
-
-   - increase verbosity
-
-   .. code-block:: yaml
-
-      verbosity:
-        value: <0-4>
-
-5. Generate bb script
+3. Generate bb script
 
     .. note::
 
@@ -91,21 +36,22 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    .. code-block:: bash
 
-      benchbuild slurm -E <report_type> <project>
+      vara-run --slurm -E <report_type> <project>
 
-   Move resulting script to appropriate subdir, e.g.:
+   The slurm script is generated as ``$VARATS_ROOT/benchbuild/<report_type>-slurm.sh``.
+   If you want to keep multiple slurm scripts you should move the generated script to an appropriate subdirectory to avoid it getting overwritten, e.g.:
 
    .. code-block:: bash
 
-      mv <report_type>-slurm.sh bb-configs/<report_type>-slurm-<project>.sh
+      mv benchbuild/<report_type>-slurm.sh benchbuild/bb-configs/<report_type>-slurm-<project>.sh
 
-6. (Optional) Modify -o parameter of SBATCH to get output file for debugging, e.g.
+4. (Optional) Modify -o parameter of SBATCH to get output file for debugging, e.g.
 
    .. code-block:: bash
 
       #SBATCH -o /scratch/<user>/varats/benchbuild/slurm-output/gravity/GenerateBlameReport-%A_%a.txt
 
-7. Start a job:
+5. Start a job:
 
    .. code-block:: bash
 
@@ -115,21 +61,26 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
       # or
       sbatch --constraint=kine bb-configs/<report_type>-slurm-<project>.sh
 
-NOTE: If you want to run the same project again (with GenerateBlameReport), you need to empty the BC_files directory, because the path to the git repository will be different. See `#494 <https://github.com/se-sic/VaRA/issues/494>`_
+   You can also add the flag ``--submit`` to the ``vara-run`` command to directly submit the script to slurm.
 
-To use interaction filters, we recommend storing all of them in a separate directory (e.g., benchbuild/interaction_filters) with descriptive names and symlinking them to the place where the experiment expects them.
+.. tip::
 
-TIP: In case you get strange errors or results, try to empty all temporary directories and try again, e.g.:
+  In case you get strange errors or results, try emptying all temporary directories and try again, e.g.:
 
-      - benchbuild/BC_files
-      - benchbuild/results
-      - benchbuild/tmp_dir
-      - data_cache
+      - ``$VARATS_ROOT/benchbuild/BC_files``
+      - ``$VARATS_ROOT/benchbuild/results``
+      - ``$VARATS_ROOT/benchbuild/tmp_dir``
+      - ``$VARATS_ROOT/data_cache``
+
 
 Handling Missing Dependencies for VaRA
 --------------------------------------
 
-If certain libraries needed by vara or clang are missing on the slurm-nodes, you can bring them yourself:
+.. note::
+
+  The recommended way to run experiments requiring VaRA (or other complex research tools) is running them in a container as described in the next section and in our :ref:`container guide<Container Guide>`.
+
+If certain libraries needed by VaRA or clang are missing on the slurm nodes, you can bring them yourself:
 
 1. Create a folder for the libraries on scratch
 
@@ -148,48 +99,52 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
               LD_LIBRARY_PATH:
               - /scratch/<user>/varats/libs
 
-If you are using containers, ``vara-container create`` will detect if such a entry in the BenchBuild config exists, copy all files found in this path into the container, and set the ``LD_LIBRARY_PATH`` inside the container appropriately.
-
 
 Slurm and Container
 -------------------
 
-If you plan to use containers in combination with slurm, we suggest you first get familiar with our :ref:`BenchBuild container guide <Running BenchBuild in a Container>`.
+If you plan to use containers in combination with slurm, we suggest you first get familiar with our :ref:`container guide<Container Guide>` and our more detailed :ref:`BenchBuild container documentation <Running BenchBuild in a Container>`.
 If you understand how BenchBuild uses containers to run experiments you can prepare your setup:
 
-1. Setup VaRA-TS as described in the normal :ref:`slurm guide <Running with Slurm>`.
-   We will make some adjustments to the configuration later.
+1. Set up VaRA-TS as described in the normal :ref:`slurm guide <Running with Slurm>` (steps 1 and 2).
 
-2. Setup the BenchBuild container support as described in the normal :ref:`container guide <Running BenchBuild in a Container>`.
-   We will make some adjustments to this configuration later.
+2. Set up the BenchBuild container support as described in the :ref:`BenchBuild container documentation <Running BenchBuild in a Container>`.
 
 3. Make sure that also the slurm cluster has rootless buildah and podman installed and configured (don't forget the subuid and subgid mappings for the users submitting the slurm jobs).
 
-4. Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
+4. Preparing the research tool(s) for each base container required by your experiments, e.g.:
+
+  .. code-block:: console
+
+       vara-buildsetup build vara --container=DEBIAN_10
+
+5. Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
    These steps can be executed easily using the following command (:ref:`documentation <vara-container>`):
 
    .. code-block:: bash
 
      vara-container prepare-slurm
 
-   If you want to know in detail what happens in this command, take a look at the section :ref:`Step 4 in Detail`.
+   This step also builds the base images.
 
-5. After the preparation is complete, you can generate the slurm script as follows:
+   If you want to know in detail what happens in this command, take a look at the section :ref:`Prepare-Slurm in Detail`.
+
+6. After the preparation is complete, you can generate the slurm script as follows:
 
    .. code-block:: bash
 
      vara-run --slurm --container -E <report_type> <projects>
 
-6. That's it! the script obtained from the previous step can be used like any other slurm script.
-   You can now make any adjustments to the script if needed or just submit it to slurm as described in the slurm guide.
+7. That's it! the script obtained from the previous step can be used like any other slurm script.
+   You can now make any adjustments to the script if needed or just submit it to slurm as described in the slurm guide (step 5).
    You can also add the flag ``--submit`` to the ``vara-run`` command to directly submit the script to slurm.
 
 
-Step 4 in Detail
-................
+Prepare-Slurm in Detail
+...........................
 
 As explained above, rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
-The recommended way to do this is using the `vara-container prepare-slurm` command, but in some situations it might be handy to know what happens under the hood:
+The recommended way to do this is using the ``vara-container prepare-slurm`` command, but in some situations it might be handy to know what happens under the hood:
 
     - You need to set the container root and runroot paths to some location that is not on a NFS, e.g., to a directory in ``tmp``:
 
@@ -237,7 +192,7 @@ The recommended way to do this is using the `vara-container prepare-slurm` comma
 
     - Now it is time to generate the slurm script (cf. step 5 of the slurm guide).
       Because of our NFS workarounds, we cannot use the default script provided by BenchBuild, but we need to provide our own script template.
-      You can find our default template in the `varats.tools` module.
+      You can find our default template in the ``varats.tools`` module.
       This template is very similar to the original template provided by BenchBuild, but it takes care of pointing all relevant environment variables to the slurm node directory as described in the points above.
       To activate the template, simply save it to the ``/scratch/<username>/varats/benchbuild`` directory and set the appropriate value in the BenchBuild config:
 

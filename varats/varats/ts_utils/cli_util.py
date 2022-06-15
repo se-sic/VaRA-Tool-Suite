@@ -11,6 +11,11 @@ from plumbum.lib import read_fd_decode_safely
 from plumbum.machines.local import PlumbumLocalPopen
 from rich.traceback import install
 
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol, runtime_checkable
+else:
+    from typing import Protocol, runtime_checkable
+
 
 def cli_yn_choice(question: str, default: str = 'y') -> bool:
     """Ask the user to make a y/n decision on the cli."""
@@ -83,6 +88,9 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
+# ------------------------------------------------------------------------------
+# CLI option declarations
+# ------------------------------------------------------------------------------
 CommandTy = tp.Union[tp.Callable[..., tp.Any], click.Command]
 CLIOptionTy = tp.Callable[[CommandTy], CommandTy]
 
@@ -118,6 +126,9 @@ def add_cli_options(command: CommandTy, *options: CLIOptionTy) -> CommandTy:
     return command
 
 
+# ------------------------------------------------------------------------------
+# CLIOptionConverter
+# ------------------------------------------------------------------------------
 ConversionTy = tp.TypeVar("ConversionTy", bound=tp.Any, covariant=True)
 
 
@@ -202,6 +213,152 @@ def convert_value(
         return CLIOptionWithConverter(name, converter, cli_decl)
 
     return decorator
+
+
+# ------------------------------------------------------------------------------
+# Plot/Table config options
+# ------------------------------------------------------------------------------
+OptionTy = tp.TypeVar("OptionTy")
+
+
+class ConfigOption(tp.Generic[OptionTy]):
+    """
+    Class representing a plot/table config option.
+
+    Values can be retrieved via the call operator.
+
+    Args:
+        name: name of the option
+        help_str: help string for this option
+        default: global default value for the option
+        view_default: global default value when in view mode; do not pass if
+                      same value is required in both modes
+        value: user-provided value of the option; do not pass if not set by user
+    """
+
+    def __init__(
+        self,
+        name: str,
+        help_str: str,
+        default: OptionTy,
+        view_default: tp.Optional[OptionTy] = None,
+        value: tp.Optional[OptionTy] = None
+    ) -> None:
+        self.__name = name
+        self.__metavar = name.upper()
+        self.__type = type(default)
+        self.__default = default
+        self.__view_default = view_default
+        self.__value: tp.Optional[OptionTy] = value
+        self.__help = f"{help_str} (global default = {default})"
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @property
+    def default(self) -> OptionTy:
+        return self.__default
+
+    @property
+    def view_default(self) -> tp.Optional[OptionTy]:
+        return self.__view_default
+
+    @property
+    def value(self) -> tp.Optional[OptionTy]:
+        return self.__value
+
+    def with_value(self, value: OptionTy) -> 'ConfigOption[OptionTy]':
+        """
+        Create a copy of this option with the given value.
+
+        Args:
+            value: the value for the copied option
+
+        Returns:
+            a copy of the option with the given value
+        """
+        return ConfigOption(
+            self.name, self.__help, self.__default, self.__view_default, value
+        )
+
+    def to_cli_option(self) -> CLIOptionTy:
+        """
+        Create a CLI option from this option.
+
+        Returns:
+            a CLI option for this option
+        """
+        if self.__type is bool:
+            return make_cli_option(
+                f"--{self.__name.replace('_', '-')}",
+                is_flag=True,
+                required=False,
+                help=self.__help
+            )
+        return make_cli_option(
+            f"--{self.__name.replace('_', '-')}",
+            metavar=self.__metavar,
+            type=self.__type,
+            required=False,
+            help=self.__help
+        )
+
+    def value_or_default(
+        self,
+        view: bool,
+        default: tp.Optional[OptionTy] = None,
+        view_default: tp.Optional[OptionTy] = None
+    ) -> OptionTy:
+        """
+        Retrieve the value for this option.
+
+        The precedence for values is
+        `user provided value > plot-specific default > global default`.
+
+        This function can also be called via the call operator.
+
+        Args:
+            view: whether view-mode is enabled
+            default: plot-specific default value
+            view_default: plot-specific default value when in view-mode
+
+        Returns:
+            the value for this option
+        """
+        # cannot pass view_default if option has no default for view mode
+        assert not (view_default and not self.__view_default)
+
+        if self.value:
+            return self.value
+        if view:
+            if self.__view_default:
+                return view_default or self.__view_default
+            return default or self.__default
+        return default or self.__default
+
+    def __str__(self) -> str:
+        return f"{self.__name}[default={self.__default}, value={self.value}]"
+
+
+@runtime_checkable
+class COGetter(Protocol[OptionTy]):
+    """Getter type for options with no view default."""
+
+    def __call__(self, default: tp.Optional[OptionTy] = None) -> OptionTy:
+        ...
+
+
+@runtime_checkable
+class COGetterV(Protocol[OptionTy]):
+    """Getter type for options with view default."""
+
+    def __call__(
+        self,
+        default: tp.Optional[OptionTy] = None,
+        view_default: tp.Optional[OptionTy] = None
+    ) -> OptionTy:
+        ...
 
 
 def tee(process: PlumbumLocalPopen,

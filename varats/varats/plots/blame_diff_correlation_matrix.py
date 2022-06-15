@@ -25,14 +25,13 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
-from varats.plot.plots import (
-    PlotGenerator,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
-from varats.ts_utils.click_param_types import EnumChoice
+from varats.ts_utils.click_param_types import (
+    EnumChoice,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -207,8 +206,6 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
 
-    NAME = "b_correlation_matrix"
-
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
@@ -258,7 +255,7 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
 class BlameDiffCorrelationMatrixGenerator(
     PlotGenerator,
     generator_name="correlation-matrix-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates correlation-matrix plot(s) for the selected case study(ies)."""
 
@@ -275,8 +272,6 @@ class BlameDiffCorrelationMatrixGenerator(
 class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
-
-    NAME = "b_distribution_comparison"
 
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
@@ -341,10 +336,7 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
 class BlameDiffDistributionGenerator(
     PlotGenerator,
     generator_name="distribution-comparison-plot",
-    options=[
-        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, REQUIRE_X_METRIC,
-        REQUIRE_Y_METRIC
-    ]
+    options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_X_METRIC, REQUIRE_Y_METRIC]
 ):
     """Generates a distribution-comparison plot for the selected case
     study(ies)."""

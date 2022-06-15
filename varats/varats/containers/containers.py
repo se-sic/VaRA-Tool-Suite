@@ -9,6 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from benchbuild.environments import bootstrap
+from benchbuild.environments.adapters.common import buildah_version
 from benchbuild.environments.domain.commands import (
     CreateImage,
     fs_compliant_name,
@@ -60,7 +61,7 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[], ContainerImage]] = {
             'apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
             'software-properties-common', 'python3', 'python3-dev',
             'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
-            'libffi-dev', 'libyaml-dev'
+            'libffi-dev', 'libyaml-dev', 'graphviz-dev'
         ).run('wget', 'https://apt.llvm.org/llvm.sh').
         run('chmod', '+x', './llvm.sh').run('./llvm.sh', '13', 'all').run(
             'ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang'
@@ -217,12 +218,14 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
-
+        mount = f'type=bind,src={src_dir},target={tgt_dir}'
+        if buildah_version() >= (1, 24, 0):
+            mount += ',rw'
         image.run(
             *pip_args,
             str(tgt_dir / 'varats-core'),
             str(tgt_dir / 'varats'),
-            mount=f'type=bind,src={src_dir},target={tgt_dir},rw',
+            mount=mount,
             runtime=crun
         )
 

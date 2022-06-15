@@ -13,7 +13,7 @@ First, create a folder, where your config should be saved.
 Then, create a case study that specifies the revision to be analyzed.
 To ease the creation of case studies the tool suite offers different selection strategies to choose revisions from the projects history, e.g., based on a probability distribution.
 
-For example, to get the latest revision of a project use:
+For example, to get the latest revision of a project use::
 
     vara-cs gen -p PROJECT_NAME select_latest
 

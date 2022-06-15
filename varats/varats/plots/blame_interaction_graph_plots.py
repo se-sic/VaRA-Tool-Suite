@@ -24,11 +24,7 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotGenerator,
-    REQUIRE_CASE_STUDY,
-    REQUIRE_REVISION,
-)
+from varats.plot.plots import PlotGenerator
 from varats.plots.chord_plot_utils import (
     make_chord_plot,
     make_arc_plot,
@@ -39,6 +35,10 @@ from varats.plots.chord_plot_utils import (
     ArcPlotNodeInfo,
 )
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import (
+    REQUIRE_REVISION,
+    REQUIRE_CASE_STUDY,
+)
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
@@ -499,9 +499,7 @@ class CommitAuthorInteractionGraphNodeDegreePlot(
 class CAIGNodeDegreePlotGenerator(
     PlotGenerator,
     generator_name="caig-node-degrees",
-    options=[
-        REQUIRE_CASE_STUDY,
-    ]
+    options=[REQUIRE_CASE_STUDY]
 ):
     """Generates a plot of node degrees of a commit-author interaction graph."""
 
