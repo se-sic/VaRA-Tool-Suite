@@ -38,7 +38,7 @@ def filter_report_paths_binary(
 def filter_ground_truth_paths_binary(
     gt_files: tp.List[Path], binary: ProjectBinaryWrapper
 ) -> tp.List[Path]:
-    return list(filter(lambda x: binary.name in x, gt_files))
+    return list(filter(lambda x: binary.name in str(x), gt_files))
 
 
 class PhasarFeatureAnalysisProjectEvalTable(Table):
@@ -88,7 +88,8 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
         )
         if len(report_files) == 0:
             raise AssertionError(
-                f"No FeatureAnalysisReport found for project {case_study.project_name}"
+                "No FeatureAnalysisReport found for project "
+                f"{case_study.project_name}"
             )
 
         cs_revisions = case_study.revisions
@@ -99,7 +100,8 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
         if 'ground_truth' not in self.table_kwargs:
             raise AssertionError(
                 "No ground truth file found!\n"
-                "vara-table [OPTIONS] phasar_fta_eval_project ground_truth=PATH[,PATH,...]"
+                "vara-table [OPTIONS] phasar_fta_eval_project "
+                "ground_truth=PATH[,PATH,...]"
             )
         gt_files = re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
 
@@ -139,11 +141,13 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
                 features = ground_truth.get_features()
             features = sorted(features)
 
-            eval: FeatureAnalysisReportEval = FeatureAnalysisReportEval(
+            evaluation: FeatureAnalysisReportEval = FeatureAnalysisReportEval(
                 report, ground_truth, features.copy()
             )
 
-            data.append(self.__create_eval_df(eval, ['Total'] + features, name))
+            data.append(
+                self.__create_eval_df(evaluation, ['Total'] + features, name)
+            )
 
             insts += report.meta_data.num_br_switch_insts
 
@@ -173,15 +177,15 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
                        ) + "\n\nbr/switch Instructions: " + str(insts)
 
     def __create_eval_df(
-        self, eval: FeatureAnalysisReportEval, entries: tp.List[str],
+        self, evaluation: FeatureAnalysisReportEval, entries: tp.List[str],
         binary: str
     ) -> pd.DataFrame:
         data: tp.List[pd.DataFrame] = []
         for entry in entries:
-            true_pos = eval.get_true_pos(entry)
-            false_pos = eval.get_false_pos(entry)
-            false_neg = eval.get_false_neg(entry)
-            true_neg = eval.get_true_neg(entry)
+            true_pos = evaluation.get_true_pos(entry)
+            false_pos = evaluation.get_false_pos(entry)
+            false_neg = evaluation.get_false_neg(entry)
+            true_neg = evaluation.get_true_neg(entry)
 
             if binary:
                 data.append(
@@ -208,11 +212,14 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
 
     def __log_warning(self) -> None:
         LOG.warning(
-            "This table is only designed for usage with a single revision of one project "
-            "but more were found.\nAll case studies and revisions except for the "
-            "first one are ignored.\n"
-            "To specify a project of the current paper config use --project=PROJECT.\n"
-            "To specify a case study of the current paper config use --cs-path=PATH.\n"
+            "This table is only designed for usage with a single revision of "
+            "one project but more were found.\n"
+            "All case studies and revisions except for the first one are "
+            "ignored.\n"
+            "To specify a project of the current paper config use "
+            "--project=PROJECT.\n"
+            "To specify a case study of the current paper config use "
+            "--cs-path=PATH.\n"
         )
 
     def wrap_table(self, table: str) -> str:
