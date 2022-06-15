@@ -150,11 +150,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 # Converting time into MS
                 time_taken = (time_dict[name][1] - time_dict[name][0]) / 1000
                 feature_dict[name] = time_taken
-                file.write(f"Overall Time for feature {feature_dict[0]}:" + f"{feature_dict[1]}")
-                file.write(f"Mean for feature {feature_dict[0]}:" + f"{feature_dict[1]/time_dict[name][2]}")
-
-        print("Leave calls accumulator")
-
+                file.write(f"Overall Time for feature {feature_dict[0]}: {feature_dict[1]}")
+                file.write(f"Mean for feature {feature_dict[0]}: {feature_dict[1]/time_dict[name][2]}")
 
 
 class TEFReportAggregate(
