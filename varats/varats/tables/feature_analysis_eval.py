@@ -5,7 +5,6 @@ import typing as tp
 from pathlib import Path
 
 import pandas as pd
-from tabulate import tabulate
 
 from varats.data.reports.feature_analysis_report import (
     FeatureAnalysisGroundTruth,
@@ -19,7 +18,8 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
-from varats.table.table import Table, wrap_table_in_document
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat
 
 LOG = logging.Logger(__name__)
@@ -41,7 +41,9 @@ def filter_ground_truth_paths_binary(
     return list(filter(lambda x: binary.name in str(x), gt_files))
 
 
-class PhasarFeatureAnalysisProjectEvalTable(Table):
+class PhasarFeatureAnalysisProjectEvalTable(
+    Table, table_name="phasar_fta_eval_project"
+):
     """
     Evaluates gathered PhASAR feature analysis data through camparision with a
     given ground truth for a single revision of a single project.
@@ -50,12 +52,7 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
     of the table are part of the ground truth file of each binary.
     """
 
-    NAME = "phasar_fta_eval_project"
-
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         paper_config = get_loaded_paper_config()
         case_studies: tp.List[CaseStudy] = sorted(
             paper_config.get_all_case_studies(), key=lambda x: x.project_name
@@ -153,28 +150,25 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
 
         df = pd.concat(data)
 
-        if self.format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            col_format = 'ccc' if len(binaries) > 1 else 'cc'
-            col_format += '|cc' + '|cc' * len(features)
-            caption = (
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["column_format"] = (
+                'ccc|cc' + '|cc' * len(features) if len(binaries) > 1 \
+                    else 'cc|cc' + '|cc' * len(features)
+            )
+            kwargs["longtable"] = True
+            kwargs["multicolumn"] = True
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
+            kwargs["caption"] = (
                 f"Evaluation of project {case_study.project_name}. "
                 f"In total there were {insts} br and switch instructions."
             )
-            table = df.to_latex(
-                column_format=col_format,
-                longtable=True,
-                multicolumn=True,
-                multicolumn_format='c',
-                multirow=True,
-                caption=caption,
-                position='t'
-            )
-            return str(table) if table else ""
+            kwargs['position'] = 't'
 
-        return tabulate(df, df.columns, self.format
-                       ) + "\n\nbr/switch Instructions: " + str(insts)
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        )
 
     def __create_eval_df(
         self, evaluation: FeatureAnalysisReportEval, entries: tp.List[str],
@@ -221,6 +215,3 @@ class PhasarFeatureAnalysisProjectEvalTable(Table):
             "To specify a case study of the current paper config use "
             "--cs-path=PATH.\n"
         )
-
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
