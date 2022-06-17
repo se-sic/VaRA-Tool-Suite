@@ -57,7 +57,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
     """
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_study: tp.Optional[CaseStudy] = self.table_kwargs['case_study']
+        case_study: CaseStudy = self.table_kwargs['case_study']
 
         report_files = get_processed_revisions_files(
             case_study.project_name, FeatureAnalysisReport,
@@ -84,9 +84,10 @@ class PhasarFeatureAnalysisProjectEvalTable(
                 "vara-table [OPTIONS] fta-project-eval-table "
                 "ground_truth=PATH[,PATH,...]"
             )
-        gt_files: tp.List[Path] = (
-            re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
-        )
+        gt_files: tp.List[Path] = [
+            Path(gt) for gt in \
+                re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
+        ]
 
         features: tp.List[str] = []
         if 'features' in self.table_kwargs:
@@ -223,9 +224,10 @@ class PhasarFeatureAnalysisTotalEvalTable(
                 "vara-table [OPTIONS] fta-total-eval-table "
                 "ground_truth=PATH[,PATH,...]"
             )
-        gt_files: tp.List[Path] = (
-            re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
-        )
+        gt_files: tp.List[Path] = [
+            Path(gt) for gt in \
+                re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
+        ]
 
         for case_study in sorted(
             tp.cast(tp.List[CaseStudy], self.table_kwargs["case_study"]),
@@ -285,8 +287,8 @@ class PhasarFeatureAnalysisTotalEvalTable(
                     gt_files_for_binary[0]
                 )
 
-                evaluation: FeatureAnalysisReportEval = FeatureAnalysisReportEval(
-                    report, ground_truth
+                evaluation: FeatureAnalysisReportEval = (
+                    FeatureAnalysisReportEval(report, ground_truth, [])
                 )
 
                 cs_data.append(self.__create_eval_df(evaluation, name))
@@ -307,8 +309,6 @@ class PhasarFeatureAnalysisTotalEvalTable(
         return dataframe_to_table(
             df, table_format, wrap_table, wrap_landscape=True, **kwargs
         )
-
-        return ''
 
     def __create_eval_df(
         self, evaluation: FeatureAnalysisReportEval, entry: str
