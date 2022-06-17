@@ -249,8 +249,10 @@ class FeatureAnalysisReportEval():
     """
 
     def __init__(
-        self, fa_report: FeatureAnalysisReport,
-        ground_truth: FeatureAnalysisGroundTruth, features: tp.List[str]
+        self,
+        fa_report: FeatureAnalysisReport,
+        ground_truth: FeatureAnalysisGroundTruth,
+        features: tp.List[str] = []
     ) -> None:
         self.__initialize_eval_data(features)
         self.__evaluate(fa_report, ground_truth)

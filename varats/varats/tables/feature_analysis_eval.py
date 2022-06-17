@@ -14,13 +14,16 @@ from varats.data.reports.feature_analysis_report import (
 from varats.jupyterhelper.file import load_feature_analysis_report
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import TableFormat
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import (
+    REQUIRE_CASE_STUDY,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 
 LOG = logging.Logger(__name__)
 
@@ -42,42 +45,19 @@ def filter_ground_truth_paths_binary(
 
 
 class PhasarFeatureAnalysisProjectEvalTable(
-    Table, table_name="phasar_fta_eval_project"
+    Table, table_name="fta_project_eval_table"
 ):
     """
     Evaluates gathered PhASAR feature analysis data through camparision with a
-    given ground truth for a single revision of a single project.
+    given ground truth for a single revision of a single project. Includes
+    feature-specific evaluation information.
 
     In case multiple binaries are given, make sure that the features to be part
     of the table are part of the ground truth file of each binary.
     """
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        paper_config = get_loaded_paper_config()
-        case_studies: tp.List[CaseStudy] = sorted(
-            paper_config.get_all_case_studies(), key=lambda x: x.project_name
-        )
-
-        if len(case_studies) == 0:
-            LOG.debug(f"paper_config={paper_config.path}")
-            raise LookupError(
-                "No case study found in the current paper config!"
-            )
-
-        case_study = case_studies[0]
-        if len(case_studies) > 1:
-            if self.table_kwargs['table_case_study'] is not None:
-                case_study = self.table_kwargs['table_case_study']
-            elif 'project' in self.table_kwargs:
-                case_studies_prj: tp.List[CaseStudy
-                                         ] = paper_config.get_case_studies(
-                                             self.table_kwargs['project']
-                                         )
-                if len(case_studies_prj) > 1:
-                    self.__log_warning()
-                case_study = case_studies_prj[0]
-            else:
-                self.__log_warning()
+        case_study: tp.Optional[CaseStudy] = self.table_kwargs['case_study']
 
         report_files = get_processed_revisions_files(
             case_study.project_name, FeatureAnalysisReport,
@@ -85,22 +65,28 @@ class PhasarFeatureAnalysisProjectEvalTable(
         )
         if len(report_files) == 0:
             raise AssertionError(
-                "No FeatureAnalysisReport found for project "
+                "No FeatureAnalysisReport found for case study "
                 f"{case_study.project_name}"
             )
 
         cs_revisions = case_study.revisions
         if len(cs_revisions) > 1:
             LOG.debug(f"revisions={cs_revisions}")
-            self.__log_warning()
+            LOG.warning(
+                "This tabled is only designed for usage with one revision "
+                "but more were found. All revisions expect for the first "
+                "one are ignored."
+            )
 
         if 'ground_truth' not in self.table_kwargs:
             raise AssertionError(
                 "No ground truth file found!\n"
-                "vara-table [OPTIONS] phasar_fta_eval_project "
+                "vara-table [OPTIONS] fta-project-eval-table "
                 "ground_truth=PATH[,PATH,...]"
             )
-        gt_files = re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
+        gt_files: tp.List[Path] = (
+            re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
+        )
 
         features: tp.List[str] = []
         if 'features' in self.table_kwargs:
@@ -134,6 +120,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
                 continue
             ground_truth = FeatureAnalysisGroundTruth(gt_files_for_binary[0])
 
+            # features
             if features == []:
                 features = ground_truth.get_features()
             features = sorted(features)
@@ -186,7 +173,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
                     pd.DataFrame([[true_pos, false_pos], [false_neg, true_neg]],
                                  index=pd.MultiIndex.from_product([[
                                      'Analysis Results'
-                                 ], [binary.name], ['Pos', 'Neg']]),
+                                 ], [binary], ['Pos', 'Neg']]),
                                  columns=pd.MultiIndex.from_product([[
                                      'Ground Truth'
                                  ], [entry], ['Pos', 'Neg']]))
@@ -204,14 +191,153 @@ class PhasarFeatureAnalysisProjectEvalTable(
 
         return pd.concat(data, axis=1)
 
-    def __log_warning(self) -> None:
-        LOG.warning(
-            "This table is only designed for usage with a single revision of "
-            "one project but more were found.\n"
-            "All case studies and revisions except for the first one are "
-            "ignored.\n"
-            "To specify a project of the current paper config use "
-            "--project=PROJECT.\n"
-            "To specify a case study of the current paper config use "
-            "--cs-path=PATH.\n"
+
+class PhasarFeatureAnalysisProjectEvalTableGenerator(
+    TableGenerator,
+    generator_name="fta-project-eval-table",
+    options=[REQUIRE_CASE_STUDY]
+):
+    """Generates a fta-project-eval table for the selected case study."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarFeatureAnalysisProjectEvalTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
+
+
+class PhasarFeatureAnalysisTotalEvalTable(
+    Table, table_name="fta_total_eval_table"
+):
+    """Evaluates gathered PhASAR feature analysis data through camparision with
+    a given ground truth for a single revision."""
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        cs_data: tp.List[pd.DataFrame] = []
+        col_format = 'cc'
+
+        if 'ground_truth' not in self.table_kwargs:
+            raise AssertionError(
+                "No ground truth file found!\n"
+                "vara-table [OPTIONS] fta-total-eval-table "
+                "ground_truth=PATH[,PATH,...]"
+            )
+        gt_files: tp.List[Path] = (
+            re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
         )
+
+        for case_study in sorted(
+            tp.cast(tp.List[CaseStudy], self.table_kwargs["case_study"]),
+            key=lambda x: x.project_name
+        ):
+            report_files = get_processed_revisions_files(
+                case_study.project_name, FeatureAnalysisReport,
+                get_case_study_file_name_filter(case_study)
+            )
+            if len(report_files) == 0:
+                raise AssertionError(
+                    "No FeatureAnalysisReport found for case study "
+                    f"{case_study.project_name}"
+                )
+
+            cs_revisions = case_study.revisions
+            if len(cs_revisions) > 1:
+                LOG.debug(f"revisions={cs_revisions}")
+                LOG.warning(
+                    "This tabled is only designed for usage with one revision "
+                    "but more were found. All revisions expect for the first "
+                    "one are ignored."
+                )
+
+            binaries = case_study.project_cls.binaries_for_revision(
+                cs_revisions[0]
+            )
+            for binary in binaries:
+                if len(binaries) > 1:
+                    name = case_study.project_name + "-" + binary.name
+                else:
+                    name = case_study.project_name
+
+                # report
+                report_files_for_binary = filter_report_paths_binary(
+                    report_files, binary
+                )
+                report: tp.Optional[FeatureAnalysisReport] = None
+                if not report_files_for_binary:
+                    LOG.warning(f"No report file given for binary {name}!")
+                    continue
+                report = load_feature_analysis_report(
+                    report_files_for_binary[0]
+                )
+
+                # ground truth
+                gt_files_for_binary = filter_ground_truth_paths_binary(
+                    gt_files, binary
+                )
+                ground_truth: tp.Optional[FeatureAnalysisGroundTruth]
+                if not gt_files_for_binary:
+                    LOG.warning(
+                        f"No ground truth file given for binary {name}!"
+                    )
+                    continue
+                ground_truth = FeatureAnalysisGroundTruth(
+                    gt_files_for_binary[0]
+                )
+
+                evaluation: FeatureAnalysisReportEval = FeatureAnalysisReportEval(
+                    report, ground_truth
+                )
+
+                cs_data.append(self.__create_eval_df(evaluation, name))
+
+                col_format += '|cc'
+
+        df = pd.concat(cs_data, axis=1)
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["column_format"] = col_format
+            kwargs["longtable"] = True
+            kwargs["multicolumn"] = True
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
+            kwargs['position'] = 't'
+
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        )
+
+        return ''
+
+    def __create_eval_df(
+        self, evaluation: FeatureAnalysisReportEval, entry: str
+    ) -> pd.DataFrame:
+        true_pos = evaluation.get_true_pos()
+        false_pos = evaluation.get_false_pos()
+        false_neg = evaluation.get_false_neg()
+        true_neg = evaluation.get_true_neg()
+
+        df = pd.DataFrame([[true_pos, false_pos], [false_neg, true_neg]],
+                          index=pd.MultiIndex.from_product([[
+                              'Analysis Results'
+                          ], ['Pos', 'Neg']]),
+                          columns=pd.MultiIndex.from_product([['Ground Truth'],
+                                                              [entry],
+                                                              ['Pos', 'Neg']]))
+        return df
+
+
+class PhasarFeatureAnalysisTotalEvalTableGenerator(
+    TableGenerator,
+    generator_name="fta-total-eval-table",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates a fta-total-eval table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarFeatureAnalysisTotalEvalTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
