@@ -179,6 +179,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 tmp_list = feature_dict[id_dict[args_id]]
                 tmp_list = tmp_list.append(time_dict[args_id])
                 feature_dict[id_dict[args_id]] = tmp_list
+                print(feature_dict[id_dict[args_id]])
+                print("\n")
 
             for name in feature_dict.keys():
                 tmp_dict = dict()
