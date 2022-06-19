@@ -150,13 +150,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 feature_dict.setdefault(trace_event.name, [])
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
                 id_dict[trace_event.args_id] = trace_event.name
-                time_dict[trace_event.args_id] = trace_event.timestamp
+                time_dict[trace_event.args_id] += trace_event.timestamp
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
-                # Trace Event with same Arg ID found, update time in time_dict from beginning to total time taken for that event
+                # Trace Event with same Arg ID found, update time in
+                # time_dict from beginning to total time taken for that event
                 if time_dict.get(trace_event.name) is None:
                     print(str(trace_event.args_id) + " \n")
                     continue
-                time_dict[trace_event.args_id] = trace_event.timestamp - time_dict[trace_event.args_id]
+                time_dict[trace_event.args_id] = abs(trace_event.timestamp - time_dict[trace_event.args_id])
             #ToDo raise error for unexpcted event type
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
