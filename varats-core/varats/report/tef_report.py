@@ -176,11 +176,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 print("\n")
                 print(feature_dict[id_dict[args_id]])
                 print("\n")
-                tmp_list = feature_dict[id_dict[args_id]]
-                print(tmp_list)
-                print("\n")
-                tmp_list = tmp_list.append(time_dict[args_id])
-                feature_dict[id_dict[args_id]] = tmp_list
+                feature_dict[id_dict[args_id]].append(time_dict[args_id])
                 print(feature_dict[id_dict[args_id]])
                 print("\n")
 
