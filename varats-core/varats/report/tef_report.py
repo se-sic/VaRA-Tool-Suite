@@ -147,7 +147,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         id_dict = dict()
         for trace_event in self.trace_events:
             if feature_dict.get(trace_event.name) is None:
-                feature_dict.setdefault(trace_event.name, [])
+                feature_dict.setdefault(trace_event.name, list())
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
                 id_dict[trace_event.args_id] = trace_event.name
                 if time_dict.get(trace_event.args_id) is None:
