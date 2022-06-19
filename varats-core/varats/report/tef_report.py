@@ -165,6 +165,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
             result_dict = dict()
+            print(feature_dict)
             for args_id in id_dict.keys():
                 # We add for every ID the time it takes for that process to finish, to the list of durations
                 # associated with the respective feature
@@ -173,7 +174,9 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 print("\n")
                 print(feature_dict[id_dict[args_id]])
                 print("\n")
-                feature_dict[id_dict[args_id]] = feature_dict[id_dict[args_id]].append(time_dict[args_id])
+                tmp_list = feature_dict[id_dict[args_id]]
+                tmp_list = tmp_list.append(time_dict[args_id])
+                feature_dict[id_dict[args_id]] = tmp_list
 
             for name in feature_dict.keys():
                 tmp_dict = dict()
