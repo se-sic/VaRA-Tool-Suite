@@ -151,8 +151,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
                 id_dict[trace_event.args_id] = trace_event.name
                 time_dict[trace_event.args_id] = trace_event.timestamp
+                print(str(trace_event.args_id) + "\n")
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
                 # Trace Event with same Arg ID found, update time in time_dict from beginning to total time taken for that event
+                print(str(trace_event.args_id) + "\n")
                 time_dict[trace_event.args_id] = trace_event.timestamp - time_dict[trace_event.args_id]
             #ToDo raise error for unexpcted event type
 
