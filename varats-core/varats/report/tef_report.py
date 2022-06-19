@@ -56,7 +56,7 @@ class TraceEvent():
         self.__tracing_clock_timestamp = int(json_trace_event["ts"])
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
-        self.__args_id = int(json_trace_event["args"][0])
+        self.__args_id = int(json_trace_event["args"][0]["ID"])
 
     @property
     def name(self) -> str:
