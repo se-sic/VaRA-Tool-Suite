@@ -56,6 +56,7 @@ class TraceEvent():
         self.__tracing_clock_timestamp = int(json_trace_event["ts"])
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
+        self.__args_id = int(json_trace_event["args"].json_trace_event["ID"])
 
     @property
     def name(self) -> str:
@@ -81,6 +82,10 @@ class TraceEvent():
     def tid(self) -> int:
         return self.__tid
 
+    @property
+    def args_id(self):
+        return self.__args_id
+
     def __str__(self) -> str:
         return f"""{{
     name: {self.name}
@@ -89,6 +94,7 @@ class TraceEvent():
     ts: {self.timestamp}
     pid: {self.pid}
     tid: {self.tid}
+    args: {self.args_id}
 }}
 """
 
@@ -132,27 +138,45 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     def feature_time_accumulator(self):
         print("Calls accumulator")
+        # Feature_dict contains a list of all measurements for each feature
         feature_dict = dict()
+
+        # time_dict takes an argument ID and maps it to the beginning time
         time_dict = dict()
+        # id maps id to the feature name
+        id_dict = dict()
         for trace_event in self.trace_events:
-            if feature_dict.get(trace_event) is None:
-                feature_dict.setdefault(trace_event.name, 0)
-                time_dict.setdefault(trace_event.name, [0, 0, 0])
+            if feature_dict.get(trace_event.name) is None:
+                feature_dict.setdefault(trace_event.name, [])
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
-                time_dict[trace_event.name][0] += trace_event.timestamp
-                time_dict[trace_event.name][2] += 1
+                id_dict[trace_event.args_id] = trace_event.name
+                time_dict[trace_event.args_id] = trace_event.timestamp
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
-                time_dict[trace_event.name][1] += trace_event.timestamp
+                # Trace Event with same Arg ID found, update time in time_dict from beginning to total time taken for that event
+                time_dict[trace_event.args_id] = trace_event.timestamp - time_dict[trace_event.args_id]
             #ToDo raise error for unexpcted event type
 
-        with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.txt", "w", encoding="utf-8") as file:
-            for name in feature_dict.keys():
-                # Converting time into MS
-                time_taken = (time_dict[name][1] - time_dict[name][0]) / 1000
-                feature_dict[name] = time_taken
-                file.write(f"Overall Time for feature {name}: {feature_dict[name]}")
-                file.write(f"Mean for feature {name}: {feature_dict[name]/time_dict[name][2]}")
+        with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
+            result_dict = dict()
+            for args_id in id_dict.keys():
+                # We add for every ID the time it takes for that process to finish, to the list of durations
+                # associated with the respective feature
+                feature_dict[id_dict[args_id]] = feature_dict[id_dict[args_id]].append(time_dict[args_id])
 
+            for name in feature_dict.keys():
+                tmp_dict = dict()
+                tmp_dict["Occurrences"] = len(feature_dict[name])
+                tmp_dict["Overall Time"] = np.sum(feature_dict[name])
+                tmp_dict["Mean"] = np.mean(feature_dict[name])
+                tmp_dict["Variance"] = np.var(feature_dict[name])
+                tmp_dict["Standard Deviation"] = np.std(feature_dict[name])
+                # file.write(f"Number of occurrences {name}: {len(feature_dict[name])}\n")
+                # file.write(f"Overall Time of feature {name}: {np.sum(feature_dict[name])}\n")
+                # file.write(f"Mean of feature {name}: {np.mean(feature_dict[name])}\n")
+                # file.write(f"Variance of Feature {name}: {np.var(feature_dict[name])}\n")
+                # file.write(f"Standard Deviation of Feature {name}: {np.std(feature_dict[name])}")
+                result_dict[name] = tmp_dict
+            json.dump(result_dict, file)
 
 class TEFReportAggregate(
     ReportAggregate[TEFReport],
