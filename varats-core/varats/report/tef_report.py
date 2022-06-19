@@ -56,7 +56,7 @@ class TraceEvent():
         self.__tracing_clock_timestamp = int(json_trace_event["ts"])
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
-        self.__args_id = int(json_trace_event["args"].json_trace_event["ID"])
+        self.__args_id = int(json_trace_event["args"][0])
 
     @property
     def name(self) -> str:
@@ -166,10 +166,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             for name in feature_dict.keys():
                 tmp_dict = dict()
                 tmp_dict["Occurrences"] = len(feature_dict[name])
-                tmp_dict["Overall Time"] = np.sum(feature_dict[name])
-                tmp_dict["Mean"] = np.mean(feature_dict[name])
-                tmp_dict["Variance"] = np.var(feature_dict[name])
-                tmp_dict["Standard Deviation"] = np.std(feature_dict[name])
+                tmp_dict["Overall Time"] = (np.sum(feature_dict[name]))/1000
+                tmp_dict["Mean"] = (np.mean(feature_dict[name]))/1000
+                tmp_dict["Variance"] = (np.var(feature_dict[name]))/1000
+                tmp_dict["Standard Deviation"] = (np.std(feature_dict[name]))/1000
                 # file.write(f"Number of occurrences {name}: {len(feature_dict[name])}\n")
                 # file.write(f"Overall Time of feature {name}: {np.sum(feature_dict[name])}\n")
                 # file.write(f"Mean of feature {name}: {np.mean(feature_dict[name])}\n")
