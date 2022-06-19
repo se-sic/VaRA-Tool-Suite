@@ -169,6 +169,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 # We add for every ID the time it takes for that process to finish, to the list of durations
                 # associated with the respective feature
                 print(str(args_id) + " \n" )
+                print(id_dict[args_id])
+                print("\n")
                 print(feature_dict[id_dict[args_id]])
                 print("\n")
                 feature_dict[id_dict[args_id]] = feature_dict[id_dict[args_id]].append(time_dict[args_id])
