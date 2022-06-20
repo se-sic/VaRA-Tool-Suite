@@ -137,13 +137,11 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         return [TraceEvent(data_item) for data_item in raw_event_list]
 
     def feature_time_accumulator(self):
-        print("Calls accumulator")
-        # Feature_dict contains a list of all measurements for each feature
+        # feature_dict contains a list of all measurements for each feature
         feature_dict = dict()
-
-        # time_dict takes an argument ID and maps it to the beginning time
+        # time_dict takes an argument ID and maps it to a list with all the measurements
         time_dict = dict()
-        # id maps id to the feature name
+        # id_dict maps id to the feature name
         id_dict = dict()
         for trace_event in self.trace_events:
             if feature_dict.get(trace_event.name) is None:
@@ -151,7 +149,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
                 id_dict[trace_event.args_id] = trace_event.name
                 if time_dict.get(trace_event.args_id) is None:
-                    time_dict[trace_event.args_id] = list();
+                    time_dict[trace_event.args_id] = list()
                     time_dict[trace_event.args_id].append(trace_event.timestamp)
                 else:
                     time_dict[trace_event.args_id].append(trace_event.timestamp)
@@ -170,19 +168,9 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             result_dict = dict()
             print(feature_dict)
             for args_id in id_dict.keys():
-                # We add for every ID the time it takes for that process to finish, to the list of durations
-                # associated with the respective feature
+                # Every args ID in time_dict is a key to a list with duration that ID took
+                # To finish that process, we add all id list to the respective feature
                 feature_dict[id_dict[args_id]].extend(time_dict[args_id])
-
-                # print(str(args_id) + " \n" )
-                # print(id_dict[args_id])
-                # print("\n")
-                # print(time_dict[args_id])
-                # print("\n")
-                # print(feature_dict[id_dict[args_id]])
-                # print("\n")
-                # print(feature_dict[id_dict[args_id]])
-                # print("\n")
 
             for name in feature_dict.keys():
                 tmp_dict = dict()
@@ -191,13 +179,9 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 tmp_dict["Mean"] = (np.mean(feature_dict[name]))/1000
                 tmp_dict["Variance"] = (np.var(feature_dict[name]))/1000
                 tmp_dict["Standard Deviation"] = (np.std(feature_dict[name]))/1000
-                # file.write(f"Number of occurrences {name}: {len(feature_dict[name])}\n")
-                # file.write(f"Overall Time of feature {name}: {np.sum(feature_dict[name])}\n")
-                # file.write(f"Mean of feature {name}: {np.mean(feature_dict[name])}\n")
-                # file.write(f"Variance of Feature {name}: {np.var(feature_dict[name])}\n")
-                # file.write(f"Standard Deviation of Feature {name}: {np.std(feature_dict[name])}")
                 result_dict[name] = tmp_dict
             json.dump(result_dict, file)
+
 
 class TEFReportAggregate(
     ReportAggregate[TEFReport],
