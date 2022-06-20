@@ -151,8 +151,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
                 id_dict[trace_event.args_id] = trace_event.name
                 if time_dict.get(trace_event.args_id) is None:
-                    time_dict[trace_event.args_id] = trace_event.timestamp
+                    time_dict[trace_event.args_id] = list();
+                    time_dict[trace_event.args_id].append(trace_event.timestamp)
                 else:
+                    time_dict[trace_event.args_id].append(trace_event.timestamp)
                     time_dict[trace_event.args_id] += trace_event.timestamp
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
                 # Trace Event with same Arg ID found, update time in
@@ -160,7 +162,9 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 if time_dict.get(trace_event.args_id) is None:
                     print(str(trace_event.args_id) + " \n")
                     continue
-                time_dict[trace_event.args_id] = abs(trace_event.timestamp - time_dict[trace_event.args_id])
+                # List[-1] returns last element of the list
+                time_dict[trace_event.args_id][-1] = abs(trace_event.timestamp - time_dict[trace_event.args_id][-1])
+
             #ToDo raise error for unexpcted event type
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
@@ -169,16 +173,17 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             for args_id in id_dict.keys():
                 # We add for every ID the time it takes for that process to finish, to the list of durations
                 # associated with the respective feature
-                print(str(args_id) + " \n" )
-                print(id_dict[args_id])
-                print("\n")
-                print(time_dict[args_id])
-                print("\n")
-                print(feature_dict[id_dict[args_id]])
-                print("\n")
-                feature_dict[id_dict[args_id]].append(time_dict[args_id])
-                print(feature_dict[id_dict[args_id]])
-                print("\n")
+                feature_dict[id_dict[args_id]].extend(time_dict[args_id])
+
+                # print(str(args_id) + " \n" )
+                # print(id_dict[args_id])
+                # print("\n")
+                # print(time_dict[args_id])
+                # print("\n")
+                # print(feature_dict[id_dict[args_id]])
+                # print("\n")
+                # print(feature_dict[id_dict[args_id]])
+                # print("\n")
 
             for name in feature_dict.keys():
                 tmp_dict = dict()
