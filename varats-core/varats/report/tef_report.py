@@ -166,7 +166,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
             result_dict = dict()
-            print(feature_dict)
+            print(id_dict)
+
+            for args_id in id_dict.keys():
+                print(args_id)
+                print("\n")
+                print(len(time_dict[args_id]))
+                print("\n\n")
+
             for args_id in id_dict.keys():
                 # Every args ID in time_dict is a key to a list with duration that ID took
                 # To finish that process, we add all id list to the respective feature
