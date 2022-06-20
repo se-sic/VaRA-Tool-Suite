@@ -155,7 +155,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     time_dict[trace_event.args_id].append(trace_event.timestamp)
                 else:
                     time_dict[trace_event.args_id].append(trace_event.timestamp)
-                    time_dict[trace_event.args_id] += trace_event.timestamp
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
                 # Trace Event with same Arg ID found, update time in
                 # time_dict from beginning to total time taken for that event
