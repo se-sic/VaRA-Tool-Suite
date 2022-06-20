@@ -169,10 +169,12 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             print(id_dict)
 
             for args_id in id_dict.keys():
+                print(id_dict[args_id])
+                print("\n")
                 print(args_id)
                 print("\n")
                 print(len(time_dict[args_id]))
-                print("\n\n")
+                print("\n -------------------------------")
 
             for args_id in id_dict.keys():
                 # Every args ID in time_dict is a key to a list with duration that ID took
