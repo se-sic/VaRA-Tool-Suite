@@ -28,6 +28,23 @@ from varats.ts_utils.click_param_types import (
 
 LOG = logging.Logger(__name__)
 
+REQUIRE_GROUND_TRUTH: CLIOptionTy = make_cli_option(
+    "-gt",
+    "--ground-truth",
+    type=str,
+    required=True,
+    metavar="PATHS",
+    help="One or more ground truths to use."
+)
+
+OPTIONAL_FEATURES: CLIOptionTy = make_cli_option(
+    "--features",
+    type=str,
+    required=False,
+    metavar="FEATURES",
+    help="The features to use explicitly."
+)
+
 
 def filter_report_paths_binary(
     report_files: tp.List[Path], binary: ProjectBinaryWrapper
@@ -85,7 +102,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
         ]
 
         features: tp.List[str] = []
-        if 'features' in self.table_kwargs:
+        if self.table_kwargs['features'] is not None:
             features = re.compile(r',\s*').split(self.table_kwargs['features'])
 
         insts: int = 0
@@ -188,24 +205,6 @@ class PhasarFeatureAnalysisProjectEvalTable(
                 )
 
         return pd.concat(data, axis=1)
-
-
-REQUIRE_GROUND_TRUTH: CLIOptionTy = make_cli_option(
-    "-gt",
-    "--ground-truth",
-    type=str,
-    required=True,
-    metavar="PATHS",
-    help="One or more ground truths to use."
-)
-
-OPTIONAL_FEATURES: CLIOptionTy = make_cli_option(
-    "--features",
-    type=str,
-    required=False,
-    metavar="FEATURES",
-    help="The features to use explicitly."
-)
 
 
 class PhasarFeatureAnalysisProjectEvalTableGenerator(
