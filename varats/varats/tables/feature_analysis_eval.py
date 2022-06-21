@@ -2,7 +2,6 @@
 import logging
 import re
 import typing as tp
-from importlib.resources import path
 from pathlib import Path
 
 import pandas as pd
@@ -298,7 +297,7 @@ class PhasarFeatureAnalysisTotalEvalTable(
                 )
 
                 evaluation: FeatureAnalysisReportEval = (
-                    FeatureAnalysisReportEval(report, ground_truth)
+                    FeatureAnalysisReportEval(report, ground_truth, [])
                 )
 
                 cs_data.append(self.__create_eval_df(evaluation, name))
@@ -341,7 +340,7 @@ class PhasarFeatureAnalysisTotalEvalTable(
 class PhasarFeatureAnalysisTotalEvalTableGenerator(
     TableGenerator,
     generator_name="fta-total-eval-table",
-    options=[REQUIRE_CASE_STUDY, REQUIRE_GROUND_TRUTH]
+    options=[REQUIRE_MULTI_CASE_STUDY, REQUIRE_GROUND_TRUTH]
 ):
     """Generates a fta-total-eval table for the selected case study(ies)."""
 
