@@ -2,6 +2,7 @@
 import logging
 import re
 import typing as tp
+from importlib.resources import path
 from pathlib import Path
 
 import pandas as pd
@@ -20,6 +21,7 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import (
     REQUIRE_CASE_STUDY,
     REQUIRE_MULTI_CASE_STUDY,
@@ -78,12 +80,6 @@ class PhasarFeatureAnalysisProjectEvalTable(
                 "one are ignored."
             )
 
-        if 'ground_truth' not in self.table_kwargs:
-            raise AssertionError(
-                "No ground truth file found!\n"
-                "vara-table [OPTIONS] fta-project-eval-table "
-                "ground_truth=PATH[,PATH,...]"
-            )
         gt_files: tp.List[Path] = [
             Path(gt) for gt in \
                 re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
@@ -107,7 +103,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
             )
             report: tp.Optional[FeatureAnalysisReport] = None
             if not report_files_for_binary:
-                LOG.warning(f"No report file given for binary {name}!")
+                LOG.warning(f"No report file given for binary {binary.name}!")
                 continue
             report = load_feature_analysis_report(report_files_for_binary[0])
 
@@ -117,7 +113,9 @@ class PhasarFeatureAnalysisProjectEvalTable(
             )
             ground_truth: tp.Optional[FeatureAnalysisGroundTruth]
             if not gt_files_for_binary:
-                LOG.warning(f"No ground truth file given for binary {name}!")
+                LOG.warning(
+                    f"No ground truth file given for binary {binary.name}!"
+                )
                 continue
             ground_truth = FeatureAnalysisGroundTruth(gt_files_for_binary[0])
 
@@ -193,10 +191,28 @@ class PhasarFeatureAnalysisProjectEvalTable(
         return pd.concat(data, axis=1)
 
 
+REQUIRE_GROUND_TRUTH: CLIOptionTy = make_cli_option(
+    "-gt",
+    "--ground-truth",
+    type=str,
+    required=True,
+    metavar="PATHS",
+    help="One or more ground truths to use."
+)
+
+OPTIONAL_FEATURES: CLIOptionTy = make_cli_option(
+    "--features",
+    type=str,
+    required=False,
+    metavar="FEATURES",
+    help="The features to use explicitly."
+)
+
+
 class PhasarFeatureAnalysisProjectEvalTableGenerator(
     TableGenerator,
     generator_name="fta-project-eval-table",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_CASE_STUDY, REQUIRE_GROUND_TRUTH, OPTIONAL_FEATURES]
 ):
     """Generates a fta-project-eval table for the selected case study."""
 
@@ -218,12 +234,6 @@ class PhasarFeatureAnalysisTotalEvalTable(
         cs_data: tp.List[pd.DataFrame] = []
         col_format = 'cc'
 
-        if 'ground_truth' not in self.table_kwargs:
-            raise AssertionError(
-                "No ground truth file found!\n"
-                "vara-table [OPTIONS] fta-total-eval-table "
-                "ground_truth=PATH[,PATH,...]"
-            )
         gt_files: tp.List[Path] = [
             Path(gt) for gt in \
                 re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
@@ -288,7 +298,7 @@ class PhasarFeatureAnalysisTotalEvalTable(
                 )
 
                 evaluation: FeatureAnalysisReportEval = (
-                    FeatureAnalysisReportEval(report, ground_truth, [])
+                    FeatureAnalysisReportEval(report, ground_truth)
                 )
 
                 cs_data.append(self.__create_eval_df(evaluation, name))
@@ -331,7 +341,7 @@ class PhasarFeatureAnalysisTotalEvalTable(
 class PhasarFeatureAnalysisTotalEvalTableGenerator(
     TableGenerator,
     generator_name="fta-total-eval-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_CASE_STUDY, REQUIRE_GROUND_TRUTH]
 ):
     """Generates a fta-total-eval table for the selected case study(ies)."""
 

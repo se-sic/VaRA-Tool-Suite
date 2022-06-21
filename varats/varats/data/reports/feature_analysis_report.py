@@ -49,7 +49,7 @@ class FeatureTaintedInstruction():
         """List of features related to the instruction."""
         return self.__feature_taints
 
-    def is_br_switch(self) -> bool:
+    def is_terminator(self) -> bool:
         br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
         return br_regex.search(self.__instruction) is not None
 
@@ -208,7 +208,7 @@ class FeatureAnalysisReport(BaseReport, shorthand="FAR", file_type="yaml"):
         for function_entry in self.__function_entries.values():
             for tainted_inst in function_entry.feature_tainted_insts:
                 for feature in tainted_inst.feature_taints:
-                    if tainted_inst.is_br_switch():
+                    if tainted_inst.is_terminator():
                         if feature not in feat_loc_dict:
                             feat_loc_dict[feature] = set()
                         feat_loc_dict[feature].add(tainted_inst.location)
@@ -249,8 +249,10 @@ class FeatureAnalysisReportEval():
     """
 
     def __init__(
-        self, fa_report: FeatureAnalysisReport,
-        ground_truth: FeatureAnalysisGroundTruth, features: tp.List[str]
+        self,
+        fa_report: FeatureAnalysisReport,
+        ground_truth: FeatureAnalysisGroundTruth,
+        features: tp.Optional[tp.List[str]] = None
     ) -> None:
         self.__initialize_eval_data(features)
         self.__evaluate(fa_report, ground_truth)

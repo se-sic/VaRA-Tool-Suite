@@ -132,11 +132,11 @@ class TestFeatureTaintedInstruction(unittest.TestCase):
         self.assertEqual(feature_taints_2[1], 'foo')
         self.assertEqual(feature_taints_2[2], 'test')
 
-    def test_is_br_switch(self) -> None:
+    def test_is_terminator(self) -> None:
         """Test if br and switch instructions are correctly identified."""
-        self.assertFalse(self.feature_tainted_inst_1.is_br_switch())
-        self.assertTrue(self.feature_tainted_inst_2.is_br_switch())
-        self.assertTrue(self.feature_tainted_inst_3.is_br_switch())
+        self.assertFalse(self.feature_tainted_inst_1.is_terminator())
+        self.assertTrue(self.feature_tainted_inst_2.is_terminator())
+        self.assertTrue(self.feature_tainted_inst_3.is_terminator())
 
 
 class TestFeatureAnalysisResultFunctionEntry(unittest.TestCase):
