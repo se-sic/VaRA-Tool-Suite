@@ -154,7 +154,7 @@ def compare_lines_and_interactions_author_revision(case_study: CaseStudy):
     )
     data = lines.merge(interactions, how='left', on=['author', 'revision'])
     data.dropna(
-        axis=0, how='all', inplace=True, subset=["lines", "interactions"]
+        axis=0, how='any', inplace=True, subset=["lines", "interactions"]
     )
     data.insert(3, "space", math.nan)
     data = data.pivot(
@@ -237,7 +237,8 @@ class AuthorContributionPlotRevision(
             plot_config, compare_lines_and_interactions_author_revision,
             **kwargs
         )
-        self.yticklables = 3
+        self.yticklabels = 3
+        self.YLABEL = "Author Contribution Lines vs. Interactions"
 
 
 class AuthorContributionPlotAuthor(
@@ -255,7 +256,7 @@ class AuthorContributionPlotAuthor(
         super().__init__(
             plot_config, compare_lines_and_interactions_author_author, **kwargs
         )
-        self.yticklables = 3
+        self.yticklabels = 3
 
 
 class AuthorContributionPlotGenerator(
@@ -271,5 +272,5 @@ class AuthorContributionPlotGenerator(
             AuthorContributionPlotRevision(
                 self.plot_config, **self.plot_kwargs
             ),
-            AuthorContributionPlotAuthor(self.plot_config, **self.plot_kwargs)
+            #AuthorContributionPlotAuthor(self.plot_config, **self.plot_kwargs)
         ]

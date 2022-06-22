@@ -7,6 +7,7 @@ import matplotlib.ticker as mticker
 import numpy as np
 import seaborn as sns
 from matplotlib import style
+from matplotlib.colors import LogNorm
 from pandas import DataFrame
 from pygtrie import CharTrie
 
@@ -210,6 +211,7 @@ class HeatMapPlot(Plot, plot_name=None):
         fig, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
         data = self.data_function(case_study)
+        axis.set_title(case_study.project_name.capitalize())
         axis = sns.heatmap(
             data,
             cmap=self.colormap,
@@ -218,7 +220,8 @@ class HeatMapPlot(Plot, plot_name=None):
             xticklabels=self.xticklabels,
             yticklabels=self.yticklabels,
             linewidth=0.1,
-            linecolor="grey"
+            linecolor="grey",
+            norm=LogNorm()
         )
         if self.XLABEL:
             axis.set_xlabel(self.XLABEL)
