@@ -62,7 +62,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             if self.__globals_active:
-                report_type = GlobalsReportWith
+                report_type: tp.Any = GlobalsReportWith
             else:
                 report_type = GlobalsReportWithout
 
