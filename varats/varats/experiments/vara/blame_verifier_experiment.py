@@ -25,9 +25,10 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     VersionExperiment,
     PEErrorHandler,
+    create_new_success_result_filename,
+    create_new_failed_result_filename,
 )
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -77,23 +78,17 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             )
 
             # Define empty success file.
-            result_file = self.__experiment_handle.get_file_name(
-                self.__experiment_handle.report_spec().main_report.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report, project,
+                binary
             )
 
             # Define output file name of failed runs
-            error_file = self.__experiment_handle.get_file_name(
-                self.__experiment_handle.report_spec().main_report.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.FAILED
+            error_file = create_new_failed_result_filename(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report, project,
+                binary
             )
 
             # Put together the path to the bc file and the opt command of vara
