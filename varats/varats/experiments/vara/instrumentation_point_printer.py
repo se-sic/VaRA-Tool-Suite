@@ -16,6 +16,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
     get_varats_result_folder,
+    create_new_success_result_filename,
 )
 from varats.experiment.wllvm import (
     BCFileExtensions,
@@ -27,7 +28,6 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
     FeatureModelProvider,
 )
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -51,13 +51,8 @@ class CollectInstrumentationPoints(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = self.__experiment_handle.get_file_name(
-                VaraIPPReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, VaraIPPReport, project, binary
             )
 
             # Need the following passes:
