@@ -23,9 +23,9 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
+    create_new_success_result_filename,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -58,13 +58,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = self.__experiment_handle.get_file_name(
-                BR.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, BR, project, binary
             )
 
             opt_params = [
