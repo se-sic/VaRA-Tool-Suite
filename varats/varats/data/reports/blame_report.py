@@ -45,6 +45,8 @@ class BlameTaintData():
     def create_taint_data(
         raw_taint_data: tp.Dict[str, tp.Any]
     ) -> 'BlameTaintData':
+        """Create a :class:`BlameTaintData` instance from from the corresponding
+        yaml document section."""
         commit = CommitRepoPair(
             FullCommitHash(raw_taint_data["commit"]),
             raw_taint_data["repository"]
@@ -125,8 +127,8 @@ class BlameInstInteractions():
     def create_blame_inst_interactions(
         raw_inst_entry: tp.Dict[str, tp.Any]
     ) -> 'BlameInstInteractions':
-        """Creates a `BlameInstInteractions` entry from the corresponding yaml
-        document section."""
+        """Creates a :class:`BlameInstInteractions` entry from the corresponding
+        yaml document section."""
 
         def create_taint_data(
             raw_data: tp.Union[str, tp.Dict[str, tp.Any]]
@@ -203,8 +205,8 @@ class BlameResultFunctionEntry():
     def create_blame_result_function_entry(
         name: str, raw_function_entry: tp.Dict[str, tp.Any]
     ) -> 'BlameResultFunctionEntry':
-        """Creates a `BlameResultFunctionEntry` from the corresponding yaml
-        document section."""
+        """Creates a :class:`BlameResultFunctionEntry` from the corresponding
+        yaml document section."""
         demangled_name = str(raw_function_entry['demangled-name'])
         num_instructions = int(raw_function_entry['num-instructions'])
         inst_list: tp.List[BlameInstInteractions] = []
@@ -292,8 +294,8 @@ def _calc_diff_between_func_entries(
 
 
 class BlameReportMetaData():
-    """Provides extra meta data about llvm::Module, which was analyzed to
-    generate this ``BlameReport``."""
+    """Provides extra meta-data about ``llvm::Module``, which was analyzed to
+    generate this :class:`BlameReport`."""
 
     def __init__(
         self, num_functions: int, num_instructions: int,
@@ -329,7 +331,7 @@ class BlameReportMetaData():
     def create_blame_report_meta_data(
         raw_document: tp.Dict[str, tp.Any]
     ) -> 'BlameReportMetaData':
-        """Creates `BlameReportMetaData` from the corresponding yaml
+        """Creates :class:`BlameReportMetaData` from the corresponding yaml
         document."""
         num_functions = int(raw_document['funcs-in-module'])
         num_instructions = int(raw_document['insts-in-module'])
@@ -544,15 +546,15 @@ class BlameReportDiff():
         return str_representation
 
 
-ElementType = tp.TypeVar('ElementType')
+ElementTy = tp.TypeVar('ElementTy')
 
 
 def __count_elements(
     report: tp.Union[BlameReport, BlameReportDiff],
     get_elements_from_interaction: tp.Callable[[BlameInstInteractions],
-                                               tp.Iterable[ElementType]]
+                                               tp.Iterable[ElementTy]]
 ) -> int:
-    elements: tp.Set[ElementType] = set()
+    elements: tp.Set[ElementTy] = set()
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
