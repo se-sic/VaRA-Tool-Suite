@@ -5,6 +5,7 @@ import unittest.mock as mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from benchbuild.environments.adapters.common import buildah_version
 from benchbuild.environments.domain.model import (
     Layer,
     FromLayer,
@@ -120,7 +121,10 @@ class TestContainerSupport(unittest.TestCase):
             "install", "--ignore-installed", "/varats/varats-core",
             "/varats/varats"
         ), varats_install_layer.args)
-        self.assertIn(("mount", "type=bind,src=varats_src,target=/varats,rw"),
+        mounting_parameters = "type=bind,src=varats_src,target=/varats"
+        if buildah_version() >= (1, 24, 0):
+            mounting_parameters += ",rm"
+        self.assertIn(("mount", mounting_parameters),
                       varats_install_layer.kwargs)
 
     @run_in_test_environment()
@@ -152,10 +156,10 @@ class TestContainerSupport(unittest.TestCase):
         )
 
     @run_in_test_environment()
-    @mock.patch("varats.tools.research_tools.vara.VaRA.verify_install")
-    def test_vara_install(self, mock_verify_install) -> None:
+    @mock.patch("varats.tools.research_tools.vara.VaRA.install_exists")
+    def test_vara_install(self, mock_install_exists) -> None:
         """Test VaRA install inside container."""
-        mock_verify_install.return_value = True
+        mock_install_exists.return_value = True
         vara_cfg()["container"]["research_tool"] = "vara"
         vara_cfg()["vara"]["llvm_source_dir"] = "tools_src/vara-llvm-project"
         vara_cfg()["vara"]["llvm_install_dir"] = "tools/VaRA"

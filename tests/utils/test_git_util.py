@@ -10,7 +10,7 @@ from varats.project.project_util import (
     BinaryType,
 )
 from varats.projects.discover_projects import initialize_projects
-from varats.tools.research_tools.vara_manager import checkout_branch_or_commit
+from varats.utils.git_commands import checkout_branch_or_commit
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,

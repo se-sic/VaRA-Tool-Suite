@@ -16,8 +16,9 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotGenerator, REQUIRE_CASE_STUDY
+from varats.plot.plots import PlotGenerator
 from varats.project.project_util import get_local_project_gits
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
