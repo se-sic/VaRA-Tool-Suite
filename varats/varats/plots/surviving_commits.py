@@ -64,7 +64,8 @@ def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
         axis=1,
         result_type='broadcast'
     )
-    return data.rename(columns={'commit_hash': 'base_hash'})
+    data.rename(columns={'commit_hash': 'base_hash'}, inplace=True)
+    return data
 
 
 def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
@@ -73,11 +74,12 @@ def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
         index="base_hash", columns='revision', values='lines'
     )
     cmap = get_commit_map(case_study.project_name)
-    case_study_data = case_study_data.sort_index(
-        key=lambda x: x.map(lambda y: cmap.short_time_id(ShortCommitHash(y)))
+    case_study_data.sort_index(
+        key=lambda x: x.map(lambda y: cmap.short_time_id(ShortCommitHash(y))),
+        inplace=True
     )
-    case_study_data = case_study_data.sort_index(
-        axis=1, key=lambda x: x.map(cmap.short_time_id)
+    case_study_data.sort_index(
+        axis=1, key=lambda x: x.map(cmap.short_time_id), inplace=True
     )
 
     return case_study_data.astype(float)
@@ -130,7 +132,8 @@ def get_normalized_interactions_per_commit_long(
         axis=1,
         result_type='broadcast'
     )
-    return data.rename(columns={'amount': 'interactions'})
+    data.rename(columns={'amount': 'interactions'}, inplace=True)
+    return data
 
 
 def get_normalized_interactions_per_commit_wide(
@@ -141,10 +144,13 @@ def get_normalized_interactions_per_commit_wide(
         index="base_hash", columns="revision", values="interactions"
     )
     cmap = get_commit_map(case_study.project_name)
-    data = data.sort_index(
-        key=lambda x: x.map(lambda y: cmap.short_time_id(ShortCommitHash(y)))
+    data.sort_index(
+        key=lambda x: x.map(lambda y: cmap.short_time_id(ShortCommitHash(y))),
+        inplace=True
     )
-    data = data.sort_index(axis=1, key=lambda x: x.map(cmap.short_time_id))
+    data.sort_index(
+        axis=1, key=lambda x: x.map(cmap.short_time_id), inplace=True
+    )
     return data.astype(float)
 
 
@@ -166,11 +172,14 @@ def lines_and_interactions(case_study: CaseStudy) -> DataFrame:
     )
     data = data.stack(level=0, dropna=False)
     cmap = get_commit_map(case_study.project_name)
-    data = data.sort_index(
+    data.sort_index(
         level=0,
-        key=lambda x: x.map(lambda y: cmap.short_time_id(ShortCommitHash(y)))
+        key=lambda x: x.map(lambda y: cmap.short_time_id(ShortCommitHash(y))),
+        inplace=True
     )
-    data = data.sort_index(axis=1, key=lambda x: x.map(cmap.short_time_id))
+    data.sort_index(
+        axis=1, key=lambda x: x.map(cmap.short_time_id), inplace=True
+    )
     return data.astype(float)
 
 
@@ -208,7 +217,7 @@ class HeatMapPlot(Plot, plot_name=None):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style())
-        fig, axis = plt.subplots(1, 1)
+        _, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
         data = self.data_function(case_study)
         axis.set_title(case_study.project_name.capitalize())
