@@ -47,6 +47,10 @@ class CommitHash(abc.ABC):
     def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
         return FullCommitHash(str(commit.id))
 
+    @abc.abstractmethod
+    def to_short_commit_hash(self) -> 'ShortCommitHash':
+        """Return the short form of the CommitHash."""
+
     def __str__(self) -> str:
         return self.hash
 
@@ -64,6 +68,9 @@ class CommitHash(abc.ABC):
 
 class ShortCommitHash(CommitHash):
     """Shortened commit hash."""
+
+    def to_short_commit_hash(self) -> 'ShortCommitHash':
+        return self
 
     @staticmethod
     def hash_length() -> int:
@@ -887,7 +894,8 @@ class RevisionBinaryMap(tp.Container[str]):
             self.__always_valid_mappings.append(wrapped_binary)
 
     def __getitem__(self,
-                    revision: ShortCommitHash) -> tp.List[ProjectBinaryWrapper]:
+                    revision: CommitHash) -> tp.List[ProjectBinaryWrapper]:
+        revision = revision.to_short_commit_hash()
         revision_specific_binaries = []
 
         for validity_range, wrapped_binary \
