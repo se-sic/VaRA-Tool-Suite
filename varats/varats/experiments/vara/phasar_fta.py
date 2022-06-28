@@ -6,6 +6,7 @@ generates an EmptyReport.
 """
 
 import typing as tp
+from inspect import FullArgSpec
 from pathlib import Path
 
 from benchbuild import Project
@@ -66,12 +67,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         for binary in project.binaries:
             # Define empty success file
             result_file = create_new_success_result_filename(
-                self.__experiment_handle, EMPTY, project, binary
-            )
-
-            # Define output file name of failed runs
-            error_file = create_new_failed_result_filename(
-                self.__experiment_handle, EMPTY, project, binary
+                self.__experiment_handle, FAR, project, binary
             )
 
             # Combine the input bitcode file's name
