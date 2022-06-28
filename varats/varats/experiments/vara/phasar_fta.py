@@ -6,7 +6,6 @@ generates an EmptyReport.
 """
 
 import typing as tp
-from inspect import FullArgSpec
 from pathlib import Path
 
 from benchbuild import Project
