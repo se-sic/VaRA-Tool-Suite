@@ -16,9 +16,9 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
     get_varats_result_folder,
+    create_new_success_result_filename,
 )
 from varats.experiment.wllvm import RunWLLVM
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -42,13 +42,8 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = self.__experiment_handle.get_file_name(
-                EmptyReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, EmptyReport, project, binary
             )
 
             run_cmd = touch[f"{vara_result_folder}/{result_file}"]
