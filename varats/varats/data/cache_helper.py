@@ -37,7 +37,7 @@ def load_cached_df_or_none(data_id: str, project_name: str,
     Args:
         data_id: identifier or identifier_name of the dataframe
         project_name: name of the project
-        data_types
+        data_types: dict of columns and types to pass to the dataframe loading
     """
 
     file_path = get_data_file_path(data_id, project_name)
