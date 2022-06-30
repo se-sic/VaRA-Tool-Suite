@@ -49,6 +49,10 @@ class TraceEvent():
 
     def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
         self.__name = str(json_trace_event["name"])
+        self.__name.replace("FR(", "")
+        if self.__name[-1] == ")":
+            self.__name = self.__name[:-1]
+
         self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
             json_trace_event["ph"]
@@ -116,6 +120,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
             print("Visiting the TEFReport")
+
     @property
     def display_time_unit(self) -> str:
         return self.__display_time_unit
@@ -132,62 +137,94 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     @staticmethod
     def _parse_trace_events(
-        raw_event_list: tp.List[tp.Dict[str, tp.Any]]
+            raw_event_list: tp.List[tp.Dict[str, tp.Any]]
     ) -> tp.List[TraceEvent]:
         return [TraceEvent(data_item) for data_item in raw_event_list]
+
+    # Gets the current_feature list and return a string of all features concatenated
+    # Contains no duplicate and alphabetical sorted
+    @staticmethod
+    def features_to_string(current_feature):
+        tmp_list = current_feature
+        alphabet_list = list()
+        tmp_set = set()
+        result = ""
+        for feature_list in tmp_list:
+            for feature in feature_list:
+                tmp_set.add(feature)
+        for feature in tmp_set:
+            alphabet_list.append(feature)
+        alphabet_list.sort()
+        for feature in alphabet_list:
+            result += feature + ","
+        return result
 
     def feature_time_accumulator(self):
         # feature_dict contains a list of all measurements for each feature
         feature_dict = dict()
-        # time_dict takes an argument ID and maps it to a list with all the measurements
-        time_dict = dict()
-        # id_dict maps id to the feature name
+        # id_dict maps id to current occurences of that id
         id_dict = dict()
+        # current_active_feature is a list of lists, containing lists of features for a active process
+        current_active_feature = list()
         for trace_event in self.trace_events:
             if feature_dict.get(trace_event.name) is None:
                 feature_dict.setdefault(trace_event.name, list())
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
-                id_dict[trace_event.args_id] = trace_event.name
-                if time_dict.get(trace_event.args_id) is None:
-                    time_dict[trace_event.args_id] = list()
-                    time_dict[trace_event.args_id].append(trace_event.timestamp)
-                else:
-                    time_dict[trace_event.args_id].append(trace_event.timestamp)
+                if id_dict.get(trace_event.args_id) is None:
+                    id_dict.setdefault(trace_event.args_id, 0)
+                id_dict[trace_event.args_id] = id_dict[trace_event.args_id] + 1
+                current_feature = trace_event.name.split(",")
+                if current_feature in current_active_feature:
+                    continue
+                feature_string = self.features_to_string(current_active_feature)
+                # When adding a new feature to the current list we end the previous running feature
+                feature_dict[feature_string][-1] \
+                    = abs(trace_event.timestamp - feature_dict[feature_string][-1])
+                current_active_feature.append(current_feature)
+                if feature_dict.get(feature_string) is None:
+                    feature_dict.setdefault(feature_string, list())
+                feature_dict[feature_string].append(trace_event.timestamp)
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
+                current_feature = trace_event.name.split(",")
+                feature_string = self.features_to_string(current_active_feature)
+
                 # Trace Event with same Arg ID found, update time in
                 # time_dict from beginning to total time taken for that event
-                if time_dict.get(trace_event.args_id) is None:
+                if id_dict.get(trace_event.args_id) is None:
                     print(str(trace_event.args_id) + " \n")
                     continue
-                # List[-1] returns last element of the list
-                time_dict[trace_event.args_id][-1] = abs(trace_event.timestamp - time_dict[trace_event.args_id][-1])
+                # If an Event ended more often then it started its invalid
+                elif id_dict[trace_event.args_id] > 0:
+                    id_dict[trace_event.args_id] = id_dict[trace_event.args_id] - 1
+                else:
+                    continue
 
-            #ToDo raise error for unexpcted event type
+                # List[-1] returns last element of the list
+                feature_dict[feature_string][-1] = abs(trace_event.timestamp - feature_dict[feature_string][-1])
+
+                if current_feature in current_active_feature:
+                    current_active_feature.remove(current_feature)
+                # ToDo Raise exception feature not in current feature list but is suppose to end
+
+                feature_dict[self.features_to_string(current_feature)].append(trace_event.timestamp)
+
+            # ToDo raise error for unexpcted event type
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
             result_dict = dict()
-            print(id_dict)
 
-            for args_id in id_dict.keys():
-                print(id_dict[args_id])
-                print("\n")
-                print(args_id)
-                print("\n")
-                print(len(time_dict[args_id]))
-                print("\n -------------------------------")
-
-            for args_id in id_dict.keys():
+            #for args_id in id_dict.keys():
                 # Every args ID in time_dict is a key to a list with duration that ID took
                 # To finish that process, we add all id list to the respective feature
-                feature_dict[id_dict[args_id]].extend(time_dict[args_id])
+                #feature_dict[id_dict[args_id]].extend(time_dict[args_id])
 
             for name in feature_dict.keys():
                 tmp_dict = dict()
                 tmp_dict["Occurrences"] = len(feature_dict[name])
-                tmp_dict["Overall Time"] = (np.sum(feature_dict[name]))/1000
-                tmp_dict["Mean"] = (np.mean(feature_dict[name]))/1000
-                tmp_dict["Variance"] = (np.var(feature_dict[name]))/1000
-                tmp_dict["Standard Deviation"] = (np.std(feature_dict[name]))/1000
+                tmp_dict["Overall Time"] = (np.sum(feature_dict[name])) / 1000
+                tmp_dict["Mean"] = (np.mean(feature_dict[name])) / 1000
+                tmp_dict["Variance"] = (np.var(feature_dict[name])) / 1000
+                tmp_dict["Standard Deviation"] = (np.std(feature_dict[name])) / 1000
                 result_dict[name] = tmp_dict
             json.dump(result_dict, file)
 
