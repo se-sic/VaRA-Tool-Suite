@@ -157,6 +157,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         alphabet_list.sort()
         for feature in alphabet_list:
             result += feature + ","
+        result = result[:-1]
         return result
 
     def feature_time_accumulator(self):
@@ -178,11 +179,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     continue
                 feature_string = self.features_to_string(current_active_feature)
                 # When adding a new feature to the current list we end the previous running feature
-                print(feature_string)
+                print(f"feature string {feature_string}")
                 print("\n---------------\n")
-                print(current_active_feature)
+                print(f"Current active string{current_active_feature}")
                 print("\n---------------\n")
-                print(feature_dict)
+                print(f"feature string {feature_dict}")
+                print("\n---------------\n")
+                print("\n---------------\n")
+
                 if len(current_active_feature) != 0:
                     feature_dict[feature_string][-1] \
                         = abs(trace_event.timestamp - feature_dict[feature_string][-1])
