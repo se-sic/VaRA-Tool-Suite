@@ -76,31 +76,46 @@ class BlameTaintData():
                     (self.function_name != other.function_name) or
                     (self.commit != other.commit))
 
+    def __lt_commit(self, other: 'BlameTaintData') -> bool:
+        if other.function_name:
+            return True
+        return self.commit < other.commit
+
+    def __lt_commit_in_function(self, other: 'BlameTaintData') -> bool:
+        if not self.function_name:
+            raise AssertionError()
+
+        if not other.function_name:
+            return False
+        if other.region_id:
+            return True
+        return (
+            self.function_name < other.function_name
+            if self.function_name != other.function_name else
+            self.commit < other.commit
+        )
+
+    def __lt_region(self, other: 'BlameTaintData') -> bool:
+        if not self.region_id:
+            raise AssertionError()
+        if not other.region_id:
+            return False
+        return self.region_id < other.region_id
+
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, BlameTaintData):
             return NotImplemented
 
         # BTS_COMMIT
         if not self.function_name:
-            if other.function_name:
-                return True
-            return self.commit < other.commit
+            return self.__lt_commit(other)
 
         # BTS_COMMIT_IN_FUNCTION
         if self.region_id is None:
-            if not other.function_name:
-                return False
-            if other.region_id:
-                return True
-            return (
-                self.function_name < other.function_name
-                if self.function_name != other.function_name else
-                self.commit < other.commit
-            )
+            return self.__lt_commit_in_function(other)
+
         # BTS_REGION
-        if not other.region_id:
-            return False
-        return self.region_id < other.region_id
+        return self.__lt_region(other)
 
     def __hash__(self) -> int:
         return hash((self.commit, self.region_id, self.function_name))
