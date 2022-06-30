@@ -25,7 +25,13 @@ from varats.utils.git_util import FullCommitHash
 class BlameLibraryInteractionsDatabase(
     EvaluationDatabase,
     cache_id="blame_library_interaction_data",
-    columns=["base_hash", "base_lib", "inter_hash", "inter_lib", "amount"]
+    column_types={
+        "base_hash": 'str',
+        "base_lib": 'str',
+        "inter_hash": 'str',
+        "inter_lib": 'str',
+        "amount": 'int'
+    }
 ):
     """Provides access to blame library interaction data."""
 
@@ -37,12 +43,7 @@ class BlameLibraryInteractionsDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.base_hash = df_layout.base_hash.astype('str')
-            df_layout.base_lib = df_layout.base_lib.astype('str')
-            df_layout.inter_hash = df_layout.inter_hash.astype('str')
-            df_layout.inter_lib = df_layout.inter_lib.astype('str')
-            df_layout.amount = df_layout.amount.astype('int')
-
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(
