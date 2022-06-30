@@ -29,8 +29,9 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     ) / f"{data_id}-{project_name}.csv.gz"
 
 
-def load_cached_df_or_none(data_id: str, project_name: str,
-                           data_types: dict) -> tp.Optional[pd.DataFrame]:
+def load_cached_df_or_none(
+    data_id: str, project_name: str, data_types: tp.Dict[str, str]
+) -> tp.Optional[pd.DataFrame]:
     """
     Load cached dataframe from disk, otherwise return None.
 
@@ -112,7 +113,7 @@ def build_cached_report_table(
 
     # mypy needs this
     empty_df = create_empty_df()
-    df_types: dict = empty_df.dtypes.to_dict()
+    df_types = empty_df.dtypes.to_dict()
     optional_cached_df = load_cached_df_or_none(data_id, project_name, df_types)
     if optional_cached_df is None:
         cached_df = empty_df

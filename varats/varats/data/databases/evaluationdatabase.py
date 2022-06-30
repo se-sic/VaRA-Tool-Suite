@@ -2,7 +2,6 @@
 import abc
 import typing as tp
 
-import numpy as np
 import pandas as pd
 from pygtrie import CharTrie
 
