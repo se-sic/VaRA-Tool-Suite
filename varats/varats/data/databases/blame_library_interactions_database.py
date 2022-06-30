@@ -78,10 +78,10 @@ class BlameLibraryInteractionsDatabase(
                 for inter_pair in inter_pair_amount_dict:
                     result_data_dicts.append(
                         build_dataframe_row(
-                            base_hash=base_pair.commit_hash,
-                            base_library=base_pair.repository_name,
-                            inter_hash=inter_pair.commit_hash,
-                            inter_library=inter_pair.repository_name,
+                            base_hash=base_pair.commit.commit_hash,
+                            base_library=base_pair.commit.repository_name,
+                            inter_hash=inter_pair.commit.commit_hash,
+                            inter_library=inter_pair.commit.repository_name,
                             amount=inter_pair_amount_dict[inter_pair]
                         )
                     )
