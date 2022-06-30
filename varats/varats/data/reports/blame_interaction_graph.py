@@ -283,20 +283,17 @@ class InteractionGraph(abc.ABC):
 class BlameInteractionGraph(InteractionGraph):
     """Graph/Network built from blame interaction data."""
 
-    def __init__(
-        self, project_name: str, report: tp.Union[BlameReport, BlameReportDiff]
-    ):
+    def __init__(self, project_name: str, report_file: Path):
         super().__init__(project_name)
-        self.__report = report
+        self.__report_file = report_file
         self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
 
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
-            interactions = gen_base_to_inter_commit_repo_pair_mapping(
-                self.__report
-            )
+            interactions = gen_base_to_inter_commit_repo_pair_mapping(report)
             commits = {
                 commit for base, inters in interactions.items()
                 for commit in [base, *inters.keys()]
@@ -324,8 +321,10 @@ class BlameInteractionGraph(InteractionGraph):
             return interaction_graph
 
         if not self.__cached_interaction_graph:
+            filename = ReportFilename(self.__report_file)
             self.__cached_interaction_graph = build_cached_graph(
-                f"ig-blame-{self.project_name}", create_graph
+                f"ig-blame-{self.project_name}-{filename.commit_hash.hash}",
+                create_graph
             )
         return self.__cached_interaction_graph
 
@@ -439,8 +438,7 @@ def create_blame_interaction_graph(
     )
     if len(report_files) == 0:
         raise LookupError(f"Found no BlameReport for project {project_name}")
-    report = load_blame_report(report_files[0])
-    return BlameInteractionGraph(project_name, report)
+    return BlameInteractionGraph(project_name, report_files[0])
 
 
 def create_file_based_interaction_graph(
