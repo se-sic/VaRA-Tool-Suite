@@ -448,9 +448,10 @@ class BlameReportDiff():
         self.__base_head = base_report.head_commit
         self.__prev_head = prev_report.head_commit
         self.__calc_diff_br(base_report, prev_report)
-        assert \
-            base_report.blame_taint_scope == prev_report.blame_taint_scope, \
-            "Cannot diff blame reports with different scopes."
+        if base_report.blame_taint_scope != prev_report.blame_taint_scope:
+            raise AssertionError(
+                "Cannot diff blame reports with different scopes."
+            )
         self.__blame_taint_scope = base_report.blame_taint_scope
 
     @property

@@ -160,10 +160,3 @@ class BlameReportExperimentCommitInFunction(
 
     NAME = "GenerateBlameReportCommitInFunction"
     BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT_IN_FUNCTION
-
-
-class BlameReportExperimentCommit(BlameReportExperiment, shorthand="BREC"):
-    """Generates a blame report with commit scoped taints."""
-
-    NAME = "GenerateBlameReportCommit"
-    BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT
