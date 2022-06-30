@@ -183,8 +183,9 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 print(current_active_feature)
                 print("\n---------------\n")
                 print(feature_dict)
-                feature_dict[feature_string][-1] \
-                    = abs(trace_event.timestamp - feature_dict[feature_string][-1])
+                if len(current_active_feature) != 0:
+                    feature_dict[feature_string][-1] \
+                        = abs(trace_event.timestamp - feature_dict[feature_string][-1])
                 current_active_feature.append(current_feature)
                 if feature_dict.get(feature_string) is None:
                     feature_dict.setdefault(feature_string, list())
