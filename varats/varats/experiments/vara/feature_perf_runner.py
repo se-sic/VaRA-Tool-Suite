@@ -13,6 +13,7 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    create_new_success_result_filename,
 )
 from varats.project.project_util import BinaryType
 from varats.provider.feature.feature_model_provider import (
@@ -20,7 +21,6 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.report.report import ReportSpecification
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.tef_report import TEFReport
 
 
@@ -48,13 +48,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
-            result_file = self.__experiment_handle.get_file_name(
-                TEFReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, TEFReport, project, binary
             )
 
             with local.cwd(local.path(project.source_of_primary)):

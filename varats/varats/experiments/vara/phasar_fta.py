@@ -22,6 +22,8 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
+    create_new_success_result_filename,
+    create_new_failed_result_filename,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
@@ -29,7 +31,6 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     get_cached_bc_file_path,
 )
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -60,23 +61,13 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Define empty success file
-            result_file = self.__experiment_handle.get_file_name(
-                EMPTY.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, EMPTY, project, binary
             )
 
             # Define output file name of failed runs
-            error_file = self.__experiment_handle.get_file_name(
-                EMPTY.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.FAILED
+            error_file = create_new_failed_result_filename(
+                self.__experiment_handle, EMPTY, project, binary
             )
 
             # Combine the input bitcode file's name
