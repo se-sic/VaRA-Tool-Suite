@@ -18,6 +18,7 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    create_new_success_result_filename,
 )
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.provider.feature.feature_model_provider import (
@@ -25,7 +26,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.provider.workload.workload_provider import WorkloadProvider
-from varats.report.report import FileStatusExtension, ReportSpecification
+from varats.report.report import ReportSpecification
 from varats.tools.research_tools.vara import VaRA
 
 
@@ -73,13 +74,9 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
                 continue
 
             # Assemble Path for report.
-            report_file_name = self.__experiment_handle.get_file_name(
-                VaraInstrumentationStatsReport.shorthand(),
-                project_name=project.name,
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FileStatusExtension.SUCCESS
+            report_file_name = create_new_success_result_filename(
+                self.__experiment_handle, VaraInstrumentationStatsReport,
+                project, binary
             )
 
             report_file = Path(vara_result_folder, str(report_file_name))
