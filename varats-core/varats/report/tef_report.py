@@ -224,6 +224,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 print("\n---------------\n")
                 print("\n---------------\n")
                 print(self.features_to_string(current_feature))
+                print("\n---------------\n")
+                print("\n---------------\n")
+                print(current_feature)
+
 
                 feature_dict[self.features_to_string(current_feature)].append(trace_event.timestamp)
 
