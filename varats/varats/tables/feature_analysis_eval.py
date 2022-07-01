@@ -25,7 +25,6 @@ from varats.ts_utils.click_param_types import (
     REQUIRE_CASE_STUDY,
     REQUIRE_MULTI_CASE_STUDY,
 )
-from varats.utils.git_util import ShortCommitHash
 
 LOG = logging.Logger(__name__)
 
