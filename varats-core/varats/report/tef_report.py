@@ -49,7 +49,7 @@ class TraceEvent():
 
     def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
         self.__name = str(json_trace_event["name"])
-        self.__name.replace("FR(", "")
+        self.__name = self.__name.replace("FR(", "")
         if self.__name[-1] == ")":
             self.__name = self.__name[:-1]
 
@@ -179,11 +179,11 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     continue
                 feature_string = self.features_to_string(current_active_feature)
                 # When adding a new feature to the current list we end the previous running feature
-                print(f"feature string {feature_string}")
+                print(f"feature string: {feature_string}")
                 print("\n---------------\n")
-                print(f"Current active string{current_active_feature}")
+                print(f"Current active string: {current_active_feature}")
                 print("\n---------------\n")
-                print(f"feature string {feature_dict}")
+                print(f"feature dict {feature_dict}")
                 print("\n---------------\n")
                 print("\n---------------\n")
 
