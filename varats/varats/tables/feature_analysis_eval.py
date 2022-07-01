@@ -108,9 +108,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
 
         insts: int = 0
         data: tp.List[pd.DataFrame] = []
-        binaries = case_study.project_cls.binaries_for_revision(
-            ShortCommitHash(str(cs_revisions[0]))
-        )
+        binaries = case_study.project_cls.binaries_for_revision(cs_revisions[0])
         for binary in binaries:
             name = ""
             if len(binaries) > 1:

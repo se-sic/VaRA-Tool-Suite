@@ -26,7 +26,6 @@ from varats.experiment.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     create_new_success_result_filename,
-    create_new_failed_result_filename,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
