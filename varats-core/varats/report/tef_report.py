@@ -177,13 +177,15 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 current_feature = trace_event.name.split(",")
                 if current_feature in current_active_feature:
                     continue
-                feature_string = self.features_to_string(current_active_feature)
                 # When adding a new feature to the current list we end the previous running feature
-
+                feature_string = self.features_to_string(current_active_feature)
                 if len(current_active_feature) != 0:
                     feature_dict[feature_string][-1] \
                         = abs(trace_event.timestamp - feature_dict[feature_string][-1])
+
                 current_active_feature.append(current_feature)
+                feature_string = self.features_to_string(current_active_feature)
+
                 if feature_dict.get(feature_string) is None:
                     feature_dict.setdefault(feature_string, list())
                 feature_dict[feature_string].append(trace_event.timestamp)
