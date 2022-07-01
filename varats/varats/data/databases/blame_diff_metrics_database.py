@@ -258,29 +258,29 @@ def get_successor_report_file(
 
 class BlameDiffMetrics(Enum):
     """Blame interaction metrics."""
-    value: str  # pylint: disable=invalid-name
+    value: tp.Tuple[str, str]  # pylint: disable=invalid-name
 
-    CHURN = "churn"
-    NUM_INTERACTIONS = "num_interactions"
-    NUM_INTERACTING_COMMITS = "num_interacting_commits"
-    NUM_INTERACTING_AUTHORS = "num_interacting_authors"
-    CI_DEGREE_MEAN = "ci_degree_mean"
-    AUTHOR_MEAN = "author_mean"
-    AVG_TIME_MEAN = "avg_time_mean"
-    CI_DEGREE_MAX = "ci_degree_max"
-    AUTHOR_MAX = "author_max"
-    AVG_TIME_MAX = "avg_time_max"
-    YEAR = "year"
+    CHURN = ("churn", 'int64')
+    NUM_INTERACTIONS = ("num_interactions", 'int64')
+    NUM_INTERACTING_COMMITS = ("num_interacting_commits", 'int64')
+    NUM_INTERACTING_AUTHORS = ("num_interacting_authors", 'int64')
+    CI_DEGREE_MEAN = ("ci_degree_mean", 'int')
+    AUTHOR_MEAN = ("author_mean", 'int')
+    AVG_TIME_MEAN = ("avg_time_mean", 'int')
+    CI_DEGREE_MAX = ("ci_degree_max", 'int')
+    AUTHOR_MAX = ("author_max", 'int')
+    AVG_TIME_MAX = ("avg_time_max", 'int')
+    YEAR = ("year", 'int64')
 
     @staticmethod
-    def to_str_list() -> tp.List[str]:
-        return [metric.value for metric in BlameDiffMetrics]
+    def to_str_dict() -> tp.Dict[str, str]:
+        return {metric.value[0]: metric.value[1] for metric in BlameDiffMetrics}
 
 
 class BlameDiffMetricsDatabase(
     EvaluationDatabase,
     cache_id="blame_diff_metrics_data",
-    columns=BlameDiffMetrics.to_str_list()
+    column_types=BlameDiffMetrics.to_str_dict()
 ):
     """Metrics database that contains all different blame-interaction metrics
     that are based on a diff between two `BlameReports`."""
@@ -295,14 +295,7 @@ class BlameDiffMetricsDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.churn = df_layout.churn.astype('int64')
-            df_layout.num_interactions = \
-                df_layout.num_interactions.astype('int64')
-            df_layout.num_interacting_commits = \
-                df_layout.num_interacting_commits.astype('int64')
-            df_layout.num_interacting_authors = \
-                df_layout.num_interacting_authors.astype('int64')
-            df_layout.year = df_layout.year.astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(

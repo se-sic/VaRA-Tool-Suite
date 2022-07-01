@@ -13,7 +13,9 @@ from varats.utils.git_util import ShortCommitHash
 
 
 class FileStatusDatabase(
-    EvaluationDatabase, cache_id="file_status_data", columns=["file_status"]
+    EvaluationDatabase,
+    cache_id="file_status_data",
+    column_types={"file_status": 'str'}
 ):
     """
     Provides access to file status data.
@@ -32,6 +34,7 @@ class FileStatusDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_revision(
