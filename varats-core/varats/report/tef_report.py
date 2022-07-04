@@ -190,14 +190,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     feature_dict.setdefault(feature_string, list())
                 feature_dict[feature_string].append(trace_event.timestamp)
 
-                print(f"feature string: {feature_string}")
-                print("\n---------------\n")
-                print(f"Current active string: {current_active_feature}")
-                print("\n---------------\n")
-                print(f"feature dict {feature_dict}")
-                print("\n---------------\n")
-                print("\n---------------\n")
-
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
                 current_feature = trace_event.name.split(",")
                 feature_string = self.features_to_string(current_active_feature)
@@ -219,17 +211,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 if current_feature in current_active_feature:
                     current_active_feature.remove(current_feature)
                 # ToDo Raise exception feature not in current feature list but is suppose to end
-                print("\n---------------\n")
-                print("\n---------------\n")
-                print("\n---------------\n")
-                print("\n---------------\n")
-                print(feature_string)
-                print("\n---------------\n")
-                print("\n---------------\n")
-                print(current_feature)
 
-                feature_dict[self.features_to_string(current_active_feature)].append(trace_event.timestamp)
-
+                if len(current_active_feature) > 0:
+                    feature_dict[self.features_to_string(current_active_feature)].append(trace_event.timestamp)
+        print(feature_dict)
             # ToDo raise error for unexpcted event type
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
