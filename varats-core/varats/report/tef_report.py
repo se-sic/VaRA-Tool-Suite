@@ -223,7 +223,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 print("\n---------------\n")
                 print("\n---------------\n")
                 print("\n---------------\n")
-                print(self.features_to_string(current_feature))
+                print(feature_string)
                 print("\n---------------\n")
                 print("\n---------------\n")
                 print(current_feature)
