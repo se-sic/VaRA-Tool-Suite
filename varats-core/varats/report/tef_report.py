@@ -163,7 +163,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     def feature_time_accumulator(self):
         # feature_dict contains a list of all measurements for each feature
         feature_dict = dict()
-        # id_dict maps id to current occurences of that id
+        # id_dict maps id to current occurrences of that id
         id_dict = dict()
         # current_active_feature is a list of lists, containing lists of features for a active process
         current_active_feature = list()
@@ -226,6 +226,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 #feature_dict[id_dict[args_id]].extend(time_dict[args_id])
 
             for name in feature_dict.keys():
+                if feature_dict[name]:
+                    continue
                 tmp_dict = dict()
                 tmp_dict["Occurrences"] = len(feature_dict[name])
                 tmp_dict["Overall Time"] = (np.sum(feature_dict[name])) / 1000
