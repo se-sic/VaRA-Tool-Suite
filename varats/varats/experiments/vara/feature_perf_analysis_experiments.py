@@ -242,7 +242,7 @@ class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             TraceFeaturePerfWithTime(
-                project, self.get_handle(), 1, self._trace_binaries and
+                project, self.get_handle(), 20, self._trace_binaries and
                 self._instrument_usdt
             )
         )
