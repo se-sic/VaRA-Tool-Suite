@@ -228,8 +228,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 print("\n---------------\n")
                 print(current_feature)
 
-
-                feature_dict[self.features_to_string(current_feature)].append(trace_event.timestamp)
+                feature_dict[self.features_to_string(current_active_feature)].append(trace_event.timestamp)
 
             # ToDo raise error for unexpcted event type
 
