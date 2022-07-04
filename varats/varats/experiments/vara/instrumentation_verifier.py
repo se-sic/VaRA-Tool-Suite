@@ -121,9 +121,9 @@ class RunInstrVerifier(VersionExperiment, shorthand="RIV"):
         # Sets vara tracing flags
         project.cflags += [
             "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
-            "-fuse-ld=lld"
+            "-fuse-ld=lld", "-Wl,-plugin-opt=save-temps"
         ]
-        project.ldflags += ["-flto", "-Wl", "-plugin-opt=save-temps"]
+        project.ldflags += ["-flto"]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
