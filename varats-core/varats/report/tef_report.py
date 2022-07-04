@@ -226,7 +226,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 #feature_dict[id_dict[args_id]].extend(time_dict[args_id])
 
             for name in feature_dict.keys():
-                if feature_dict[name]:
+                if len(feature_dict[name]) == 0:
                     continue
                 tmp_dict = dict()
                 tmp_dict["Occurrences"] = len(feature_dict[name])
