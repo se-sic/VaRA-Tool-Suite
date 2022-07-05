@@ -187,7 +187,10 @@ def _load_dataframe_for_report(
 class SZZUnleashedQualityMetricsDatabase(
     EvaluationDatabase,
     cache_id="szz_unleashed_quality_metrics",
-    columns=["introducer", "score"]
+    column_types={
+        "introducer": 'str',
+        "score": 'int64'
+    }
 ):
     """SZZ quality metrics database for SZZUnleashed data."""
 
@@ -208,7 +211,10 @@ class SZZUnleashedQualityMetricsDatabase(
 class PyDrillerSZZQualityMetricsDatabase(
     EvaluationDatabase,
     cache_id="pydriller_szz_quality_metrics",
-    columns=["introducer", "score"]
+    column_types={
+        "introducer": 'str',
+        "score": 'int64'
+    }
 ):
     """SZZ quality metrics database for PyDriller based SZZ data."""
 

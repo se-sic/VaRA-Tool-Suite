@@ -113,9 +113,9 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
         result = runner.invoke(
             driver_casestudy.main, [
-                'gen', '-p', 'brotli', 'select_sample', '--num-rev', '6',
-                '--start', '1991-01-01', '--end', '2013-10-20',
-                'UniformSamplingMethod'
+                'gen', '-p', 'brotli', '--allow-blocked', 'select_sample',
+                '--num-rev', '6', '--start', '1991-01-01', '--end',
+                '2013-10-20', 'UniformSamplingMethod'
             ]
         )
 

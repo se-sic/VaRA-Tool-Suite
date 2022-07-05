@@ -363,7 +363,6 @@ def _generate_degree_stackplot(
 ) -> None:
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
-
     if plot_kwargs["show_churn"]:
         main_axis = fig.add_subplot(grid_spec[:-1, :])
         main_axis.get_xaxis().set_visible(False)

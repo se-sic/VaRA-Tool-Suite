@@ -15,6 +15,7 @@ from benchbuild.utils.requirements import Requirement, SlurmMem
 
 import varats.experiments.vara.blame_experiment as BE
 from varats.data.reports.blame_report import BlameReport as BR
+from varats.data.reports.blame_report import BlameTaintScope
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -23,9 +24,9 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
+    create_new_success_result_filename,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -35,9 +36,13 @@ class BlameReportGeneration(actions.Step):  # type: ignore
     NAME = "BlameReportGeneration"
     DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(
+        self, project: Project, experiment_handle: ExperimentHandle,
+        blame_taint_scope: BlameTaintScope
+    ):
         super().__init__(obj=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
+        self.__blame_taint_scope = blame_taint_scope
 
     def analyze(self) -> actions.StepResult:
         """
@@ -58,18 +63,14 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = self.__experiment_handle.get_file_name(
-                BR.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, BR, project, binary
             )
 
             opt_params = [
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
                 "-vara-use-phasar",
+                f"-vara-blame-taint-scope={self.__blame_taint_scope.name}",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
                     project, binary, [
@@ -95,13 +96,14 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
 
 class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
-    """Generates a commit flow report (CFR) of the project(s) specified in the
-    call."""
+    """Generates a blame report of the project(s) specified in the call."""
 
     NAME = "GenerateBlameReport"
 
     REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
+
+    BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT
 
     def actions_for_project(
         self, project: Project
@@ -135,8 +137,26 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
         )
 
         analysis_actions.append(
-            BlameReportGeneration(project, self.get_handle())
+            BlameReportGeneration(
+                project, self.get_handle(), self.BLAME_TAINT_SCOPE
+            )
         )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
+
+
+class BlameReportExperimentRegion(BlameReportExperiment, shorthand="BRER"):
+    """Generates a blame report with region scoped taints."""
+
+    NAME = "GenerateBlameReportRegion"
+    BLAME_TAINT_SCOPE = BlameTaintScope.REGION
+
+
+class BlameReportExperimentCommitInFunction(
+    BlameReportExperiment, shorthand="BRECIF"
+):
+    """Generates a blame report with commit-in-function scoped taints."""
+
+    NAME = "GenerateBlameReportCommitInFunction"
+    BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT_IN_FUNCTION
