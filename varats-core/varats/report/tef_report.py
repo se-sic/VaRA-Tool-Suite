@@ -219,11 +219,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
             result_dict = dict()
-
-            #for args_id in id_dict.keys():
-                # Every args ID in time_dict is a key to a list with duration that ID took
-                # To finish that process, we add all id list to the respective feature
-                #feature_dict[id_dict[args_id]].extend(time_dict[args_id])
+            overall_time = 0
 
             for name in feature_dict.keys():
                 if len(feature_dict[name]) == 0:
@@ -235,6 +231,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 tmp_dict["Variance"] = (np.var(feature_dict[name])) / 1000
                 tmp_dict["Standard Deviation"] = (np.std(feature_dict[name])) / 1000
                 result_dict[name] = tmp_dict
+                overall_time += (np.sum(feature_dict[name])) / 1000
+            result_dict["Overall time for all features"] = overall_time
             json.dump(result_dict, file)
 
 
