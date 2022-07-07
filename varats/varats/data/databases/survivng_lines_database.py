@@ -14,7 +14,10 @@ from varats.utils.git_util import calc_surviving_lines, FullCommitHash
 class SurvivingLinesDatabase(
     EvaluationDatabase,
     cache_id="survivng_lines_data",
-    columns=["commit_hash", "lines"]
+    column_types={
+        "commit_hash": 'str',
+        "lines": 'int32'
+    }
 ):
 
     @classmethod
@@ -22,7 +25,9 @@ class SurvivingLinesDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Dict[str, tp.Any]
     ) -> pd.DataFrame:
-        data_frame = load_cached_df_or_none(cls.CACHE_ID, project_name)
+        data_frame = load_cached_df_or_none(
+            cls.CACHE_ID, project_name, cls.COLUMN_TYPES
+        )
         project_repo = get_local_project_git(case_study.project_name)
         revisions = case_study.revisions if case_study else [
             FullCommitHash.from_pygit_commit(commit) for commit in
@@ -38,12 +43,12 @@ class SurvivingLinesDatabase(
         for revision in revisions_to_compute:
             lines_per_commit = calc_surviving_lines(project_repo, revision)
 
-            def build_dataframe_row(hash: FullCommitHash,
+            def build_dataframe_row(chash: FullCommitHash,
                                     lines: int) -> tp.Dict[str, tp.Any]:
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision': revision,
                     'time_id': commit_map.time_id(FullCommitHash(revision)),
-                    'commit_hash': hash.hash,
+                    'commit_hash': chash.hash,
                     'lines': lines
                 }
                 return data_dict

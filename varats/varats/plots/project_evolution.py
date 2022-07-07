@@ -1,4 +1,3 @@
-import math
 import typing as tp
 
 import matplotlib.patches as mpatches
@@ -13,17 +12,13 @@ from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
 from varats.mapping.commit_map import get_commit_map
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotConfig, PlotGenerator
-from varats.plots.surviving_commits import (
-    get_interactions_per_commit_long,
-    get_lines_per_commit_long,
-)
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import FullCommitHash
 
 
-class ProjectEvolutionPlot(Plot, plot_name='commit_structure'):
+class ProjectEvolutionPlot(Plot, plot_name='project_evolution'):
 
-    NAME = 'commit_structure'
+    NAME = 'project-evolution'
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs['case_study']
