@@ -3,8 +3,14 @@ import typing as tp
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import pandas as pd
 from pandas import DataFrame
 
+from varats.data.databases.blame_library_interactions_database import (
+    BlameLibraryInteractionsDatabase,
+)
+from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
+from varats.mapping.commit_map import get_commit_map
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotConfig, PlotGenerator
 from varats.plots.surviving_commits import (
@@ -15,34 +21,30 @@ from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import FullCommitHash
 
 
-class CommitStructurePlot(Plot, plot_name='commit_structure'):
+class ProjectEvolutionPlot(Plot, plot_name='commit_structure'):
 
     NAME = 'commit_structure'
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs['case_study']
-        lines: DataFrame = get_lines_per_commit_long(case_study).rename(
-            columns={'commit_hash': 'base_hash'}
-        )
+        project_name = case_study.project_name
+        lines: DataFrame = SurvivingLinesDatabase.get_data_for_project(
+            project_name, ["revision", "commit_hash", "lines"],
+            get_commit_map(project_name), case_study
+        ).rename(columns={'commit_hash': 'base_hash'})
 
-        interactions: DataFrame = get_interactions_per_commit_long(
-            case_study
+        interactions: DataFrame = BlameLibraryInteractionsDatabase(
+        ).get_data_for_project(
+            project_name, ["base_hash", "amount", "revision", "base_lib"],
+            get_commit_map(project_name), case_study
         ).rename(columns={'amount': 'interactions'})
         data = lines.merge(
             interactions, how='left', on=["base_hash", "revision"]
         )
-        data.dropna(
-            axis=0, how='any', inplace=True, subset=["lines", "interactions"]
-        )
-        data = data.apply(
-            lambda x:
-            [x['revision'], x['base_hash'], x['lines'], x['interactions']]
-            if x['base_hash'].startswith(x[
-                'revision'].hash) else [math.nan, math.nan, math.nan, math.nan],
-            axis=1,
-            result_type='broadcast'
-        )
-        data.dropna(axis=0, how='any', inplace=True)
+        data.drop(['base_hash'], inplace=True, axis='columns')
+        df: pd.DataFrame = data.groupby(by=['revision'], sort=False).sum()
+        df.reset_index(inplace=True)
+        print(df)
         _, axis = plt.subplots(1, 1)
         plt.setp(
             axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
@@ -50,13 +52,13 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
         plt.setp(
             axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
         )
-
-        df = data.drop(columns=["base_hash"])
         ax = axis.twinx()
         plt.setp(ax.get_yticklabels(), fontsize=self.plot_config.x_tick_size())
-        x_axis = range(len(df['revision']))
+        x_axis = range(len(df))
         ax.scatter(x_axis, df['lines'], color="green")
         axis.scatter(x_axis, df['interactions'], color="orange")
+        ax.set_ylim(ymin=0)
+        axis.set_ylim(ymin=0)
         lines_legend = mpatches.Patch(color='green', label="Lines")
         interactions_legend = mpatches.Patch(
             color="orange", label='Interactions'
@@ -74,11 +76,11 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
         super().__init__(plot_config, **kwargs)
 
 
-class CommitStructurePlotGenerator(
+class ProjectEvolutionPlotGenerator(
     PlotGenerator,
-    generator_name="commit-structure",
+    generator_name="project-evolution",
     options=[REQUIRE_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
-        return [CommitStructurePlot(self.plot_config, **self.plot_kwargs)]
+        return [ProjectEvolutionPlot(self.plot_config, **self.plot_kwargs)]
