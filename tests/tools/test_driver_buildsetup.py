@@ -49,6 +49,7 @@ class TestDriverBuildsetup(unittest.TestCase):
             "localhost/debian:10_varats_vara_DEV", "build_VaRA", None, [
                 "build",
                 "vara",
+                "--no-update-prompt",
                 "--build-type=DEV",
                 "--source-location=/varats_root/tools_src",
                 "--install-prefix=/varats_root/tools",

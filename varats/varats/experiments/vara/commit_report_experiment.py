@@ -22,13 +22,13 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
+    create_new_success_result_filename,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -89,14 +89,8 @@ class CRAnalysis(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-
-            result_file = self.__experiment_handle.get_file_name(
-                CR.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, CR, project, binary
             )
 
             opt_params = [
