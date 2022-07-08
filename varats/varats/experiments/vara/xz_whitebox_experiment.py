@@ -76,7 +76,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                     if Path(file_path_xz).is_file():
                         rm_cmd()
 
-                    xz_cmd = binary[5, "-k", workload]
+                    xz_cmd = binary["-5", "-k", workload]
                     xz_cmd()
                     
                     # TODO: figure out how to handle different configs
