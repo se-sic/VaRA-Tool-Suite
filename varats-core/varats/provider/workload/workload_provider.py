@@ -31,7 +31,7 @@ class WorkloadProvider(Provider):
 
         workloads_source = bb.source.Git(
             remote=(
-                "https://github.com/Kaufi-Jonas/"
+                "https://gitlab.cs.uni-saarland.de/s8jskauf/"
                 "WorkloadsForConfigurableSystems.git"
             ),
             local="WorkloadsForConfigurableSystems",
