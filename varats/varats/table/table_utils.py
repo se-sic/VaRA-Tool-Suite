@@ -10,7 +10,10 @@ from varats.table.tables import TableFormat
 
 
 def wrap_table_in_latex_document(
-    table: str, landscape: bool = False, margin: float = 1.5
+    table: str,
+    landscape: bool = False,
+    margin: float = 1.5,
+    document_decorator: tp.Callable[[Document], None] = lambda x: x
 ) -> str:
     """
     Wraps a table inside a proper latex document.
@@ -41,11 +44,15 @@ def wrap_table_in_latex_document(
 
     doc.packages.append(Package('longtable'))
     doc.packages.append(Package('booktabs'))
+    doc.packages.append(Package('multirow'))
+    doc.packages.append(Package('multicol'))
 
     doc.change_document_style("empty")
 
     # embed latex table inside document
     doc.append(NoEscape(table))
+
+    document_decorator(doc)
 
     return tp.cast(str, doc.dumps())
 

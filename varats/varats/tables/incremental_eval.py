@@ -20,7 +20,8 @@ from varats.project.project_util import (
     get_project_cls_by_name,
 )
 from varats.revision.revisions import get_processed_revisions_files
-from varats.table.table import Table, wrap_table_in_document
+from varats.table.table import Table
+from varats.table.table_utils import wrap_table_in_latex_document
 from varats.table.tables import TableFormat
 from varats.utils.git_util import calc_repo_loc
 
@@ -208,7 +209,7 @@ class PhasarGlobalsDataComparision(Table):
             doc.add_color("cellGreen", model="HTML", description="66ff33")
             doc.add_color("cellRed", model="HTML", description="ff3333")
 
-        return wrap_table_in_document(
+        return wrap_table_in_latex_document(
             table=table, landscape=True, document_decorator=add_doc_defs
         )
 
@@ -275,4 +276,4 @@ class PhasarIncMetricsTable(Table):
         return tabulate(df, df.columns, self.format.value)
 
     def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        return wrap_table_in_latex_document(table=table, landscape=True)
