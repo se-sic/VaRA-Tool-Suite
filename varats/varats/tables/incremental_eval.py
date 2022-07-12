@@ -21,8 +21,12 @@ from varats.project.project_util import (
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
-from varats.table.table_utils import wrap_table_in_latex_document
-from varats.table.tables import TableFormat
+from varats.table.table_utils import (
+    wrap_table_in_latex_document,
+    dataframe_to_table,
+)
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import calc_repo_loc
 
 
@@ -83,16 +87,11 @@ def _color_and_format_delta_cell(x) -> tp.Any:
     return "\\cellcolor{cellGreen}" + str(x) + "\%"
 
 
-class PhasarGlobalsDataComparision(Table):
+class PhasarIncrementalDataComparision(Table, table_name="phasar_inc_overview"):
     """Comparision overview of gathered phasar-incremental analysis data to
     compare the effect of running an analysis incrementally."""
 
-    NAME = "phasar_inc_overview"
-
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies: tp.List[CaseStudy] = get_loaded_paper_config(
         ).get_all_case_studies()
 
@@ -180,28 +179,21 @@ class PhasarGlobalsDataComparision(Table):
             inplace=True
         )
 
-        if self.format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
+        table_kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        if table_format.is_latex():
             df.style.format('j')
             caption = ("TEST")
-            table = df.to_latex(
-                #index=True,
-                escape=False,
-                column_format="lccc|ccc|ccc|ccc",
-                # bold_rows=True,
-                multicolumn_format="c",
-                multicolumn=True,
-                # longtable=True,
-                caption=caption,
-                #float_format='{:0.2f}'.format
-                float_format='%.2f'
-            )
-            return str(table) if table else ""
 
-        return tabulate(df, df.columns, self.format.value)
-
-    def wrap_table(self, table: str) -> str:
+            # table_kwargs["index"] = True
+            table_kwargs["escape"] = False
+            table_kwargs["column_format"] = "lccc|ccc|ccc|ccc"
+            # table_kwargs["# bold_rows"] = True
+            table_kwargs["multicolumn_format"] = "c"
+            table_kwargs["multicolumn"] = True,
+            # table_kwargs["longtable"] = True
+            table_kwargs["caption"] = caption
+            # table_kwargs["float_format"] = '{:0.2f}'.format
+            table_kwargs["float_format"] = '%.2f'
 
         def add_doc_defs(doc: Document) -> None:
             doc.packages.append(Package('xcolor'))
@@ -209,21 +201,33 @@ class PhasarGlobalsDataComparision(Table):
             doc.add_color("cellGreen", model="HTML", description="66ff33")
             doc.add_color("cellRed", model="HTML", description="ff3333")
 
-        return wrap_table_in_latex_document(
-            table=table, landscape=True, document_decorator=add_doc_defs
+        return dataframe_to_table(
+            df,
+            table_format,
+            wrap_table,
+            wrap_landscape=True,
+            document_decorator=add_doc_defs,
+            **table_kwargs
         )
 
 
-class PhasarIncMetricsTable(Table):
+class PhasarIncrementalDataComparisionGenerator(
+    TableGenerator, generator_name="phasar-inc-overview", options=[]
+):
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarIncrementalDataComparision(
+                self.table_config, **self.table_kwargs
+            )
+        ]
+
+
+class PhasarIncMetricsTable(Table, table_name="phasar_inc_cs_metrics"):
     """Table showing some general information about the case studies in a paper
     config."""
 
-    NAME = "phasar_inc_cs_metrics"
-
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         cs_data: tp.List[pd.DataFrame] = []
@@ -266,14 +270,20 @@ class PhasarIncMetricsTable(Table):
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
         df = pd.concat(cs_data).sort_index()
-        if self.format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            table = df.to_latex(
-                bold_rows=True, multicolumn_format="c", multirow=True
-            )
-            return str(table) if table else ""
-        return tabulate(df, df.columns, self.format.value)
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_latex_document(table=table, landscape=True)
+        table_kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        if table_format.is_latex():
+            table_kwargs["multicolumn_format"] = "c"
+            table_kwargs["multirow"] = True
+
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=True, **table_kwargs
+        )
+
+
+class PhasarIncMetricsTableGenerator(
+    TableGenerator, generator_name="phasar-inc-cs-metrics", options=[]
+):
+
+    def generate(self) -> tp.List[Table]:
+        return [PhasarIncMetricsTable(self.table_config, **self.table_kwargs)]

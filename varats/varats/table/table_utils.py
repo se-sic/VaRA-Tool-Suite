@@ -62,6 +62,7 @@ def dataframe_to_table(
     table_format: TableFormat,
     wrap_table: bool = False,
     wrap_landscape: bool = False,
+    document_decorator: tp.Callable[[Document], None] = lambda x: x,
     **kwargs: tp.Any
 ) -> str:
     """
@@ -84,7 +85,9 @@ def dataframe_to_table(
     if table_format.is_latex():
         table = data.to_latex(**kwargs)
         if wrap_table:
-            table = wrap_table_in_latex_document(table, wrap_landscape)
+            table = wrap_table_in_latex_document(
+                table, wrap_landscape, document_decorator=document_decorator
+            )
 
     elif table_format.is_html():
         table = data.to_html(**kwargs)
