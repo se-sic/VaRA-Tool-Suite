@@ -1,8 +1,10 @@
 """Experiment that instruments a project with verification instrumentation that
 is used during execution to check if regions are correctly opend/closed."""
 import os
+import textwrap
 import typing as tp
 
+import benchbuild.command as bbcmd
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
@@ -31,8 +33,10 @@ from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 from varats.utils.git_util import ShortCommitHash
 
+# TODO: merge this with feature runner experiment
 
-class RunAndVerifyInstrumentedProject(actions.Step):  #type: ignore
+
+class RunAndVerifyInstrumentedProject(actions.ProjectStep):  #type: ignore
 
     NAME = "RunAndVerifyInstrumentedProject"
     DESCRIPTION = "foo"
@@ -40,12 +44,20 @@ class RunAndVerifyInstrumentedProject(actions.Step):  #type: ignore
     def __init__(
         self, project: VProject, experiment_handle: ExperimentHandle
     ) -> None:
-        super().__init__(obj=project, action_fn=self.run_verifier)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.run_verifier()
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run instrumentation verifier", indent * " "
+        )
 
     def run_verifier(self) -> actions.StepResult:
 
-        project: VProject = self.obj
+        project: VProject = self.project
 
         print(f"PWD {os.getcwd()}")
 
@@ -63,7 +75,8 @@ class RunAndVerifyInstrumentedProject(actions.Step):  #type: ignore
                 extension_type=FSE.SUCCESS
             )
 
-            with local.cwd(local.path(project.source_of_primary)):
+            # with local.cwd(local.path(project.source_of_primary)):  # / ".."):
+            with local.cwd(local.path(project.builddir)):
                 print(f"Currenlty at {local.path(project.source_of_primary)}")
                 print(f"Bin path {binary.path}")
 
@@ -73,10 +86,40 @@ class RunAndVerifyInstrumentedProject(actions.Step):  #type: ignore
                     VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
                 ):
 
-                    workload = "/home/vulder/vara-root/countries-land-1km.geo.json"
+                    workload = \
+                        "/scratch/sattlerf/countries-land-1km.geo.json"
+
+                    # Get jobs from project
+                    jobs = bbcmd.filter_job_index(project.jobs, None)
+                    print(f"{jobs=}")
+                    project_commands = bbcmd.prepare_project_commands(
+                        project, jobs
+                    )
+                    print(f"{project_commands=}")
+                    res = [job() for job in project_commands]
+                    print(f"{res=}")
+
+                    # print(project.jobs)
+                    # for job in project.jobs.items():
+                    #     print(f"job: {str(job)}")
+                    #     for wl in job[1]:
+                    #         print(f"wl: {wl}")
+
+                    #         print(f"Here PWD {os.getcwd()}")
+
+                    #         print(f"{wl.path=}")
+                    #         # wl()
+                    #         cmd = wl.as_plumbum()
+                    #         print(cmd["-k", "--verbose"])
+                    #         cmd("-k", "--verbose")
+
+                    # inject_binary_names(jobs, binary)
+
+                    # wjobs = wrap_jobs_to_run(jobs)
+                    # exec_run_jobs(wjobs)
 
                     # TODO: figure out how to handle workloads
-                    binary("-k", workload)
+                    # binary("-f", "-k", workload)
 
                     # TODO: figure out how to handle different configs
                     # executable("--slow")
@@ -126,12 +169,12 @@ class RunInstrVerifier(VersionExperiment, shorthand="RIV"):
         project.ldflags += ["-flto"]
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = run.RuntimeExtension(project, self)  #\
+        #<< time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << run.WithTimeout()
+        project.compiler_extension = compiler.RunCompiler(project, self)  # \
+        #<< run.WithTimeout()
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(

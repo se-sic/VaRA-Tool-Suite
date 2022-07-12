@@ -1,7 +1,9 @@
 """Project file for xz."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, Command, SourceRoot
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
     block_revisions,
@@ -53,7 +55,7 @@ class Xz(VProject):
             PaperConfigSpecificGit(
                 project_name='xz',
                 remote="https://github.com/xz-mirror/xz.git",
-                local="xz",
+                local="xz.git",
                 refspec="origin/HEAD",
                 limit=None,
                 shallow=False
@@ -65,6 +67,15 @@ class Xz(VProject):
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
         'autotools-dev', 'libtool', 'pkg-config'
     )
+
+    JOBS = {
+        WorkloadSet(name="Foo"): [
+            Command(
+                Path("xz.git/src/xz/xz"), "-f", "-k",
+                "/scratch/sattlerf/countries-land-1km.geo.json"
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(

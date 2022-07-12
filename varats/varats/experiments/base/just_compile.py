@@ -23,21 +23,22 @@ from varats.report.report import ReportSpecification
 
 
 # Please take care when changing this file, see docs experiments/just_compile
-class EmptyAnalysis(actions.Step):  # type: ignore
+class EmptyAnalysis(actions.ProjectStep):  # type: ignore
     """Empty analysis step for testing."""
 
     NAME = "EmptyAnalysis"
     DESCRIPTION = "Analyses nothing."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
-        if not self.obj:
-            return actions.StepResult.ERROR
-        project = self.obj
+        project = self.project
 
         vara_result_folder = get_varats_result_folder(project)
 
