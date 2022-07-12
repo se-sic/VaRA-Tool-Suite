@@ -25,9 +25,11 @@ from varats.revision.revisions import (
 class BlameInteractionDatabase(
     EvaluationDatabase,
     cache_id="blame_interaction_data",
-    columns=[
-        "IN_HEAD_Interactions", "OUT_HEAD_Interactions", "HEAD_Interactions"
-    ]
+    column_types={
+        "IN_HEAD_Interactions": 'int64',
+        "OUT_HEAD_Interactions": 'int64',
+        "HEAD_Interactions": 'int64'
+    }
 ):
     """Provides access to blame interaction data."""
 
@@ -39,12 +41,7 @@ class BlameInteractionDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.IN_HEAD_Interactions = \
-                df_layout.IN_HEAD_Interactions.astype('int64')
-            df_layout.OUT_HEAD_Interactions = \
-                df_layout.OUT_HEAD_Interactions.astype('int64')
-            df_layout.HEAD_Interactions = \
-                df_layout.HEAD_Interactions.astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(

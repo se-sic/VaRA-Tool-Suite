@@ -1,7 +1,6 @@
 """Utility module for BenchBuild experiments."""
 
 import os
-import shutil
 import random
 import shutil
 import tempfile
@@ -9,7 +8,6 @@ import traceback
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
-import tempfile
 from types import TracebackType
 
 from benchbuild import source
@@ -20,6 +18,7 @@ from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
     FileStatusExtension,
@@ -514,3 +513,73 @@ class ZippedReportFolder(TempDir):
             )
 
         super().__exit__(exc_type, exc_value, exc_traceback)
+
+
+def __create_new_result_filename_impl(
+    exp_handle: ExperimentHandle, report_type: tp.Type[BaseReport],
+    project: VProject, binary: ProjectBinaryWrapper,
+    extension_type: FileStatusExtension
+) -> ReportFilename:
+    """
+    Create a result filename for the specified file extensiona  report of the
+    executed experiment/project combination.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+        extension_type: of the report
+
+    Returns: formatted filename
+    """
+    return exp_handle.get_file_name(
+        report_type.shorthand(),
+        project_name=str(project.name),
+        binary_name=binary.name,
+        project_revision=project.version_of_primary,
+        project_uuid=str(project.run_uuid),
+        extension_type=extension_type
+    )
+
+
+def create_new_success_result_filename(
+    exp_handle: ExperimentHandle, report_type: tp.Type[BaseReport],
+    project: VProject, binary: ProjectBinaryWrapper
+) -> ReportFilename:
+    """
+    Create a result filename for a successfull report of the executed
+    experiment/project combination.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+
+    Returns: formatted success filename
+    """
+    return __create_new_result_filename_impl(
+        exp_handle, report_type, project, binary, FileStatusExtension.SUCCESS
+    )
+
+
+def create_new_failed_result_filename(
+    exp_handle: ExperimentHandle, report_type: tp.Type[BaseReport],
+    project: VProject, binary: ProjectBinaryWrapper
+) -> ReportFilename:
+    """
+    Create a result filename for a failed report of the executed
+    experiment/project combination.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+
+    Returns: formatted fail filename
+    """
+    return __create_new_result_filename_impl(
+        exp_handle, report_type, project, binary, FileStatusExtension.FAILED
+    )

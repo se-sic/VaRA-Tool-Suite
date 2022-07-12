@@ -10,6 +10,7 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOptTBAA,
 )
 from varats.data.reports.commit_report import CommitReport
+from varats.data.reports.feature_analysis_report import FeatureAnalysisReport
 from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
@@ -126,3 +127,12 @@ def load_incremental_report(file_path: Path) -> IncrementalReport:
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, IncrementalReport)
+def load_feature_analysis_report(file_path: Path) -> \
+        FeatureAnalysisReport:
+    """
+    Load a FeatureAnalysisReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, FeatureAnalysisReport)

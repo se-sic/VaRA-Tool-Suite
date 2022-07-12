@@ -42,7 +42,6 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
-from varats.tools.research_tools.vara_manager import pull_current_branch
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -57,6 +56,7 @@ from varats.ts_utils.click_param_types import (
     EnumChoice,
     create_multi_case_study_choice,
 )
+from varats.utils.git_commands import pull_current_branch
 from varats.utils.git_util import (
     get_initial_commit,
     is_commit_hash,
@@ -192,7 +192,7 @@ def __casestudy_gen(
             "You need to create a paper config first"
             " using vara-pc create"
         )
-        return
+        raise click.Abort()
     ctx.obj['path'] = Path(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
@@ -245,7 +245,10 @@ def __casestudy_gen(
             ctx.obj['merge_stage'] = stage_index
 
         else:
-            ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
+            if new_stage:
+                ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
+            else:
+                ctx.obj['merge_stage'] = max(case_study.num_stages - 1, 0)
     ctx.obj['case_study'] = case_study
 
 

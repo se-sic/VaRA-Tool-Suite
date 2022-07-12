@@ -16,9 +16,10 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotGenerator, REQUIRE_MULTI_CASE_STUDY
+from varats.plot.plots import PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.project.project_util import get_local_project_gits
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     create_commit_lookup_helper,
     CommitRepoPair,

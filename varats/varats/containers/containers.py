@@ -61,7 +61,7 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[], ContainerImage]] = {
             'apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
             'software-properties-common', 'python3', 'python3-dev',
             'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
-            'libffi-dev', 'libyaml-dev'
+            'libffi-dev', 'libyaml-dev', 'graphviz-dev'
         ).run('wget', 'https://apt.llvm.org/llvm.sh').
         run('chmod', '+x', './llvm.sh').run('./llvm.sh', '13', 'all').run(
             'ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang'

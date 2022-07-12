@@ -14,16 +14,13 @@ from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotGenerator,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
 )
 from varats.project.project_util import get_local_project_git
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
@@ -220,7 +217,7 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 class BlameLorenzCurveGenerator(
     PlotGenerator,
     generator_name="lorenz-curve-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates lorenz-curve plot(s) for the selected case study(ies)."""
 
@@ -442,7 +439,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 class BlameGiniOverTimeGenerator(
     PlotGenerator,
     generator_name="gini-overtime-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates gini-overtime plot(s) for the selected case study(ies)."""
 

@@ -1,23 +1,30 @@
 Tables
 ======
 
-Tables provide a simple means to visualize tabular data. VaRA-TS comes with its own table abstraction that uses `python-tabulate <https://github.com/astanin/python-tabulate>`_ to render tables in different formats.
+Tables provide a simple means to visualize tabular data. VaRA-TS comes with its own table abstraction that uses pandas or `python-tabulate <https://github.com/astanin/python-tabulate>`_ to render tables in different formats.
+Here, you can find detailed information about how tables work in VaRA-TS and how to implement your own tables.
+For an introduction on how to generate tables see :ref:`this guide <Visualizing Data>`.
 
+Table Architecture
+------------------
 
-How to tabulate your data with VaRA-TS
---------------------------------------
-
-You can create tables for your data either by directly using the :ref:`vara-table` tool, or, if you are working with a :ref:`paper config<How to use paper configs>` and want to automate table generation, you can take a look at :ref:`artefacts`.
+Tables in VaRA-TS work analogous to plots as described :ref:`here <Plot Architecture>`.
+This section applies to tables as well if you replace every occurrence of `plot` with `table`.
 
 How to add a new table in VaRA-TS
 ---------------------------------
 
-You can create a new table type by creating a subclass of :class:`~varats.table.table.Table`.
-The table will then be available under the name you declare in the class-level field ``NAME``.
-Each table class must override the abstract function :func:`~varats.table.table.Table.tabulate()` that returns a string of the rendered table.
-By convention, the returned string should be produced by `python-tabulate`'s ``tabulate()`` function using the table class' :attr:`~varats.table.table.Table.format` attribute.
+To implement a new plot, you need to create at least one subclass of :class:`~varats.table.tables.TableGenerator` and one :class:`~varats.table.table.Table`.
 
+Each table class must override the abstract function :func:`~varats.table.table.Table.tabulate()` that returns a string of the rendered table.
+By convention, the returned string should be produced by `python-tabulate`'s ``tabulate()`` function using the provided ``table_format`` parameter.
+There exists also a helper function :func:`~varats.table.table_utils.dataframe_to_table()` that can automatically convert a pandas data frame into the appropriate string representation.
 The data for tables should be retrieved using our :ref:`data storage abstraction<Data management>`.
+
+For the table generator, you need to implement the method :func:`~varats.table.table.TableGenerator.generate()`.
+The generator's generate function must return one or more instances of table classes that should be generated.
+There is no restriction to what tables can be instantiated, but each generator should typically restrict to generating instances of a single table type.
+
 
 Table helper modules
 --------------------
@@ -36,6 +43,16 @@ Module: tables
 ..............
 
 .. automodule:: varats.table.tables
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: table_utils
+...................
+
+.. automodule:: varats.table.table_utils
     :members:
     :undoc-members:
     :show-inheritance:

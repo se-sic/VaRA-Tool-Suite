@@ -23,6 +23,7 @@ from varats.experiment.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     get_default_compile_error_wrapped,
+    create_new_success_result_filename,
 )
 from varats.experiment.wllvm import (
     get_cached_bc_file_path,
@@ -30,7 +31,6 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     RunWLLVM,
 )
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -61,15 +61,15 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            report_name = "GRWith" if self.__globals_active else "GRWithout"
+            if self.__globals_active:
+                report_type: tp.Union[
+                    tp.Type[GlobalsReportWith],
+                    tp.Type[GlobalsReportWithout]] = GlobalsReportWith
+            else:
+                report_type = GlobalsReportWithout
 
-            result_file = self.__experiment_handle.get_file_name(
-                report_name,
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filename(
+                self.__experiment_handle, report_type, project, binary
             )
 
             phasar_params = [
@@ -88,9 +88,8 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project,
-                    self.__experiment_handle.report_spec().
-                    get_report_type(report_name), Path(vara_result_folder)
+                    self.__experiment_handle, project, report_type,
+                    Path(vara_result_folder)
                 )
             )
 
