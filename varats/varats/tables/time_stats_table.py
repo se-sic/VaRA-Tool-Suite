@@ -1,6 +1,7 @@
 """Module for `TimeStatsTable`."""
 import typing as tp
 
+import numpy as np
 import pandas as pd
 
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -33,17 +34,24 @@ class TimeStatsTable(Table, table_name="time_stats"):
                 time_aggregated = TimeReportAggregate(report_file)
                 report_name = time_aggregated.filename
 
+                mean_runtime = np.mean(
+                    time_aggregated.measurements_wall_clock_time
+                )
+                std_runtime = np.std(
+                    time_aggregated.measurements_wall_clock_time
+                )
+                mean_ctx = np.mean(time_aggregated.measurements_ctx_switches)
+                std_ctx = np.std(time_aggregated.measurements_ctx_switches)
+
                 new_row = {
                     "Binary":
                         report_name.binary_name,
                     "Experiment":
                         report_name.experiment_shorthand,
                     "Runtime Mean (Std)":
-                        "%.2f (%.2f)" %  # pylint: disable=C0209
-                        time_aggregated.mean_std_wall_clock_time,
+                        f"{mean_runtime:.2f} ({std_runtime:.2f})",
                     "Ctx-Switches Mean (Std)":
-                        "%.2f (%.2f)" %  # pylint: disable=C0209
-                        time_aggregated.mean_std_ctx_switches
+                        f"{mean_ctx:.2f} ({std_ctx:.2f})"
                 }
 
                 df = df.append(new_row, ignore_index=True)

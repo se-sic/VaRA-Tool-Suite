@@ -254,46 +254,32 @@ class TimeReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)
-
-    @property
-    def wall_clock_times(self) -> tp.List[float]:
-        """Wall clock times from all reports."""
-        return [
+        self._measurements_wall_clock_time = [
             report.wall_clock_time.total_seconds() for report in self.reports
         ]
-
-    @property
-    def mean_std_wall_clock_time(self) -> tp.Tuple[float, float]:
-        """Returns (mean, std)."""
-        return (np.mean(self.wall_clock_times), np.std(self.wall_clock_times))
-
-    @property
-    def min_max_wall_clock_time(self) -> tp.Tuple[float, float]:
-        """Returns (min, max)."""
-        return (np.min(self.wall_clock_times), np.max(self.wall_clock_times))
-
-    @property
-    def ctx_switches(self) -> tp.List[float]:
-        """Total number of context switches from all reports."""
-        return [
+        self._measurements_ctx_switches = [
             report.voluntary_ctx_switches + report.involuntary_ctx_switches
             for report in self.reports
         ]
 
     @property
-    def mean_std_ctx_switches(self) -> tp.Tuple[float, float]:
-        """Returns (mean, std)."""
-        return (np.mean(self.ctx_switches), np.std(self.ctx_switches))
+    def measurements_wall_clock_time(self) -> tp.List[float]:
+        """Wall clock time measurements of all aggregated reports."""
+        return self._measurements_wall_clock_time
 
     @property
-    def min_max_ctx_switches(self) -> tp.Tuple[float, float]:
-        """Returns (min, max)."""
-        return (np.min(self.ctx_switches), np.max(self.ctx_switches))
+    def measurements_ctx_switches(self) -> tp.List[int]:
+        """Context switches measurements of all aggregated reports."""
+        return self._measurements_ctx_switches
 
     @property
     def summary(self) -> str:
-        return f"num_reports = {len(self.reports)}\n" \
-            "mean(std) of wall clock time = %.2f(%.2f)\n" \
-                % self.mean_std_wall_clock_time + \
-            "mean(std) of context switches = %.2f(%.2f)\n" \
-                % self.mean_std_ctx_switches # pylint: disable=C0209
+        return (
+            f"num_reports = {len(self.reports)}\n"
+            "mean (std) of wall clock time = "
+            f"{np.mean(self.measurements_wall_clock_time):.2f}"
+            f" ({np.std(self.measurements_wall_clock_time):.2f})\n"
+            "mean (std) of context switches = "
+            f"{np.mean(self.measurements_ctx_switches):.2f}"
+            f" ({np.std(self.measurements_ctx_switches):.2f})\n"
+        )
