@@ -5,8 +5,6 @@ from pathlib import Path
 from time import sleep
 
 from benchbuild import Project
-from benchbuild.extensions import compiler, run
-from benchbuild.extensions import time as bbtime
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import time, cp, mkdir
 from plumbum import BG, FG, local
@@ -16,13 +14,12 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     ZippedReportFolder,
     get_varats_result_folder,
-    VersionExperiment,
+)
+from varats.experiment.feature_perf_experiments import (
+    FeaturePerfExperiment,
+    InstrumentationType,
 )
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
-from varats.provider.feature.feature_model_provider import (
-    FeatureModelProvider,
-    FeatureModelNotFound,
-)
 from varats.provider.workload.workload_provider import WorkloadProvider
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import FileStatusExtension, ReportSpecification
@@ -42,13 +39,12 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
         self,
         project: Project,
         experiment_handle: ExperimentHandle,
-        num_iterations: int,
         attach_bpf: bool = False
     ):
         super().__init__(obj=project, action_fn=self.run)
         self._experiment_handle = experiment_handle
-        self._num_iterations = num_iterations
         self._attach_bpf = attach_bpf
+        self._num_iterations = 1
 
     def run(self) -> actions.StepResult:
         """Action function for this step."""
@@ -173,119 +169,95 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
             return bcc_runner
 
 
-class FeaturePerfAnalysisDry(VersionExperiment, shorthand="FPA_Dry"):
+class FeaturePerfAnalysisDry(FeaturePerfExperiment, shorthand="FPA_Dry"):
     """Captures baseline runtime (without any instrumentation)."""
 
     NAME = "FeaturePerfAnalysisDry"
-
     REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
 
-    def __init__(
-        self,
-        *args: tp.Any,
-        trace_binaries: bool = False,
-        instrument_usdt: bool = False,
-        **kwargs: tp.Any
-    ):
-        super().__init__(*args, **kwargs)
-
-        self._trace_binaries = trace_binaries
-        self._instrument_usdt = instrument_usdt
-
     def actions_for_project(
-        self, project: Project
+        self,
+        project: Project,
+        instrumentation: InstrumentationType = InstrumentationType.NONE,
+        analysis_actions: tp.Optional[tp.Iterable[actions.Step]] = None,
+        use_feature_model: bool = False
     ) -> tp.MutableSequence[actions.Step]:
-        """
-        Returns the specified steps to run the project(s) specified in the call
-        in a fixed order.
 
-        Args:
-            project: to analyze
-        """
-
-        # Add tracing markers.
-        if self._trace_binaries or self._instrument_usdt:
-            fm_provider = FeatureModelProvider.create_provider_for_project(
-                project
-            )
-            if fm_provider is None:
-                raise Exception("Could not get FeatureModelProvider!")
-
-            fm_path = fm_provider.get_feature_model_path(
-                project.version_of_primary
-            )
-            if fm_path is None or not fm_path.exists():
-                raise FeatureModelNotFound(project, fm_path)
-
-            # Sets vara tracing flags
-            project.cflags += [
-                "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
-                "-fsanitize=vara"
-            ]
-            if self._instrument_usdt:
-                project.cflags += ["-fvara-instr=usdt"]
-            elif self._trace_binaries:
-                project.cflags += ["-fvara-instr=trace_event"]
-
-            project.cflags += ["-flto", "-fuse-ld=lld"]
-            project.ldflags += ["-flto"]
-
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << bbtime.RunWithTime()
-
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << run.WithTimeout()
-
-        analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
-            TraceFeaturePerfWithTime(
-                project, self.get_handle(), 20, self._trace_binaries and
-                self._instrument_usdt
-            )
+        analysis_actions = [
+            TraceFeaturePerfWithTime(project, self.get_handle())
+        ]
+        return super().actions_for_project(
+            project, instrumentation, analysis_actions, use_feature_model
         )
-
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
 
 
 class FeaturePerfAnalysisDryUsdt(
-    FeaturePerfAnalysisDry, shorthand="FPA_Dry_USDT"
+    FeaturePerfExperiment, shorthand="FPA_Dry_USDT"
 ):
     """Captures baseline runtime for inactive probes instrumented by VaRA's USDT
     feature performance analysis instrumentation."""
 
     NAME = "FeaturePerfAnalysisDryUsdt"
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
 
-    def __init__(self, *args: tp.Any, **kwargs: tp.Any):
-        super().__init__(
-            *args, trace_binaries=False, instrument_usdt=True, **kwargs
+    def actions_for_project(
+        self,
+        project: Project,
+        instrumentation: InstrumentationType = InstrumentationType.USDT,
+        analysis_actions: tp.Optional[tp.Iterable[actions.Step]] = None,
+        use_feature_model: bool = True
+    ) -> tp.MutableSequence[actions.Step]:
+
+        analysis_actions = [
+            TraceFeaturePerfWithTime(project, self.get_handle())
+        ]
+        return super().actions_for_project(
+            project, instrumentation, analysis_actions, use_feature_model
         )
 
 
-class FeaturePerfAnalysisTef(FeaturePerfAnalysisDry, shorthand="FPA_TEF"):
+class FeaturePerfAnalysisTef(FeaturePerfExperiment, shorthand="FPA_TEF"):
     """Traces feature performance using VaRA's TEF instrumentation."""
 
     NAME = "FeaturePerfAnalysisTef"
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
 
-    def __init__(self, *args: tp.Any, **kwargs: tp.Any):
-        super().__init__(
-            *args, trace_binaries=True, instrument_usdt=False, **kwargs
+    def actions_for_project(
+        self,
+        project: Project,
+        instrumentation: InstrumentationType = InstrumentationType.TEF,
+        analysis_actions: tp.Optional[tp.Iterable[actions.Step]] = None,
+        use_feature_model: bool = True
+    ) -> tp.MutableSequence[actions.Step]:
+
+        analysis_actions = [
+            TraceFeaturePerfWithTime(project, self.get_handle())
+        ]
+        return super().actions_for_project(
+            project, instrumentation, analysis_actions, use_feature_model
         )
 
 
 class FeaturePerfAnalysisTefUsdt(
-    FeaturePerfAnalysisDry, shorthand="FPA_TEF_USDT"
+    FeaturePerfExperiment, shorthand="FPA_TEF_USDT"
 ):
     """Traces feature performance using VaRA's USDT instrumentation and attaches
     to these probes via a BPF script to generate a TEF."""
 
     NAME = "FeaturePerfAnalysisTefUsdt"
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
 
-    def __init__(self, *args: tp.Any, **kwargs: tp.Any):
-        super().__init__(
-            *args, trace_binaries=True, instrument_usdt=True, **kwargs
+    def actions_for_project(
+        self,
+        project: Project,
+        instrumentation: InstrumentationType = InstrumentationType.TEF,
+        analysis_actions: tp.Optional[tp.Iterable[actions.Step]] = None,
+        use_feature_model: bool = True
+    ) -> tp.MutableSequence[actions.Step]:
+
+        analysis_actions = [
+            TraceFeaturePerfWithTime(project, self.get_handle(), True)
+        ]
+        return super().actions_for_project(
+            project, instrumentation, analysis_actions, use_feature_model
         )
