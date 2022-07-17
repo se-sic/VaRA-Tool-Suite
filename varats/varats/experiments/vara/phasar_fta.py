@@ -6,24 +6,26 @@ generates an EmptyReport.
 """
 
 import typing as tp
+from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
-from varats.data.reports.empty_report import EmptyReport as EMPTY
+from varats.data.reports.feature_analysis_report import (
+    FeatureAnalysisReport as FAR,
+)
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     wrap_unlimit_stack_size,
     get_varats_result_folder,
-    PEErrorHandler,
     ExperimentHandle,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
+    create_default_analysis_failure_handler,
     create_new_success_result_filename,
-    create_new_failed_result_filename,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
@@ -31,6 +33,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     get_cached_bc_file_path,
 )
+from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from varats.report.report import ReportSpecification
 
 
@@ -62,12 +65,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         for binary in project.binaries:
             # Define empty success file
             result_file = create_new_success_result_filename(
-                self.__experiment_handle, EMPTY, project, binary
-            )
-
-            # Define output file name of failed runs
-            error_file = create_new_failed_result_filename(
-                self.__experiment_handle, EMPTY, project, binary
+                self.__experiment_handle, FAR, project, binary
             )
 
             # Combine the input bitcode file's name
@@ -76,20 +74,24 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             )
 
             opt_params = [
-                "-vara-PFA", "-S",
-                str(bc_target_file), "-o", "/dev/null"
+                "-vara-PFA",
+                "-S",
+                "-vara-FAR",
+                f"-vara-report-outfile={vara_result_folder}/{result_file}",
+                str(bc_target_file),
             ]
 
             run_cmd = opt[opt_params]
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
 
-            run_cmd = run_cmd > f"{vara_result_folder}/{result_file}"
-
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 run_cmd,
-                PEErrorHandler(vara_result_folder, error_file.filename)
+                create_default_analysis_failure_handler(
+                    self.__experiment_handle, project, FAR,
+                    Path(vara_result_folder)
+                )
             )
 
 
@@ -98,7 +100,7 @@ class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
     the call."""
 
     NAME = "PhASARFeatureTaintAnalysis"
-    REPORT_SPEC = ReportSpecification(EMPTY)
+    REPORT_SPEC = ReportSpecification(FAR)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
@@ -123,13 +125,18 @@ class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
+        fm_provider = FeatureModelProvider.get_provider_for_project(project)
+
+        fm_path = fm_provider.get_feature_model_path(project.version_of_primary)
+
         project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-feature"
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-feature",
+            "-fvara-fm-path=" + str(fm_path), "-g"
         ]
 
         bc_file_extensions = [
             BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-            BCFileExtensions.FEATURE
+            BCFileExtensions.FEATURE, BCFileExtensions.DEBUG
         ]
 
         analysis_actions = []

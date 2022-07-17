@@ -364,8 +364,7 @@ class TestBlameTaintData(unittest.TestCase):
 
 
 class TestBlameInstInteractions(unittest.TestCase):
-    """Test if a blame inst interactions are correctly reconstruction from
-    yaml."""
+    """Test if blame inst interactions are correctly reconstructed from yaml."""
 
     blame_interaction_1: BlameInstInteractions
     blame_interaction_2: BlameInstInteractions
@@ -445,7 +444,7 @@ class TestBlameInstInteractions(unittest.TestCase):
 
 
 class TestResultFunctionEntry(unittest.TestCase):
-    """Test if a result function entry is correctly reconstruction from yaml."""
+    """Test if a result function entry is correctly reconstructed from yaml."""
 
     func_entry_c: BlameResultFunctionEntry
     func_entry_cxx: BlameResultFunctionEntry
@@ -482,13 +481,13 @@ class TestResultFunctionEntry(unittest.TestCase):
             self.func_entry_cxx.demangled_name, 'doStuff(int, int)'
         )
 
-    def test_instructions_name(self) -> None:
+    def test_instructions_num(self) -> None:
         """Test if num instructions is saved correctly."""
         self.assertEqual(self.func_entry_c.num_instructions, 42)
         self.assertEqual(self.func_entry_cxx.num_instructions, 2)
 
     def test_found_interactions(self) -> None:
-        """Test if all interactions where found."""
+        """Test if all interactions were found."""
         c_interaction_list = self.func_entry_c.interactions
         self.assertEqual(len(c_interaction_list), 2)
         self.assertEqual(
