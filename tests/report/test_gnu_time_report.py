@@ -103,6 +103,8 @@ class TestGNUTimeReport(unittest.TestCase):
 User time: 0:00:02
 System time: 0:00:03
 Elapsed wall clock time: 0:00:42
-Max Resident Size (kbytes): 1804"""
+Max Resident Size (kbytes): 1804
+Voluntary context switches: 1
+Involuntary context switches: 1"""
         self.assertEqual(repr(self.report), expected_result)
         self.assertEqual(str(self.report), expected_result)
