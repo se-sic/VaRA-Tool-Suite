@@ -3,7 +3,7 @@ import re
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, git
+from benchbuild.utils.cmd import cmake, git, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -42,7 +42,7 @@ class FastDownward(VProject, ReleaseProviderHook):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(FastDownward.NAME))
-        binary_map.specify_binary('bin/downward', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('build/bin/downward', BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -55,15 +55,19 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
-        with local.cwd(version_source):
+
+        mkdir("-p", version_source / "build")
+
+        with local.cwd(version_source / "build"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("./src")
+                bb.watch(cmake)("../src")
 
             bb.watch(cmake)(
                 "--build", ".", "-j",
                 get_number_of_jobs(bb_cfg())
             )
 
+        with local.cwd(version_source):
             verify_binaries(self)
 
     @classmethod
