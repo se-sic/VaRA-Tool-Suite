@@ -94,7 +94,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             release_commits = release_commits.union({
                 (FullCommitHash(h), tag)
                 for h, tag in refs
-                if re.match("^release-[0-9]+\\.[0-9]+\\.[0-9]+$", tag) and not h.startswith('96ab3e3')
+                if re.match("^release-[0-9]+\\.[0-9]+\\.[0-9]+$", tag)
             })
 
             return list(release_commits)
