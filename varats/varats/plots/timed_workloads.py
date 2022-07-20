@@ -64,12 +64,16 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
 
                     df = df.append(new_row, ignore_index=True)
 
+        fig, ax = plt.subplots()
+        fig.set_size_inches(11.7, 8.27)
         sns.boxplot(
             x="Project-Binary",
             y="Mean wall time (msecs)",
             hue="Revision",
-            data=df
+            data=df,
+            ax=ax,
         )
+        sns.despine()
 
 
 class TimedWorkloadPlotGenerator(
