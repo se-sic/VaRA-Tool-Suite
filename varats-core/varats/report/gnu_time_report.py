@@ -273,6 +273,10 @@ class TimeReportAggregate(
         return self._measurements_ctx_switches
 
     @property
+    def max_resident_sizes(self) -> tp.List[int]:
+        return [report.max_res_size for report in self.reports]
+
+    @property
     def summary(self) -> str:
         return (
             f"num_reports = {len(self.reports)}\n"
