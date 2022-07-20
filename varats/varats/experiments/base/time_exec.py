@@ -25,7 +25,6 @@ from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import ReportSpecification
 
 
-# Please take care when changing this file, see docs experiments/just_compile
 class TimeProjectWorkloads(actions.Step):  # type: ignore
     """Times the execution time of all project workloads."""
 
@@ -62,14 +61,14 @@ class TimeProjectWorkloads(actions.Step):  # type: ignore
                             "download/v0.6.0/countries-land-1km.geo.json", "-O",
                             workload
                         )
-
-                        run_report_name = Path(
-                            time_reports_dir
-                        ) / f"time_report_{i}.txt"
-
                         rm('-f', workload + ".xz")
                         rm('-f', workload + ".lrz")
                         rm('-f', workload + ".gz")
+
+                        # Start actual experiment code/measurement code
+                        run_report_name = Path(
+                            time_reports_dir
+                        ) / f"time_report_{i}.txt"
 
                         run_cmd = time['-v', '-o', f'{run_report_name}',
                                        binary[workload]]

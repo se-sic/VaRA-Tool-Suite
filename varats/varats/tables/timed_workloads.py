@@ -48,7 +48,7 @@ class TimedWorkloadTable(Table, table_name="timed_workloads"):
                         # agg_time_report.wall_clock_time.total_seconds() * 1000,
                         np.mean(list(map(lambda x: x * 1000, agg_time_report.measurements_wall_clock_time))),
                     "StdDev":
-                        np.std(list(map(lambda x: x * 1000, agg_time_report.measurements_wall_clock_time))),
+                        round(np.std(list(map(lambda x: x * 1000, agg_time_report.measurements_wall_clock_time))), 2),
                     "Max resident size (kbytes)":
                         max(agg_time_report.max_resident_sizes),
                     #"Involuntarty CTX switches":
