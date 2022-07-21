@@ -61,7 +61,7 @@ def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
     )
     if not research_tool.is_up_to_date():
         print(
-            f"{colors.LightYellow}VaRA is outdated! Newest major release "
+            f"{colors.LightYellow}{research_tool.name} is outdated! Newest major release "
             f"version is {colors.bold}{colors.LightBlue}"
             f"{highest_release_version}{colors.bold.reset}{colors.fg.reset}\n"
         )
