@@ -60,7 +60,7 @@ class TestFileStatusExtension(unittest.TestCase):
 
 
 class TestReportFilename(unittest.TestCase):
-    """Test basic TestReportFilename functionality."""
+    """Test basic ReportFilename functionality."""
 
     correct_UUID: str
     raw_filename: str
@@ -151,6 +151,31 @@ class TestReportFilename(unittest.TestCase):
         """Check if we can extract the UUID from a filename."""
         self.assertEqual(self.report_filename.uuid, self.correct_UUID)
         self.assertRaises(ValueError, lambda: self.broken_report_filename.uuid)
+
+
+class TestConfigReportFilename(unittest.TestCase):
+    """Test configuration specific ReportFilename functionality."""
+
+    raw_filename: str
+    report_filename: ReportFilename
+
+    @classmethod
+    def setUpClass(cls):
+        """Setup file and CommitReport."""
+        cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
+        cls.raw_filepath = (
+            "CRE-CR-foo-bar-7bb9ef5f8c_"
+            f"{cls.correct_UUID}_"
+            "success/conf_42.txt"
+        )
+        cls.report_filename = ReportFilename(cls.raw_filename)
+        # cls.broken_report_filename = ReportFilename("ThisFileIsWrong.foobar")
+
+    def test_is_configuration_specific_file(self):
+        pass
+
+    def configuration_id(self):
+        pass
 
 
 class TestBaseReport(unittest.TestCase):
