@@ -15,6 +15,7 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
+from varats.paper_mgmt.paper_config import get_paper_config
 from varats.project.project_util import get_local_project_git
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
@@ -24,12 +25,11 @@ from varats.utils.git_util import FullCommitHash
 
 
 def _generate_graph_table(
-    case_studies: tp.List[CaseStudy],
     graph_generator: tp.Callable[[str, FullCommitHash], nx.DiGraph],
     table_format: TableFormat, wrap_table: bool
 ) -> str:
     degree_data: tp.List[pd.DataFrame] = []
-    for case_study in case_studies:
+    for case_study in get_paper_config().get_all_case_studies():
         project_name = case_study.project_name
         project_git = git["-C", get_local_project_git(project_name).path]
         revision = newest_processed_revision_for_case_study(
@@ -110,16 +110,11 @@ class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
             return create_blame_interaction_graph(project_name, revision
                                                  ).commit_interaction_graph()
 
-        return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format,
-            wrap_table
-        )
+        return _generate_graph_table(create_graph, table_format, wrap_table)
 
 
 class CommitInteractionGraphMetricsTableGenerator(
-    TableGenerator,
-    generator_name="cig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    TableGenerator, generator_name="cig-metrics-table", options=[]
 ):
     """Generates a cig-metrics table for the selected case study(ies)."""
 
@@ -142,16 +137,11 @@ class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
             return create_blame_interaction_graph(project_name, revision
                                                  ).author_interaction_graph()
 
-        return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format,
-            wrap_table
-        )
+        return _generate_graph_table(create_graph, table_format, wrap_table)
 
 
 class AuthorInteractionGraphMetricsTableGenerator(
-    TableGenerator,
-    generator_name="aig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    TableGenerator, generator_name="aig-metrics-table", options=[]
 ):
     """Generates an aig-metrics table for the selected case study(ies)."""
 
@@ -177,16 +167,11 @@ class CommitAuthorInteractionGraphMetricsTable(
                 project_name, revision
             ).commit_author_interaction_graph()
 
-        return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format,
-            wrap_table
-        )
+        return _generate_graph_table(create_graph, table_format, wrap_table)
 
 
 class CommitAuthorInteractionGraphMetricsTableGenerator(
-    TableGenerator,
-    generator_name="caig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    TableGenerator, generator_name="caig-metrics-table", options=[]
 ):
     """Generates a caig-metrics table for the selected case study(ies)."""
 
