@@ -210,7 +210,7 @@ class FeatureAnalysisReport(BaseReport, shorthand="FAR", file_type="yaml"):
                 for feature in tainted_inst.feature_taints:
                     if tainted_inst.is_terminator():
                         if feature not in feat_loc_dict:
-                            feat_loc_dict[feature] = list()
+                            feat_loc_dict[feature] = []
                         feat_loc_dict[feature].append(tainted_inst.location)
         return feat_loc_dict
 
@@ -267,9 +267,9 @@ class FeatureAnalysisReportEval():
                 'true_neg': 0,
             }
             self.__evaluation_locs[feature] = {
-                'true_pos': list(),
-                'false_pos': list(),
-                'false_neg': list(),
+                'true_pos': [],
+                'false_pos': [],
+                'false_neg': [],
             }
 
     def __evaluate(
@@ -289,7 +289,7 @@ class FeatureAnalysisReportEval():
             if feature in feat_loc_dict:
                 fta_locations = feat_loc_dict[feature]
             else:
-                fta_locations = {}
+                fta_locations = list()
 
             feat_true_pos_locs = [
                 loc for loc in fta_locations if loc in gt_locations
