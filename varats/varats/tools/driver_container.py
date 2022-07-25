@@ -188,8 +188,7 @@ def prepare_slurm(
     click.echo("Done.")
 
     click.echo(
-        "Run `benchbuild slurm -E <report_type> <project> -- "
-        "container run --import` inside the `benchbuild` directory "
+        "Run `vara-run --container --slurm -E <experiment> <project> "
         "to generate a slurm script."
     )
 

@@ -69,7 +69,7 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
             if workload is None:
                 print(
                     f"No workload for project={project.name} " \
-                        "binary={binary.name}. Skipping."
+                        f"binary={binary.name}. Skipping."
                 )
                 continue
 

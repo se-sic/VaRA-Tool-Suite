@@ -21,10 +21,12 @@ from varats.revision.revisions import (
 class CommitInteractionDatabase(
     EvaluationDatabase,
     cache_id="commit_interaction_data",
-    columns=[
-        "CFInteractions", "DFInteractions", "HEAD CF Interactions",
-        "HEAD DF Interactions"
-    ]
+    column_types={
+        "CFInteractions": 'int64',
+        "DFInteractions": 'int64',
+        "HEAD CF Interactions": 'int64',
+        "HEAD DF Interactions": 'int64'
+    }
 ):
     """Provides access to commit interaction data."""
 
@@ -36,12 +38,7 @@ class CommitInteractionDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.CFInteractions = df_layout.CFInteractions.astype('int64')
-            df_layout.DFInteractions = df_layout.DFInteractions.astype('int64')
-            df_layout['HEAD CF Interactions'] = df_layout['HEAD CF Interactions'
-                                                         ].astype('int64')
-            df_layout['HEAD DF Interactions'] = df_layout['HEAD DF Interactions'
-                                                         ].astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(

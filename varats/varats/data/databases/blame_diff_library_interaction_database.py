@@ -25,7 +25,13 @@ from varats.utils.git_util import FullCommitHash
 class BlameDiffLibraryInteractionDatabase(
     EvaluationDatabase,
     cache_id="blame_diff_library_interaction_data",
-    columns=["base_hash", "base_lib", "inter_hash", "inter_lib", "amount"]
+    column_types={
+        "base_hash": 'str',
+        "base_lib": 'str',
+        "inter_hash": 'str',
+        "inter_lib": 'str',
+        "amount": 'int'
+    }
 ):
     """Provides access to blame diff library interaction data."""
 
@@ -37,12 +43,7 @@ class BlameDiffLibraryInteractionDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.base_hash = df_layout.base_hash.astype('str')
-            df_layout.base_lib = df_layout.base_lib.astype('str')
-            df_layout.inter_hash = df_layout.inter_hash.astype('str')
-            df_layout.inter_lib = df_layout.inter_lib.astype('str')
-            df_layout.amount = df_layout.amount.astype('int')
-
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(
@@ -91,10 +92,10 @@ class BlameDiffLibraryInteractionDatabase(
                 for inter_pair in inter_pair_amount_dict:
                     result_data_dicts.append(
                         build_dataframe_row(
-                            base_hash=base_pair.commit_hash,
-                            base_library=base_pair.repository_name,
-                            inter_hash=inter_pair.commit_hash,
-                            inter_library=inter_pair.repository_name,
+                            base_hash=base_pair.commit.commit_hash,
+                            base_library=base_pair.commit.repository_name,
+                            inter_hash=inter_pair.commit.commit_hash,
+                            inter_library=inter_pair.commit.repository_name,
                             amount=inter_pair_amount_dict[inter_pair]
                         )
                     )
