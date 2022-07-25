@@ -3,7 +3,7 @@ import re
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, git, mkdir
+from benchbuild.utils.cmd import cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -84,7 +84,6 @@ class FastDownward(VProject, ReleaseProviderHook):
         cls, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
         repo_loc = get_local_project_git_path(cls.NAME)
-        # TODO: Use get_tagged_commit? (currently returns empty list)
         with local.cwd(repo_loc):
             # Before 2019_07, there were no real releases, but the following
             # commits were identified as suitable.
