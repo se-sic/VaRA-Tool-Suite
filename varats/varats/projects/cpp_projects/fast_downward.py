@@ -86,13 +86,6 @@ class FastDownward(VProject, ReleaseProviderHook):
         repo_loc = get_local_project_git_path(cls.NAME)
         # TODO: Use get_tagged_commit? (currently returns empty list)
         with local.cwd(repo_loc):
-            ref_list: tp.List[str] = git("show-ref", "--tags",
-                                         "--dereference").strip().split("\n")
-            refs: tp.List[tp.Tuple[str, str]] = [
-                (ref_split[0], ref_split[1][10:])
-                for ref_split in [ref.strip().split() for ref in ref_list]
-            ]
-
             # Before 2019_07, there were no real releases, but the following
             # commits were identified as suitable.
             release_commits = {
@@ -122,9 +115,10 @@ class FastDownward(VProject, ReleaseProviderHook):
                 )
             }
 
+            tagged_commits = get_tagged_commits(cls.NAME)
             release_commits = release_commits.union({
                 (FullCommitHash(h), tag)
-                for h, tag in refs
+                for h, tag in tagged_commits
                 if re.match("^release-[0-9]+\\.[0-9]+\\.[0-9]+$", tag)
             })
 
