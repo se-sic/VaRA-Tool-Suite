@@ -289,7 +289,7 @@ class FeatureAnalysisReportEval():
             if feature in feat_loc_dict:
                 fta_locations = feat_loc_dict[feature]
             else:
-                fta_locations = list()
+                fta_locations = []
 
             feat_true_pos_locs = [
                 loc for loc in fta_locations if loc in gt_locations
