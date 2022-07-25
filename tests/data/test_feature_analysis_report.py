@@ -57,6 +57,34 @@ result-map:
 ...
 """
 
+YAML_DOC_FAR_2 = """---
+result-map:
+  adjust_assignment_expression:
+    demangled-name:  adjust_assignment_expression
+    feature-related-insts: []
+  bool_exec:
+    demangled-name:  bool_exec
+    feature-related-insts:
+      - inst:       'br i1 %tobool, label %if.then, label %if.else, !dbg !666'
+        location:   'src/path/example.cpp:42'
+        taints:
+          - foo
+          - test
+      - inst:       'br i1 %tobool, label %if.then1, label %if.else2, !dbg !69'
+        location:   'src/path/example.cpp:42'
+        taints:
+          - foo
+          - test
+      - inst:       'br i1 %tobool, label %if.then2, label %if.else3, !dbg !669'
+        location:   'src/path/example.cpp:42'
+        taints:
+          - test
+  _Z7doStuffii:
+    demangled-name:  'doStuff(int, int)'
+    feature-related-insts: []
+...
+"""
+
 YAML_DOC_GT_1 = """---
 foo:
     - 'src/path/example.cpp:42'
@@ -64,6 +92,16 @@ foo:
 test:
     - 'src/path/example.cpp:24'
     - 'src/path/file.cpp:9'
+feature:
+    - 'src/path/example.cpp:42'
+...
+"""
+
+YAML_DOC_GT_2 = """---
+foo:
+    - 'src/path/example.cpp:42'
+test:
+    - 'src/path/example.cpp:24'
 feature:
     - 'src/path/example.cpp:42'
 ...
@@ -318,12 +356,12 @@ class TestFeatureAnalysisReport(unittest.TestCase):
         """Test if mapping of features to locations is correct."""
         feat_loc_dict = self.report.get_feature_locations_dict()
         self.assertEqual(len(feat_loc_dict), 3)
-        self.assertEqual(feat_loc_dict['foo'], {'src/path/example.cpp:42'})
+        self.assertEqual(feat_loc_dict['foo'], ['src/path/example.cpp:42'])
         self.assertEqual(
             feat_loc_dict['feature'],
-            {'src/path/example.cpp:42', 'src/path/example.cpp:50'}
+            ['src/path/example.cpp:42', 'src/path/example.cpp:50']
         )
-        self.assertEqual(feat_loc_dict['test'], {'src/path/example.cpp:42'})
+        self.assertEqual(feat_loc_dict['test'], ['src/path/example.cpp:42'])
 
 
 class TestFeatureAnalysisGroundTruth(unittest.TestCase):
@@ -351,16 +389,16 @@ class TestFeatureAnalysisGroundTruth(unittest.TestCase):
         foo_locations = self.ground_truth.get_feature_locations('foo')
         self.assertEqual(
             foo_locations,
-            {'src/path/example.cpp:42', 'src/path/example.cpp:70'}
+            ['src/path/example.cpp:42', 'src/path/example.cpp:70']
         )
 
         test_locations = self.ground_truth.get_feature_locations('test')
         self.assertEqual(
-            test_locations, {'src/path/example.cpp:24', 'src/path/file.cpp:9'}
+            test_locations, ['src/path/example.cpp:24', 'src/path/file.cpp:9']
         )
 
         feature_locations = self.ground_truth.get_feature_locations('feature')
-        self.assertEqual(feature_locations, {'src/path/example.cpp:42'})
+        self.assertEqual(feature_locations, ['src/path/example.cpp:42'])
 
     def test_get_features(self):
         """Test if we get the correct features."""
@@ -375,11 +413,12 @@ class TestFeatureAnalysisReportEval(unittest.TestCase):
     executed."""
 
     eval_1: FeatureAnalysisReportEval
+    eval_2: FeatureAnalysisReportEval
 
     @classmethod
     def setUpClass(cls) -> None:
         """Load and parse function infos from yaml file."""
-        report: FeatureAnalysisReport
+        report_1: FeatureAnalysisReport
         with mock.patch(
             "builtins.open",
             new=mock.mock_open(
@@ -387,20 +426,40 @@ class TestFeatureAnalysisReportEval(unittest.TestCase):
                 YAML_DOC_FAR_1
             )
         ):
-            loaded_report = FeatureAnalysisReport(Path('fake_file_path'))
-            report = loaded_report
+            report_1 = FeatureAnalysisReport(Path('fake_file_path'))
         """Load and parse location infos from yaml file."""
-        ground_truth: FeatureAnalysisGroundTruth
+        ground_truth_1: FeatureAnalysisGroundTruth
         with mock.patch(
             "builtins.open", new=mock.mock_open(read_data=YAML_DOC_GT_1)
         ):
-            ground_truth = FeatureAnalysisGroundTruth(Path('fake_file_path'))
+            ground_truth_1 = FeatureAnalysisGroundTruth(Path('fake_file_path'))
 
         cls.eval_1 = FeatureAnalysisReportEval(
-            report, ground_truth, ['foo', 'test', 'feature']
+            report_1, ground_truth_1, ['foo', 'test', 'feature']
+        )
+        """Load and parse function infos from yaml file."""
+        report_2: FeatureAnalysisReport
+        with mock.patch(
+            "builtins.open",
+            new=mock.mock_open(
+                read_data=YAML_DOC_HEADER + YAML_DOC_FAR_METADATA +
+                YAML_DOC_FAR_2
+            )
+        ):
+            report_2 = FeatureAnalysisReport(Path('fake_file_path'))
+        """Load and parse location infos from yaml file."""
+        ground_truth_2: FeatureAnalysisGroundTruth
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_GT_2)
+        ):
+            ground_truth_2 = FeatureAnalysisGroundTruth(Path('fake_file_path'))
+
+        cls.eval_2 = FeatureAnalysisReportEval(
+            report_2, ground_truth_2, ['foo', 'test', 'feature']
         )
 
-    def test_evaluation(self) -> None:
+    def test_eval_stats(self) -> None:
+        """Test if the statistical evaluation data is correct."""
         self.assertEqual(self.eval_1.get_true_pos('foo'), 1)
         self.assertEqual(self.eval_1.get_false_pos('foo'), 0)
         self.assertEqual(self.eval_1.get_false_neg('foo'), 1)
@@ -420,3 +479,93 @@ class TestFeatureAnalysisReportEval(unittest.TestCase):
         self.assertEqual(self.eval_1.get_false_pos(), 2)
         self.assertEqual(self.eval_1.get_false_neg(), 3)
         self.assertEqual(self.eval_1.get_true_neg(), 20)
+
+        self.assertEqual(self.eval_2.get_true_pos('foo'), 2)
+        self.assertEqual(self.eval_2.get_false_pos('foo'), 0)
+        self.assertEqual(self.eval_2.get_false_neg('foo'), 0)
+        self.assertEqual(self.eval_2.get_true_neg('foo'), 7)
+
+        self.assertEqual(self.eval_2.get_true_pos('test'), 0)
+        self.assertEqual(self.eval_2.get_false_pos('test'), 3)
+        self.assertEqual(self.eval_2.get_false_neg('test'), 1)
+        self.assertEqual(self.eval_2.get_true_neg('test'), 5)
+
+        self.assertEqual(self.eval_2.get_true_pos('feature'), 0)
+        self.assertEqual(self.eval_2.get_false_pos('feature'), 0)
+        self.assertEqual(self.eval_2.get_false_neg('feature'), 1)
+        self.assertEqual(self.eval_2.get_true_neg('feature'), 8)
+
+        self.assertEqual(self.eval_2.get_true_pos(), 2)
+        self.assertEqual(self.eval_2.get_false_pos(), 3)
+        self.assertEqual(self.eval_2.get_false_neg(), 2)
+        self.assertEqual(self.eval_2.get_true_neg(), 20)
+
+    def test_eval_locs(self) -> None:
+        """Test if the location evaluation data is correct."""
+        true_pos_foo = list()
+        false_pos_foo = list()
+        false_neg_foo = list()
+        true_pos_foo.append('src/path/example.cpp:42')
+        false_neg_foo.append('src/path/example.cpp:70')
+        self.assertEqual(self.eval_1.get_true_pos_locs('foo'), true_pos_foo)
+        self.assertEqual(self.eval_1.get_false_pos_locs('foo'), false_pos_foo)
+        self.assertEqual(self.eval_1.get_false_neg_locs('foo'), false_neg_foo)
+
+        true_pos_test = list()
+        false_pos_test = list()
+        false_neg_test = list()
+        false_pos_test.append('src/path/example.cpp:42')
+        false_neg_test.append('src/path/example.cpp:24')
+        false_neg_test.append('src/path/file.cpp:9')
+        self.assertEqual(self.eval_1.get_true_pos_locs('test'), true_pos_test)
+        self.assertEqual(self.eval_1.get_false_pos_locs('test'), false_pos_test)
+        self.assertEqual(self.eval_1.get_false_neg_locs('test'), false_neg_test)
+
+        true_pos_feature = list()
+        false_pos_feature = list()
+        false_neg_feature = list()
+        true_pos_feature.append('src/path/example.cpp:42')
+        false_pos_feature.append('src/path/example.cpp:50')
+        self.assertEqual(
+            self.eval_1.get_true_pos_locs('feature'), true_pos_feature
+        )
+        self.assertEqual(
+            self.eval_1.get_false_pos_locs('feature'), false_pos_feature
+        )
+        self.assertEqual(
+            self.eval_1.get_false_neg_locs('feature'), false_neg_feature
+        )
+
+        true_pos_foo = list()
+        false_pos_foo = list()
+        false_neg_foo = list()
+        true_pos_foo.append('src/path/example.cpp:42')
+        true_pos_foo.append('src/path/example.cpp:42')
+        self.assertEqual(self.eval_2.get_true_pos_locs('foo'), true_pos_foo)
+        self.assertEqual(self.eval_2.get_false_pos_locs('foo'), false_pos_foo)
+        self.assertEqual(self.eval_2.get_false_neg_locs('foo'), false_neg_foo)
+
+        true_pos_test = list()
+        false_pos_test = list()
+        false_neg_test = list()
+        false_pos_test.append('src/path/example.cpp:42')
+        false_pos_test.append('src/path/example.cpp:42')
+        false_pos_test.append('src/path/example.cpp:42')
+        false_neg_test.append('src/path/example.cpp:24')
+        self.assertEqual(self.eval_2.get_true_pos_locs('test'), true_pos_test)
+        self.assertEqual(self.eval_2.get_false_pos_locs('test'), false_pos_test)
+        self.assertEqual(self.eval_2.get_false_neg_locs('test'), false_neg_test)
+
+        true_pos_feature = list()
+        false_pos_feature = list()
+        false_neg_feature = list()
+        false_neg_feature.append('src/path/example.cpp:42')
+        self.assertEqual(
+            self.eval_2.get_true_pos_locs('feature'), true_pos_feature
+        )
+        self.assertEqual(
+            self.eval_2.get_false_pos_locs('feature'), false_pos_feature
+        )
+        self.assertEqual(
+            self.eval_2.get_false_neg_locs('feature'), false_neg_feature
+        )

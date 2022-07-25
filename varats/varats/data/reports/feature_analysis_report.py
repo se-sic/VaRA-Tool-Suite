@@ -201,17 +201,17 @@ class FeatureAnalysisReport(BaseReport, shorthand="FAR", file_type="yaml"):
         """
         return self.__function_entries[mangled_function_name]
 
-    def get_feature_locations_dict(self) -> tp.Dict[str, tp.Set[str]]:
+    def get_feature_locations_dict(self) -> tp.Dict[str, tp.List[str]]:
         """Returns a dictionary that maps a feature name to a list of all
         locations of tainted br and switch instructions."""
-        feat_loc_dict: tp.Dict[str, tp.Set[str]] = {}
+        feat_loc_dict: tp.Dict[str, tp.List[str]] = {}
         for function_entry in self.__function_entries.values():
             for tainted_inst in function_entry.feature_tainted_insts:
                 for feature in tainted_inst.feature_taints:
                     if tainted_inst.is_terminator():
                         if feature not in feat_loc_dict:
-                            feat_loc_dict[feature] = set()
-                        feat_loc_dict[feature].add(tainted_inst.location)
+                            feat_loc_dict[feature] = list()
+                        feat_loc_dict[feature].append(tainted_inst.location)
         return feat_loc_dict
 
 
@@ -230,9 +230,9 @@ class FeatureAnalysisGroundTruth():
         """Path to ground truth file."""
         return self.__path
 
-    def get_feature_locations(self, feature: str) -> tp.Set[str]:
+    def get_feature_locations(self, feature: str) -> tp.List[str]:
         """Get the locations of a specific feature."""
-        return set(self.__locations[feature])
+        return self.__locations[feature]
 
     def get_features(self) -> tp.List[str]:
         """Get a list of all features in the ground truth."""
@@ -256,14 +256,20 @@ class FeatureAnalysisReportEval():
         self.__evaluate(fa_report, ground_truth)
 
     def __initialize_eval_data(self, features: tp.List[str]) -> None:
-        self.__evaluation_data: tp.Dict[str, tp.Dict[str, int]] = {}
+        self.__evaluation_stats: tp.Dict[str, tp.Dict[str, int]] = {}
+        self.__evaluation_locs: tp.Dict[str, tp.Dict[str, tp.List[str]]] = {}
         features.append('Total')
         for feature in features:
-            self.__evaluation_data[feature] = {
+            self.__evaluation_stats[feature] = {
                 'true_pos': 0,
                 'false_pos': 0,
                 'false_neg': 0,
-                'true_neg': 0
+                'true_neg': 0,
+            }
+            self.__evaluation_locs[feature] = {
+                'true_pos': list(),
+                'false_pos': list(),
+                'false_neg': list(),
             }
 
     def __evaluate(
@@ -273,17 +279,31 @@ class FeatureAnalysisReportEval():
         true_pos, false_pos, false_neg, true_neg = (0, 0, 0, 0)
 
         gt_features = ground_truth.get_features()
+        feat_loc_dict = fa_report.get_feature_locations_dict()
         for feature in gt_features:
             feat_true_pos, feat_false_pos, feat_false_neg, feat_true_neg = (
                 0, 0, 0, 0
             )
 
             gt_locations = ground_truth.get_feature_locations(feature)
-            fta_locations = fa_report.get_feature_locations_dict()[feature]
+            if feature in feat_loc_dict:
+                fta_locations = feat_loc_dict[feature]
+            else:
+                fta_locations = {}
 
-            feat_true_pos = len(gt_locations.intersection(fta_locations))
-            feat_false_pos = len(fta_locations.difference(gt_locations))
-            feat_false_neg = len(gt_locations.difference(fta_locations))
+            feat_true_pos_locs = [
+                loc for loc in fta_locations if loc in gt_locations
+            ]
+            feat_false_pos_locs = [
+                loc for loc in fta_locations if loc not in gt_locations
+            ]
+            feat_false_neg_locs = [
+                loc for loc in gt_locations if loc not in fta_locations
+            ]
+
+            feat_true_pos = len(feat_true_pos_locs)
+            feat_false_pos = len(feat_false_pos_locs)
+            feat_false_neg = len(feat_false_neg_locs)
             feat_true_neg = (
                 fa_report.meta_data.num_br_switch_insts - feat_true_pos -
                 feat_false_pos - feat_false_neg
@@ -294,17 +314,27 @@ class FeatureAnalysisReportEval():
             false_neg += feat_false_neg
             true_neg += feat_true_neg
 
-            if feature in self.__evaluation_data:
+            if feature in self.__evaluation_stats:
 
-                self.__evaluation_data[feature]['true_pos'] = feat_true_pos
-                self.__evaluation_data[feature]['false_pos'] = feat_false_pos
-                self.__evaluation_data[feature]['false_neg'] = feat_false_neg
-                self.__evaluation_data[feature]['true_neg'] = feat_true_neg
+                self.__evaluation_stats[feature]['true_pos'] = feat_true_pos
+                self.__evaluation_stats[feature]['false_pos'] = feat_false_pos
+                self.__evaluation_stats[feature]['false_neg'] = feat_false_neg
+                self.__evaluation_stats[feature]['true_neg'] = feat_true_neg
 
-        self.__evaluation_data['Total']['true_pos'] = true_pos
-        self.__evaluation_data['Total']['false_pos'] = false_pos
-        self.__evaluation_data['Total']['false_neg'] = false_neg
-        self.__evaluation_data['Total']['true_neg'] = true_neg
+                self.__evaluation_locs[feature]['true_pos'] = sorted(
+                    feat_true_pos_locs
+                )
+                self.__evaluation_locs[feature]['false_pos'] = sorted(
+                    feat_false_pos_locs
+                )
+                self.__evaluation_locs[feature]['false_neg'] = sorted(
+                    feat_false_neg_locs
+                )
+
+        self.__evaluation_stats['Total']['true_pos'] = true_pos
+        self.__evaluation_stats['Total']['false_pos'] = false_pos
+        self.__evaluation_stats['Total']['false_neg'] = false_neg
+        self.__evaluation_stats['Total']['true_neg'] = true_neg
 
     def get_true_pos(self, entry: str = 'Total') -> int:
         """
@@ -312,10 +342,10 @@ class FeatureAnalysisReportEval():
         the whole report.
 
         Args:
-            feature : str, deafult 'Total'
+            entry : str, default 'Total'
                 The name of the entry to look up.
         """
-        return self.__evaluation_data[entry]['true_pos']
+        return self.__evaluation_stats[entry]['true_pos']
 
     def get_false_pos(self, entry: str = 'Total') -> int:
         """
@@ -323,10 +353,10 @@ class FeatureAnalysisReportEval():
         the whole report.
 
         Args:
-            feature : str, deafult 'Total'
+            entry : str, default 'Total'
                 The name of the entry to look up.
         """
-        return self.__evaluation_data[entry]['false_pos']
+        return self.__evaluation_stats[entry]['false_pos']
 
     def get_false_neg(self, entry: str = 'Total') -> int:
         """
@@ -334,10 +364,10 @@ class FeatureAnalysisReportEval():
         the whole report.
 
         Args:
-            feature : str, deafult 'Total'
+            entry : str, default 'Total'
                 The name of the entry to look up.
         """
-        return self.__evaluation_data[entry]['false_neg']
+        return self.__evaluation_stats[entry]['false_neg']
 
     def get_true_neg(self, entry: str = 'Total') -> int:
         """
@@ -345,7 +375,40 @@ class FeatureAnalysisReportEval():
         the whole report.
 
         Args:
-            feature : str, deafult 'Total'
+            entry : str, default 'Total'
                 The name of the entry to look up.
         """
-        return self.__evaluation_data[entry]['true_neg']
+        return self.__evaluation_stats[entry]['true_neg']
+
+    def get_true_pos_locs(self, feature: str) -> tp.List[str]:
+        """
+        Returns a list with the locations of the true positive taints for a
+        specific feature.
+
+        Args:
+            feature : str,
+                The name of the feature to look up.
+        """
+        return self.__evaluation_locs[feature]['true_pos'].copy()
+
+    def get_false_pos_locs(self, feature: str) -> tp.List[str]:
+        """
+        Returns a list with the locations of the false positive taints for a
+        specific feature.
+
+        Args:
+            feature : str,
+                The name of the feature to look up.
+        """
+        return self.__evaluation_locs[feature]['false_pos'].copy()
+
+    def get_false_neg_locs(self, feature: str) -> tp.List[str]:
+        """
+        Returns a list with the locations of the false negative taints for a
+        specific feature.
+
+        Args:
+            feature : str,
+                The name of the feature to look up.
+        """
+        return self.__evaluation_locs[feature]['false_neg'].copy()

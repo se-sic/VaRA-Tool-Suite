@@ -66,7 +66,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
     Table, table_name="fta_project_eval_table"
 ):
     """
-    Evaluates gathered PhASAR feature analysis data through camparision with a
+    Evaluates gathered PhASAR feature analysis data through comparision with a
     given ground truth for a single revision of a single project. Includes
     feature-specific evaluation information.
 
@@ -150,13 +150,15 @@ class PhasarFeatureAnalysisProjectEvalTable(
 
             insts += report.meta_data.num_br_switch_insts
 
-        df = pd.concat(data)
+        if len(features) > 7:
+            df = pd.concat(data, axis=1)
+        else:
+            df = pd.concat(data)
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = (
-                'ccc|cc' + '|cc' * len(features) if len(binaries) > 1 \
-                    else 'cc|cc' + '|cc' * len(features)
+            kwargs["column_format"] = self.__get_col_format(
+                len(features), len(binaries)
             )
             kwargs["longtable"] = True
             kwargs["multicolumn"] = True
@@ -166,7 +168,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
                 f"Evaluation of project {case_study.project_name}. "
                 f"In total there were {insts} br and switch instructions."
             )
-            kwargs['position'] = 't'
+            kwargs["position"] = 't'
 
         return dataframe_to_table(
             df, table_format, wrap_table, wrap_landscape=True, **kwargs
@@ -183,28 +185,65 @@ class PhasarFeatureAnalysisProjectEvalTable(
             false_neg = evaluation.get_false_neg(entry)
             true_neg = evaluation.get_true_neg(entry)
 
-            if binary:
-                data.append(
-                    pd.DataFrame([[true_pos, false_pos], [false_neg, true_neg]],
-                                 index=pd.MultiIndex.from_product([[
-                                     'Analysis Results'
-                                 ], [binary], ['Pos', 'Neg']]),
-                                 columns=pd.MultiIndex.from_product([[
-                                     'Ground Truth'
-                                 ], [entry], ['Pos', 'Neg']]))
-                )
+            if len(entries) > 8:
+                if binary:
+                    data.append(
+                        pd.DataFrame([[true_pos, false_pos],
+                                      [false_neg, true_neg]],
+                                     index=pd.MultiIndex.from_product([[
+                                         'Analysis Results'
+                                     ], [entry], ['Pos', 'Neg']]),
+                                     columns=pd.MultiIndex.from_product([[
+                                         'Ground Truth'
+                                     ], [binary], ['Pos', 'Neg']]))
+                    )
+                else:
+                    data.append(
+                        pd.DataFrame([[true_pos, false_pos],
+                                      [false_neg, true_neg]],
+                                     index=pd.MultiIndex.from_product([[
+                                         'Analysis Results'
+                                     ], [entry], ['Pos', 'Neg']]),
+                                     columns=pd.MultiIndex.from_product([[
+                                         'Ground Truth'
+                                     ], ['Pos', 'Neg']]))
+                    )
             else:
-                data.append(
-                    pd.DataFrame([[true_pos, false_pos], [false_neg, true_neg]],
-                                 index=pd.MultiIndex.from_product([[
-                                     'Analysis Results'
-                                 ], ['Pos', 'Neg']]),
-                                 columns=pd.MultiIndex.from_product([[
-                                     'Ground Truth'
-                                 ], [entry], ['Pos', 'Neg']]))
-                )
+                if binary:
+                    data.append(
+                        pd.DataFrame([[true_pos, false_pos],
+                                      [false_neg, true_neg]],
+                                     index=pd.MultiIndex.from_product([[
+                                         'Analysis Results'
+                                     ], [binary], ['Pos', 'Neg']]),
+                                     columns=pd.MultiIndex.from_product([[
+                                         'Ground Truth'
+                                     ], [entry], ['Pos', 'Neg']]))
+                    )
+                else:
+                    data.append(
+                        pd.DataFrame([[true_pos, false_pos],
+                                      [false_neg, true_neg]],
+                                     index=pd.MultiIndex.from_product([[
+                                         'Analysis Results'
+                                     ], ['Pos', 'Neg']]),
+                                     columns=pd.MultiIndex.from_product([[
+                                         'Ground Truth'
+                                     ], [entry], ['Pos', 'Neg']]))
+                    )
 
-        return pd.concat(data, axis=1)
+        if len(entries) > 8:
+            df = pd.concat(data)
+        else:
+            df = pd.concat(data, axis=1)
+        return df
+
+    def __get_col_format(self, num_features: int, num_binaries: int) -> str:
+        if num_features > 7:
+            return 'ccc' + '|cc' * num_binaries
+        if num_binaries == 1:
+            return 'cc|cc' + '|cc' * num_features
+        return 'ccc|cc' + '|cc' * num_features
 
 
 class PhasarFeatureAnalysisProjectEvalTableGenerator(
@@ -225,7 +264,7 @@ class PhasarFeatureAnalysisProjectEvalTableGenerator(
 class PhasarFeatureAnalysisTotalEvalTable(
     Table, table_name="fta_total_eval_table"
 ):
-    """Evaluates gathered PhASAR feature analysis data through camparision with
+    """Evaluates gathered PhASAR feature analysis data through comparision with
     a given ground truth for a single revision."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
@@ -312,7 +351,7 @@ class PhasarFeatureAnalysisTotalEvalTable(
             kwargs["multicolumn"] = True
             kwargs["multicolumn_format"] = "c"
             kwargs["multirow"] = True
-            kwargs['position'] = 't'
+            kwargs["position"] = 't'
 
         return dataframe_to_table(
             df, table_format, wrap_table, wrap_landscape=True, **kwargs
@@ -346,6 +385,150 @@ class PhasarFeatureAnalysisTotalEvalTableGenerator(
     def generate(self) -> tp.List[Table]:
         return [
             PhasarFeatureAnalysisTotalEvalTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
+
+
+class PhasarFeatureAnalysisLocationsEvalTable(
+    Table, table_name="fta_locations_eval_table"
+):
+    """
+    Evaluates gathered PhASAR feature analysis data through comparision with a
+    given ground truth for a single revision of a single project. Includes
+    detailed feature-specific evaluation information about the locations of br
+    and switch instructions.
+
+    In case multiple binaries are given, make sure that the features to be part
+    of the table are part of the ground truth file of each binary.
+    """
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_study: CaseStudy = self.table_kwargs['case_study']
+
+        report_files = get_processed_revisions_files(
+            case_study.project_name, FeatureAnalysisReport,
+            get_case_study_file_name_filter(case_study)
+        )
+        if len(report_files) == 0:
+            raise AssertionError(
+                "No FeatureAnalysisReport found for case study "
+                f"{case_study.project_name}"
+            )
+
+        cs_revisions = case_study.revisions
+        if len(cs_revisions) > 1:
+            LOG.debug(f"revisions={cs_revisions}")
+            LOG.warning(
+                "This tabled is only designed for usage with one revision "
+                "but more were found. All revisions expect for the first "
+                "one are ignored."
+            )
+
+        gt_files: tp.List[Path] = [
+            Path(gt) for gt in \
+                re.compile(r',\s*').split(self.table_kwargs['ground_truth'])
+        ]
+
+        features: tp.List[str] = []
+        if self.table_kwargs['features'] is not None:
+            features = re.compile(r',\s*').split(self.table_kwargs['features'])
+
+        data: tp.List[pd.DataFrame] = []
+        binaries = case_study.project_cls.binaries_for_revision(cs_revisions[0])
+        for binary in binaries:
+            name = ""
+            if len(binaries) > 1:
+                name = binary.name
+
+            # report
+            report_files_for_binary = filter_report_paths_binary(
+                report_files, binary
+            )
+            report: tp.Optional[FeatureAnalysisReport] = None
+            if not report_files_for_binary:
+                LOG.warning(f"No report file given for binary {binary.name}!")
+                continue
+            report = load_feature_analysis_report(report_files_for_binary[0])
+
+            # ground truth
+            gt_files_for_binary = filter_ground_truth_paths_binary(
+                gt_files, binary
+            )
+            ground_truth: tp.Optional[FeatureAnalysisGroundTruth]
+            if not gt_files_for_binary:
+                LOG.warning(
+                    f"No ground truth file given for binary {binary.name}!"
+                )
+                continue
+            ground_truth = FeatureAnalysisGroundTruth(gt_files_for_binary[0])
+
+            # features
+            if features == []:
+                features = ground_truth.get_features()
+            features = sorted(features)
+
+            evaluation: FeatureAnalysisReportEval = FeatureAnalysisReportEval(
+                report, ground_truth, features.copy()
+            )
+
+            data.append(self.__create_eval_df(evaluation, features, name))
+
+        df = pd.concat(data, axis=1)
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["column_format"] = 'c' + len(binaries) * '|c|c'
+            kwargs["longtable"] = True
+            kwargs["multicolumn"] = True
+            kwargs["multicolumn_format"] = "c"
+            kwargs["multirow"] = True
+            kwargs["position"] = 't'
+
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        )
+
+    def __create_eval_df(
+        self, evaluation: FeatureAnalysisReportEval, entries: tp.List[str],
+        binary: str
+    ) -> pd.DataFrame:
+        data: tp.List[pd.DataFrame] = []
+        for entry in entries:
+            false_pos = evaluation.get_false_pos_locs(entry)
+            false_neg = evaluation.get_false_neg_locs(entry)
+
+            if binary:
+                data.append(
+                    pd.DataFrame([[false_pos, false_neg]],
+                                 index=pd.MultiIndex.from_product([[binary],
+                                                                   [entry]]),
+                                 columns=pd.MultiIndex.from_product([[
+                                     'Locations'
+                                 ], ['False Positive', 'False Negative']]))
+                )
+            else:
+                data.append(
+                    pd.DataFrame([[false_pos, false_neg]],
+                                 index=[entry],
+                                 columns=pd.MultiIndex.from_product([[
+                                     'Locations'
+                                 ], ['False Positive', 'False Negative']]))
+                )
+
+        return pd.concat(data)
+
+
+class PhasarFeatureAnalysisLocationsEvalTableGenerator(
+    TableGenerator,
+    generator_name="fta-locations-eval-table",
+    options=[REQUIRE_CASE_STUDY, REQUIRE_GROUND_TRUTH, OPTIONAL_FEATURES]
+):
+    """Generates a fta-locations-eval table for the selected case study."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarFeatureAnalysisLocationsEvalTable(
                 self.table_config, **self.table_kwargs
             )
         ]
