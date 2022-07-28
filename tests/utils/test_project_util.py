@@ -13,6 +13,8 @@ from varats.project.project_util import (
     get_loaded_vara_projects,
     ProjectBinaryWrapper,
     BinaryType,
+    get_tagged_commits,
+    get_local_project_git_path,
 )
 from varats.projects.c_projects.gravity import Gravity
 from varats.projects.discover_projects import initialize_projects
@@ -255,3 +257,63 @@ class TestProjectBinaryWrapper(unittest.TestCase):
             "ls", Path("/bin/ls"), BinaryType.SHARED_LIBRARY
         )
         self.assertIsNone(shared_lib_binary())
+
+
+class TestTaggedCommits(unittest.TestCase):
+    """Check if we can get list of tagged commits from a project."""
+
+    @classmethod
+    def setUp(cls) -> None:
+        """Initialize all projects before running tests."""
+        initialize_projects()
+
+    @staticmethod
+    def hash_belongs_to_commit(hash_value: str) -> bool:
+        return str(
+            git("rev-parse", "--quiet", "--verify", hash_value).rstrip()
+        ) == hash_value
+
+    def test_get_tagged_commits_lightweight(self) -> None:
+        """Check if we can get list of tagged commits from a project when
+        lightweight tags are used."""
+        fast_downward_tagged_commits = set(get_tagged_commits("fast_downward"))
+        fast_downward_repo_loc = get_local_project_git_path("fast_downward")
+        with local.cwd(fast_downward_repo_loc):
+            for (hash_value, _) in fast_downward_tagged_commits:
+                self.assertTrue(self.hash_belongs_to_commit(hash_value))
+
+        # Assert tags are included (we cannot check for set equality since new
+        # tags might be added in the repository)
+        self.assertTrue(
+            fast_downward_tagged_commits.issuperset({
+                ('96ab3e3259af9c0a73d89b67a0549ea6b1736660', 'release-19.06.0'),
+                ('fd21c6b0d070fcb8556db06fc65807e3f31389a6', 'release-19.12.0'),
+                ('3a27ea77f85f41486c57286f5e73a5cac96cc35c', 'release-20.06.0'),
+                ('e907baf9b847c28710873077b4670aa9e5310d57', 'release-21.12.0'),
+                ('906f7fe0f7da35a0384576c07b2cf46ab6921269', 'release-22.06.0')
+            })
+        )
+
+    def test_get_tagged_commits_annotated(self) -> None:
+        """Check if we can get list of tagged commits from a project when
+        annotated tags are used."""
+        xz_tagged_commits = set(get_tagged_commits("xz"))
+        xz_repo_loc = get_local_project_git_path("xz")
+        with local.cwd(xz_repo_loc):
+            for (hash_value, _) in xz_tagged_commits:
+                self.assertTrue(self.hash_belongs_to_commit(hash_value))
+
+        # Assert tags are included (we cannot check for set equality since new
+        # tags might be added in the repository)
+        self.assertTrue(
+            xz_tagged_commits.issuperset({
+                ('a0cd05ee71d330b79ead6eb9222e1b24e1559d3a', 'v5.2.0'),
+                ('dec11497a71518423b5ff0e759100cf8aadf6c7b', 'v5.2.1'),
+                ('9815cdf6987ef91a85493bfcfd1ce2aaf3b47a0a', 'v5.2.2'),
+                ('3d566cd519017eee1a400e7961ff14058dfaf33c', 'v5.2.3'),
+                ('b5be61cc06088bb07f488f9baf7d447ff47b37c1', 'v5.2.4'),
+                ('2327a461e1afce862c22269b80d3517801103c1b', 'v5.2.5'),
+                ('2267f5b0d20a5d24e93fcd9f72ea7eeb0d89708c', 'v5.3.1alpha'),
+                ('edf525e2b1840dcaf377df472c67d8f11f8ace1b', 'v5.3.2alpha'),
+            })
+        )
