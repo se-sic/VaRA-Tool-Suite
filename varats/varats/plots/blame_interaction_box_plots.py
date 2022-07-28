@@ -82,8 +82,10 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
         )
         ax.set_ylim(-0.1, 1.1)
         ax.set_aspect(0.3 / ax.get_data_ratio())
-        ax.tick_params(axis='x', labelrotation=45)
+        ax.tick_params(axis='x', labelrotation=45, labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
         ax.set_xlabel(None)
+        ax.yaxis.label.set_size(10)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -177,8 +179,10 @@ class AuthorBlameVsFileDegreesViolinPlot(
         )
         ax.set_ylim(bottom=0, top=1.1 * data["# Additional Authors"].max())
         ax.set_aspect(0.3 / ax.get_data_ratio())
-        ax.tick_params(axis='x', labelrotation=45)
+        ax.tick_params(axis='x', labelrotation=45, labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
         ax.set_xlabel(None)
+        ax.yaxis.label.set_size(10)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
