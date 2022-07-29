@@ -44,7 +44,7 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
         super().__init__(obj=project, action_fn=self.run)
         self._experiment_handle = experiment_handle
         self._attach_bpf = attach_bpf
-        self._num_iterations = 1
+        self._num_iterations = 20
 
     def run(self) -> actions.StepResult:
         """Action function for this step."""
@@ -138,7 +138,7 @@ class TraceFeaturePerfWithTime(actions.Step):  # type: ignore
                         bcc_runner: Future
                         if self._attach_bpf:
                             bcc_runner = \
-                                TraceFeaturePerfWithTime.attach_bcc_tef_script(
+                                self.attach_bcc_tef_script(
                                     tef_report_file, binary.path
                                 )
 
@@ -250,7 +250,7 @@ class FeaturePerfAnalysisTefUsdt(
     def actions_for_project(
         self,
         project: Project,
-        instrumentation: InstrumentationType = InstrumentationType.TEF,
+        instrumentation: InstrumentationType = InstrumentationType.USDT,
         analysis_actions: tp.Optional[tp.Iterable[actions.Step]] = None,
         use_feature_model: bool = True
     ) -> tp.MutableSequence[actions.Step]:
