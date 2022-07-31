@@ -132,8 +132,7 @@ class CommonTableOptions():
         ),
         make_cli_option(
             "--wrap-table",
-            type=bool,
-            default=False,
+            is_flag=True,
             help="Wrap tables inside a complete latex document."
         ),
         make_cli_option(
