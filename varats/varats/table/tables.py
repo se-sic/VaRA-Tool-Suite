@@ -30,6 +30,8 @@ else:
     from typing import final
 
 if tp.TYPE_CHECKING:
+    from rich.progress import Progress, TaskID  # pylint: disable=unused-import
+
     import varats.table.table  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
@@ -412,7 +414,12 @@ class TableGenerator(abc.ABC):
         """Create the table instance(s) that should be generated."""
 
     @final
-    def __call__(self, common_options: CommonTableOptions) -> None:
+    def __call__(
+        self,
+        common_options: CommonTableOptions,
+        progress: tp.Optional["Progress"] = None,
+        task_id: tp.Optional["TaskID"] = None
+    ) -> None:
         """
         Generate the tables as specified by this generator.
 
@@ -431,6 +438,14 @@ class TableGenerator(abc.ABC):
                 f"If you answer 'no', the tables will still be generated.", "n"
             )
 
+        if progress:
+            if task_id is None:
+                task_id = progress.add_task(
+                    total=len(tables), description=f"Building {self.NAME}"
+                )
+            else:
+                progress.update(task_id, total=len(tables))
+
         for table in tables:
             if common_options.dry_run:
                 LOG.info(repr(table))
@@ -444,6 +459,8 @@ class TableGenerator(abc.ABC):
                     table_format=common_options.table_format,
                     wrap_table=common_options.wrap_table
                 )
+            if progress and task_id is not None:
+                progress.advance(task_id)
 
 
 class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
@@ -576,12 +593,18 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=2):
             generator.table_config, **generator.table_kwargs
         )
 
-    def generate_artefact(self) -> None:
+    def generate_artefact(
+        self, progress: tp.Optional["Progress"] = None
+    ) -> None:
         """Generate the specified table(s)."""
+        task_id = None
+        if progress:
+            task_id = progress.add_task(description=f"Building {self.name}")
+
         generator_instance = self.table_generator_class(
             self.table_config, **self.__table_kwargs
         )
-        generator_instance(self.common_options)
+        generator_instance(self.common_options, progress, task_id)
 
     def get_artefact_file_infos(self) -> tp.List[ArtefactFileInfo]:
         """
