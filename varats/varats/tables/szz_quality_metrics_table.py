@@ -49,11 +49,14 @@ class SZZQualityMetricsTable(Table, table_name="szz_quality_metrics"):
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["multicolumn_format"] = "c"
             kwargs["longtable"] = True
 
         return dataframe_to_table(
-            data, table_format, wrap_table, wrap_landscape=True, **kwargs
+            data,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
 

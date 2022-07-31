@@ -89,13 +89,8 @@ def _generate_graph_table(
 
     df = pd.concat(degree_data).round(2)
 
-    kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
-    if table_format.is_latex():
-        kwargs["multicolumn_format"] = "c"
-        kwargs["multirow"] = True
-
     return dataframe_to_table(
-        df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        df, table_format, wrap_table=wrap_table, wrap_landscape=True
     )
 
 
@@ -214,39 +209,32 @@ class AuthorBlameVsFileDegreesTable(
             file_neighbors = set(file_aig.successors(node)
                                 ).union(file_aig.predecessors(node))
             blame_nodes.append(({
-                "author": f"{node_attrs['author']}",
-                "blame_num_commits": node_attrs['num_commits'],
-                "blame_node_degree": blame_aig.degree(node),
-                "author_diff": len(blame_neighbors.difference(file_neighbors))
+                "Author": f"{node_attrs['author']}",
+                "Blame Num Commits": node_attrs['num_commits'],
+                "Blame Node-deg": blame_aig.degree(node),
+                "Author Diff": len(blame_neighbors.difference(file_neighbors))
             }))
         blame_data = pd.DataFrame(blame_nodes)
-        blame_data.set_index("author", inplace=True)
+        blame_data.set_index("Author", inplace=True)
 
         file_nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in file_aig.nodes:
             node_attrs = tp.cast(AIGNodeAttrs, file_aig.nodes[node])
             file_nodes.append(({
-                "author": f"{node_attrs['author']}",
-                "file_num_commits": node_attrs['num_commits'],
-                "file_node_degree": file_aig.degree(node)
+                "Author": f"{node_attrs['author']}",
+                "File Num Commits": node_attrs['num_commits'],
+                "File Node-deg": file_aig.degree(node)
             }))
         file_data = pd.DataFrame(file_nodes)
-        file_data.set_index("author", inplace=True)
+        file_data.set_index("Author", inplace=True)
 
         degree_data = blame_data.join(file_data, how="outer")
-
-        kwargs: tp.Dict[str, tp.Any] = {}
-        if table_format.is_latex():
-            kwargs["index"] = True
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
 
         return dataframe_to_table(
             degree_data,
             table_format,
-            wrap_table,
+            wrap_table=wrap_table,
             wrap_landscape=True,
-            **kwargs
         )
 
 

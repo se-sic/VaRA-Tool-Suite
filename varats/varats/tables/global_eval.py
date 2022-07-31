@@ -176,11 +176,8 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
 
         mean_stddev = df[df["SDev %"] != '-']["SDev %"].mean()
 
-        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
-            kwargs["longtable"] = True
             kwargs["caption"] = (
                 "Pearson correlation coefficient between RGG and Speedup "
                 "(TimeWithout / TimeWith) "
@@ -192,7 +189,11 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
             )
 
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
 

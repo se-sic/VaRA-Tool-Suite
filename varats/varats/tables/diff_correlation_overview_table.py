@@ -44,12 +44,8 @@ class DiffCorrelationOverviewTable(
             correlations, axis=1, keys=get_unique_cs_name(case_studies)
         )
 
-        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
-        if table_format.is_latex():
-            kwargs["multicolumn_format"] = "c"
-
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=False, **kwargs
+            df, table_format, wrap_table=wrap_table, wrap_landscape=False
         )
 
 

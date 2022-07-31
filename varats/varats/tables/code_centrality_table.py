@@ -70,7 +70,7 @@ def _collect_cig_node_data(
 class TopCentralCodeCommitsTable(
     Table, table_name="top_central_code_commits_table"
 ):
-    """Table showing commits with highest commit interaction graph node
+    """Table showing commits with the highest commit interaction graph node
     degrees."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
@@ -96,18 +96,16 @@ class TopCentralCodeCommitsTable(
         degree_data.sort_values(["centrality", "commit"],
                                 ascending=[False, True],
                                 inplace=True)
+        degree_data.set_index("commit", inplace=True)
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["index"] = False
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
             kwargs["caption"] = f"Top {num_commits} Central Code Commits"
 
         return dataframe_to_table(
             degree_data,
             table_format,
-            wrap_table,
+            wrap_table=wrap_table,
             wrap_landscape=True,
             **kwargs
         )

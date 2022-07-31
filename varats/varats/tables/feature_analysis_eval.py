@@ -159,9 +159,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
                     else 'cc|cc' + '|cc' * len(features)
             )
             kwargs["longtable"] = True
-            kwargs["multicolumn"] = True
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
+            kwargs["multicol_align"] = "c"
             kwargs["caption"] = (
                 f"Evaluation of project {case_study.project_name}. "
                 f"In total there were {insts} br and switch instructions."
@@ -169,7 +167,11 @@ class PhasarFeatureAnalysisProjectEvalTable(
             kwargs['position'] = 't'
 
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
     def __create_eval_df(
@@ -309,13 +311,15 @@ class PhasarFeatureAnalysisTotalEvalTable(
         if table_format.is_latex():
             kwargs["column_format"] = col_format
             kwargs["longtable"] = True
-            kwargs["multicolumn"] = True
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
+            kwargs["multicol_align"] = "c"
             kwargs['position'] = 't'
 
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df,
+            table_format,
+            wrap_tale=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
     def __create_eval_df(

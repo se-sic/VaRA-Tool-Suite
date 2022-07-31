@@ -62,12 +62,8 @@ class TimeStatsTable(Table, table_name="time_stats"):
             inplace=True,
         )
 
-        kwargs: tp.Dict[str, tp.Any] = {}
-        if table_format.is_latex():
-            kwargs["column_format"] = "llrr"
-
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df, table_format, wrap_table=wrap_table, wrap_landscape=True
         )
 
 

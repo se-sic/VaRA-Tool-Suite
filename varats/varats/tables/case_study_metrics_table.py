@@ -64,14 +64,16 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
 
         df = pd.concat(cs_data).sort_index()
 
-        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
+            kwargs["hrules"] = True
+            style.format(
+                formatter={"Revision": "\\texttt{{{}}}"}, escape="latex"
+            )
+            style.format_index("\\textsc{{{}}}", escape="latex")
 
-        return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
-        )
+        return dataframe_to_table(df, table_format, style, wrap_table, **kwargs)
 
 
 class CaseStudyMetricsTableGenerator(

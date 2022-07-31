@@ -35,13 +35,16 @@ class BugOverviewTable(Table, table_name="bug_overview_table"):
 
         bug_df = pd.DataFrame(columns=variables, data=np.array(data_rows))
 
-        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["multicolumn_format"] = "c"
-            kwargs["longtable"] = True
+            kwargs["environment"] = "longtable"
 
         return dataframe_to_table(
-            bug_df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            bug_df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
 
