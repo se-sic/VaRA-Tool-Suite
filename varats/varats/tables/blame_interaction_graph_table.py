@@ -88,9 +88,20 @@ def _generate_graph_table(
         )
 
     df = pd.concat(degree_data).round(2)
+    style = df.style
+    kwargs: tp.Dict[str, tp.Any] = {}
+    if table_format.is_latex():
+        kwargs["hrules"] = True
+        kwargs["multicol_align"] = "c"
+        style.format(precision=2)
 
     return dataframe_to_table(
-        df, table_format, wrap_table=wrap_table, wrap_landscape=True
+        df,
+        table_format,
+        style,
+        wrap_table=wrap_table,
+        wrap_landscape=True,
+        **kwargs
     )
 
 
@@ -230,9 +241,16 @@ class AuthorBlameVsFileDegreesTable(
 
         degree_data = blame_data.join(file_data, how="outer")
 
+        style = degree_data.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            style.format(precision=2)
+
         return dataframe_to_table(
             degree_data,
             table_format,
+            style,
             wrap_table=wrap_table,
             wrap_landscape=True,
         )

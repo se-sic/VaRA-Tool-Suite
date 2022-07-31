@@ -100,6 +100,7 @@ class TopCentralCodeCommitsTable(
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
+            kwargs["hrules"] = True
             kwargs["caption"] = f"Top {num_commits} Central Code Commits"
 
         return dataframe_to_table(

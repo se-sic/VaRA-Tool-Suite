@@ -24,16 +24,19 @@ class BugOverviewTable(Table, table_name="bug_overview_table"):
         )
 
         variables = [
-            "fixing hash", "fixing message", "fixing author", "issue_number"
+            "fixing hash", "fixing message", "fixing author", "issue number"
         ]
         pybugs = bug_provider.find_pygit_bugs()
 
         data_rows = [[
-            pybug.fixing_commit.hex, pybug.fixing_commit.message,
+            pybug.fixing_commit.hex,
+            pybug.fixing_commit.message.splitlines()[0],
             pybug.fixing_commit.author.name, pybug.issue_id
         ] for pybug in pybugs]
 
         bug_df = pd.DataFrame(columns=variables, data=np.array(data_rows))
+        bug_df.set_index("issue number", inplace=True)
+        bug_df.sort_index(inplace=True)
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
