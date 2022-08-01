@@ -28,8 +28,8 @@ class TestDiffCorrelationOverviewTable(unittest.TestCase):
         self.assertEqual(
             r"""\begin{tabular}{lrrrr}
 \toprule
- & \multicolumn{4}{c}{xz} \\
- & Churn & Num Interactions & Num Interacting Commits & Num Interacting Authors \\
+{} & \multicolumn{4}{c}{xz} \\
+{} & {Churn} & {Num Interactions} & {Num Interacting Commits} & {Num Interacting Authors} \\
 \midrule
 Churn & 1.00 & 1.00 & -1.00 & nan \\
 Num Interactions & 1.00 & 1.00 & -1.00 & nan \\
