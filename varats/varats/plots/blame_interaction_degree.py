@@ -1288,11 +1288,11 @@ class BlameDegree(Plot, plot_name=None):
         )
 
         def head_cm_neighbours(
-            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+            lhs: ShortCommitHash, rhs: ShortCommitHash
         ) -> bool:
             return commit_map.short_time_id(
-                lhs_cm
-            ) + 1 == commit_map.short_time_id(rhs_cm)
+                lhs
+            ) + 1 == commit_map.short_time_id(rhs)
 
         new_revs: tp.Set[FullCommitHash] = set()
 
@@ -1305,7 +1305,7 @@ class BlameDegree(Plot, plot_name=None):
         df["revision"] = unique_revisions
         df = df.set_index("revision")
         df_iter = tp.cast(
-            tp.Iterable[tp.Tuple[FullCommitHash, pd.Series]], df.iterrows()
+            tp.Iterable[tp.Tuple[ShortCommitHash, pd.Series]], df.iterrows()
         )
         last_revision, last_row = next(df_iter)
         for revision, row in df_iter:
