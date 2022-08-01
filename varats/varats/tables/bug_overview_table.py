@@ -38,16 +38,8 @@ class BugOverviewTable(Table, table_name="bug_overview_table"):
         bug_df.set_index("issue number", inplace=True)
         bug_df.sort_index(inplace=True)
 
-        kwargs: tp.Dict[str, tp.Any] = {}
-        if table_format.is_latex():
-            kwargs["environment"] = "longtable"
-
         return dataframe_to_table(
-            bug_df,
-            table_format,
-            wrap_table=wrap_table,
-            wrap_landscape=True,
-            **kwargs
+            bug_df, table_format, wrap_table=wrap_table, wrap_landscape=True
         )
 
 

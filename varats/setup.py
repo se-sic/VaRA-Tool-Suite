@@ -29,7 +29,7 @@ setup(
         "networkx>=2.5",
         "numpy>=1.21",
         "packaging>=20.1",
-        "pandas>=1.4.0",
+        "pandas>=1.3.0",
         "plotly>=4.14.1",
         "plumbum>=1.6.6",
         "pygit2>=0.28.2",

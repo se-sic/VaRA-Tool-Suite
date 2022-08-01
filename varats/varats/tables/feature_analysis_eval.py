@@ -155,10 +155,10 @@ class PhasarFeatureAnalysisProjectEvalTable(
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["column_format"] = (
-                'ccc|cc' + '|cc' * len(features) if len(binaries) > 1 \
-                    else 'cc|cc' + '|cc' * len(features)
+                'ccc|cc' +
+                '|cc' * len(features) if len(binaries) > 1 else 'cc|cc' +
+                '|cc' * len(features)
             )
-            kwargs["longtable"] = True
             kwargs["multicol_align"] = "c"
             kwargs["caption"] = (
                 f"Evaluation of project {case_study.project_name}. "
@@ -310,7 +310,6 @@ class PhasarFeatureAnalysisTotalEvalTable(
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["column_format"] = col_format
-            kwargs["longtable"] = True
             kwargs["multicol_align"] = "c"
             kwargs['position'] = 't'
 
