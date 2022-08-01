@@ -52,7 +52,7 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]
-        highlight_commits = self.plot_kwargs["highlight"]
+        highlight_commits = self.plot_kwargs.get("highlight", [])
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReport
