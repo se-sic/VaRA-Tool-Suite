@@ -278,7 +278,6 @@ class BlameVerifierReportPlot(Plot, plot_name=None):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        pass
 
     def calc_missing_revisions(
         self, boundary_gradient: float
