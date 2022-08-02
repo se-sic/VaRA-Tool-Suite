@@ -8,7 +8,6 @@ import matplotlib.ticker as mtick
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from matplotlib import style
 from sklearn import preprocessing
 
 from varats.data.databases.blame_verifier_report_database import (
@@ -279,7 +278,7 @@ class BlameVerifierReportPlot(Plot, plot_name=None):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        style.use(self.plot_config.style())
+        pass
 
     def calc_missing_revisions(
         self, boundary_gradient: float

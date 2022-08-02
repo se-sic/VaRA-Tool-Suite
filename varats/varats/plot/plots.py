@@ -146,11 +146,6 @@ class PlotConfig():
         decl.name: decl for decl in tp.cast(
             tp.List[ConfigOption[tp.Any]], [
                 ConfigOption(
-                    "style",
-                    default="classic",
-                    help_str="Matplotlib style to use."
-                ),
-                ConfigOption(
                     "fig_title",
                     default="",
                     help_str="The title of the plot figure."
@@ -235,10 +230,6 @@ class PlotConfig():
             return option.value_or_default(self.__view, default, view_default)
 
         return get_value
-
-    @property
-    def style(self) -> COGetter[str]:
-        return self.__option_getter(self.__options["style"])
 
     @property
     def fig_title(self) -> COGetter[str]:

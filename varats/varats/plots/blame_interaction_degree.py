@@ -1107,7 +1107,6 @@ class BlameDegree(Plot, plot_name=None):
                        f'- Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.plot_config.style())
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1128,7 +1127,6 @@ class BlameDegree(Plot, plot_name=None):
                        f'{self.plot_kwargs["inter_lib"]} '
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.plot_config.style())
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1174,8 +1172,6 @@ class BlameDegree(Plot, plot_name=None):
         )
 
     def _fraction_overview_plot(self, degree_type: DegreeType) -> None:
-        style.use(self.plot_config.style())
-
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
         df.sort_values(by=['time_id'], inplace=True)
