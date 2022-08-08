@@ -184,10 +184,6 @@ def create_new_varats_config() -> s.Configuration:
             "default": None,
             "desc": "Randomize the order of versions to explore."
         },
-        "workloads_base_location": {
-            "default": str(Path.home()),
-            "desc": "Location of directory containing workloads for binaries."
-        },
     }
 
     cfg['plots'] = {
