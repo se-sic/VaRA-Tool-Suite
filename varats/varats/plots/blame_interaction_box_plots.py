@@ -12,6 +12,9 @@ from varats.data.reports.blame_interaction_graph import (
     AIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
@@ -33,13 +36,13 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
             project_name = case_study.project_name
             added_project_name = False
             revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
+                case_study, BlameReportExperiment
             )
             if not revision:
                 continue
 
             caig = create_blame_interaction_graph(
-                project_name, revision
+                project_name, revision, BlameReportExperiment
             ).commit_author_interaction_graph(
                 outgoing_interactions=True, incoming_interactions=True
             )
@@ -120,7 +123,7 @@ class AuthorBlameVsFileDegreesViolinPlot(
         for case_study in case_studies:
             project_name = case_study.project_name
             revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
+                case_study, BlameReportExperiment
             )
             if not revision:
                 continue
@@ -128,7 +131,7 @@ class AuthorBlameVsFileDegreesViolinPlot(
             project_names.append(project_name)
 
             blame_aig = create_blame_interaction_graph(
-                project_name, revision
+                project_name, revision, BlameReportExperiment
             ).author_interaction_graph()
             file_aig = create_file_based_interaction_graph(
                 project_name, revision

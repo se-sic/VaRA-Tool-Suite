@@ -3,7 +3,7 @@
 import typing as tp
 
 import yaml
-from benchbuild import Experiment, Project, source
+from benchbuild import Project, source
 from benchbuild.experiment import ProjectT
 from benchbuild.utils import actions
 from pygit2 import Commit
@@ -78,7 +78,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class PyDrillerSZZExperiment(Experiment):  # type: ignore
+class PyDrillerSZZExperiment(VersionExperiment):  # type: ignore
     """
     Generates a PyDrillerSZZ report.
 
