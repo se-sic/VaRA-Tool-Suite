@@ -6,7 +6,9 @@ import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.reports.commit_report import CommitReport
+from varats.experiments.vara.commit_report_experiment import (
+    CommitReportExperiment,
+)
 from varats.jupyterhelper.file import load_commit_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
@@ -67,13 +69,15 @@ class CommitInteractionDatabase(
                                 )
 
         report_files = get_processed_revisions_files(
-            project_name, CommitReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            CommitReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = get_failed_revisions_files(
-            project_name, CommitReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            CommitReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         # cls.CACHE_ID is set by superclass
