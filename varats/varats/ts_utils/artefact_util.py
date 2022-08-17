@@ -73,7 +73,7 @@ class ExperimentTypeConverter(CLIOptionConverter[tp.Type[VersionExperiment]]):
     ) -> tp.Union[str, tp.List[str]]:
         if isinstance(value, tp.List):
             raise ValueError("Conversion for lists not implemented.")
-        return value.__name__
+        return str(value.NAME)
 
     @staticmethod
     def string_to_value(

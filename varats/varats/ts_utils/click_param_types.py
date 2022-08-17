@@ -239,7 +239,7 @@ OPTIONAL_REPORT_TYPE: CLIOptionTy = convert_value(
     )
 )
 REQUIRE_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
-    "experiment_type", ReportTypeConverter
+    "experiment_type", ExperimentTypeConverter
 )(
     make_cli_option(
         "--experiment-type",

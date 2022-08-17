@@ -34,7 +34,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         newest_processed = MCS.newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertEqual(
@@ -49,7 +50,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         newest_processed = MCS.newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertIsNone(newest_processed)
@@ -64,7 +66,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         failed_revs = MCS.failed_revisions_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertEqual(len(failed_revs), 1)
@@ -83,7 +86,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         process_revs = MCS.processed_revisions_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertEqual(len(process_revs), 1)
@@ -94,14 +98,16 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_get_revisions_status_for_case_study_to_high_stage(self) -> None:
-        """Check if we correctly handle look ups where the stage selected is
+        """Check if we correctly handle lookups where the stage selected is
         larger than the biggest one in the case study."""
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         load_paper_config()
 
         self.assertListEqual(
             MCS.get_revisions_status_for_case_study(
-                get_paper_config().get_case_studies('brotli')[0], CR, 9001
+                get_paper_config().get_case_studies('brotli')[0],
+                CommitReportExperiment,
+                stage_num=9001
             ), []
         )
 

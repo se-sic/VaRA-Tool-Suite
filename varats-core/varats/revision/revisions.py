@@ -354,7 +354,7 @@ def get_tagged_revisions(
     """
     revisions = []
     result_files = __get_result_files_dict(
-        project_cls.name, experiment_type, report_type
+        project_cls.NAME, experiment_type, report_type
     )
     for commit_hash, file_list in result_files.items():
         filtered_file_list = list(

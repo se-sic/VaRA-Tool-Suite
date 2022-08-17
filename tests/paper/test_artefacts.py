@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile
 
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.empty_report import EmptyReport
+from varats.experiments.base.just_compile import JustCompileReport
 from varats.paper_mgmt.artefacts import (
     initialize_artefact_types,
     Artefacts,
@@ -34,7 +35,7 @@ artefacts:
   output_dir: 'some/path'
   plot_config: {}
   plot_generator: pc-overview-plot
-  report_type: EmptyReport
+  experiment_type: JustCompile
   view: false
 """
 
@@ -87,7 +88,7 @@ class TestArtefacts(unittest.TestCase):
         self.assertEqual(artefact_dict['name'], 'overview')
         self.assertEqual(artefact_dict['output_dir'], 'some/path')
         self.assertEqual(artefact_dict['plot_generator'], 'pc-overview-plot')
-        self.assertEqual(artefact_dict['report_type'], 'EmptyReport')
+        self.assertEqual(artefact_dict['experiment_type'], 'JustCompile')
 
     # PlotArtefact tests
 
@@ -111,7 +112,7 @@ class TestArtefacts(unittest.TestCase):
     def test_artefact_plot_kwargs(self):
         """Check if plot kwargs are loaded correctly."""
         self.assertEqual(
-            self.plot_artefact.plot_kwargs['report_type'], EmptyReport
+            self.plot_artefact.plot_kwargs['experiment_type'], JustCompileReport
         )
 
     def test_artefact_file_info(self):

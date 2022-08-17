@@ -24,11 +24,7 @@ from varats.jupyterhelper.file import (
     load_szzunleashed_report,
     load_pydriller_szz_report,
 )
-from varats.mapping.commit_map import (
-    CommitMap,
-    get_commit_map,
-    create_lazy_commit_map_loader,
-)
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.project.project_util import (

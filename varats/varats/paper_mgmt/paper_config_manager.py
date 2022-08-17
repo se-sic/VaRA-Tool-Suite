@@ -12,7 +12,7 @@ from plumbum import colors
 
 import varats.paper_mgmt.paper_config as PC
 from varats.experiment.experiment_util import VersionExperiment
-from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
@@ -292,7 +292,7 @@ def get_status(
     ) + "\n"
 
     if sort:
-        cmap = create_lazy_commit_map_loader(case_study.project_name)()
+        cmap = get_commit_map(case_study.project_name)
 
     def rev_time(rev: tp.Tuple[ShortCommitHash, FileStatusExtension]) -> int:
         return cmap.short_time_id(rev[0])
