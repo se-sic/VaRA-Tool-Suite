@@ -21,6 +21,9 @@ from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.utils.git_util import ShortCommitHash, CommitHashTy, CommitHash
 from varats.utils.settings import vara_cfg
 
+if tp.TYPE_CHECKING:
+    from varats.experiment.experiment_util import VersionExperiment
+
 
 def is_revision_blocked(
     revision: CommitHash, project_cls: tp.Type[Project]
@@ -60,15 +63,19 @@ def filter_blocked_revisions(
 
 
 def __get_result_files_dict(
-    project_name: str, result_file_type: tp.Type[BaseReport]
+    project_name: str,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Dict[ShortCommitHash, tp.List[Path]]:
     """
-    Returns a dict that maps the commit_hash to a list of all result files, of
-    type result_file_type, for that commit.
+    Returns a dict that maps the commit_hash to a list of all result files of
+    the given type for that commit.
 
     Args:
         project_name: target project
-        result_file_type: the type of the result file
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
     """
     res_dir = Path(f"{vara_cfg()['result_dir']}/{project_name}/")
 
@@ -78,10 +85,14 @@ def __get_result_files_dict(
     if not res_dir.exists():
         return result_files
 
+    if report_type is None:
+        report_type = experiment_type.report_spec().main_report
+
     for res_file in res_dir.iterdir():
         report_file = ReportFilename(res_file)
         if report_file.is_result_file(
-        ) and result_file_type.is_correct_report_type(res_file.name):
+        ) and report_file.report_shorthand == report_type.shorthand(
+        ) and report_file.experiment_shorthand == experiment_type.shorthand():
             commit_hash = report_file.commit_hash
             result_files[commit_hash].append(res_file)
 
@@ -90,18 +101,21 @@ def __get_result_files_dict(
 
 def __get_files_with_status(
     project_name: str,
-    result_file_type: tp.Type[BaseReport],
     file_statuses: tp.List[FileStatusExtension],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
 ) -> tp.List[Path]:
     """
-    Find all file paths to revision files with given file statuses.
+    Find all file paths to result files with given file statuses.
 
     Args:
         project_name: target project
-        result_file_type: the type of the result file
         file_statuses: a list of statuses the files should have
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         file_name_filter: optional filter to exclude certain files; returns
                           true if the file_name should not be checked
         only_newest: whether to include all result files, or only the newest;
@@ -113,7 +127,9 @@ def __get_files_with_status(
     """
     processed_revisions_paths = []
 
-    result_files = __get_result_files_dict(project_name, result_file_type)
+    result_files = __get_result_files_dict(
+        project_name, experiment_type, report_type
+    )
     for value in result_files.values():
         sorted_res_files = sorted(
             value, key=lambda x: Path(x).stat().st_mtime, reverse=True
@@ -131,7 +147,8 @@ def __get_files_with_status(
 
 def get_all_revisions_files(
     project_name: str,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
 ) -> tp.List[Path]:
@@ -140,9 +157,11 @@ def get_all_revisions_files(
 
     Args:
         project_name: target project
-        result_file_type: the type of the result file
         file_name_filter: optional filter to exclude certain files; returns
                           true if the file_name should not be checked
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         only_newest: whether to include all result files, or only the newest;
                      if ``False``, result files for the same revision are sorted
                      descending by the file's mtime
@@ -151,15 +170,15 @@ def get_all_revisions_files(
         a list of file paths to correctly processed revision files
     """
     return __get_files_with_status(
-        project_name, result_file_type,
-        list(FileStatusExtension.get_physical_file_statuses()),
-        file_name_filter, only_newest
+        project_name, list(FileStatusExtension.get_physical_file_statuses()),
+        experiment_type, report_type, file_name_filter, only_newest
     )
 
 
 def get_processed_revisions_files(
     project_name: str,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
 ) -> tp.List[Path]:
@@ -168,9 +187,11 @@ def get_processed_revisions_files(
 
     Args:
         project_name: target project
-        result_file_type: the type of the result file
         file_name_filter: optional filter to exclude certain files; returns
                           true if the file_name should not be checked
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         only_newest: whether to include all result files, or only the newest;
                      if ``False``, result files for the same revision are sorted
                      descending by the file's mtime
@@ -179,14 +200,15 @@ def get_processed_revisions_files(
         a list of file paths to correctly processed revision files
     """
     return __get_files_with_status(
-        project_name, result_file_type, [FileStatusExtension.SUCCESS],
-        file_name_filter, only_newest
+        project_name, [FileStatusExtension.SUCCESS], experiment_type,
+        report_type, file_name_filter, only_newest
     )
 
 
 def get_failed_revisions_files(
     project_name: str,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
 ) -> tp.List[Path]:
@@ -195,9 +217,11 @@ def get_failed_revisions_files(
 
     Args:
         project_name: target project
-        result_file_type: the type of the result file
         file_name_filter: optional filter to exclude certain files; returns
                           ``True`` if the file_name should not be included
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         only_newest: whether to include all result files, or only the newest;
                      if ``False``, result files for the same revision are sorted
                      descending by the file's mtime
@@ -206,14 +230,16 @@ def get_failed_revisions_files(
         a list of file paths to failed revision files
     """
     return __get_files_with_status(
-        project_name, result_file_type,
+        project_name,
         [FileStatusExtension.FAILED, FileStatusExtension.COMPILE_ERROR],
-        file_name_filter, only_newest
+        experiment_type, report_type, file_name_filter, only_newest
     )
 
 
 def get_processed_revisions(
-    project_name: str, result_file_type: tp.Type[BaseReport]
+    project_name: str,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
 ) -> tp.List[ShortCommitHash]:
     """
     Calculates a list of revisions of a project that have already been processed
@@ -221,33 +247,43 @@ def get_processed_revisions(
 
     Args:
         project_name: target project
-        result_file_type: the type of the result file
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         list of correctly process revisions
     """
     return [
         ReportFilename(x.name).commit_hash
-        for x in get_processed_revisions_files(project_name, result_file_type)
+        for x in get_processed_revisions_files(
+            project_name, experiment_type, report_type
+        )
     ]
 
 
 def get_failed_revisions(
-    project_name: str, result_file_type: tp.Type[BaseReport]
+    project_name: str,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
 ) -> tp.List[ShortCommitHash]:
     """
     Calculates a list of revisions of a project that have failed.
 
     Args:
         project_name: target project
-        result_file_type: the type of the result file
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         list of failed revisions
     """
     failed_revisions = []
 
-    result_files = __get_result_files_dict(project_name, result_file_type)
+    result_files = __get_result_files_dict(
+        project_name, experiment_type, report_type
+    )
     for commit_hash, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
         if ReportFilename(newest_res_file.name).has_status_failed():
@@ -260,7 +296,8 @@ def __get_tag_for_revision(
     revision: ShortCommitHash,
     file_list: tp.List[Path],
     project_cls: tp.Type[Project],
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     tag_blocked: bool = True
 ) -> FileStatusExtension:
     """
@@ -270,7 +307,9 @@ def __get_tag_for_revision(
         revision: the revision to get the status for
         file_list: the list of result files for the revision
         project_cls: the project class the revision belongs to
-        result_file_type: the report type to be considered
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         the status for the revision
@@ -278,8 +317,14 @@ def __get_tag_for_revision(
     if tag_blocked and is_revision_blocked(revision, project_cls):
         return FileStatusExtension.BLOCKED
 
+    if report_type is None:
+        report_type = experiment_type.report_spec().main_report
+
     newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
-    if result_file_type.is_correct_report_type(newest_res_file.name):
+    report_file = ReportFilename(newest_res_file)
+    if report_file.is_result_file(
+    ) and report_file.report_shorthand == report_type.shorthand(
+    ) and report_file.experiment_shorthand == experiment_type.shorthand():
         return ReportFilename(str(newest_res_file)).file_status
 
     return FileStatusExtension.MISSING
@@ -287,7 +332,8 @@ def __get_tag_for_revision(
 
 def get_tagged_revisions(
     project_cls: tp.Type[Project],
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     tag_blocked: bool = True,
     revision_filter: tp.Optional[tp.Callable[[Path], bool]] = None
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
@@ -297,7 +343,9 @@ def get_tagged_revisions(
 
     Args:
         project_cls: target project
-        result_file_type: the type of the result file
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         tag_blocked: whether to tag blocked revisions as blocked
         revision_filter: to select a specific subset of revisions
 
@@ -305,7 +353,9 @@ def get_tagged_revisions(
         list of tuples (revision, ``FileStatusExtension``)
     """
     revisions = []
-    result_files = __get_result_files_dict(project_cls.NAME, result_file_type)
+    result_files = __get_result_files_dict(
+        project_cls.name, experiment_type, report_type
+    )
     for commit_hash, file_list in result_files.items():
         filtered_file_list = list(
             filter(revision_filter, file_list)
@@ -313,8 +363,8 @@ def get_tagged_revisions(
 
         if filtered_file_list:
             tag = __get_tag_for_revision(
-                commit_hash, filtered_file_list, project_cls, result_file_type,
-                tag_blocked
+                commit_hash, filtered_file_list, project_cls, experiment_type,
+                report_type, tag_blocked
             )
         else:
             tag = FileStatusExtension.MISSING
@@ -325,8 +375,10 @@ def get_tagged_revisions(
 
 
 def get_tagged_revision(
-    revision: ShortCommitHash, project_name: str,
-    result_file_type: tp.Type[BaseReport]
+    revision: ShortCommitHash,
+    project_name: str,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> FileStatusExtension:
     """
     Calculates the file status for a revision. If two files exists the newest is
@@ -335,16 +387,21 @@ def get_tagged_revision(
     Args:
         revision: the revision to get the status for
         project_name: target project
-        result_file_type: the type of the result file
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         the status for the revision
     """
     project_cls = get_project_cls_by_name(project_name)
-    result_files = __get_result_files_dict(project_name, result_file_type)
+    result_files = __get_result_files_dict(
+        project_name, experiment_type, report_type
+    )
 
     if revision not in result_files.keys():
         return FileStatusExtension.MISSING
     return __get_tag_for_revision(
-        revision, result_files[revision], project_cls, result_file_type
+        revision, result_files[revision], project_cls, experiment_type,
+        report_type
     )

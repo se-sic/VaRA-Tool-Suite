@@ -7,6 +7,9 @@ from pathlib import Path
 import varats.paper_mgmt.case_study as MCS
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.commit_report import CommitReport as CR
+from varats.experiments.vara.commit_report_experiment import (
+    CommitReportExperiment,
+)
 from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
@@ -112,7 +115,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertRaises(
             ValueError, MCS.get_revision_status_for_case_study,
             get_paper_config().get_case_studies('brotli')[0],
-            ShortCommitHash('0000000000'), CR
+            ShortCommitHash('0000000000'), CommitReportExperiment, CR
         )
 
     @run_in_test_environment(
@@ -127,7 +130,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertEqual(
             MCS.get_revision_status_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
-                ShortCommitHash('21ac39f7c8'), CR
+                ShortCommitHash('21ac39f7c8'), CommitReportExperiment, CR
             ), FileStatusExtension.SUCCESS
         )
 
