@@ -467,8 +467,8 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 @click.option(
     "--experiment-type",
     type=TypedChoice({
-        SZZUnleashedExperiment.name: SZZUnleashedExperiment,
-        PyDrillerSZZExperiment.name: PyDrillerSZZExperiment
+        SZZUnleashedExperiment.NAME: SZZUnleashedExperiment,
+        PyDrillerSZZExperiment.NAME: PyDrillerSZZExperiment
     }),
     required=True,
     help="Experiment type of the result files."

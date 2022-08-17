@@ -14,7 +14,10 @@ from varats.data.reports.szz_report import (
     PyDrillerSZZReport,
     SZZTool,
 )
-from varats.experiment.experiment_util import get_varats_result_folder
+from varats.experiment.experiment_util import (
+    get_varats_result_folder,
+    VersionExperiment,
+)
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
@@ -78,7 +81,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class PyDrillerSZZExperiment(VersionExperiment):  # type: ignore
+class PyDrillerSZZExperiment(VersionExperiment, shorthand="PyDrillerSZZ"):
     """
     Generates a PyDrillerSZZ report.
 
