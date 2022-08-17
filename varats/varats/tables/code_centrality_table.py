@@ -9,7 +9,9 @@ from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CIGNodeAttrs,
 )
-from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
@@ -33,11 +35,13 @@ LOG = logging.Logger(__name__)
 
 
 def _collect_cig_node_data(
-    project_name: str, revision: FullCommitHash
+    project_name: str, revision: FullCommitHash,
+    experiment_type: tp.Type[BlameReportExperiment]
 ) -> tp.List[tp.Dict[str, tp.Any]]:
     churn_config = ChurnConfig.create_c_style_languages_config()
-    cig = create_blame_interaction_graph(project_name,
-                                         revision).commit_interaction_graph()
+    cig = create_blame_interaction_graph(
+        project_name, revision, experiment_type
+    ).commit_interaction_graph()
     commit_lookup = create_commit_lookup_helper(project_name)
     repo_lookup = get_local_project_gits(project_name)
 
@@ -79,12 +83,14 @@ class TopCentralCodeCommitsTable(
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise TableDataEmpty()
 
-        nodes = _collect_cig_node_data(project_name, revision)
+        nodes = _collect_cig_node_data(
+            project_name, revision, BlameReportExperiment
+        )
         data = pd.DataFrame(nodes)
         data["code_centrality"] = data["degree"] - data["insertions"]
         data.set_index("commit_hash", inplace=True)
