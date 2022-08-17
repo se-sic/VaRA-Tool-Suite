@@ -15,7 +15,6 @@ setup(
         "PyGithub>=1.47",
         "Cryptography<37.0.0",
         "PyDriller>=2.0",
-        "tabulate>=0.8.6",
         "requests>=2.23.0",
         "packaging>=20.1",
         "pygit2>=0.28.2",

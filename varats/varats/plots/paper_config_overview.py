@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import seaborn as sb
-from matplotlib import style
 from matplotlib.patches import Patch
 
 import varats.paper_mgmt.paper_config as PC
@@ -247,7 +246,6 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     """
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
         _plot_overview_graph(
             _gen_overview_plot(**self.plot_kwargs), self.plot_config
         )

@@ -4,7 +4,6 @@ study."""
 import typing as tp
 
 import matplotlib.pyplot as plt
-from matplotlib import style
 from pandas import DataFrame
 
 from varats.data.databases.file_status_database import FileStatusDatabase
@@ -122,7 +121,6 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
     NAME = 'case_study_overview_plot'
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
         data = _gen_overview_data(
             self.plot_kwargs["show_blocked"], **self.plot_kwargs
         )
