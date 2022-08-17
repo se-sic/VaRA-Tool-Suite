@@ -616,9 +616,7 @@ def __calc_code_churn_range_impl(
 
     repo_git = git[__get_git_path_arg(repo_path)]
     log_base_params = ["log", "--pretty=%H"]
-    diff_base_params = [
-        "log", "--pretty=format:'%H'", "--shortstat", "-l0", "--first-parent"
-    ]
+    diff_base_params = ["log", "--pretty=format:'%H'", "--shortstat", "-l0"]
     if revision_range:
         log_base_params.append(revision_range)
         diff_base_params.append(revision_range)
@@ -758,7 +756,7 @@ def calc_repo_code_churn(
     Calculates code churn for a repository.
 
     Args:
-        repo: path to git repository
+        repo_path: path to git repository
         churn_config: churn config to customize churn generation
 
     Returns:

@@ -19,6 +19,8 @@ from varats.utils.settings import vara_cfg
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 if tp.TYPE_CHECKING:
+    from rich.progress import Progress  # pylint: disable=unused-import
+
     import varats.paper.case_study as cs  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
@@ -131,7 +133,9 @@ class Artefact(ABC):
         """
 
     @abc.abstractmethod
-    def generate_artefact(self) -> None:
+    def generate_artefact(
+        self, progress: tp.Optional["Progress"] = None
+    ) -> None:
         """Generate the specified artefact."""
 
     @abc.abstractmethod

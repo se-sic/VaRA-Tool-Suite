@@ -1107,7 +1107,6 @@ class BlameDegree(Plot, plot_name=None):
                        f'- Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.plot_config.style())
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1128,7 +1127,6 @@ class BlameDegree(Plot, plot_name=None):
                        f'{self.plot_kwargs["inter_lib"]} '
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.plot_config.style())
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1174,8 +1172,6 @@ class BlameDegree(Plot, plot_name=None):
         )
 
     def _fraction_overview_plot(self, degree_type: DegreeType) -> None:
-        style.use(self.plot_config.style())
-
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
         df.sort_values(by=['time_id'], inplace=True)
@@ -1288,11 +1284,11 @@ class BlameDegree(Plot, plot_name=None):
         )
 
         def head_cm_neighbours(
-            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+            lhs: ShortCommitHash, rhs: ShortCommitHash
         ) -> bool:
             return commit_map.short_time_id(
-                lhs_cm
-            ) + 1 == commit_map.short_time_id(rhs_cm)
+                lhs
+            ) + 1 == commit_map.short_time_id(rhs)
 
         new_revs: tp.Set[FullCommitHash] = set()
 
@@ -1305,7 +1301,7 @@ class BlameDegree(Plot, plot_name=None):
         df["revision"] = unique_revisions
         df = df.set_index("revision")
         df_iter = tp.cast(
-            tp.Iterable[tp.Tuple[FullCommitHash, pd.Series]], df.iterrows()
+            tp.Iterable[tp.Tuple[ShortCommitHash, pd.Series]], df.iterrows()
         )
         last_revision, last_row = next(df_iter)
         for revision, row in df_iter:
