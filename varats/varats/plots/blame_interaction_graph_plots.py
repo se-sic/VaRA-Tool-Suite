@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import plotly.offline as offply
-from matplotlib import style
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -284,7 +283,6 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
         sort = self.plot_kwargs["sort"]
         case_study = self.plot_kwargs["plot_case_study"]
 
-        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
@@ -379,7 +377,6 @@ class AuthorInteractionGraphNodeDegreePlot(Plot, plot_name='aig_node_degrees'):
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["plot_case_study"]
 
-        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
@@ -455,7 +452,6 @@ class CommitAuthorInteractionGraphNodeDegreePlot(
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["plot_case_study"]
 
-        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 

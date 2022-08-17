@@ -5,7 +5,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib import style
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -37,7 +36,6 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]
 
-        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
