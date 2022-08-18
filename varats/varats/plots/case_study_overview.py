@@ -8,6 +8,7 @@ from pandas import DataFrame
 
 from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.empty_report import EmptyReport
+from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
@@ -22,6 +23,7 @@ from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import (
     REQUIRE_REPORT_TYPE,
     REQUIRE_CASE_STUDY,
+    REQUIRE_EXPERIMENT_TYPE,
 )
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
@@ -58,10 +60,7 @@ def _gen_overview_data(tag_blocked: bool,
     commit_map: CommitMap = get_commit_map(project_name)
     project = get_project_cls_by_name(project_name)
 
-    if 'report_type' in kwargs:
-        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
-    else:
-        result_file_type = EmptyReport
+    experiment_type = kwargs["experiment_type"]
 
     positions: tp.Dict[str, tp.List[int]] = {
         "background": [],
@@ -84,7 +83,7 @@ def _gen_overview_data(tag_blocked: bool,
         project_name, ["revision", "time_id", "file_status"],
         commit_map,
         case_study,
-        result_file_type=result_file_type,
+        experiment_type=experiment_type,
         tag_blocked=tag_blocked
     )
     positions["success"] = (
@@ -176,16 +175,15 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
         commit_map: CommitMap = get_commit_map(project_name)
 
         def gen_revision_df(**plot_kwargs: tp.Any) -> DataFrame:
-            result_file_type: tp.Type[BaseReport] = plot_kwargs.get(
-                "report_type", EmptyReport
-            )
+            experiment_type: tp.Type[VersionExperiment] = plot_kwargs[
+                "experiment_type"]
 
             # load data
             frame = FileStatusDatabase.get_data_for_project(
                 project_name, ["revision", "time_id", "file_status"],
                 commit_map,
                 case_study,
-                result_file_type=result_file_type,
+                experiment_type=experiment_type,
                 tag_blocked=True
             )
             return frame
@@ -218,7 +216,7 @@ class CaseStudyOverviewGenerator(
     PlotGenerator,
     generator_name="cs-overview-plot",
     options=[
-        REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, OPTIONAL_SHOW_BLOCKED,
+        REQUIRE_EXPERIMENT_TYPE, REQUIRE_CASE_STUDY, OPTIONAL_SHOW_BLOCKED,
         OPTIONAL_SHOW_ALL_BLOCKED
     ]
 ):

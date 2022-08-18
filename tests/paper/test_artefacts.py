@@ -134,7 +134,7 @@ class TestArtefacts(unittest.TestCase):
 
         plot_generator = CaseStudyOverviewGenerator(
             PlotConfig.from_kwargs(view=False),
-            report_type=EmptyReport,
+            experiment_type=JustCompileReport,
             case_study=get_loaded_paper_config().get_case_studies("xz")[0]
         )
         artefact = PlotArtefact.from_generator(
@@ -142,7 +142,7 @@ class TestArtefacts(unittest.TestCase):
         )
         artefact_dict = artefact.get_dict()
         self.assertEqual("xz_0", artefact_dict["case_study"])
-        self.assertEqual("EmptyReport", artefact_dict["report_type"])
+        self.assertEqual("JustCompile", artefact_dict["experiment_type"])
 
     # Artefacts tests
 
