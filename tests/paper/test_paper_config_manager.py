@@ -43,7 +43,7 @@ def mocked_get_commit_map(
     start: tp.Optional[str] = None
 ) -> CommitMap:  # pylint: disable=unused-argument
     """
-    Mock function to replace a lazy commit map loader callback.
+    Create a dummy commit map.
 
     Args:
         project_name: name of the project
