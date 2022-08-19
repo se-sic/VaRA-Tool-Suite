@@ -13,14 +13,12 @@ import pygit2
 from benchbuild import Project
 
 from varats.base.sampling_method import NormalSamplingMethod
-from varats.data.reports.szz_report import (
-    SZZReport,
-    SZZUnleashedReport,
-    PyDrillerSZZReport,
+from varats.data.reports.szz_report import SZZReport
+from varats.experiments.szz.pydriller_szz_experiment import (
+    PyDrillerSZZExperiment,
 )
-from varats.experiment.experiment_util import (
-    VersionExperiment,
-    get_tagged_experiment_specific_revisions,
+from varats.experiments.szz.szz_unleashed_experiment import (
+    SZZUnleashedExperiment,
 )
 from varats.jupyterhelper.file import (
     load_szzunleashed_report,
@@ -56,6 +54,9 @@ from varats.utils.git_util import (
     ChurnConfig,
 )
 
+if tp.TYPE_CHECKING:
+    from varats.experiment.experiment_util import VersionExperiment
+
 LOG = logging.Logger(__name__)
 
 
@@ -73,20 +74,24 @@ class ExtenderStrategy(Enum):
 
 
 def newest_processed_revision_for_case_study(
-    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+    case_study: CaseStudy,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Optional[FullCommitHash]:
     """
     Computes the newest revision of this case study that has been processed.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         the newest processed revision if available
     """
     processed_revisions = processed_revisions_for_case_study(
-        case_study, result_file_type
+        case_study, experiment_type, report_type
     )
     if not processed_revisions:
         return None
@@ -97,20 +102,24 @@ def newest_processed_revision_for_case_study(
 
 
 def processed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+    case_study: CaseStudy,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.List[FullCommitHash]:
     """
     Computes all revisions of this case study that have been processed.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         a list of processed revisions
     """
     total_processed_revisions = get_processed_revisions(
-        case_study.project_name, result_file_type
+        case_study.project_name, experiment_type, report_type
     )
 
     return [
@@ -120,20 +129,24 @@ def processed_revisions_for_case_study(
 
 
 def failed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+    case_study: CaseStudy,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.List[FullCommitHash]:
     """
     Computes all revisions of this case study that have failed.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         a list of failed revisions
     """
     total_failed_revisions = get_failed_revisions(
-        case_study.project_name, result_file_type
+        case_study.project_name, experiment_type, report_type
     )
 
     return [
@@ -144,17 +157,19 @@ def failed_revisions_for_case_study(
 
 def get_revisions_status_for_case_study(
     case_study: CaseStudy,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     stage_num: int = -1,
-    tag_blocked: bool = True,
-    experiment_type: tp.Optional[tp.Type[VersionExperiment]] = None
+    tag_blocked: bool = True
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Computes the file status for all revisions in this case study.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         stage_num: only consider a specific stage of the case study
         tag_blocked: if true, also blocked commits are tagged
 
@@ -167,14 +182,9 @@ def get_revisions_status_for_case_study(
         # Return an empty list should a project name not exist.
         return []
 
-    if experiment_type:
-        tagged_revisions = get_tagged_experiment_specific_revisions(
-            project_cls, result_file_type, tag_blocked, experiment_type
-        )
-    else:
-        tagged_revisions = get_tagged_revisions(
-            project_cls, result_file_type, tag_blocked
-        )
+    tagged_revisions = get_tagged_revisions(
+        project_cls, experiment_type, report_type, tag_blocked
+    )
 
     def filtered_tagged_revs(
         rev_provider: tp.Iterable[FullCommitHash]
@@ -212,7 +222,8 @@ def get_revisions_status_for_case_study(
 def get_revision_status_for_case_study(
     case_study: CaseStudy,
     revision: ShortCommitHash,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> FileStatusExtension:
     """
     Computes the file status for the given revision in this case study.
@@ -220,7 +231,9 @@ def get_revision_status_for_case_study(
     Args:
         case_study: to work on
         revision: to compute status for
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         a list of (revision, status) tuples
@@ -229,7 +242,7 @@ def get_revision_status_for_case_study(
         raise ValueError(f"Case study has no revision {revision}")
 
     return get_tagged_revision(
-        revision, case_study.project_name, result_file_type
+        revision, case_study.project_name, experiment_type, report_type
     )
 
 
@@ -579,7 +592,7 @@ def extend_with_release_revs(
 
 
 def extend_with_bug_commits(
-    case_study: CaseStudy, cmap: CommitMap, report_type: tp.Type['BaseReport'],
+    case_study: CaseStudy, experiment_type: tp.Type["VersionExperiment"],
     merge_stage: int, ignore_blocked: bool
 ) -> None:
     """
@@ -588,24 +601,24 @@ def extend_with_bug_commits(
 
     Args:
         case_study: to extend
-        cmap: commit map to map revisions to unique IDs
+        experiment_type: experiment to use for bug detection
         ignore_blocked: ignore_blocked revisions
         merge_stage: stage the revisions will be added to
-        report_type: report to use for bug detection
     """
     project_cls: tp.Type[Project] = get_project_cls_by_name(
         case_study.project_name
     )
+    cmap = get_commit_map(case_study.project_name, None, 'HEAD', None)
 
     def load_bugs_from_szz_report(
         load_fun: tp.Callable[[Path], SZZReport]
     ) -> tp.Optional[tp.FrozenSet[RawBug]]:
         reports = get_processed_revisions_files(
-            case_study.project_name, report_type
+            case_study.project_name, experiment_type, None
         )
         if not reports:
             LOG.warning(
-                f"I could not find any {report_type} reports. "
+                f"I could not find any {experiment_type} results. "
                 "Falling back to bug provider."
             )
             return None
@@ -613,14 +626,14 @@ def extend_with_bug_commits(
         return report.get_all_raw_bugs()
 
     bugs: tp.Optional[tp.FrozenSet[RawBug]] = None
-    if report_type == SZZUnleashedReport:
+    if experiment_type == SZZUnleashedExperiment:
         bugs = load_bugs_from_szz_report(load_szzunleashed_report)
-    elif report_type == PyDrillerSZZReport:
+    elif experiment_type == PyDrillerSZZExperiment:
         bugs = load_bugs_from_szz_report(load_pydriller_szz_report)
     else:
         LOG.warning(
-            f"Report type {report_type} is not supported by this extender "
-            f"strategy. Falling back to bug provider."
+            f"Experiment type {experiment_type} is not supported by this "
+            f"extender strategy. Falling back to bug provider."
         )
 
     if bugs is None:

@@ -17,7 +17,9 @@ from varats.data.reports.blame_interaction_graph import (
     AIGNodeAttrs,
     CAIGNodeAttrs,
 )
-from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
@@ -57,8 +59,9 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
     def save(self, plot_dir: Path, filetype: str = 'svg') -> None:
         project_name = self.plot_kwargs["project"]
         revision = self.plot_kwargs["revision"]
-        cig = create_blame_interaction_graph(project_name, revision
-                                            ).commit_interaction_graph()
+        cig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).commit_interaction_graph()
         nx.set_node_attributes(
             cig, {node: cig.nodes[node]["commit_hash"] for node in cig.nodes},
             "label"
@@ -100,8 +103,9 @@ def _prepare_cig_plotly(
 ) -> tp.Tuple[tp.List[tp.Tuple[NodeTy, NodeInfoTy]], tp.List[tp.Tuple[
     NodeTy, NodeTy, EdgeInfoTy]]]:
     commit_lookup = create_commit_lookup_helper(project_name)
-    cig = create_blame_interaction_graph(project_name,
-                                         revision).commit_interaction_graph()
+    cig = create_blame_interaction_graph(
+        project_name, revision, BlameReportExperiment
+    ).commit_interaction_graph()
 
     def filter_nodes(node: CommitRepoPair) -> bool:
         if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
@@ -297,13 +301,14 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
         axes.set_xlabel(xlabel)
 
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
-        cig = create_blame_interaction_graph(case_study.project_name, revision
-                                            ).commit_interaction_graph()
+        cig = create_blame_interaction_graph(
+            case_study.project_name, revision, BlameReportExperiment
+        ).commit_interaction_graph()
         commit_lookup = create_commit_lookup_helper(case_study.project_name)
 
         def filter_nodes(node: CommitRepoPair) -> bool:
@@ -387,13 +392,14 @@ class AuthorInteractionGraphNodeDegreePlot(Plot, plot_name='aig_node_degrees'):
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
-        aig = create_blame_interaction_graph(project_name, revision
-                                            ).author_interaction_graph()
+        aig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).author_interaction_graph()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in aig.nodes:
@@ -462,13 +468,14 @@ class CommitAuthorInteractionGraphNodeDegreePlot(
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
-        caig = create_blame_interaction_graph(project_name, revision
-                                             ).commit_author_interaction_graph()
+        caig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).commit_author_interaction_graph()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in caig.nodes:

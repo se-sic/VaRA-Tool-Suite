@@ -12,8 +12,13 @@ from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
-from varats.data.reports.szz_report import SZZReport
 from varats.experiment.experiment_util import VersionExperiment
+from varats.experiments.szz.pydriller_szz_experiment import (
+    PyDrillerSZZExperiment,
+)
+from varats.experiments.szz.szz_unleashed_experiment import (
+    SZZUnleashedExperiment,
+)
 from varats.mapping.commit_map import (
     create_lazy_commit_map_loader,
     generate_commit_map,
@@ -459,17 +464,18 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 
 
 @__casestudy_gen.command("select_bug")
-@click.argument(
-    "report_type",
+@click.option(
+    "--experiment-type",
     type=TypedChoice({
-        k: v
-        for (k, v) in BaseReport.REPORT_TYPES.items()
-        if isinstance(v, SZZReport)
-    })
+        SZZUnleashedExperiment.NAME: SZZUnleashedExperiment,
+        PyDrillerSZZExperiment.NAME: PyDrillerSZZExperiment
+    }),
+    required=True,
+    help="Experiment type of the result files."
 )
 @click.pass_context
 def __gen_bug_commits(
-    ctx: click.Context, report_type: tp.Type['BaseReport']
+    ctx: click.Context, experiment_type: tp.Type['VersionExperiment']
 ) -> None:
     """
     Extend a case study with revisions that either introduced or fixed a bug as
@@ -477,11 +483,8 @@ def __gen_bug_commits(
 
     REPORT_TYPE: report to use for determining bug regions
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
     extend_with_bug_commits(
-        ctx.obj['case_study'], cmap, report_type, ctx.obj['merge_stage'],
+        ctx.obj['case_study'], experiment_type, ctx.obj['merge_stage'],
         ctx.obj['ignore_blocked']
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
@@ -531,9 +534,15 @@ def __casestudy_package(
 
 @main.command("view")
 @click.option(
+    "--experiment-type",
+    type=create_experiment_type_choice(),
+    required=True,
+    help="Experiment type of the result files."
+)
+@click.option(
     "--report-type",
     type=create_report_type_choice(),
-    required=True,
+    required=False,
     help="Report type of the result files."
 )
 @click.option(
@@ -546,17 +555,20 @@ def __casestudy_package(
     help="Only report the newest file for each matched commit hash"
 )
 def __casestudy_view(
-    report_type: tp.Type[BaseReport], project: str,
+    experiment_type: tp.Type[VersionExperiment],
+    report_type: tp.Optional[tp.Type[BaseReport]], project: str,
     commit_hash: ShortCommitHash, newest_only: bool
 ) -> None:
     """View report files."""
     try:
-        commit_hash = __init_commit_hash(report_type, project, commit_hash)
+        commit_hash = __init_commit_hash(
+            project, experiment_type, report_type, commit_hash
+        )
     except LookupError:
         return
 
     result_files = PCM.get_result_files(
-        report_type, project, commit_hash, newest_only
+        project, experiment_type, report_type, commit_hash, newest_only
     )
     result_files.sort(
         key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
@@ -612,7 +624,8 @@ def __casestudy_view(
 
 
 def __init_commit_hash(
-    report_type: tp.Type[BaseReport], project: str, commit_hash: ShortCommitHash
+    project: str, experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]], commit_hash: ShortCommitHash
 ) -> ShortCommitHash:
     if not commit_hash:
         # Ask the user to provide a commit hash
@@ -623,7 +636,7 @@ def __init_commit_hash(
         for case_study in paper_config.get_case_studies(project):
             available_commit_hashes.extend(
                 get_revisions_status_for_case_study(
-                    case_study, report_type, tag_blocked=False
+                    case_study, experiment_type, report_type, tag_blocked=False
                 )
             )
 
