@@ -37,6 +37,7 @@ class TestSecurity(unittest.TestCase):
             'weaknesses.'
     }
 
+    @unittest.skip("See se-sic/VaRA#646")
     def test_find_single_cve(self):
         """
         Check if the Heartbleed's CVE-2014-0160 can be properly retrieved and
