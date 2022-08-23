@@ -130,6 +130,10 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(
             self.report_filename.file_status, FileStatusExtension.SUCCESS
         )
+        self.assertEqual(self.report_filename.config_id, None)
+
+    def test_is_configuration_specific_file(self):
+        self.assertFalse(self.report_filename.is_configuration_specific_file())
 
     def test_accessors_broken(self):
         """Tests if the different accessor functions work correctly even for
@@ -156,7 +160,7 @@ class TestReportFilename(unittest.TestCase):
 class TestConfigReportFilename(unittest.TestCase):
     """Test configuration specific ReportFilename functionality."""
 
-    raw_filename: str
+    raw_filepath: str
     report_filename: ReportFilename
 
     @classmethod
@@ -168,14 +172,13 @@ class TestConfigReportFilename(unittest.TestCase):
             f"{cls.correct_UUID}_"
             "success/conf_42.txt"
         )
-        cls.report_filename = ReportFilename(cls.raw_filename)
-        # cls.broken_report_filename = ReportFilename("ThisFileIsWrong.foobar")
+        cls.report_filename = ReportFilename(cls.raw_filepath)
 
     def test_is_configuration_specific_file(self):
-        pass
+        self.assertTrue(self.report_filename.is_configuration_specific_file())
 
-    def configuration_id(self):
-        pass
+    def test_configuration_id(self):
+        self.assertEqual(self.report_filename.config_id, 42)
 
 
 class TestBaseReport(unittest.TestCase):

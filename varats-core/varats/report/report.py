@@ -142,7 +142,8 @@ class ReportFilename():
         r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
-        FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$"
+        FileStatusExtension.get_regex_grp() + r"?" +
+        r"(\/conf_(?P<config_id>\d+))?" + r"(?P<file_ext>\..*)?" + "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
@@ -150,17 +151,9 @@ class ReportFilename():
         "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
         "{status_ext}" + "{file_ext}"
     )
-    """
-    ~/vara-root/results/test/RT-xz-xz-e7da44d515_25522255-ef50-4ecc-aefd-e0e37bdb1689_success/conf_42.json
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-      File "/home/vulder/git/VaRA-Tool-Suite/varats-core/varats/report/report.py", line 341, in uuid
-        raise ValueError(f'File {self.filename} name was wrongly formatted.')
-    ValueError: File ~/vara-root/results/test/RT-xz-xz-e7da44d515_25522255-ef50-4ecc-aefd-e0e37bdb1689_success/conf_42.json name was wrongly formatted.')
-    """
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
-        print(file_name)
+        # print(file_name)
         # print(self.__RESULT_FILE_REGEX)
         # print("[", str(self.__RESULT_FILE_REGEX), "]")
         # print(
@@ -337,6 +330,26 @@ class ReportFilename():
             )
 
         raise ValueError('File {file_name} name was wrongly formatted.')
+
+    @property
+    def config_id(self) -> tp.Optional[int]:
+        """
+        Configuration ID of the result file. A configuartion ID is only present
+        in configuration specific reports, for others, no ID exists.
+
+        Returns:
+            the configuration ID from a result file
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            config_id_group = match.group("config_id")
+            if config_id_group:
+                return int(config_id_group)
+
+        return None
+
+    def is_configuration_specific_file(self) -> bool:
+        return self.config_id is not None
 
     @property
     def uuid(self) -> str:
