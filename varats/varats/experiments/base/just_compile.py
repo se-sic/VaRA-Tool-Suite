@@ -16,7 +16,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
     get_varats_result_folder,
-    create_new_success_result_filename,
+    create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.report.report import ReportSpecification
@@ -42,7 +42,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = create_new_success_result_filename(
+            result_file = create_new_success_result_filepath(
                 self.__experiment_handle, EmptyReport, project, binary
             )
 
@@ -51,8 +51,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, EmptyReport,
-                    Path(vara_result_folder)
+                    self.__experiment_handle, project, EmptyReport
                 )
             )
 

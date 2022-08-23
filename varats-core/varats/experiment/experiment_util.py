@@ -22,6 +22,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
     FileStatusExtension,
+    ReportFilepath,
     ReportSpecification,
     ReportFilename,
 )
@@ -156,8 +157,7 @@ def get_default_compile_error_wrapped(
     return FunctionPEErrorWrapper(
         project.compile,
         create_default_compiler_error_handler(
-            experiment_handle, project, report_type,
-            get_varats_result_folder(project)
+            experiment_handle, project, report_type
         )
     )
 
@@ -166,7 +166,6 @@ def create_default_compiler_error_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
-    output_folder: tp.Optional[Path] = None,
     binary: tp.Optional[ProjectBinaryWrapper] = None
 ) -> PEErrorHandler:
     """
@@ -177,14 +176,13 @@ def create_default_compiler_error_handler(
         experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
-        output_folder: where the errors will be placed
         binary: if only a specific binary is handled
 
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
         experiment_handle, project, report_type,
-        FileStatusExtension.COMPILE_ERROR, output_folder, binary
+        FileStatusExtension.COMPILE_ERROR, binary
     )
 
 
@@ -192,7 +190,6 @@ def create_default_analysis_failure_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
-    output_folder: tp.Optional[Path] = None,
     binary: tp.Optional[ProjectBinaryWrapper] = None,
     timeout_duration: tp.Optional[str] = None,
 ) -> PEErrorHandler:
@@ -204,7 +201,6 @@ def create_default_analysis_failure_handler(
         experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
-        output_folder: where the errors will be placed
         binary: if only a specific binary is handled
         timeout_duration: set timeout
 
@@ -212,7 +208,7 @@ def create_default_analysis_failure_handler(
     """
     return create_default_error_handler(
         experiment_handle, project, report_type, FileStatusExtension.FAILED,
-        output_folder, binary, timeout_duration
+        binary, timeout_duration
     )
 
 
@@ -221,7 +217,6 @@ def create_default_error_handler(
     project: Project,
     report_type: tp.Type[BaseReport],
     error_type: FileStatusExtension,
-    output_folder: tp.Optional[Path] = None,
     binary: tp.Optional[ProjectBinaryWrapper] = None,
     timeout_duration: tp.Optional[str] = None,
 ) -> PEErrorHandler:
@@ -233,15 +228,12 @@ def create_default_error_handler(
         project: currently under analysis
         report_type: that should be generated
         error_type: a FSE describing the problem type
-        output_folder: where the errors will be placed
         timeout_duration: set timeout
         binary: if only a specific binary is handled
 
     Retruns: a initialized PEErrorHandler
     """
-    error_output_folder = output_folder if output_folder else Path(
-        f"{bb_cfg()['varats']['outfile']}/{project.name}"
-    )
+    error_output_folder = get_varats_result_folder(project)
 
     return PEErrorHandler(
         error_output_folder,
@@ -513,16 +505,16 @@ class ZippedReportFolder(TempDir):
         super().__exit__(exc_type, exc_value, exc_traceback)
 
 
-def __create_new_result_filename_impl(
+def __create_new_result_filepath_impl(
     exp_handle: ExperimentHandle,
     report_type: tp.Type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
     extension_type: FileStatusExtension,
     config_id: tp.Optional[int] = None
-) -> ReportFilename:
+) -> ReportFilepath:
     """
-    Create a result filename for the specified file extensiona report of the
+    Create a result filepath for the specified file extensiona report of the
     executed experiment/project combination.
 
     Args:
@@ -532,32 +524,41 @@ def __create_new_result_filename_impl(
         binary: current binary
         extension_type: of the report
 
-    Returns: formatted filename
+    Returns: formatted filepath
     """
-    if config_id:
-        pass
-        # TODO: create config folder
+    varats_result_folder = get_varats_result_folder(project)
 
-    return exp_handle.get_file_name(
-        report_type.shorthand(),
-        project_name=str(project.name),
-        binary_name=binary.name,
-        project_revision=project.version_of_primary,
-        project_uuid=str(project.run_uuid),
-        extension_type=extension_type,
-        config_id=config_id
+    result_filepath = ReportFilepath(
+        varats_result_folder,
+        exp_handle.get_file_name(
+            report_type.shorthand(),
+            project_name=str(project.name),
+            binary_name=binary.name,
+            project_revision=ShortCommitHash(project.version_of_primary),
+            project_uuid=str(project.run_uuid),
+            extension_type=extension_type,
+            config_id=config_id
+        )
     )
 
+    if config_id:
+        # We need to ensure that the config folder is created in the
+        # background, so configuration specific reports can be created.
+        config_folder = result_filepath.fully_qualified_path().parent
+        config_folder.mkdir(parents=True, exist_ok=True)
 
-def create_new_success_result_filename(
+    return result_filepath
+
+
+def create_new_success_result_filepath(
     exp_handle: ExperimentHandle,
     report_type: tp.Type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
     config_id: tp.Optional[int] = None
-) -> ReportFilename:
+) -> ReportFilepath:
     """
-    Create a result filename for a successfull report of the executed
+    Create a result filepath for a successfull report of the executed
     experiment/project combination.
 
     Args:
@@ -566,23 +567,23 @@ def create_new_success_result_filename(
         project: current project
         binary: current binary
 
-    Returns: formatted success filename
+    Returns: formatted success filepath
     """
-    return __create_new_result_filename_impl(
+    return __create_new_result_filepath_impl(
         exp_handle, report_type, project, binary, FileStatusExtension.SUCCESS,
         config_id
     )
 
 
-def create_new_failed_result_filename(
+def create_new_failed_result_filepath(
     exp_handle: ExperimentHandle,
     report_type: tp.Type[BaseReport],
     project: VProject,
     binary: ProjectBinaryWrapper,
     config_id: tp.Optional[int] = None
-) -> ReportFilename:
+) -> ReportFilepath:
     """
-    Create a result filename for a failed report of the executed
+    Create a result filepath for a failed report of the executed
     experiment/project combination.
 
     Args:
@@ -591,9 +592,9 @@ def create_new_failed_result_filename(
         project: current project
         binary: current binary
 
-    Returns: formatted fail filename
+    Returns: formatted fail filepath
     """
-    return __create_new_result_filename_impl(
+    return __create_new_result_filepath_impl(
         exp_handle, report_type, project, binary, FileStatusExtension.FAILED,
         config_id
     )

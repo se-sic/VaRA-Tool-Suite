@@ -152,21 +152,13 @@ class ReportFilename():
         "{status_ext}" + "{file_ext}"
     )
 
+    __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (
+        "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
+        "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
+        "{status_ext}" + "/conf_{config_id}" + "{file_ext}"
+    )
+
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
-        # print(file_name)
-        # print(self.__RESULT_FILE_REGEX)
-        # print("[", str(self.__RESULT_FILE_REGEX), "]")
-        # print(
-        #     "[",
-        #     str(
-        #         r"(?P<experiment_shorthand>.*)-" +
-        #         r"(?P<report_shorthand>.*)-" +
-        #         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        #         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
-        #         FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" +
-        #         "$"
-        #     ), "]"
-        # )
         if isinstance(file_name, (Path, PosixPath)):
             self.__filename = file_name.name
         else:
@@ -349,6 +341,12 @@ class ReportFilename():
         return None
 
     def is_configuration_specific_file(self) -> bool:
+        """
+        Check if the file name contains configuration specific information.
+
+        Returns:
+            True, if the file name is configuration specific
+        """
         return self.config_id is not None
 
     @property
@@ -395,6 +393,21 @@ class ReportFilename():
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
 
+        if config_id:
+            return ReportFilename(
+                ReportFilename.__CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE.format(
+                    experiment_shorthand=experiment_shorthand,
+                    report_shorthand=report_shorthand,
+                    project_name=project_name,
+                    binary_name=binary_name,
+                    project_revision=project_revision,
+                    project_uuid=project_uuid,
+                    status_ext=status_ext,
+                    config_id=config_id,
+                    file_ext=file_ext
+                )
+            )
+
         return ReportFilename(
             ReportFilename.__RESULT_FILE_TEMPLATE.format(
                 experiment_shorthand=experiment_shorthand,
@@ -415,8 +428,29 @@ class ReportFilename():
         return self.filename
 
 
-class ReportFilename2():
-    pass
+class ReportFilepath():
+    """ReportFilepath combines report filenames with path semantics and presents
+    the file as a fully qualified path."""
+
+    def __init__(
+        self, base_path: Path, report_filename: ReportFilename
+    ) -> None:
+        self.__base_path = base_path
+        self.__report_filename = report_filename
+
+    @property
+    def base_path(self) -> Path:
+        return self.__base_path
+
+    @property
+    def report_filename(self) -> ReportFilename:
+        return self.__report_filename
+
+    def fully_qualified_path(self) -> Path:
+        return self.base_path / str(self.report_filename)
+
+    def __str__(self) -> str:
+        return str(self.fully_qualified_path())
 
 
 class BaseReport():
