@@ -267,7 +267,7 @@ def _create_line(
     interval = _get_interval(dist)
 
     # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
-    control_points: np.ndarray[tp.Any, npt._DType[np.float64]] = np.array([
+    control_points: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end

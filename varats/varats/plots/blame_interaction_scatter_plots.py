@@ -18,7 +18,11 @@ from varats.paper_mgmt.case_study import (
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
-from varats.project.project_util import get_local_project_gits
+from varats.project.project_util import (
+    get_local_project_gits,
+    get_local_project_git_path,
+)
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     create_commit_lookup_helper,
@@ -27,6 +31,15 @@ from varats.utils.git_util import (
     calc_repo_code_churn,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
+)
+
+OPTIONAL_HIGHLIGHT_COMMITS: CLIOptionTy = make_cli_option(
+    "--highlight",
+    type=str,
+    required=False,
+    multiple=True,
+    metavar="COMMIT",
+    help="One or more case studies to use."
 )
 
 
@@ -39,6 +52,7 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]
+        highlight_commits = self.plot_kwargs.get("highlight", [])
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReport
@@ -53,8 +67,9 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
         repo_lookup = get_local_project_gits(project_name)
         code_churn_lookup = {
             repo_name: calc_repo_code_churn(
-                repo, ChurnConfig.create_c_style_languages_config()
-            ) for repo_name, repo in repo_lookup.items()
+                get_local_project_git_path(project_name, repo_name),
+                ChurnConfig.create_c_style_languages_config()
+            ) for repo_name, _ in repo_lookup.items()
         }
 
         def filter_nodes(node: CommitRepoPair) -> bool:
@@ -71,15 +86,30 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
             _, insertions, _ = code_churn_lookup[commit.repository_name][
                 commit.commit_hash]
             nodes.append(({
-                "Case Study": project_name,
-                "commit_hash": commit.commit_hash,
-                "Commit Size": insertions,
-                "Node Degree": cig.degree(node),
+                "Case Study":
+                    project_name,
+                "commit_hash":
+                    commit.commit_hash,
+                "Commit Size":
+                    insertions,
+                "Node Degree":
+                    cig.degree(node),
+                "highlight":
+                    any(
+                        commit.commit_hash.hash.startswith(hc)
+                        for hc in highlight_commits
+                    )
             }))
         data = pd.DataFrame(nodes)
         data = apply_tukeys_fence(data, "Commit Size", 3.0)
         grid = multivariate_grid(
-            "Commit Size", "Node Degree", "Case Study", data, global_kde=False
+            data,
+            "Commit Size",
+            "Node Degree",
+            "Case Study",
+            global_kde=False,
+            s=100,
+            alpha=0.5
         )
 
         ax = grid.ax_joint
@@ -88,6 +118,16 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
         )
         ax.axhline(
             data["Node Degree"].quantile(0.80), color="#777777", linewidth=3
+        )
+        highlight = data[data["highlight"]]
+        ax.scatter(
+            x=highlight["Commit Size"],
+            y=highlight["Node Degree"],
+            linewidths=5,
+            marker="x",
+            s=200,
+            color="red",
+            zorder=5
         )
 
     def calc_missing_revisions(
@@ -99,7 +139,7 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
 class CentralCodeScatterPlotGenerator(
     PlotGenerator,
     generator_name="central-code-scatter",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY, OPTIONAL_HIGHLIGHT_COMMITS]
 ):
     """Generates scatter plots comparing node degree with commit size."""
 
@@ -146,11 +186,13 @@ class AuthorInteractionScatterPlot(
             }))
         data = pd.DataFrame(nodes)
         multivariate_grid(
+            data,
             "# Commits",
             "# Interacting authors",
             "project",
-            data,
-            global_kde=False
+            global_kde=False,
+            s=100,
+            alpha=0.5
         )
 
     def calc_missing_revisions(
