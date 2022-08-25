@@ -43,7 +43,8 @@ from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_git_path, \
+    get_primary_project_source
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
@@ -54,6 +55,7 @@ from varats.ts_utils.cli_util import (
     cli_yn_choice,
     add_cli_options,
 )
+from varats.ts_utils.project_sources import VaraTestRepoSource
 from varats.ts_utils.click_param_types import (
     create_experiment_type_choice,
     create_report_type_choice,
@@ -203,7 +205,10 @@ def __casestudy_gen(
     ) / (paper_config + f"/{project}_{version}.case_study")
     ctx.obj['git_path'] = get_local_project_git_path(project)
     if update:
-        pull_current_branch(ctx.obj['git_path'])
+        if isinstance(get_primary_project_source(project), VaraTestRepoSource):
+            get_primary_project_source(project).fetch()
+        else:
+            pull_current_branch(ctx.obj['git_path'])
 
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
