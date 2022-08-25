@@ -11,6 +11,7 @@ from varats.data.reports.globals_report import (
     GlobalsReportWithout,
     GlobalsReport,
 )
+from varats.experiments.phasar.global_analysis_compare import GlobalsComparision
 from varats.jupyterhelper.file import (
     load_globals_with_report,
     load_globals_without_report,
@@ -107,11 +108,12 @@ class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
             key=lambda x: x.project_name
         ):
             report_files_with = get_processed_revisions_files(
-                case_study.project_name, GlobalsReportWith,
+                case_study.project_name, GlobalsComparision, GlobalsReportWith,
                 get_case_study_file_name_filter(case_study)
             )
             report_files_without = get_processed_revisions_files(
-                case_study.project_name, GlobalsReportWithout,
+                case_study.project_name,
+                GlobalsComparision, GlobalsReportWithout,
                 get_case_study_file_name_filter(case_study)
             )
 

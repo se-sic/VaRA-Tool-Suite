@@ -11,6 +11,7 @@ from varats.data.reports.feature_analysis_report import (
     FeatureAnalysisReport,
     FeatureAnalysisReportEval,
 )
+from varats.experiments.vara.phasar_fta import PhASARTaintAnalysis
 from varats.jupyterhelper.file import load_feature_analysis_report
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -78,7 +79,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
         case_study: CaseStudy = self.table_kwargs['case_study']
 
         report_files = get_processed_revisions_files(
-            case_study.project_name, FeatureAnalysisReport,
+            case_study.project_name, PhASARTaintAnalysis, FeatureAnalysisReport,
             get_case_study_file_name_filter(case_study)
         )
         if len(report_files) == 0:
@@ -244,7 +245,8 @@ class PhasarFeatureAnalysisTotalEvalTable(
             key=lambda x: x.project_name
         ):
             report_files = get_processed_revisions_files(
-                case_study.project_name, FeatureAnalysisReport,
+                case_study.project_name, PhASARTaintAnalysis,
+                FeatureAnalysisReport,
                 get_case_study_file_name_filter(case_study)
             )
             if len(report_files) == 0:

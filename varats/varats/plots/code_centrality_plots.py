@@ -10,7 +10,9 @@ from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CIGNodeAttrs,
 )
-from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
@@ -46,14 +48,15 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
         churn_config = ChurnConfig.create_c_style_languages_config()
-        cig = create_blame_interaction_graph(project_name, revision
-                                            ).commit_interaction_graph()
+        cig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).commit_interaction_graph()
         commit_lookup = create_commit_lookup_helper(project_name)
         repo_lookup = get_local_project_gits(project_name)
 

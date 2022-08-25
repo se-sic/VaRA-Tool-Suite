@@ -29,7 +29,7 @@ class FileStatusDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
-        result_file_type = kwargs.get("result_file_type", EmptyReport)
+        experiment_type = kwargs["experiment_type"]
         tag_blocked = tp.cast(bool, kwargs.get("tag_blocked", True))
 
         def create_dataframe_layout() -> pd.DataFrame:
@@ -52,7 +52,7 @@ class FileStatusDatabase(
 
         if case_study:
             processed_revisions = get_revisions_status_for_case_study(
-                case_study, result_file_type, tag_blocked=tag_blocked
+                case_study, experiment_type, tag_blocked=tag_blocked
             )
             for rev, stat in processed_revisions:
                 data_frames.append(create_data_frame_for_revision(rev, stat))
@@ -76,7 +76,7 @@ class FileStatusDatabase(
             commit_map: the commit map to use
             case_studies: the case study to retrieve data for
             kwargs:
-                - result_file_type: the report type to compute the status for
+                - experiment_type: the experiment type to compute the status for
                 - tag_blocked: whether to include information about blocked
                                revisions
 

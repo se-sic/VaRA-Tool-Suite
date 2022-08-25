@@ -28,8 +28,10 @@ class TestDriverPlot(unittest.TestCase):
         # vara-plot
         runner = CliRunner()
         result = runner.invoke(
-            driver_plot.main,
-            ["--plot-dir=foo", "pc-overview-plot", "--report-type=EmptyReport"]
+            driver_plot.main, [
+                "--plot-dir=foo", "pc-overview-plot",
+                "--experiment-type=JustCompile"
+            ]
         )
 
         self.assertEqual(0, result.exit_code, result.exception)
@@ -52,7 +54,7 @@ class TestDriverPlot(unittest.TestCase):
         result = runner.invoke(
             driver_plot.main, [
                 "--save-artefact=PC Overview", "--plot-dir=foo",
-                "pc-overview-plot", "--report-type=EmptyReport"
+                "pc-overview-plot", "--experiment-type=JustCompile"
             ]
         )
 

@@ -10,7 +10,9 @@ from varats.data.reports.blame_interaction_graph import (
     CIGNodeAttrs,
     AIGNodeAttrs,
 )
-from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
@@ -55,13 +57,14 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
         highlight_commits = self.plot_kwargs.get("highlight", [])
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
-        cig = create_blame_interaction_graph(project_name, revision
-                                            ).commit_interaction_graph()
+        cig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).commit_interaction_graph()
 
         commit_lookup = create_commit_lookup_helper(project_name)
         repo_lookup = get_local_project_gits(project_name)
@@ -167,13 +170,14 @@ class AuthorInteractionScatterPlot(
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
-        aig = create_blame_interaction_graph(project_name, revision
-                                            ).author_interaction_graph()
+        aig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).author_interaction_graph()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in aig.nodes:
