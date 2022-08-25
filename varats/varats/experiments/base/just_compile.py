@@ -39,14 +39,12 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             return actions.StepResult.ERROR
         project = self.obj
 
-        vara_result_folder = get_varats_result_folder(project)
-
         for binary in project.binaries:
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, EmptyReport, project, binary
             )
 
-            run_cmd = touch[f"{vara_result_folder}/{result_file}"]
+            run_cmd = touch[f"{result_file}"]
 
             exec_func_with_pe_error_handler(
                 run_cmd,
