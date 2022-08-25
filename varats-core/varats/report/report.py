@@ -164,10 +164,22 @@ class ReportFilename():
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
-        if isinstance(file_name, (Path, PosixPath)):
-            self.__filename = file_name.name
-        else:
-            self.__filename = str(file_name)
+        self.__filename = str(file_name)
+
+    @staticmethod
+    def construct(
+        filepath: Path, base_folder: tp.Optional[Path]
+    ) -> 'ReportFilename':
+        """
+        Constructs a `ReportFilename` from a given path and a base folder.
+
+        The base folder can be omitted should the filepath only contain the
+        file.
+        """
+        if base_folder:
+            return ReportFilename(filepath.relative_to(base_folder))
+
+        return ReportFilename(filepath)
 
     @property
     def filename(self) -> str:
@@ -443,6 +455,14 @@ class ReportFilepath():
         self.__base_path = base_path
         self.__report_filename = report_filename
 
+    @staticmethod
+    def construct(full_filepath: Path, base_folder: Path) -> 'ReportFilepath':
+        """Constructs a `ReportFilepath` from a given full path, ideally a fully
+        qualified path but this is not strictly required, and a base folder."""
+        return ReportFilepath(
+            base_folder, ReportFilename.construct(full_filepath, base_folder)
+        )
+
     @property
     def base_path(self) -> Path:
         return self.__base_path
@@ -456,6 +476,9 @@ class ReportFilepath():
 
     def __str__(self) -> str:
         return str(self.fully_qualified_path())
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class BaseReport():

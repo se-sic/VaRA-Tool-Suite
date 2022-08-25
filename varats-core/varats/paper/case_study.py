@@ -332,6 +332,17 @@ class CaseStudy():
             return False
         return self.__stages[num_stage].has_revision(revision)
 
+    def is_revision_config_specific(self, revision: CommitHash) -> bool:
+        """
+        Checks whether a revision specifies different configurations.
+
+        Args:
+            revision: i.e., a commit hash registed in this case study
+
+        Returns: True, if configurations have been specified for this revision
+        """
+        return bool(self.get_config_ids_for_revision(revision))
+
     def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
