@@ -11,6 +11,9 @@ from varats.data.reports.blame_interaction_graph import (
     create_file_based_interaction_graph,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
@@ -33,7 +36,7 @@ def _generate_graph_table(
         project_name = case_study.project_name
         project_git = git["-C", get_local_project_git(project_name).path]
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             continue
@@ -113,8 +116,9 @@ class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
         def create_graph(
             project_name: str, revision: FullCommitHash
         ) -> nx.DiGraph:
-            return create_blame_interaction_graph(project_name, revision
-                                                 ).commit_interaction_graph()
+            return create_blame_interaction_graph(
+                project_name, revision, BlameReportExperiment
+            ).commit_interaction_graph()
 
         return _generate_graph_table(create_graph, table_format, wrap_table)
 
@@ -140,8 +144,9 @@ class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
         def create_graph(
             project_name: str, revision: FullCommitHash
         ) -> nx.DiGraph:
-            return create_blame_interaction_graph(project_name, revision
-                                                 ).author_interaction_graph()
+            return create_blame_interaction_graph(
+                project_name, revision, BlameReportExperiment
+            ).author_interaction_graph()
 
         return _generate_graph_table(create_graph, table_format, wrap_table)
 
@@ -170,7 +175,7 @@ class CommitAuthorInteractionGraphMetricsTable(
             project_name: str, revision: FullCommitHash
         ) -> nx.DiGraph:
             return create_blame_interaction_graph(
-                project_name, revision
+                project_name, revision, BlameReportExperiment
             ).commit_author_interaction_graph()
 
         return _generate_graph_table(create_graph, table_format, wrap_table)
@@ -200,13 +205,14 @@ class AuthorBlameVsFileDegreesTable(
 
         project_name: str = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise TableDataEmpty()
 
-        blame_aig = create_blame_interaction_graph(project_name, revision
-                                                  ).author_interaction_graph()
+        blame_aig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).author_interaction_graph()
         file_aig = create_file_based_interaction_graph(
             project_name, revision
         ).author_interaction_graph()

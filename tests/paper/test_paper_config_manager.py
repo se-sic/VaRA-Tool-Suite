@@ -12,20 +12,51 @@ from benchbuild.source import nosource
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 
 import varats.paper_mgmt.paper_config_manager as PCM
-from tests.paper.test_case_study import (
-    YAML_CASE_STUDY,
-    mocked_create_lazy_commit_map_loader,
-)
+from tests.paper.test_case_study import YAML_CASE_STUDY
 from tests.test_utils import DummyGit
 from tests.utils.test_experiment_util import (
     MockExperiment,
     MockExperimentMultiReport,
 )
-from varats.data.reports.commit_report import CommitReport
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import load_case_study_from_file, CaseStudy
 from varats.projects.c_projects.gzip import Gzip
 from varats.report.report import FileStatusExtension
 from varats.utils.git_util import ShortCommitHash
+
+GIT_LOG_OUT = """7620b817357d6f14356afd004ace2da426cf8c36
+622e9b1d024da1343b83fc47fb1891e1d245add3
+8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9
+2e654f9963154e5af9d3081fc871d54d783a1270
+edfad78619d52479e02228a5789a2e98d7b0f9f6
+a3db5806d012082b9e25cc36d09f19cd736a468f
+e75f428c0ddc90a7011cfda82a7114a16c537e34
+1e7e3769dc4efd55249c475470152acbcf804bb3
+9872ba420c99323195e96cafe56ff247c3011ad5
+b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
+
+
+def mocked_get_commit_map(
+    project_name: str,  # pylint: disable=unused-argument
+    cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
+    end: str = "HEAD",  # pylint: disable=unused-argument
+    start: tp.Optional[str] = None
+) -> CommitMap:  # pylint: disable=unused-argument
+    """
+    Create a dummy commit map.
+
+    Args:
+        project_name: name of the project
+        cmap_path: path to commit map file
+        end: commit to end loading, e.g, HEAD
+        start: commit from which to start loading
+    """
+
+    def format_stream() -> tp.Generator[str, None, None]:
+        for number, line in enumerate(reversed(GIT_LOG_OUT.split('\n'))):
+            yield f"{number}, {line}\n"
+
+    return CommitMap(format_stream())
 
 
 class TestPaperConfigManager(unittest.TestCase):
@@ -66,9 +97,7 @@ class TestPaperConfigManager(unittest.TestCase):
         self.project_source_mock = project_source_patcher.start()
         self.project_source_mock.return_value = self.DUMMY_GIT
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_short_status(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:
@@ -98,9 +127,7 @@ class TestPaperConfigManager(unittest.TestCase):
         self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/0/8/1]')
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_short_status_color(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:
@@ -131,14 +158,12 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
     @mock.patch(
-        'varats.paper_mgmt.paper_config_manager.create_lazy_commit_map_loader',
-        side_effect=mocked_create_lazy_commit_map_loader
+        'varats.paper_mgmt.paper_config_manager.get_commit_map',
+        side_effect=mocked_get_commit_map
     )
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_status(
-        self, mock_get_tagged_experiment_specific_revisions, mock_cmap_loader
+        self, mock_get_tagged_experiment_specific_revisions, mock_cmap
     ) -> None:
         # pylint: disable=unused-argument
         """Check if the case study can show a short status."""
@@ -216,14 +241,12 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
     @mock.patch(
-        'varats.paper_mgmt.paper_config_manager.create_lazy_commit_map_loader',
-        side_effect=mocked_create_lazy_commit_map_loader
+        'varats.paper_mgmt.paper_config_manager.get_commit_map',
+        side_effect=mocked_get_commit_map
     )
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_status_with_stages(
-        self, mock_get_tagged_experiment_specific_revisions, mock_cmap_loader
+        self, mock_get_tagged_experiment_specific_revisions, mock_cmap
     ) -> None:
         # pylint: disable=unused-argument
         """Check if the case study can show a short status."""
@@ -307,9 +330,7 @@ class TestPaperConfigManager(unittest.TestCase):
         )
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_status_color(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:
@@ -391,9 +412,7 @@ class TestPaperConfigManager(unittest.TestCase):
 """
         )
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_total_status_color(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:

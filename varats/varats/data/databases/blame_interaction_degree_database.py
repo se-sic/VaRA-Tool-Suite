@@ -9,11 +9,13 @@ import pandas as pd
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
-    BlameReport,
     generate_author_degree_tuples,
     generate_avg_time_distribution_tuples,
     generate_max_time_distribution_tuples,
     generate_lib_dependent_degrees,
+)
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
@@ -230,13 +232,15 @@ class BlameInteractionDegreeDatabase(
                                )
 
         report_files = get_processed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = get_failed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         # cls.CACHE_ID is set by superclass
