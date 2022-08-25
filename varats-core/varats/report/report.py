@@ -24,6 +24,7 @@ class FileStatusExtension(Enum):
     value: tp.Tuple[str, Color]  # pylint: disable=invalid-name
 
     SUCCESS = ("success", colors.green)
+    PARTIAL = ("partial", colors.darkturquoise)
     INCOMPLETE = ("incomplete", colors.orangered1)
     FAILED = ("failed", colors.lightred)
     COMPILE_ERROR = ("cerror", colors.red)
@@ -130,6 +131,9 @@ class FileStatusExtension(Enum):
             rhs == FileStatusExtension.SUCCESS and
             lhs != FileStatusExtension.SUCCESS
         ):
+            if FileStatusExtension.PARTIAL in (lhs, rhs):
+                return FileStatusExtension.PARTIAL
+
             return FileStatusExtension.INCOMPLETE
         return lhs
 
@@ -141,9 +145,10 @@ class ReportFilename():
     __RESULT_FILE_REGEX = re.compile(
         r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
-        FileStatusExtension.get_regex_grp() + r"?" +
-        r"(\/conf_(?P<config_id>\d+))?" + r"(?P<file_ext>\..*)?" + "$"
+        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)"
+        r"(\/config-(?P<config_id>\d+))?" + "_" +
+        FileStatusExtension.get_regex_grp() + r"?" + r"(?P<file_ext>\..*)?" +
+        "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
@@ -154,8 +159,8 @@ class ReportFilename():
 
     __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (
         "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
-        "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
-        "{status_ext}" + "/conf_{config_id}" + "{file_ext}"
+        "{binary_name}-" + "{project_revision}_" + "{project_uuid}" +
+        "/config-{config_id}_" + "{status_ext}" + "{file_ext}"
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:

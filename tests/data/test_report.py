@@ -169,8 +169,8 @@ class TestConfigReportFilename(unittest.TestCase):
         cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
         cls.raw_filepath = (
             "CRE-CR-foo-bar-7bb9ef5f8c_"
-            f"{cls.correct_UUID}_"
-            "success/conf_42.txt"
+            f"{cls.correct_UUID}/config-42_"
+            "success.txt"
         )
         cls.report_filename = ReportFilename(cls.raw_filepath)
 
