@@ -10,7 +10,7 @@ artefacts:
   output_dir: .
   plot_config: {}
   plot_generator: pc-overview-plot
-  report_type: EmptyReport
+  experiment_type: JustCompile
   view: false
 - artefact_type: table
   artefact_type_version: 2

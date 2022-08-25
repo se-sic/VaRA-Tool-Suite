@@ -418,10 +418,10 @@ class VersionExperiment(Experiment):  # type: ignore
             report_specific_bad_revs = []
             for report_type in cls.report_spec():
                 report_specific_bad_revs.append({
-                    revision.hash for revision, file_status in
-                    get_tagged_experiment_specific_revisions(
-                        prj_cls, report_type, experiment_type=cls
-                    ) if file_status not in fs_good
+                    revision.hash
+                    for revision, file_status in
+                    get_tagged_revisions(prj_cls, cls, report_type)
+                    if file_status not in fs_good
                 })
 
             bad_revisions = report_specific_bad_revs[0].intersection(
@@ -442,38 +442,6 @@ class VersionExperiment(Experiment):  # type: ignore
             return [source.context(*var) for var in variants]
 
         return [source.context(*variants[0])]
-
-
-def get_tagged_experiment_specific_revisions(
-    project_cls: tp.Type[Project],
-    result_file_type: tp.Type[BaseReport],
-    tag_blocked: bool = True,
-    experiment_type: tp.Optional[tp.Type[VersionExperiment]] = None
-) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
-    """
-    Calculates a list of revisions of a project that belong to an experiment,
-    tagged with the file status. If two files exists the newest is considered
-    for detecting the status.
-
-    Args:
-        project_cls: target project
-        result_file_type: the type of the result file
-        tag_blocked: whether to tag blocked revisions as blocked
-        experiment_type: target experiment type
-
-    Returns:
-        list of tuples (revision, ``FileStatusExtension``)
-    """
-
-    def experiment_filter(file_path: Path) -> bool:
-        if experiment_type is None:
-            return True
-
-        return experiment_type.file_belongs_to_experiment(file_path.name)
-
-    return get_tagged_revisions(
-        project_cls, result_file_type, tag_blocked, experiment_filter
-    )
 
 
 class ZippedReportFolder(TempDir):

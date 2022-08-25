@@ -20,6 +20,9 @@ from varats.data.reports.blame_report import (
     count_interacting_commits,
     count_interacting_authors,
 )
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
@@ -107,8 +110,8 @@ def build_report_files_tuple(
         ReportFilename(report).commit_hash: report
         for report in get_processed_revisions_files(
             project_name,
-            BlameReport,
-            get_case_study_file_name_filter(case_study)
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
             if case_study else lambda x: False,
         )
     }
@@ -117,8 +120,8 @@ def build_report_files_tuple(
         ReportFilename(report).commit_hash: report
         for report in get_failed_revisions_files(
             project_name,
-            BlameReport,
-            get_case_study_file_name_filter(case_study)
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
             if case_study else lambda x: False,
         )
     }
@@ -156,7 +159,9 @@ def build_report_pairs_tuple(
             rev.to_short_commit_hash() for rev in case_study.revisions
         ]
     else:
-        sampled_revs = get_processed_revisions(project_name, BlameReport)
+        sampled_revs = get_processed_revisions(
+            project_name, BlameReportExperiment
+        )
     short_time_id_cache: tp.Dict[ShortCommitHash, int] = {
         rev: commit_map.short_time_id(rev) for rev in sampled_revs
     }
