@@ -180,7 +180,6 @@ class DataManager():
             the loaded report file
         """
         if isinstance(file_path, ReportFilepath):
-            print(f"{file_path=}")
             py_file_path: Path = file_path.fully_qualified_path()
         else:
             py_file_path = file_path
