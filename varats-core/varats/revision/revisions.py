@@ -345,7 +345,7 @@ def __get_tag_for_revision(
     return FileStatusExtension.MISSING
 
 
-def __split_into_config_file_lists(
+def _split_into_config_file_lists(
     report_files: tp.List[ReportFilepath]
 ) -> tp.Dict[tp.Optional[int], tp.List[ReportFilepath]]:
     config_id_mapping: tp.DefaultDict[
@@ -392,12 +392,9 @@ def get_tagged_revisions(
             filter(revision_filter, file_list)
         ) if revision_filter else file_list
 
-        if not filtered_file_list:
-            continue
-
         # Split file list into config id sets
         for config_id, config_specific_file_list \
-                in __split_into_config_file_lists(filtered_file_list).items():
+                in _split_into_config_file_lists(filtered_file_list).items():
             tag = __get_tag_for_revision(
                 commit_hash, config_specific_file_list, project_cls,
                 experiment_type, report_type, tag_blocked

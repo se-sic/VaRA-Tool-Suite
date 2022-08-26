@@ -162,6 +162,7 @@ class TestConfigReportFilename(unittest.TestCase):
 
     raw_filepath: str
     report_filename: ReportFilename
+    correct_UUID: str
 
     @classmethod
     def setUpClass(cls):
