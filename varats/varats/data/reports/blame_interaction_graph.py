@@ -23,7 +23,7 @@ from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_gits,
 )
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -304,7 +304,7 @@ class InteractionGraph(abc.ABC):
 class BlameInteractionGraph(InteractionGraph):
     """Graph/Network built from blame interaction data."""
 
-    def __init__(self, project_name: str, report_file: Path):
+    def __init__(self, project_name: str, report_file: ReportFilepath):
         super().__init__(project_name)
         self.__report_file = report_file
         self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
@@ -344,7 +344,7 @@ class BlameInteractionGraph(InteractionGraph):
             return interaction_graph
 
         if not self.__cached_interaction_graph:
-            filename = ReportFilename(self.__report_file)
+            filename = self.__report_file.report_filename
             self.__cached_interaction_graph = build_cached_graph(
                 f"ig-{filename.experiment_shorthand}-{self.project_name}-"
                 f"{filename.commit_hash.hash}", create_graph

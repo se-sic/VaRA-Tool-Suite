@@ -133,7 +133,7 @@ class TestCaseStudy(unittest.TestCase):
         self.assertEqual(
             self.case_study.get_config_ids_for_revision(
                 FullCommitHash('8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9')
-            ), [-1]
+            ), []
         )
 
     def test_get_config_ids_for_multiple_revs(self) -> None:
@@ -156,7 +156,7 @@ class TestCaseStudy(unittest.TestCase):
         self.assertEqual(
             self.case_study.get_config_ids_for_revision_in_stage(
                 FullCommitHash('7620b817357d6f14356afd004ace2da426cf8c36'), 1
-            ), [-1]
+            ), []
         )
 
 

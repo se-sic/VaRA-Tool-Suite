@@ -155,6 +155,34 @@ def failed_revisions_for_case_study(
     ]
 
 
+def __conf_specific_filestatus(
+    case_study: CaseStudy, revision: ShortCommitHash,
+    conf_tag_map: tp.Dict[tp.Optional[int], FileStatusExtension]
+) -> FileStatusExtension:
+    fs_count: tp.DefaultDict[FileStatusExtension, int] = defaultdict(int)
+
+    cs_config_ids = case_study.get_config_ids_for_revision(revision)
+    for config_id in cs_config_ids:
+        if config_id in conf_tag_map:
+            fs_count[conf_tag_map[config_id]] += 1
+        else:
+            fs_count[FileStatusExtension.MISSING] += 1
+
+    if fs_count[FileStatusExtension.COMPILE_ERROR] > 0:
+        return FileStatusExtension.COMPILE_ERROR
+
+    if fs_count[FileStatusExtension.FAILED] > 0:
+        return FileStatusExtension.FAILED
+
+    if fs_count[FileStatusExtension.SUCCESS] == len(cs_config_ids):
+        return FileStatusExtension.SUCCESS
+
+    if fs_count[FileStatusExtension.MISSING] == len(cs_config_ids):
+        return FileStatusExtension.MISSING
+
+    return FileStatusExtension.PARTIAL
+
+
 def get_revisions_status_for_case_study(
     case_study: CaseStudy,
     experiment_type: tp.Type["VersionExperiment"],
@@ -193,9 +221,15 @@ def get_revisions_status_for_case_study(
         for rev in rev_provider:
             short_rev = rev.to_short_commit_hash()
             found = False
-            for tagged_rev in tagged_revisions:
-                if short_rev == tagged_rev[0]:
-                    filtered_revisions.append(tagged_rev)
+            for tagged_rev, conf_tag_map in tagged_revisions.items():
+                if short_rev == tagged_rev:
+                    if case_study.has_revision_configs_specified(tagged_rev):
+                        tag = __conf_specific_filestatus(
+                            case_study, tagged_rev, conf_tag_map
+                        )
+                    else:
+                        tag = conf_tag_map[None]
+                    filtered_revisions.append((tagged_rev, tag))
                     found = True
                     break
             if not found:
