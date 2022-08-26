@@ -268,7 +268,9 @@ good-names=a,
            _,
            df,
            id,
-           pc
+           pc,
+           LoadableType,
+           PathLikeType,
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
