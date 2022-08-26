@@ -420,6 +420,7 @@ class VersionExperiment(Experiment):  # type: ignore
                 report_specific_bad_revs.append({
                     revision.hash
                     for revision, file_status in
+                    # TODO (se-sic/VaRA#840): needs updated VariantContext handling
                     get_tagged_revisions(prj_cls, cls, report_type)
                     if file_status not in fs_good
                 })

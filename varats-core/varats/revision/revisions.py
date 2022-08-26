@@ -116,7 +116,7 @@ def __get_files_with_status(
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
-) -> tp.List[Path]:
+) -> tp.List[ReportFilepath]:
     """
     Find all file paths to result files with given file statuses.
 
@@ -142,14 +142,16 @@ def __get_files_with_status(
     )
     for value in result_files.values():
         sorted_res_files = sorted(
-            value, key=lambda x: Path(x).stat().st_mtime, reverse=True
+            value,
+            key=lambda x: x.fully_qualified_path().stat().st_mtime,
+            reverse=True
         )
         if only_newest:
             sorted_res_files = [sorted_res_files[0]]
         for result_file in sorted_res_files:
-            if file_name_filter(result_file.name):
+            if file_name_filter(result_file.report_filename.filename):
                 continue
-            if ReportFilename(result_file.name).file_status in file_statuses:
+            if result_file.report_filename.file_status in file_statuses:
                 processed_revisions_paths.append(result_file)
 
     return processed_revisions_paths
@@ -161,7 +163,7 @@ def get_all_revisions_files(
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
-) -> tp.List[Path]:
+) -> tp.List[ReportFilepath]:
     """
     Find all file paths to revision files.
 
@@ -191,7 +193,7 @@ def get_processed_revisions_files(
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
-) -> tp.List[Path]:
+) -> tp.List[ReportFilepath]:
     """
     Find all file paths to correctly processed revision files.
 
@@ -221,7 +223,7 @@ def get_failed_revisions_files(
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
-) -> tp.List[Path]:
+) -> tp.List[ReportFilepath]:
     """
     Find all file paths to failed revision files.
 
@@ -265,8 +267,7 @@ def get_processed_revisions(
         list of correctly process revisions
     """
     return [
-        ReportFilename(x.name).commit_hash
-        for x in get_processed_revisions_files(
+        x.report_filename.commit_hash for x in get_processed_revisions_files(
             project_name, experiment_type, report_type
         )
     ]
@@ -295,8 +296,10 @@ def get_failed_revisions(
         project_name, experiment_type, report_type
     )
     for commit_hash, value in result_files.items():
-        newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        if ReportFilename(newest_res_file.name).has_status_failed():
+        newest_res_file = max(
+            value, key=lambda x: x.fully_qualified_path().stat().st_mtime
+        )
+        if newest_res_file.report_filename.has_status_failed():
             failed_revisions.append(commit_hash)
 
     return failed_revisions

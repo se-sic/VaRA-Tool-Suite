@@ -356,9 +356,7 @@ class CaseStudy():
         for stage in self.__stages:
             config_ids += stage.get_config_ids_for_revision(revision)
 
-        if ConfigurationMap.DUMMY_CONFIG_ID in config_ids and len(
-            config_ids
-        ) > 1:
+        if ConfigurationMap.DUMMY_CONFIG_ID in config_ids:
             config_ids.remove(ConfigurationMap.DUMMY_CONFIG_ID)
 
         return config_ids
@@ -378,7 +376,14 @@ class CaseStudy():
         if self.num_stages <= num_stage:
             return []
 
-        return self.__stages[num_stage].get_config_ids_for_revision(revision)
+        config_ids = self.__stages[num_stage].get_config_ids_for_revision(
+            revision
+        )
+
+        while ConfigurationMap.DUMMY_CONFIG_ID in config_ids:
+            config_ids.remove(ConfigurationMap.DUMMY_CONFIG_ID)
+
+        return config_ids
 
     def shift_stage(self, from_index: int, offset: int) -> None:
         """

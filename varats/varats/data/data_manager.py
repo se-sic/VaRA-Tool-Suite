@@ -18,9 +18,10 @@ from threading import Lock
 
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 
-from varats.report.report import BaseReport
+from varats.report.report import BaseReport, ReportFilepath
 
 LoadableType = tp.TypeVar('LoadableType', bound=BaseReport)
+PathLikeType = tp.TypeVar('PathLikeType', Path, ReportFilepath)
 
 
 def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
@@ -139,7 +140,7 @@ class DataManager():
         return tp.cast(LoadableType, new_blob.data)
 
     def load_data_class(
-        self, file_path: Path, DataClassTy: tp.Type[LoadableType],
+        self, file_path: PathLikeType, DataClassTy: tp.Type[LoadableType],
         loaded_callback: tp.Callable[[LoadableType], None]
     ) -> None:
         # pylint: disable=invalid-name
@@ -151,16 +152,21 @@ class DataManager():
             DataClassTy: type of the report class to be loaded
             loaded_callback: that gets called after loading has finished
         """
-        if not os.path.isfile(file_path):
+        if isinstance(file_path, ReportFilepath):
+            py_file_path: Path = file_path.fully_qualified_path()
+        else:
+            py_file_path = file_path
+
+        if not os.path.isfile(py_file_path):
             raise FileNotFoundError
 
-        worker = FileLoader(self.__load_data_class, file_path, DataClassTy)
+        worker = FileLoader(self.__load_data_class, py_file_path, DataClassTy)
         worker.signal.finished.connect(loaded_callback)
         worker.signal.clean.connect(self._release_lock)
         self.thread_pool.start(worker)
 
     def load_data_class_sync(
-        self, file_path: Path, DataClassTy: tp.Type[LoadableType]
+        self, file_path: PathLikeType, DataClassTy: tp.Type[LoadableType]
     ) -> LoadableType:
         # pylint: disable=invalid-name
         """
@@ -173,10 +179,16 @@ class DataManager():
         Returns:
             the loaded report file
         """
-        if not os.path.isfile(file_path):
+        if isinstance(file_path, ReportFilepath):
+            print(f"{file_path=}")
+            py_file_path: Path = file_path.fully_qualified_path()
+        else:
+            py_file_path = file_path
+
+        if not os.path.isfile(py_file_path):
             raise FileNotFoundError
 
-        loaded_file = self.__load_data_class(file_path, DataClassTy)
+        loaded_file = self.__load_data_class(py_file_path, DataClassTy)
         self._release_lock()
         return loaded_file
 
