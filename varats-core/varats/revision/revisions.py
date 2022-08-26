@@ -380,7 +380,9 @@ def get_tagged_revisions(
     Returns:
         list of tuples (revision, ``FileStatusExtension``)
     """
-    revisions = defaultdict(dict)
+    revisions: tp.DefaultDict[ShortCommitHash,
+                              tp.Dict[tp.Optional[int],
+                                      FileStatusExtension]] = defaultdict(dict)
     result_files = __get_result_files_dict(
         project_cls.NAME, experiment_type, report_type
     )

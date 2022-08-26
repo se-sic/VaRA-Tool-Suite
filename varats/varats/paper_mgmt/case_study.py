@@ -159,7 +159,7 @@ def __conf_specific_filestatus(
     case_study: CaseStudy, revision: ShortCommitHash,
     conf_tag_map: tp.Dict[tp.Optional[int], FileStatusExtension]
 ) -> FileStatusExtension:
-    fs_count = defaultdict(int)
+    fs_count: tp.DefaultDict[FileStatusExtension, int] = defaultdict(int)
 
     cs_config_ids = case_study.get_config_ids_for_revision(revision)
     for config_id in cs_config_ids:
