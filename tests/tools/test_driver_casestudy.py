@@ -283,7 +283,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         result = runner.invoke(driver_casestudy.main, ['status', 'JustCompile'])
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertEqual(
-            "CS: xz_0: (  0/5) processed [0/0/0/0/3/2]\n"
+            "CS: xz_0: (  0/5) processed [0/0/0/0/0/3/2]\n"
             "    c5c7ceb08a [Missing]\n"
             "    ef364d3abc [Missing]\n"
             "    2f0bc9cd40 [Missing]\n"
@@ -291,7 +291,7 @@ class TestDriverCaseStudy(unittest.TestCase):
             "    10437b5b56 [Blocked]\n\n"
             "---------------------------------------------"
             "-----------------------------------\n"
-            "Total: (  0/5) processed [0/0/0/0/3/2]\n", result.stdout
+            "Total: (  0/5) processed [0/0/0/0/0/3/2]\n", result.stdout
         )
 
     @run_in_test_environment(
