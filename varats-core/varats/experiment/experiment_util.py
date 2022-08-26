@@ -492,6 +492,7 @@ def __create_new_result_filepath_impl(
         project: current project
         binary: current binary
         extension_type: of the report
+        config_id: optional id to specify the used configuration
 
     Returns: formatted filepath
     """
@@ -535,6 +536,7 @@ def create_new_success_result_filepath(
         report_type: type of the report
         project: current project
         binary: current binary
+        config_id: optional id to specify the used configuration
 
     Returns: formatted success filepath
     """
@@ -560,6 +562,7 @@ def create_new_failed_result_filepath(
         report_type: type of the report
         project: current project
         binary: current binary
+        config_id: optional id to specify the used configuration
 
     Returns: formatted fail filepath
     """

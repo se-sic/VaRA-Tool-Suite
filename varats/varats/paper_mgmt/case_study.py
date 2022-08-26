@@ -223,7 +223,7 @@ def get_revisions_status_for_case_study(
             found = False
             for tagged_rev, conf_tag_map in tagged_revisions.items():
                 if short_rev == tagged_rev:
-                    if case_study.is_revision_config_specific(tagged_rev):
+                    if case_study.has_revision_configs_specified(tagged_rev):
                         tag = __conf_specific_filestatus(
                             case_study, tagged_rev, conf_tag_map
                         )

@@ -332,7 +332,7 @@ class CaseStudy():
             return False
         return self.__stages[num_stage].has_revision(revision)
 
-    def is_revision_config_specific(self, revision: CommitHash) -> bool:
+    def has_revision_configs_specified(self, revision: CommitHash) -> bool:
         """
         Checks whether a revision specifies different configurations.
 

@@ -20,8 +20,8 @@ from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 
 from varats.report.report import BaseReport, ReportFilepath
 
-LoadableType = tp.TypeVar('LoadableType', bound=BaseReport)
-PathLikeType = tp.TypeVar('PathLikeType', Path, ReportFilepath)
+LoadableTy = tp.TypeVar('LoadableTy', bound=BaseReport)
+PathLikeTy = tp.TypeVar('PathLikeTy', Path, ReportFilepath)
 
 
 def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
@@ -54,7 +54,7 @@ class FileBlob():
         data: a blob of data in memory
     """
 
-    def __init__(self, key: str, file_path: Path, data: LoadableType) -> None:
+    def __init__(self, key: str, file_path: Path, data: LoadableTy) -> None:
         self.__key = key
         self.__file_path = file_path
         self.__class_object = data
@@ -70,7 +70,7 @@ class FileBlob():
         return self.__file_path
 
     @property
-    def data(self) -> LoadableType:
+    def data(self) -> LoadableTy:
         """The loaded DataClass from the file."""
         return self.__class_object
 
@@ -85,8 +85,8 @@ class FileLoader(QRunnable):
     """Manages concurrent file loading in the background of the application."""
 
     def __init__(
-        self, func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
-        file_path: Path, class_type: tp.Type[LoadableType]
+        self, func: tp.Callable[[Path, tp.Type[LoadableTy]], LoadableTy],
+        file_path: Path, class_type: tp.Type[LoadableTy]
     ) -> None:
         super().__init__()
         self.func = func
@@ -116,15 +116,15 @@ class DataManager():
         self.loader_lock = Lock()
 
     def __load_data_class(
-        self, file_path: Path, DataClassTy: tp.Type[LoadableType]
-    ) -> LoadableType:
+        self, file_path: Path, DataClassTy: tp.Type[LoadableTy]
+    ) -> LoadableTy:
         # pylint: disable=invalid-name
         """Load a DataClass of type <DataClassTy> from a file."""
         key = sha256_checksum(file_path)
 
         self.loader_lock.acquire()  # pylint: disable=consider-using-with
         if key in self.file_map:
-            return tp.cast(LoadableType, self.file_map[key].data)
+            return tp.cast(LoadableTy, self.file_map[key].data)
 
         self.loader_lock.release()
 
@@ -137,11 +137,11 @@ class DataManager():
         # unlocking in the happy path is performed by the loading function
         self.file_map[key] = new_blob
 
-        return tp.cast(LoadableType, new_blob.data)
+        return tp.cast(LoadableTy, new_blob.data)
 
     def load_data_class(
-        self, file_path: PathLikeType, DataClassTy: tp.Type[LoadableType],
-        loaded_callback: tp.Callable[[LoadableType], None]
+        self, file_path: PathLikeTy, DataClassTy: tp.Type[LoadableTy],
+        loaded_callback: tp.Callable[[LoadableTy], None]
     ) -> None:
         # pylint: disable=invalid-name
         """
@@ -166,8 +166,8 @@ class DataManager():
         self.thread_pool.start(worker)
 
     def load_data_class_sync(
-        self, file_path: PathLikeType, DataClassTy: tp.Type[LoadableType]
-    ) -> LoadableType:
+        self, file_path: PathLikeTy, DataClassTy: tp.Type[LoadableTy]
+    ) -> LoadableTy:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.
@@ -200,8 +200,8 @@ class DataManager():
 
 
 def _load_data_class_pool(
-    file_path: Path, report_type: tp.Type[LoadableType]
-) -> LoadableType:
+    file_path: Path, report_type: tp.Type[LoadableTy]
+) -> LoadableTy:
     return VDM.load_data_class_sync(file_path, report_type)
 
 

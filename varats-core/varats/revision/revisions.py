@@ -93,7 +93,6 @@ def __get_result_files_dict(
     if report_type is None:
         report_type = experiment_type.report_spec().main_report
 
-    # for res_file in res_dir.iterdir():
     for res_file in res_dir.rglob("*"):
         if res_file.is_dir():
             continue
