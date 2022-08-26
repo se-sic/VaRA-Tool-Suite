@@ -514,7 +514,7 @@ def __create_new_result_filepath_impl(
     if config_id:
         # We need to ensure that the config folder is created in the
         # background, so configuration specific reports can be created.
-        config_folder = result_filepath.fully_qualified_path().parent
+        config_folder = result_filepath.full_path().parent
         config_folder.mkdir(parents=True, exist_ok=True)
 
     return result_filepath

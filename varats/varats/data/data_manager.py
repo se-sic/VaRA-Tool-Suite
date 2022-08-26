@@ -153,7 +153,7 @@ class DataManager():
             loaded_callback: that gets called after loading has finished
         """
         if isinstance(file_path, ReportFilepath):
-            py_file_path: Path = file_path.fully_qualified_path()
+            py_file_path: Path = file_path.full_path()
         else:
             py_file_path = file_path
 
@@ -180,7 +180,7 @@ class DataManager():
             the loaded report file
         """
         if isinstance(file_path, ReportFilepath):
-            py_file_path: Path = file_path.fully_qualified_path()
+            py_file_path: Path = file_path.full_path()
         else:
             py_file_path = file_path
 

@@ -141,9 +141,7 @@ def __get_files_with_status(
     )
     for value in result_files.values():
         sorted_res_files = sorted(
-            value,
-            key=lambda x: x.fully_qualified_path().stat().st_mtime,
-            reverse=True
+            value, key=lambda x: x.full_path().stat().st_mtime, reverse=True
         )
         if only_newest:
             sorted_res_files = [sorted_res_files[0]]
@@ -296,7 +294,7 @@ def get_failed_revisions(
     )
     for commit_hash, value in result_files.items():
         newest_res_file = max(
-            value, key=lambda x: x.fully_qualified_path().stat().st_mtime
+            value, key=lambda x: x.full_path().stat().st_mtime
         )
         if newest_res_file.report_filename.has_status_failed():
             failed_revisions.append(commit_hash)
@@ -333,7 +331,7 @@ def __get_tag_for_revision(
         report_type = experiment_type.report_spec().main_report
 
     newest_res_file = max(
-        file_list, key=lambda x: x.fully_qualified_path().stat().st_mtime
+        file_list, key=lambda x: x.full_path().stat().st_mtime
     )
     report_file = newest_res_file.report_filename
     if report_file.is_result_file(

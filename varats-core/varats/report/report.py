@@ -447,7 +447,7 @@ class ReportFilename():
 
 class ReportFilepath():
     """ReportFilepath combines report filenames with path semantics and presents
-    the file as a fully qualified path."""
+    the file as a full path."""
 
     def __init__(
         self, base_path: Path, report_filename: ReportFilename
@@ -471,11 +471,11 @@ class ReportFilepath():
     def report_filename(self) -> ReportFilename:
         return self.__report_filename
 
-    def fully_qualified_path(self) -> Path:
+    def full_path(self) -> Path:
         return self.base_path / str(self.report_filename)
 
     def __str__(self) -> str:
-        return str(self.fully_qualified_path())
+        return str(self.full_path())
 
     def __repr__(self) -> str:
         return str(self)
