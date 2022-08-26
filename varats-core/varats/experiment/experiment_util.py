@@ -483,7 +483,7 @@ def __create_new_result_filepath_impl(
     config_id: tp.Optional[int] = None
 ) -> ReportFilepath:
     """
-    Create a result filepath for the specified file extensiona report of the
+    Create a result filepath for the specified file extension and report of the
     executed experiment/project combination.
 
     Args:
