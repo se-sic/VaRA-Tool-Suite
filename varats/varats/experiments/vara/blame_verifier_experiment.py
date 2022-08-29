@@ -25,8 +25,8 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     VersionExperiment,
     PEErrorHandler,
-    create_new_success_result_filename,
-    create_new_failed_result_filename,
+    create_new_success_result_filepath,
+    create_new_failed_result_filepath,
 )
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.report.report import ReportSpecification
@@ -78,14 +78,14 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             )
 
             # Define empty success file.
-            result_file = create_new_success_result_filename(
+            result_file = create_new_success_result_filepath(
                 self.__experiment_handle,
                 self.__experiment_handle.report_spec().main_report, project,
                 binary
             )
 
             # Define output file name of failed runs
-            error_file = create_new_failed_result_filename(
+            error_file = create_new_failed_result_filepath(
                 self.__experiment_handle,
                 self.__experiment_handle.report_spec().main_report, project,
                 binary
