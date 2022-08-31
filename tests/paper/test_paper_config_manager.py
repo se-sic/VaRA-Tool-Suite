@@ -12,20 +12,51 @@ from benchbuild.source import nosource
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 
 import varats.paper_mgmt.paper_config_manager as PCM
-from tests.paper.test_case_study import (
-    YAML_CASE_STUDY,
-    mocked_create_lazy_commit_map_loader,
-)
+from tests.paper.test_case_study import YAML_CASE_STUDY
 from tests.test_utils import DummyGit
 from tests.utils.test_experiment_util import (
     MockExperiment,
     MockExperimentMultiReport,
 )
-from varats.data.reports.commit_report import CommitReport
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import load_case_study_from_file, CaseStudy
 from varats.projects.c_projects.gzip import Gzip
 from varats.report.report import FileStatusExtension
 from varats.utils.git_util import ShortCommitHash
+
+GIT_LOG_OUT = """7620b817357d6f14356afd004ace2da426cf8c36
+622e9b1d024da1343b83fc47fb1891e1d245add3
+8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9
+2e654f9963154e5af9d3081fc871d54d783a1270
+edfad78619d52479e02228a5789a2e98d7b0f9f6
+a3db5806d012082b9e25cc36d09f19cd736a468f
+e75f428c0ddc90a7011cfda82a7114a16c537e34
+1e7e3769dc4efd55249c475470152acbcf804bb3
+9872ba420c99323195e96cafe56ff247c3011ad5
+b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
+
+
+def mocked_get_commit_map(
+    project_name: str,  # pylint: disable=unused-argument
+    cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
+    end: str = "HEAD",  # pylint: disable=unused-argument
+    start: tp.Optional[str] = None
+) -> CommitMap:  # pylint: disable=unused-argument
+    """
+    Create a dummy commit map.
+
+    Args:
+        project_name: name of the project
+        cmap_path: path to commit map file
+        end: commit to end loading, e.g, HEAD
+        start: commit from which to start loading
+    """
+
+    def format_stream() -> tp.Generator[str, None, None]:
+        for number, line in enumerate(reversed(GIT_LOG_OUT.split('\n'))):
+            yield f"{number}, {line}\n"
+
+    return CommitMap(format_stream())
 
 
 class TestPaperConfigManager(unittest.TestCase):
@@ -66,9 +97,7 @@ class TestPaperConfigManager(unittest.TestCase):
         self.project_source_mock = project_source_patcher.start()
         self.project_source_mock.return_value = self.DUMMY_GIT
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_short_status(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:
@@ -81,26 +110,32 @@ class TestPaperConfigManager(unittest.TestCase):
         self.project_source_mock.return_value = mocked_gzip_source
 
         # Revision not in set
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('42b25e7f15'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         status = PCM.get_short_status(self.case_study, MockExperiment, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/0/9/1]')
+        self.assertEqual(
+            status, 'CS: gzip_1: (  0/10) processed [0/0/0/0/0/9/1]'
+        )
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
         mock_get_tagged_experiment_specific_revisions.reset_mock()
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         status = PCM.get_short_status(self.case_study, MockExperiment, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/0/8/1]')
+        self.assertEqual(
+            status, 'CS: gzip_1: (  1/10) processed [1/0/0/0/0/8/1]'
+        )
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_short_status_color(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:
@@ -111,47 +146,53 @@ class TestPaperConfigManager(unittest.TestCase):
         if the colors are present.
         """
         # Revision not in set
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('42b25e7f15'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         status = PCM.get_short_status(self.case_study, MockExperiment, 5, True)
         self.assertEqual(
-            status, 'CS: gzip_1: (  0/10) processed [0/0/0/0/10/0]'
+            status, 'CS: gzip_1: (  0/10) processed [0/0/0/0/0/10/0]'
         )
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
         mock_get_tagged_experiment_specific_revisions.reset_mock()
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         status = PCM.get_short_status(self.case_study, MockExperiment, 5, True)
-        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/0/9/0]')
+        self.assertEqual(
+            status, 'CS: gzip_1: (  1/10) processed [1/0/0/0/0/9/0]'
+        )
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
     @mock.patch(
-        'varats.paper_mgmt.paper_config_manager.create_lazy_commit_map_loader',
-        side_effect=mocked_create_lazy_commit_map_loader
+        'varats.paper_mgmt.paper_config_manager.get_commit_map',
+        side_effect=mocked_get_commit_map
     )
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_status(
-        self, mock_get_tagged_experiment_specific_revisions, mock_cmap_loader
+        self, mock_get_tagged_experiment_specific_revisions, mock_cmap
     ) -> None:
         # pylint: disable=unused-argument
         """Check if the case study can show a short status."""
         # Revision not in set
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('42b25e7f15'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         status = PCM.get_status(
             self.case_study, MockExperiment, 5, False, False
         )
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/0/0/0/10/0]
+            status, """CS: gzip_1: (  0/10) processed [0/0/0/0/0/10/0]
     b8b25e7f15 [Missing]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
@@ -167,20 +208,37 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
         mock_get_tagged_experiment_specific_revisions.reset_mock()
-        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
-            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
-            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
-            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
-        ], [(ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)]])
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([{
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('b8b25e7f15'): {
+                0: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('a3db5806d0'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('622e9b1d02'): {
+                None: FileStatusExtension.FAILED
+            },
+            ShortCommitHash('1e7e3769dc'): {
+                None: FileStatusExtension.COMPILE_ERROR
+            },
+            ShortCommitHash('2e654f9963'): {
+                None: FileStatusExtension.BLOCKED
+            }
+        }, {
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }])
 
         status = PCM.get_status(
             self.case_study, MockExperimentMultiReport, 5, False, False
         )
         self.assertEqual(
-            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/5/1]
-    b8b25e7f15 [Success]
+            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/1/4/1]
+    b8b25e7f15 [Partial]
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]
@@ -189,7 +247,7 @@ class TestPaperConfigManager(unittest.TestCase):
     a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
-    9872ba420c [Missing]
+    9872ba420c [Success]
 """
         )
         mock_get_tagged_experiment_specific_revisions.assert_called()
@@ -200,7 +258,7 @@ class TestPaperConfigManager(unittest.TestCase):
             self.case_study, MockExperimentMultiReport, 5, False, True
         )
         self.assertEqual(
-            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/5/1]
+            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/1/4/1]
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]
@@ -209,32 +267,32 @@ class TestPaperConfigManager(unittest.TestCase):
     a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
-    9872ba420c [Missing]
-    b8b25e7f15 [Success]
+    9872ba420c [Success]
+    b8b25e7f15 [Partial]
 """
         )
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
     @mock.patch(
-        'varats.paper_mgmt.paper_config_manager.create_lazy_commit_map_loader',
-        side_effect=mocked_create_lazy_commit_map_loader
+        'varats.paper_mgmt.paper_config_manager.get_commit_map',
+        side_effect=mocked_get_commit_map
     )
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_status_with_stages(
-        self, mock_get_tagged_experiment_specific_revisions, mock_cmap_loader
+        self, mock_get_tagged_experiment_specific_revisions, mock_cmap
     ) -> None:
         # pylint: disable=unused-argument
         """Check if the case study can show a short status."""
         # Revision not in set
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('42b25e7f15'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         status = PCM.get_status(self.case_study, MockExperiment, 5, True, False)
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/0/0/0/10/0]
+            status, """CS: gzip_1: (  0/10) processed [0/0/0/0/0/10/0]
   Stage 0 (stage_0)
     b8b25e7f15 [Missing]
     7620b81735 [Missing]
@@ -253,21 +311,38 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
         mock_get_tagged_experiment_specific_revisions.reset_mock()
-        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
-            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
-            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
-            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
-        ], [(ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)]])
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([{
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('b8b25e7f15'): {
+                0: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('a3db5806d0'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('622e9b1d02'): {
+                None: FileStatusExtension.FAILED
+            },
+            ShortCommitHash('1e7e3769dc'): {
+                None: FileStatusExtension.COMPILE_ERROR
+            },
+            ShortCommitHash('2e654f9963'): {
+                None: FileStatusExtension.BLOCKED
+            }
+        }, {
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }])
 
         status = PCM.get_status(
             self.case_study, MockExperimentMultiReport, 5, True, False
         )
         self.assertEqual(
-            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/5/1]
+            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/1/4/1]
   Stage 0 (stage_0)
-    b8b25e7f15 [Success]
+    b8b25e7f15 [Partial]
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]
@@ -276,7 +351,7 @@ class TestPaperConfigManager(unittest.TestCase):
     a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
-    9872ba420c [Missing]
+    9872ba420c [Success]
   Stage 1
     7620b81735 [Missing]
 """
@@ -289,7 +364,7 @@ class TestPaperConfigManager(unittest.TestCase):
             self.case_study, MockExperimentMultiReport, 5, True, True
         )
         self.assertEqual(
-            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/5/1]
+            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/1/4/1]
   Stage 0 (stage_0)
     7620b81735 [Missing]
     622e9b1d02 [Failed]
@@ -299,17 +374,15 @@ class TestPaperConfigManager(unittest.TestCase):
     a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
-    9872ba420c [Missing]
-    b8b25e7f15 [Success]
+    9872ba420c [Success]
+    b8b25e7f15 [Partial]
   Stage 1
     7620b81735 [Missing]
 """
         )
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_status_color(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:
@@ -320,15 +393,17 @@ class TestPaperConfigManager(unittest.TestCase):
         if the colors are present.
         """
         # Revision not in set
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('42b25e7f15'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         status = PCM.get_status(
             self.case_study, MockExperiment, 5, False, False, True
         )
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/0/0/0/10/0]
+            status, """CS: gzip_1: (  0/10) processed [0/0/0/0/0/10/0]
     b8b25e7f15 [Missing]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
@@ -344,20 +419,37 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
         mock_get_tagged_experiment_specific_revisions.reset_mock()
-        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
-            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
-            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
-            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
-        ], [(ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)]])
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([{
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('b8b25e7f15'): {
+                0: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('a3db5806d0'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('622e9b1d02'): {
+                None: FileStatusExtension.FAILED
+            },
+            ShortCommitHash('1e7e3769dc'): {
+                None: FileStatusExtension.COMPILE_ERROR
+            },
+            ShortCommitHash('2e654f9963'): {
+                None: FileStatusExtension.BLOCKED
+            }
+        }, {
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }])
 
         status = PCM.get_status(
             self.case_study, MockExperimentMultiReport, 5, False, False, True
         )
         self.assertEqual(
-            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/5/1]
-    b8b25e7f15 [Success]
+            status, """CS: gzip_1: (  1/10) processed [1/1/1/1/1/4/1]
+    b8b25e7f15 [Partial]
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]
@@ -366,7 +458,7 @@ class TestPaperConfigManager(unittest.TestCase):
     a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
-    9872ba420c [Missing]
+    9872ba420c [Success]
 """
         )
         mock_get_tagged_experiment_specific_revisions.assert_called()
@@ -381,19 +473,17 @@ class TestPaperConfigManager(unittest.TestCase):
         # pylint: disable=line-too-long
         self.assertEqual(
             PCM.get_legend(True),
-            """CS: project_42: (Success / Total) processed [Success/Incomplete/Failed/CompileError/Missing/Blocked]
+            """CS: project_42: (Success / Total) processed [Success/Partial/Incomplete/Failed/CompileError/Missing/Blocked]
 """
         )
 
         self.assertEqual(
             PCM.get_legend(False),
-            """CS: project_42: (Success / Total) processed [Success/Incomplete/Failed/CompileError/Missing/Blocked]
+            """CS: project_42: (Success / Total) processed [Success/Partial/Incomplete/Failed/CompileError/Missing/Blocked]
 """
         )
 
-    @mock.patch(
-        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
-    )
+    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
     def test_total_status_color(
         self, mock_get_tagged_experiment_specific_revisions
     ) -> None:
@@ -401,9 +491,11 @@ class TestPaperConfigManager(unittest.TestCase):
         total_status_occurrences: tp.DefaultDict[
             FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
         # Revision not in set
-        mock_get_tagged_experiment_specific_revisions.return_value = [
-            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
-        ]
+        mock_get_tagged_experiment_specific_revisions.return_value = {
+            ShortCommitHash('42b25e7f15'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }
 
         PCM.get_status(
             self.case_study, MockExperiment, 5, False, False, True,
@@ -413,19 +505,36 @@ class TestPaperConfigManager(unittest.TestCase):
         self.assertEqual(
             status,
             """--------------------------------------------------------------------------------
-Total:         (  0/10) processed [0/0/0/0/10/0]"""
+Total:         (  0/10) processed [0/0/0/0/0/10/0]"""
         )
 
         mock_get_tagged_experiment_specific_revisions.assert_called()
 
         mock_get_tagged_experiment_specific_revisions.reset_mock()
-        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
-            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
-            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
-            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
-        ], [(ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)]])
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([{
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('b8b25e7f15'): {
+                0: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('a3db5806d0'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('622e9b1d02'): {
+                None: FileStatusExtension.FAILED
+            },
+            ShortCommitHash('1e7e3769dc'): {
+                None: FileStatusExtension.COMPILE_ERROR
+            },
+            ShortCommitHash('2e654f9963'): {
+                None: FileStatusExtension.BLOCKED
+            }
+        }, {
+            ShortCommitHash('9872ba420c'): {
+                None: FileStatusExtension.SUCCESS
+            }
+        }])
 
         PCM.get_status(
             self.case_study, MockExperimentMultiReport, 5, False, False, True,
@@ -435,7 +544,7 @@ Total:         (  0/10) processed [0/0/0/0/10/0]"""
         self.assertEqual(
             status,
             """--------------------------------------------------------------------------------
-Total:         (  1/15) processed [1/1/1/1/10/1]"""
+Total:         (  1/16) processed [1/1/1/1/1/10/1]"""
         )
 
         mock_get_tagged_experiment_specific_revisions.assert_called()
@@ -453,7 +562,7 @@ Total:         (  1/15) processed [1/1/1/1/10/1]"""
         self.assertEqual(
             status,
             """--------------------------------------------------------------------------------
-Total:         (  1/15) processed [1/1/1/1/10/1]"""
+Total:         (  1/16) processed [1/1/1/1/1/10/1]"""
         )
 
         mock_get_tagged_experiment_specific_revisions.assert_called()

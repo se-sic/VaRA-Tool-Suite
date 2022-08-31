@@ -11,6 +11,7 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
 
 
 class TimeStatsTable(Table, table_name="time_stats"):
@@ -25,12 +26,13 @@ class TimeStatsTable(Table, table_name="time_stats"):
         for case_study in case_studies:
             project_name = case_study.project_name
 
-            report_files = get_processed_revisions_files(
-                project_name, TimeReportAggregate,
-                get_case_study_file_name_filter(case_study), False
-            )
+            for experiment_type in self.table_kwargs["experiment_type"]:
+                report_files = get_processed_revisions_files(
+                    project_name, experiment_type, TimeReportAggregate,
+                    get_case_study_file_name_filter(case_study), False
+                )
 
-            for report_file in report_files:
+                report_file = report_files[0]
                 time_aggregated = TimeReportAggregate(report_file)
                 report_name = time_aggregated.filename
 
@@ -62,17 +64,15 @@ class TimeStatsTable(Table, table_name="time_stats"):
             inplace=True,
         )
 
-        kwargs: tp.Dict[str, tp.Any] = {}
-        if table_format.is_latex():
-            kwargs["column_format"] = "llrr"
-
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df, table_format, wrap_table=wrap_table, wrap_landscape=True
         )
 
 
 class TimeStatsTableGenerator(
-    TableGenerator, generator_name="time-stats", options=[]
+    TableGenerator,
+    generator_name="time-stats",
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE]
 ):
     """Generator for `TimeStatsTable`."""
 

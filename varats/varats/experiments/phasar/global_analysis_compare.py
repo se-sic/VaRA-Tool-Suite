@@ -23,7 +23,7 @@ from varats.experiment.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     get_default_compile_error_wrapped,
-    create_new_success_result_filename,
+    create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import (
     get_cached_bc_file_path,
@@ -68,7 +68,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
             else:
                 report_type = GlobalsReportWithout
 
-            result_file = create_new_success_result_filename(
+            result_file = create_new_success_result_filepath(
                 self.__experiment_handle, report_type, project, binary
             )
 
@@ -88,8 +88,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, report_type,
-                    Path(vara_result_folder)
+                    self.__experiment_handle, project, report_type
                 )
             )
 

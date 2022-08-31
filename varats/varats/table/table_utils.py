@@ -3,7 +3,7 @@
 import typing as tp
 
 import pandas as pd
-from pylatex import Document, UnsafeCommand, Package, NoEscape
+from pylatex import Document, Package, NoEscape
 from tabulate import tabulate
 
 from varats.table.tables import TableFormat
@@ -33,14 +33,14 @@ def wrap_table_in_latex_document(
             "landscape": "true" if landscape else "false"
         }
     )
-    # set monospace font
-    monospace_comm = UnsafeCommand(
-        'renewcommand', r'\familydefault', extra_arguments=r'\ttdefault'
-    )
-    doc.preamble.append(monospace_comm)
 
-    doc.packages.append(Package('longtable'))
-    doc.packages.append(Package('booktabs'))
+    doc.packages.update([
+        Package("booktabs"),
+        Package("hyperref"),
+        Package("longtable"),
+        Package("multirow"),
+        Package("xcolor", options=["table"]),
+    ])
 
     doc.change_document_style("empty")
 
@@ -53,6 +53,7 @@ def wrap_table_in_latex_document(
 def dataframe_to_table(
     data: pd.DataFrame,
     table_format: TableFormat,
+    style: tp.Optional["pd.io.formats.style.Styler"] = None,
     wrap_table: bool = False,
     wrap_landscape: bool = False,
     **kwargs: tp.Any
@@ -63,6 +64,8 @@ def dataframe_to_table(
     Args:
         data: the ``DataFrame`` to convert
         table_format: the table format used for conversion
+        style: optional styler object;
+               needs to be passed when custom styles are used
         wrap_table: whether to wrap the table in a separate
                     document (latex only)
         wrap_landscape: whether to use landscape mode to wrap the
@@ -74,13 +77,15 @@ def dataframe_to_table(
         the table as a string
     """
     table = ""
+    if not style:
+        style = data.style
     if table_format.is_latex():
-        table = data.to_latex(**kwargs)
+        table = style.to_latex(**kwargs)
         if wrap_table:
             table = wrap_table_in_latex_document(table, wrap_landscape)
 
     elif table_format.is_html():
-        table = data.to_html(**kwargs)
+        table = style.to_html(**kwargs)
     else:
         table = tabulate(data, data.columns, table_format.value)
 

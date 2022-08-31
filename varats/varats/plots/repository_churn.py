@@ -8,7 +8,7 @@ from itertools import islice
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib import axes, style
+from matplotlib import axes
 
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
@@ -233,7 +233,6 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
     NAME = 'repo_churn'
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)
