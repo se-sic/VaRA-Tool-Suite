@@ -87,7 +87,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                     xz_cmd = binary[f"-{compression_level}", "-k", workload]
                                     xz_cmd()
                                     mv_cmd = mv[result_file.filename, Path(time_reports_dir)]
-
+                                    mv_cmd()
                                     # TODO: figure out  how to handle different configs
                                     #executable("--slow")
                                     # executable()
