@@ -64,7 +64,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
-                    for x in range(1, 10):
+                    for x in range(0, 10):
                         self.compression_level = x
                         xz_params = [
                             "-{compression}".format(compression=self.compression_level),
