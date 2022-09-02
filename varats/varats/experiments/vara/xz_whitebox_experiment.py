@@ -16,6 +16,7 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    get_varats_result_folder, ZippedReportFolder,
 )
 from varats.project.project_util import BinaryType
 from varats.provider.feature.feature_model_provider import (
@@ -25,6 +26,7 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.tef_report import TEFReport
+from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 
 
 class ExecAndTraceBinary(actions.Step):  # type: ignore
@@ -43,8 +45,9 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
         """Execute the specified binaries of the project, in specific
         configurations, against one or multiple workloads."""
         project: Project = self.obj
-
         print(f"PWD {os.getcwd()}")
+
+        number_of_repetition = 1
 
         vara_result_folder = get_varats_result_folder(project)
         for binary in project.binaries:
@@ -61,37 +64,34 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
             )
 
             with local.cwd(local.path(project.source_of_primary)):
-                print(f"Currenlty at {local.path(project.source_of_primary)}")
-                print(f"Bin path {binary.path}")
+                with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
+                    with ZippedReportFolder(
+                            aggregated_time_reports_dir / Path(f"XZCompressionLevel{compression_level}")) as time_reports_dir:
+                        print(f"Currenlty at {local.path(project.source_of_primary)}")
+                        print(f"Bin path {binary.path}")
 
-                # executable = local[f"{binary.path}"]
+                        # executable = local[f"{binary.path}"]
+                        for compression_level in range(0, 10):
+                            with local.env(
+                                VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
+                            ):
 
-                with local.env(
-                    VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
-                ):
+                                workload = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json"
+                                file_path_xz = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json.xz"
+                                rm_cmd = rm[file_path_xz]
+                                if Path(file_path_xz).is_file():
+                                    rm_cmd()
 
-                    workload = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json"
-                    file_path_xz = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json.xz"
-                    rm_cmd = rm[file_path_xz]
-                    if Path(file_path_xz).is_file():
-                        rm_cmd()
+                                xz_cmd = binary[f"-{compression_level}", "-k", workload]
+                                xz_cmd()
 
-                    xz_cmd = binary["-5", "-k", workload]
-                    xz_cmd()
-                    
-                    # TODO: figure out how to handle different configs
-                    #executable("--slow")
-                    # executable()
-                    if Path(file_path_xz).is_file():
-                        rm_cmd()
-
-                print("-----------------------------------------------")
-                print(f"{vara_result_folder}/{result_file}")
-
-
-                tefReport = TEFReport(Path(f"{vara_result_folder}/{result_file}"))
-                tefReport.feature_time_accumulator()
-                print("-----------------------------------------------")
+                                # TODO: figure out  how to handle different configs
+                                #executable("--slow")
+                                # executable()
+                                if Path(file_path_xz).is_file():
+                                    rm_cmd()
+                                tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
+                                tefReport.feature_time_accumulator()
 
         return actions.StepResult.OK
 
@@ -151,8 +151,8 @@ class FeaturePerfRunner(VersionExperiment, shorthand="xzW"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(ExecAndTraceBinary(project, self.get_handle()))
 
-        tefReport = TEFReport(Path("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/test.json"))
-        tefReport.feature_time_accumulator()
+        #tefReport = TEFReport(Path("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/test.json"))
+        #tefReport.feature_time_accumulator()
 
         analysis_actions.append(actions.Clean(project))
 
