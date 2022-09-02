@@ -9,7 +9,7 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
-from plumbum.cmd import rm, ls
+from plumbum.cmd import rm, ls, mv
 
 from varats.experiment.experiment_util import (
     ExperimentHandle,
@@ -65,13 +65,14 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
 
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
-                    with ZippedReportFolder(
-                            aggregated_time_reports_dir / Path(f"XZCompressionLevel{compression_level}")) as time_reports_dir:
+                    for compression_level in range(0, 10):
                         print(f"Currenlty at {local.path(project.source_of_primary)}")
                         print(f"Bin path {binary.path}")
 
                         # executable = local[f"{binary.path}"]
-                        for compression_level in range(0, 10):
+                        with ZippedReportFolder(
+                                aggregated_time_reports_dir / Path(
+                                    f"XZCompressionLevel{compression_level}")) as time_reports_dir:
                             with local.env(
                                 VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
                             ):
@@ -79,19 +80,22 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                 workload = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json"
                                 file_path_xz = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json.xz"
                                 rm_cmd = rm[file_path_xz]
-                                if Path(file_path_xz).is_file():
-                                    rm_cmd()
+                                for i in range(number_of_repetition):
+                                    if Path(file_path_xz).is_file():
+                                        rm_cmd()
 
-                                xz_cmd = binary[f"-{compression_level}", "-k", workload]
-                                xz_cmd()
+                                    xz_cmd = binary[f"-{compression_level}", "-k", workload]
+                                    xz_cmd()
+                                    mv_cmd = mv[result_file.filename, Path(time_reports_dir)]
 
-                                # TODO: figure out  how to handle different configs
-                                #executable("--slow")
-                                # executable()
-                                if Path(file_path_xz).is_file():
-                                    rm_cmd()
-                                tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
-                                tefReport.feature_time_accumulator()
+                                    # TODO: figure out  how to handle different configs
+                                    #executable("--slow")
+                                    # executable()
+
+                                    if Path(file_path_xz).is_file():
+                                        rm_cmd()
+                                    tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
+                                    tefReport.feature_time_accumulator()
 
         return actions.StepResult.OK
 
