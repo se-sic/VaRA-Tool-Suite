@@ -93,7 +93,8 @@ def create_new_bb_config(
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.test_suite',
-            'varats.projects.perf_tests.feature_perf_cs_collection'
+            'varats.projects.perf_tests.feature_perf_cs_collection',
+            'varats.projects.test_projects.library_analysis.lib_upgrade_bug'
         ]
 
     # Experiments for VaRA
