@@ -45,13 +45,13 @@ class CommitMap():
         self._hash_to_id_master = None
 
     @property
-    def __hash_to_id(self):
+    def __hash_to_id(self) -> CharTrie:
         if not self._hash_to_id:
             self._hash_to_id = self.generate_hash_to_id()
         return self._hash_to_id
 
     @property
-    def __hash_to_id_master(self):
+    def __hash_to_id_master(self) -> CharTrie:
         if not self._hash_to_id_master:
             self._hash_to_id_master = self.generate_hash_to_id(master=True)
         return self._hash_to_id_master
@@ -212,7 +212,7 @@ def get_commit_map(
     project_name: str,
     end: str = "HEAD",
     start: tp.Optional[str] = None,
-    refspec: str = "HEAD",
+    refspec: tp.Optional[str] = None,
 ) -> CommitMap:
     """
     Get a commit map for a project.
@@ -231,5 +231,7 @@ def get_commit_map(
     primary_source = get_primary_project_source(project_name)
     if refspec is None and hasattr(primary_source, "refspec"):
         refspec = primary_source.refspec
+    elif refspec is None:
+        refspec = "HEAD"
 
     return CommitMap(project_git_path, end, start, refspec)

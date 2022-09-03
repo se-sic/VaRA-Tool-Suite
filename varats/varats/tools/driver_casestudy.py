@@ -332,7 +332,7 @@ def __gen_sample(
         else:
             start = get_initial_commit(project_repo_path).hash
 
-    cmap = get_commit_map(ctx.obj['project'], end, start, None)
+    cmap = get_commit_map(ctx.obj['project'], end, start)
     extend_with_distrib_sampling(
         ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],
         num_rev, ctx.obj['ignore_blocked'], only_code_commits
@@ -444,7 +444,7 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 
     release_type: Release type to consider
     """
-    cmap = get_commit_map(ctx.obj['project'], refspec='None')
+    cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_release_revs(
         ctx.obj['case_study'], cmap, release_type, ctx.obj['ignore_blocked'],
         ctx.obj['merge_stage']

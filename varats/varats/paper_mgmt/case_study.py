@@ -642,7 +642,7 @@ def extend_with_bug_commits(
     project_cls: tp.Type[Project] = get_project_cls_by_name(
         case_study.project_name
     )
-    cmap = get_commit_map(case_study.project_name, None, 'HEAD', None)
+    cmap = get_commit_map(case_study.project_name, refspec='HEAD')
 
     def load_bugs_from_szz_report(
         load_fun: tp.Callable[[Path], SZZReport]
