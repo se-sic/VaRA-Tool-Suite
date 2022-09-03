@@ -3,6 +3,7 @@
 import logging
 import typing as tp
 from collections.abc import ItemsView
+from functools import cached_property
 from pathlib import Path
 
 from benchbuild.utils.cmd import git, mkdir
@@ -40,28 +41,14 @@ class CommitMap():
         self.end = end
         self.start = start
         self.refspec = refspec
-        self.__hash_to_id = None
-        self.__hash_to_id_master = None
 
-    @property
+    @cached_property
     def __hash_to_id(self):
-        if self.__hash_to_id is None:
-            self.__hash_to_id = self.generate_hash_to_id()
-        return self.__hash_to_id
+        return self.generate_hash_to_id()
 
-    @__hash_to_id.setter
-    def __hash_to_id(self, value):
-        self.___hash_to_id = value
-
-    @property
+    @cached_property
     def __hash_to_id_master(self):
-        if self.__hash_to_id_master is None:
-            self.__hash_to_id_master = self.generate_hash_to_id(master=True)
-        return self.__hash_to_id_master
-
-    @__hash_to_id_master.setter
-    def __hash_to_id_master(self, value):
-        self.___hash_to_id_master = value
+        return self.generate_hash_to_id(master=True)
 
     def generate_hash_to_id(self, master: bool = False):
         search_range = ""
