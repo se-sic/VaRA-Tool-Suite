@@ -1,5 +1,5 @@
 """Commit map module."""
-
+import functools
 import logging
 import typing as tp
 from collections.abc import ItemsView
@@ -42,11 +42,13 @@ class CommitMap():
         self.start = start
         self.refspec = refspec
 
-    @cached_property
+    @property
+    @functools.lru_cache()
     def __hash_to_id(self):
         return self.generate_hash_to_id()
 
-    @cached_property
+    @property
+    @functools.lru_cache()
     def __hash_to_id_master(self):
         return self.generate_hash_to_id(master=True)
 
