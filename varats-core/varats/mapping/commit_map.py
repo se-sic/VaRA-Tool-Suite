@@ -41,18 +41,22 @@ class CommitMap():
         self.end = end
         self.start = start
         self.refspec = refspec
+        self._hash_to_id = None
+        self._hash_to_id_master = None
 
     @property
-    @functools.lru_cache()
     def __hash_to_id(self):
-        return self.generate_hash_to_id()
+        if not self._hash_to_id:
+            self._hash_to_id = self.generate_hash_to_id()
+        return self._hash_to_id
 
     @property
-    @functools.lru_cache()
     def __hash_to_id_master(self):
-        return self.generate_hash_to_id(master=True)
+        if not self._hash_to_id_master:
+            self._hash_to_id_master = self.generate_hash_to_id(master=True)
+        return self._hash_to_id_master
 
-    def generate_hash_to_id(self, master: bool = False):
+    def generate_hash_to_id(self, master: bool = False) -> CharTrie:
         search_range = ""
         if self.start is not None:
             search_range += self.start + ".."
@@ -208,6 +212,7 @@ def get_commit_map(
     project_name: str,
     end: str = "HEAD",
     start: tp.Optional[str] = None,
+    refspec: str = "HEAD",
 ) -> CommitMap:
     """
     Get a commit map for a project.
@@ -218,13 +223,13 @@ def get_commit_map(
         project_name: name of the project
         end: last commit that should be included in the map
         start: commit before the first commit that should be included in the map
+        refspec: that should be checked out
 
     Returns: a bidirectional commit map from commits to time IDs
     """
     project_git_path = get_local_project_git_path(project_name)
     primary_source = get_primary_project_source(project_name)
-    refspec = "HEAD"
-    if hasattr(primary_source, "refspec"):
+    if refspec is None and hasattr(primary_source, "refspec"):
         refspec = primary_source.refspec
 
     return CommitMap(project_git_path, end, start, refspec)
