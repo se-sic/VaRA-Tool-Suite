@@ -1,9 +1,7 @@
 """Commit map module."""
-import functools
 import logging
 import typing as tp
 from collections.abc import ItemsView
-from functools import cached_property
 from pathlib import Path
 
 from benchbuild.utils.cmd import git, mkdir
