@@ -15,6 +15,8 @@ from varats.data.reports.commit_report import (
     generate_interactions,
 )
 from varats.mapping.commit_map import CommitMap
+from varats.project.project_util import get_local_project_git_path
+from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
@@ -386,11 +388,13 @@ ef58a957a6c1887930cc70d6199ae7e48aa8d716"""
 def testing_gen_commit_map() -> CommitMap:
     """Generate a local commit map for testing."""
 
-    def commit_log_stream() -> tp.Generator[str, None, None]:
-        for number, line in enumerate(reversed(RAW_COMMIT_LOG.split('\n'))):
-            yield f"{number}, {line}\n"
-
-    return CommitMap(commit_log_stream())
+    initialize_projects()
+    xz_repo_path = get_local_project_git_path("xz")
+    return CommitMap(
+        xz_repo_path,
+        start="923bf96b55e5216a6c8df9d8331934f54784390e",
+        end="80a1a8bb838842a2be343bd88ad1462c21c5e2c9"
+    )
 
 
 class TestCommitMap(unittest.TestCase):
@@ -408,30 +412,30 @@ class TestCommitMap(unittest.TestCase):
         """Test time id look up."""
         self.assertEqual(
             self.cmap.time_id(
-                FullCommitHash("ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d")
-            ), 1
+                FullCommitHash("b81bf0c7d1873e52a4086a9abb494471d652cb55")
+            ), 1388
         )
         self.assertEqual(
             self.cmap.time_id(
-                FullCommitHash("ef58a957a6c1887930cc70d6199ae7e48aa8d716")
-            ), 0
+                FullCommitHash("340cf1ec3927767046b8293a49da3db4e393f426")
+            ), 1387
         )
         self.assertEqual(
             self.cmap.time_id(
-                FullCommitHash("20540be6186c159880dda3a49a5827722c1a0ac9")
-            ), 32
+                FullCommitHash("80a1a8bb838842a2be343bd88ad1462c21c5e2c9")
+            ), 1422
         )
 
     def test_short_time_id(self) -> None:
         """Test short time id look up."""
         self.assertEqual(
-            self.cmap.short_time_id(ShortCommitHash("ae332f2a5d")), 1
+            self.cmap.short_time_id(ShortCommitHash("b81bf0c7d187")), 1388
         )
         self.assertEqual(
-            self.cmap.short_time_id(ShortCommitHash("ef58a957a6c1")), 0
+            self.cmap.short_time_id(ShortCommitHash("340cf1ec3927")), 1387
         )
         self.assertEqual(
-            self.cmap.short_time_id(ShortCommitHash("20540be618")), 32
+            self.cmap.short_time_id(ShortCommitHash("80a1a8bb8388")), 1422
         )
 
 
@@ -455,6 +459,8 @@ class TestCommitConnectionGenerators(unittest.TestCase):
     def test_gen_interactions_nodes(self) -> None:
         """Test generation of interaction node."""
         nodes = generate_interactions(self.commit_report, self.cmap)[0]
+        self.assertTrue(False, nodes)
+        return
         self.assertEqual(
             nodes.at[0, 'hash'],
             FullCommitHash('38f87b03c2763bb2af05ae98905b0ac8ba55b3eb')
