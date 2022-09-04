@@ -259,7 +259,7 @@ def __casestudy_gen(
 def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
 
-    cmap = get_commit_map(ctx.obj["git_path"])
+    cmap = get_commit_map(ctx.obj['project'])
     case_study: CaseStudy = ctx.obj['case_study']
 
     repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
