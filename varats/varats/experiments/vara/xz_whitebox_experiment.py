@@ -93,8 +93,10 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                     print("------------------------------------\n")
                                     print(aggregated_time_reports_dir / Path(f"XZCompressionLevel{compression_level}"))
                                     print("------------------------------------\n")
-
-                                    mv_cmd = mv[result_file.filename, Path(time_reports_dir)]
+                                    print(os.listdir(vara_result_folder))
+                                    print("------------------------------------\n")
+                                    mv_cmd = mv[Path(vara_result_folder / result_file.filename), Path(time_reports_dir)]
+                                    mv_cmd()
                                     # TODO: figure out  how to handle different configs
                                     #executable("--slow")
                                     # executable()
