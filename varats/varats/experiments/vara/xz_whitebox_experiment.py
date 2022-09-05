@@ -66,7 +66,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
                     for compression_level in range(0, 10):
-                        print(f"Currenlty at {local.path(project.source_of_primary)}")
+                        print(f"Currently at {local.path(project.source_of_primary)}")
                         print(f"Bin path {binary.path}")
 
                         # executable = local[f"{binary.path}"]
@@ -80,14 +80,21 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                 workload = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json"
                                 file_path_xz = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json.xz"
                                 rm_cmd = rm[file_path_xz]
+
                                 for i in range(number_of_repetition):
                                     if Path(file_path_xz).is_file():
                                         rm_cmd()
 
                                     xz_cmd = binary[f"-{compression_level}", "-k", workload]
                                     xz_cmd()
+
+                                    print("------------------------------------\n")
+                                    print(vara_result_folder / result_file.filename)
+                                    print("------------------------------------\n")
+                                    print(aggregated_time_reports_dir / Path(f"XZCompressionLevel{compression_level}"))
+                                    print("------------------------------------\n")
+
                                     mv_cmd = mv[result_file.filename, Path(time_reports_dir)]
-                                    mv_cmd()
                                     # TODO: figure out  how to handle different configs
                                     #executable("--slow")
                                     # executable()
