@@ -104,8 +104,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
 
                                     if Path(file_path_xz).is_file():
                                         rm_cmd()
-                                    tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
-                                    tefReport.feature_time_accumulator()
+                                    #tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
+                                    #tefReport.feature_time_accumulator()
 
         return actions.StepResult.OK
 
