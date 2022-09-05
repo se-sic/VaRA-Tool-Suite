@@ -6,7 +6,7 @@ from pathlib import Path
 
 import benchbuild.extensions.time as bb_time
 from benchbuild import Project
-from benchbuild.command import ProjectCommand
+from benchbuild.command import ProjectCommand, unwrap
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import touch, time, wget, rm
@@ -18,9 +18,10 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
+    create_new_success_result_filepath,
     get_varats_result_folder,
-    create_new_success_result_filename,
     ZippedReportFolder,
+    ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.varats_project import VProject
@@ -46,7 +47,7 @@ class TimeProjectWorkloads(actions.Step):  # type: ignore
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = create_new_success_result_filename(
+            result_file = create_new_success_result_filepath(
                 self.__experiment_handle,
                 self.__experiment_handle.report_spec().main_report, project,
                 binary
@@ -96,21 +97,26 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
     NAME = "TimeAnalysis"
     DESCRIPTION = "Time the execution of all produced binaries."
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(
+        self, project: Project, experiment_handle: ExperimentHandle, num: int
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.__num = num
 
-    def __call__(self) -> actions.StepResult:
-        return self.analyze()
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
 
-    def analyze(self) -> actions.StepResult:
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
         """Only create a report file."""
         self.project: VProject
         # repetitions = 10
 
         # vara_result_folder = get_varats_result_folder(self.project)
 
-        workloads = itertools.chain(*self.project.workloads.values())
+        wl_tmp = unwrap(self.project.workloads, self.project)
+        print(f"{wl_tmp=}")
+        workloads = itertools.chain(*wl_tmp.values())
 
         commands: tp.List[ProjectCommand] = []
         for workload in workloads:
@@ -125,11 +131,10 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
                 print(f"PB: {command.command.as_plumbum(project=self.project)}")
                 cmd = command.command.as_plumbum(project=self.project)
 
-                time_reports_dir = "/tmp/foo"
-                i = 42
-                run_report_name = Path(
-                    time_reports_dir
-                ) / f"time_report_{i}.txt"
+                # time_reports_dir = "/tmp/foo"
+                time_reports_dir = tmp_dir
+                i = self.__num
+                run_report_name = time_reports_dir / f"time_report_{i}.txt"
 
                 run_cmd = time['-v', '-o', f'{run_report_name}', cmd]
 
@@ -141,7 +146,6 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-# Please take care when changing this file, see docs experiments/just_compile
 class TimeWorkloads(VersionExperiment, shorthand="TWL"):
     """Generates time report files."""
 
@@ -170,8 +174,14 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
+        # analysis_actions.append(
+        #     TimeProjectWorkloadsNew(project, self.get_handle())
+        # )
         analysis_actions.append(
-            TimeProjectWorkloadsNew(project, self.get_handle())
+            ZippedExperimentSteps([
+                TimeProjectWorkloadsNew(project, self.get_handle(), 1),
+                TimeProjectWorkloadsNew(project, self.get_handle(), 2)
+            ])
         )
         analysis_actions.append(actions.Clean(project))
 

@@ -3,17 +3,24 @@
 import os
 import random
 import shutil
+import sys
 import tempfile
+import textwrap
 import traceback
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 from types import TracebackType
 
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol, runtime_checkable
+else:
+    from typing import Protocol, runtime_checkable
+
 from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step
+from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
@@ -472,6 +479,53 @@ class ZippedReportFolder(TempDir):
             )
 
         super().__exit__(exc_type, exc_value, exc_traceback)
+
+
+@runtime_checkable
+class NeedsOutputFolder(Protocol):
+
+    def __call__(self, tmp_folder: Path) -> StepResult:
+        ...
+
+
+def run_child_with_output_folder(
+    child: NeedsOutputFolder, tmp_folder: Path
+) -> StepResult:
+    return child(tmp_folder)
+
+
+class ZippedExperimentSteps(MultiStep):
+
+    NAME = "ZippedSteps"
+    DESCRIPTION = "zipped desc"
+
+    def __init__(
+        self, actions: tp.Optional[tp.List[NeedsOutputFolder]]
+    ) -> None:
+        # TODO: how to handle this on a type level?
+        super().__init__(actions)
+
+    def __run_children(self, tmp_folder: Path) -> tp.List[StepResult]:
+        results = []
+
+        for child in self.actions:
+            run_child_with_output_folder(child, tmp_folder)
+
+        return results
+
+    def __call__(self) -> StepResult:
+        results = []
+
+        with ZippedReportFolder(Path("/tmp/foo/myzip.zip")) as tmp_dir:
+            results = self.__run_children(Path(tmp_dir))
+
+        return max(results) if results else StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
+        return textwrap.indent(
+            f"\nZippedExperimentSteps: Foo\n{sub_actns}", indent * " "
+        )
 
 
 def __create_new_result_filepath_impl(

@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.command import Command, SourceRoot, WorkloadSet, OnlyIn
 from benchbuild.source import HTTP
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
@@ -63,7 +63,6 @@ class Xz(VProject):
             )
         ),
         # TODO: auto unzipper for BB?
-        # TODO: can haz source without rev? Good idea?
         HTTP(
             local="countries-land-1km.geo.json",
             remote={
