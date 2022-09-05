@@ -214,7 +214,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
                 if len(current_active_feature) > 0:
                     feature_dict[self.features_to_string(current_active_feature)].append(trace_event.timestamp)
-        print(feature_dict)
             # ToDo raise error for unexpcted event type
 
         with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:

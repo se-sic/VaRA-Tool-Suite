@@ -95,7 +95,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                     print("------------------------------------\n")
                                     print(os.listdir(vara_result_folder))
                                     print("------------------------------------\n")
-                                    mv_cmd = mv[Path(vara_result_folder / result_file.filename), Path(time_reports_dir)]
+                                    mv_cmd = mv[Path(vara_result_folder / result_file.filename), Path(time_reports_dir)
+                                        / f"tefreport_compression_{compression_level}_{i}"]
                                     mv_cmd()
                                     # TODO: figure out  how to handle different configs
                                     #executable("--slow")
