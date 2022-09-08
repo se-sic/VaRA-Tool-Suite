@@ -36,10 +36,8 @@ class RevisionBinaryRenderer:
             if binary.name == self.__binary_name:
                 entry_point = binary.entry_point
                 if entry_point:
-                    print(f"Found: {entry_point=}")
                     return entry_point
 
-        # TODO: @SimB: Do we have an easy way (execept for tags) to exclude workloads for some revisions?
         raise AssertionError(
             "Specified binary was not present in the current version."
         )
