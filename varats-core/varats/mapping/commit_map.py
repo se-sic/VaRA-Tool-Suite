@@ -68,13 +68,15 @@ class CommitMap():
                     "--no-pager", "log", "--all", "--pretty=format:'%H'"
                 )
                 wanted_out = git(
-                    "--no-pager", "log", "--all", "--pretty=format:'%H'",
-                    search_range
+                    "--no-pager", "log", "--pretty=format:'%H'", search_range
                 )
             else:
-                full_out = git("--no-pager", "log", "--pretty=format:'%H'")
+                full_out = git(
+                    "--no-pager", "log", "--all", "--pretty=format:'%H'"
+                )
                 wanted_out = git(
-                    "--no-pager", "log", "--pretty=format:'%H'", search_range
+                    "--no-pager", "log", "--all", "--pretty=format:'%H'",
+                    search_range
                 )
 
             def format_stream() -> tp.Generator[str, None, None]:

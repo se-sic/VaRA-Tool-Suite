@@ -531,9 +531,8 @@ def extend_with_distrib_sampling(
     # of the list is the same as the distribution over the commits age history
     project_cls = get_project_cls_by_name(case_study.project_name)
     revision_list = [
-        (FullCommitHash(rev), idx)
-        for rev, idx in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
-        if
+        (FullCommitHash(rev), idx) for rev, idx in
+        sorted(list(cmap.mapping_items_master()), key=lambda x: x[1]) if
         not case_study.has_revision_in_stage(ShortCommitHash(rev), merge_stage)
         and not is_blocked(ShortCommitHash(rev), project_cls) and
         is_code_commit(ShortCommitHash(rev))
