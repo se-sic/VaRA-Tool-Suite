@@ -11,6 +11,7 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
 
 
 class TimedWorkloadTable(Table, table_name="time_workloads"):
@@ -24,12 +25,15 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
             project_name = case_study.project_name
 
             report_files = get_processed_revisions_files(
-                project_name, TimeReportAggregate,
+                project_name,
+                # TODO: clean up
+                self.table_kwargs["experiment_type"][0],
+                TimeReportAggregate,
                 get_case_study_file_name_filter(case_study)
             )
 
             for report_file in report_files:
-                agg_time_report = TimeReportAggregate(report_file)
+                agg_time_report = TimeReportAggregate(report_file.full_path())
                 report_file = agg_time_report.filename
 
                 #mean_runtime = np.mean(time_report.measurements_wall_clock_time)
@@ -44,16 +48,35 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                         report_file.binary_name,
                     "Revision":
                         str(report_file.commit_hash),
+                    # TODO: get wl name here
+                    "Workload":
+                        42,
                     "Mean wall time (msecs)":
-                        # agg_time_report.wall_clock_time.total_seconds() * 1000,
-                        np.mean(list(map(lambda x: x * 1000, agg_time_report.measurements_wall_clock_time))),
+                        np.mean(
+                            list(
+                                map(
+                                    lambda x: x * 1000,
+                                    agg_time_report.measurements_wall_clock_time
+                                )
+                            )
+                        ),
                     "StdDev":
-                        round(np.std(list(map(lambda x: x * 1000, agg_time_report.measurements_wall_clock_time))), 2),
+                        round(
+                            np.std(
+                                list(
+                                    map(
+                                        lambda x: x * 1000, agg_time_report.
+                                        measurements_wall_clock_time
+                                    )
+                                )
+                            ), 2
+                        ),
                     "Max resident size (kbytes)":
                         max(agg_time_report.max_resident_sizes),
                     #"Involuntarty CTX switches":
                     #    agg_time_report.involuntary_ctx_switches
-                    "Reps": len(agg_time_report.reports)
+                    "Reps":
+                        len(agg_time_report.reports)
                 }
 
                 df = df.append(new_row, ignore_index=True)
@@ -74,7 +97,9 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
 
 
 class TimedWorkloadTableGenerator(
-    TableGenerator, generator_name="time-workloads", options=[]
+    TableGenerator,
+    generator_name="time-workloads",
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE]
 ):
     """Generator for `TimeWorkloadsTable`."""
 

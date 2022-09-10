@@ -28,6 +28,7 @@ from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import (
     REQUIRE_REPORT_TYPE,
     REQUIRE_CASE_STUDY,
+    REQUIRE_MULTI_EXPERIMENT_TYPE,
 )
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
@@ -44,10 +45,14 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
             project_name = case_study.project_name
 
             report_files = get_processed_revisions_files(
-                project_name, TimeReportAggregate,
+                project_name,
+                # TODO: clean up
+                self.table_kwargs["experiment_type"][0],
+                TimeReportAggregate,
                 get_case_study_file_name_filter(case_study)
             )
 
+            # TODO: integrate workloads
             for report_file in report_files:
                 agg_time_report = TimeReportAggregate(report_file)
                 report_file = agg_time_report.filename
@@ -77,7 +82,9 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
 
 
 class TimedWorkloadPlotGenerator(
-    PlotGenerator, generator_name="timed-workloads", options=[]
+    PlotGenerator,
+    generator_name="timed-workloads",
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE]
 ):
     """Generates repo-churn plot(s) for the selected case study(ies)."""
 
