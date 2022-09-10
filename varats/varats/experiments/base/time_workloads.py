@@ -110,10 +110,8 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
         """Only create a report file."""
         self.project: VProject
-        # repetitions = 10
 
-        # vara_result_folder = get_varats_result_folder(self.project)
-
+        # TODO: refactor into helper function
         wl_tmp = unwrap(self.project.workloads, self.project)
         print(f"{wl_tmp=}")
         workloads = itertools.chain(*wl_tmp.values())
@@ -124,9 +122,14 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
 
         print(f"{commands=}")
 
-        # TODO: test/port repetitions
         with local.cwd(self.project.builddir):
             for command in commands:
+                # TODO: remove/refactor manual cleanup
+                workload = "countries-land-1km.geo.json"
+                rm('-f', workload + ".xz")
+                rm('-f', workload + ".lrz")
+                rm('-f', workload + ".gz")
+
                 # TODO: more elegant way of wrapping commands?
                 print(f"PB: {command.command.as_plumbum(project=self.project)}")
                 cmd = command.command.as_plumbum(project=self.project)
@@ -140,8 +143,6 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
 
                 print(f"{run_cmd=}")
                 run_cmd()
-
-                # command()
 
         return actions.StepResult.OK
 
@@ -172,16 +173,26 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
+        measurment_repetitions = 2
+        result_filepath = create_new_success_result_filepath(
+            self.get_handle(),
+            # TODO: handle binary name. token?
+            self.get_handle().report_spec().main_report,
+            project,
+            project.binaries[0]
+        )
+
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
-        # analysis_actions.append(
-        #     TimeProjectWorkloadsNew(project, self.get_handle())
-        # )
+
         analysis_actions.append(
-            ZippedExperimentSteps([
-                TimeProjectWorkloadsNew(project, self.get_handle(), 1),
-                TimeProjectWorkloadsNew(project, self.get_handle(), 2)
-            ])
+            ZippedExperimentSteps(
+                result_filepath, [
+                    TimeProjectWorkloadsNew(
+                        project, self.get_handle(), rep_num
+                    ) for rep_num in range(0, measurment_repetitions)
+                ]
+            )
         )
         analysis_actions.append(actions.Clean(project))
 

@@ -500,10 +500,12 @@ class ZippedExperimentSteps(MultiStep):
     DESCRIPTION = "zipped desc"
 
     def __init__(
-        self, actions: tp.Optional[tp.List[NeedsOutputFolder]]
+        self, output_filepath: ReportFilepath,
+        actions: tp.Optional[tp.List[NeedsOutputFolder]]
     ) -> None:
         # TODO: how to handle this on a type level?
         super().__init__(actions)
+        self.__output_filepath = output_filepath
 
     def __run_children(self, tmp_folder: Path) -> tp.List[StepResult]:
         results = []
@@ -516,7 +518,7 @@ class ZippedExperimentSteps(MultiStep):
     def __call__(self) -> StepResult:
         results = []
 
-        with ZippedReportFolder(Path("/tmp/foo/myzip.zip")) as tmp_dir:
+        with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
             results = self.__run_children(Path(tmp_dir))
 
         return max(results) if results else StepResult.OK

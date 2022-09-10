@@ -82,6 +82,7 @@ class Xz(VProject):
         # TODO: kwargs make tagging hard
         # WorkloadSet(WorkloadCategory.SMALL, name="compression"): [
         WorkloadSet(name="compression"): [
+            # TODO: commands/workloads need a unqiue "name"
             Command(
                 SourceRoot("xz") / RSBinary("xz"), "-k",
                 "countries-land-1km.geo.json"

@@ -13,7 +13,7 @@ from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 
 
-class TimedWorkloadTable(Table, table_name="timed_workloads"):
+class TimedWorkloadTable(Table, table_name="time_workloads"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -74,7 +74,7 @@ class TimedWorkloadTable(Table, table_name="timed_workloads"):
 
 
 class TimedWorkloadTableGenerator(
-    TableGenerator, generator_name="timed-workloads", options=[]
+    TableGenerator, generator_name="time-workloads", options=[]
 ):
     """Generator for `TimeWorkloadsTable`."""
 
