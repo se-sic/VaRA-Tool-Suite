@@ -3,14 +3,12 @@ import typing as tp
 
 import networkx as nx
 import pandas as pd
-from benchbuild.utils.cmd import git
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     AIGNodeAttrs,
     create_file_based_interaction_graph,
 )
-from varats.data.reports.blame_report import BlameReport
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
@@ -19,12 +17,12 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import get_local_project_git_path
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import FullCommitHash, num_commits, num_authors
 
 
 def _generate_graph_table(
@@ -34,7 +32,7 @@ def _generate_graph_table(
     degree_data: tp.List[pd.DataFrame] = []
     for case_study in get_paper_config().get_all_case_studies():
         project_name = case_study.project_name
-        project_git = git["-C", get_local_project_git(project_name).path]
+        project_git_path = get_local_project_git_path(project_name)
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReportExperiment
         )
@@ -56,11 +54,9 @@ def _generate_graph_table(
             pd.DataFrame.from_dict({
                 project_name: {
                     ("commits", ""):
-                        int(project_git("rev-list", "--count", revision.hash)),
+                        num_commits(revision.hash, project_git_path),
                     ("authors", ""):
-                        len(
-                            project_git("shortlog", "-s", "--all").splitlines()
-                        ),
+                        num_authors(revision.hash, project_git_path),
                     ("nodes", ""):
                         len(graph.nodes),
                     ("edges", ""):
