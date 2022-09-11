@@ -174,7 +174,7 @@ def create_multi_experiment_type_choice(
     """
     initialize_experiments()
     value_dict = {
-        k: v
+        k: [v]
         for k, v in ExperimentRegistry.experiments.items()
         if not __is_experiment_excluded(k)
     }
