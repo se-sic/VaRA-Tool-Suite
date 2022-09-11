@@ -98,9 +98,10 @@ import typing as tp  # isort:skip
 
 tp.TYPE_CHECKING = True
 import varats.mapping.commit_map  # isort:skip
+import varats.containers.containers  # isort:skip
+import varats.experiment.experiment_util  # isort:skip
 import varats.plot.plot  # isort:skip
 import varats.table.table  # isort:skip
-import varats.containers.containers  # isort:skip
 
 tp.TYPE_CHECKING = False
 
