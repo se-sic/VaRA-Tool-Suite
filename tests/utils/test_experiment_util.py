@@ -161,7 +161,7 @@ class TestVersionExperiment(unittest.TestCase):
         self.assertEqual(len(sample_gen), 1)
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_whitelisting_one(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -179,7 +179,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_whitelisting_many(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -201,7 +201,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_blacklisting_one(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -222,7 +222,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_blacklisting_many(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -243,7 +243,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_white_overwrite_blacklisting(self, mock_get_tagged_revisions):
         """Test if whitelist overwrites blacklist."""
         self.prepare_vara_config(vara_cfg())
