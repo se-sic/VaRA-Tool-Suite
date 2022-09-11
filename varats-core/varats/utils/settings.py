@@ -76,7 +76,7 @@ def create_new_varats_config() -> s.Configuration:
     cfg["vara"] = {
         "version": {
             "desc": "VaRA version.",
-            "default": 120,
+            "default": 140,
         },
         "llvm_source_dir": {
             "desc": "LLVM source dir",
