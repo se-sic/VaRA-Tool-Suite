@@ -25,7 +25,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
-    create_new_success_result_filename,
+    create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
@@ -64,7 +64,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Define empty success file
-            result_file = create_new_success_result_filename(
+            result_file = create_new_success_result_filepath(
                 self.__experiment_handle, FAR, project, binary
             )
 
@@ -89,8 +89,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, FAR,
-                    Path(vara_result_folder)
+                    self.__experiment_handle, project, FAR
                 )
             )
 

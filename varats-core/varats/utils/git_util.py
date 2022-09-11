@@ -302,6 +302,45 @@ def contains_source_code(
     raise RuntimeError(f"git diff failed with retcode={return_code}")
 
 
+def num_commits(
+    c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
+) -> int:
+    """
+    Count the commits in a git repo starting from the given commit back to the
+    initial commit.
+
+    Args:
+        c_start: commit to start counting at
+        repo_folder: path to the git repo
+
+    Returns:
+        the number of commits
+    """
+    return int(
+        git(__get_git_path_arg(repo_folder), "rev-list", "--count", c_start)
+    )
+
+
+def num_authors(
+    c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
+) -> int:
+    """
+    Count the authors in a git repo starting from the given commit back to the
+    initial commit.
+
+    Args:
+        c_start: commit to start counting at
+        repo_folder: path to the git repo
+
+    Returns:
+        the number of authors
+    """
+    return len(
+        git(__get_git_path_arg(repo_folder), "shortlog", "-s",
+            c_start).splitlines()
+    )
+
+
 ################################################################################
 # Git interaction classes
 
