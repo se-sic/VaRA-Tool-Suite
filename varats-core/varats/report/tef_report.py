@@ -216,7 +216,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     feature_dict[self.features_to_string(current_active_feature)].append(trace_event.timestamp)
             # ToDo raise error for unexpcted event type
 
-        with open("/scratch/messerig/varaRoot/results/xz/xzWhiteBoxTest/jsonTest.json", "w", encoding="utf-8") as file:
+        with open(self.path / "_parsed", "w", encoding="utf-8") as file:
             result_dict = dict()
             overall_time = 0
 
@@ -231,7 +231,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 tmp_dict["Standard Deviation"] = (np.std(feature_dict[name])) / 1000
                 result_dict[name] = tmp_dict
                 overall_time += (np.sum(feature_dict[name])) / 1000
-            result_dict["Overall time for all features"] = overall_time
+
+            tmp_time_dict = dict()
+            tmp_time_dict["Time Taken"] = overall_time
+            result_dict["Overall time for all features"] = tmp_time_dict
             json.dump(result_dict, file)
 
 
@@ -245,3 +248,26 @@ class TEFReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
+
+    @property
+    def wall_clock_times(self) -> tp.Any:
+
+        result_dict = dict()
+        for report in self.reports:
+            f = open(report.path)
+            data = json.load(f)
+            for feature in data:
+                if feature not in result_dict:
+                    result_dict[feature] = dict()
+                for elements in data[feature]:
+                    if data[feature][elements] not in result_dict[feature]:
+                        result_dict[feature][elements] = list()
+                    result_dict[feature][elements].append(data[feature][elements])
+        tmp_dict = dict()
+        tmp_dict["Repetitions"] = len(result_dict[0])
+        for feature in result_dict:
+            for elements in result_dict[feature]:
+                result_dict[elements] = np.sum(result_dict[elements]) / len(result_dict[elements])
+        result_dict["Number of Repetitions"] = tmp_dict
+        with open(self.path / "result_aggregate.json", "w", encoding="utf-8") as json_result_file:
+            json.dump(result_dict, json_result_file)
