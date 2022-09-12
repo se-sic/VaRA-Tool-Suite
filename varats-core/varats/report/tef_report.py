@@ -216,7 +216,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     feature_dict[self.features_to_string(current_active_feature)].append(trace_event.timestamp)
             # ToDo raise error for unexpcted event type
 
-        with open(self.path / "_parsed", "w", encoding="utf-8") as file:
+        with open(Path(str(self.path) + "_parsed"), "w", encoding="utf-8") as file:
             result_dict = dict()
             overall_time = 0
 
