@@ -264,10 +264,10 @@ class TEFReportAggregate(
                         result_dict[feature][elements] = list()
                     result_dict[feature][elements].append(data[feature][elements])
         tmp_dict = dict()
-        tmp_dict["Repetitions"] = len(result_dict[0])
+        #tmp_dict["Repetitions"] = len(result_dict[0])
         for feature in result_dict:
             for elements in result_dict[feature]:
                 result_dict[elements] = np.sum(result_dict[elements]) / len(result_dict[elements])
-        result_dict["Number of Repetitions"] = tmp_dict
+        #result_dict["Number of Repetitions"] = tmp_dict
         with open(self.path / "result_aggregate.json", "w", encoding="utf-8") as json_result_file:
             json.dump(result_dict, json_result_file)
