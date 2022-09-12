@@ -99,8 +99,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                         rm_unparsed = rm[result_path]
                                         rm_unparsed()
 
-                                    tef_time_aggregate = TEFReportAggregate(Path(time_reports_dir))
-                                    tef_time_aggregate.wall_clock_times
+
 
 
                                     #executable("--slow")
@@ -108,6 +107,10 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
 
                                     if Path(file_path_xz).is_file():
                                         rm_cmd()
+
+                        tef_time_aggregate = TEFReportAggregate(aggregated_time_reports_dir / Path(
+                                    f"XZCompressionLevel{compression_level}"))
+                        tef_time_aggregate.wall_clock_times
 
                                     #tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
                                     #tefReport.feature_time_accumulator()
