@@ -26,7 +26,7 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.tef_report import TEFReport
-from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
+from varats.report.tef_report import TEFReportAggregate
 
 
 class ExecAndTraceBinary(actions.Step):  # type: ignore
@@ -47,7 +47,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
         project: Project = self.obj
         print(f"PWD {os.getcwd()}")
 
-        number_of_repetition = 1
+        number_of_repetition = 2
 
         vara_result_folder = get_varats_result_folder(project)
         for binary in project.binaries:
@@ -88,22 +88,27 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                     xz_cmd = binary[f"-{compression_level}", "-k", workload]
                                     xz_cmd()
 
-                                    print("------------------------------------\n")
-                                    print(vara_result_folder / result_file.filename)
-                                    print("------------------------------------\n")
-                                    print(aggregated_time_reports_dir / Path(f"XZCompressionLevel{compression_level}"))
-                                    print("------------------------------------\n")
-                                    print(os.listdir(vara_result_folder))
-                                    print("------------------------------------\n")
-                                    mv_cmd = mv[Path(vara_result_folder / result_file.filename), Path(time_reports_dir)
-                                        / f"tefreport_compression_{compression_level}_{i}"]
+                                    result_path = Path(time_reports_dir) / f"tefreport_compression_{compression_level}_{i}"
+
+                                    mv_cmd = mv[Path(vara_result_folder / result_file.filename), result_path]
                                     mv_cmd()
-                                    # TODO: figure out  how to handle different configs
+                                    tef_report = TEFReport(Path(time_reports_dir) /f"tefreport_compression_{compression_level}_{i}")
+                                    tef_report.feature_time_accumulator()
+
+                                    if result_path.is_file():
+                                        rm_unparsed = rm[result_path]
+                                        rm_unparsed()
+
+                                    tef_time_aggregate = TEFReportAggregate(Path(time_reports_dir))
+                                    tef_time_aggregate.wall_clock_times
+
+
                                     #executable("--slow")
                                     # executable()
 
                                     if Path(file_path_xz).is_file():
                                         rm_cmd()
+
                                     #tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
                                     #tefReport.feature_time_accumulator()
 

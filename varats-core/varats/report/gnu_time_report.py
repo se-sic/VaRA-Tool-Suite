@@ -237,3 +237,4 @@ class TimeReportAggregate(
             f"mean(wall_clock_time) = {self.mean_wall_clock_time}\n" \
             f"std(wall_clock_time) = {self.std_wall_clock_time}\n" \
             f"variance(wall_clock_time) = {self.var_wall_clock_time} \n"
+
