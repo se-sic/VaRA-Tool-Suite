@@ -107,8 +107,7 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, SZZUnleashedReport,
-                    Path(varats_result_folder)
+                    self.__experiment_handle, project, SZZUnleashedReport
                 )
             )
 

@@ -3,7 +3,7 @@
 import typing as tp
 
 import yaml
-from benchbuild import Experiment, Project, source
+from benchbuild import Project, source
 from benchbuild.experiment import ProjectT
 from benchbuild.utils import actions
 from pygit2 import Commit
@@ -14,7 +14,10 @@ from varats.data.reports.szz_report import (
     PyDrillerSZZReport,
     SZZTool,
 )
-from varats.experiment.experiment_util import get_varats_result_folder
+from varats.experiment.experiment_util import (
+    get_varats_result_folder,
+    VersionExperiment,
+)
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
@@ -78,7 +81,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class PyDrillerSZZExperiment(Experiment):  # type: ignore
+class PyDrillerSZZExperiment(VersionExperiment, shorthand="PyDrillerSZZ"):
     """
     Generates a PyDrillerSZZ report.
 

@@ -20,12 +20,15 @@ from varats.data.reports.blame_report import (
     count_interacting_commits,
     count_interacting_authors,
 )
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import get_local_project_git
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
@@ -40,7 +43,7 @@ from varats.utils.git_util import (
 )
 
 
-def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+def id_from_paths(paths: tp.Tuple[ReportFilepath, ReportFilepath]) -> str:
     """
     Concatenates the commit hashes of two result files separated by an
     underscore.
@@ -53,11 +56,13 @@ def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     """
 
     return \
-        f"{ReportFilename(paths[0]).commit_hash}_" \
-        f"{ReportFilename(paths[1]).commit_hash}"
+        f"{paths[0].report_filename.commit_hash}_" \
+        f"{paths[1].report_filename.commit_hash}"
 
 
-def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+def timestamp_from_paths(
+    paths: tp.Tuple[ReportFilepath, ReportFilepath]
+) -> str:
     """
     Concatenates the timestamp of two result files separated by an underscore.
 
@@ -67,7 +72,8 @@ def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     Returns:
         the combined timestamp string of the result files
     """
-    return f"{paths[0].stat().st_mtime_ns}_{paths[1].stat().st_mtime_ns}"
+    return f"{paths[0].full_path().stat().st_mtime_ns}_" \
+        + f"{paths[1].full_path().stat().st_mtime_ns}"
 
 
 def compare_timestamps(ts1: str, ts2: str) -> bool:
@@ -107,8 +113,8 @@ def build_report_files_tuple(
         ReportFilename(report).commit_hash: report
         for report in get_processed_revisions_files(
             project_name,
-            BlameReport,
-            get_case_study_file_name_filter(case_study)
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
             if case_study else lambda x: False,
         )
     }
@@ -117,8 +123,8 @@ def build_report_files_tuple(
         ReportFilename(report).commit_hash: report
         for report in get_failed_revisions_files(
             project_name,
-            BlameReport,
-            get_case_study_file_name_filter(case_study)
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
             if case_study else lambda x: False,
         )
     }
@@ -156,7 +162,9 @@ def build_report_pairs_tuple(
             rev.to_short_commit_hash() for rev in case_study.revisions
         ]
     else:
-        sampled_revs = get_processed_revisions(project_name, BlameReport)
+        sampled_revs = get_processed_revisions(
+            project_name, BlameReportExperiment
+        )
     short_time_id_cache: tp.Dict[ShortCommitHash, int] = {
         rev: commit_map.short_time_id(rev) for rev in sampled_revs
     }
