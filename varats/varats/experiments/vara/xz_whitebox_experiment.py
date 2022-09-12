@@ -109,8 +109,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                         rm_cmd()
 
                         tef_time_aggregate = TEFReportAggregate(aggregated_time_reports_dir / Path(
-                                    f"XZCompressionLevel{compression_level}"))
-                        tef_time_aggregate.wall_clock_times
+                                    f"XZCompressionLevel{compression_level}.zip"))
+                        tef_time_aggregate.wall_clock_times()
 
                                     #tefReport = TEFReport(Path(f"{time_reports_dir}/{result_file}"))
                                     #tefReport.feature_time_accumulator()
