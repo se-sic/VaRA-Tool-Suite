@@ -263,6 +263,11 @@ class TEFReportAggregate(
                     if data[feature][elements] not in result_dict[feature]:
                         result_dict[feature][elements] = list()
                     result_dict[feature][elements].append(data[feature][elements])
+        print("------------------------")
+        print(self.reports)
+        print("------------------------")
+        print(result_dict)
+        print("------------------------")
         tmp_dict = dict()
         #tmp_dict["Repetitions"] = len(result_dict[0])
         for feature in result_dict:
