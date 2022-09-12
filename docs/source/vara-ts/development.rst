@@ -195,4 +195,50 @@ Prepare the next version.
 VaRA and vara-llvm-project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. todo:: Add when making the next VaRA release
+Releasing
+"""""""""
+
+.. code-block:: console
+
+    cd vara-llvm-project
+    git checkout vara-$DEV_VERSION-dev
+    git pull
+    git checkout -b vara-$DEV_VERSION
+    git push --set-upstream origin vara-$DEV_VERSION
+    git tag -s vara-X.Y.Z
+    git push origin vara-X.Y.Z
+
+    cd vara
+    git checkout vara-dev
+    git pull
+    git checkout vara
+    git pull
+    git merge vara-dev
+    git tag -s vara-X.Y.Z
+    git push
+    git push origin vara-X.Y.Z
+
+Preparing new development branches
+""""""""""""""""""""""""""""""""""
+
+Before upgrading to the new LLVM base check build and run tests.
+
+.. code-block:: console
+
+    cd vara-llvm-project
+    git checkout vara-$DEV_VERSION-dev
+    git checkout -b vara-$DEV_VERSION_NEXT-dev
+    # fetch upstream llvm changes
+    git fetch upstream
+    git rebase --onto $NEXT_LLVM_RELEASE_BASE $PREV_LLVM_RELEASE_BASE vara-$DEV_VERSION_NEXT-dev
+    # Fix regressions and API changes introduced by the new LLVM version.
+    # Check if the phasar submodule needs an update.
+    git push --set-upstream origin vara-$DEV_VERSION_NEXT-dev
+
+Set the new development default in varats to $DEV_VERSION_NEXT.
+
+.. code-block:: console
+
+   cd vara-tools-suite
+   vi varats-core/varats/utils/settings.py
+   # Set vara:version to `XY` of $DEV_VERSION_NEXT

@@ -42,7 +42,7 @@ class TestCSMetricsTable(unittest.TestCase):
 {} & {commits} & {authors} & {nodes} & {edges} & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
 {} & {} & {} & {} & {} & {mean} & {median} & {min} & {max} & {median} & {min} & {max} & {median} & {min} & {max} \\
 \midrule
-xz & 1143 & 28 & 124 & 928 & 14.97 & 8.00 & 1 & 154 & 4.00 & 0 & 64 & 3.00 & 0 & 92 \\
+xz & 1143 & 16 & 124 & 928 & 14.97 & 8.00 & 1 & 154 & 4.00 & 0 & 64 & 3.00 & 0 & 92 \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -70,7 +70,7 @@ xz & 1143 & 28 & 124 & 928 & 14.97 & 8.00 & 1 & 154 & 4.00 & 0 & 64 & 3.00 & 0 &
 {} & {commits} & {authors} & {nodes} & {edges} & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
 {} & {} & {} & {} & {} & {mean} & {median} & {min} & {max} & {median} & {min} & {max} & {median} & {min} & {max} \\
 \midrule
-xz & 1143 & 28 & 1 & 0 & 0.00 & 0.00 & 0 & 0 & 0.00 & 0 & 0 & 0.00 & 0 & 0 \\
+xz & 1143 & 16 & 1 & 0 & 0.00 & 0.00 & 0 & 0 & 0.00 & 0 & 0 & 0.00 & 0 & 0 \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -98,7 +98,7 @@ xz & 1143 & 28 & 1 & 0 & 0.00 & 0.00 & 0 & 0 & 0.00 & 0 & 0 & 0.00 & 0 & 0 \\
 {} & {commits} & {authors} & {nodes} & {edges} & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
 {} & {} & {} & {} & {} & {mean} & {median} & {min} & {max} & {median} & {min} & {max} & {median} & {min} & {max} \\
 \midrule
-xz & 1143 & 28 & 125 & 92 & 1.47 & 1.00 & 0 & 92 & 1.00 & 0 & 1 & 0.00 & 0 & 92 \\
+xz & 1143 & 16 & 125 & 92 & 1.47 & 1.00 & 0 & 92 & 1.00 & 0 & 1 & 0.00 & 0 & 92 \\
 \bottomrule
 \end{tabular}
 """, table_str
