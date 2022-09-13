@@ -16,7 +16,7 @@ from varats.jupyterhelper.file import load_feature_analysis_report
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import ProjectBinaryWrapper
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -48,7 +48,7 @@ OPTIONAL_FEATURES: CLIOptionTy = make_cli_option(
 
 
 def filter_report_paths_binary(
-    report_files: tp.List[Path], binary: ProjectBinaryWrapper
+    report_files: tp.List[ReportFilepath], binary: ProjectBinaryWrapper
 ) -> tp.List[Path]:
     return list(
         filter(
