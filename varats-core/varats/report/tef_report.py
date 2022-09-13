@@ -251,8 +251,9 @@ class TEFReportAggregate(
 
     @property
     def wall_clock_times(self) -> tp.Any:
-
+        print("Enter Function")
         result_dict = dict()
+        print(self.reports)
         for report in self.reports:
             f = open(report.path)
             data = json.load(f)
