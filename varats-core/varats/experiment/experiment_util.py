@@ -17,6 +17,7 @@ from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
+import varats.revision.revisions as revs
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import (
@@ -26,7 +27,6 @@ from varats.report.report import (
     ReportSpecification,
     ReportFilename,
 )
-from varats.revision.revisions import get_tagged_revisions
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -421,7 +421,7 @@ class VersionExperiment(Experiment):  # type: ignore
                     revision.hash
                     for revision, file_status in
                     # TODO (se-sic/VaRA#840): needs updated VariantContext handling
-                    get_tagged_revisions(prj_cls, cls, report_type)
+                    revs.get_tagged_revisions(prj_cls, cls, report_type)
                     if file_status not in fs_good
                 })
 
