@@ -411,7 +411,7 @@ class PhasarFeatureAnalysisLocationsEvalTable(
         case_study: CaseStudy = self.table_kwargs['case_study']
 
         report_files = get_processed_revisions_files(
-            case_study.project_name, FeatureAnalysisReport,
+            case_study.project_name, PhASARTaintAnalysis, FeatureAnalysisReport,
             get_case_study_file_name_filter(case_study)
         )
         if len(report_files) == 0:
