@@ -74,6 +74,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             )
 
             opt_params = [
+                "-enable-new-pm=0",
                 "-vara-PFA",
                 "-S",
                 "-vara-FAR",
