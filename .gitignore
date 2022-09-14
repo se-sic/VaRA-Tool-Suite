@@ -18,3 +18,4 @@ build/
 .tox/
 docs/source/.varats.yaml
 docs/**/*.inc
+varats-core/varats/tefReportTestLocal
