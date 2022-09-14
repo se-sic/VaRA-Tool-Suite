@@ -175,7 +175,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
 
         raise WrongTimeReportFormat("Could not prase wall clock time: ", line)
 
-    @staticmethod
+    @staticmet_parse_wall_clock_timehod
     @static_vars(
         MAXRES_REGEX=re.compile(
             r"Maximum resident set size \((?P<size_type>.*)\): (?P<amount>\d*)"

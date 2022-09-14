@@ -115,8 +115,11 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         with open(self.path, "r", encoding="utf-8") as json_tef_report:
             data = json.load(json_tef_report)
 
-            self.__display_time_unit = str(data["displayTimeUnit"])
-            self.__trace_events = self._parse_trace_events(data["traceEvents"])
+            if "displayTimeUnit" in data:
+                self.__display_time_unit = str(data["displayTimeUnit"])
+            if "traceEvents" in data:
+                self.__trace_events = self._parse_trace_events(data["traceEvents"])
+
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
             print("Visiting the TEFReport")
@@ -235,6 +238,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             tmp_time_dict = dict()
             tmp_time_dict["Time Taken"] = overall_time
             result_dict["Overall time for all features"] = tmp_time_dict
+            #header_dict = dict()
+            #header_dict["Results parsed"] = result_dict
             json.dump(result_dict, file)
 
 
@@ -250,12 +255,14 @@ class TEFReportAggregate(
         super().__init__(path, TEFReport)
 
     @property
-    def wall_clock_times(self) -> tp.Any:
+    def wall_clock_times(self) -> None:
         print("Enter Function")
         result_dict = dict()
         print(self.reports)
+        number_of_repetitions = 0
         for report in self.reports:
             f = open(report.path)
+            number_of_repetitions = number_of_repetitions + 1
             data = json.load(f)
             for feature in data:
                 if feature not in result_dict:
@@ -264,16 +271,19 @@ class TEFReportAggregate(
                     if data[feature][elements] not in result_dict[feature]:
                         result_dict[feature][elements] = list()
                     result_dict[feature][elements].append(data[feature][elements])
-        print("------------------------")
-        print(self.reports)
-        print("------------------------")
-        print(result_dict)
-        print("------------------------")
+
         tmp_dict = dict()
-        #tmp_dict["Repetitions"] = len(result_dict[0])
+        tmp_dict["Repetitions"] = number_of_repetitions
         for feature in result_dict:
             for elements in result_dict[feature]:
-                result_dict[elements] = np.sum(result_dict[elements]) / len(result_dict[elements])
-        #result_dict["Number of Repetitions"] = tmp_dict
-        with open(self.path / 'result_aggregate.json", "w", encoding="utf-8') as json_result_file:
+                result_dict[feature][elements] = np.sum(result_dict[feature][elements]) / len(result_dict[feature][elements])
+        result_dict["Number of Repetitions"] = tmp_dict
+        result_location = str(self.path)
+        while len(result_location) > 0:
+            if result_location[-1] == '/':
+                break
+            else:
+                result_location = result_location[:-1]
+
+        with open(Path(result_location + "result_aggregate.json" ), "w", encoding="utf-8") as json_result_file:
             json.dump(result_dict, json_result_file)
