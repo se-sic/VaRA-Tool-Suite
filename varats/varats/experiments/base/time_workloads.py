@@ -34,7 +34,7 @@ from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import ReportSpecification
 
 
-class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
+class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
     """Times the execution of all project workloads."""
 
     NAME = "TimeWorkloads"
@@ -118,9 +118,8 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                    TimeProjectWorkloadsNew(
-                        project, self.get_handle(), rep_num
-                    ) for rep_num in range(0, measurment_repetitions)
+                    TimeProjectWorkloads(project, self.get_handle(), rep_num)
+                    for rep_num in range(0, measurment_repetitions)
                 ]
             )
         )
