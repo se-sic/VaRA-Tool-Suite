@@ -126,11 +126,8 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
                 rm('-f', workload + ".lrz")
                 rm('-f', workload + ".gz")
 
-                # TODO: more elegant way of wrapping commands?
-                print(
-                    f"PB: {prj_command.command.as_plumbum(project=self.project)}"
-                )
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
+                print(f"{pb_cmd}")
 
                 run_report_name = tmp_dir / create_workload_specific_filename(
                     "time_report", prj_command.command, self.__num, ".txt"
@@ -159,8 +156,6 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self)
-        # \
-        # << bb_time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
