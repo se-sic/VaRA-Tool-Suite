@@ -81,7 +81,8 @@ class Xz(VProject):
     WORKLOADS = {
         # TODO: kwargs make tagging hard
         # WorkloadSet(WorkloadCategory.SMALL, name="compression"): [
-        WorkloadSet(name="compression"): [
+        # WorkloadSet("compression", WorkloadCategory.SMALL): [
+        WorkloadSet(WorkloadCategory.SMALL): [
             # TODO: commands/workloads need a unqiue "name"
             Command(
                 SourceRoot("xz") / RSBinary("xz"), "-k",

@@ -24,6 +24,7 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import RunWLLVM
+from varats.experiment.workload_util import workload_commands
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import ReportSpecification
@@ -112,18 +113,18 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
         self.project: VProject
 
         # TODO: refactor into helper function
-        wl_tmp = unwrap(self.project.workloads, self.project)
-        print(f"{wl_tmp=}")
-        workloads = itertools.chain(*wl_tmp.values())
+        # wl_tmp = unwrap(self.project.workloads, self.project)
+        # print(f"{wl_tmp=}")
+        # workloads = itertools.chain(*wl_tmp.values())
 
-        commands: tp.List[ProjectCommand] = []
-        for workload in workloads:
-            commands.append(ProjectCommand(self.project, workload))
+        # commands: tp.List[ProjectCommand] = []
+        # for workload in workloads:
+        #     commands.append(ProjectCommand(self.project, workload))
 
-        print(f"{commands=}")
+        # print(f"{commands=}")
 
         with local.cwd(self.project.builddir):
-            for command in commands:
+            for command in workload_commands(self.project):
                 # TODO: remove/refactor manual cleanup
                 workload = "countries-land-1km.geo.json"
                 rm('-f', workload + ".xz")
@@ -132,14 +133,11 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
 
                 # TODO: more elegant way of wrapping commands?
                 print(f"PB: {command.command.as_plumbum(project=self.project)}")
-                cmd = command.command.as_plumbum(project=self.project)
+                pb_cmd = command.command.as_plumbum(project=self.project)
 
-                # time_reports_dir = "/tmp/foo"
-                time_reports_dir = tmp_dir
-                i = self.__num
-                run_report_name = time_reports_dir / f"time_report_{i}.txt"
+                run_report_name = tmp_dir / f"time_report_{self.__num}.txt"
 
-                run_cmd = time['-v', '-o', f'{run_report_name}', cmd]
+                run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
                 print(f"{run_cmd=}")
                 run_cmd()

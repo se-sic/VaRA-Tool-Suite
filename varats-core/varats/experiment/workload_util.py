@@ -4,11 +4,12 @@ Utility module for working with workloads.
 Provides generic workload categories and helper functions to load, run, and
 process different workloads.
 """
+import itertools
 import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from benchbuild.command import PathToken
+from benchbuild.command import PathToken, ProjectCommand, unwrap
 
 from varats.project.varats_project import VProject
 
@@ -48,3 +49,10 @@ def specify_binary(binary_name: str) -> PathToken:
 
 
 RSBinary = specify_binary
+
+
+def workload_commands(project: VProject) -> tp.List[ProjectCommand]:
+    return [
+        ProjectCommand(project, workload) for workload in
+        itertools.chain(*unwrap(project.workloads, project).values())
+    ]
