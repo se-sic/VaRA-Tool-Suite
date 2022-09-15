@@ -174,15 +174,22 @@ def update(research_tool: str) -> None:
     default=BuildType.DEV,
     help="Build type to use for the tool build configuration."
 )
+@click.option(
+    "--update-prompt/--no-update-prompt",
+    default=True,
+    help="Show a prompt to check for major version updates."
+)
 @main.command()
 def build(
     research_tool: str, build_type: BuildType,
     build_folder_suffix: tp.Optional[str], source_location: tp.Optional[Path],
-    install_prefix: tp.Optional[Path], container: tp.Optional[ImageBase]
+    install_prefix: tp.Optional[Path], container: tp.Optional[ImageBase],
+    update_prompt: bool
 ) -> None:
     """Build a research tool and all its components."""
     tool = get_research_tool(research_tool, source_location)
-    show_major_release_prompt(tool)
+    if update_prompt:
+        show_major_release_prompt(tool)
 
     if container:
         _build_in_container(tool, container, build_type, install_prefix)
@@ -287,6 +294,7 @@ def _build_in_container(
         image_name, f"build_{tool.name}", None, [
             "build",
             tool.name.lower(),
+            "--no-update-prompt",
             f"--build-type={build_type.name}",
             f"--source-location={source_mount}",
             f"--install-prefix={install_mount}",
