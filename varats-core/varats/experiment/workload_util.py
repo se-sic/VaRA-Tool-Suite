@@ -15,6 +15,7 @@ from benchbuild.command import (
     unwrap,
     filter_workload_index,
     WorkloadSet,
+    Command,
 )
 
 from varats.project.varats_project import VProject
@@ -80,3 +81,12 @@ def workload_commands(
             filter_workload_index(run_only, unwrap(project.workloads, project))
         )
     ]
+
+
+def create_workload_specific_filename(
+    filename_base: str,
+    cmd: Command,
+    repetition: int = 0,
+    file_suffix: str = ".txt"
+) -> Path:
+    return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")

@@ -24,7 +24,11 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import RunWLLVM
-from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.experiment.workload_util import (
+    workload_commands,
+    WorkloadCategory,
+    create_workload_specific_filename,
+)
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import ReportSpecification
@@ -128,7 +132,9 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
                 )
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
-                run_report_name = tmp_dir / f"time_report_{self.__num}.txt"
+                run_report_name = tmp_dir / create_workload_specific_filename(
+                    "time_report", prj_command.command, self.__num, ".txt"
+                )
 
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
