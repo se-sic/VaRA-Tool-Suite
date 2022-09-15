@@ -85,8 +85,10 @@ class Xz(VProject):
         WorkloadSet(WorkloadCategory.SMALL): [
             # TODO: commands/workloads need a unqiue "name"
             Command(
-                SourceRoot("xz") / RSBinary("xz"), "-k",
-                "countries-land-1km.geo.json"
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
+                "countries-land-1km.geo.json",
+                label="countries-land-1km"
             )
         ],
         # WorkloadSet(WorkloadCategory.MEDIUM, name="compression"): [

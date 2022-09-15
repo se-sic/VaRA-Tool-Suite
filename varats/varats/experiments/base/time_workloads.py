@@ -112,19 +112,8 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
         """Only create a report file."""
         self.project: VProject
 
-        # TODO: refactor into helper function
-        # wl_tmp = unwrap(self.project.workloads, self.project)
-        # print(f"{wl_tmp=}")
-        # workloads = itertools.chain(*wl_tmp.values())
-
-        # commands: tp.List[ProjectCommand] = []
-        # for workload in workloads:
-        #     commands.append(ProjectCommand(self.project, workload))
-
-        # print(f"{commands=}")
-
         with local.cwd(self.project.builddir):
-            for command in workload_commands(self.project):
+            for prj_command in workload_commands(self.project):
                 # TODO: remove/refactor manual cleanup
                 workload = "countries-land-1km.geo.json"
                 rm('-f', workload + ".xz")
@@ -132,8 +121,10 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
                 rm('-f', workload + ".gz")
 
                 # TODO: more elegant way of wrapping commands?
-                print(f"PB: {command.command.as_plumbum(project=self.project)}")
-                pb_cmd = command.command.as_plumbum(project=self.project)
+                print(
+                    f"PB: {prj_command.command.as_plumbum(project=self.project)}"
+                )
+                pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
                 run_report_name = tmp_dir / f"time_report_{self.__num}.txt"
 
