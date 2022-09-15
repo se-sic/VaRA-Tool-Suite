@@ -63,17 +63,12 @@ class CommitMap():
         with local.cwd(self.git_path):
             old_head = get_current_branch()
             git("checkout", self.refspec)
+            full_out = git("--no-pager", "log", "--all", "--pretty=format:'%H'")
             if master:
-                full_out = git(
-                    "--no-pager", "log", "--all", "--pretty=format:'%H'"
-                )
                 wanted_out = git(
                     "--no-pager", "log", "--pretty=format:'%H'", search_range
                 )
             else:
-                full_out = git(
-                    "--no-pager", "log", "--all", "--pretty=format:'%H'"
-                )
                 wanted_out = git(
                     "--no-pager", "log", "--all", "--pretty=format:'%H'",
                     search_range
