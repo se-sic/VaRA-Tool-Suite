@@ -24,7 +24,7 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import RunWLLVM
-from varats.experiment.workload_util import workload_commands
+from varats.experiment.workload_util import workload_commands, WorkloadCategory
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import ReportSpecification
@@ -113,7 +113,9 @@ class TimeProjectWorkloadsNew(actions.ProjectStep):  # type: ignore
         self.project: VProject
 
         with local.cwd(self.project.builddir):
-            for prj_command in workload_commands(self.project):
+            for prj_command in workload_commands(
+                self.project, WorkloadCategory.MEDIUM
+            ):
                 # TODO: remove/refactor manual cleanup
                 workload = "countries-land-1km.geo.json"
                 rm('-f', workload + ".xz")

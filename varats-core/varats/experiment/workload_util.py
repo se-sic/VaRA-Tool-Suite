@@ -9,7 +9,13 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from benchbuild.command import PathToken, ProjectCommand, unwrap
+from benchbuild.command import (
+    PathToken,
+    ProjectCommand,
+    unwrap,
+    filter_workload_index,
+    WorkloadSet,
+)
 
 from varats.project.varats_project import VProject
 
@@ -51,8 +57,26 @@ def specify_binary(binary_name: str) -> PathToken:
 RSBinary = specify_binary
 
 
-def workload_commands(project: VProject) -> tp.List[ProjectCommand]:
+def workload_commands(
+    project: VProject, *requested_workload_tags: WorkloadSet
+) -> tp.List[ProjectCommand]:
+    """
+    Generates a list of project commands for a project and the specified
+    workload sets.
+
+    Args:
+        project: the project to select the workloads from
+        requested_workload_tags: optional list of workload tags
+
+    Returns: list of project commands to execute the workloads
+    """
+    run_only: tp.Optional[WorkloadSet] = None
+    if requested_workload_tags:
+        run_only = WorkloadSet(*requested_workload_tags)
+
     return [
-        ProjectCommand(project, workload) for workload in
-        itertools.chain(*unwrap(project.workloads, project).values())
+        ProjectCommand(project, workload) for workload in itertools.chain(
+            *
+            filter_workload_index(run_only, unwrap(project.workloads, project))
+        )
     ]
