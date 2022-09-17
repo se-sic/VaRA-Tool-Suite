@@ -111,10 +111,10 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                         tef_time_aggregate = TEFReportAggregate(aggregated_time_reports_dir / Path(
                                     f"XZCompressionLevel{compression_level}.zip"))
                         tef_time_aggregate.wall_clock_times
-                        rename_file = mv[aggregated_time_reports_dir / "result_aggregate.json", aggregated_time_reports_dir
-                                         / f"result_aggregate_{compression_level}.json"]
+                        rename_file = mv[Path(aggregated_time_reports_dir / "result_aggregate.json"), Path(aggregated_time_reports_dir
+                                         / f"result_aggregate_{compression_level}.json")]
                         rename_file()
-                        
+
         return actions.StepResult.OK
 
 
