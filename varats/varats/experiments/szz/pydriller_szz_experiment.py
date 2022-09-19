@@ -18,6 +18,7 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
 )
+from varats.project.varats_project import VProject
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
@@ -37,12 +38,12 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
 
     def create_report(self) -> actions.StepResult:
         """Create a report from SZZ data."""
-        project = self.obj
+        self.project: VProject
 
-        bug_provider = BugProvider.get_provider_for_project(project)
+        bug_provider = BugProvider.get_provider_for_project(self.project)
         pygit_bugs = bug_provider.find_pygit_bugs()
 
-        varats_result_folder = get_varats_result_folder(project)
+        varats_result_folder = get_varats_result_folder(self.project)
 
         def commit_to_hash(commit: Commit) -> str:
             return str(commit.id)
@@ -60,10 +61,10 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
 
         result_file = PyDrillerSZZReport.get_file_name(
             "PyDrSZZ",
-            project_name=str(project.name),
+            project_name=str(self.project.name),
             binary_name="none",  # we don't rely on binaries in this experiment
-            project_revision=project.version_of_primary,
-            project_uuid=str(project.run_uuid),
+            project_revision=self.project.version_of_primary,
+            project_uuid=str(self.project.run_uuid),
             extension_type=FSE.SUCCESS
         )
 

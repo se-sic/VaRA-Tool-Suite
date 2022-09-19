@@ -31,6 +31,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     RunWLLVM,
 )
+from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
@@ -51,16 +52,14 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """This step performs the actual comparision, running the analysis with
         and without phasars global support."""
-        if not self.obj:
-            return actions.StepResult.ERROR
-        project = self.obj
+        self.project: VProject
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = get_varats_result_folder(project)
+        vara_result_folder = get_varats_result_folder(self.project)
 
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             if self.__globals_active:
                 report_type: tp.Union[
                     tp.Type[GlobalsReportWith],
@@ -69,14 +68,14 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
                 report_type = GlobalsReportWithout
 
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, report_type, project, binary
+                self.__experiment_handle, report_type, self.project, binary
             )
 
             phasar_params = [
                 f"--auto-globals={'ON' if self.__globals_active else 'OFF'}",
                 "-m",
                 get_cached_bc_file_path(
-                    project, binary,
+                    self.project, binary,
                     [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
                 ), "-o", f"{vara_result_folder}/{result_file}"
             ]
@@ -88,7 +87,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, report_type
+                    self.__experiment_handle, self.project, report_type
                 )
             )
 

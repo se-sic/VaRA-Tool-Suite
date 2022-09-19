@@ -25,6 +25,7 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     exec_func_with_pe_error_handler,
 )
+from varats.project.varats_project import VProject
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
@@ -46,10 +47,10 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
 
     def prepare_szz_data(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
-        project: Project = self.obj
-        run_dir = Path(project.source_of_primary).parent
+        self.project: VProject
+        run_dir = Path(self.project.source_of_primary).parent
 
-        bug_provider = BugProvider.get_provider_for_project(type(project))
+        bug_provider = BugProvider.get_provider_for_project(type(self.project))
         bugs = bug_provider.find_pygit_bugs()
 
         fixers_dict = {}
@@ -92,22 +93,22 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
 
     def run_szz(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
-        project: Project = self.obj
-        run_dir = Path(project.source_of_primary).parent
+        self.project: VProject
+        run_dir = Path(self.project.source_of_primary).parent
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
 
-        varats_result_folder = get_varats_result_folder(project)
+        varats_result_folder = get_varats_result_folder(self.project)
 
         with local.cwd(run_dir):
             run_cmd = java["-jar",
                            str(szzunleashed_jar), "-d", "1", "-i",
                            str(run_dir / "issue_list.json"), "-r",
-                           project.source_of_primary]
+                           self.project.source_of_primary]
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, SZZUnleashedReport
+                    self.__experiment_handle, self.project, SZZUnleashedReport
                 )
             )
 
@@ -124,11 +125,11 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
 
     def create_report(self) -> actions.StepResult:
         """Create a report from SZZUnleashed data."""
-        project = self.obj
+        self.project: VProject
 
-        varats_result_folder = get_varats_result_folder(project)
+        varats_result_folder = get_varats_result_folder(self.project)
 
-        run_dir = Path(project.source_of_primary).parent
+        run_dir = Path(self.project.source_of_primary).parent
         with (run_dir / "results" /
               "fix_and_introducers_pairs.json").open("r") as result_json:
             szz_result = json.load(result_json)
@@ -145,10 +146,10 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
 
         result_file = SZZUnleashedReport.get_file_name(
             "SZZUnleashed",
-            project_name=str(project.name),
+            project_name=str(self.project.name),
             binary_name="none",  # we don't rely on binaries in this experiment
-            project_revision=project.version_of_primary,
-            project_uuid=str(project.run_uuid),
+            project_revision=self.project.version_of_primary,
+            project_uuid=str(self.project.run_uuid),
             extension_type=FSE.SUCCESS
         )
 

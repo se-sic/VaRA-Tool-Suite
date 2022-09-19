@@ -33,6 +33,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     get_cached_bc_file_path,
 )
+from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from varats.report.report import ReportSpecification
 
@@ -56,21 +57,20 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
     def analyze(self) -> actions.StepResult:
         """This step performs the actual analysis with the correct flags."""
-
-        project = self.obj
+        self.project: VProject
 
         # Define the output directory.
-        vara_result_folder = get_varats_result_folder(project)
+        vara_result_folder = get_varats_result_folder(self.project)
 
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             # Define empty success file
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, FAR, project, binary
+                self.__experiment_handle, FAR, self.project, binary
             )
 
             # Combine the input bitcode file's name
             bc_target_file = get_cached_bc_file_path(
-                project, binary, self.__bc_file_extensions
+                self.project, binary, self.__bc_file_extensions
             )
 
             opt_params = [
@@ -89,7 +89,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, FAR
+                    self.__experiment_handle, self.project, FAR
                 )
             )
 

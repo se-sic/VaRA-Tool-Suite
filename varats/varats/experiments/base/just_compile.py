@@ -19,6 +19,7 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import RunWLLVM
+from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
@@ -35,13 +36,11 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
-        if not self.obj:
-            return actions.StepResult.ERROR
-        project = self.obj
+        self.project: VProject
 
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, EmptyReport, project, binary
+                self.__experiment_handle, EmptyReport, self.project, binary
             )
 
             run_cmd = touch[f"{result_file}"]
@@ -49,7 +48,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, EmptyReport
+                    self.__experiment_handle, self.project, EmptyReport
                 )
             )
 

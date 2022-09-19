@@ -24,6 +24,7 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
+from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
@@ -43,16 +44,14 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
 
     def analyze(self) -> actions.StepResult:
         """Run phasar's IDELinearConstantAnalysis analysis."""
-        if not self.obj:
-            return actions.StepResult.ERROR
-        project = self.obj
+        self.project: VProject
 
         phasar = local["phasar-llvm"]
-        for binary in project.binaries:
-            bc_file = get_cached_bc_file_path(project, binary)
+        for binary in self.project.binaries:
+            bc_file = get_cached_bc_file_path(self.project, binary)
 
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, EmptyReport, project, binary
+                self.__experiment_handle, EmptyReport, self.project, binary
             )
 
             phasar_params = ["-m", bc_file, "-C", "CHA", "-D", "ide-lca"]
@@ -64,7 +63,7 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, EmptyReport
+                    self.__experiment_handle, self.project, EmptyReport
                 )
             )
 
