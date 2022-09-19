@@ -503,7 +503,8 @@ class ZippedExperimentSteps(MultiStep):
         self, output_filepath: ReportFilepath,
         actions: tp.Optional[tp.List[NeedsOutputFolder]]
     ) -> None:
-        # TODO: how to handle this on a type level?
+        # TODO: MultiStep needs to be a generic type to correctly handle
+        #       actions on a type level.
         super().__init__(actions)
         self.__output_filepath = output_filepath
 
