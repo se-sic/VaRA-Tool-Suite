@@ -720,7 +720,7 @@ class KeyedReportAggregate(
         if key:
             return self.__reports[key]
 
-        if not self.__default_key:
+        if self.__default_key is None:
             raise AssertionError("No key or default key was provided.")
 
         return self.__reports[self.__default_key]

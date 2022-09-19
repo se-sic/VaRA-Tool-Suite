@@ -5,6 +5,7 @@ Provides generic workload categories and helper functions to load, run, and
 process different workloads.
 """
 import itertools
+import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -91,12 +92,22 @@ def create_workload_specific_filename(
     repetition: int = 0,
     file_suffix: str = ".txt"
 ) -> Path:
+    if '_' in cmd.label:
+        raise AssertionError(
+            "Workload/Command labels should not contain underscores '_'!"
+        )
     return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
 
 
+__WORKLOAD_FILE_REGEX = re.compile(r".*\_(?P<label>.+)\_\d+$")
+
+
 def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
-    # TODO: port to regex
-    return workload_specific_report_file.stem.split('_')[-2]
+    match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
+    if match:
+        return str(match.group("label"))
+
+    return None
 
 
 class WorkloadSpecificReportAggregate(
