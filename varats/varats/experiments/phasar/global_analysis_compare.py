@@ -45,7 +45,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
         self, project: Project, experiment_handle: ExperimentHandle,
         globals_active: bool
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
         self.__globals_active = globals_active
 

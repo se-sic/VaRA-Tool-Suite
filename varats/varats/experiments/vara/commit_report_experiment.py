@@ -48,7 +48,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         experiment_handle: ExperimentHandle,
         interaction_filter_experiment_name: tp.Optional[str] = None
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.__interaction_filter_experiment_name = \
             interaction_filter_experiment_name
         self.__experiment_handle = experiment_handle

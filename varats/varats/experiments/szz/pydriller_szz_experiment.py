@@ -34,7 +34,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
     DESCRIPTION = "Create a report from SZZ data"
 
     def __init__(self, project: Project):
-        super().__init__(obj=project, action_fn=self.create_report)
+        super().__init__(project=project, action_fn=self.create_report)
 
     def create_report(self) -> actions.StepResult:
         """Create a report from SZZ data."""

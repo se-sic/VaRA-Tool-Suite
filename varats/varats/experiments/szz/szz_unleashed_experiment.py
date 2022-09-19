@@ -43,7 +43,7 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
     DESCRIPTION = "Prepares data needed for running SZZUnleashed."
 
     def __init__(self, project: Project):
-        super().__init__(obj=project, action_fn=self.prepare_szz_data)
+        super().__init__(project=project, action_fn=self.prepare_szz_data)
 
     def prepare_szz_data(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
@@ -88,7 +88,7 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
     DESCRIPTION = "Run SZZUnleashed on a project"
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run_szz)
+        super().__init__(project=project, action_fn=self.run_szz)
         self.__experiment_handle = experiment_handle
 
     def run_szz(self) -> actions.StepResult:
@@ -121,7 +121,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
     DESCRIPTION = "Create a report from SZZUnleashed data"
 
     def __init__(self, project: Project):
-        super().__init__(obj=project, action_fn=self.create_report)
+        super().__init__(project=project, action_fn=self.create_report)
 
     def create_report(self) -> actions.StepResult:
         """Create a report from SZZUnleashed data."""

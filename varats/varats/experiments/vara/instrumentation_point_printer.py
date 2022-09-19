@@ -41,7 +41,7 @@ class CollectInstrumentationPoints(actions.Step):  # type: ignore
         "point information."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:

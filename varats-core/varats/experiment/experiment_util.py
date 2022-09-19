@@ -428,8 +428,8 @@ class VersionExperiment(Experiment):  # type: ignore
                     revision.hash
                     for revision, file_status in
                     # TODO (se-sic/VaRA#840): needs updated VariantContext handling
-                    revs.get_tagged_revisions(prj_cls, cls, report_type)
-                    if file_status not in fs_good
+                    revs.get_tagged_revisions(prj_cls, cls, report_type).items()
+                    if file_status[None] not in fs_good
                 })
 
             bad_revisions = report_specific_bad_revs[0].intersection(

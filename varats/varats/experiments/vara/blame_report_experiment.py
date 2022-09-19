@@ -41,7 +41,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         self, project: Project, experiment_handle: ExperimentHandle,
         blame_taint_scope: BlameTaintScope
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
         self.__blame_taint_scope = blame_taint_scope
 

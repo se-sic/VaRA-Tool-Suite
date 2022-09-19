@@ -51,7 +51,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         experiment_handle: ExperimentHandle,
         bc_file_extensions: tp.List[BCFileExtensions],
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.__bc_file_extensions = bc_file_extensions
         self.__experiment_handle = experiment_handle
 

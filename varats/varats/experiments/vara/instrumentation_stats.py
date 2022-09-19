@@ -40,7 +40,7 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
         " instrumentation using VaRA's USDT probes and a bpftrace script."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run)
+        super().__init__(project=project, action_fn=self.run)
         self.__experiment_handle = experiment_handle
 
     def run(self) -> actions.StepResult:

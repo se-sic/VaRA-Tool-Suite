@@ -45,7 +45,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         self, project: Project, bc_file_extensions: tp.List[BCFileExtensions],
         experiment_handle: ExperimentHandle
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.bc_file_extensions = bc_file_extensions
         self.__experiment_handle = experiment_handle
 

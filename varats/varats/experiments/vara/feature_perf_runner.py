@@ -34,7 +34,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
         "performance traces."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run_perf_tracing)
+        super().__init__(project=project, action_fn=self.run_perf_tracing)
         self.__experiment_handle = experiment_handle
 
     def run_perf_tracing(self) -> actions.StepResult:

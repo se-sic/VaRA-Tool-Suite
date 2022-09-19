@@ -138,7 +138,7 @@ class Extract(actions.Step):  # type: ignore
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
         super().__init__(
-            obj=project,
+            project=project,
             action_fn=FunctionPEErrorWrapper(self.extract, handler)
             if handler else self.extract
         )
