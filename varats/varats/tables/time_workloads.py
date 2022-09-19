@@ -29,11 +29,15 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
         for case_study in case_studies:
             project_name = case_study.project_name
 
+            if len(self.table_kwargs["experiment_type"]) > 1:
+                print(
+                    "Table can currently only handle on experiment, "
+                    "ignoring everything else."
+                )
+
             report_files = get_processed_revisions_files(
                 project_name,
-                # TODO: clean up
-                self.table_kwargs["experiment_type"][0],
-                TimeReportAggregate,
+                self.table_kwargs["experiment_type"][0], TimeReportAggregate,
                 get_case_study_file_name_filter(case_study)
             )
 
@@ -43,11 +47,6 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                 )
                 report_file = agg_time_report.filename
 
-                #mean_runtime = np.mean(time_report.measurements_wall_clock_time)
-                #std_runtime = np.std(time_report.measurements_wall_clock_time)
-                #mean_ctx = np.mean(time_report.measurements_ctx_switches)
-                #std_ctx = np.std(time_report.measurements_ctx_switches)
-
                 for workload_name in agg_time_report.workload_names():
                     new_row = {
                         "Project":
@@ -56,7 +55,6 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                             report_file.binary_name,
                         "Revision":
                             str(report_file.commit_hash),
-                        # TODO: get wl name here
                         "Workload":
                             workload_name,
                         "Mean wall time (msecs)":
@@ -90,8 +88,6 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                                 agg_time_report.
                                 max_resident_sizes(workload_name)
                             ),
-                        #"Involuntarty CTX switches":
-                        #    agg_time_report.involuntary_ctx_switches
                         "Reps":
                             len(agg_time_report.reports(workload_name))
                     }
