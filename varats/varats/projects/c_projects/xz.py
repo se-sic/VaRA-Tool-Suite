@@ -70,6 +70,14 @@ class Xz(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0/countries-land-1km.geo.json"
             }
+        ),
+        HTTP(
+            local="countries-land-10km.geo.json",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0/countries-land-10km.geo.json"
+            }
         )
     ]
 
@@ -79,13 +87,28 @@ class Xz(VProject):
     )
 
     WORKLOADS = {
+        # TODO: do we still want this?
         # WorkloadSet("compression", WorkloadCategory.SMALL): [
         WorkloadSet(WorkloadCategory.SMALL): [
             Command(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
+                "countries-land-10km.geo.json",
+                label="countries-land-10km",
+                creates=[
+                    SourceRoot('xz') / "../countries-land-10km.geo.json.xz"
+                ]
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
                 "countries-land-1km.geo.json",
-                label="countries-land-1km"
+                label="countries-land-1km",
+                creates=[
+                    SourceRoot('xz') / "../countries-land-1km.geo.json.xz"
+                ]
             )
         ],
     }
