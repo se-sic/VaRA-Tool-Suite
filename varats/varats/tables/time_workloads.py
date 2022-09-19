@@ -1,12 +1,17 @@
 """Module for the TimedWorkloadsTable."""
 import typing as tp
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from varats.experiment.workload_util import get_workload_label
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
-from varats.report.gnu_time_report import TimeReportAggregate
+from varats.report.gnu_time_report import (
+    TimeReportAggregate,
+    WLTimeReportAggregate,
+)
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -32,8 +37,10 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                 get_case_study_file_name_filter(case_study)
             )
 
-            for report_file in report_files:
-                agg_time_report = TimeReportAggregate(report_file.full_path())
+            for report_filepath in report_files:
+                agg_time_report = WLTimeReportAggregate(
+                    report_filepath.full_path()
+                )
                 report_file = agg_time_report.filename
 
                 #mean_runtime = np.mean(time_report.measurements_wall_clock_time)
@@ -41,45 +48,55 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                 #mean_ctx = np.mean(time_report.measurements_ctx_switches)
                 #std_ctx = np.std(time_report.measurements_ctx_switches)
 
-                new_row = {
-                    "Project":
-                        project_name,
-                    "Binary":
-                        report_file.binary_name,
-                    "Revision":
-                        str(report_file.commit_hash),
-                    # TODO: get wl name here
-                    "Workload":
-                        42,
-                    "Mean wall time (msecs)":
-                        np.mean(
-                            list(
-                                map(
-                                    lambda x: x * 1000,
-                                    agg_time_report.measurements_wall_clock_time
-                                )
-                            )
-                        ),
-                    "StdDev":
-                        round(
-                            np.std(
+                for workload_name in agg_time_report.workload_names():
+                    new_row = {
+                        "Project":
+                            project_name,
+                        "Binary":
+                            report_file.binary_name,
+                        "Revision":
+                            str(report_file.commit_hash),
+                        # TODO: get wl name here
+                        "Workload":
+                            workload_name,
+                        "Mean wall time (msecs)":
+                            np.mean(
                                 list(
                                     map(
-                                        lambda x: x * 1000, agg_time_report.
-                                        measurements_wall_clock_time
+                                        lambda x: x * 1000,
+                                        agg_time_report.
+                                        measurements_wall_clock_time(
+                                            workload_name
+                                        )
                                     )
                                 )
-                            ), 2
-                        ),
-                    "Max resident size (kbytes)":
-                        max(agg_time_report.max_resident_sizes),
-                    #"Involuntarty CTX switches":
-                    #    agg_time_report.involuntary_ctx_switches
-                    "Reps":
-                        len(agg_time_report.reports)
-                }
+                            ),
+                        "StdDev":
+                            round(
+                                np.std(
+                                    list(
+                                        map(
+                                            lambda x: x * 1000,
+                                            agg_time_report.
+                                            measurements_wall_clock_time(
+                                                workload_name
+                                            )
+                                        )
+                                    )
+                                ), 2
+                            ),
+                        "Max resident size (kbytes)":
+                            max(
+                                agg_time_report.
+                                max_resident_sizes(workload_name)
+                            ),
+                        #"Involuntarty CTX switches":
+                        #    agg_time_report.involuntary_ctx_switches
+                        "Reps":
+                            len(agg_time_report.reports(workload_name))
+                    }
 
-                df = df.append(new_row, ignore_index=True)
+                    df = df.append(new_row, ignore_index=True)
 
         df.sort_values(["Project", "Binary"], inplace=True)
         df.set_index(

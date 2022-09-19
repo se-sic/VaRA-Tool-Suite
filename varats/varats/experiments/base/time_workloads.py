@@ -6,10 +6,10 @@ from pathlib import Path
 
 import benchbuild.extensions.time as bb_time
 from benchbuild import Project
-from benchbuild.command import ProjectCommand, unwrap
+from benchbuild.command import ProjectCommand, unwrap, enable_rollback
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import touch, time, wget, rm
+from benchbuild.utils.cmd import touch, time, wget, rm, ls
 from plumbum import local
 
 from varats.experiment.experiment_util import (
@@ -56,14 +56,8 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, WorkloadCategory.MEDIUM
+                self.project, WorkloadCategory.SMALL, WorkloadCategory.MEDIUM
             ):
-                # TODO: remove/refactor manual cleanup
-                workload = "countries-land-1km.geo.json"
-                rm('-f', workload + ".xz")
-                rm('-f', workload + ".lrz")
-                rm('-f', workload + ".gz")
-
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
                 print(f"{pb_cmd}")
 
@@ -73,8 +67,9 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
 
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
-                print(f"{run_cmd=}")
-                run_cmd()
+                with enable_rollback(prj_command):
+                    print(f"{run_cmd=}")
+                    run_cmd()
 
         return actions.StepResult.OK
 

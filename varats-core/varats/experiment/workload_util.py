@@ -19,6 +19,8 @@ from benchbuild.command import (
 )
 
 from varats.project.varats_project import VProject
+from varats.report.report import KeyedReportAggregate, ReportTy
+from varats.utils.exceptions import auto_unwrap
 
 
 class WorkloadCategory(Enum):
@@ -90,3 +92,29 @@ def create_workload_specific_filename(
     file_suffix: str = ".txt"
 ) -> Path:
     return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
+
+
+def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+    # TODO: port to regex
+    return workload_specific_report_file.stem.split('_')[-2]
+
+
+class WorkloadSpecificReportAggregate(
+    KeyedReportAggregate[str, ReportTy],
+    tp.Generic[ReportTy],
+    shorthand="",
+    file_type=""
+):
+
+    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+        super().__init__(
+            path, report_type,
+            auto_unwrap(
+                "Files contained in a WorkloadSpecificReportAggregate should"
+                "always be formatted correctly by the"
+                "create_workload_specific_filename function."
+            )(get_workload_label)
+        )
+
+    def workload_names(self) -> tp.Iterable[str]:
+        return self.keys()
