@@ -87,17 +87,13 @@ class Xz(VProject):
     )
 
     WORKLOADS = {
-        # TODO: do we still want this?
-        # WorkloadSet("compression", WorkloadCategory.SMALL): [
         WorkloadSet(WorkloadCategory.SMALL): [
             Command(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
                 "countries-land-10km.geo.json",
                 label="countries-land-10km",
-                creates=[
-                    SourceRoot('xz') / "../countries-land-10km.geo.json.xz"
-                ]
+                creates=["countries-land-10km.geo.json.xz"]
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
@@ -106,9 +102,7 @@ class Xz(VProject):
                 "-k",
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
-                creates=[
-                    SourceRoot('xz') / "../countries-land-1km.geo.json.xz"
-                ]
+                creates=["countries-land-1km.geo.json.xz"]
             )
         ],
     }
