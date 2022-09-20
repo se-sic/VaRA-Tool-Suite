@@ -18,7 +18,7 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
 )
-from varats.report.gnu_time_report import TimeReportAggregate
+from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import FileStatusExtension, BaseReport
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
@@ -41,33 +41,43 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
 
         df = pd.DataFrame()
 
+        if len(self.plot_kwargs["experiment_type"]) > 1:
+            print(
+                "Table can currently only handle on experiment, "
+                "ignoring everything else."
+            )
+
         for case_study in case_studies:
             project_name = case_study.project_name
 
             report_files = get_processed_revisions_files(
-                project_name,
-                # TODO: clean up
-                self.table_kwargs["experiment_type"][0],
-                TimeReportAggregate,
+                project_name, self.plot_kwargs["experiment_type"][0],
+                WLTimeReportAggregate,
                 get_case_study_file_name_filter(case_study)
             )
 
-            # TODO: integrate workloads
-            for report_file in report_files:
-                agg_time_report = TimeReportAggregate(report_file)
+            for report_filepath in report_files:
+                agg_time_report = WLTimeReportAggregate(
+                    report_filepath.full_path()
+                )
                 report_file = agg_time_report.filename
 
-                for wall_clock_time in agg_time_report.measurements_wall_clock_time:
-                    new_row = {
-                        "Project-Binary":
-                            f"{project_name}-{report_file.binary_name}",
-                        "Revision":
-                            str(report_file.commit_hash),
-                        "Mean wall time (msecs)":
-                            wall_clock_time * 1000,
-                    }
+                for workload_name in agg_time_report.workload_names():
+                    for wall_clock_time in agg_time_report.measurements_wall_clock_time(
+                        workload_name
+                    ):
+                        new_row = {
+                            "Project-Binary":
+                                f"{project_name}-{report_file.binary_name}",
+                            "Workload":
+                                workload_name,
+                            "Revision":
+                                str(report_file.commit_hash),
+                            "Mean wall time (msecs)":
+                                wall_clock_time * 1000,
+                        }
 
-                    df = df.append(new_row, ignore_index=True)
+                        df = df.append(new_row, ignore_index=True)
 
         fig, ax = plt.subplots()
         fig.set_size_inches(11.7, 8.27)
@@ -79,6 +89,11 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
             ax=ax,
         )
         sns.despine()
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise NotImplementedError
 
 
 class TimedWorkloadPlotGenerator(
