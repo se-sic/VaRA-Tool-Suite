@@ -57,9 +57,7 @@ class LibUpgradeBug(VProject):
             get_local_project_git_path(LibUpgradeBug.NAME)
         )
 
-        binary_map.specify_binary(
-            local.path("revision") / "build/src/divider", BinaryType.EXECUTABLE
-        )
+        binary_map.specify_binary("build/src/divider", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -79,4 +77,5 @@ class LibUpgradeBug(VProject):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
+        with local.cwd(version_source):
             verify_binaries(self)
