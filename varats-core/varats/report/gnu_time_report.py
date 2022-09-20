@@ -321,9 +321,9 @@ class WLTimeReportAggregate(
 
     @property
     def summary(self) -> str:
-        # TODO: adapt to WL
         return (
             f"num_reports = {len(self.reports())}\n"
+            f"num_workloads = {len(self.workload_names())}\n"
             "mean (std) of wall clock time = "
             f"{np.mean(self.measurements_wall_clock_time):.2f}"
             f" ({np.std(self.measurements_wall_clock_time):.2f})\n"
