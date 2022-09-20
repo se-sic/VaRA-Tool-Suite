@@ -6,6 +6,7 @@ import unittest.mock as mock
 from pathlib import Path
 
 import yaml
+from pygtrie import CharTrie
 
 from varats.data.reports.commit_report import (
     CommitReport,
@@ -15,6 +16,8 @@ from varats.data.reports.commit_report import (
     generate_interactions,
 )
 from varats.mapping.commit_map import CommitMap
+from varats.project.project_util import get_local_project_git_path
+from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
@@ -348,6 +351,60 @@ class TestCommitReport(unittest.TestCase):
         )
 
 
+def testing_gen_commit_map() -> CommitMap:
+    """Generate a local commit map for testing."""
+
+    initialize_projects()
+    xz_repo_path = get_local_project_git_path("xz")
+    return CommitMap(
+        xz_repo_path,
+        start="923bf96b55e5216a6c8df9d8331934f54784390e",
+        end="80a1a8bb838842a2be343bd88ad1462c21c5e2c9"
+    )
+
+
+class TestCommitMap(unittest.TestCase):
+    """Test CommitMap generation and Usage."""
+
+    cmap: CommitMap
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Setup file and CommitReport."""
+
+        cls.cmap = testing_gen_commit_map()
+
+    def test_time_id(self) -> None:
+        """Test time id look up."""
+        self.assertEqual(
+            self.cmap.time_id(
+                FullCommitHash("b81bf0c7d1873e52a4086a9abb494471d652cb55")
+            ), 1787
+        )
+        self.assertEqual(
+            self.cmap.time_id(
+                FullCommitHash("340cf1ec3927767046b8293a49da3db4e393f426")
+            ), 1786
+        )
+        self.assertEqual(
+            self.cmap.time_id(
+                FullCommitHash("80a1a8bb838842a2be343bd88ad1462c21c5e2c9")
+            ), 1844
+        )
+
+    def test_short_time_id(self) -> None:
+        """Test short time id look up."""
+        self.assertEqual(
+            self.cmap.short_time_id(ShortCommitHash("b81bf0c7d187")), 1787
+        )
+        self.assertEqual(
+            self.cmap.short_time_id(ShortCommitHash("340cf1ec3927")), 1786
+        )
+        self.assertEqual(
+            self.cmap.short_time_id(ShortCommitHash("80a1a8bb8388")), 1844
+        )
+
+
 RAW_COMMIT_LOG = """20540be6186c159880dda3a49a5827722c1a0ac9
 8aa53f1797315a541960d4225f00c9f27c9612fe
 a604573c68ae41e1126229dfeab5b63bfb3848c8
@@ -383,56 +440,25 @@ ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d
 ef58a957a6c1887930cc70d6199ae7e48aa8d716"""
 
 
-def testing_gen_commit_map() -> CommitMap:
-    """Generate a local commit map for testing."""
+class MockCommitMap(CommitMap):
+
+    def __init__(self, stream: tp.Iterable[str]) -> None:
+        self._hash_to_id: CharTrie = CharTrie()
+        self._hash_to_id_master: CharTrie = CharTrie()
+        for line in stream:
+            slices = line.strip().split(', ')
+            self._hash_to_id[slices[1]] = int(slices[0])
+            self._hash_to_id_master[slices[1]] = int(slices[0])
+
+
+def testing_gen_mock_commit_map() -> CommitMap:
+    """Generate a local commit map from a mock log for testing."""
 
     def commit_log_stream() -> tp.Generator[str, None, None]:
         for number, line in enumerate(reversed(RAW_COMMIT_LOG.split('\n'))):
             yield f"{number}, {line}\n"
 
-    return CommitMap(commit_log_stream())
-
-
-class TestCommitMap(unittest.TestCase):
-    """Test CommitMap generation and Usage."""
-
-    cmap: CommitMap
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        """Setup file and CommitReport."""
-
-        cls.cmap = testing_gen_commit_map()
-
-    def test_time_id(self) -> None:
-        """Test time id look up."""
-        self.assertEqual(
-            self.cmap.time_id(
-                FullCommitHash("ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d")
-            ), 1
-        )
-        self.assertEqual(
-            self.cmap.time_id(
-                FullCommitHash("ef58a957a6c1887930cc70d6199ae7e48aa8d716")
-            ), 0
-        )
-        self.assertEqual(
-            self.cmap.time_id(
-                FullCommitHash("20540be6186c159880dda3a49a5827722c1a0ac9")
-            ), 32
-        )
-
-    def test_short_time_id(self) -> None:
-        """Test short time id look up."""
-        self.assertEqual(
-            self.cmap.short_time_id(ShortCommitHash("ae332f2a5d")), 1
-        )
-        self.assertEqual(
-            self.cmap.short_time_id(ShortCommitHash("ef58a957a6c1")), 0
-        )
-        self.assertEqual(
-            self.cmap.short_time_id(ShortCommitHash("20540be618")), 32
-        )
+    return MockCommitMap(commit_log_stream())
 
 
 class TestCommitConnectionGenerators(unittest.TestCase):
@@ -450,7 +476,7 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         ):
             cls.commit_report = CommitReport(Path("fake_file_path"))
 
-        cls.cmap = testing_gen_commit_map()
+        cls.cmap = testing_gen_mock_commit_map()
 
     def test_gen_interactions_nodes(self) -> None:
         """Test generation of interaction node."""
