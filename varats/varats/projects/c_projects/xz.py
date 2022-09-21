@@ -70,14 +70,6 @@ class Xz(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0/countries-land-1km.geo.json"
             }
-        ),
-        HTTP(
-            local="countries-land-10km.geo.json",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0/countries-land-10km.geo.json"
-            }
         )
     ]
 
@@ -87,16 +79,7 @@ class Xz(VProject):
     )
 
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.SMALL): [
-            Command(
-                SourceRoot("xz") / RSBinary("xz"),
-                "-k",
-                "countries-land-10km.geo.json",
-                label="countries-land-10km",
-                creates=["countries-land-10km.geo.json.xz"]
-            )
-        ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",

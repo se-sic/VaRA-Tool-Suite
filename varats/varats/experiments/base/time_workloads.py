@@ -29,6 +29,7 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
     create_workload_specific_filename,
 )
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.report.report import ReportSpecification
@@ -41,11 +42,13 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
     DESCRIPTION = "Time the execution of all project workloads."
 
     def __init__(
-        self, project: Project, experiment_handle: ExperimentHandle, num: int
+        self, project: Project, experiment_handle: ExperimentHandle, num: int,
+        binary: ProjectBinaryWrapper
     ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__num = num
+        self.__binary = binary
 
     def __call__(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
@@ -56,7 +59,7 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, WorkloadCategory.SMALL, WorkloadCategory.MEDIUM
+                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
                 print(f"{pb_cmd}")
@@ -98,13 +101,13 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
+        # Only consider the main/first binary
+        binary = project.binaries[0]
+
         measurment_repetitions = 2
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
-            # TODO: handle binary name. token?
-            self.get_handle().report_spec().main_report,
-            project,
-            project.binaries[0]
+            self.get_handle().report_spec().main_report, project, binary
         )
 
         analysis_actions = []
@@ -113,8 +116,9 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                    TimeProjectWorkloads(project, self.get_handle(), rep_num)
-                    for rep_num in range(0, measurment_repetitions)
+                    TimeProjectWorkloads(
+                        project, self.get_handle(), rep_num, binary
+                    ) for rep_num in range(0, measurment_repetitions)
                 ]
             )
         )

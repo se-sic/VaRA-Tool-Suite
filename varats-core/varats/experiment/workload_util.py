@@ -19,6 +19,7 @@ from benchbuild.command import (
     Command,
 )
 
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import KeyedReportAggregate, ReportTy
 from varats.utils.exceptions import auto_unwrap
@@ -29,6 +30,7 @@ class WorkloadCategory(Enum):
     together."""
     value: int  # pylint: disable=invalid-name
 
+    EXAMPLE = 0
     SMALL = 1
     MEDIUM = 2
     LARGE = 3
@@ -42,7 +44,10 @@ class RevisionBinaryRenderer:
     def __init__(self, binary_name: str) -> None:
         self.__binary_name = binary_name
 
-    def __call__(self, project: VProject, **kwargs: tp.Any) -> Path:
+    def unrendered(self) -> str:
+        return f"<binaryLocFor({self.__binary_name})>"
+
+    def rendered(self, project: VProject, **kwargs: tp.Any) -> Path:
         for binary in project.binaries:
             if binary.name == self.__binary_name:
                 entry_point = binary.entry_point
@@ -62,7 +67,8 @@ RSBinary = specify_binary
 
 
 def workload_commands(
-    project: VProject, *requested_workload_tags: WorkloadSet
+    project: VProject, binary: ProjectBinaryWrapper,
+    requested_workload_tags: tp.List[WorkloadSet]
 ) -> tp.List[ProjectCommand]:
     """
     Generates a list of project commands for a project and the specified
@@ -78,12 +84,17 @@ def workload_commands(
     if requested_workload_tags:
         run_only = WorkloadSet(*requested_workload_tags)
 
-    return [
-        ProjectCommand(project, workload) for workload in itertools.chain(
+    project_cmds: tp.List[ProjectCommand] = [
+        ProjectCommand(project, workload_cmd)
+        for workload_cmd in itertools.chain(
             *
             filter_workload_index(run_only, unwrap(project.workloads, project))
         )
     ]
+
+    return list(
+        filter(lambda prj_cmd: prj_cmd.path.name == binary.name, project_cmds)
+    )
 
 
 def create_workload_specific_filename(
