@@ -494,7 +494,7 @@ def run_child_with_output_folder(
     return child(tmp_folder)
 
 
-class ZippedExperimentSteps(MultiStep):
+class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
 
     NAME = "ZippedSteps"
     DESCRIPTION = "zipped desc"
@@ -503,8 +503,6 @@ class ZippedExperimentSteps(MultiStep):
         self, output_filepath: ReportFilepath,
         actions: tp.Optional[tp.List[NeedsOutputFolder]]
     ) -> None:
-        # TODO: MultiStep needs to be a generic type to correctly handle
-        #       actions on a type level.
         super().__init__(actions)
         self.__output_filepath = output_filepath
 
