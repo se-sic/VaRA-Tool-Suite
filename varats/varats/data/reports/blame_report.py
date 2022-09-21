@@ -120,6 +120,14 @@ class BlameTaintData():
     def __hash__(self) -> int:
         return hash((self.commit, self.region_id, self.function_name))
 
+    def __str__(self) -> str:
+        result = f"{self.commit.repository_name}[{self.commit.commit_hash.short_hash}]"
+        if self.function_name:
+            result += f"\n{self.function_name}"
+        if self.region_id:
+            result += f"@{self.region_id}"
+        return result
+
 
 class BlameInstInteractions():
     """
@@ -203,6 +211,9 @@ class BlameInstInteractions():
 
         return False
 
+    def __hash__(self) -> int:
+        return hash((self.base_taint, *self.interacting_taints))
+
 
 class BlameResultFunctionEntry():
     """Collection of all interactions for a specific function."""
@@ -264,48 +275,6 @@ class BlameResultFunctionEntry():
         for inst in self.__inst_list:
             str_representation += f"  - {inst}"
         return str_representation
-
-
-def _calc_diff_between_func_entries(
-    base_func_entry: BlameResultFunctionEntry,
-    prev_func_entry: BlameResultFunctionEntry
-) -> BlameResultFunctionEntry:
-    diff_interactions: tp.List[BlameInstInteractions] = []
-
-    # copy lists to avoid side effects
-    base_interactions = list(base_func_entry.interactions)
-    prev_interactions = list(prev_func_entry.interactions)
-
-    # num instructions diff
-    diff_num_instructions = abs(
-        base_func_entry.num_instructions - prev_func_entry.num_instructions
-    )
-
-    for base_inter in base_interactions:
-        if base_inter in prev_interactions:
-            prev_inter_idx = prev_interactions.index(base_inter)
-            prev_inter = prev_interactions.pop(prev_inter_idx)
-            # create new blame inst interaction with the absolute difference
-            # between base and prev
-            difference = base_inter.amount - prev_inter.amount
-            if difference != 0:
-                diff_interactions.append(
-                    BlameInstInteractions(
-                        base_inter.base_taint,
-                        deepcopy(base_inter.interacting_taints), difference
-                    )
-                )
-        else:
-            # append new interaction from base report
-            diff_interactions.append(deepcopy(base_inter))
-
-    # append left over interactions from previous blame report
-    diff_interactions += prev_interactions
-
-    return BlameResultFunctionEntry(
-        base_func_entry.name, base_func_entry.demangled_name, diff_interactions,
-        diff_num_instructions
-    )
 
 
 class BlameReportMetaData():
@@ -415,16 +384,16 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
                 self.__function_entries[new_function_entry.name
                                        ] = new_function_entry
 
-    def get_blame_result_function_entry(
+    def get_function_entry(
         self, mangled_function_name: str
-    ) -> BlameResultFunctionEntry:
+    ) -> tp.Optional[BlameResultFunctionEntry]:
         """
         Get the result entry for a specific function.
 
         Args:
             mangled_function_name: mangled name of the function to look up
         """
-        return self.__function_entries[mangled_function_name]
+        return self.__function_entries.get(mangled_function_name)
 
     @property
     def blame_taint_scope(self) -> BlameTaintScope:
@@ -457,107 +426,183 @@ class BlameReportDiff():
     revisions."""
 
     def __init__(
-        self, base_report: BlameReport, prev_report: BlameReport
+        self, old_report: BlameReport, new_report: BlameReport
     ) -> None:
-        self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = {}
-        self.__base_head = base_report.head_commit
-        self.__prev_head = prev_report.head_commit
-        self.__calc_diff_br(base_report, prev_report)
-        if base_report.blame_taint_scope != prev_report.blame_taint_scope:
+        self.__changes: tp.Dict[str, BlameResultFunctionEntry] = {}
+        self.__base_head = new_report.head_commit
+        self.__prev_head = old_report.head_commit
+        self.__calc_diff_br(old_report, new_report)
+        if new_report.blame_taint_scope != old_report.blame_taint_scope:
             raise AssertionError(
                 "Cannot diff blame reports with different scopes."
             )
-        self.__blame_taint_scope = base_report.blame_taint_scope
+        self.__blame_taint_scope = new_report.blame_taint_scope
 
     @property
     def blame_taint_scope(self) -> BlameTaintScope:
         return self.__blame_taint_scope
 
     @property
-    def base_head_commit(self) -> ShortCommitHash:
+    def new_head_commit(self) -> ShortCommitHash:
         return self.__base_head
 
     @property
-    def prev_head_commit(self) -> ShortCommitHash:
+    def old_head_commit(self) -> ShortCommitHash:
         return self.__prev_head
 
     @property
     def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
         """Iterate over all function entries in the diff."""
-        return self.__function_entries.values()
+        return self.__changes.values()
 
-    def get_blame_result_function_entry(
+    def get_function_entry(
         self, mangled_function_name: str
-    ) -> BlameResultFunctionEntry:
+    ) -> tp.Optional[BlameResultFunctionEntry]:
         """
         Get the result entry for a specific function in the diff.
 
         Args:
             mangled_function_name: mangled name of the function to look up
         """
-        return self.__function_entries[mangled_function_name]
+        return self.__changes.get(mangled_function_name)
 
-    def has_function(self, mangled_function_name: str) -> bool:
-        return mangled_function_name in self.__function_entries
+    def changes(self) -> tp.Generator[BlameInstInteractions, None, None]:
+        for func_entry_delta in self.__changes.values():
+            for inst_inter_delta in func_entry_delta.interactions:
+                yield inst_inter_delta
+
+    def additions(self) -> tp.Generator[BlameInstInteractions, None, None]:
+        for func_entry_delta in self.__changes.values():
+            for inst_inter_delta in func_entry_delta.interactions:
+                if inst_inter_delta.amount > 0:
+                    yield inst_inter_delta
+
+    def deletions(self) -> tp.Generator[BlameInstInteractions, None, None]:
+        for func_entry_delta in self.__changes.values():
+            for inst_inter_delta in func_entry_delta.interactions:
+                if inst_inter_delta.amount < 0:
+                    yield inst_inter_delta
 
     def __calc_diff_br(
-        self, base_report: BlameReport, prev_report: BlameReport
+        self, old_report: BlameReport, new_report: BlameReport
     ) -> None:
         function_names = {
-            base_func_entry.name
-            for base_func_entry in base_report.function_entries
+            new_func_entry.name
+            for new_func_entry in new_report.function_entries
         } | {
-            prev_func_entry.name
-            for prev_func_entry in prev_report.function_entries
+            old_func_entry.name
+            for old_func_entry in old_report.function_entries
         }
         for func_name in function_names:
-            base_func_entry = None
-            prev_func_entry = None
-            try:
-                base_func_entry = base_report.get_blame_result_function_entry(
-                    func_name
-                )
-            except LookupError:
-                pass
+            new_func_entry = new_report.get_function_entry(func_name)
+            old_func_entry = old_report.get_function_entry(func_name)
 
-            try:
-                prev_func_entry = prev_report.get_blame_result_function_entry(
-                    func_name
-                )
-            except LookupError:
-                pass
-
-            # Only base report has the function
-            if prev_func_entry is None and base_func_entry is not None:
-                if base_func_entry.interactions:
-                    self.__function_entries[func_name] = deepcopy(
-                        base_func_entry
+            # Only new report has the function
+            if old_func_entry is None and new_func_entry is not None:
+                if new_func_entry.interactions:
+                    self.__changes[func_name] = BlameResultFunctionEntry(
+                        new_func_entry.name, new_func_entry.demangled_name, [
+                            BlameInstInteractions(
+                                inters.base_taint,
+                                deepcopy(inters.interacting_taints),
+                                inters.amount
+                            ) for inters in new_func_entry.interactions
+                        ], new_func_entry.num_instructions
                     )
 
-            # Only prev report has the function
-            elif base_func_entry is None and prev_func_entry is not None:
-                if prev_func_entry.interactions:
-                    self.__function_entries[func_name] = deepcopy(
-                        prev_func_entry
+            # Only old report has the function
+            elif new_func_entry is None and old_func_entry is not None:
+                if old_func_entry.interactions:
+                    self.__changes[func_name] = BlameResultFunctionEntry(
+                        old_func_entry.name, old_func_entry.demangled_name, [
+                            BlameInstInteractions(
+                                inters.base_taint,
+                                deepcopy(inters.interacting_taints),
+                                -inters.amount
+                            ) for inters in old_func_entry.interactions
+                        ], -old_func_entry.num_instructions
                     )
 
             # Both reports have the same function
-            elif base_func_entry is not None and prev_func_entry is not None:
-                diff_entry = _calc_diff_between_func_entries(
-                    base_func_entry, prev_func_entry
+            elif new_func_entry is not None and old_func_entry is not None:
+                diff_entry = self.__calc_diff_between_func_entries(
+                    old_func_entry, new_func_entry
                 )
-
-                if diff_entry.interactions:
-                    self.__function_entries[func_name] = diff_entry
+                if diff_entry:
+                    self.__changes[func_name] = diff_entry
 
             else:
                 raise AssertionError(
                     "The function name should be at least in one of the reports"
                 )
 
+    @staticmethod
+    def __calc_diff_between_func_entries(
+        old_func_entry: BlameResultFunctionEntry,
+        new_func_entry: BlameResultFunctionEntry
+    ) -> tp.Optional[BlameResultFunctionEntry]:
+        diff_interactions: tp.List[BlameInstInteractions] = []
+
+        # copy lists to avoid side effects
+        new_interactions = list(new_func_entry.interactions)
+        old_interactions = list(old_func_entry.interactions)
+
+        # num instructions diff
+        diff_num_instructions = abs(
+            new_func_entry.num_instructions - old_func_entry.num_instructions
+        )
+
+        for inter in sorted(set(new_interactions) | set(old_interactions)):
+            new_inter: tp.Optional[BlameInstInteractions] = None
+            old_inter: tp.Optional[BlameInstInteractions] = None
+
+            if inter in new_interactions:
+                new_inter = new_interactions[new_interactions.index(inter)]
+            if inter in old_interactions:
+                old_inter = old_interactions[old_interactions.index(inter)]
+
+            if old_inter is None and new_inter is not None:
+                diff_interactions.append(
+                    BlameInstInteractions(
+                        new_inter.base_taint,
+                        deepcopy(new_inter.interacting_taints), new_inter.amount
+                    )
+                )
+
+            elif new_inter is None and old_inter is not None:
+                diff_interactions.append(
+                    BlameInstInteractions(
+                        old_inter.base_taint,
+                        deepcopy(old_inter.interacting_taints),
+                        -old_inter.amount
+                    )
+                )
+
+            elif old_inter is not None and new_inter is not None:
+                difference = new_inter.amount - old_inter.amount
+                if difference != 0:
+                    diff_interactions.append(
+                        BlameInstInteractions(
+                            new_inter.base_taint,
+                            deepcopy(new_inter.interacting_taints), difference
+                        )
+                    )
+            else:
+                raise AssertionError(
+                    "The interaction should be at least in one of the reports"
+                )
+
+        if diff_interactions:
+            return BlameResultFunctionEntry(
+                new_func_entry.name, new_func_entry.demangled_name,
+                diff_interactions, diff_num_instructions
+            )
+
+        return None
+
     def __str__(self) -> str:
         str_representation = ""
-        for function in self.__function_entries.values():
+        for function in self.__changes.values():
             str_representation += str(function) + "\n"
         return str_representation
 
@@ -971,3 +1016,39 @@ def get_interacting_commits_for_commit(
                 in_commits.add(interaction.base_taint.commit)
 
     return in_commits, out_commits
+
+
+def get_largest_commit_interaction_paths(
+    report: BlameReport
+) -> tp.List[tp.Set[BlameTaintData]]:
+    """
+    Compute sets of commits that contain commits from maximal commit interaction
+    paths.
+
+    That is, take all commit interaction paths (cs, base)
+
+    Args:
+        report: blame report to take commit interaction paths from
+
+    Returns:
+        a list of sets with maximal commit interaction paths
+    """
+    all_cips: tp.List[tp.Set[BlameTaintData]] = []
+    for func_entry in report.function_entries:
+        for cip in func_entry.interactions:
+            btd = set(cip.interacting_taints)
+            btd.add(cip.base_taint)
+            all_cips.append(btd)
+
+    all_cips.sort(key=len)
+    maximal_cips: tp.List[tp.Set[BlameTaintData]] = []
+    for i, cip in enumerate(all_cips):
+        is_maximum = True
+        for bigger_cip in all_cips[(i + 1):]:
+            if cip.issubset(bigger_cip):
+                is_maximum = False
+                break
+        if is_maximum:
+            maximal_cips.append(cip)
+
+    return maximal_cips

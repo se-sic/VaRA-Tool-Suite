@@ -316,7 +316,7 @@ class BlameDiffMetricsDatabase(
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
             pred_commit = repo.get(pred_report.head_commit.hash)
 
-            diff_between_head_pred = BlameReportDiff(head_report, pred_report)
+            diff_between_head_pred = BlameReportDiff(pred_report, head_report)
 
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn(

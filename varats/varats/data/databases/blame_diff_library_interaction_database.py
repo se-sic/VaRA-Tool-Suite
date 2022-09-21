@@ -53,7 +53,7 @@ class BlameDiffLibraryInteractionDatabase(
             head_report = load_blame_report(report_paths[0])
             pred_report = load_blame_report(report_paths[1])
 
-            diff_report = BlameReportDiff(head_report, pred_report)
+            diff_report = BlameReportDiff(pred_report, head_report)
 
             base_inter_c_repo_pair_mapping = \
                 gen_base_to_inter_commit_repo_pair_mapping(

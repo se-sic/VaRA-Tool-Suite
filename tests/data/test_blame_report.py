@@ -567,21 +567,23 @@ class TestBlameReport(unittest.TestCase):
 
     def test_get_function_entry(self) -> None:
         """Test if we get the correct function entry."""
-        func_entry_1 = self.report.get_blame_result_function_entry(
+        func_entry_1 = self.report.get_function_entry(
             'adjust_assignment_expression'
         )
-        self.assertEqual(func_entry_1.name, 'adjust_assignment_expression')
-        self.assertEqual(
-            func_entry_1.demangled_name, 'adjust_assignment_expression'
-        )
-        self.assertNotEqual(func_entry_1.name, 'bool_exec')
+        self.assertIsNotNone(func_entry_1)
+        if func_entry_1:
+            self.assertEqual(func_entry_1.name, 'adjust_assignment_expression')
+            self.assertEqual(
+                func_entry_1.demangled_name, 'adjust_assignment_expression'
+            )
+            self.assertNotEqual(func_entry_1.name, 'bool_exec')
 
-        func_entry_2 = self.report.get_blame_result_function_entry(
-            '_Z7doStuffii'
-        )
-        self.assertEqual(func_entry_2.name, '_Z7doStuffii')
-        self.assertEqual(func_entry_2.demangled_name, 'doStuff(int, int)')
-        self.assertNotEqual(func_entry_2.name, 'bool_exec')
+        func_entry_2 = self.report.get_function_entry('_Z7doStuffii')
+        self.assertIsNotNone(func_entry_2)
+        if func_entry_2:
+            self.assertEqual(func_entry_2.name, '_Z7doStuffii')
+            self.assertEqual(func_entry_2.demangled_name, 'doStuff(int, int)')
+            self.assertNotEqual(func_entry_2.name, 'bool_exec')
 
     def test_iter_function_entries(self) -> None:
         """Test if we can iterate over all function entries."""
@@ -614,54 +616,65 @@ class TestBlameReportWithRepoData(unittest.TestCase):
 
     def test_get_unknown_repo_if_no_data_was_provided(self) -> None:
         """Checks if hashes without repo data get parsed correctly."""
-        entry = self.report.get_blame_result_function_entry("bool_exec")
-        interaction = entry.interactions[0]
+        entry = self.report.get_function_entry("bool_exec")
+        self.assertIsNotNone(entry)
+        if entry:
+            interaction = entry.interactions[0]
 
-        self.assertEqual(
-            interaction.interacting_taints[0].commit.commit_hash,
-            FullCommitHash("a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9")
-        )
-        self.assertEqual(
-            interaction.interacting_taints[0].commit.repository_name, "Unknown"
-        )
+            self.assertEqual(
+                interaction.interacting_taints[0].commit.commit_hash,
+                FullCommitHash("a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9")
+            )
+            self.assertEqual(
+                interaction.interacting_taints[0].commit.repository_name,
+                "Unknown"
+            )
 
     def test_correct_repo_interacting(self) -> None:
         """Checks if hashes without repo data get parsed correctly."""
-        entry = self.report.get_blame_result_function_entry("bool_exec")
-        interaction = entry.interactions[0]
+        entry = self.report.get_function_entry("bool_exec")
+        self.assertIsNotNone(entry)
+        if entry:
+            interaction = entry.interactions[0]
 
-        self.assertEqual(
-            interaction.interacting_taints[1].commit.commit_hash,
-            FullCommitHash("e8999a84efbd9c3e739bff7af39500d14e61bfbc")
-        )
-        self.assertEqual(
-            interaction.interacting_taints[1].commit.repository_name, "gzip"
-        )
+            self.assertEqual(
+                interaction.interacting_taints[1].commit.commit_hash,
+                FullCommitHash("e8999a84efbd9c3e739bff7af39500d14e61bfbc")
+            )
+            self.assertEqual(
+                interaction.interacting_taints[1].commit.repository_name, "gzip"
+            )
 
     def test_reponame_parsing_with_extra_dashes(self) -> None:
         """Checks if hashes without repo data get parsed correctly."""
-        entry = self.report.get_blame_result_function_entry("bool_exec")
-        interaction = entry.interactions[0]
+        entry = self.report.get_function_entry("bool_exec")
+        self.assertIsNotNone(entry)
+        if entry:
+            interaction = entry.interactions[0]
 
-        self.assertEqual(
-            interaction.interacting_taints[2].commit.commit_hash,
-            FullCommitHash("ff999a84efbd9c3e739bff7af39500d14e61bfbc")
-        )
-        self.assertEqual(
-            interaction.interacting_taints[2].commit.repository_name,
-            "repo-with-dashes"
-        )
+            self.assertEqual(
+                interaction.interacting_taints[2].commit.commit_hash,
+                FullCommitHash("ff999a84efbd9c3e739bff7af39500d14e61bfbc")
+            )
+            self.assertEqual(
+                interaction.interacting_taints[2].commit.repository_name,
+                "repo-with-dashes"
+            )
 
     def test_correct_repo_base_hash(self) -> None:
         """Checks if hashes without repo data get parsed correctly."""
-        entry = self.report.get_blame_result_function_entry("bool_exec")
-        interaction = entry.interactions[0]
+        entry = self.report.get_function_entry("bool_exec")
+        self.assertIsNotNone(entry)
+        if entry:
+            interaction = entry.interactions[0]
 
-        self.assertEqual(
-            interaction.base_taint.commit.commit_hash,
-            FullCommitHash("48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33")
-        )
-        self.assertEqual(interaction.base_taint.commit.repository_name, "xz")
+            self.assertEqual(
+                interaction.base_taint.commit.commit_hash,
+                FullCommitHash("48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33")
+            )
+            self.assertEqual(
+                interaction.base_taint.commit.repository_name, "xz"
+            )
 
 
 class TestBlameReportDiff(unittest.TestCase):
@@ -688,207 +701,242 @@ class TestBlameReportDiff(unittest.TestCase):
     def test_add_function_between_reports(self) -> None:
         """Checks if the diff containts functions that where added between
         reports."""
-        diff = BlameReportDiff(self.reports[1], self.reports[0])
-        new_func = diff.get_blame_result_function_entry('_Z7doStuffdd')
+        diff = BlameReportDiff(self.reports[0], self.reports[1])
+        new_func = diff.get_function_entry('_Z7doStuffdd')
+        self.assertIsNotNone(new_func)
 
         # Check if new function is correctly added to diff
-        self.assertEqual(new_func.name, '_Z7doStuffdd')
-        self.assertEqual(new_func.demangled_name, 'doStuff(double, double)')
-        self.assertEqual(len(new_func.interactions), 1)
-        self.assertEqual(
-            new_func.interactions[0].base_taint.commit.commit_hash,
-            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
-        )
-        self.assertEqual(len(new_func.interactions[0].interacting_taints), 1)
-        self.assertEqual(
-            new_func.interactions[0].interacting_taints[0].commit.commit_hash,
-            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        )
-        self.assertEqual(new_func.interactions[0].amount, 2)
+        if new_func:
+            self.assertEqual(new_func.name, '_Z7doStuffdd')
+            self.assertEqual(new_func.demangled_name, 'doStuff(double, double)')
+            self.assertEqual(len(new_func.interactions), 1)
+            self.assertEqual(
+                new_func.interactions[0].base_taint.commit.commit_hash,
+                FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+            )
+            self.assertEqual(
+                len(new_func.interactions[0].interacting_taints), 1
+            )
+            self.assertEqual(
+                new_func.interactions[0].interacting_taints[0].commit.
+                commit_hash,
+                FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+            )
+            self.assertEqual(new_func.interactions[0].amount, 2)
 
     def test_num_instructions_diff_added(self) -> None:
         """Checks if we correctly calculate the numer of instructions in a
         diff."""
-        diff = BlameReportDiff(self.reports[1], self.reports[0])
+        diff = BlameReportDiff(self.reports[0], self.reports[1])
 
-        new_func = diff.get_blame_result_function_entry('_Z7doStuffdd')
+        new_func = diff.get_function_entry('_Z7doStuffdd')
+        self.assertIsNotNone(new_func)
 
         # Check if new function is correctly added to diff
-        self.assertEqual(new_func.name, '_Z7doStuffdd')
-        self.assertEqual(new_func.num_instructions, 42)
+        if new_func:
+            self.assertEqual(new_func.name, '_Z7doStuffdd')
+            self.assertEqual(new_func.num_instructions, 42)
 
     def test_remove_function_between_reports(self) -> None:
         """Checks if the diff containts functions that where removed between
         reports."""
-        diff = BlameReportDiff(self.reports[2], self.reports[0])
-        del_func = diff.get_blame_result_function_entry('bool_exec')
+        diff = BlameReportDiff(self.reports[0], self.reports[2])
+        del_func = diff.get_function_entry('bool_exec')
+        self.assertIsNotNone(del_func)
 
-        # Check if deleted function is correctly added to diff
-        self.assertEqual(del_func.name, 'bool_exec')
-        self.assertEqual(del_func.demangled_name, 'bool_exec')
-        self.assertEqual(len(del_func.interactions), 2)
-        # Check first interaction
-        self.assertEqual(
-            del_func.interactions[0].base_taint.commit.commit_hash,
-            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
-        )
-        self.assertEqual(len(del_func.interactions[0].interacting_taints), 1)
-        self.assertEqual(
-            del_func.interactions[0].interacting_taints[0].commit.commit_hash,
-            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        )
-        self.assertEqual(del_func.interactions[0].amount, 22)
+        if del_func:
+            # Check if deleted function is correctly added to diff
+            self.assertEqual(del_func.name, 'bool_exec')
+            self.assertEqual(del_func.demangled_name, 'bool_exec')
+            self.assertEqual(len(del_func.interactions), 2)
+            # Check first interaction
+            self.assertEqual(
+                del_func.interactions[0].base_taint.commit.commit_hash,
+                FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+            )
+            self.assertEqual(
+                len(del_func.interactions[0].interacting_taints), 1
+            )
+            self.assertEqual(
+                del_func.interactions[0].interacting_taints[0].commit.
+                commit_hash,
+                FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+            )
+            self.assertEqual(del_func.interactions[0].amount, -22)
 
-        # Check second interaction
-        self.assertEqual(
-            del_func.interactions[1].base_taint.commit.commit_hash,
-            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
-        )
-        self.assertEqual(len(del_func.interactions[1].interacting_taints), 2)
-        self.assertEqual(
-            del_func.interactions[1].interacting_taints[0].commit.commit_hash,
-            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        )
-        self.assertEqual(
-            del_func.interactions[1].interacting_taints[1].commit.commit_hash,
-            FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
-        )
-        self.assertEqual(del_func.interactions[1].amount, 5)
+            # Check second interaction
+            self.assertEqual(
+                del_func.interactions[1].base_taint.commit.commit_hash,
+                FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+            )
+            self.assertEqual(
+                len(del_func.interactions[1].interacting_taints), 2
+            )
+            self.assertEqual(
+                del_func.interactions[1].interacting_taints[0].commit.
+                commit_hash,
+                FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+            )
+            self.assertEqual(
+                del_func.interactions[1].interacting_taints[1].commit.
+                commit_hash,
+                FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
+            )
+            self.assertEqual(del_func.interactions[1].amount, -5)
 
     def test_num_instructions_diff_removed(self) -> None:
         """Checks if we correctly calculate the numer of instructions in a
         diff."""
-        diff = BlameReportDiff(self.reports[2], self.reports[0])
-        del_func = diff.get_blame_result_function_entry('bool_exec')
+        diff = BlameReportDiff(self.reports[0], self.reports[2])
+        del_func = diff.get_function_entry('bool_exec')
+        self.assertIsNotNone(del_func)
 
         # Check if new function is correctly added to diff
-        self.assertEqual(del_func.name, 'bool_exec')
-        self.assertEqual(del_func.num_instructions, 42)
+        if del_func:
+            self.assertEqual(del_func.name, 'bool_exec')
+            self.assertEqual(del_func.num_instructions, -42)
 
     def test_add_interaction(self) -> None:
         """Checks if the diff containts interactions that where added between
         reports."""
-        diff = BlameReportDiff(self.reports[1], self.reports[0])
-        changed_func = diff.get_blame_result_function_entry('_Z7doStuffii')
+        diff = BlameReportDiff(self.reports[0], self.reports[1])
+        changed_func = diff.get_function_entry('_Z7doStuffii')
+        self.assertIsNotNone(changed_func)
 
         # Check if changed function is correctly added to diff
-        self.assertEqual(changed_func.name, '_Z7doStuffii')
-        self.assertEqual(changed_func.demangled_name, 'doStuff(int, int)')
-        self.assertEqual(len(changed_func.interactions), 1)
-        # Check first interaction
-        self.assertEqual(
-            changed_func.interactions[0].base_taint.commit.commit_hash,
-            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
-        )
-        self.assertEqual(
-            len(changed_func.interactions[0].interacting_taints), 1
-        )
-        self.assertEqual(
-            changed_func.interactions[0].interacting_taints[0].commit.
-            commit_hash,
-            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        )
-        self.assertEqual(changed_func.interactions[0].amount, 3)
+        if changed_func:
+            self.assertEqual(changed_func.name, '_Z7doStuffii')
+            self.assertEqual(changed_func.demangled_name, 'doStuff(int, int)')
+            self.assertEqual(len(changed_func.interactions), 1)
+            # Check first interaction
+            self.assertEqual(
+                changed_func.interactions[0].base_taint.commit.commit_hash,
+                FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+            )
+            self.assertEqual(
+                len(changed_func.interactions[0].interacting_taints), 1
+            )
+            self.assertEqual(
+                changed_func.interactions[0].interacting_taints[0].commit.
+                commit_hash,
+                FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+            )
+            self.assertEqual(changed_func.interactions[0].amount, 3)
 
     def test_remove_interaction(self) -> None:
         """Checkfs if the diff contains interactions that where removed between
         reports."""
-        diff = BlameReportDiff(self.reports[3], self.reports[0])
-        del_func = diff.get_blame_result_function_entry('bool_exec')
+        diff = BlameReportDiff(self.reports[0], self.reports[3])
+        del_func = diff.get_function_entry('bool_exec')
+        self.assertIsNotNone(del_func)
 
         # Check if deleted function is correctly added to diff
-        self.assertEqual(del_func.name, 'bool_exec')
-        self.assertEqual(del_func.demangled_name, 'bool_exec')
-        self.assertEqual(len(del_func.interactions), 1)
-        # Check first interaction
-        self.assertEqual(
-            del_func.interactions[0].base_taint.commit.commit_hash,
-            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
-        )
-        self.assertEqual(len(del_func.interactions[0].interacting_taints), 1)
-        self.assertEqual(
-            del_func.interactions[0].interacting_taints[0].commit.commit_hash,
-            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        )
-        self.assertEqual(del_func.interactions[0].amount, 22)
+        if del_func:
+            self.assertEqual(del_func.name, 'bool_exec')
+            self.assertEqual(del_func.demangled_name, 'bool_exec')
+            self.assertEqual(len(del_func.interactions), 1)
+            # Check first interaction
+            self.assertEqual(
+                del_func.interactions[0].base_taint.commit.commit_hash,
+                FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+            )
+            self.assertEqual(
+                len(del_func.interactions[0].interacting_taints), 1
+            )
+            self.assertEqual(
+                del_func.interactions[0].interacting_taints[0].commit.
+                commit_hash,
+                FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+            )
+            self.assertEqual(del_func.interactions[0].amount, -22)
 
     def test_increase_interaction_amount(self) -> None:
         """Checks if interactions where the amount increased between reports are
         shown."""
-        diff = BlameReportDiff(self.reports[1], self.reports[0])
-        changed_func = diff.get_blame_result_function_entry('bool_exec')
+        diff = BlameReportDiff(self.reports[0], self.reports[1])
+        changed_func = diff.get_function_entry('bool_exec')
+        self.assertIsNotNone(changed_func)
 
         # Check if deleted function is correctly added to diff
-        self.assertEqual(changed_func.name, 'bool_exec')
-        self.assertEqual(changed_func.demangled_name, 'bool_exec')
-        self.assertEqual(len(changed_func.interactions), 2)
+        if changed_func:
+            self.assertEqual(changed_func.name, 'bool_exec')
+            self.assertEqual(changed_func.demangled_name, 'bool_exec')
+            self.assertEqual(len(changed_func.interactions), 2)
 
-        # Check second interaction, that was increased
-        self.assertEqual(
-            changed_func.interactions[1].base_taint.commit.commit_hash,
-            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
-        )
-        self.assertEqual(
-            len(changed_func.interactions[1].interacting_taints), 2
-        )
-        self.assertEqual(
-            changed_func.interactions[1].interacting_taints[0].commit.
-            commit_hash,
-            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        )
-        self.assertEqual(
-            changed_func.interactions[1].interacting_taints[1].commit.
-            commit_hash,
-            FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
-        )
-        self.assertEqual(changed_func.interactions[1].amount, 2)
+            # Check second interaction, that was increased
+            self.assertEqual(
+                changed_func.interactions[1].base_taint.commit.commit_hash,
+                FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+            )
+            self.assertEqual(
+                len(changed_func.interactions[1].interacting_taints), 2
+            )
+            self.assertEqual(
+                changed_func.interactions[1].interacting_taints[0].commit.
+                commit_hash,
+                FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+            )
+            self.assertEqual(
+                changed_func.interactions[1].interacting_taints[1].commit.
+                commit_hash,
+                FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
+            )
+            self.assertEqual(changed_func.interactions[1].amount, 2)
 
     def test_decreased_interaction_amount(self) -> None:
         """Checks if interactions where the amount decreased between reports are
         shown."""
-        diff = BlameReportDiff(self.reports[1], self.reports[0])
-        changed_func = diff.get_blame_result_function_entry('bool_exec')
+        diff = BlameReportDiff(self.reports[0], self.reports[1])
+        changed_func = diff.get_function_entry('bool_exec')
+        self.assertIsNotNone(changed_func)
 
         # Check if deleted function is correctly added to diff
-        self.assertEqual(changed_func.name, 'bool_exec')
-        self.assertEqual(changed_func.demangled_name, 'bool_exec')
-        self.assertEqual(len(changed_func.interactions), 2)
+        if changed_func:
+            self.assertEqual(changed_func.name, 'bool_exec')
+            self.assertEqual(changed_func.demangled_name, 'bool_exec')
+            self.assertEqual(len(changed_func.interactions), 2)
 
-        # Check first interaction, that was decreased
-        self.assertEqual(
-            changed_func.interactions[0].base_taint.commit.commit_hash,
-            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
-        )
-        self.assertEqual(
-            len(changed_func.interactions[0].interacting_taints), 1
-        )
-        self.assertEqual(
-            changed_func.interactions[0].interacting_taints[0].commit.
-            commit_hash,
-            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        )
-        self.assertEqual(changed_func.interactions[0].amount, -3)
+            # Check first interaction, that was decreased
+            self.assertEqual(
+                changed_func.interactions[0].base_taint.commit.commit_hash,
+                FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+            )
+            self.assertEqual(
+                len(changed_func.interactions[0].interacting_taints), 1
+            )
+            self.assertEqual(
+                changed_func.interactions[0].interacting_taints[0].commit.
+                commit_hash,
+                FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+            )
+            self.assertEqual(changed_func.interactions[0].amount, -3)
 
     def test_function_not_in_diff(self) -> None:
         """Checks that only functions that changed are in the diff."""
         # Report 2
-        diff = BlameReportDiff(self.reports[1], self.reports[0])
-        self.assertTrue(diff.has_function('bool_exec'))
-        self.assertTrue(diff.has_function('_Z7doStuffii'))
-        self.assertTrue(diff.has_function('_Z7doStuffdd'))
-        self.assertFalse(diff.has_function('adjust_assignment_expression'))
+        diff = BlameReportDiff(self.reports[0], self.reports[1])
+        self.assertIsNotNone(diff.get_function_entry('bool_exec'))
+        self.assertIsNotNone(diff.get_function_entry('_Z7doStuffii'))
+        self.assertIsNotNone(diff.get_function_entry('_Z7doStuffdd'))
+        self.assertIsNone(
+            diff.get_function_entry('adjust_assignment_expression')
+        )
 
         # Report 3
         diff_2 = BlameReportDiff(self.reports[2], self.reports[0])
-        self.assertTrue(diff_2.has_function('bool_exec'))
-        self.assertFalse(diff_2.has_function('adjust_assignment_expression'))
-        self.assertFalse(diff_2.has_function('_Z7doStuffii'))
+        self.assertIsNotNone(diff_2.get_function_entry('bool_exec'))
+        self.assertIsNone(
+            diff_2.get_function_entry('adjust_assignment_expression')
+        )
+        self.assertIsNone(diff_2.get_function_entry('_Z7doStuffii'))
 
         # Report 4
         diff_3 = BlameReportDiff(self.reports[3], self.reports[0])
-        self.assertTrue(diff_3.has_function('bool_exec'))
-        self.assertFalse(diff_3.has_function('adjust_assignment_expression'))
-        self.assertFalse(diff_3.has_function('_Z7doStuffii'))
+        self.assertIsNotNone(diff_3.get_function_entry('bool_exec'))
+        self.assertIsNone(
+            diff_3.get_function_entry('adjust_assignment_expression')
+        )
+        self.assertIsNone(diff_3.get_function_entry('_Z7doStuffii'))
 
 
 class TestBlameReportHelperFunctions(unittest.TestCase):
