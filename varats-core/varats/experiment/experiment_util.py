@@ -482,7 +482,7 @@ class ZippedReportFolder(TempDir):
 
 
 @runtime_checkable
-class NeedsOutputFolder(Protocol, Step):
+class NeedsOutputFolder(Protocol):
 
     def __call__(self, tmp_folder: Path) -> StepResult:
         ...
