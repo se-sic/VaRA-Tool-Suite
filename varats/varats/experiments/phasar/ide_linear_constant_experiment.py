@@ -28,7 +28,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class IDELinearConstantAnalysis(actions.Step):  # type: ignore
+class IDELinearConstantAnalysis(actions.ProjectStep):  # type: ignore
     """Analysis step to run phasar's IDELinearConstantAnalysis on a project."""
 
     NAME = "IDELinearConstantAnalysis"
@@ -38,14 +38,14 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
         "values through the program."
     )
 
+    project: VProject
+
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """Run phasar's IDELinearConstantAnalysis analysis."""
-        self.project: VProject
-
         phasar = local["phasar-llvm"]
         for binary in self.project.binaries:
             bc_file = get_cached_bc_file_path(self.project, binary)

@@ -30,13 +30,14 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
     NAME = "EmptyAnalysis"
     DESCRIPTION = "Analyses nothing."
 
+    project: VProject
+
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
-        self.project: VProject
 
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(

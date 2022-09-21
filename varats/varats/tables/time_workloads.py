@@ -1,11 +1,9 @@
 """Module for the TimedWorkloadsTable."""
 import typing as tp
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from varats.experiment.workload_util import get_workload_label
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.report.gnu_time_report import (
@@ -20,6 +18,8 @@ from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
 
 
 class TimedWorkloadTable(Table, table_name="time_workloads"):
+    """Simple table to print the run-time and memory consumption of different
+    workloads."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()

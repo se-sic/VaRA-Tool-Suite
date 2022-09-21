@@ -35,11 +35,13 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
+class RunGlobalsTestAnalysis(actions.ProjectStep):  # type: ignore
     """Analyse a project with and without phasars global support."""
 
     NAME = "GlobalsReportGeneration"
     DESCRIPTION = "Run phasar LCA with and without globals support"
+
+    project: VProject
 
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
@@ -52,8 +54,6 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """This step performs the actual comparision, running the analysis with
         and without phasars global support."""
-        self.project: VProject
-
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.

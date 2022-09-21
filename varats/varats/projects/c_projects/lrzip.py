@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import Command, SourceRoot, WorkloadSet, OnlyIn
+from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.source import HTTP
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs

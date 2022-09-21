@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import Command, SourceRoot, WorkloadSet, OnlyIn
+from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.source import HTTP
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
