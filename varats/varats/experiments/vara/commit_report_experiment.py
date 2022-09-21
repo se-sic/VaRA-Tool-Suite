@@ -33,7 +33,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class CRAnalysis(actions.Step):  # type: ignore
+class CRAnalysis(actions.MultiStep):  # type: ignore
     """Analyse a project with VaRA and generate a Commit Report."""
 
     NAME = "CRAnalysis"
@@ -41,6 +41,8 @@ class CRAnalysis(actions.Step):  # type: ignore
 
     INTERACTION_FILTER_TEMPLATE = \
         "InteractionFilter-{experiment}-{project}.yaml"
+
+    project: VProject
 
     def __init__(
         self,
@@ -60,8 +62,6 @@ class CRAnalysis(actions.Step):  # type: ignore
             -vara-CR: to run a commit flow report
             -vara-report-outfile=<path>: specify the path to store the results
         """
-        self.project: VProject
-
         if self.__interaction_filter_experiment_name is None:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(

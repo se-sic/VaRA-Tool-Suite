@@ -38,12 +38,14 @@ from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from varats.report.report import ReportSpecification
 
 
-class PhASARFTACheck(actions.Step):  # type: ignore
+class PhASARFTACheck(actions.MultiStep):  # type: ignore
     """Analyse a project with VaRA and generate the output of the feature taint
     analysis."""
 
     NAME = "PhASARFTACheck"
     DESCRIPTION = "Generate a full FTA."
+
+    project: VProject
 
     def __init__(
         self,
@@ -57,8 +59,6 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
     def analyze(self) -> actions.StepResult:
         """This step performs the actual analysis with the correct flags."""
-        self.project: VProject
-
         # Define the output directory.
         vara_result_folder = get_varats_result_folder(self.project)
 

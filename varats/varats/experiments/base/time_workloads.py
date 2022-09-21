@@ -37,11 +37,9 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
     project: VProject
 
     def __init__(
-        self, project: Project, experiment_handle: ExperimentHandle, num: int,
-        binary: ProjectBinaryWrapper
+        self, project: Project, num: int, binary: ProjectBinaryWrapper
     ):
         super().__init__(project=project)
-        self.__experiment_handle = experiment_handle
         self.__num = num
         self.__binary = binary
 
@@ -110,9 +108,8 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                    TimeProjectWorkloads(
-                        project, self.get_handle(), rep_num, binary
-                    ) for rep_num in range(0, measurment_repetitions)
+                    TimeProjectWorkloads(project, rep_num, binary)
+                    for rep_num in range(0, measurment_repetitions)
                 ]
             )
         )

@@ -25,13 +25,15 @@ from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReport
 
 
-class ExecAndTraceBinary(actions.Step):  # type: ignore
+class ExecAndTraceBinary(actions.MultiStep):  # type: ignore
     """Executes the specified binaries of the project, in specific
     configurations, against one or multiple workloads."""
 
     NAME = "ExecBinary"
     DESCRIPTION = "Executes each binary and caputres white-box " +\
         "performance traces."
+
+    project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project, action_fn=self.run_perf_tracing)
@@ -40,8 +42,6 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
     def run_perf_tracing(self) -> actions.StepResult:
         """Execute the specified binaries of the project, in specific
         configurations, against one or multiple workloads."""
-        self.project: VProject
-
         print(f"PWD {os.getcwd()}")
 
         vara_result_folder = get_varats_result_folder(self.project)

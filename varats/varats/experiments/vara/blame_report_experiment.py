@@ -31,11 +31,13 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class BlameReportGeneration(actions.Step):  # type: ignore
+class BlameReportGeneration(actions.MultiStep):  # type: ignore
     """Analyse a project with VaRA and generate a BlameReport."""
 
     NAME = "BlameReportGeneration"
     DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
+
+    project: VProject
 
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
@@ -54,8 +56,6 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             * -vara-BR: to run a commit flow report
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
-        self.project: VProject
-
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.

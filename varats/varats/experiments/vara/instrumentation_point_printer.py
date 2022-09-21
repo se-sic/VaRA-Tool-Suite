@@ -32,13 +32,15 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 
 
-class CollectInstrumentationPoints(actions.Step):  # type: ignore
+class CollectInstrumentationPoints(actions.MultiStep):  # type: ignore
     """Runs utility pass on LLVM-IR to extract instrumentation point
     information."""
 
     NAME = "CollectInstrumentationPoints"
     DESCRIPTION = "Runs utility pass on LLVM-IR to extract instrumentation " \
         "point information."
+
+    project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project, action_fn=self.analyze)
@@ -47,8 +49,6 @@ class CollectInstrumentationPoints(actions.Step):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """Run VaRA-IPP utility pass and extract instrumentation point
         information."""
-        self.project: VProject
-
         vara_result_folder = get_varats_result_folder(self.project)
 
         for binary in self.project.binaries:

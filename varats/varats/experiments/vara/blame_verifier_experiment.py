@@ -33,13 +33,15 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class BlameVerifierReportGeneration(actions.Step):  # type: ignore
+class BlameVerifierReportGeneration(actions.MultiStep):  # type: ignore
     """Analyse a project with the BlameVerifier and generate a
     BlameVerifierReport."""
 
     NAME = "BlameVerifierReportGeneration"
     DESCRIPTION = "Compares and analyses VaRA-commit-hashes with " \
                   "debug-commit-hashes."
+
+    project: VProject
 
     def __init__(
         self, project: Project, bc_file_extensions: tp.List[BCFileExtensions],
@@ -62,8 +64,6 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             * -vara-verifier-options=: chooses between multiple print options
                 * Status: prints if the module as a whole passed or failed
         """
-        self.project: VProject
-
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
