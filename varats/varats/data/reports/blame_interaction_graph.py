@@ -4,7 +4,9 @@ import itertools
 import re
 import sys
 import typing as tp
+from collections import defaultdict
 from copy import deepcopy
+from enum import Enum
 from pathlib import Path
 
 import networkx as nx
@@ -14,6 +16,8 @@ from varats.data.cache_helper import build_cached_graph
 from varats.data.reports.blame_report import (
     gen_base_to_inter_commit_repo_pair_mapping,
     BlameTaintData,
+    BlameReportDiff,
+    BlameInstInteractions,
 )
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
@@ -23,8 +27,8 @@ from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_gits,
 )
-from varats.report.report import ReportFilename, ReportFilepath
-from varats.revision.revisions import get_processed_revisions_files
+from varats.report.report import ReportFilepath
+from varats.revision.revisions import get_processed_revision_files
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
@@ -32,6 +36,7 @@ from varats.utils.git_util import (
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
     get_submodule_head,
+    ShortCommitHash,
 )
 
 if sys.version_info <= (3, 8):
@@ -50,6 +55,24 @@ class BIGNodeAttrs(TypedDict):
 class BIGEdgeAttrs(TypedDict):
     """Blame interaction graph edge attributes."""
     amount: int
+
+
+class DiffType(Enum):
+    ADDITION = 1
+    DELETION = -1
+    UNCHANGED = 0
+
+
+class BIGDiffNodeAttrs(TypedDict):
+    """Blame interaction graph node attributes."""
+    blame_taint_data: BlameTaintData
+    diff_type: DiffType
+
+
+class BIGDiffEdgeAttrs(TypedDict):
+    """Blame interaction graph edge attributes."""
+    amount: int
+    diff_type: DiffType
 
 
 class CIGNodeAttrs(TypedDict):
@@ -312,7 +335,7 @@ class BlameInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            report = load_blame_report(self.__report_file)
+            report = load_blame_report(self.__report_file.full_path())
             interaction_graph = nx.DiGraph()
             interactions = gen_base_to_inter_commit_repo_pair_mapping(report)
             nodes: tp.Set[BIGNodeTy] = {
@@ -350,6 +373,135 @@ class BlameInteractionGraph(InteractionGraph):
                 f"{filename.commit_hash.hash}", create_graph
             )
         return self.__cached_interaction_graph
+
+
+class BlameInteractionGraphDiff():
+
+    def __init__(
+        self, project_name: str, old_report_file: ReportFilepath,
+        new_report_file: ReportFilepath
+    ):
+        # super().__init__(project_name)
+        self.__project_name = project_name
+        self.__old_report_file = old_report_file
+        self.__new_report_file = new_report_file
+        self.__cached_interaction_graph: tp.Optional[nx.MultiDiGraph] = None
+
+    def blame_interaction_graph(self) -> nx.MultiDiGraph:
+
+        def create_graph() -> nx.MultiDiGraph:
+            old_report = load_blame_report(self.__old_report_file.full_path())
+            new_report = load_blame_report(self.__new_report_file.full_path())
+            diff = BlameReportDiff(old_report, new_report)
+
+            interaction_graph = nx.MultiDiGraph()
+
+            def group_interactions(
+                interactions: tp.Generator[BlameInstInteractions, None, None]
+            ) -> tp.Dict[BlameTaintData, tp.Dict[BlameTaintData, int]]:
+                grouped_interactions: tp.Dict[BlameTaintData, tp.Dict[
+                    BlameTaintData,
+                    int]] = defaultdict(lambda: defaultdict(lambda: 0))
+
+                for interaction in interactions:
+                    base_taint = interaction.base_taint
+
+                    for interacting_taint in interaction.interacting_taints:
+                        grouped_interactions[base_taint][interacting_taint
+                                                        ] += interaction.amount
+                return grouped_interactions
+
+            additions = group_interactions(diff.additions())
+            deletions = group_interactions(diff.deletions())
+            unchanged = group_interactions(diff.unchanged())
+            unchanged_nodes = {
+                commit for base, inters in unchanged.items()
+                for commit in [base, *inters.keys()]
+            }
+            added_nodes = {
+                commit for base, inters in additions.items()
+                for commit in [base, *inters.keys()]
+            }.difference(unchanged_nodes)
+            deleted_nodes = {
+                commit for base, inters in deletions.items()
+                for commit in [base, *inters.keys()]
+            }.difference(unchanged_nodes)
+
+            def create_node_attrs(
+                blame_taint_data: BlameTaintData, diff_type: DiffType
+            ) -> BIGDiffNodeAttrs:
+                return {
+                    "blame_taint_data": blame_taint_data,
+                    "diff_type": diff_type
+                }
+
+            # pylint: disable=unused-argument
+            def create_edge_attrs(
+                base: BlameTaintData, inter: BlameTaintData, amount: int,
+                diff_type: DiffType
+            ) -> BIGDiffEdgeAttrs:
+                return {"amount": amount, "diff_type": diff_type}
+
+            interaction_graph.add_nodes_from([
+                (node, create_node_attrs(node, DiffType.UNCHANGED))
+                for node in unchanged_nodes
+            ])
+            interaction_graph.add_nodes_from([
+                (node, create_node_attrs(node, DiffType.ADDITION))
+                for node in added_nodes
+            ])
+            interaction_graph.add_nodes_from([
+                (node, create_node_attrs(node, DiffType.DELETION))
+                for node in deleted_nodes
+            ])
+            interaction_graph.add_edges_from([
+                (
+                    base, inter,
+                    create_edge_attrs(base, inter, amount, DiffType.UNCHANGED)
+                )
+                for base, inters in unchanged.items()
+                for inter, amount in inters.items()
+            ])
+            interaction_graph.add_edges_from([
+                (
+                    base, inter,
+                    create_edge_attrs(base, inter, amount, DiffType.ADDITION)
+                )
+                for base, inters in additions.items()
+                for inter, amount in inters.items()
+            ])
+            interaction_graph.add_edges_from([
+                (
+                    base, inter,
+                    create_edge_attrs(base, inter, amount, DiffType.DELETION)
+                )
+                for base, inters in deletions.items()
+                for inter, amount in inters.items()
+            ])
+            return interaction_graph
+
+        if not self.__cached_interaction_graph:
+            old_filename = self.__old_report_file.report_filename
+            new_filename = self.__old_report_file.report_filename
+            self.__cached_interaction_graph = build_cached_graph(
+                f"ig-diff-{new_filename.experiment_shorthand}-"
+                f"{self.__project_name}-{old_filename.commit_hash.hash}-"
+                f"{old_filename.commit_hash.hash}", create_graph
+            )
+        return self.__cached_interaction_graph
+
+    def commit_interaction_graph(self) -> nx.DiGraph:
+        raise NotImplementedError
+
+    def author_interaction_graph(self) -> nx.DiGraph:
+        raise NotImplementedError
+
+    def commit_author_interaction_graph(
+        self,
+        outgoing_interactions: bool = True,
+        incoming_interactions: bool = False
+    ) -> nx.DiGraph:
+        raise NotImplementedError
 
 
 class FileBasedInteractionGraph(InteractionGraph):
@@ -450,23 +602,42 @@ def create_blame_interaction_graph(
     Returns:
         the blame interaction graph
     """
-    file_name_filter: tp.Callable[[str], bool] = lambda x: False
-
-    if revision:
-
-        def match_revision(file_name: str) -> bool:
-            return ReportFilename(
-                file_name
-            ).commit_hash != revision.to_short_commit_hash()
-
-        file_name_filter = match_revision
-
-    report_files = get_processed_revisions_files(
-        project_name, experiment_type, file_name_filter=file_name_filter
+    report_files = get_processed_revision_files(
+        project_name, revision.to_short_commit_hash(), experiment_type
     )
     if len(report_files) == 0:
         raise LookupError(f"Found no BlameReport for project {project_name}")
     return BlameInteractionGraph(project_name, report_files[0])
+
+
+def create_blame_interaction_graph_diff(
+    project_name: str, old_revision: ShortCommitHash,
+    new_revision: ShortCommitHash,
+    experiment_type: tp.Type[BlameReportExperiment]
+) -> BlameInteractionGraphDiff:
+    """
+    Create a blame interaction graph diff for the given project revisions.
+
+    Args:
+        project_name: name of the project
+        old_revision: old project revision
+        new_revision: new project revision
+        experiment_type: experiment that was used to create the blame data
+
+    Returns:
+        the blame interaction graph diff
+    """
+    old_report_files = get_processed_revision_files(
+        project_name, old_revision, experiment_type
+    )
+    new_report_files = get_processed_revision_files(
+        project_name, new_revision, experiment_type
+    )
+    if len(new_report_files) == 0 or len(old_report_files) == 0:
+        raise LookupError(f"Missing BlameReport for project {project_name}")
+    return BlameInteractionGraphDiff(
+        project_name, old_report_files[0], new_report_files[0]
+    )
 
 
 def create_file_based_interaction_graph(

@@ -214,6 +214,20 @@ def get_processed_revisions_files(
     )
 
 
+def get_processed_revision_files(
+    project_name: str,
+    revision: ShortCommitHash,
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
+    only_newest: bool = True
+) -> tp.List[ReportFilepath]:
+    return get_processed_revisions_files(
+        project_name, experiment_type, report_type,
+        lambda file_name: ReportFilename(file_name).commit_hash != revision,
+        only_newest
+    )
+
+
 def get_failed_revisions_files(
     project_name: str,
     experiment_type: tp.Type["exp_u.VersionExperiment"],

@@ -72,8 +72,7 @@ class BlameTaintData():
         if not isinstance(other, BlameTaintData):
             return NotImplemented
 
-        return not ((self.region_id != other.region_id) or
-                    (self.function_name != other.function_name) or
+        return not ((self.function_name != other.function_name) or
                     (self.commit != other.commit))
 
     def __lt_commit(self, other: 'BlameTaintData') -> bool:
@@ -429,6 +428,7 @@ class BlameReportDiff():
         self, old_report: BlameReport, new_report: BlameReport
     ) -> None:
         self.__changes: tp.Dict[str, BlameResultFunctionEntry] = {}
+        self.__unchanged: tp.Dict[str, BlameResultFunctionEntry] = {}
         self.__base_head = new_report.head_commit
         self.__prev_head = old_report.head_commit
         self.__calc_diff_br(old_report, new_report)
@@ -471,6 +471,11 @@ class BlameReportDiff():
             for inst_inter_delta in func_entry_delta.interactions:
                 yield inst_inter_delta
 
+    def unchanged(self) -> tp.Generator[BlameInstInteractions, None, None]:
+        for func_entry_delta in self.__unchanged.values():
+            for inst_inter_delta in func_entry_delta.interactions:
+                yield inst_inter_delta
+
     def additions(self) -> tp.Generator[BlameInstInteractions, None, None]:
         for func_entry_delta in self.__changes.values():
             for inst_inter_delta in func_entry_delta.interactions:
@@ -497,20 +502,12 @@ class BlameReportDiff():
             new_func_entry = new_report.get_function_entry(func_name)
             old_func_entry = old_report.get_function_entry(func_name)
 
-            # Only new report has the function
+            # Only new report has the function -> addition
             if old_func_entry is None and new_func_entry is not None:
                 if new_func_entry.interactions:
-                    self.__changes[func_name] = BlameResultFunctionEntry(
-                        new_func_entry.name, new_func_entry.demangled_name, [
-                            BlameInstInteractions(
-                                inters.base_taint,
-                                deepcopy(inters.interacting_taints),
-                                inters.amount
-                            ) for inters in new_func_entry.interactions
-                        ], new_func_entry.num_instructions
-                    )
+                    self.__changes[func_name] = deepcopy(new_func_entry)
 
-            # Only old report has the function
+            # Only old report has the function -> deletion
             elif new_func_entry is None and old_func_entry is not None:
                 if old_func_entry.interactions:
                     self.__changes[func_name] = BlameResultFunctionEntry(
@@ -525,32 +522,28 @@ class BlameReportDiff():
 
             # Both reports have the same function
             elif new_func_entry is not None and old_func_entry is not None:
-                diff_entry = self.__calc_diff_between_func_entries(
+                self.__calc_diff_between_func_entries(
                     old_func_entry, new_func_entry
                 )
-                if diff_entry:
-                    self.__changes[func_name] = diff_entry
 
             else:
                 raise AssertionError(
                     "The function name should be at least in one of the reports"
                 )
 
-    @staticmethod
     def __calc_diff_between_func_entries(
-        old_func_entry: BlameResultFunctionEntry,
+        self, old_func_entry: BlameResultFunctionEntry,
         new_func_entry: BlameResultFunctionEntry
-    ) -> tp.Optional[BlameResultFunctionEntry]:
+    ) -> None:
         diff_interactions: tp.List[BlameInstInteractions] = []
+        unchanged_interactions: tp.List[BlameInstInteractions] = []
 
         # copy lists to avoid side effects
         new_interactions = list(new_func_entry.interactions)
         old_interactions = list(old_func_entry.interactions)
 
         # num instructions diff
-        diff_num_instructions = abs(
-            new_func_entry.num_instructions - old_func_entry.num_instructions
-        )
+        diff_num_instructions = new_func_entry.num_instructions - old_func_entry.num_instructions
 
         for inter in sorted(set(new_interactions) | set(old_interactions)):
             new_inter: tp.Optional[BlameInstInteractions] = None
@@ -561,6 +554,7 @@ class BlameReportDiff():
             if inter in old_interactions:
                 old_inter = old_interactions[old_interactions.index(inter)]
 
+            # pure addition
             if old_inter is None and new_inter is not None:
                 diff_interactions.append(
                     BlameInstInteractions(
@@ -569,6 +563,7 @@ class BlameReportDiff():
                     )
                 )
 
+            # pure deletion
             elif new_inter is None and old_inter is not None:
                 diff_interactions.append(
                     BlameInstInteractions(
@@ -578,6 +573,7 @@ class BlameReportDiff():
                     )
                 )
 
+            # partial addition or deletion
             elif old_inter is not None and new_inter is not None:
                 difference = new_inter.amount - old_inter.amount
                 if difference != 0:
@@ -587,18 +583,23 @@ class BlameReportDiff():
                             deepcopy(new_inter.interacting_taints), difference
                         )
                     )
+                else:
+                    unchanged_interactions.append(deepcopy(new_inter))
             else:
                 raise AssertionError(
                     "The interaction should be at least in one of the reports"
                 )
 
         if diff_interactions:
-            return BlameResultFunctionEntry(
+            self.__changes[new_func_entry.name] = BlameResultFunctionEntry(
                 new_func_entry.name, new_func_entry.demangled_name,
                 diff_interactions, diff_num_instructions
             )
-
-        return None
+        if unchanged_interactions:
+            self.__unchanged[new_func_entry.name] = BlameResultFunctionEntry(
+                new_func_entry.name, new_func_entry.demangled_name,
+                unchanged_interactions, diff_num_instructions
+            )
 
     def __str__(self) -> str:
         str_representation = ""
