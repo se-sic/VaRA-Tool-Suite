@@ -495,9 +495,11 @@ def run_child_with_output_folder(
 
 
 class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
+    """Runs multiple actions, providing them a shared tmp folder that afterwards
+    is zipped into an archive.."""
 
     NAME = "ZippedSteps"
-    DESCRIPTION = "zipped desc"
+    DESCRIPTION = "Run multiple actions with a shared tmp folder"
 
     def __init__(
         self, output_filepath: ReportFilepath,
@@ -525,7 +527,7 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
     def __str__(self, indent: int = 0) -> str:
         sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
         return textwrap.indent(
-            f"\nZippedExperimentSteps: Foo\n{sub_actns}", indent * " "
+            f"\nZippedExperimentSteps:\n{sub_actns}", indent * " "
         )
 
 

@@ -312,22 +312,21 @@ class WLTimeReportAggregate(
     def measurements_ctx_switches(self, workload_name: str) -> tp.List[int]:
         """Context switches measurements of all aggregated reports."""
         return [
-            report.wall_clock_time.total_seconds()
+            report.voluntary_ctx_switches + report.involuntary_ctx_switches
             for report in self.reports(workload_name)
         ]
 
     def max_resident_sizes(self, workload_name: str) -> tp.List[int]:
         return [report.max_res_size for report in self.reports(workload_name)]
 
-    @property
     def summary(self) -> str:
         return (
             f"num_reports = {len(self.reports())}\n"
             f"num_workloads = {len(self.workload_names())}\n"
             "mean (std) of wall clock time = "
-            f"{np.mean(self.measurements_wall_clock_time):.2f}"
-            f" ({np.std(self.measurements_wall_clock_time):.2f})\n"
+            f"{np.mean(self.measurements_wall_clock_time()):.2f}"
+            f" ({np.std(self.measurements_wall_clock_time()):.2f})\n"
             "mean (std) of context switches = "
-            f"{np.mean(self.measurements_ctx_switches):.2f}"
-            f" ({np.std(self.measurements_ctx_switches):.2f})\n"
+            f"{np.mean(self.measurements_ctx_switches()):.2f}"
+            f" ({np.std(self.measurements_ctx_switches()):.2f})\n"
         )

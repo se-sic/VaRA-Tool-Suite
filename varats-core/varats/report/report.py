@@ -686,7 +686,7 @@ class KeyedReportAggregate(
         self,
         path: Path,
         report_type: tp.Type[ReportTy],
-        key_func,
+        key_func: tp.Callable[[Path], KeyTy],
         default_key: tp.Optional[KeyTy] = None
     ) -> None:
         super().__init__(path)
