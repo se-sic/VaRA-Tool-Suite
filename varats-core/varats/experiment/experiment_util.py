@@ -482,7 +482,7 @@ class ZippedReportFolder(TempDir):
 
 
 @runtime_checkable
-class NeedsOutputFolder(Protocol):
+class NeedsOutputFolder(Protocol, Step):
 
     def __call__(self, tmp_folder: Path) -> StepResult:
         ...
@@ -509,7 +509,7 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
         self.__output_filepath = output_filepath
 
     def __run_children(self, tmp_folder: Path) -> tp.List[StepResult]:
-        results = []
+        results: tp.List[StepResult] = []
 
         for child in self.actions:
             run_child_with_output_folder(child, tmp_folder)

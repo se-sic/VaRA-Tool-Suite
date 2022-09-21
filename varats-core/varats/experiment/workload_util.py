@@ -138,5 +138,5 @@ class WorkloadSpecificReportAggregate(
             )(get_workload_label)
         )
 
-    def workload_names(self) -> tp.Iterable[str]:
+    def workload_names(self) -> tp.Collection[str]:
         return self.keys()

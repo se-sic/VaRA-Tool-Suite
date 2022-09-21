@@ -712,7 +712,7 @@ class KeyedReportAggregate(
     def removed(self) -> bool:
         return not self.__finalizer.alive
 
-    def keys(self) -> tp.Iterable[KeyTy]:
+    def keys(self) -> tp.Collection[KeyTy]:
         return self.__reports.keys()
 
     def reports(self, key: tp.Optional[KeyTy] = None) -> tp.List[ReportTy]:

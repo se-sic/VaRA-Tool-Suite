@@ -64,7 +64,7 @@ def auto_unwrap(
     ) -> tp.Callable[..., T]:
 
         @wraps(func_ret_optional)
-        def function_unwrapper(*args: tp.Any, **kwargs: tp.Any):
+        def function_unwrapper(*args: tp.Any, **kwargs: tp.Any) -> T:
             return unwrap(func_ret_optional(*args, **kwargs), conversion_reason)
 
         return function_unwrapper
