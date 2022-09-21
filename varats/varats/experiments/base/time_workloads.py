@@ -6,7 +6,7 @@ from pathlib import Path
 
 import benchbuild.extensions.time as bb_time
 from benchbuild import Project
-from benchbuild.command import ProjectCommand, unwrap, enable_rollback
+from benchbuild.command import ProjectCommand, unwrap, cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import touch, time, wget, rm, ls
@@ -67,7 +67,7 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
 
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
-                with enable_rollback(prj_command):
+                with cleanup(prj_command):
                     print(f"{run_cmd=}")
                     run_cmd()
 
