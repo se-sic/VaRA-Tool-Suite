@@ -51,8 +51,11 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
                             agg_time_report.measurements_wall_clock_time(
                         workload_name
                     ):
-                        unique_reference = f"{project_name}-{report_file.binary_name}" \
-                            + f"-{str(report_file.commit_hash)}"
+                        unique_reference = (
+                            f"{project_name}-"
+                            f"{report_file.binary_name}"
+                            f"-{str(report_file.commit_hash)}"
+                        )
                         new_row = {
                             "Project-Binary-Revision": unique_reference,
                             "Workload": workload_name,

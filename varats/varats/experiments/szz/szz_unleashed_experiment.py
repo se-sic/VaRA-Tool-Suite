@@ -100,8 +100,6 @@ class RunSZZUnleashed(actions.MultiStep):  # type: ignore
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
 
-        varats_result_folder = get_varats_result_folder(self.project)
-
         with local.cwd(run_dir):
             run_cmd = java["-jar",
                            str(szzunleashed_jar), "-d", "1", "-i",

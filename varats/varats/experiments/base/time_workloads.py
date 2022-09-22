@@ -12,7 +12,6 @@ from plumbum import local
 
 from varats.experiment.experiment_util import (
     VersionExperiment,
-    ExperimentHandle,
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
     ZippedExperimentSteps,
