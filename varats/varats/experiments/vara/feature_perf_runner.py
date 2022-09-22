@@ -16,6 +16,7 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
 )
 from varats.project.project_util import BinaryType
+from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
     FeatureModelNotFound,
@@ -24,7 +25,7 @@ from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReport
 
 
-class ExecAndTraceBinary(actions.Step):  # type: ignore
+class ExecAndTraceBinary(actions.MultiStep):  # type: ignore
     """Executes the specified binaries of the project, in specific
     configurations, against one or multiple workloads."""
 
@@ -32,28 +33,30 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
     DESCRIPTION = "Executes each binary and caputres white-box " +\
         "performance traces."
 
+    project: VProject
+
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run_perf_tracing)
+        super().__init__(project=project, action_fn=self.run_perf_tracing)
         self.__experiment_handle = experiment_handle
 
     def run_perf_tracing(self) -> actions.StepResult:
         """Execute the specified binaries of the project, in specific
         configurations, against one or multiple workloads."""
-        project: Project = self.obj
-
         print(f"PWD {os.getcwd()}")
 
-        vara_result_folder = get_varats_result_folder(project)
-        for binary in project.binaries:
+        vara_result_folder = get_varats_result_folder(self.project)
+        for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, TEFReport, project, binary
+                self.__experiment_handle, TEFReport, self.project, binary
             )
 
-            with local.cwd(local.path(project.source_of_primary)):
-                print(f"Currenlty at {local.path(project.source_of_primary)}")
+            with local.cwd(local.path(self.project.source_of_primary)):
+                print(
+                    f"Currenlty at {local.path(self.project.source_of_primary)}"
+                )
                 print(f"Bin path {binary.path}")
 
                 # executable = local[f"{binary.path}"]

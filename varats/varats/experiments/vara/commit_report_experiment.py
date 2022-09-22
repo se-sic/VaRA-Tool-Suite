@@ -29,10 +29,11 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
+from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class CRAnalysis(actions.Step):  # type: ignore
+class CRAnalysis(actions.MultiStep):  # type: ignore
     """Analyse a project with VaRA and generate a Commit Report."""
 
     NAME = "CRAnalysis"
@@ -41,13 +42,15 @@ class CRAnalysis(actions.Step):  # type: ignore
     INTERACTION_FILTER_TEMPLATE = \
         "InteractionFilter-{experiment}-{project}.yaml"
 
+    project: VProject
+
     def __init__(
         self,
         project: Project,
         experiment_handle: ExperimentHandle,
         interaction_filter_experiment_name: tp.Optional[str] = None
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.__interaction_filter_experiment_name = \
             interaction_filter_experiment_name
         self.__experiment_handle = experiment_handle
@@ -59,22 +62,18 @@ class CRAnalysis(actions.Step):  # type: ignore
             -vara-CR: to run a commit flow report
             -vara-report-outfile=<path>: specify the path to store the results
         """
-        if not self.obj:
-            return actions.StepResult.ERROR
-        project = self.obj
-
         if self.__interaction_filter_experiment_name is None:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
                     experiment="CommitReportExperiment",
-                    project=str(project.name)
+                    project=str(self.project.name)
                 )
             )
         else:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
                     experiment=self.__interaction_filter_experiment_name,
-                    project=str(project.name)
+                    project=str(self.project.name)
                 )
             )
             if not interaction_filter_file.is_file():
@@ -86,11 +85,11 @@ class CRAnalysis(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = get_varats_result_folder(project)
+        vara_result_folder = get_varats_result_folder(self.project)
 
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, CR, project, binary
+                self.__experiment_handle, CR, self.project, binary
             )
 
             opt_params = [
@@ -104,7 +103,9 @@ class CRAnalysis(actions.Step):  # type: ignore
                     f"{str(interaction_filter_file)}"
                 )
 
-            opt_params.append(str(get_cached_bc_file_path(project, binary)))
+            opt_params.append(
+                str(get_cached_bc_file_path(self.project, binary))
+            )
 
             run_cmd = opt[opt_params]
 
@@ -115,7 +116,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                 timeout[timeout_duration, run_cmd],
                 create_default_analysis_failure_handler(
                     self.__experiment_handle,
-                    project,
+                    self.project,
                     CR,
                     timeout_duration=timeout_duration
                 )
