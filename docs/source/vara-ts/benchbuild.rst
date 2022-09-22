@@ -107,8 +107,8 @@ Configuring the Container Support
 
 To use BenchBuild's container support, you first need to setup `buildah <https://github.com/containers/buildah/blob/master/install.md>`_ and `podman <https://podman.io/getting-started/installation>`_ on your system.
 Please follow their install instructions on how to setup both tools.
-We highly recommend to use buildah and podman in rootless mode.
-Keep in mind that you have to set up a subuid and subgid mapping on all machines and for all users that need to run containers.
+We highly recommend to use buildah and podman in rootless mode, which requires a subuid and subgid mapping on all machines and for all users that need to run containers.
+More details can be found `here <https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md>`_.
 You also need to install `crun` on those machines.
 For debian, this can be don with the following command::
 

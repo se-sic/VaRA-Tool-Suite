@@ -15,6 +15,8 @@ import varats.experiment.experiment_util as EU
 from tests.test_helper import BBTestSource
 from tests.test_utils import run_in_test_environment
 from varats.data.reports.commit_report import CommitReport as CR
+from varats.project.project_util import BinaryType, ProjectBinaryWrapper
+from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import TimeReport
 from varats.report.report import FileStatusExtension, ReportSpecification
 from varats.utils.git_util import ShortCommitHash
@@ -98,6 +100,7 @@ class TestVersionExperiment(unittest.TestCase):
     """Test VersionExperiments sampling behaviour."""
 
     tmp_path: tempfile.TemporaryDirectory
+    vers_expr: MockExperiment
 
     @classmethod
     def setUpClass(cls):
@@ -158,7 +161,7 @@ class TestVersionExperiment(unittest.TestCase):
         self.assertEqual(len(sample_gen), 1)
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_whitelisting_one(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -176,7 +179,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_whitelisting_many(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -198,7 +201,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_blacklisting_one(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -219,7 +222,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_blacklisting_many(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -240,7 +243,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_white_overwrite_blacklisting(self, mock_get_tagged_revisions):
         """Test if whitelist overwrites blacklist."""
         self.prepare_vara_config(vara_cfg())
@@ -257,6 +260,68 @@ class TestVersionExperiment(unittest.TestCase):
         self.assertEqual(sample_gen[0]["test_source"].version, "rev4000000")
         self.assertEqual(len(sample_gen), 1)
         mock_get_tagged_revisions.assert_called()
+
+    @run_in_test_environment()
+    def test_create_success_result_filepath(self):
+        """Checks if we correctly create new success result files."""
+        new_res_file = EU.create_new_success_result_filepath(
+            self.vers_expr.get_handle(), CR, tp.cast(VProject, BBTestProject()),
+            ProjectBinaryWrapper("foo", Path("bar/foo"), BinaryType.EXECUTABLE)
+        )
+
+        self.assertTrue(new_res_file.base_path.exists())
+
+        report_filename = new_res_file.report_filename
+        self.assertEqual(
+            report_filename.file_status, FileStatusExtension.SUCCESS
+        )
+        self.assertEqual(report_filename.config_id, None)
+
+    @run_in_test_environment()
+    def test_create_failed_result_filepath(self):
+        """Checks if we correctly create new failed result files."""
+        new_res_file = EU.create_new_failed_result_filepath(
+            self.vers_expr.get_handle(), CR, tp.cast(VProject, BBTestProject()),
+            ProjectBinaryWrapper("foo", Path("bar/foo"), BinaryType.EXECUTABLE)
+        )
+
+        self.assertTrue(new_res_file.base_path.exists())
+
+        report_filename = new_res_file.report_filename
+        self.assertEqual(
+            report_filename.file_status, FileStatusExtension.FAILED
+        )
+        self.assertEqual(report_filename.config_id, None)
+
+    @run_in_test_environment()
+    def test_create_success_result_filepath_config(self):
+        """Checks if we correctly create new success config-specific result
+        files."""
+        new_res_file = EU.create_new_success_result_filepath(
+            self.vers_expr.get_handle(), CR, tp.cast(VProject, BBTestProject()),
+            ProjectBinaryWrapper("foo", Path("bar/foo"), BinaryType.EXECUTABLE),
+            42
+        )
+
+        self.assertTrue(new_res_file.base_path.exists())
+
+        report_filename = new_res_file.report_filename
+        self.assertEqual(
+            report_filename.file_status, FileStatusExtension.SUCCESS
+        )
+        self.assertEqual(report_filename.config_id, 42)
+        self.assertTrue((
+            new_res_file.base_path / Path(
+                "mock-CR-test_empty-foo-rev1000000_"
+                f"{report_filename.uuid}"
+            )
+        ).exists())
+        self.assertTrue((
+            new_res_file.base_path / Path(
+                "mock-CR-test_empty-foo-rev1000000_"
+                f"{report_filename.uuid}"
+            )
+        ).is_dir())
 
 
 class TestZippedReportFolder(unittest.TestCase):

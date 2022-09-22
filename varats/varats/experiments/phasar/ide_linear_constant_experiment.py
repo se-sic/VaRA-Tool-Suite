@@ -17,13 +17,13 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
+    create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
@@ -47,35 +47,24 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
             return actions.StepResult.ERROR
         project = self.obj
 
-        # Add to the user-defined path for saving the results of the
-        # analysis also the name and the unique id of the project of every
-        # run.
-        varats_result_folder = get_varats_result_folder(project)
-
         phasar = local["phasar-llvm"]
         for binary in project.binaries:
             bc_file = get_cached_bc_file_path(project, binary)
 
-            result_file = self.__experiment_handle.get_file_name(
-                EmptyReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filepath(
+                self.__experiment_handle, EmptyReport, project, binary
             )
 
             phasar_params = ["-m", bc_file, "-C", "CHA", "-D", "ide-lca"]
 
             run_cmd = wrap_unlimit_stack_size(phasar[phasar_params])
 
-            run_cmd = (run_cmd > f'{varats_result_folder}/{result_file}')
+            run_cmd = (run_cmd > f'{result_file}')
 
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, EmptyReport,
-                    Path(varats_result_folder)
+                    self.__experiment_handle, project, EmptyReport
                 )
             )
 

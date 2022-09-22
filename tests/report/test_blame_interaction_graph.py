@@ -11,6 +11,9 @@ from varats.data.reports.blame_interaction_graph import (
     get_author_data,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
@@ -35,9 +38,12 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         load_paper_config()
 
         revision = newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies("xz")[0], BlameReport
+            get_paper_config().get_case_studies("xz")[0], BlameReportExperiment
         )
-        blame_interaction_graph = create_blame_interaction_graph("xz", revision)
+        assert revision
+        blame_interaction_graph = create_blame_interaction_graph(
+            "xz", revision, BlameReportExperiment
+        )
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")
 
@@ -63,8 +69,9 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         load_paper_config()
 
         revision = newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies("xz")[0], BlameReport
+            get_paper_config().get_case_studies("xz")[0], BlameReportExperiment
         )
+        assert revision
         blame_interaction_graph = create_file_based_interaction_graph(
             "xz", revision
         )
@@ -93,9 +100,12 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         load_paper_config()
 
         revision = newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies("xz")[0], BlameReport
+            get_paper_config().get_case_studies("xz")[0], BlameReportExperiment
         )
-        blame_interaction_graph = create_blame_interaction_graph("xz", revision)
+        assert revision
+        blame_interaction_graph = create_blame_interaction_graph(
+            "xz", revision, BlameReportExperiment
+        )
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")
 
