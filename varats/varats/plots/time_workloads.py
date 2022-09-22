@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
