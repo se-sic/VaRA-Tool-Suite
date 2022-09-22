@@ -57,21 +57,16 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             return actions.StepResult.ERROR
         project = self.obj
 
-        # Add to the user-defined path for saving the results of the
-        # analysis also the name and the unique id of the project of every
-        # run.
-        vara_result_folder = get_varats_result_folder(project)
-
         for binary in project.binaries:
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, BR, project, binary
             )
 
             opt_params = [
-                "-vara-BD", "-vara-BR", "-vara-init-commits",
-                "-vara-use-phasar",
+                "-enable-new-pm=0", "-vara-BD", "-vara-BR",
+                "-vara-init-commits", "-vara-use-phasar",
                 f"-vara-blame-taint-scope={self.__blame_taint_scope.name}",
-                f"-vara-report-outfile={vara_result_folder}/{result_file}",
+                f"-vara-report-outfile={result_file.full_path()}",
                 get_cached_bc_file_path(
                     project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
