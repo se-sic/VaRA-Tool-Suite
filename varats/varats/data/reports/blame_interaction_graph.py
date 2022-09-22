@@ -376,6 +376,7 @@ class BlameInteractionGraph(InteractionGraph):
 
 
 class BlameInteractionGraphDiff():
+    """Graph/Network built from blame interaction data diff."""
 
     def __init__(
         self, project_name: str, old_report_file: ReportFilepath,
@@ -388,6 +389,22 @@ class BlameInteractionGraphDiff():
         self.__cached_interaction_graph: tp.Optional[nx.MultiDiGraph] = None
 
     def blame_interaction_graph(self) -> nx.MultiDiGraph:
+        """
+        Return a digraph with blame data as nodes and interactions as edges.
+
+        Nodes can be referenced via their
+        :class:`~varats.data.reports.blame_report.BlameTaintData`.
+        The graph has the following attributes:
+        Nodes:
+          - blame_taint_data: BlameTaintData for this node
+          - diff_type: whether this node was added, deleted, or unchanged
+        Edges:
+          - amount: how often this interaction was found
+          - diff_type: whether this edge was added, deleted, or unchanged
+
+        Returns:
+            the blame interaction graph diff
+        """
 
         def create_graph() -> nx.MultiDiGraph:
             old_report = load_blame_report(self.__old_report_file.full_path())
@@ -489,19 +506,6 @@ class BlameInteractionGraphDiff():
                 f"{old_filename.commit_hash.hash}", create_graph
             )
         return self.__cached_interaction_graph
-
-    def commit_interaction_graph(self) -> nx.DiGraph:
-        raise NotImplementedError
-
-    def author_interaction_graph(self) -> nx.DiGraph:
-        raise NotImplementedError
-
-    def commit_author_interaction_graph(
-        self,
-        outgoing_interactions: bool = True,
-        incoming_interactions: bool = False
-    ) -> nx.DiGraph:
-        raise NotImplementedError
 
 
 class FileBasedInteractionGraph(InteractionGraph):
