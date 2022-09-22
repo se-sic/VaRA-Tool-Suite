@@ -1,10 +1,13 @@
 """"""
+import os
 import typing as tp
+from enum import Enum
+from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import iteridebenchmark, time
+from benchbuild.utils.cmd import iteridebenchmark, phasar_llvm, time
 
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import (
@@ -17,6 +20,7 @@ from varats.experiment.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
+    ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import (
     BCFileExtensions,
@@ -24,46 +28,113 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class IterIDEBasicStats(actions.Step):  # type: ignore
+class AnalysisType(Enum):
+
+    value: str
+
+    TYPE_STATE = "typestate"
+    TAINT = "taint"
+    LCA = "lca"
+
+    @staticmethod
+    def convert_from(value: str) -> tp.List['AnalysisType']:
+        enabled_analysis_types = []
+        for analysis_type in AnalysisType:
+            if analysis_type.value in value:
+                enabled_analysis_types.append(analysis_type)
+
+        return enabled_analysis_types
+
+    def __str__(self) -> str:
+        return f"{self.value}"
+
+
+def _get_enabled_analyses() -> tp.List[AnalysisType]:
+    """Allows overriding of analyses run by an experiment, this should only be
+    used for testing purposes, as the experiment will not generate all the
+    required results."""
+    env_analysis_selection = os.getenv("PHASAR_ANALYSIS")
+    if env_analysis_selection:
+        return AnalysisType.convert_from(env_analysis_selection)
+
+    return [at for at in AnalysisType]
+
+
+class IterIDEBasicStats(actions.ProjectStep):  # type: ignore
+
+    NAME = "OldIDESolver"
+    DESCRIPTION = "Analyses old IDESolver"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        phasar_params = [
+            "--old", "-D",
+            str(self.__analysis_type), "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = iteridebenchmark[phasar_params]
+
+        result_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}.txt"
+        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+
+        run_cmd()
+
+        return actions.StepResult.OK
+
+
+class PhasarIDEStats(actions.ProjectStep):  # type: ignore
 
     NAME = "EmptyAnalysis"
     DESCRIPTION = "Analyses nothing."
 
-    obj: VProject
+    project: VProject
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.analyze)
-        self.__experiment_handle = experiment_handle
+    def __init__(self, project: Project, binary: ProjectBinaryWrapper):
+        super().__init__(project=project)
+        self.__binary = binary
 
-    def analyze(self) -> None:
-        for binary in self.obj.binaries:
-            result_file = create_new_success_result_filepath(
-                self.__experiment_handle, EmptyReport, self.obj, binary
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.compute_stats(tmp_dir)
+
+    def compute_stats(self, tmp_dir: Path) -> None:
+        phasar_params = [
+            "-S", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
             )
+        ]
 
-            phasar_params = [
-                "--old", "-D", "lca", "-m",
-                get_cached_bc_file_path(
-                    self.obj, binary,
-                    [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
-                )
-            ]
+        phasar_cmd = phasar_llvm[phasar_params]
 
-            phasar_cmd = iteridebenchmark[phasar_params]
+        result_file = tmp_dir / "phasar_bc_stats.txt"
+        run_cmd = phasar_cmd > str(result_file)
 
-            run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+        run_cmd()
 
-            exec_func_with_pe_error_handler(
-                run_cmd,
-                create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.obj,
-                    self.__experiment_handle.report_spec().main_report
-                )
-            )
+        return actions.StepResult.OK
 
 
 class IDELinearConstantAnalysisExperiment(
@@ -105,6 +176,12 @@ class IDELinearConstantAnalysisExperiment(
             BCFileExtensions.TBAA,
         ]
 
+        # Only consider the main/first binary
+        binary = project.binaries[0]
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), EmptyReport, project, binary
+        )
+
         analysis_actions = []
 
         analysis_actions += get_bc_cache_actions(
@@ -115,7 +192,16 @@ class IDELinearConstantAnalysisExperiment(
             )
         )
 
-        analysis_actions.append(IterIDEBasicStats(project, self.get_handle()))
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_file, [
+                    PhasarIDEStats(project, binary), *[
+                        IterIDEBasicStats(project, 0, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
+                    ]
+                ]
+            )
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
