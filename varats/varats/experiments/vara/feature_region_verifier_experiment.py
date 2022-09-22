@@ -79,7 +79,7 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
             )
 
             opt_params = [
-                "-vara-PTFD", "-vara-PTFDD", "-vara-FR-verifier", "--vara-verifier-options=Status", "-o", "/dev/null",
+                "-enable-new-pm=0", "-vara-PTFD", "-vara-feature-structure-based", "-vara-PTFDD", "-vara-FR-verifier", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
@@ -97,7 +97,7 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, FRR, Path(vara_result_folder)
+                    self.__experiment_handle, project, FRR, vara_result_folder
                 )
             )
         return actions.StepResult.OK
