@@ -1017,39 +1017,3 @@ def get_interacting_commits_for_commit(
                 in_commits.add(interaction.base_taint.commit)
 
     return in_commits, out_commits
-
-
-def get_largest_commit_interaction_paths(
-    report: BlameReport
-) -> tp.List[tp.Set[BlameTaintData]]:
-    """
-    Compute sets of commits that contain commits from maximal commit interaction
-    paths.
-
-    That is, take all commit interaction paths (cs, base)
-
-    Args:
-        report: blame report to take commit interaction paths from
-
-    Returns:
-        a list of sets with maximal commit interaction paths
-    """
-    all_cips: tp.List[tp.Set[BlameTaintData]] = []
-    for func_entry in report.function_entries:
-        for cip in func_entry.interactions:
-            btd = set(cip.interacting_taints)
-            btd.add(cip.base_taint)
-            all_cips.append(btd)
-
-    all_cips.sort(key=len)
-    maximal_cips: tp.List[tp.Set[BlameTaintData]] = []
-    for i, cip in enumerate(all_cips):
-        is_maximum = True
-        for bigger_cip in all_cips[(i + 1):]:
-            if cip.issubset(bigger_cip):
-                is_maximum = False
-                break
-        if is_maximum:
-            maximal_cips.append(cip)
-
-    return maximal_cips
