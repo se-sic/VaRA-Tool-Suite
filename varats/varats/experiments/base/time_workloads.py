@@ -62,7 +62,6 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
-                    print(f"{run_cmd=}")
                     run_cmd()
 
         return actions.StepResult.OK
