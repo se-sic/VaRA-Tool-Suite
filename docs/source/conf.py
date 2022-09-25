@@ -83,6 +83,10 @@ add_module_names = True
 import pandas  # isort:skip
 import numpy.typing as npt  # isort:skip
 
+# The _typeshed module is not available during docs build, hence, we import
+# modules that require this module before setting the type checking flag.
+import scipy.stats  # isort:skip
+
 # The autodocs typehints plugin does not resolve circular imports caused by type
 # annotations, so we have to manually break the circles.
 import rich.console  # isort:skip
@@ -94,9 +98,10 @@ import typing as tp  # isort:skip
 
 tp.TYPE_CHECKING = True
 import varats.mapping.commit_map  # isort:skip
+import varats.containers.containers  # isort:skip
+import varats.experiment.experiment_util  # isort:skip
 import varats.plot.plot  # isort:skip
 import varats.table.table  # isort:skip
-import varats.containers.containers  # isort:skip
 
 tp.TYPE_CHECKING = False
 

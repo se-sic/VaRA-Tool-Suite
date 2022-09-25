@@ -5,7 +5,7 @@ import typing as tp
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib import axes, style
+from matplotlib import axes
 
 from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
@@ -140,8 +140,6 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
     NAME = 'b_lorenz_curve'
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
-
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
         commit_map = get_commit_map(project_name)
@@ -365,8 +363,6 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
     NAME = 'b_gini_overtime'
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
-
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         project_name = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)

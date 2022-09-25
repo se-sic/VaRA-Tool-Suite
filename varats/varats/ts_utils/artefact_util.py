@@ -1,6 +1,9 @@
 """Utility functions for working with artefacts."""
 import typing as tp
 
+from benchbuild.experiment import ExperimentRegistry
+
+from varats.experiment.experiment_util import VersionExperiment
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.report.report import BaseReport
@@ -58,6 +61,31 @@ class ReportTypeConverter(CLIOptionConverter[tp.Type[BaseReport]]):
         if isinstance(str_value, tp.List):
             raise ValueError("Conversion for lists not implemented.")
         return BaseReport.REPORT_TYPES[str_value]
+
+
+class ExperimentTypeConverter(CLIOptionConverter[tp.Type[VersionExperiment]]):
+    """CLI option converter for experiments."""
+
+    @staticmethod
+    def value_to_string(
+        value: tp.Union[tp.Type[VersionExperiment],
+                        tp.List[tp.Type[VersionExperiment]]]
+    ) -> tp.Union[str, tp.List[str]]:
+        if isinstance(value, tp.List):
+            raise ValueError("Conversion for lists not implemented.")
+        return str(value.NAME)
+
+    @staticmethod
+    def string_to_value(
+        str_value: tp.Union[str, tp.List[str]]
+    ) -> tp.Union[tp.Type[VersionExperiment],
+                  tp.List[tp.Type[VersionExperiment]]]:
+        if isinstance(str_value, tp.List):
+            raise ValueError("Conversion for lists not implemented.")
+        return tp.cast(
+            tp.Type[VersionExperiment],
+            ExperimentRegistry.experiments[str_value]
+        )
 
 
 def convert_kwargs(

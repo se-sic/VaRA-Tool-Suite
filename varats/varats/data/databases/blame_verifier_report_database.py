@@ -12,6 +12,10 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOptTBAA,
     BlameVerifierReportOpt,
 )
+from varats.experiments.vara.blame_verifier_experiment import (
+    BlameVerifierReportExperimentOpt,
+    BlameVerifierReportExperimentNoOptTBAA,
+)
 from varats.jupyterhelper.file import (
     load_blame_verifier_report_no_opt_tbaa,
     load_blame_verifier_report_opt,
@@ -124,25 +128,29 @@ class BlameVerifierReportDatabase(
             )
 
         report_files_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportOpt,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentOpt,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         report_files_no_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportNoOptTBAA,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentNoOptTBAA,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         report_files = report_files_opt + report_files_no_opt
 
         failed_report_files_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportOpt,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentOpt,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files_no_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportNoOptTBAA,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentNoOptTBAA,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = \

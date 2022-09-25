@@ -18,6 +18,7 @@ from varats.data.reports.blame_report import BlameReport
 from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import load_case_study_from_file, CaseStudy
 from varats.projects.discover_projects import initialize_projects
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions
 from varats.utils.git_util import ShortCommitHash
 
@@ -25,7 +26,7 @@ from varats.utils.git_util import ShortCommitHash
 class TestBlameDiffMetricsUtils(unittest.TestCase):
     """Test functions to create blame diff dependent databases."""
 
-    br_paths_list: tp.List[Path]
+    br_paths_list: tp.List[ReportFilepath]
     case_study: CaseStudy
     commit_map: CommitMap
 
@@ -35,27 +36,51 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         commit map."""
 
         initialize_projects()
-
+        base_dir_xz = TEST_INPUTS_DIR / Path('results/xz/')
+        base_dir_twolibs = TEST_INPUTS_DIR / Path(
+            'results/TwoLibsOneProjectInteractionDiscreteLibsSingleProject/'
+        )
         cls.br_paths_list = [
-            TEST_INPUTS_DIR / Path(
-                "results/xz/BRE-BR-xz-xz-2f0bc9cd40"
-                "_9e238675-ee7c-4325-8e9f-8ccf6fd3f05c_success.yaml"
-            ), TEST_INPUTS_DIR / Path(
-                "results/xz/BRE-BR-xz-xz-c5c7ceb08a"
-                "_77a6c5bc-e5c7-4532-8814-70dbcc6b5dda_success.yaml"
-            ), TEST_INPUTS_DIR / Path(
-                "results/xz/BRE-BR-xz-xz-ef364d3abc"
-                "_feeeecb2-1826-49e5-a188-d4d883f06d00_success.yaml"
-            ), TEST_INPUTS_DIR / Path(
-                "results/TwoLibsOneProjectInteractionDiscreteLibsSingleProject/"
-                "BRE-BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
-                "elementalist-5e8fe1616d_11ca651c-2d41-42bd-aa4e-8c37ba67b75f"
-                "_success.yaml"
-            ), TEST_INPUTS_DIR / Path(
-                "results/TwoLibsOneProjectInteractionDiscreteLibsSingleProject/"
-                "BRE-BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
-                "elementalist-e64923e69e_0b22c10c-4adb-4885-b3d2-416749b53aa8"
-                "_success.yaml"
+            ReportFilepath(
+                base_dir_xz,
+                ReportFilename(
+                    "BRE-BR-xz-xz-2f0bc9cd40"
+                    "_9e238675-ee7c-4325-8e9f-8ccf6fd3f05c_success.yaml"
+                )
+            ),
+            ReportFilepath(
+                base_dir_xz,
+                ReportFilename(
+                    "BRE-BR-xz-xz-c5c7ceb08a"
+                    "_77a6c5bc-e5c7-4532-8814-70dbcc6b5dda_success.yaml"
+                )
+            ),
+            ReportFilepath(
+                base_dir_xz,
+                ReportFilename(
+                    "BRE-BR-xz-xz-ef364d3abc"
+                    "_feeeecb2-1826-49e5-a188-d4d883f06d00_success.yaml"
+                )
+            ),
+            ReportFilepath(
+                base_dir_twolibs,
+                ReportFilename(
+                    "BRE-BR-TwoLibsOneProjectInteractionDiscreteLibs"
+                    "SingleProject-"
+                    "elementalist-5e8fe1616d_"
+                    "11ca651c-2d41-42bd-aa4e-8c37ba67b75f"
+                    "_success.yaml"
+                )
+            ),
+            ReportFilepath(
+                base_dir_twolibs,
+                ReportFilename(
+                    "BRE-BR-TwoLibsOneProjectInteractionDiscreteLibs"
+                    "SingleProject-"
+                    "elementalist-e64923e69e_"
+                    "0b22c10c-4adb-4885-b3d2-416749b53aa8"
+                    "_success.yaml"
+                )
             )
         ]
 
@@ -104,7 +129,7 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         files are correctly returned as tuple."""
 
         mock_result_files: tp.Dict[ShortCommitHash,
-                                   tp.List[Path]] = defaultdict(list)
+                                   tp.List[ReportFilepath]] = defaultdict(list)
         mock_result_files[ShortCommitHash("5e8fe1616d")
                          ] = [self.br_paths_list[3]]
         mock_result_files[ShortCommitHash("e64923e69e")
@@ -116,7 +141,7 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
             self.case_study.project_name, self.case_study
         )
 
-        successful_revisions: tp.Dict[ShortCommitHash, Path] = {
+        successful_revisions: tp.Dict[ShortCommitHash, ReportFilepath] = {
             ShortCommitHash('5e8fe1616d'): self.br_paths_list[3],
             ShortCommitHash('e64923e69e'): self.br_paths_list[4],
         }
@@ -141,10 +166,11 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
             self.case_study.project_name, self.commit_map, self.case_study
         )
 
-        mock_report_pairs_list: tp.List[tp.Tuple[Path, Path]] = [
-            (self.br_paths_list[3], self.br_paths_list[4])
-        ]
-        mock_failed_report_pairs_list: tp.List[tp.Tuple[Path, Path]] = []
+        mock_report_pairs_list: tp.List[tp.Tuple[
+            ReportFilepath,
+            ReportFilepath]] = [(self.br_paths_list[3], self.br_paths_list[4])]
+        mock_failed_report_pairs_list: tp.List[tp.Tuple[ReportFilepath,
+                                                        ReportFilepath]] = []
 
         self.assertEqual(
             report_pairs_tuple,

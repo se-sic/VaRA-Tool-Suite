@@ -290,9 +290,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """Upgrade the research tool to a newer version."""
         new_version = self.find_highest_sub_prj_version("vara-llvm-project")
 
-        if new_version != (
+        # The vara-llvm-project dev branch is always one major version ahead
+        # from the latest VaRA release tag, hence, their difference is 10.
+        if new_version - (
             math.ceil(self.find_highest_sub_prj_version("VaRA") / 10) * 10
-        ):
+        ) != 10:
             raise AssertionError("vara-llvm-project and vara tool out of sync.")
 
         if str(vara_cfg()["vara"]["version"]) != str(new_version):
