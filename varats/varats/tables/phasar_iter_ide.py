@@ -130,9 +130,17 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
 
         print(df)
 
-        style = df.style
+        memory_limit = 30000  # mbytes
+
+        style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
+            style.highlight_between(
+                left=memory_limit,
+                props='cellcolor:{red};',
+                subset=[('Typestate', 'Mem (mbytes)'),
+                        ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
+            )
             # df.style.format('j')
             kwargs["column_format"] = "lr|crr|rr|rr|rr"
             kwargs["multicol_align"] = "c|"
