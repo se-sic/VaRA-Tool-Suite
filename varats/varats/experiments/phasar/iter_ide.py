@@ -119,8 +119,13 @@ class PhasarIDEStats(actions.ProjectStep):  # type: ignore
         return self.compute_stats(tmp_dir)
 
     def compute_stats(self, tmp_dir: Path) -> None:
+        if self.__binary.type.is_library:
+            extra_lib_params = ["--entry-points", "__ALL__"]
+        else:
+            extra_lib_params = []
+
         phasar_params = [
-            "-S", "-m",
+            "-S", *extra_lib_params, "-m",
             get_cached_bc_file_path(
                 self.project, self.__binary,
                 [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
