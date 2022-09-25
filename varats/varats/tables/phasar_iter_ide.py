@@ -1,5 +1,6 @@
 import typing as tp
 
+import numpy as np
 import pandas as pd
 
 from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
@@ -18,6 +19,10 @@ from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc
+
+
+def from_kbytes_to_mbytes(kbytes: int) -> int:
+    return kbytes / 1000
 
 
 class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
@@ -51,6 +56,30 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                         "Stats file was not present in the report."
                     )
 
+                typestate_time = np.nan
+                typestate_mem = np.nan
+                if report.old_typestate:
+                    typestate_time = report.old_typestate.wall_clock_time\
+                        .total_seconds()
+                    typestate_mem = from_kbytes_to_mbytes(
+                        report.old_typestate.max_res_size
+                    )
+
+                taint_time = np.nan
+                taint_mem = np.nan
+                if report.old_taint:
+                    taint_time = report.old_taint.wall_clock_time.total_seconds(
+                    )
+                    taint_mem = from_kbytes_to_mbytes(
+                        report.old_taint.max_res_size
+                    )
+
+                lca_time = np.nan
+                lca_mem = np.nan
+                if report.old_lca:
+                    lca_time = report.old_lca.wall_clock_time.total_seconds()
+                    lca_mem = from_kbytes_to_mbytes(report.old_lca.max_res_size)
+
                 cs_dict = {
                     project_name: {
                         "Revision":
@@ -62,6 +91,18 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                             calc_repo_loc(project_repo, rev_range),
                         "IR-LOC":
                             report.basic_bc_stats.num_instructions,
+                        "Typestate-T":
+                            typestate_time,
+                        "Typestate-M":
+                            typestate_mem,
+                        "Taint-T":
+                            taint_time,
+                        "Taint-M":
+                            taint_mem,
+                        "LCA-T":
+                            lca_time,
+                        "LCA-M":
+                            lca_mem,
                     }
                 }
 
@@ -71,17 +112,39 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             raise TableDataEmpty()
 
         df = pd.concat(cs_data).sort_index()
+        print(df)
+        print(df.columns)
 
+        df.columns = pd.MultiIndex.from_tuples([
+            ('', 'Revision'),
+            ('', 'Domain'),
+            ('', 'LOC'),
+            ('', 'IR-LOC'),
+            ('Typestate', 'Time (s)'),
+            ('Typestate', 'Mem (mbytes)'),
+            ('Taint', 'Time (s)'),
+            ('Taint', 'Mem (mbytes)'),
+            ('LCA', 'Time (s)'),
+            ('LCA', 'Mem (mbytes)'),
+        ])
+
+        print(df)
+
+        style = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = "c"
-            kwargs["multicol_align"] = "c"
+            # df.style.format('j')
+            kwargs["column_format"] = "lr|crr|rr|rr|rr"
+            kwargs["multicol_align"] = "c|"
+            # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
             kwargs["caption"] = ("Foo")
+            style.format(precision=2)
 
         return dataframe_to_table(
             df,
             table_format,
+            style,
             wrap_table=wrap_table,
             wrap_landscape=True,
             **kwargs
