@@ -138,7 +138,9 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
-            kwargs["caption"] = ("Foo")
+            kwargs[
+                "caption"
+            ] = """On the left, we see all evaluted projectes with additional information, such as, revision we analyzed, the amount of C/C++ code. The three columns on the right show time and memory consumption of the benchmarked analyses utilizing the current version of the IDE solver."""
             style.format(precision=2)
 
         return dataframe_to_table(
