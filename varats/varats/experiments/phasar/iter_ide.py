@@ -8,6 +8,7 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import iteridebenchmark, phasar_llvm, time
+from plumbum import RETCODE
 
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import (
@@ -99,7 +100,9 @@ class IterIDEBasicStats(actions.ProjectStep):  # type: ignore
         result_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}.txt"
         run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        run_cmd()
+        ret_code = run_cmd & RETCODE
+        if ret_code == 137:
+            print("Found OOM")
 
         return actions.StepResult.OK
 
