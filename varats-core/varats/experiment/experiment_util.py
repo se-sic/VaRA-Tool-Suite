@@ -460,6 +460,9 @@ class ZippedReportFolder(TempDir):
         super().__init__()
         self.__result_report_name: Path = result_report_path.with_suffix('')
 
+    def __enter__(self) -> Path:
+        return Path(super().__enter__())
+
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],
         exc_value: tp.Optional[BaseException],

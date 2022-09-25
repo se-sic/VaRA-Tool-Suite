@@ -1,6 +1,7 @@
 """Small helper methods that implement common functionalities."""
 
 import typing as tp
+from itertools import tee
 
 FunctionType = tp.TypeVar("FunctionType")
 
@@ -22,3 +23,13 @@ def static_vars(**kwargs) -> tp.Any:
         return func
 
     return add_static_vars
+
+
+T = tp.TypeVar('T')
+
+
+# Forward port of itertools.pairwise
+def pairwise(iterable: tp.Iterable[T]) -> tp.Iterable[tp.Tuple[T, T]]:
+    first_iter, second_iter = tee(iterable)
+    next(second_iter, None)
+    return zip(first_iter, second_iter)

@@ -85,6 +85,7 @@ def create_new_bb_config(
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
         '.two_libs_one_project_interaction_discrete_libs_single_project'
     ]
+
     if include_test_projects:
         projects_conf.value[:] += [
             'varats.projects.test_projects.basic_tests',
@@ -93,7 +94,8 @@ def create_new_bb_config(
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.test_suite',
-            'varats.projects.perf_tests.feature_perf_cs_collection'
+            'varats.projects.perf_tests.feature_perf_cs_collection',
+            'varats.projects.test_projects.commit_inc_scenarios'
         ]
 
     # Experiments for VaRA
@@ -110,6 +112,7 @@ def create_new_bb_config(
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.phasar.incremental_analysis',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',

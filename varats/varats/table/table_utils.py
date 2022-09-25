@@ -10,7 +10,10 @@ from varats.table.tables import TableFormat
 
 
 def wrap_table_in_latex_document(
-    table: str, landscape: bool = False, margin: float = 1.5
+    table: str,
+    landscape: bool = False,
+    margin: float = 1.5,
+    document_decorator: tp.Callable[[Document], None] = lambda x: x
 ) -> str:
     """
     Wraps a table inside a proper latex document.
@@ -39,6 +42,7 @@ def wrap_table_in_latex_document(
         Package("hyperref"),
         Package("longtable"),
         Package("multirow"),
+        Package('multicol'),
         Package("xcolor", options=["table"]),
     ])
 
@@ -46,6 +50,8 @@ def wrap_table_in_latex_document(
 
     # embed latex table inside document
     doc.append(NoEscape(table))
+
+    document_decorator(doc)
 
     return tp.cast(str, doc.dumps())
 
@@ -56,6 +62,7 @@ def dataframe_to_table(
     style: tp.Optional["pd.io.formats.style.Styler"] = None,
     wrap_table: bool = False,
     wrap_landscape: bool = False,
+    document_decorator: tp.Callable[[Document], None] = lambda x: x,
     **kwargs: tp.Any
 ) -> str:
     """
@@ -82,7 +89,9 @@ def dataframe_to_table(
     if table_format.is_latex():
         table = style.to_latex(**kwargs)
         if wrap_table:
-            table = wrap_table_in_latex_document(table, wrap_landscape)
+            table = wrap_table_in_latex_document(
+                table, wrap_landscape, document_decorator=document_decorator
+            )
 
     elif table_format.is_html():
         table = style.to_html(**kwargs)
