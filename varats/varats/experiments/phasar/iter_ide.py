@@ -10,7 +10,7 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import iteridebenchmark, phasar_llvm, time
 from plumbum import RETCODE
 
-from varats.data.reports.empty_report import EmptyReport
+from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
@@ -145,6 +145,7 @@ class PhasarIDEStats(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
+# TODO: fix wrong name
 class IDELinearConstantAnalysisExperiment(
     VersionExperiment, shorthand="IterIDE"
 ):
@@ -153,7 +154,7 @@ class IDELinearConstantAnalysisExperiment(
 
     NAME = "PhasarIterIDE"
 
-    REPORT_SPEC = ReportSpecification(EmptyReport)
+    REPORT_SPEC = ReportSpecification(PhasarIterIDEStatsReport)
 
     def actions_for_project(
         self, project: Project
@@ -175,7 +176,7 @@ class IDELinearConstantAnalysisExperiment(
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, EmptyReport
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
@@ -187,7 +188,7 @@ class IDELinearConstantAnalysisExperiment(
         # Only consider the main/first binary
         binary = project.binaries[0]
         result_file = create_new_success_result_filepath(
-            self.get_handle(), EmptyReport, project, binary
+            self.get_handle(), self.REPORT_SPEC.main_report, project, binary
         )
 
         analysis_actions = []
