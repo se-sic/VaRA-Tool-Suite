@@ -103,7 +103,8 @@ class BlameVerifierReportGeneration(actions.ProjectStep):  # type: ignore
                 timeout[timeout_duration, vara_run_cmd] >
                 f"{vara_result_folder}/{result_file}",
                 PEErrorHandler(
-                    vara_result_folder, error_file.filename, timeout_duration
+                    vara_result_folder, error_file.report_filename.filename,
+                    timeout_duration
                 )
             )
 

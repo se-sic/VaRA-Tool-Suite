@@ -1,7 +1,6 @@
 """Implements experiment for VaRA's InstrumentationPointPrinter utility pass."""
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time

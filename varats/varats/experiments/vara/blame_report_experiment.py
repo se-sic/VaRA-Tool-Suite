@@ -6,7 +6,6 @@ BlameReport.
 """
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -89,7 +88,7 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, BR
+                    self.__experiment_handle, self.project, BR
                 )
             )
 
