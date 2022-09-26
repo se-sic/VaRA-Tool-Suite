@@ -62,7 +62,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                     continue
 
                 if line.startswith("Elapsed (wall clock) time"):
-                    self.__wall_clock_time: timedelta = \
+                    self.Def: timedelta = \
                         TimeReport._parse_wall_clock_time(line)
                     continue
 
