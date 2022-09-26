@@ -130,7 +130,7 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
 
         print(df)
 
-        memory_limit = 30000  # mbytes
+        memory_limit = 100000  # mbytes
 
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
@@ -148,7 +148,9 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             kwargs['position'] = 't'
             kwargs[
                 "caption"
-            ] = """On the left, we see all evaluted projectes with additional information, such as, revision we analyzed, the amount of C/C++ code. The three columns on the right show time and memory consumption of the benchmarked analyses utilizing the current version of the IDE solver."""
+            ] = f"""On the left, we see all evaluted projectes with additional information, such as, revision we analyzed, the amount of C/C++ code.
+The three columns on the right show time and memory consumption of the benchmarked analyses utilizing the current version of the IDE solver.
+The red cells indicate that our memory limit of {memory_limit} mbytes was exceeded."""
             style.format(precision=2)
 
         return dataframe_to_table(
