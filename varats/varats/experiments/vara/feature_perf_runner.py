@@ -25,7 +25,7 @@ from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReport
 
 
-class ExecAndTraceBinary(actions.MultiStep):  # type: ignore
+class ExecAndTraceBinary(actions.ProjectStep):  # type: ignore
     """Executes the specified binaries of the project, in specific
     configurations, against one or multiple workloads."""
 
@@ -36,8 +36,11 @@ class ExecAndTraceBinary(actions.MultiStep):  # type: ignore
     project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(project=project, action_fn=self.run_perf_tracing)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.run_perf_tracing()
 
     def run_perf_tracing(self) -> actions.StepResult:
         """Execute the specified binaries of the project, in specific

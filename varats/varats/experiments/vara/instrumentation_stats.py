@@ -31,7 +31,7 @@ from varats.report.report import ReportSpecification
 from varats.tools.research_tools.vara import VaRA
 
 
-class CaptureInstrumentationStats(actions.MultiStep):  # type: ignore
+class CaptureInstrumentationStats(actions.ProjectStep):  # type: ignore
     """Executes each binary and collects runtime statistics about
     instrumentation using VaRA's USDT probes and a bpftrace script."""
 
@@ -42,8 +42,11 @@ class CaptureInstrumentationStats(actions.MultiStep):  # type: ignore
     project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(project=project, action_fn=self.run)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.run()
 
     def run(self) -> actions.StepResult:
         """Capture instrumentation stats by running the binary with a workload

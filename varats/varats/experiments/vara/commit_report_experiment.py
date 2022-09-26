@@ -33,7 +33,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class CRAnalysis(actions.MultiStep):  # type: ignore
+class CRAnalysis(actions.ProjectStep):  # type: ignore
     """Analyse a project with VaRA and generate a Commit Report."""
 
     NAME = "CRAnalysis"
@@ -50,10 +50,13 @@ class CRAnalysis(actions.MultiStep):  # type: ignore
         experiment_handle: ExperimentHandle,
         interaction_filter_experiment_name: tp.Optional[str] = None
     ):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__interaction_filter_experiment_name = \
             interaction_filter_experiment_name
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """

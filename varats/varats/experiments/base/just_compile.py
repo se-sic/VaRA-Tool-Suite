@@ -33,8 +33,11 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
     project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""

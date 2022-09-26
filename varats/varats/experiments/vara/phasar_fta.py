@@ -38,7 +38,7 @@ from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from varats.report.report import ReportSpecification
 
 
-class PhASARFTACheck(actions.MultiStep):  # type: ignore
+class PhASARFTACheck(actions.ProjectStep):  # type: ignore
     """Analyse a project with VaRA and generate the output of the feature taint
     analysis."""
 
@@ -53,9 +53,12 @@ class PhASARFTACheck(actions.MultiStep):  # type: ignore
         experiment_handle: ExperimentHandle,
         bc_file_extensions: tp.List[BCFileExtensions],
     ):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__bc_file_extensions = bc_file_extensions
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """This step performs the actual analysis with the correct flags."""
