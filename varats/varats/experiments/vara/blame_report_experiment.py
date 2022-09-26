@@ -31,7 +31,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class BlameReportGeneration(actions.MultiStep):  # type: ignore
+class BlameReportGeneration(actions.ProjectStep):  # type: ignore
     """Analyse a project with VaRA and generate a BlameReport."""
 
     NAME = "BlameReportGeneration"
