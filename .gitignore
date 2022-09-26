@@ -19,3 +19,4 @@ build/
 docs/source/.varats.yaml
 docs/**/*.inc
 varats-core/varats/tefReportTestLocal
+varats-core/varats/LinearRegressionTestLocal
