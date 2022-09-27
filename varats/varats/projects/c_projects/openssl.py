@@ -47,6 +47,7 @@ class OpenSSL(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(OpenSSL.NAME))
 
+        binary_map.specify_binary("apps/openssl", BinaryType.EXECUTABLE)
         binary_map.specify_binary("libssl.so", BinaryType.SHARED_LIBRARY)
 
         return binary_map[revision]
