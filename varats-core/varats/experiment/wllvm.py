@@ -140,9 +140,11 @@ class Extract(actions.ProjectStep):  # type: ignore
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
         super().__init__(project=project)
-        self.__action_fn: tp.Callable[..., tp.Any] = FunctionPEErrorWrapper(
-            self.extract, handler
-        ) if handler else self.extract
+        self.__action_fn = tp.cast(
+            tp.Callable[..., tp.Any],
+            FunctionPEErrorWrapper(self.extract, handler)
+            if handler else self.extract
+        )
 
         if bc_file_extensions is None:
             bc_file_extensions = []
