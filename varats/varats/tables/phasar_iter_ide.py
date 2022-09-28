@@ -15,7 +15,7 @@ from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
 )
-from varats.report.gnu_time_report import TimeReport
+from varats.report.gnu_time_report import TimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
@@ -23,8 +23,8 @@ from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc
 
 
-def from_kbytes_to_mbytes(kbytes: int) -> int:
-    return kbytes / 1000
+def from_kbytes_to_mbytes(kbytes: float) -> float:
+    return kbytes / 1000.
 
 
 class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
@@ -61,26 +61,32 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                 typestate_time = np.nan
                 typestate_mem = np.nan
                 if report.old_typestate:
-                    typestate_time = report.old_typestate.wall_clock_time\
-                        .total_seconds()
+                    typestate_time = np.mean(
+                        report.old_typestate.measurements_wall_clock_time
+                    )
                     typestate_mem = from_kbytes_to_mbytes(
-                        report.old_typestate.max_res_size
+                        np.mean(report.old_typestate.max_resident_sizes)
                     )
 
                 taint_time = np.nan
                 taint_mem = np.nan
                 if report.old_taint:
-                    taint_time = report.old_taint.wall_clock_time.total_seconds(
+                    taint_time = np.mean(
+                        report.old_taint.measurements_wall_clock_time
                     )
                     taint_mem = from_kbytes_to_mbytes(
-                        report.old_taint.max_res_size
+                        np.mean(report.old_taint.max_resident_sizes)
                     )
 
                 lca_time = np.nan
                 lca_mem = np.nan
                 if report.old_lca:
-                    lca_time = report.old_lca.wall_clock_time.total_seconds()
-                    lca_mem = from_kbytes_to_mbytes(report.old_lca.max_res_size)
+                    lca_time = np.mean(
+                        report.old_lca.measurements_wall_clock_time
+                    )
+                    lca_mem = from_kbytes_to_mbytes(
+                        np.mean(report.old_lca.max_resident_sizes)
+                    )
 
                 cs_dict = {
                     project_name: {
@@ -214,7 +220,9 @@ class PhasarIterIDEOldVSNew(Table, table_name="phasar-iter-ide-old-new"):
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = "l|cccc|cccc|cccc|cccc|cccc|cccc|"
+            kwargs[
+                "column_format"
+            ] = "l|cccp{0.7cm}|cccp{0.7cm}|cccp{0.7cm}|cccp{0.7cm}|cccp{0.7cm}|cccp{0.7cm}|"
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
@@ -248,36 +256,59 @@ class PhasarIterIDEOldVSNew(Table, table_name="phasar-iter-ide-old-new"):
         return self.__compute_delta_comp("LCA", report.old_lca, report.new_lca)
 
     def __compute_delta_comp(
-        self, name: str, old_time_report: tp.Optional[TimeReport],
-        new_time_report: tp.Optional[TimeReport]
+        self, name: str, old_time_report: tp.Optional[TimeReportAggregate],
+        new_time_report: tp.Optional[TimeReportAggregate]
     ):
         time_old = np.nan
         time_new = np.nan
         time_speedup = np.nan
+        time_variance = np.nan
 
         memory_old = np.nan
         memory_new = np.nan
         memory_speedup = np
+        memory_variance = np.nan
 
         if old_time_report:
-            time_old = old_time_report.wall_clock_time.total_seconds()
-            memory_old = from_kbytes_to_mbytes(old_time_report.max_res_size)
+            time_old = np.mean(old_time_report.measurements_wall_clock_time)
+            memory_old = from_kbytes_to_mbytes(
+                np.mean(old_time_report.max_resident_sizes)
+            )
 
         if new_time_report:
-            time_new = new_time_report.wall_clock_time.total_seconds()
-            memory_new = from_kbytes_to_mbytes(new_time_report.max_res_size)
+            time_new = np.mean(new_time_report.measurements_wall_clock_time)
+            memory_new = from_kbytes_to_mbytes(
+                np.mean(new_time_report.max_resident_sizes)
+            )
 
         time_speedup = time_old / time_new
         memory_speedup = memory_old / memory_new
 
+        if old_time_report and new_time_report:
+            t1 = np.var(old_time_report.measurements_wall_clock_time)
+            t2 = np.var(new_time_report.measurements_wall_clock_time)
+            t1 = round(t1, 2)
+            t2 = round(t2, 2)
+            time_variance = f'{t1} | {t2}'
+            print(f"{np.var(old_time_report.max_resident_sizes)=}")
+            m1 = from_kbytes_to_mbytes(
+                np.var(old_time_report.max_resident_sizes)
+            )
+            m2 = from_kbytes_to_mbytes(
+                np.var(new_time_report.measurements_wall_clock_time)
+            )
+            m1 = round(m1, 2)
+            m2 = round(m2, 2)
+            memory_variance = f'{m1} | {m2}'
+
         return {(name, 'Time', 'Old'): time_old,
                 (name, 'Time', 'New'): time_new,
                 (name, 'Time', '$\mathcal{S}$'): time_speedup,
-                (name, 'Time', '$s^2$'): 0,
+                (name, 'Time', '$s^2$'): time_variance,
                 (name, 'Memory', 'Old'): memory_old,
                 (name, 'Memory', 'New'): memory_new,
                 (name, 'Memory', '$\mathcal{S}$'): memory_speedup,
-                (name, 'Memory', '$s^2$'): 0}
+                (name, 'Memory', '$s^2$'): memory_variance}
 
 
 class PhasarIterIDEOldVSNewGenerator(

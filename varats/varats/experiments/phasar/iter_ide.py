@@ -7,7 +7,7 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import iteridebenchmark, phasar_llvm, time
+from benchbuild.utils.cmd import iteridebenchmark, phasar_llvm, time, mkdir
 from plumbum import RETCODE
 
 from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
@@ -86,6 +86,9 @@ class IterIDETimeOld(actions.ProjectStep):  # type: ignore
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        tmp_dir /= f"old_{self.__analysis_type}"
+        mkdir("-p", tmp_dir)
+
         phasar_params = [
             "--old", "-D",
             str(self.__analysis_type), "-m",
@@ -127,6 +130,9 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        tmp_dir /= f"new_{self.__analysis_type}"
+        mkdir("-p", tmp_dir)
+
         phasar_params = [
             "-D",
             str(self.__analysis_type), "-m",
@@ -242,15 +248,19 @@ class IDELinearConstantAnalysisExperiment(
             )
         )
 
+        reps = range(0, 3)
+
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_file, [
                     PhasarIDEStats(project, binary), *[
-                        IterIDETimeOld(project, 0, binary, analysis_type)
+                        IterIDETimeOld(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
+                        for rep in reps
                     ], *[
-                        IterIDETimeNew(project, 0, binary, analysis_type)
+                        IterIDETimeNew(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
+                        for rep in reps
                     ]
                 ]
             )

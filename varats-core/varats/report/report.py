@@ -690,20 +690,27 @@ class KeyedReportAggregate(
         default_key: tp.Optional[KeyTy] = None
     ) -> None:
         super().__init__(path)
-
-        # Create a temporary directory for extraction and register finalizer,
-        # which will clean it up.
-        self.__tmpdir = TemporaryDirectory()  # pylint: disable=R1732
-        self.__finalizer = weakref.finalize(self, self.__tmpdir.cleanup)
-
-        # Extract archive and parse reports.
-        if self.path.exists():
-            shutil.unpack_archive(self.path, self.__tmpdir.name)
-
         self.__default_key = default_key
         self.__reports: tp.Dict[KeyTy, tp.List[ReportTy]] = defaultdict(list)
-        for file in Path(self.__tmpdir.name).iterdir():
-            self.__reports[key_func(file)].append(report_type(file))
+
+        if path.suffix in ('.zip',):
+            # Create a temporary directory for extraction and register finalizer,
+            # which will clean it up.
+            self.__tmpdir = TemporaryDirectory()  # pylint: disable=R1732
+            self.__finalizer = weakref.finalize(self, self.__tmpdir.cleanup)
+
+            # Extract archive and parse reports.
+            if self.path.exists():
+                shutil.unpack_archive(self.path, self.__tmpdir.name)
+
+            for file in Path(self.__tmpdir.name).iterdir():
+                self.__reports[key_func(file)].append(report_type(file))
+        else:  # assume normal dir
+            self.__tmpdir = None
+            self.__finalizer = lambda: None
+
+            for file in path.iterdir():
+                self.__reports[key_func(file)].append(report_type(file))
 
     def remove(self) -> None:
         self.__finalizer()

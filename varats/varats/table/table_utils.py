@@ -30,7 +30,7 @@ def wrap_table_in_latex_document(
     """
     doc = Document(
         documentclass="scrbook",
-        document_options="8pt,paper=a4",
+        document_options="7pt,paper=a4",
         geometry_options={
             "margin": f"{margin}cm",
             "landscape": "true" if landscape else "false"
