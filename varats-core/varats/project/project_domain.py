@@ -11,6 +11,7 @@ class ProjectDomains(Enum):
     CODEC = "Codec"
     COMPRESSION = "Compression"
     C_LIBRARY = "C Library"
+    CPP_LIBRARY = "C++ Library"
     DATABASE = "Database"
     DATA_STRUCTURES = "Data structures"
     DOCUMENTATION = "Documentation"
