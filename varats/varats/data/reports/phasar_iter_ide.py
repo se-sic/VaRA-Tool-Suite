@@ -30,12 +30,18 @@ class PhasarIterIDEStatsReport(
     _old_typestate: tp.Optional[TimeReport]
     _old_taint: tp.Optional[TimeReport]
     _old_lca: tp.Optional[TimeReport]
+    _new_typestate: tp.Optional[TimeReport]
+    _new_taint: tp.Optional[TimeReport]
+    _new_lca: tp.Optional[TimeReport]
 
     def __init__(self, path: Path) -> None:
         self._bc_stats = None
         self._old_typestate = None
         self._old_taint = None
         self._old_lca = None
+        self._new_typestate = None
+        self._new_taint = None
+        self._new_lca = None
 
         with TemporaryDirectory() as tmpdir:
             shutil.unpack_archive(path, tmpdir)
@@ -51,6 +57,12 @@ class PhasarIterIDEStatsReport(
                     self._old_taint = TimeReport(file)
                 elif file.name.startswith("old_lca"):
                     self._old_lca = TimeReport(file)
+                elif file.name.startswith("new_typestate"):
+                    self._new_typestate = TimeReport(file)
+                elif file.name.startswith("new_taint"):
+                    self._new_taint = TimeReport(file)
+                elif file.name.startswith("new_lca"):
+                    self._new_lca = TimeReport(file)
                 else:
                     print(f"Unknown file {file}!")
 
@@ -69,3 +81,15 @@ class PhasarIterIDEStatsReport(
     @property
     def old_lca(self) -> tp.Optional[TimeReport]:
         return self._old_lca
+
+    @property
+    def new_typestate(self) -> tp.Optional[TimeReport]:
+        return self._new_typestate
+
+    @property
+    def new_taint(self) -> tp.Optional[TimeReport]:
+        return self._new_taint
+
+    @property
+    def new_lca(self) -> tp.Optional[TimeReport]:
+        return self._new_lca

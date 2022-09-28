@@ -66,7 +66,7 @@ def _get_enabled_analyses() -> tp.List[AnalysisType]:
     return [at for at in AnalysisType]
 
 
-class IterIDEBasicStats(actions.ProjectStep):  # type: ignore
+class IterIDETimeOld(actions.ProjectStep):  # type: ignore
 
     NAME = "OldIDESolver"
     DESCRIPTION = "Analyses old IDESolver"
@@ -102,7 +102,48 @@ class IterIDEBasicStats(actions.ProjectStep):  # type: ignore
 
         ret_code = run_cmd & RETCODE
         if ret_code == 137:
-            print("Found OOM")
+            print("Found OOM (old)")
+
+        return actions.StepResult.OK
+
+
+class IterIDETimeNew(actions.ProjectStep):  # type: ignore
+
+    NAME = "NewIDESolver"
+    DESCRIPTION = "Analyses new IDESolver"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        phasar_params = [
+            "-D",
+            str(self.__analysis_type), "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = iteridebenchmark[phasar_params]
+
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
+        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+
+        ret_code = run_cmd & RETCODE
+        if ret_code == 137:
+            print("Found OOM (new)")
 
         return actions.StepResult.OK
 
@@ -205,7 +246,10 @@ class IDELinearConstantAnalysisExperiment(
             ZippedExperimentSteps(
                 result_file, [
                     PhasarIDEStats(project, binary), *[
-                        IterIDEBasicStats(project, 0, binary, analysis_type)
+                        IterIDETimeOld(project, 0, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
+                    ], *[
+                        IterIDETimeNew(project, 0, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                     ]
                 ]

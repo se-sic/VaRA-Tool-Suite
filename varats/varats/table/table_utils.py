@@ -30,7 +30,7 @@ def wrap_table_in_latex_document(
     """
     doc = Document(
         documentclass="scrbook",
-        document_options="paper=a4",
+        document_options="8pt,paper=a4",
         geometry_options={
             "margin": f"{margin}cm",
             "landscape": "true" if landscape else "false"
@@ -48,10 +48,10 @@ def wrap_table_in_latex_document(
 
     doc.change_document_style("empty")
 
+    document_decorator(doc)
+
     # embed latex table inside document
     doc.append(NoEscape(table))
-
-    document_decorator(doc)
 
     return tp.cast(str, doc.dumps())
 

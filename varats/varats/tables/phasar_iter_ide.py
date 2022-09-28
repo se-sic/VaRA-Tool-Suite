@@ -2,6 +2,7 @@ import typing as tp
 
 import numpy as np
 import pandas as pd
+from pylatex import Document
 
 from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
 from varats.experiments.phasar.iter_ide import (
@@ -14,6 +15,7 @@ from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
 )
+from varats.report.gnu_time_report import TimeReport
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
@@ -170,3 +172,118 @@ class PhasarIterIDEStatsGenerator(
 
     def generate(self) -> tp.List[Table]:
         return [PhasarIterIDEStats(self.table_config, **self.table_kwargs)]
+
+
+class PhasarIterIDEOldVSNew(Table, table_name="phasar-iter-ide-old-new"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        cs_data: tp.List[pd.DataFrame] = []
+
+        for case_study in get_loaded_paper_config().get_all_case_studies():
+            print(f"Working on {case_study}")
+            project_name = case_study.project_name
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IDELinearConstantAnalysisExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+            print(f"{report_files=}")
+
+            revision = None
+            revisions = case_study.revisions
+            if len(revisions) == 1:
+                revision = revisions[0]
+
+            rev_range = revision.hash if revision else "HEAD"
+
+            for report_file in report_files:
+                report = load_phasar_iter_ide_stats_report(report_file)
+
+                cs_dict = {project_name: {}}
+                cs_dict[project_name].update(
+                    self.compute_typestate_stats(report)
+                )
+                cs_dict[project_name].update(self.compute_taint(report))
+                cs_dict[project_name].update(self.compute_lca_stats(report))
+                cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
+
+        df = pd.concat(cs_data).sort_index()
+
+        print(df)
+
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["column_format"] = "l|cccc|cccc|cccc|cccc|cccc|cccc|"
+            kwargs["multicol_align"] = "c|"
+            # kwargs["multicolumn"] = True
+            kwargs['position'] = 't'
+            kwargs["caption"] = """Foo bar"""
+            style.format(precision=2)
+
+        def add_extras(doc: Document) -> None:
+            pass
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            document_decorator=add_extras,
+            **kwargs
+        )
+
+    def compute_typestate_stats(self, report: PhasarIterIDEStatsReport):
+        return self.__compute_delta_comp(
+            "Typestate", report.old_typestate, report.new_typestate
+        )
+
+    def compute_taint(self, report: PhasarIterIDEStatsReport):
+        return self.__compute_delta_comp(
+            "Taint", report.old_taint, report.new_taint
+        )
+
+    def compute_lca_stats(self, report: PhasarIterIDEStatsReport):
+        return self.__compute_delta_comp("LCA", report.old_lca, report.new_lca)
+
+    def __compute_delta_comp(
+        self, name: str, old_time_report: tp.Optional[TimeReport],
+        new_time_report: tp.Optional[TimeReport]
+    ):
+        time_old = np.nan
+        time_new = np.nan
+        time_speedup = np.nan
+
+        memory_old = np.nan
+        memory_new = np.nan
+        memory_speedup = np
+
+        if old_time_report:
+            time_old = old_time_report.wall_clock_time.total_seconds()
+            memory_old = from_kbytes_to_mbytes(old_time_report.max_res_size)
+
+        if new_time_report:
+            time_new = new_time_report.wall_clock_time.total_seconds()
+            memory_new = from_kbytes_to_mbytes(new_time_report.max_res_size)
+
+        time_speedup = time_old / time_new
+        memory_speedup = memory_old / memory_new
+
+        return {(name, 'Time', 'Old'): time_old,
+                (name, 'Time', 'New'): time_new,
+                (name, 'Time', '$\mathcal{S}$'): time_speedup,
+                (name, 'Time', '$s^2$'): 0,
+                (name, 'Memory', 'Old'): memory_old,
+                (name, 'Memory', 'New'): memory_new,
+                (name, 'Memory', '$\mathcal{S}$'): memory_speedup,
+                (name, 'Memory', '$s^2$'): 0}
+
+
+class PhasarIterIDEOldVSNewGenerator(
+    TableGenerator, generator_name="phasar-iter-ide-old-new", options=[]
+):
+    """TODO: """
+
+    def generate(self) -> tp.List[Table]:
+        return [PhasarIterIDEOldVSNew(self.table_config, **self.table_kwargs)]
