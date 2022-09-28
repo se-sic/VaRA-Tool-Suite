@@ -1,4 +1,4 @@
-"""Implements an experiment times the execution of all project binaries."""
+"""Implements an experiment that times the execution of all project binaries."""
 
 import typing as tp
 from pathlib import Path
@@ -28,10 +28,10 @@ from varats.report.report import ReportSpecification
 
 
 class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
-    """Times the execution of all project workloads."""
+    """Times the execution of all project example workloads."""
 
     NAME = "TimeWorkloads"
-    DESCRIPTION = "Time the execution of all project workloads."
+    DESCRIPTION = "Time the execution of all project example workloads."
 
     project: VProject
 

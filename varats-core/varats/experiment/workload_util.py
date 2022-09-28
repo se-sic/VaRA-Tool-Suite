@@ -105,7 +105,7 @@ def create_workload_specific_filename(
 ) -> Path:
     if '_' in cmd.label:
         raise AssertionError(
-            "Workload/Command labels should not contain underscores '_'!"
+            "Workload/Command labels must not contain underscores '_'!"
         )
     return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
 
