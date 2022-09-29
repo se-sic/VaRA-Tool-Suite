@@ -91,7 +91,7 @@ class Gzip(VProject, ReleaseProviderHook):
             Command(
                 SourceRoot("gzip") / RSBinary("gzip"),
                 "-k",
-                "--force",  # needed because BB creats symlinks for the inputs
+                "--force",  # needed because BB creates symlinks for the inputs
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=[

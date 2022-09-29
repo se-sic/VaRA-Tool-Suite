@@ -296,7 +296,7 @@ class WLTimeReportAggregate(
     file_type=ReportAggregate.FILE_TYPE
 ):
     """Context Manager for parsing multiple time reports stored inside a zip
-    file."""
+    file and grouping them based on the workload they belong to."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)

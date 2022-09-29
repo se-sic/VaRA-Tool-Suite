@@ -26,7 +26,7 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
 
         if len(self.plot_kwargs["experiment_type"]) > 1:
             print(
-                "Plot can currently only handle on experiment, "
+                "Plot can currently only handle a single experiment, "
                 "ignoring everything else."
             )
 

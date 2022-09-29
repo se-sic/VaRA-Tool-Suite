@@ -31,7 +31,7 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
 
             if len(self.table_kwargs["experiment_type"]) > 1:
                 print(
-                    "Table can currently only handle on experiment, "
+                    "Table can currently handle only a single experiment, "
                     "ignoring everything else."
                 )
 
