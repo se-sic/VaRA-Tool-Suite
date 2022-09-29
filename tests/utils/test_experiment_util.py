@@ -127,13 +127,23 @@ class TestVersionExperiment(unittest.TestCase):
     def generate_get_tagged_revisions_output(
     ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""
-        return [
-            (ShortCommitHash('rev1000000'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('rev2000000'), FileStatusExtension.BLOCKED),
-            (ShortCommitHash('rev3000000'), FileStatusExtension.COMPILE_ERROR),
-            (ShortCommitHash('rev4000000'), FileStatusExtension.FAILED),
-            (ShortCommitHash('rev5000000'), FileStatusExtension.MISSING)
-        ]
+        return {
+            ShortCommitHash('rev1000000'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('rev2000000'): {
+                None: FileStatusExtension.BLOCKED
+            },
+            ShortCommitHash('rev3000000'): {
+                None: FileStatusExtension.COMPILE_ERROR
+            },
+            ShortCommitHash('rev4000000'): {
+                None: FileStatusExtension.FAILED
+            },
+            ShortCommitHash('rev5000000'): {
+                None: FileStatusExtension.MISSING
+            }
+        }
 
     @run_in_test_environment()
     def test_sample_limit(self):
