@@ -3,7 +3,7 @@
 import typing as tp
 
 import yaml
-from benchbuild import Experiment, Project, source
+from benchbuild import Project, source
 from benchbuild.experiment import ProjectT
 from benchbuild.utils import actions
 from pygit2 import Commit
@@ -14,13 +14,17 @@ from varats.data.reports.szz_report import (
     PyDrillerSZZReport,
     SZZTool,
 )
-from varats.experiment.experiment_util import get_varats_result_folder
+from varats.experiment.experiment_util import (
+    get_varats_result_folder,
+    VersionExperiment,
+)
+from varats.project.varats_project import VProject
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
-class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
+class CreatePyDrillerSZZReport(actions.ProjectStep):  # type: ignore
     """
     Create a SZZReport from the data collected by the.
 
@@ -29,17 +33,20 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
     NAME = "CreatePyDrillerSZZReport"
     DESCRIPTION = "Create a report from SZZ data"
 
+    project: VProject
+
     def __init__(self, project: Project):
-        super().__init__(obj=project, action_fn=self.create_report)
+        super().__init__(project=project)
+
+    def __call__(self) -> actions.StepResult:
+        return self.create_report()
 
     def create_report(self) -> actions.StepResult:
         """Create a report from SZZ data."""
-        project = self.obj
-
-        bug_provider = BugProvider.get_provider_for_project(project)
+        bug_provider = BugProvider.get_provider_for_project(self.project)
         pygit_bugs = bug_provider.find_pygit_bugs()
 
-        varats_result_folder = get_varats_result_folder(project)
+        varats_result_folder = get_varats_result_folder(self.project)
 
         def commit_to_hash(commit: Commit) -> str:
             return str(commit.id)
@@ -57,10 +64,10 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
 
         result_file = PyDrillerSZZReport.get_file_name(
             "PyDrSZZ",
-            project_name=str(project.name),
+            project_name=str(self.project.name),
             binary_name="none",  # we don't rely on binaries in this experiment
-            project_revision=project.version_of_primary,
-            project_uuid=str(project.run_uuid),
+            project_revision=self.project.version_of_primary,
+            project_uuid=str(self.project.run_uuid),
             extension_type=FSE.SUCCESS
         )
 
@@ -78,7 +85,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class PyDrillerSZZExperiment(Experiment):  # type: ignore
+class PyDrillerSZZExperiment(VersionExperiment, shorthand="PyDrillerSZZ"):
     """
     Generates a PyDrillerSZZ report.
 

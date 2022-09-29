@@ -1,7 +1,6 @@
 """Implements an empty experiment that just compiles the project."""
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
@@ -15,10 +14,10 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
-    get_varats_result_folder,
+    create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import RunWLLVM
-from varats.report.report import FileStatusExtension as FSE
+from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
@@ -29,6 +28,8 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
     NAME = "EmptyAnalysis"
     DESCRIPTION = "Analyses nothing."
 
+    project: VProject
+
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
@@ -38,27 +39,18 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
-        project = self.project
 
-        vara_result_folder = get_varats_result_folder(project)
-
-        for binary in project.binaries:
-            result_file = self.__experiment_handle.get_file_name(
-                EmptyReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+        for binary in self.project.binaries:
+            result_file = create_new_success_result_filepath(
+                self.__experiment_handle, EmptyReport, self.project, binary
             )
 
-            run_cmd = touch[f"{vara_result_folder}/{result_file}"]
+            run_cmd = touch[f"{result_file}"]
 
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, EmptyReport,
-                    Path(vara_result_folder)
+                    self.__experiment_handle, self.project, EmptyReport
                 )
             )
 

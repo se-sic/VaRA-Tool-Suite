@@ -70,13 +70,13 @@ class Libssh(VProject):
         binary_map.specify_binary(
             'build/src/libssh.so',
             BinaryType.SHARED_LIBRARY,
-            only_valid_in=RevisionRange("c65f56aefa", "9c4baa7fd5")
+            only_valid_in=RevisionRange("c65f56aefa", "aa899f8ec0")
         )
 
         binary_map.specify_binary(
             'build/lib/libssh.so',
             BinaryType.SHARED_LIBRARY,
-            only_valid_in=RevisionRange("d85bc347d3", "master")
+            only_valid_in=RevisionRange("aa899f8ec0", "master")
         )
 
         return binary_map[revision]

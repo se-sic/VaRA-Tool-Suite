@@ -26,26 +26,25 @@ class TestBugOverviewTable(unittest.TestCase):
 
         # each bug must be matched separately since order is unclear
         result_bug_regex =\
-            re.compile(
+            re.compile(r"None\s*"
                        r"&\s*3b76c8d295385358375fefdb0cf045d97ad2d193\s*"
-                       r"&\s*Multiplication result fix\\textbackslash n \s*"
-                       r"&\s*VaRA Tester\s*"
-                       r"&\s*None\s*\\\\\s*", re.DOTALL)
+                       r"&\s*Multiplication result fix\s*"
+                       r"&\s*VaRA Tester\s*\\\\", re.DOTALL)
         type_bug_regex = \
-            re.compile(r"&\s*2da78b2820370f6759e9086fad74155d6655e93b\s*"
-                       r"&\s*Fixes return type of multiply\\textbackslash n \s*"
-                       r"&\s*VaRA Tester\s*"
-                       r"&\s*None\s*\\\\\s*", re.DOTALL)
+            re.compile(r"None\s*"
+                       r"&\s*2da78b2820370f6759e9086fad74155d6655e93b\s*"
+                       r"&\s*Fixes return type of multiply\s*"
+                       r"&\s*VaRA Tester\s*\\\\", re.DOTALL)
         string_bug_regex = \
-            re.compile(r"&\s*d846bdbe45e4d64a34115f5285079e1b5f84007f\s*"
-                       r"&\s*Fixes answer to everything\\textbackslash n \s*"
-                       r"&\s*VaRA Tester\s*"
-                       r"&\s*None\s*\\\\\s*", re.DOTALL)
+            re.compile(r"None\s*"
+                       r"&\s*d846bdbe45e4d64a34115f5285079e1b5f84007f\s*"
+                       r"&\s*Fixes answer to everything\s*"
+                       r"&\s*VaRA Tester\s*\\\\", re.DOTALL)
         arg_bug_regex = \
-            re.compile(r"&\s*ddf0ba95408dc5508504c84e6616c49128410389\s*"
-                       r"&\s*Fixed function arguments\\textbackslash n \s*"
-                       r"&\s*VaRA Tester\s*"
-                       r"&\s*None\s*\\\\.*", re.DOTALL)
+            re.compile(r"None\s*"
+                       r"&\s*ddf0ba95408dc5508504c84e6616c49128410389\s*"
+                       r"&\s*Fixed function arguments\s*"
+                       r"&\s*VaRA Tester\s*\\\\", re.DOTALL)
 
         table_string = table.tabulate(TableFormat.LATEX_BOOKTABS, False)
 

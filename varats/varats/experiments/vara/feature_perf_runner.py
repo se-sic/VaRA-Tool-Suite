@@ -12,6 +12,7 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    create_new_success_result_filepath,
 )
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
@@ -20,12 +21,11 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.report.report import ReportSpecification
-from varats.report.report import FileStatusExtension as FSE
 from varats.report.tef_report import TEFReport
 from varats.utils.git_util import ShortCommitHash
 
 
-class ExecAndTraceBinary(actions.Step):  # type: ignore
+class ExecAndTraceBinary(actions.ProjectStep):  # type: ignore
     """Executes the specified binaries of the project, in specific
     configurations, against one or multiple workloads."""
 
@@ -33,33 +33,33 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
     DESCRIPTION = "Executes each binary and caputres white-box " +\
         "performance traces."
 
-    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run_perf_tracing)
+    project: VProject
+
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.run_perf_tracing()
 
     def run_perf_tracing(self) -> actions.StepResult:
         """Execute the specified binaries of the project, in specific
         configurations, against one or multiple workloads."""
-        project: VProject = self.obj
-
         print(f"PWD {os.getcwd()}")
 
-        vara_result_folder = get_varats_result_folder(project)
-        for binary in project.binaries:
+        vara_result_folder = get_varats_result_folder(self.project)
+        for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
-            result_file = self.__experiment_handle.get_file_name(
-                self.__experiment_handle.report_spec().main_report.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=ShortCommitHash(project.version_of_primary),
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_file = create_new_success_result_filepath(
+                self.__experiment_handle, TEFReport, self.project, binary
             )
 
-            with local.cwd(local.path(project.source_of_primary)):
-                print(f"Currenlty at {local.path(project.source_of_primary)}")
+            with local.cwd(local.path(self.project.source_of_primary)):
+                print(
+                    f"Currenlty at {local.path(self.project.source_of_primary)}"
+                )
                 print(f"Bin path {binary.path}")
 
                 # executable = local[f"{binary.path}"]

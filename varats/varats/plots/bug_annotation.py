@@ -4,7 +4,7 @@ import typing as tp
 from benchbuild.project import Project
 from matplotlib import axes
 
-from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import get_commit_map
 from varats.provider.bug.bug_provider import BugProvider
 from varats.utils.git_util import FullCommitHash
 
@@ -27,7 +27,7 @@ def draw_bugs(
         label_size: the label size of bug annotations
         vertical_alignment: the vertical alignment of bug annotations
     """
-    cmap = create_lazy_commit_map_loader(project.NAME)()
+    cmap = get_commit_map(project.NAME)
     revision_time_ids = [cmap.time_id(rev) for rev in revisions]
 
     bug_provider = BugProvider.get_provider_for_project(project)

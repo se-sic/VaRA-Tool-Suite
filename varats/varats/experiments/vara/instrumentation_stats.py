@@ -18,18 +18,20 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    create_new_success_result_filepath,
 )
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
+from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
     FeatureModelNotFound,
 )
 from varats.provider.workload.workload_provider import WorkloadProvider
-from varats.report.report import FileStatusExtension, ReportSpecification
+from varats.report.report import ReportSpecification
 from varats.tools.research_tools.vara import VaRA
 
 
-class CaptureInstrumentationStats(actions.Step):  # type: ignore
+class CaptureInstrumentationStats(actions.ProjectStep):  # type: ignore
     """Executes each binary and collects runtime statistics about
     instrumentation using VaRA's USDT probes and a bpftrace script."""
 
@@ -37,55 +39,54 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
     DESCRIPTION = "Executes each binary and collects runtime statistics about" \
         " instrumentation using VaRA's USDT probes and a bpftrace script."
 
+    project: VProject
+
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.run()
 
     def run(self) -> actions.StepResult:
         """Capture instrumentation stats by running the binary with a workload
         and attaching the UsdtExecutionStats.bt."""
-        project: Project = self.obj
-
-        vara_result_folder = get_varats_result_folder(project)
+        vara_result_folder = get_varats_result_folder(self.project)
         binary: ProjectBinaryWrapper
 
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
             # Get workload to use.
             # TODO (se-sic/VaRA#841): refactor to bb workloads if possible
             workload_provider = WorkloadProvider.create_provider_for_project(
-                project
+                self.project
             )
             if not workload_provider:
                 print(
-                    f"No workload provider for project={project.name}. " \
+                    f"No workload provider for project={self.project.name}. " \
                     "Skipping."
                 )
                 return actions.StepResult.CAN_CONTINUE
             workload = workload_provider.get_workload_for_binary(binary.name)
             if workload is None:
                 print(
-                    f"No workload for project={project.name} " \
-                        "binary={binary.name}. Skipping."
+                    f"No workload for project={self.project.name} " \
+                        f"binary={binary.name}. Skipping."
                 )
                 continue
 
             # Assemble Path for report.
-            report_file_name = self.__experiment_handle.get_file_name(
-                VaraInstrumentationStatsReport.shorthand(),
-                project_name=project.name,
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FileStatusExtension.SUCCESS
+            report_file_name = create_new_success_result_filepath(
+                self.__experiment_handle, VaraInstrumentationStatsReport,
+                self.project, binary
             )
 
             report_file = Path(vara_result_folder, str(report_file_name))
 
             # Execute binary.
-            with local.cwd(project.source_of_primary):
+            with local.cwd(self.project.source_of_primary):
                 run_cmd = binary[workload]
 
                 # attach bpftrace to binary to allow tracing it via USDT
