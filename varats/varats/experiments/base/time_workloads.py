@@ -1,4 +1,4 @@
-"""Implements an experiment times the execution of all project binaries."""
+"""Implements an experiment that times the execution of all project binaries."""
 
 import typing as tp
 from pathlib import Path
@@ -12,7 +12,6 @@ from plumbum import local
 
 from varats.experiment.experiment_util import (
     VersionExperiment,
-    ExperimentHandle,
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
     ZippedExperimentSteps,
@@ -29,10 +28,10 @@ from varats.report.report import ReportSpecification
 
 
 class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
-    """Times the execution of all project workloads."""
+    """Times the execution of all project example workloads."""
 
     NAME = "TimeWorkloads"
-    DESCRIPTION = "Time the execution of all project workloads."
+    DESCRIPTION = "Time the execution of all project example workloads."
 
     project: VProject
 
@@ -63,7 +62,6 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
-                    print(f"{run_cmd=}")
                     run_cmd()
 
         return actions.StepResult.OK

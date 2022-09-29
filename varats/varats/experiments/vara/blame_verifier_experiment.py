@@ -33,7 +33,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class BlameVerifierReportGeneration(actions.MultiStep):  # type: ignore
+class BlameVerifierReportGeneration(actions.ProjectStep):  # type: ignore
     """Analyse a project with the BlameVerifier and generate a
     BlameVerifierReport."""
 
@@ -47,9 +47,12 @@ class BlameVerifierReportGeneration(actions.MultiStep):  # type: ignore
         self, project: Project, bc_file_extensions: tp.List[BCFileExtensions],
         experiment_handle: ExperimentHandle
     ):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.bc_file_extensions = bc_file_extensions
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """
@@ -100,7 +103,8 @@ class BlameVerifierReportGeneration(actions.MultiStep):  # type: ignore
                 timeout[timeout_duration, vara_run_cmd] >
                 f"{vara_result_folder}/{result_file}",
                 PEErrorHandler(
-                    vara_result_folder, error_file.filename, timeout_duration
+                    vara_result_folder, error_file.report_filename.filename,
+                    timeout_duration
                 )
             )
 

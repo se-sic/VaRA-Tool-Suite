@@ -1,6 +1,5 @@
 """Module for phasar LinearConstantAnalysis analyses."""
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
@@ -13,7 +12,6 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     ExperimentHandle,
     get_default_compile_error_wrapped,
-    get_varats_result_folder,
     exec_func_with_pe_error_handler,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -41,8 +39,11 @@ class IDELinearConstantAnalysis(actions.ProjectStep):  # type: ignore
     project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """Run phasar's IDELinearConstantAnalysis analysis."""

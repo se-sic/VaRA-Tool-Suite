@@ -512,7 +512,9 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
         results: tp.List[StepResult] = []
 
         for child in self.actions:
-            run_child_with_output_folder(child, tmp_folder)
+            run_child_with_output_folder(
+                tp.cast(NeedsOutputFolder, child), tmp_folder
+            )
 
         return results
 

@@ -1,7 +1,6 @@
 """Implements an empty experiment that just compiles the project."""
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
@@ -15,7 +14,6 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
-    get_varats_result_folder,
     create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import RunWLLVM
@@ -33,8 +31,11 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
     project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""

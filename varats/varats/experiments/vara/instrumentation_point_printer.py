@@ -1,7 +1,6 @@
 """Implements experiment for VaRA's InstrumentationPointPrinter utility pass."""
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
@@ -32,7 +31,7 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 
 
-class CollectInstrumentationPoints(actions.MultiStep):  # type: ignore
+class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
     """Runs utility pass on LLVM-IR to extract instrumentation point
     information."""
 
@@ -43,8 +42,11 @@ class CollectInstrumentationPoints(actions.MultiStep):  # type: ignore
     project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """Run VaRA-IPP utility pass and extract instrumentation point

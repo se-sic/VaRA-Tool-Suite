@@ -33,7 +33,7 @@ def unwrap(maybe_t: tp.Optional[T], conversion_reason: str) -> T:
     Args:
         maybe_t: the optional that should always be a value
         conversion_reason: why maybe_t should contain a value and unwrapping
-                           should be save
+                           should be safe
 
     Returns: the 'contained' value inside the optional
     """
@@ -50,7 +50,7 @@ def auto_unwrap(
 ) -> tp.Callable[[tp.Callable[..., tp.Optional[T]]], tp.Callable[..., T]]:
     """
     Wraps a function with an automatic unwrap call, so a function that normally
-    returns an optinal is declared to always return a concret value. Should no
+    returns an optional is declared to always return a concrete value. Should no
     value be returned, an exception is raised mentioning the reason/assumtion
     why it was thought that the function always returns a value.
 

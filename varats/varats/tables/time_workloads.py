@@ -31,7 +31,7 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
 
             if len(self.table_kwargs["experiment_type"]) > 1:
                 print(
-                    "Table can currently only handle on experiment, "
+                    "Table can currently handle only a single experiment, "
                     "ignoring everything else."
                 )
 
@@ -40,6 +40,17 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                 self.table_kwargs["experiment_type"][0], TimeReportAggregate,
                 get_case_study_file_name_filter(case_study)
             )
+
+            def wall_clock_time_in_msecs(
+                agg_time_report: WLTimeReportAggregate
+            ) -> tp.List[float]:
+                return list(
+                    map(
+                        lambda x: x * 1000,
+                        agg_time_report.
+                        measurements_wall_clock_time(workload_name)
+                    )
+                )
 
             for report_filepath in report_files:
                 agg_time_report = WLTimeReportAggregate(
@@ -58,29 +69,11 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                         "Workload":
                             workload_name,
                         "Mean wall time (msecs)":
-                            np.mean(
-                                list(
-                                    map(
-                                        lambda x: x * 1000,
-                                        agg_time_report.
-                                        measurements_wall_clock_time(
-                                            workload_name
-                                        )
-                                    )
-                                )
-                            ),
+                            np.mean(wall_clock_time_in_msecs(agg_time_report)),
                         "StdDev":
                             round(
                                 np.std(
-                                    list(
-                                        map(
-                                            lambda x: x * 1000,
-                                            agg_time_report.
-                                            measurements_wall_clock_time(
-                                                workload_name
-                                            )
-                                        )
-                                    )
+                                    wall_clock_time_in_msecs(agg_time_report)
                                 ), 2
                             ),
                         "Max resident size (kbytes)":

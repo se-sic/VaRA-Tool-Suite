@@ -140,9 +140,11 @@ class Extract(actions.ProjectStep):  # type: ignore
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
         super().__init__(project=project)
-        self.__action_fn = FunctionPEErrorWrapper(
-            self.extract, handler
-        ) if handler else self.extract
+        self.__action_fn = tp.cast(
+            tp.Callable[..., tp.Any],
+            FunctionPEErrorWrapper(self.extract, handler)
+            if handler else self.extract
+        )
 
         if bc_file_extensions is None:
             bc_file_extensions = []
@@ -150,7 +152,7 @@ class Extract(actions.ProjectStep):  # type: ignore
         self.bc_file_extensions = bc_file_extensions
 
     def __call__(self) -> actions.StepResult:
-        return self.__action_fn()
+        return tp.cast(actions.StepResult, self.__action_fn())
 
     def extract(self) -> actions.StepResult:
         """This step extracts the bitcode of the executable of the project into

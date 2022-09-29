@@ -6,7 +6,6 @@ BlameReport.
 """
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -31,7 +30,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class BlameReportGeneration(actions.MultiStep):  # type: ignore
+class BlameReportGeneration(actions.ProjectStep):  # type: ignore
     """Analyse a project with VaRA and generate a BlameReport."""
 
     NAME = "BlameReportGeneration"
@@ -43,9 +42,12 @@ class BlameReportGeneration(actions.MultiStep):  # type: ignore
         self, project: Project, experiment_handle: ExperimentHandle,
         blame_taint_scope: BlameTaintScope
     ):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__blame_taint_scope = blame_taint_scope
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """
@@ -86,7 +88,7 @@ class BlameReportGeneration(actions.MultiStep):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, BR
+                    self.__experiment_handle, self.project, BR
                 )
             )
 

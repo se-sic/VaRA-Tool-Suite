@@ -24,7 +24,7 @@ from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
-class CreatePyDrillerSZZReport(actions.MultiStep):  # type: ignore
+class CreatePyDrillerSZZReport(actions.ProjectStep):  # type: ignore
     """
     Create a SZZReport from the data collected by the.
 
@@ -36,7 +36,10 @@ class CreatePyDrillerSZZReport(actions.MultiStep):  # type: ignore
     project: VProject
 
     def __init__(self, project: Project):
-        super().__init__(project=project, action_fn=self.create_report)
+        super().__init__(project=project)
+
+    def __call__(self) -> actions.StepResult:
+        return self.create_report()
 
     def create_report(self) -> actions.StepResult:
         """Create a report from SZZ data."""

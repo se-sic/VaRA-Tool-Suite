@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
@@ -27,7 +26,7 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
 
         if len(self.plot_kwargs["experiment_type"]) > 1:
             print(
-                "Plot can currently only handle on experiment, "
+                "Plot can currently only handle a single experiment, "
                 "ignoring everything else."
             )
 
@@ -51,8 +50,11 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
                             agg_time_report.measurements_wall_clock_time(
                         workload_name
                     ):
-                        unique_reference = f"{project_name}-{report_file.binary_name}" \
-                            + f"-{str(report_file.commit_hash)}"
+                        unique_reference = (
+                            f"{project_name}-"
+                            f"{report_file.binary_name}"
+                            f"-{str(report_file.commit_hash)}"
+                        )
                         new_row = {
                             "Project-Binary-Revision": unique_reference,
                             "Workload": workload_name,

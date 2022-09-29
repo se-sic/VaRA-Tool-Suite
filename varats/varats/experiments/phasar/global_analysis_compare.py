@@ -2,7 +2,6 @@
 of running an analysis with globals support."""
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
@@ -47,9 +46,12 @@ class RunGlobalsTestAnalysis(actions.ProjectStep):  # type: ignore
         self, project: Project, experiment_handle: ExperimentHandle,
         globals_active: bool
     ):
-        super().__init__(project=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__globals_active = globals_active
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """This step performs the actual comparision, running the analysis with
