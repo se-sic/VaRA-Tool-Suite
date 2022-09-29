@@ -62,7 +62,7 @@ class Lrzip(VProject):
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=[
-                    SourceRoot('lrzip') / "../countries-land-1km.geo.json.lrz"
+                    "countries-land-1km.geo.json.lrz"
                 ]
             )
         ],

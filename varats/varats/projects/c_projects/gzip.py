@@ -95,7 +95,7 @@ class Gzip(VProject, ReleaseProviderHook):
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=[
-                    SourceRoot('gzip') / "../countries-land-1km.geo.json.gz"
+                    "countries-land-1km.geo.json.gz"
                 ]
             )
         ],
