@@ -35,7 +35,7 @@ class ExecAndTraceBinary(actions.ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
 

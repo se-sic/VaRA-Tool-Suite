@@ -3,8 +3,10 @@ is used during execution to check if regions are correctly opend/closed."""
 import os
 import textwrap
 import typing as tp
+from pathlib import Path
 
 import benchbuild.command as bbcmd
+from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
@@ -14,14 +16,21 @@ from varats.data.reports.instrumentation_verifier_report import (
 )
 from varats.experiment.experiment_util import (
     ExperimentHandle,
+    create_new_success_result_filepath,
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    ZippedReportFolder,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
     BCFileExtensions,
     get_bc_cache_actions,
+)
+from varats.experiment.workload_util import (
+    workload_commands,
+    WorkloadCategory,
+    create_workload_specific_filename,
 )
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
@@ -36,10 +45,12 @@ from varats.utils.git_util import ShortCommitHash
 # TODO: merge this with feature runner experiment
 
 
-class RunAndVerifyInstrumentedProject(actions.ProjectStep):  #type: ignore
+class RunAndVerifyInstrumentedProject(actions.ProjectStep):  # type: ignore
 
     NAME = "RunAndVerifyInstrumentedProject"
     DESCRIPTION = "foo"
+
+    project: VProject
 
     def __init__(
         self, project: VProject, experiment_handle: ExperimentHandle
@@ -56,74 +67,40 @@ class RunAndVerifyInstrumentedProject(actions.ProjectStep):  #type: ignore
         )
 
     def run_verifier(self) -> actions.StepResult:
+        """Runs the binary with the embedded region verifier code."""
 
-        project: VProject = self.project
-
-        print(f"PWD {os.getcwd()}")
-
-        vara_result_folder = get_varats_result_folder(project)
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
+                # Skip libaries as we cannot run them
                 continue
 
-            result_file = self.__experiment_handle.get_file_name(
-                self.__experiment_handle.report_spec().main_report.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=ShortCommitHash(project.version_of_primary),
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
+            result_filepath = create_new_success_result_filepath(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report,
+                self.project, binary
             )
 
-            # with local.cwd(local.path(project.source_of_primary)):  # / ".."):
-            with local.cwd(local.path(project.builddir)):
-                print(f"Currenlty at {local.path(project.source_of_primary)}")
-                print(f"Bin path {binary.path}")
+            with local.cwd(local.path(self.project.builddir)):
+                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
+                    for prj_command in workload_commands(
+                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        local_tracefile_path = Path(
+                            tmp_dir
+                        ) / f"trace_{prj_command.command.label}.json"
+                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd()
 
-                # executable = local[f"{binary.path}"]
-
-                with local.env(
-                    VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
-                ):
-
-                    workload = \
-                        "/scratch/sattlerf/countries-land-1km.geo.json"
-
-                    # Get jobs from project
-                    jobs = bbcmd.filter_job_index(project.jobs, None)
-                    print(f"{jobs=}")
-                    project_commands = bbcmd.prepare_project_commands(
-                        project, jobs
-                    )
-                    print(f"{project_commands=}")
-                    res = [job() for job in project_commands]
-                    print(f"{res=}")
-
-                    # print(project.jobs)
-                    # for job in project.jobs.items():
-                    #     print(f"job: {str(job)}")
-                    #     for wl in job[1]:
-                    #         print(f"wl: {wl}")
-
-                    #         print(f"Here PWD {os.getcwd()}")
-
-                    #         print(f"{wl.path=}")
-                    #         # wl()
-                    #         cmd = wl.as_plumbum()
-                    #         print(cmd["-k", "--verbose"])
-                    #         cmd("-k", "--verbose")
-
-                    # inject_binary_names(jobs, binary)
-
-                    # wjobs = wrap_jobs_to_run(jobs)
-                    # exec_run_jobs(wjobs)
-
-                    # TODO: figure out how to handle workloads
-                    # binary("-f", "-k", workload)
-
-                    # TODO: figure out how to handle different configs
-                    # executable("--slow")
-                    # executable()
+                        # TODO: figure out how to handle different configs
+                        # executable("--slow")
+                        # executable()
 
         return actions.StepResult.OK
 
@@ -169,12 +146,10 @@ class RunInstrVerifier(VersionExperiment, shorthand="RIV"):
         project.ldflags += ["-flto"]
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self)  #\
-        #<< time.RunWithTime()
+        project.runtime_extension = run.RuntimeExtension(project, self)
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self)  # \
-        #<< run.WithTimeout()
+        project.compiler_extension = compiler.RunCompiler(project, self)
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(

@@ -82,7 +82,7 @@ class Xz(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("xz") / RSBinary("xz"),
+                SourceRoot("xz.git") / RSBinary("xz"),
                 "-k",
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
