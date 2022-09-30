@@ -116,7 +116,7 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
         # Sets vara tracing flags
         project.cflags += [
             "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
-            "-fuse-ld=lld"
+            "-fuse-ld=lld", "-flegacy-pass-manager"
         ]
         project.ldflags += ["-flto"]
 

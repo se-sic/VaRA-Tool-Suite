@@ -141,7 +141,8 @@ class RunInstrVerifier(VersionExperiment, shorthand="RIV"):
         # Sets vara tracing flags
         project.cflags += [
             "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
-            "-fuse-ld=lld", "-Wl,-plugin-opt=save-temps"
+            "-fuse-ld=lld", "-Wl,-plugin-opt=save-temps",
+            "-flegacy-pass-manager"
         ]
         project.ldflags += ["-flto"]
 
