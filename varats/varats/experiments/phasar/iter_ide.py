@@ -7,7 +7,13 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import iteridebenchmark, phasar_llvm, time, mkdir
+from benchbuild.utils.cmd import (
+    iteridebenchmark,
+    phasar_llvm,
+    time,
+    mkdir,
+    touch,
+)
 from plumbum import RETCODE
 
 from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
@@ -98,7 +104,7 @@ class IterIDETimeOld(actions.ProjectStep):  # type: ignore
             )
         ]
 
-        phasar_cmd = iteridebenchmark[phasar_params]
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}.txt"
         run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
@@ -106,6 +112,12 @@ class IterIDETimeOld(actions.ProjectStep):  # type: ignore
         ret_code = run_cmd & RETCODE
         if ret_code == 137:
             print("Found OOM (old)")
+            return actions.StepResult.OK
+
+        if ret_code != 0:
+            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}"
+            touch(error_file)
+            return actions.StepResult.ERROR
 
         return actions.StepResult.OK
 
@@ -142,7 +154,7 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
             )
         ]
 
-        phasar_cmd = iteridebenchmark[phasar_params]
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
         run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
@@ -150,6 +162,12 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
         ret_code = run_cmd & RETCODE
         if ret_code == 137:
             print("Found OOM (new)")
+            return actions.StepResult.OK
+
+        if ret_code != 0:
+            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}"
+            touch(error_file)
+            return actions.StepResult.ERROR
 
         return actions.StepResult.OK
 
@@ -168,7 +186,7 @@ class PhasarIDEStats(actions.ProjectStep):  # type: ignore
     def __call__(self, tmp_dir: Path) -> actions.StepResult:
         return self.compute_stats(tmp_dir)
 
-    def compute_stats(self, tmp_dir: Path) -> None:
+    def compute_stats(self, tmp_dir: Path) -> actions.StepResult:
         if self.__binary.type.is_library:
             extra_lib_params = ["--entry-points", "__ALL__"]
         else:
