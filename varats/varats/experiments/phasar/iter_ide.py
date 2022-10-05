@@ -20,12 +20,8 @@ from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
-    ExperimentHandle,
     get_default_compile_error_wrapped,
-    get_varats_result_folder,
-    exec_func_with_pe_error_handler,
     create_default_compiler_error_handler,
-    create_default_analysis_failure_handler,
     create_new_success_result_filepath,
     ZippedExperimentSteps,
 )
@@ -194,7 +190,8 @@ class IterIDECompareAnalysisResults(actions.ProjectStep):  # type: ignore
         mkdir("-p", tmp_dir)
 
         phasar_params = [
-            "--compare-results-to-old", "-m",
+            "-D",
+            str(self.__analysis_type), "--compare-results-to-old", "-m",
             get_cached_bc_file_path(
                 self.project, self.__binary,
                 [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
@@ -204,17 +201,19 @@ class IterIDECompareAnalysisResults(actions.ProjectStep):  # type: ignore
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"cmp_{self.__analysis_type}.txt"
-        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        ret_code = run_cmd & RETCODE
+        (ret_code, stdout, stderr) = phasar_cmd.run(retcode=None)
+
+        with open(result_file, "w") as output_file:
+            output_file.write(f"Error Code: {ret_code}\n")
+            output_file.write("\nStdout:\n")
+            output_file.write(stdout)
+            output_file.write("\nStderr:\n")
+            output_file.write(stderr)
+
         if ret_code == 137:
-            print("Found OOM (new)")
+            print("Found OOM (cmp)")
             return actions.StepResult.OK
-
-        if ret_code != 0:
-            error_file = tmp_dir / f"cmp_{self.__analysis_type}_err_{ret_code}"
-            touch(error_file)
-            return actions.StepResult.ERROR
 
         return actions.StepResult.OK
 
@@ -298,6 +297,9 @@ class IDELinearConstantAnalysisExperiment(
         ]
 
         # Only consider the main/first binary
+        print(f"{project.name}")
+        if len(project.binaries) < 1:
+            return []
         binary = project.binaries[0]
         result_file = create_new_success_result_filepath(
             self.get_handle(), self.REPORT_SPEC.main_report, project, binary
@@ -313,13 +315,16 @@ class IDELinearConstantAnalysisExperiment(
             )
         )
 
-        reps = range(0, 3)
+        reps = range(0, 1)
 
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_file, [
-                    PhasarIDEStats(project, binary),
-                    IterIDECompareAnalysisResults(project, binary), *[
+                    PhasarIDEStats(project, binary), *[
+                        IterIDECompareAnalysisResults(
+                            project, binary, analysis_type
+                        ) for analysis_type in _get_enabled_analyses()
+                    ], *[
                         IterIDETimeOld(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
