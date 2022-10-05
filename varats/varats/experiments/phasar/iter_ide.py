@@ -75,7 +75,7 @@ def _get_enabled_analyses() -> tp.List[AnalysisType]:
 class IterIDETimeOld(actions.ProjectStep):  # type: ignore
 
     NAME = "OldIDESolver"
-    DESCRIPTION = "Analyses old IDESolver"
+    DESCRIPTION = "Analyse old IDESolver"
 
     project: VProject
 
@@ -125,7 +125,7 @@ class IterIDETimeOld(actions.ProjectStep):  # type: ignore
 class IterIDETimeNew(actions.ProjectStep):  # type: ignore
 
     NAME = "NewIDESolver"
-    DESCRIPTION = "Analyses new IDESolver"
+    DESCRIPTION = "Analyse new IDESolver"
 
     project: VProject
 
@@ -166,6 +166,53 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
 
         if ret_code != 0:
             error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}"
+            touch(error_file)
+            return actions.StepResult.ERROR
+
+        return actions.StepResult.OK
+
+
+class IterIDECompareAnalysisResults(actions.ProjectStep):  # type: ignore
+
+    NAME = "CmpIDESolverResults"
+    DESCRIPTION = "Analyse IDESolver results for equivalence"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        mkdir("-p", tmp_dir)
+
+        phasar_params = [
+            "--compare-results-to-old", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
+
+        result_file = tmp_dir / f"cmp_{self.__analysis_type}.txt"
+        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+
+        ret_code = run_cmd & RETCODE
+        if ret_code == 137:
+            print("Found OOM (new)")
+            return actions.StepResult.OK
+
+        if ret_code != 0:
+            error_file = tmp_dir / f"cmp_{self.__analysis_type}_err_{ret_code}"
             touch(error_file)
             return actions.StepResult.ERROR
 
@@ -271,7 +318,8 @@ class IDELinearConstantAnalysisExperiment(
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_file, [
-                    PhasarIDEStats(project, binary), *[
+                    PhasarIDEStats(project, binary),
+                    IterIDECompareAnalysisResults(project, binary), *[
                         IterIDETimeOld(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
