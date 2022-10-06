@@ -44,12 +44,32 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
 
     @staticmethod
     def get_vara_feature_cflags(project: VProject) -> tp.List[str]:
+        """
+        Returns the cflags needed to enable VaRAs feature support, i.e., passing
+        the compiler a feature model and lowering the feature information into
+        the LLVM-IR.
+
+        Args:
+            project: to get the cflags for
+
+        Returns: list of feature cflags
+        """
         fm_path = FeatureExperiment.get_feature_model_path(project).absolute()
         return ["-fvara-feature", f"-fvara-fm-path={fm_path}"]
 
     @staticmethod
     def get_vara_tracing_cflags(instr_type: str,
                                 save_temps: bool = False) -> tp.List[str]:
+        """
+        Returns the cflags needed to trace projects with VaRA, using the
+        specified tracer code.
+
+        Args:
+            instr_type: instrumentation type to use
+            save_temps: saves temporary LLVM-IR files (good for debugging)
+
+        Returns: list of tracing specific cflags
+        """
         c_flags = [
             "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
             "-fuse-ld=lld", "-flegacy-pass-manager"
@@ -61,4 +81,9 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
 
     @staticmethod
     def get_vara_tracing_ldflags() -> tp.List[str]:
+        """
+        Returns the ldflags needed to instrument projects with VaRA during LTO.
+
+        Returns: ldflags for VaRA LTO support
+        """
         return ["-flto"]
