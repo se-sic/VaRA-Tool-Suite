@@ -1,13 +1,11 @@
 """Experiment that instruments a project with verification instrumentation that
 is used during execution to check if regions are correctly opend/closed."""
-import os
 import textwrap
 import typing as tp
 from pathlib import Path
 
-import benchbuild.command as bbcmd
 from benchbuild.command import cleanup
-from benchbuild.extensions import compiler, run, time
+from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from plumbum import local
 
@@ -17,31 +15,14 @@ from varats.data.reports.instrumentation_verifier_report import (
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     create_new_success_result_filepath,
-    get_varats_result_folder,
-    VersionExperiment,
     get_default_compile_error_wrapped,
     ZippedReportFolder,
 )
-from varats.experiment.wllvm import (
-    RunWLLVM,
-    BCFileExtensions,
-    get_bc_cache_actions,
-)
-from varats.experiment.workload_util import (
-    workload_commands,
-    WorkloadCategory,
-    create_workload_specific_filename,
-)
+from varats.experiment.workload_util import workload_commands, WorkloadCategory
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
-from varats.provider.feature.feature_model_provider import (
-    FeatureModelProvider,
-    FeatureModelNotFound,
-)
 from varats.report.report import ReportSpecification
-from varats.report.report import FileStatusExtension as FSE
-from varats.utils.git_util import ShortCommitHash
 
 # TODO: merge this with feature runner experiment
 

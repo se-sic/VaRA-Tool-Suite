@@ -18,6 +18,7 @@ from varats.report.report import ReportSpecification
 
 
 class FeatureExperiment(VersionExperiment, shorthand=""):
+    """Base class experiment for feautre specific experiments."""
 
     NAME = "FeatureExperiment"
 
