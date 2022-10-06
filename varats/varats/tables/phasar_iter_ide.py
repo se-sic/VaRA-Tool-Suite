@@ -24,6 +24,10 @@ from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc
 
 
+def latex_sanitize_project_name(project_name: str) -> str:
+    return project_name.replace('_', '\_')
+
+
 def from_kbytes_to_mbytes(kbytes: float) -> float:
     return kbytes / 1000.
 
@@ -94,7 +98,7 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                     )
 
                 cs_dict = {
-                    project_name: {
+                    latex_sanitize_project_name(project_name): {
                         "Revision":
                             str(revision.short_hash),
                         "Domain":
@@ -192,13 +196,12 @@ class PhasarIterIDEOldVSNew(Table, table_name="phasar-iter-ide-old-new"):
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
             print(f"Working on {case_study}")
-            project_name = case_study.project_name
+            project_name = latex_sanitize_project_name(case_study.project_name)
             report_files = get_processed_revisions_files(
                 case_study.project_name, IDELinearConstantAnalysisExperiment,
                 PhasarIterIDEStatsReport,
                 get_case_study_file_name_filter(case_study)
             )
-            print(f"{report_files=}")
 
             revision = None
             revisions = case_study.revisions
