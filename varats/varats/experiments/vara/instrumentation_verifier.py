@@ -32,6 +32,7 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
     create_workload_specific_filename,
 )
+from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
@@ -46,6 +47,8 @@ from varats.utils.git_util import ShortCommitHash
 
 
 class RunAndVerifyInstrumentedProject(actions.ProjectStep):  # type: ignore
+    """Experiment step that executes a traced binary, extracing information from
+    the run-time analysis."""
 
     NAME = "RunAndVerifyInstrumentedProject"
     DESCRIPTION = "foo"
@@ -105,7 +108,7 @@ class RunAndVerifyInstrumentedProject(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-class RunInstrVerifier(VersionExperiment, shorthand="RIV"):
+class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
     """Test runner for feature performance."""
 
     NAME = "RunInstrVerifier"
@@ -124,27 +127,11 @@ class RunInstrVerifier(VersionExperiment, shorthand="RIV"):
         """
         instr_type = "instr_verify"
 
-        fm_provider = FeatureModelProvider.create_provider_for_project(
-            type(project)
-        )
-        if fm_provider is None:
-            raise Exception("Could not get FeatureModelProvider!")
+        project.cflags += self.get_vara_feature_cflags(project)
 
-        fm_path = fm_provider.get_feature_model_path(project.version_of_primary)
-        if fm_path is None or not fm_path.exists():
-            raise FeatureModelNotFound(project, fm_path)
+        project.cflags += self.get_vara_tracing_cflags(instr_type, True)
 
-        # Sets FM model flags
-        project.cflags += [
-            "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}"
-        ]
-        # Sets vara tracing flags
-        project.cflags += [
-            "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
-            "-fuse-ld=lld", "-Wl,-plugin-opt=save-temps",
-            "-flegacy-pass-manager"
-        ]
-        project.ldflags += ["-flto"]
+        project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self)
