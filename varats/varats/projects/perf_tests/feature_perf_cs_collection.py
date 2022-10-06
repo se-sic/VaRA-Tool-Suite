@@ -2,11 +2,13 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -38,6 +40,21 @@ class FeaturePerfCSCollection(VProject):
         )
     ]
 
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SingleLocalSimple"),
+                label="SLS-no-input"
+            ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("MultiSharedMultipleRegions"),
+                label="MSMR-no-input"
+            )
+        ]
+    }
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -66,6 +83,13 @@ class FeaturePerfCSCollection(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            )
+        )
+        binary_map.specify_binary(
+            "build/bin/MultiSharedMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c051e44a973ee31b3baa571407694467a513ba68", "master"
             )
         )
 

@@ -2,7 +2,9 @@
 execution performance of each binary that is produced by a project."""
 import os
 import typing as tp
+from pathlib import Path
 
+from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
@@ -13,6 +15,12 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
+    ZippedReportFolder,
+)
+from varats.experiment.workload_util import (
+    workload_commands,
+    WorkloadCategory,
+    create_workload_specific_filename,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import BinaryType
@@ -46,37 +54,39 @@ class ExecAndTraceBinary(actions.ProjectStep):  # type: ignore
     def run_perf_tracing(self) -> actions.StepResult:
         """Execute the specified binaries of the project, in specific
         configurations, against one or multiple workloads."""
-        print(f"PWD {os.getcwd()}")
 
-        vara_result_folder = get_varats_result_folder(self.project)
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
+                # Skip libaries as we cannot run them
                 continue
 
-            result_file = create_new_success_result_filepath(
-                self.__experiment_handle, TEFReport, self.project, binary
+            result_filepath = create_new_success_result_filepath(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report,
+                self.project, binary
             )
 
-            with local.cwd(local.path(self.project.source_of_primary)):
-                print(
-                    f"Currenlty at {local.path(self.project.source_of_primary)}"
-                )
-                print(f"Bin path {binary.path}")
+            with local.cwd(local.path(self.project.builddir)):
+                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
+                    for prj_command in workload_commands(
+                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        local_tracefile_path = Path(
+                            tmp_dir
+                        ) / f"trace_{prj_command.command.label}.json"
+                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd()
 
-                # executable = local[f"{binary.path}"]
-
-                with local.env(
-                    VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
-                ):
-
-                    workload = "/tmp/countries-land-1km.geo.json"
-
-                    # TODO: figure out how to handle workloads
-                    binary("-k", workload)
-
-                    # TODO: figure out how to handle different configs
-                    # executable("--slow")
-                    # executable()
+                        # TODO: figure out how to handle different configs
+                        # executable("--slow")
+                        # executable()
 
         return actions.StepResult.OK
 
@@ -98,7 +108,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         Args:
             project: to analyze
         """
-        instr_type = "instr_verify"  # trace_event
+        instr_type = "trace_event"  # trace_event
 
         project.cflags += self.get_vara_feature_cflags(project)
 

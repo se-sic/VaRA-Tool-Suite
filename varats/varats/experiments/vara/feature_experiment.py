@@ -14,9 +14,14 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
     FeatureModelNotFound,
 )
+from varats.report.report import ReportSpecification
 
 
 class FeatureExperiment(VersionExperiment, shorthand=""):
+
+    NAME = "FeatureExperiment"
+
+    REPORT_SPEC = ReportSpecification()
 
     @abstractmethod
     def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
