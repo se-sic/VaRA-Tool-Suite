@@ -8,6 +8,11 @@ from benchbuild.experiment import ExperimentRegistry
 
 from varats.data.discover_reports import initialize_reports
 from varats.experiments.discover_experiments import initialize_experiments
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+    BlameReportExperimentRegion,
+    BlameReportExperimentCommitInFunction,
+)
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.report.report import BaseReport
 from varats.ts_utils.artefact_util import (
@@ -256,5 +261,22 @@ REQUIRE_MULTI_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
         type=create_multi_experiment_type_choice(),
         required=True,
         help="One or more experiment types to use."
+    )
+)
+REQUIRE_BLAME_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
+    "experiment_type", ExperimentTypeConverter
+)(
+    make_cli_option(
+        "--experiment-type",
+        type=TypedChoice({
+            BlameReportExperiment.NAME:
+                BlameReportExperiment,
+            BlameReportExperimentRegion.NAME:
+                BlameReportExperimentRegion,
+            BlameReportExperimentCommitInFunction.NAME:
+                BlameReportExperimentCommitInFunction
+        }),
+        required=True,
+        help="The experiment type to use."
     )
 )
