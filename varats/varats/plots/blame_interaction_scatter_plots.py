@@ -63,7 +63,7 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
             raise PlotDataEmpty()
 
         cig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision.to_short_commit_hash(), BlameReportExperiment
         ).commit_interaction_graph()
 
         commit_lookup = create_commit_lookup_helper(project_name)
@@ -176,7 +176,7 @@ class AuthorInteractionScatterPlot(
             raise PlotDataEmpty()
 
         aig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision.to_short_commit_hash(), BlameReportExperiment
         ).author_interaction_graph()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []

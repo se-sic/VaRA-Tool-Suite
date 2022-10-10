@@ -28,14 +28,14 @@ from varats.utils.git_util import (
     create_commit_lookup_helper,
     CommitRepoPair,
     UNCOMMITTED_COMMIT_HASH,
-    FullCommitHash,
+    ShortCommitHash,
 )
 
 LOG = logging.Logger(__name__)
 
 
 def _collect_cig_node_data(
-    project_name: str, revision: FullCommitHash,
+    project_name: str, revision: ShortCommitHash,
     experiment_type: tp.Type[BlameReportExperiment]
 ) -> tp.List[tp.Dict[str, tp.Any]]:
     churn_config = ChurnConfig.create_c_style_languages_config()
@@ -89,7 +89,7 @@ class TopCentralCodeCommitsTable(
             raise TableDataEmpty()
 
         nodes = _collect_cig_node_data(
-            project_name, revision, BlameReportExperiment
+            project_name, revision.to_short_commit_hash(), BlameReportExperiment
         )
         data = pd.DataFrame(nodes)
         data["code_centrality"] = data["degree"] - data["insertions"]

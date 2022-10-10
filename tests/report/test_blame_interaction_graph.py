@@ -42,7 +42,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         )
         assert revision
         blame_interaction_graph = create_blame_interaction_graph(
-            "xz", revision, BlameReportExperiment
+            "xz", revision.to_short_commit_hash(), BlameReportExperiment
         )
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")
@@ -104,7 +104,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         )
         assert revision
         blame_interaction_graph = create_blame_interaction_graph(
-            "xz", revision, BlameReportExperiment
+            "xz", revision.to_short_commit_hash(), BlameReportExperiment
         )
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")

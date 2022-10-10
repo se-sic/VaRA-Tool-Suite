@@ -22,11 +22,11 @@ from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
-from varats.utils.git_util import FullCommitHash, num_commits, num_authors
+from varats.utils.git_util import num_commits, num_authors, ShortCommitHash
 
 
 def _generate_graph_table(
-    graph_generator: tp.Callable[[str, FullCommitHash], nx.DiGraph],
+    graph_generator: tp.Callable[[str, ShortCommitHash], nx.DiGraph],
     table_format: TableFormat, wrap_table: bool
 ) -> str:
     degree_data: tp.List[pd.DataFrame] = []
@@ -39,7 +39,7 @@ def _generate_graph_table(
         if not revision:
             continue
 
-        graph = graph_generator(project_name, revision)
+        graph = graph_generator(project_name, revision.to_short_commit_hash())
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in graph.nodes:
@@ -110,7 +110,7 @@ class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
 
         def create_graph(
-            project_name: str, revision: FullCommitHash
+            project_name: str, revision: ShortCommitHash
         ) -> nx.DiGraph:
             return create_blame_interaction_graph(
                 project_name, revision, BlameReportExperiment
@@ -138,7 +138,7 @@ class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
 
         def create_graph(
-            project_name: str, revision: FullCommitHash
+            project_name: str, revision: ShortCommitHash
         ) -> nx.DiGraph:
             return create_blame_interaction_graph(
                 project_name, revision, BlameReportExperiment
@@ -168,7 +168,7 @@ class CommitAuthorInteractionGraphMetricsTable(
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
 
         def create_graph(
-            project_name: str, revision: FullCommitHash
+            project_name: str, revision: ShortCommitHash
         ) -> nx.DiGraph:
             return create_blame_interaction_graph(
                 project_name, revision, BlameReportExperiment
@@ -207,7 +207,7 @@ class AuthorBlameVsFileDegreesTable(
             raise TableDataEmpty()
 
         blame_aig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision.to_short_commit_hash(), BlameReportExperiment
         ).author_interaction_graph()
         file_aig = create_file_based_interaction_graph(
             project_name, revision

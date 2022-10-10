@@ -592,7 +592,7 @@ class FileBasedInteractionGraph(InteractionGraph):
 
 
 def create_blame_interaction_graph(
-    project_name: str, revision: FullCommitHash,
+    project_name: str, revision: ShortCommitHash,
     experiment_type: tp.Type[BlameReportExperiment]
 ) -> BlameInteractionGraph:
     """
@@ -607,7 +607,7 @@ def create_blame_interaction_graph(
         the blame interaction graph
     """
     report_files = get_processed_revision_files(
-        project_name, revision.to_short_commit_hash(), experiment_type
+        project_name, revision, experiment_type
     )
     if len(report_files) == 0:
         raise LookupError(f"Found no BlameReport for project {project_name}")

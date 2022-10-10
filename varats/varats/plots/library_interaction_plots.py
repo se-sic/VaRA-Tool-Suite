@@ -117,7 +117,8 @@ class LibInteractionStats(Plot, plot_name='lib_inter_stats'):
         for analyzed_revision in revisions:
             commit = project_repo.get(analyzed_revision.hash)
             big = create_blame_interaction_graph(
-                project_name, analyzed_revision, experiment_type
+                project_name, analyzed_revision.to_short_commit_hash(),
+                experiment_type
             ).blame_interaction_graph()
 
             new_regions = _find_new_lib_regions(

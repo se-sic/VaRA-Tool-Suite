@@ -42,7 +42,8 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
                 continue
 
             caig = create_blame_interaction_graph(
-                project_name, revision, BlameReportExperiment
+                project_name, revision.to_short_commit_hash(),
+                BlameReportExperiment
             ).commit_author_interaction_graph(
                 outgoing_interactions=True, incoming_interactions=True
             )
@@ -131,7 +132,8 @@ class AuthorBlameVsFileDegreesViolinPlot(
             project_names.append(project_name)
 
             blame_aig = create_blame_interaction_graph(
-                project_name, revision, BlameReportExperiment
+                project_name, revision.to_short_commit_hash(),
+                BlameReportExperiment
             ).author_interaction_graph()
             file_aig = create_file_based_interaction_graph(
                 project_name, revision

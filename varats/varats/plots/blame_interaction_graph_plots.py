@@ -58,7 +58,7 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
 
     def save(self, plot_dir: Path, filetype: str = 'svg') -> None:
         project_name = self.plot_kwargs["project"]
-        revision = self.plot_kwargs["revision"]
+        revision = ShortCommitHash(self.plot_kwargs["revision"])
         cig = create_blame_interaction_graph(
             project_name, revision, BlameReportExperiment
         ).commit_interaction_graph()
@@ -95,7 +95,7 @@ EdgeInfoTy = tp.TypeVar("EdgeInfoTy", ChordPlotEdgeInfo, ArcPlotEdgeInfo)
 
 
 def _prepare_cig_plotly(
-    project_name: str, revision: FullCommitHash,
+    project_name: str, revision: ShortCommitHash,
     create_node_info: tp.Callable[[NodeTy, CommitRepoPair, nx.DiGraph],
                                   NodeInfoTy],
     create_edge_info: tp.Callable[[CommitRepoPair, CommitRepoPair, int],
@@ -150,9 +150,7 @@ class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
 
     def plot(self, view_mode: bool) -> None:
         project_name: str = self.plot_kwargs["case_study"].project_name
-        revision = get_commit_map(project_name).convert_to_full_or_warn(
-            ShortCommitHash(self.plot_kwargs["revision"])
-        )
+        revision = ShortCommitHash(self.plot_kwargs["revision"])
 
         def create_node_data(
             node: NodeTy, commit: CommitRepoPair, cig: nx.DiGraph
@@ -210,9 +208,7 @@ class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
 
     def plot(self, view_mode: bool) -> None:
         project_name: str = self.plot_kwargs["case_study"].project_name
-        revision = get_commit_map(project_name).convert_to_full_or_warn(
-            ShortCommitHash(self.plot_kwargs["revision"])
-        )
+        revision = ShortCommitHash(self.plot_kwargs["revision"])
 
         def create_node_data(
             node: NodeTy, commit: CommitRepoPair, cig: nx.DiGraph
@@ -307,7 +303,8 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
             raise PlotDataEmpty()
 
         cig = create_blame_interaction_graph(
-            case_study.project_name, revision, BlameReportExperiment
+            case_study.project_name, revision.to_short_commit_hash(),
+            BlameReportExperiment
         ).commit_interaction_graph()
         commit_lookup = create_commit_lookup_helper(case_study.project_name)
 
@@ -398,7 +395,7 @@ class AuthorInteractionGraphNodeDegreePlot(Plot, plot_name='aig_node_degrees'):
             raise PlotDataEmpty()
 
         aig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision.to_short_commit_hash(), BlameReportExperiment
         ).author_interaction_graph()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
@@ -474,7 +471,7 @@ class CommitAuthorInteractionGraphNodeDegreePlot(
             raise PlotDataEmpty()
 
         caig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision.to_short_commit_hash(), BlameReportExperiment
         ).commit_author_interaction_graph()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []

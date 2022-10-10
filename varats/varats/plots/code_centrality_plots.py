@@ -55,7 +55,7 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
 
         churn_config = ChurnConfig.create_c_style_languages_config()
         cig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision.to_short_commit_hash(), BlameReportExperiment
         ).commit_interaction_graph()
         commit_lookup = create_commit_lookup_helper(project_name)
         repo_lookup = get_local_project_gits(project_name)
