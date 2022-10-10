@@ -86,6 +86,8 @@ def dataframe_to_table(
 
     elif table_format.is_html():
         table = style.to_html(**kwargs)
+    elif table_format == TableFormat.CSV:
+        table = data.to_csv(**kwargs)
     else:
         table = tabulate(data, data.columns, table_format.value)
 

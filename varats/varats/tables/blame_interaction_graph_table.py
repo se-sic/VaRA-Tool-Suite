@@ -8,7 +8,9 @@ from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     AIGNodeAttrs,
     create_file_based_interaction_graph,
+    BIGEdgeAttrs,
 )
+from varats.data.reports.blame_report import BlameTaintData
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
@@ -21,7 +23,12 @@ from varats.project.project_util import get_local_project_git_path
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
+from varats.ts_utils.click_param_types import (
+    REQUIRE_MULTI_CASE_STUDY,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REVISION,
+    REQUIRE_BLAME_EXPERIMENT_TYPE,
+)
 from varats.utils.git_util import num_commits, num_authors, ShortCommitHash
 
 
@@ -273,4 +280,59 @@ class AuthorBlameVsFileDegreesTableGenerator(
             AuthorBlameVsFileDegreesTable(
                 self.table_config, case_study=cs, **self.table_kwargs
             ) for cs in case_studies
+        ]
+
+
+class CommitInteractionGraphAdjacencyTable(Table, table_name="cig_adj_table"):
+    """CIG adjacency list/table."""
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_study = self.table_kwargs["case_study"]
+        experiment_type = self.table_kwargs["experiment_type"]
+        revision = ShortCommitHash(self.table_kwargs["revision"])
+        cig = create_blame_interaction_graph(
+            case_study.project_name, revision, experiment_type
+        ).blame_interaction_graph()
+
+        adjacency_list = pd.DataFrame(
+            columns={
+                "from_commit": 'str',
+                "from_function": 'str',
+                "to_commit": 'str',
+                "to_function": 'str',
+                "amount": 'int64',
+            },
+            data=[{
+                "from_commit":
+                    tp.cast(BlameTaintData, from_node).commit.commit_hash,
+                "from_function":
+                    tp.cast(BlameTaintData, from_node).function_name,
+                "to_commit":
+                    tp.cast(BlameTaintData, to_node).commit.commit_hash,
+                "to_function":
+                    tp.cast(BlameTaintData, to_node).function_name,
+                "amount":
+                    tp.cast(BIGEdgeAttrs, data)["amount"],
+            } for from_node, to_node, data in cig.edges(data=True)]
+        )
+
+        return dataframe_to_table(
+            adjacency_list, table_format, adjacency_list.style, index=False
+        )
+
+
+class CommitInteractionGraphAdjacencyTableGenerator(
+    TableGenerator,
+    generator_name="cig-adj-table",
+    options=[
+        REQUIRE_CASE_STUDY, REQUIRE_REVISION, REQUIRE_BLAME_EXPERIMENT_TYPE
+    ]
+):
+    """Generates a cig-metrics table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            CommitInteractionGraphAdjacencyTable(
+                self.table_config, **self.table_kwargs
+            )
         ]
