@@ -3,12 +3,15 @@ import re
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.source import HTTP
 from benchbuild.utils.cmd import make, mkdir
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper_mgmt.paper_config import (
     PaperConfigSpecificGit,
     project_filter_generator,
@@ -66,6 +69,15 @@ class Gzip(VProject, ReleaseProviderHook):
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("gzip")
+        ),
+        # TODO: auto unzipper for BB?
+        HTTP(
+            local="countries-land-1km.geo.json",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0/countries-land-1km.geo.json"
+            }
         )
     ]
 
@@ -73,6 +85,19 @@ class Gzip(VProject, ReleaseProviderHook):
         'apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'autopoint',
         'gettext', 'texinfo', 'rsync'
     )
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            Command(
+                SourceRoot("gzip") / RSBinary("gzip"),
+                "-k",
+                "--force",  # needed because BB creates symlinks for the inputs
+                "countries-land-1km.geo.json",
+                label="countries-land-1km",
+                creates=["countries-land-1km.geo.json.gz"]
+            )
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(
