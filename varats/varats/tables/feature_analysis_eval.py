@@ -11,6 +11,7 @@ from varats.data.reports.feature_analysis_report import (
     FeatureAnalysisReport,
     FeatureAnalysisReportEval,
 )
+from varats.experiments.vara.phasar_fta import PhASARTaintAnalysis
 from varats.jupyterhelper.file import load_feature_analysis_report
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -78,7 +79,7 @@ class PhasarFeatureAnalysisProjectEvalTable(
         case_study: CaseStudy = self.table_kwargs['case_study']
 
         report_files = get_processed_revisions_files(
-            case_study.project_name, FeatureAnalysisReport,
+            case_study.project_name, PhASARTaintAnalysis, FeatureAnalysisReport,
             get_case_study_file_name_filter(case_study)
         )
         if len(report_files) == 0:
@@ -155,13 +156,11 @@ class PhasarFeatureAnalysisProjectEvalTable(
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["column_format"] = (
-                'ccc|cc' + '|cc' * len(features) if len(binaries) > 1 \
-                    else 'cc|cc' + '|cc' * len(features)
+                'ccc|cc' +
+                '|cc' * len(features) if len(binaries) > 1 else 'cc|cc' +
+                '|cc' * len(features)
             )
-            kwargs["longtable"] = True
-            kwargs["multicolumn"] = True
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
+            kwargs["multicol_align"] = "c"
             kwargs["caption"] = (
                 f"Evaluation of project {case_study.project_name}. "
                 f"In total there were {insts} br and switch instructions."
@@ -169,7 +168,11 @@ class PhasarFeatureAnalysisProjectEvalTable(
             kwargs['position'] = 't'
 
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
     def __create_eval_df(
@@ -242,7 +245,8 @@ class PhasarFeatureAnalysisTotalEvalTable(
             key=lambda x: x.project_name
         ):
             report_files = get_processed_revisions_files(
-                case_study.project_name, FeatureAnalysisReport,
+                case_study.project_name, PhASARTaintAnalysis,
+                FeatureAnalysisReport,
                 get_case_study_file_name_filter(case_study)
             )
             if len(report_files) == 0:
@@ -308,14 +312,15 @@ class PhasarFeatureAnalysisTotalEvalTable(
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["column_format"] = col_format
-            kwargs["longtable"] = True
-            kwargs["multicolumn"] = True
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
+            kwargs["multicol_align"] = "c"
             kwargs['position'] = 't'
 
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df,
+            table_format,
+            wrap_tale=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
     def __create_eval_df(

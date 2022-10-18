@@ -6,7 +6,6 @@ BlameReport.
 """
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -24,25 +23,31 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
-    create_new_success_result_filename,
+    create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
+from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class BlameReportGeneration(actions.Step):  # type: ignore
+class BlameReportGeneration(actions.ProjectStep):  # type: ignore
     """Analyse a project with VaRA and generate a BlameReport."""
 
     NAME = "BlameReportGeneration"
     DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
 
+    project: VProject
+
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
         blame_taint_scope: BlameTaintScope
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__blame_taint_scope = blame_taint_scope
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """
@@ -53,18 +58,14 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             * -vara-BR: to run a commit flow report
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
-        if not self.obj:
-            return actions.StepResult.ERROR
-        project = self.obj
-
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = get_varats_result_folder(project)
+        vara_result_folder = get_varats_result_folder(self.project)
 
-        for binary in project.binaries:
-            result_file = create_new_success_result_filename(
-                self.__experiment_handle, BR, project, binary
+        for binary in self.project.binaries:
+            result_file = create_new_success_result_filepath(
+                self.__experiment_handle, BR, self.project, binary
             )
 
             opt_params = [
@@ -73,7 +74,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 f"-vara-blame-taint-scope={self.__blame_taint_scope.name}",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary, [
+                    self.project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
                         BCFileExtensions.BLAME
                     ]
@@ -87,8 +88,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, BR,
-                    Path(vara_result_folder)
+                    self.__experiment_handle, self.project, BR
                 )
             )
 

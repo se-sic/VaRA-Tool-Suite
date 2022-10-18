@@ -12,6 +12,9 @@ from varats.data.reports.blame_interaction_graph import (
     AIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
@@ -33,13 +36,13 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
             project_name = case_study.project_name
             added_project_name = False
             revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
+                case_study, BlameReportExperiment
             )
             if not revision:
                 continue
 
             caig = create_blame_interaction_graph(
-                project_name, revision
+                project_name, revision, BlameReportExperiment
             ).commit_author_interaction_graph(
                 outgoing_interactions=True, incoming_interactions=True
             )
@@ -82,8 +85,10 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
         )
         ax.set_ylim(-0.1, 1.1)
         ax.set_aspect(0.3 / ax.get_data_ratio())
-        ax.tick_params(axis='x', labelrotation=45)
+        ax.tick_params(axis='x', labelrotation=45, labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
         ax.set_xlabel(None)
+        ax.yaxis.label.set_size(9)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -118,7 +123,7 @@ class AuthorBlameVsFileDegreesViolinPlot(
         for case_study in case_studies:
             project_name = case_study.project_name
             revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
+                case_study, BlameReportExperiment
             )
             if not revision:
                 continue
@@ -126,7 +131,7 @@ class AuthorBlameVsFileDegreesViolinPlot(
             project_names.append(project_name)
 
             blame_aig = create_blame_interaction_graph(
-                project_name, revision
+                project_name, revision, BlameReportExperiment
             ).author_interaction_graph()
             file_aig = create_file_based_interaction_graph(
                 project_name, revision
@@ -177,8 +182,10 @@ class AuthorBlameVsFileDegreesViolinPlot(
         )
         ax.set_ylim(bottom=0, top=1.1 * data["# Additional Authors"].max())
         ax.set_aspect(0.3 / ax.get_data_ratio())
-        ax.tick_params(axis='x', labelrotation=45)
+        ax.tick_params(axis='x', labelrotation=45, labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
         ax.set_xlabel(None)
+        ax.yaxis.label.set_size(9)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
