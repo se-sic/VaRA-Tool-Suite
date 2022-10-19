@@ -1,40 +1,18 @@
 """Module for feature performance experiments that instrument and measure the
 execution performance of each binary that is produced by a project."""
-import os
 import typing as tp
-from pathlib import Path
 
-from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from plumbum import local
 
-from varats.experiment.experiment_util import (
-    ExperimentHandle,
-    get_varats_result_folder,
-    VersionExperiment,
-    get_default_compile_error_wrapped,
-    create_new_success_result_filepath,
-    ZippedReportFolder,
-)
-from varats.experiment.workload_util import (
-    workload_commands,
-    WorkloadCategory,
-    create_workload_specific_filename,
-)
+from varats.experiment.experiment_util import get_default_compile_error_wrapped
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
 )
-from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
-from varats.provider.feature.feature_model_provider import (
-    FeatureModelProvider,
-    FeatureModelNotFound,
-)
 from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReport
-from varats.utils.git_util import ShortCommitHash
 
 
 class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):

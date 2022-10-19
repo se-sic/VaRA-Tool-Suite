@@ -1,29 +1,18 @@
 """Experiment that instruments a project with verification instrumentation that
 is used during execution to check if regions are correctly opend/closed."""
-import textwrap
 import typing as tp
-from pathlib import Path
 
-from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
-from plumbum import local
 
 from varats.data.reports.instrumentation_verifier_report import (
     InstrVerifierReport,
 )
-from varats.experiment.experiment_util import (
-    ExperimentHandle,
-    create_new_success_result_filepath,
-    get_default_compile_error_wrapped,
-    ZippedReportFolder,
-)
-from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.experiment.experiment_util import get_default_compile_error_wrapped
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
 )
-from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
