@@ -1,6 +1,5 @@
 """Project file for xz."""
 import typing as tp
-from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
@@ -57,7 +56,7 @@ class Xz(VProject):
             PaperConfigSpecificGit(
                 project_name='xz',
                 remote="https://github.com/xz-mirror/xz.git",
-                local="xz.git",
+                local="xz",
                 refspec="origin/HEAD",
                 limit=None,
                 shallow=False
@@ -82,7 +81,7 @@ class Xz(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("xz.git") / RSBinary("xz"),
+                SourceRoot("xz") / RSBinary("xz"),
                 "-k",
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
