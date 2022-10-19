@@ -169,6 +169,29 @@ def get_local_project_gits(
     return repos
 
 
+def get_local_project_git_paths(project_name: str) -> tp.Dict[str, Path]:
+    """
+    Get the all paths to the git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the paths to the git repositories for the project's sources
+    """
+    repos: tp.Dict[str, Path] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        if isinstance(source, Git):
+            source_name = os.path.basename(source.local)
+            repos[source_name] = get_local_project_git_path(
+                project_name, source_name
+            )
+
+    return repos
+
+
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
     """Get a list of all tagged commits along with their respective tags."""
     repo_loc = get_local_project_git_path(project_name)
