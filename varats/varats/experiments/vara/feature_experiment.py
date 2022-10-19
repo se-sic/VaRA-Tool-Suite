@@ -1,14 +1,30 @@
 """Base class experiment and utilities for experiments that work with
 features."""
 # TODO: figure out where to put the file
+import textwrap
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
+from benchbuild.command import cleanup
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step
+from benchbuild.utils.actions import Step, ProjectStep, StepResult
+from plumbum import local
 
-from varats.experiment.experiment_util import VersionExperiment
+from varats.experiment.experiment_util import (
+    VersionExperiment,
+    ExperimentHandle,
+    get_varats_result_folder,
+    get_default_compile_error_wrapped,
+    create_new_success_result_filepath,
+    ZippedReportFolder,
+)
+from varats.experiment.workload_util import (
+    workload_commands,
+    WorkloadCategory,
+    create_workload_specific_filename,
+)
+from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
@@ -88,3 +104,61 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Returns: ldflags for VaRA LTO support
         """
         return ["-flto"]
+
+
+class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
+    """Executes the traced project binaries over the specified workloads."""
+
+    NAME = "VaRARunTracedBinaries"
+    DESCRIPTION = "Run traced binary on workloads."
+
+    project: VProject
+
+    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
+        super().__init__(project=project)
+        self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> StepResult:
+        return self.run_traced_code()
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run instrumentation verifier", indent * " "
+        )
+
+    def run_traced_code(self) -> StepResult:
+        """Runs the binary with the embedded tracing code."""
+        for binary in self.project.binaries:
+            if binary.type != BinaryType.EXECUTABLE:
+                # Skip libaries as we cannot run them
+                continue
+
+            result_filepath = create_new_success_result_filepath(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report,
+                self.project, binary
+            )
+
+            with local.cwd(local.path(self.project.builddir)):
+                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
+                    for prj_command in workload_commands(
+                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        local_tracefile_path = Path(
+                            tmp_dir
+                        ) / f"trace_{prj_command.command.label}.json"
+                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd()
+
+                        # TODO: figure out how to handle different configs
+                        # executable("--slow")
+                        # executable()
+
+        return StepResult.OK

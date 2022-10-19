@@ -19,74 +19,13 @@ from varats.experiment.experiment_util import (
     ZippedReportFolder,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
-from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.experiments.vara.feature_experiment import (
+    FeatureExperiment,
+    RunVaRATracedWorkloads,
+)
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
-
-# TODO: merge this with feature runner experiment
-
-
-class RunAndVerifyInstrumentedProject(actions.ProjectStep):  # type: ignore
-    """Experiment step that executes a traced binary, extracing information from
-    the run-time analysis."""
-
-    NAME = "RunAndVerifyInstrumentedProject"
-    DESCRIPTION = "foo"
-
-    project: VProject
-
-    def __init__(
-        self, project: VProject, experiment_handle: ExperimentHandle
-    ) -> None:
-        super().__init__(project=project)
-        self.__experiment_handle = experiment_handle
-
-    def __call__(self) -> actions.StepResult:
-        return self.run_verifier()
-
-    def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* {self.project.name}: Run instrumentation verifier", indent * " "
-        )
-
-    def run_verifier(self) -> actions.StepResult:
-        """Runs the binary with the embedded region verifier code."""
-
-        for binary in self.project.binaries:
-            if binary.type != BinaryType.EXECUTABLE:
-                # Skip libaries as we cannot run them
-                continue
-
-            result_filepath = create_new_success_result_filepath(
-                self.__experiment_handle,
-                self.__experiment_handle.report_spec().main_report,
-                self.project, binary
-            )
-
-            with local.cwd(local.path(self.project.builddir)):
-                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
-                    for prj_command in workload_commands(
-                        self.project, binary, [WorkloadCategory.EXAMPLE]
-                    ):
-                        local_tracefile_path = Path(
-                            tmp_dir
-                        ) / f"trace_{prj_command.command.label}.json"
-                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
-                            pb_cmd = prj_command.command.as_plumbum(
-                                project=self.project
-                            )
-                            print(
-                                f"Running example {prj_command.command.label}"
-                            )
-                            with cleanup(prj_command):
-                                pb_cmd()
-
-                        # TODO: figure out how to handle different configs
-                        # executable("--slow")
-                        # executable()
-
-        return actions.StepResult.OK
 
 
 class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
@@ -129,7 +68,7 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
-            RunAndVerifyInstrumentedProject(project, self.get_handle())
+            RunVaRATracedWorkloads(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 
