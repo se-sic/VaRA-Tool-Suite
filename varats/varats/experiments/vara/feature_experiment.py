@@ -13,16 +13,10 @@ from plumbum import local
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
-    get_varats_result_folder,
-    get_default_compile_error_wrapped,
     create_new_success_result_filepath,
     ZippedReportFolder,
 )
-from varats.experiment.workload_util import (
-    workload_commands,
-    WorkloadCategory,
-    create_workload_specific_filename,
-)
+from varats.experiment.workload_util import workload_commands, WorkloadCategory
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
@@ -33,7 +27,7 @@ from varats.report.report import ReportSpecification
 
 
 class FeatureExperiment(VersionExperiment, shorthand=""):
-    """Base class experiment for feautre specific experiments."""
+    """Base class experiment for feature specific experiments."""
 
     NAME = "FeatureExperiment"
 
