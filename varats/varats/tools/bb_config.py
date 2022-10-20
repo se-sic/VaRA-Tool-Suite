@@ -58,6 +58,7 @@ def create_new_bb_config(
         'varats.projects.c_projects.grep',
         'varats.projects.c_projects.gzip',
         'varats.projects.c_projects.htop',
+        'varats.projects.c_projects.hypre',
         'varats.projects.c_projects.irssi',
         'varats.projects.c_projects.libjpeg_turbo',
         'varats.projects.c_projects.libpng',
