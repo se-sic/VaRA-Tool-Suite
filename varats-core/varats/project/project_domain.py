@@ -24,7 +24,6 @@ class ProjectDomains(Enum):
     RENDERING = "Rendering"
     SECURITY = "Security"
     SIGNAL_PROCESSING = "Signal processing"
-    SOLVER = "Solver"
     TEST = "Test project"
     UNIX_TOOLS = "UNIX utils"
     VERSION_CONTROL = "Version control"
