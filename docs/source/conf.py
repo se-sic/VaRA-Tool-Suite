@@ -91,6 +91,8 @@ import scipy.stats  # isort:skip
 # annotations, so we have to manually break the circles.
 import rich.console  # isort:skip
 import cryptography.hazmat.backends  # isort:skip
+import cryptography.hazmat.backends.openssl.backend  # isort:skip
+import cryptography.exceptions  # isort:skip
 import click  # isort:skip
 import git  # isort:skip
 
