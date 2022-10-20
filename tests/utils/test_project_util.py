@@ -260,7 +260,7 @@ class TestProjectBinaryWrapper(unittest.TestCase):
 
 
 class TestTaggedCommits(unittest.TestCase):
-    """Check if we can get list of tagged commits from a project."""
+    """Check if we can get a list of tagged commits from a project."""
 
     @classmethod
     def setUp(cls) -> None:
