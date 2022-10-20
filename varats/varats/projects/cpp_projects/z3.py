@@ -30,9 +30,7 @@ from varats.utils.settings import bb_cfg
 
 
 class Z3(VProject, ReleaseProviderHook):
-    """
-    Z3 is a theorem prover from Microsoft Research.
-    """
+    """Z3 is a theorem prover from Microsoft Research."""
 
     NAME = 'z3'
     GROUP = 'cpp_projects'
