@@ -175,6 +175,7 @@ def get_local_project_git_paths(project_name: str) -> tp.Dict[str, Path]:
 
     Args:
         project_name: name of the given benchbuild project
+
     Returns:
         dict with the paths to the git repositories for the project's sources
     """
