@@ -18,6 +18,7 @@ class ProjectDomains(Enum):
     FILE_FORMAT = "File format"
     HW_EMULATOR = "Hardware emulator"
     PARSER = "Parser"
+    PLANNING = "Planning"
     PROG_LANG = "Programming language"
     PROTOCOL = "Protocol"
     RENDERING = "Rendering"
