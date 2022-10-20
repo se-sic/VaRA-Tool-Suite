@@ -1,4 +1,5 @@
 """Project file for Z3."""
+import re
 import typing as tp
 
 import benchbuild as bb
@@ -13,6 +14,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     get_local_project_git_path,
     verify_binaries,
+    get_tagged_commits,
 )
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
@@ -82,5 +84,14 @@ class Z3(VProject, ReleaseProviderHook):
     def get_release_revisions(
         cls, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
-        # TODO
-        pass
+        major_release_regex = "^(z|Z)3-[0-9]+\\.[0-9]+\\.0$"
+        minor_release_regex = "^(z|Z)3-[0-9]+\\.[0-9]+(\\.[1-9]+)?$"
+
+        tagged_commits = get_tagged_commits(cls.NAME)
+        if release_type == ReleaseType.MAJOR:
+            return [(FullCommitHash(h), tag)
+                    for h, tag in tagged_commits
+                    if re.match(major_release_regex, tag)]
+        return [(FullCommitHash(h), tag)
+                for h, tag in tagged_commits
+                if re.match(minor_release_regex, tag)]
