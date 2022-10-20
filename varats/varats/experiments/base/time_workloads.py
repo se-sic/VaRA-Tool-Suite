@@ -48,6 +48,7 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
         """Only create a report file."""
 
+        print("foo")
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
                 self.project, self.__binary, [WorkloadCategory.EXAMPLE]
@@ -58,6 +59,9 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
                 run_report_name = tmp_dir / create_workload_specific_filename(
                     "time_report", prj_command.command, self.__num, ".txt"
                 )
+
+                if self.__num == 1:
+                    return actions.StepResult.ERROR
 
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
