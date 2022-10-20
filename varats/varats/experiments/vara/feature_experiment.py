@@ -1,6 +1,5 @@
 """Base class experiment and utilities for experiments that work with
 features."""
-# TODO: figure out where to put the file
 import textwrap
 import typing as tp
 from abc import abstractmethod
