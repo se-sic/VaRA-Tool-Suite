@@ -35,7 +35,6 @@ from varats.report.report import (
     ReportFilename,
 )
 from varats.utils.git_util import ShortCommitHash
-from varats.utils.report_utils import adapted_report_filepath_status
 from varats.utils.settings import vara_cfg, bb_cfg
 
 if tp.TYPE_CHECKING:
@@ -529,8 +528,8 @@ class ZippedExperimentSteps(MultiStep):
 
         overall_step_result = max(results) if results else StepResult.OK
         if overall_step_result is not StepResult.OK:
-            error_filepath = adapted_report_filepath_status(
-                self.__output_filepath, FileStatusExtension.FAILED
+            error_filepath = self.__output_filepath.with_status(
+                FileStatusExtension.FAILED
             )
             self.__output_filepath.full_path().rename(
                 error_filepath.full_path()
