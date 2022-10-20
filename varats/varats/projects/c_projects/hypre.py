@@ -4,6 +4,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake
+from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -39,13 +40,20 @@ class Hypre(VProject, ReleaseProviderHook):
     DOMAIN = ProjectDomains.SOLVER
 
     SOURCE = [
-        PaperConfigSpecificGit(
-            project_name="hypre",
-            remote="https://github.com/hypre-space/hypre.git",
-            local="hypre",
-            refspec="origin/HEAD",
-            limit=None,
-            shallow=False
+        block_revisions([
+            SingleRevision(
+                "7c5ce339f18c19965edea47d40c572c2bf8b3aea",
+                "Undeclared identifier 'HYPRE_BRANCH_NAME'"
+            )
+        ])(
+            PaperConfigSpecificGit(
+                project_name="hypre",
+                remote="https://github.com/hypre-space/hypre.git",
+                local="hypre",
+                refspec="origin/HEAD",
+                limit=None,
+                shallow=False
+            )
         )
     ]
 
