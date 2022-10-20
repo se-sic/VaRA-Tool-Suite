@@ -26,6 +26,7 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
+from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
@@ -69,8 +70,11 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "-vara-BD", "-vara-BR", "-vara-init-commits",
-                "-vara-use-phasar",
+                "-vara-BD", "-vara-BR", "-vara-init-commits", "-vara-rewriteMD",
+                "-vara-git-mappings=" + ",".join([
+                    f'"{repo}:{path}"' for repo, path in
+                    get_local_project_git_paths(self.project.name).items()
+                ]), "-vara-use-phasar",
                 f"-vara-blame-taint-scope={self.__blame_taint_scope.name}",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
