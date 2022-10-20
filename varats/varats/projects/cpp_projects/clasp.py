@@ -29,7 +29,7 @@ from varats.utils.git_util import (
 from varats.utils.settings import bb_cfg
 
 
-class Hypre(VProject, ReleaseProviderHook):
+class Clasp(VProject, ReleaseProviderHook):
     """
     clasp is an answer set solver for (extended) normal and disjunctive logic
     programs.
