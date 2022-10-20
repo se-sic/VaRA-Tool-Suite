@@ -169,24 +169,42 @@ def get_local_project_gits(
     return repos
 
 
+def get_local_project_git_paths(project_name: str) -> tp.Dict[str, Path]:
+    """
+    Get the all paths to the git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the paths to the git repositories for the project's sources
+    """
+    repos: tp.Dict[str, Path] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        if isinstance(source, Git):
+            source_name = os.path.basename(source.local)
+            repos[source_name] = get_local_project_git_path(
+                project_name, source_name
+            )
+
+    return repos
+
+
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
     """Get a list of all tagged commits along with their respective tags."""
     repo_loc = get_local_project_git_path(project_name)
     with local.cwd(repo_loc):
-        # --dereference resolves tag IDs into commits for annotated tags
+        # --dereference resolves tag IDs into commits
         # These lines are indicated by the suffix '^{}' (see man git-show-ref)
         ref_list: tp.List[str] = git("show-ref", "--tags",
                                      "--dereference").strip().split("\n")
-
-        # Only keep dereferenced or leightweight tags (i.e., only keep commits)
-        # and strip suffix, if necessary
+        ref_list = [ref for ref in ref_list if ref.endswith("^{}")]
         refs: tp.List[tp.Tuple[str, str]] = [
-            (ref_split[0], ref_split[1][10:].replace('^{}', ''))
+            (ref_split[0], ref_split[1][10:-3])
             for ref_split in [ref.strip().split() for ref in ref_list]
-            if git("cat-file", "-t", ref_split[1][10:]).replace('\n', ''
-                                                               ) == 'commit'
         ]
-
         return refs
 
 
