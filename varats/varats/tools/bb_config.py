@@ -77,13 +77,11 @@ def create_new_bb_config(
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
-        'varats.projects.cpp_projects.clasp',
         'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.hypre',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
-        'varats.projects.cpp_projects.z3',
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'

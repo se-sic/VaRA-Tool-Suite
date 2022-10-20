@@ -15,15 +15,8 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.provider.release.release_provider import (
-    ReleaseProviderHook,
-    ReleaseType,
-)
-from varats.utils.git_util import (
-    RevisionBinaryMap,
-    ShortCommitHash,
-    FullCommitHash,
-)
+from varats.provider.release.release_provider import ReleaseProviderHook
+from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
