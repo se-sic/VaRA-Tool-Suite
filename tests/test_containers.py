@@ -123,7 +123,7 @@ class TestContainerSupport(unittest.TestCase):
         ), varats_install_layer.args)
         mounting_parameters = "type=bind,src=varats_src,target=/varats"
         if buildah_version() >= (1, 24, 0):
-            mounting_parameters += ",rm"
+            mounting_parameters += ",rw"
         self.assertIn(("mount", mounting_parameters),
                       varats_install_layer.kwargs)
 

@@ -47,6 +47,10 @@ class CommitHash(abc.ABC):
     def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
         return FullCommitHash(str(commit.id))
 
+    @abc.abstractmethod
+    def to_short_commit_hash(self) -> 'ShortCommitHash':
+        """Return the short form of the CommitHash."""
+
     def __str__(self) -> str:
         return self.hash
 
@@ -64,6 +68,9 @@ class CommitHash(abc.ABC):
 
 class ShortCommitHash(CommitHash):
     """Shortened commit hash."""
+
+    def to_short_commit_hash(self) -> 'ShortCommitHash':
+        return self
 
     @staticmethod
     def hash_length() -> int:
@@ -293,6 +300,45 @@ def contains_source_code(
         return True
 
     raise RuntimeError(f"git diff failed with retcode={return_code}")
+
+
+def num_commits(
+    c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
+) -> int:
+    """
+    Count the commits in a git repo starting from the given commit back to the
+    initial commit.
+
+    Args:
+        c_start: commit to start counting at
+        repo_folder: path to the git repo
+
+    Returns:
+        the number of commits
+    """
+    return int(
+        git(__get_git_path_arg(repo_folder), "rev-list", "--count", c_start)
+    )
+
+
+def num_authors(
+    c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
+) -> int:
+    """
+    Count the authors in a git repo starting from the given commit back to the
+    initial commit.
+
+    Args:
+        c_start: commit to start counting at
+        repo_folder: path to the git repo
+
+    Returns:
+        the number of authors
+    """
+    return len(
+        git(__get_git_path_arg(repo_folder), "shortlog", "-s",
+            c_start).splitlines()
+    )
 
 
 ################################################################################
@@ -607,9 +653,7 @@ def __calc_code_churn_range_impl(
 
     repo_git = git[__get_git_path_arg(repo_path)]
     log_base_params = ["log", "--pretty=%H"]
-    diff_base_params = [
-        "log", "--pretty=format:'%H'", "--shortstat", "-l0", "--first-parent"
-    ]
+    diff_base_params = ["log", "--pretty=format:'%H'", "--shortstat", "-l0"]
     if revision_range:
         log_base_params.append(revision_range)
         diff_base_params.append(revision_range)
@@ -749,7 +793,7 @@ def calc_repo_code_churn(
     Calculates code churn for a repository.
 
     Args:
-        repo: path to git repository
+        repo_path: path to git repository
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -887,7 +931,8 @@ class RevisionBinaryMap(tp.Container[str]):
             self.__always_valid_mappings.append(wrapped_binary)
 
     def __getitem__(self,
-                    revision: ShortCommitHash) -> tp.List[ProjectBinaryWrapper]:
+                    revision: CommitHash) -> tp.List[ProjectBinaryWrapper]:
+        revision = revision.to_short_commit_hash()
         revision_specific_binaries = []
 
         for validity_range, wrapped_binary \

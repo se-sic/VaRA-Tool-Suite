@@ -39,10 +39,10 @@ class TestCSMetricsTable(unittest.TestCase):
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
 \toprule
-{} & commits & authors & nodes & edges & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
-{} &        mean & median & min &  max &          median & min & max &         median & min & max \\
+{} & {commits} & {authors} & {nodes} & {edges} & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
+{} & {} & {} & {} & {} & {mean} & {median} & {min} & {max} & {median} & {min} & {max} & {median} & {min} & {max} \\
 \midrule
-\textbf{xz} &    1143 &      28 &   124 &   928 &       14.97 &    8.0 &   1 &  154 &             4.0 &   0 &  64 &            3.0 &   0 &  92 \\
+xz & 1143 & 16 & 124 & 928 & 14.97 & 8.00 & 1 & 154 & 4.00 & 0 & 64 & 3.00 & 0 & 92 \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -67,10 +67,10 @@ class TestCSMetricsTable(unittest.TestCase):
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
 \toprule
-{} & commits & authors & nodes & edges & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
-{} &        mean & median & min & max &          median & min & max &         median & min & max \\
+{} & {commits} & {authors} & {nodes} & {edges} & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
+{} & {} & {} & {} & {} & {mean} & {median} & {min} & {max} & {median} & {min} & {max} & {median} & {min} & {max} \\
 \midrule
-\textbf{xz} &    1143 &      28 &     1 &     0 &         0.0 &    0.0 &   0 &   0 &             0.0 &   0 &   0 &            0.0 &   0 &   0 \\
+xz & 1143 & 16 & 1 & 0 & 0.00 & 0.00 & 0 & 0 & 0.00 & 0 & 0 & 0.00 & 0 & 0 \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -95,10 +95,10 @@ class TestCSMetricsTable(unittest.TestCase):
         self.assertEqual(
             r"""\begin{tabular}{lrrrrrrrrrrrrrr}
 \toprule
-{} & commits & authors & nodes & edges & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
-{} &        mean & median & min & max &          median & min & max &         median & min & max \\
+{} & {commits} & {authors} & {nodes} & {edges} & \multicolumn{4}{c}{node degree} & \multicolumn{3}{c}{node out degree} & \multicolumn{3}{c}{node in degree} \\
+{} & {} & {} & {} & {} & {mean} & {median} & {min} & {max} & {median} & {min} & {max} & {median} & {min} & {max} \\
 \midrule
-\textbf{xz} &    1143 &      28 &   125 &    92 &        1.47 &    1.0 &   0 &  92 &             1.0 &   0 &   1 &            0.0 &   0 &  92 \\
+xz & 1143 & 16 & 125 & 92 & 1.47 & 1.00 & 0 & 92 & 1.00 & 0 & 1 & 0.00 & 0 & 92 \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -126,15 +126,12 @@ class TestCSMetricsTable(unittest.TestCase):
 
         self.assertEqual(
             r"""\begin{tabular}{lrrrrr}
-\toprule
-{} &  blame\_num\_commits &  blame\_node\_degree &  author\_diff &  file\_num\_commits &  file\_node\_degree \\
-author         &                    &                    &              &                   &                   \\
-\midrule
-Alexey Tourbin &                NaN &                NaN &          NaN &                 1 &                 2 \\
-Ben Boeckel    &                NaN &                NaN &          NaN &                 1 &                 2 \\
-Jim Meyering   &                NaN &                NaN &          NaN &                 1 &                 2 \\
-Lasse Collin   &              124.0 &                0.0 &          0.0 &               479 &                 6 \\
-\bottomrule
+{} & {Blame Num Commits} & {Blame Node-deg} & {Author Diff} & {File Num Commits} & {File Node-deg} \\
+{Author} & {} & {} & {} & {} & {} \\
+Alexey Tourbin & nan & nan & nan & 1 & 2 \\
+Ben Boeckel & nan & nan & nan & 1 & 2 \\
+Jim Meyering & nan & nan & nan & 1 & 2 \\
+Lasse Collin & 124.00 & 0.00 & 0.00 & 479 & 6 \\
 \end{tabular}
 """, table_str
         )

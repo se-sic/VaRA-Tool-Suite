@@ -7,9 +7,11 @@ import pandas as pd
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
-    BlameReport,
     generate_in_head_interactions,
     generate_out_head_interactions,
+)
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
@@ -25,9 +27,11 @@ from varats.revision.revisions import (
 class BlameInteractionDatabase(
     EvaluationDatabase,
     cache_id="blame_interaction_data",
-    columns=[
-        "IN_HEAD_Interactions", "OUT_HEAD_Interactions", "HEAD_Interactions"
-    ]
+    column_types={
+        "IN_HEAD_Interactions": 'int64',
+        "OUT_HEAD_Interactions": 'int64',
+        "HEAD_Interactions": 'int64'
+    }
 ):
     """Provides access to blame interaction data."""
 
@@ -39,12 +43,7 @@ class BlameInteractionDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.IN_HEAD_Interactions = \
-                df_layout.IN_HEAD_Interactions.astype('int64')
-            df_layout.OUT_HEAD_Interactions = \
-                df_layout.OUT_HEAD_Interactions.astype('int64')
-            df_layout.HEAD_Interactions = \
-                df_layout.HEAD_Interactions.astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(
@@ -71,13 +70,15 @@ class BlameInteractionDatabase(
                                 )
 
         report_files = get_processed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = get_failed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         # cls.CACHE_ID is set by superclass

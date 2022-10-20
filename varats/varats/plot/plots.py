@@ -28,6 +28,8 @@ else:
     from typing import final
 
 if tp.TYPE_CHECKING:
+    from rich.progress import Progress, TaskID  # pylint: disable=unused-import
+
     import varats.plot.plot  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
@@ -144,11 +146,6 @@ class PlotConfig():
         decl.name: decl for decl in tp.cast(
             tp.List[ConfigOption[tp.Any]], [
                 ConfigOption(
-                    "style",
-                    default="classic",
-                    help_str="Matplotlib style to use."
-                ),
-                ConfigOption(
                     "fig_title",
                     default="",
                     help_str="The title of the plot figure."
@@ -233,10 +230,6 @@ class PlotConfig():
             return option.value_or_default(self.__view, default, view_default)
 
         return get_value
-
-    @property
-    def style(self) -> COGetter[str]:
-        return self.__option_getter(self.__options["style"])
 
     @property
     def fig_title(self) -> COGetter[str]:
@@ -447,7 +440,12 @@ class PlotGenerator(abc.ABC):
         """Create the plot instance(s) that should be generated."""
 
     @final
-    def __call__(self, common_options: CommonPlotOptions) -> None:
+    def __call__(
+        self,
+        common_options: CommonPlotOptions,
+        progress: tp.Optional["Progress"] = None,
+        task_id: tp.Optional["TaskID"] = None
+    ) -> None:
         """
         Generate the plots as specified by this generator.
 
@@ -466,6 +464,14 @@ class PlotGenerator(abc.ABC):
                 f"If you answer 'no', the plots will still be generated.", "n"
             )
 
+        if progress:
+            if task_id is None:
+                task_id = progress.add_task(
+                    total=len(plots), description=f"Building {self.NAME}"
+                )
+            else:
+                progress.update(task_id, total=len(plots))
+
         for plot in plots:
             if common_options.dry_run:
                 LOG.info(repr(plot))
@@ -475,6 +481,8 @@ class PlotGenerator(abc.ABC):
                 plot.show()
             else:
                 plot.save(plot_dir, filetype=common_options.file_type)
+            if progress and task_id is not None:
+                progress.advance(task_id)
 
 
 class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
@@ -606,12 +614,18 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
             generator.plot_config, **generator.plot_kwargs
         )
 
-    def generate_artefact(self) -> None:
+    def generate_artefact(
+        self, progress: tp.Optional["Progress"] = None
+    ) -> None:
         """Generate the specified plot(s)."""
+        task_id = None
+        if progress:
+            task_id = progress.add_task(description=f"Building {self.name}")
+
         generator_instance = self.plot_generator_class(
             self.plot_config, **self.__plot_kwargs
         )
-        generator_instance(self.common_options)
+        generator_instance(self.common_options, progress, task_id)
 
     def get_artefact_file_infos(self) -> tp.List[ArtefactFileInfo]:
         """

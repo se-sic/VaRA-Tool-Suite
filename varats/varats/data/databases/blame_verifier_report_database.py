@@ -12,6 +12,10 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOptTBAA,
     BlameVerifierReportOpt,
 )
+from varats.experiments.vara.blame_verifier_experiment import (
+    BlameVerifierReportExperimentOpt,
+    BlameVerifierReportExperimentNoOptTBAA,
+)
 from varats.jupyterhelper.file import (
     load_blame_verifier_report_no_opt_tbaa,
     load_blame_verifier_report_opt,
@@ -37,7 +41,13 @@ class OptLevel(Enum):
 
 class BlameVerifierReportDatabase(
     EvaluationDatabase,
-    columns=["opt_level", "total", "successful", "failed", "undetermined"],
+    column_types={
+        "opt_level": 'int64',
+        "total": 'int64',
+        "successful": 'int64',
+        "failed": 'int64',
+        "undetermined": 'int64'
+    },
     cache_id="blame_verifier_report_data"
 ):
     """Provides access to blame verifier report data."""
@@ -53,11 +63,7 @@ class BlameVerifierReportDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.opt_level = df_layout.opt_level.astype('int64')
-            df_layout.total = df_layout.total.astype('int64')
-            df_layout.successful = df_layout.successful.astype('int64')
-            df_layout.failed = df_layout.failed.astype('int64')
-            df_layout.undetermined = df_layout.undetermined.astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(
@@ -122,25 +128,29 @@ class BlameVerifierReportDatabase(
             )
 
         report_files_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportOpt,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentOpt,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         report_files_no_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportNoOptTBAA,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentNoOptTBAA,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         report_files = report_files_opt + report_files_no_opt
 
         failed_report_files_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportOpt,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentOpt,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files_no_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportNoOptTBAA,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentNoOptTBAA,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = \

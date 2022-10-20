@@ -332,6 +332,17 @@ class CaseStudy():
             return False
         return self.__stages[num_stage].has_revision(revision)
 
+    def has_revision_configs_specified(self, revision: CommitHash) -> bool:
+        """
+        Checks whether a revision specifies different configurations.
+
+        Args:
+            revision: i.e., a commit hash registed in this case study
+
+        Returns: True, if configurations have been specified for this revision
+        """
+        return bool(self.get_config_ids_for_revision(revision))
+
     def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
@@ -345,9 +356,7 @@ class CaseStudy():
         for stage in self.__stages:
             config_ids += stage.get_config_ids_for_revision(revision)
 
-        if ConfigurationMap.DUMMY_CONFIG_ID in config_ids and len(
-            config_ids
-        ) > 1:
+        if ConfigurationMap.DUMMY_CONFIG_ID in config_ids:
             config_ids.remove(ConfigurationMap.DUMMY_CONFIG_ID)
 
         return config_ids
@@ -367,7 +376,14 @@ class CaseStudy():
         if self.num_stages <= num_stage:
             return []
 
-        return self.__stages[num_stage].get_config_ids_for_revision(revision)
+        config_ids = self.__stages[num_stage].get_config_ids_for_revision(
+            revision
+        )
+
+        while ConfigurationMap.DUMMY_CONFIG_ID in config_ids:
+            config_ids.remove(ConfigurationMap.DUMMY_CONFIG_ID)
+
+        return config_ids
 
     def shift_stage(self, from_index: int, offset: int) -> None:
         """

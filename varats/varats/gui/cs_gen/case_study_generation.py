@@ -19,11 +19,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.gui.cs_gen.case_study_generation_ui import Ui_MainWindow
-from varats.mapping.commit_map import (
-    create_lazy_commit_map_loader,
-    get_commit_map,
-    CommitMap,
-)
+from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import CaseStudy, store_case_study
 from varats.paper_mgmt.case_study import (
     extend_with_extra_revs,
@@ -132,9 +128,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
     def gen(self) -> None:
         """Generate the case study using the selected strategy, project and
         strategy specific arguments."""
-        cmap = create_lazy_commit_map_loader(
-            self.selected_project, None, 'HEAD', None
-        )()
+        cmap = get_commit_map(self.selected_project, refspec='HEAD')
         version = self.cs_version.value()
         case_study = CaseStudy(self.revision_list_project, version)
         paper_config = vara_cfg()["paper_config"]["current_config"].value

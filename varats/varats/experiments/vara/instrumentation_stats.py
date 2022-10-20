@@ -18,7 +18,7 @@ from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
     get_default_compile_error_wrapped,
-    create_new_success_result_filename,
+    create_new_success_result_filepath,
 )
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.provider.feature.feature_model_provider import (
@@ -69,12 +69,12 @@ class CaptureInstrumentationStats(actions.Step):  # type: ignore
             if workload is None:
                 print(
                     f"No workload for project={project.name} " \
-                        "binary={binary.name}. Skipping."
+                        f"binary={binary.name}. Skipping."
                 )
                 continue
 
             # Assemble Path for report.
-            report_file_name = create_new_success_result_filename(
+            report_file_name = create_new_success_result_filepath(
                 self.__experiment_handle, VaraInstrumentationStatsReport,
                 project, binary
             )
