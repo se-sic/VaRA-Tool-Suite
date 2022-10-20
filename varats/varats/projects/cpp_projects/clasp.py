@@ -83,4 +83,5 @@ class Hypre(VProject, ReleaseProviderHook):
     def get_release_revisions(
         cls, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
+        # TODO
         pass
