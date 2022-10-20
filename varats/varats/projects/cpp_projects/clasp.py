@@ -33,8 +33,6 @@ class Clasp(VProject, ReleaseProviderHook):
     """
     clasp is an answer set solver for (extended) normal and disjunctive logic
     programs.
-
-    (fetched by Git)
     """
 
     NAME = 'clasp'
