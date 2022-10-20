@@ -48,20 +48,15 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
         """Only create a report file."""
 
-        print("foo")
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
                 self.project, self.__binary, [WorkloadCategory.EXAMPLE]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
-                print(f"{pb_cmd}")
 
                 run_report_name = tmp_dir / create_workload_specific_filename(
                     "time_report", prj_command.command, self.__num, ".txt"
                 )
-
-                if self.__num == 1:
-                    return actions.StepResult.ERROR
 
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
@@ -79,7 +74,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
     REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
-        self, project: Project
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
@@ -98,7 +93,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         # Only consider the main/first binary
         binary = project.binaries[0]
 
-        measurment_repetitions = 2
+        measurement_repetitions = 2
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
             self.get_handle().report_spec().main_report, project, binary
@@ -111,7 +106,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
             ZippedExperimentSteps(
                 result_filepath, [
                     TimeProjectWorkloads(project, rep_num, binary)
-                    for rep_num in range(0, measurment_repetitions)
+                    for rep_num in range(0, measurement_repetitions)
                 ]
             )
         )
