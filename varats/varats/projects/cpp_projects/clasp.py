@@ -1,4 +1,5 @@
 """Project file for clasp."""
+import re
 import typing as tp
 
 import benchbuild as bb
@@ -10,6 +11,7 @@ from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
+    get_tagged_commits,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     verify_binaries,
@@ -83,5 +85,15 @@ class Hypre(VProject, ReleaseProviderHook):
     def get_release_revisions(
         cls, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
-        # TODO
-        pass
+        major_release_regex = "^v[0-9]+\\.[0-9]+\\.0$"
+        minor_release_regex = "^v[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+
+        tagged_commits = get_tagged_commits(cls.NAME)
+        print(tagged_commits)
+        if release_type == ReleaseType.MAJOR:
+            return [(FullCommitHash(h), tag)
+                    for h, tag in tagged_commits
+                    if re.match(major_release_regex, tag)]
+        return [(FullCommitHash(h), tag)
+                for h, tag in tagged_commits
+                if re.match(minor_release_regex, tag)]
