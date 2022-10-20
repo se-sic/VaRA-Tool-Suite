@@ -85,11 +85,10 @@ class Hypre(VProject, ReleaseProviderHook):
     def get_release_revisions(
         cls, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
-        major_release_regex = "^v[0-9]+\\.[0-9]+\\.0$"
-        minor_release_regex = "^v[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+        major_release_regex = "^v?[0-9]+\\.[0-9]+\\.0$"
+        minor_release_regex = "^v?[0-9]+\\.[0-9]+(\\.[1-9]+)?$"
 
         tagged_commits = get_tagged_commits(cls.NAME)
-        print(tagged_commits)
         if release_type == ReleaseType.MAJOR:
             return [(FullCommitHash(h), tag)
                     for h, tag in tagged_commits
