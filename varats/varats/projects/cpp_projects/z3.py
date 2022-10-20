@@ -32,8 +32,6 @@ from varats.utils.settings import bb_cfg
 class Z3(VProject, ReleaseProviderHook):
     """
     Z3 is a theorem prover from Microsoft Research.
-
-    (fetched by Git)
     """
 
     NAME = 'z3'
