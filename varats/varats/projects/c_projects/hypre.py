@@ -30,14 +30,12 @@ from varats.utils.settings import bb_cfg
 
 
 class Hypre(VProject, ReleaseProviderHook):
-    """
-    HYPRE is a library of high performance preconditioners and solvers featuring
-    multigrid methods for the solution of large, sparse linear systems of
-    equations on massively parallel computers.
-    """
+    """HYPRE is a library of high performance preconditioners and solvers
+    featuring multigrid methods for the solution of large, sparse linear systems
+    of equations on massively parallel computers."""
 
     NAME = 'hypre'
-    GROUP = 'cpp_projects'
+    GROUP = 'c_projects'
     DOMAIN = ProjectDomains.SOLVER
 
     SOURCE = [
