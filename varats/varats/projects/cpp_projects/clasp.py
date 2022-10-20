@@ -54,7 +54,7 @@ class Clasp(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Hypre.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_git_path(Clasp.NAME))
         binary_map.specify_binary('build/bin/clasp', BinaryType.EXECUTABLE)
 
         return binary_map[revision]
