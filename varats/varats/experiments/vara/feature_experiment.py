@@ -4,7 +4,6 @@ import textwrap
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
-from pprint import pprint
 
 from benchbuild.command import cleanup
 from benchbuild.project import Project
