@@ -4,12 +4,14 @@ import textwrap
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
+from pprint import pprint
 
 from benchbuild.command import cleanup
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
 from plumbum import local
 
+from varats.base.configuration import ConfigurationImpl
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -17,6 +19,8 @@ from varats.experiment.experiment_util import (
     ZippedReportFolder,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.paper.case_study import load_configuration_map_from_case_study_file
+from varats.paper_mgmt.paper_config import get_paper_config
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
@@ -24,6 +28,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.report.report import ReportSpecification
+from varats.utils.git_util import CommitHash, ShortCommitHash
 
 
 class FeatureExperiment(VersionExperiment, shorthand=""):
@@ -132,26 +137,50 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                 self.project, binary
             )
 
-            with local.cwd(local.path(self.project.builddir)):
-                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
-                    for prj_command in workload_commands(
-                        self.project, binary, [WorkloadCategory.EXAMPLE]
-                    ):
-                        local_tracefile_path = Path(
-                            tmp_dir
-                        ) / f"trace_{prj_command.command.label}.json"
-                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
-                            pb_cmd = prj_command.command.as_plumbum(
-                                project=self.project
-                            )
-                            print(
-                                f"Running example {prj_command.command.label}"
-                            )
-                            with cleanup(prj_command):
-                                pb_cmd()
+            paper_config = get_paper_config()
+            case_studies = paper_config.get_case_studies(
+                cs_name=self.project.name
+            )
 
-                        # TODO: figure out how to handle different configs
-                        # executable("--slow")
-                        # executable()
+            for case_study in case_studies:
+                with local.cwd(local.path(self.project.builddir)):
+                    with ZippedReportFolder(
+                        result_filepath.full_path()
+                    ) as tmp_dir:
+                        config_ids = case_study.get_config_ids_for_revision(
+                            ShortCommitHash(self.project.version_of_primary)
+                        )
+                        config_map = load_configuration_map_from_case_study_file(
+                            Path(
+                                paper_config.path /
+                                f"{case_study.project_name}_{case_study.version}.case_study"
+                            ), ConfigurationImpl
+                        )
+                        for config_id in config_ids:
+                            config = config_map.get_configuration(config_id)
+                            # TODO: Use config
+                            for prj_command in workload_commands(
+                                self.project,
+                                binary,
+                                [WorkloadCategory.EXAMPLE],
+                            ):
+                                local_tracefile_path = Path(
+                                    tmp_dir
+                                ) / f"trace_{prj_command.command.label}_{config_id}.json"
+                                with local.env(
+                                    VARA_TRACE_FILE=local_tracefile_path
+                                ):
+                                    pb_cmd = prj_command.command.as_plumbum(
+                                        project=self.project
+                                    )
+                                    print(
+                                        f"Running example {prj_command.command.label}_{config_id}"
+                                    )
+                                    with cleanup(prj_command):
+                                        pb_cmd()
+
+                                # TODO: figure out how to handle different configs
+                                # executable("--slow")
+                                # executable()
 
         return StepResult.OK

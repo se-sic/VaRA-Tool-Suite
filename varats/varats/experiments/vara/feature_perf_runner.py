@@ -5,7 +5,10 @@ import typing as tp
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
-from varats.experiment.experiment_util import get_default_compile_error_wrapped
+from varats.experiment.experiment_util import (
+    get_default_compile_error_wrapped,
+    VersionExperiment,
+)
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
@@ -15,7 +18,7 @@ from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReport
 
 
-class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
+class FeaturePerfRunner(FeatureExperiment, VersionExperiment, shorthand="FPR"):
     """Test runner for feature performance."""
 
     NAME = "RunFeaturePerf"
