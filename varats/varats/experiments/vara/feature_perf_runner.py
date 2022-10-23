@@ -56,11 +56,15 @@ class FeaturePerfRunner(FeatureExperiment, VersionExperiment, shorthand="FPR"):
             self.get_handle(), project, TEFReport
         )
 
+        feature_model_path = self.get_feature_model_path(project)
+
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
-            RunVaRATracedWorkloads(project, self.get_handle())
+            RunVaRATracedWorkloads(
+                project, self.get_handle(), feature_model_path
+            )
         )
         analysis_actions.append(actions.Clean(project))
 

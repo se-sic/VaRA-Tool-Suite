@@ -5,11 +5,17 @@ import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
+import lxml.etree as xml
 from benchbuild.command import cleanup
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
 from plumbum import local
 
+from varats.base.commandline_option import (
+    CommandlineOption,
+    CommandlineOptionGroup,
+    CommandlineOptionFormat,
+)
 from varats.base.configuration import ConfigurationImpl
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -27,7 +33,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.report.report import ReportSpecification
-from varats.utils.git_util import CommitHash, ShortCommitHash
+from varats.utils.git_util import ShortCommitHash
 
 
 class FeatureExperiment(VersionExperiment, shorthand=""):
@@ -111,9 +117,13 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
+    def __init__(
+        self, project: VProject, experiment_handle: ExperimentHandle,
+        feature_model_path: Path
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.feature_model_path = feature_model_path
 
     def __call__(self) -> StepResult:
         return self.run_traced_code()
@@ -122,6 +132,24 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
         return textwrap.indent(
             f"* {self.project.name}: Run instrumentation verifier", indent * " "
         )
+
+    def create_command_line_options_from_fm(self) -> list[CommandlineOption]:
+        feature_model = xml.parse(self.feature_model_path)
+        configuration_options = feature_model.findall('.//configurationOption')
+        options = []
+        for configuration_option in configuration_options:
+            name = configuration_option.find('name').text.strip()
+            output_string = configuration_option.find('outputString')
+            if output_string is not None:
+                output_string = output_string.text
+                if output_string is not None and output_string.strip() != "":
+                    options.append(
+                        CommandlineOptionFormat(
+                            option_name=name,
+                            flag_format_string=output_string.strip()
+                        )
+                    )
+        return options
 
     def run_traced_code(self) -> StepResult:
         """Runs the binary with the embedded tracing code."""
@@ -155,9 +183,22 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 f"{case_study.project_name}_{case_study.version}.case_study"
                             ), ConfigurationImpl
                         )
+                        all_command_line_options = self.create_command_line_options_from_fm(
+                        )
                         for config_id in config_ids:
                             config = config_map.get_configuration(config_id)
-                            # TODO: Use config
+                            option_names = [
+                                option.name for option in config.options()
+                            ]
+                            command_line_options = [
+                                command_line_option for command_line_option in
+                                all_command_line_options
+                                if command_line_option.get_option_name() in
+                                option_names
+                            ]
+                            command_line_option_group = CommandlineOptionGroup(
+                                command_line_options
+                            )
                             for prj_command in workload_commands(
                                 self.project,
                                 binary,
@@ -176,10 +217,9 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                         f"Running example {prj_command.command.label}_{config_id}"
                                     )
                                     with cleanup(prj_command):
-                                        pb_cmd()
-
-                                # TODO: figure out how to handle different configs
-                                # executable("--slow")
-                                # executable()
+                                        pb_cmd(
+                                            command_line_option_group.
+                                            render(config)
+                                        )
 
         return StepResult.OK

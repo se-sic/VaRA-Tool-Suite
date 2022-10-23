@@ -9,6 +9,9 @@ class CommandlineOption(abc.ABC):
     """Abstract class representing different kinds of command-line options,
     passed to tools like ls, e.g., `ls -l -a`."""
 
+    def __init__(self, option_name: tp.Optional[str] = None):
+        self.option_name = option_name
+
     @abc.abstractmethod
     def render(self, config: Configuration) -> str:
         """
@@ -20,6 +23,9 @@ class CommandlineOption(abc.ABC):
         Returns: command line string for the given `Configuration`
         """
 
+    def get_option_name(self) -> str:
+        return self.option_name
+
 
 class CommandlineOptionSwitch(CommandlineOption):
     """Option switch is only included if a certain condition is met, otherwise,
@@ -28,12 +34,12 @@ class CommandlineOptionSwitch(CommandlineOption):
     def __init__(
         self, option_name: str, flag: str, condition: bool = True
     ) -> None:
-        self.__option_name = option_name
+        super().__init__(option_name)
         self.__flag = flag
         self.__condition = condition
 
     def render(self, config: Configuration) -> str:
-        maybe_value = config.get_config_value(self.__option_name)
+        maybe_value = config.get_config_value(self.option_name)
         if maybe_value is not None and (bool(maybe_value) == self.__condition):
             return self.__flag
 
@@ -52,7 +58,7 @@ class CommandlineOptionFormat(CommandlineOption):
         flag_format_string: str,
         should_render: tp.Callable[[Configuration], bool] = lambda x: True
     ) -> None:
-        self.__option_name = option_name
+        super().__init__(option_name)
         self.__flag_format_string = flag_format_string
         self.__should_render = should_render
 
@@ -73,6 +79,7 @@ class CommandlineOptionGroup(CommandlineOption):
     the options."""
 
     def __init__(self, cli_options: tp.List[CommandlineOption]) -> None:
+        super().__init__()
         self.__cli_options = cli_options
 
     def render(self, config: Configuration) -> str:
