@@ -127,13 +127,23 @@ class TestVersionExperiment(unittest.TestCase):
     def generate_get_tagged_revisions_output(
     ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""
-        return [
-            (ShortCommitHash('rev1000000'), FileStatusExtension.SUCCESS),
-            (ShortCommitHash('rev2000000'), FileStatusExtension.BLOCKED),
-            (ShortCommitHash('rev3000000'), FileStatusExtension.COMPILE_ERROR),
-            (ShortCommitHash('rev4000000'), FileStatusExtension.FAILED),
-            (ShortCommitHash('rev5000000'), FileStatusExtension.MISSING)
-        ]
+        return {
+            ShortCommitHash('rev1000000'): {
+                None: FileStatusExtension.SUCCESS
+            },
+            ShortCommitHash('rev2000000'): {
+                None: FileStatusExtension.BLOCKED
+            },
+            ShortCommitHash('rev3000000'): {
+                None: FileStatusExtension.COMPILE_ERROR
+            },
+            ShortCommitHash('rev4000000'): {
+                None: FileStatusExtension.FAILED
+            },
+            ShortCommitHash('rev5000000'): {
+                None: FileStatusExtension.MISSING
+            }
+        }
 
     @run_in_test_environment()
     def test_sample_limit(self):
@@ -161,7 +171,7 @@ class TestVersionExperiment(unittest.TestCase):
         self.assertEqual(len(sample_gen), 1)
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_whitelisting_one(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -179,7 +189,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_whitelisting_many(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -201,7 +211,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_blacklisting_one(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -222,7 +232,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_only_blacklisting_many(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
         self.prepare_vara_config(vara_cfg())
@@ -243,7 +253,7 @@ class TestVersionExperiment(unittest.TestCase):
         mock_get_tagged_revisions.assert_called()
 
     @run_in_test_environment()
-    @mock.patch('varats.experiment.experiment_util.get_tagged_revisions')
+    @mock.patch('varats.experiment.experiment_util.revs.get_tagged_revisions')
     def test_white_overwrite_blacklisting(self, mock_get_tagged_revisions):
         """Test if whitelist overwrites blacklist."""
         self.prepare_vara_config(vara_cfg())

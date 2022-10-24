@@ -27,7 +27,7 @@ from varats.utils.git_util import ShortCommitHash, CommitHashTy, CommitHash
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
-    from varats.experiment.experiment_util import VersionExperiment
+    import varats.experiment.experiment_util as exp_u
 
 
 def is_revision_blocked(
@@ -69,7 +69,7 @@ def filter_blocked_revisions(
 
 def __get_result_files_dict(
     project_name: str,
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Dict[ShortCommitHash, tp.List[ReportFilepath]]:
     """
@@ -111,7 +111,7 @@ def __get_result_files_dict(
 def __get_files_with_status(
     project_name: str,
     file_statuses: tp.List[FileStatusExtension],
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -156,7 +156,7 @@ def __get_files_with_status(
 
 def get_all_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -186,7 +186,7 @@ def get_all_revisions_files(
 
 def get_processed_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -216,7 +216,7 @@ def get_processed_revisions_files(
 
 def get_failed_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -247,7 +247,7 @@ def get_failed_revisions_files(
 
 def get_processed_revisions(
     project_name: str,
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
 ) -> tp.List[ShortCommitHash]:
     """
@@ -272,7 +272,7 @@ def get_processed_revisions(
 
 def get_failed_revisions(
     project_name: str,
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
 ) -> tp.List[ShortCommitHash]:
     """
@@ -306,7 +306,7 @@ def __get_tag_for_revision(
     revision: ShortCommitHash,
     file_list: tp.List[ReportFilepath],
     project_cls: tp.Type[Project],
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     tag_blocked: bool = True
 ) -> FileStatusExtension:
@@ -357,7 +357,7 @@ def _split_into_config_file_lists(
 
 def get_tagged_revisions(
     project_cls: tp.Type[Project],
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     tag_blocked: bool = True,
     revision_filter: tp.Optional[tp.Callable[[ReportFilepath], bool]] = None
@@ -405,7 +405,7 @@ def get_tagged_revisions(
 def get_tagged_revision(
     revision: ShortCommitHash,
     project_name: str,
-    experiment_type: tp.Type["VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> FileStatusExtension:
     """

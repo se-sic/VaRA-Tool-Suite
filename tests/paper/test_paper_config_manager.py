@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile
 
 from benchbuild.source import nosource
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
+from pygtrie import CharTrie
 
 import varats.paper_mgmt.paper_config_manager as PCM
 from tests.paper.test_case_study import YAML_CASE_STUDY
@@ -36,6 +37,17 @@ e75f428c0ddc90a7011cfda82a7114a16c537e34
 b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
 
 
+class MockCommitMap(CommitMap):
+
+    def __init__(self, stream: tp.Iterable[str]) -> None:
+        self._hash_to_id: CharTrie = CharTrie()
+        self._hash_to_id_master: CharTrie = CharTrie()
+        for line in stream:
+            slices = line.strip().split(', ')
+            self._hash_to_id[slices[1]] = int(slices[0])
+            self._hash_to_id_master[slices[1]] = int(slices[0])
+
+
 def mocked_get_commit_map(
     project_name: str,  # pylint: disable=unused-argument
     cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
@@ -56,7 +68,7 @@ def mocked_get_commit_map(
         for number, line in enumerate(reversed(GIT_LOG_OUT.split('\n'))):
             yield f"{number}, {line}\n"
 
-    return CommitMap(format_stream())
+    return MockCommitMap(format_stream())
 
 
 class TestPaperConfigManager(unittest.TestCase):
