@@ -18,7 +18,7 @@ from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReport
 
 
-class FeaturePerfRunner(FeatureExperiment, VersionExperiment, shorthand="FPR"):
+class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
     """Test runner for feature performance."""
 
     NAME = "RunFeaturePerf"
