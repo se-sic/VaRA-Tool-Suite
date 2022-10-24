@@ -77,5 +77,5 @@ class ProjectEvolutionPlotGenerator(
     options=[REQUIRE_CASE_STUDY]
 ):
 
-    def generate(self) -> tp.List['varats.plot.plot.Plot']:
+    def generate(self) -> tp.List['Plot']:
         return [ProjectEvolutionPlot(self.plot_config, **self.plot_kwargs)]
