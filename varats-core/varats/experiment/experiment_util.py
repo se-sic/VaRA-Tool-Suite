@@ -512,19 +512,30 @@ class ZippedExperimentSteps(MultiStep):
         results: tp.List[StepResult] = []
 
         for child in self.actions:
-            run_child_with_output_folder(
-                tp.cast(NeedsOutputFolder, child), tmp_folder
+            results.append(
+                run_child_with_output_folder(
+                    tp.cast(NeedsOutputFolder, child), tmp_folder
+                )
             )
 
         return results
 
     def __call__(self) -> StepResult:
-        results = []
+        results: tp.List[StepResult] = []
 
         with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
             results = self.__run_children(Path(tmp_dir))
 
-        return max(results) if results else StepResult.OK
+        overall_step_result = max(results) if results else StepResult.OK
+        if overall_step_result is not StepResult.OK:
+            error_filepath = self.__output_filepath.with_status(
+                FileStatusExtension.FAILED
+            )
+            self.__output_filepath.full_path().rename(
+                error_filepath.full_path()
+            )
+
+        return overall_step_result
 
     def __str__(self, indent: int = 0) -> str:
         sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
