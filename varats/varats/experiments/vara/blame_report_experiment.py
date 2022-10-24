@@ -19,13 +19,13 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     ExperimentHandle,
-    get_varats_result_folder,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
+from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
@@ -58,11 +58,6 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
             * -vara-BR: to run a commit flow report
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
-        # Add to the user-defined path for saving the results of the
-        # analysis also the name and the unique id of the project of every
-        # run.
-        vara_result_folder = get_varats_result_folder(self.project)
-
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, BR, self.project, binary
@@ -70,7 +65,11 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
 
             opt_params = [
                 "-enable-new-pm=0", "-vara-BD", "-vara-BR",
-                "-vara-init-commits", "-vara-use-phasar",
+                "-vara-init-commits", "-vara-rewriteMD",
+                "-vara-git-mappings=" + ",".join([
+                    f'"{repo}:{path}"' for repo, path in
+                    get_local_project_git_paths(self.project.name).items()
+                ]), "-vara-use-phasar",
                 f"-vara-blame-taint-scope={self.__blame_taint_scope.name}",
                 f"-vara-report-outfile={result_file.full_path()}",
                 get_cached_bc_file_path(
