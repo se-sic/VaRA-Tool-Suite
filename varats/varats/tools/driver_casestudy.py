@@ -61,8 +61,6 @@ from varats.ts_utils.click_param_types import (
     EnumChoice,
     create_multi_case_study_choice,
 )
-from varats.ts_utils.project_sources import VaraTestRepoSource
-from varats.utils.git_commands import pull_current_branch
 from varats.utils.git_util import (
     get_initial_commit,
     is_commit_hash,
