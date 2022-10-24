@@ -311,7 +311,7 @@ class ExperimentHandle():
         return self.__experiment.report_spec(
         ).get_report_type(report_shorthand).get_file_name(
             self.__experiment.shorthand(), project_name, binary_name,
-            project_revision, project_uuid, extension_type, config_id=config_id
+            project_revision, project_uuid, extension_type, config_id
         )
 
     def report_spec(self) -> ReportSpecification:
