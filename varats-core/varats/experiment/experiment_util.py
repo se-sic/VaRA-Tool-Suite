@@ -402,7 +402,11 @@ class VersionExperiment(Experiment):  # type: ignore
         Returns:
             list of sampled versions
         """
-        variants = list(source.product(*prj_cls.SOURCE))
+        from benchbuild.source import enumerate
+        print("Sampling....")
+        # variants = list(source.product(*prj_cls.SOURCE))
+        variants = list(enumerate(prj_cls, *prj_cls.SOURCE))
+        print(f"Got {variants=}")
 
         if bool(vara_cfg()["experiment"]["random_order"]):
             random.shuffle(variants)
@@ -436,8 +440,12 @@ class VersionExperiment(Experiment):  # type: ignore
                 *report_specific_bad_revs[1:]
             )
 
+            print(f"{variants=}")
             variants = list(
-                filter(lambda var: str(var[0]) not in bad_revisions, variants)
+                filter(
+                    lambda var: str(var.primary.version) not in bad_revisions,
+                    variants
+                )
             )
 
         if not variants:
