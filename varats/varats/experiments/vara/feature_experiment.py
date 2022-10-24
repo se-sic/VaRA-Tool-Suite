@@ -100,7 +100,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
 
 
 class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
-    """Executes the traced project binaries over the specified workloads."""
+    """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
     DESCRIPTION = "Run traced binary on workloads."
