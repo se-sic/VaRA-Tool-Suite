@@ -11,8 +11,3 @@ class RegionVerificationReport(BaseReport, shorthand="FRR", file_type="txt"):
     """
 
     SHORTHAND = "FRR"
-
-    @classmethod
-    def shorthand(cls) -> str:
-        """Shorthand for this report."""
-        return cls.SHORTHAND
