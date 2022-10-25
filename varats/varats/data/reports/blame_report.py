@@ -208,11 +208,12 @@ class BlameResultFunctionEntry():
     """Collection of all interactions for a specific function."""
 
     def __init__(
-        self, name: str, demangled_name: str,
+        self, name: str, demangled_name: str, file_name: tp.Optional[str],
         blame_insts: tp.List[BlameInstInteractions], num_instructions: int
     ) -> None:
         self.__name = name
         self.__demangled_name = demangled_name
+        self.__file_name = file_name
         self.__inst_list = blame_insts
         self.__num_instructions = num_instructions
 
@@ -224,6 +225,7 @@ class BlameResultFunctionEntry():
         yaml document section."""
         demangled_name = str(raw_function_entry['demangled-name'])
         num_instructions = int(raw_function_entry['num-instructions'])
+        file_name = str(raw_function_entry.get('file'))
         inst_list: tp.List[BlameInstInteractions] = []
         for raw_inst_entry in raw_function_entry['insts']:
             inst_list.append(
@@ -231,7 +233,7 @@ class BlameResultFunctionEntry():
                 create_blame_inst_interactions(raw_inst_entry)
             )
         return BlameResultFunctionEntry(
-            name, demangled_name, inst_list, num_instructions
+            name, demangled_name, file_name, inst_list, num_instructions
         )
 
     @property
@@ -248,6 +250,11 @@ class BlameResultFunctionEntry():
     def demangled_name(self) -> str:
         """Demangled name of the function."""
         return self.__demangled_name
+
+    @property
+    def file_name(self) -> tp.Optional[str]:
+        """Name of file containing the function if available."""
+        return self.__file_name
 
     @property
     def num_instructions(self) -> int:
@@ -303,8 +310,8 @@ def _calc_diff_between_func_entries(
     diff_interactions += prev_interactions
 
     return BlameResultFunctionEntry(
-        base_func_entry.name, base_func_entry.demangled_name, diff_interactions,
-        diff_num_instructions
+        base_func_entry.name, base_func_entry.demangled_name,
+        base_func_entry.file_name, diff_interactions, diff_num_instructions
     )
 
 
