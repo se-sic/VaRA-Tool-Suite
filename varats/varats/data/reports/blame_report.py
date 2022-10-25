@@ -225,7 +225,7 @@ class BlameResultFunctionEntry():
         yaml document section."""
         demangled_name = str(raw_function_entry['demangled-name'])
         num_instructions = int(raw_function_entry['num-instructions'])
-        file_name = str(raw_function_entry.get('file'))
+        file_name = tp.cast(tp.Optional[str], raw_function_entry.get('file'))
         inst_list: tp.List[BlameInstInteractions] = []
         for raw_inst_entry in raw_function_entry['insts']:
             inst_list.append(
