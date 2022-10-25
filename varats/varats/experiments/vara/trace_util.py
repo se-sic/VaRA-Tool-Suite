@@ -1,11 +1,11 @@
-"""TODO"""
+"""TODO."""
 import json
 from collections import OrderedDict
 from pathlib import Path
 
 
 def sanitize_trace(path: Path, category: str) -> OrderedDict:
-    """TODO"""
+    """TODO."""
     trace_events = []
     with open(path, mode="r", encoding="UTF-8") as file:
         for event in json.load(file)["traceEvents"]:
@@ -43,16 +43,14 @@ def sanitize_trace(path: Path, category: str) -> OrderedDict:
             missing[name] = event
 
     for event in reversed(missing.values()):
-        normalized_trace_events.append(
-            {
-                "name": event["name"],
-                "ph": "E",
-                "ts": end - start,
-                "pid": event["pid"],
-                "tid": event["tid"],
-                "cat": f"{event['cat']} (Missing)"
-            }
-        )
+        normalized_trace_events.append({
+            "name": event["name"],
+            "ph": "E",
+            "ts": end - start,
+            "pid": event["pid"],
+            "tid": event["tid"],
+            "cat": f"{event['cat']} (Missing)"
+        })
 
     result: OrderedDict = OrderedDict()
     result["traceEvents"] = normalized_trace_events
@@ -62,7 +60,7 @@ def sanitize_trace(path: Path, category: str) -> OrderedDict:
 
 
 def merge_trace(*results) -> OrderedDict:
-    """TODO"""
+    """TODO."""
     trace_events = []
     for result in results:
         trace_events += sanitize_trace(*result)["traceEvents"]

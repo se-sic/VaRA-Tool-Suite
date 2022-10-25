@@ -173,16 +173,14 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             xray_result_path = Path(
                                 tmp_dir
                             ) / f"xray_{prj_command.command.label}.json"
-                            local["llvm-xray"](
-                                [
-                                    "convert",
-                                    f"--instr_map={xray_map_path}",
-                                    f"--output={xray_result_path}",
-                                    "--output-format=trace_event",
-                                    "--symbolize",
-                                    xray_log_path,
-                                ]
-                            )
+                            local["llvm-xray"]([
+                                "convert",
+                                f"--instr_map={xray_map_path}",
+                                f"--output={xray_result_path}",
+                                "--output-format=trace_event",
+                                "--symbolize",
+                                xray_log_path,
+                            ])
 
                             merge_result_path = Path(
                                 tmp_dir
