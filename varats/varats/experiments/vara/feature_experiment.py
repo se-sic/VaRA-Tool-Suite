@@ -12,7 +12,6 @@ from benchbuild.utils.actions import Step, ProjectStep, StepResult
 from plumbum import local
 
 from varats.base.commandline_option import (
-    CommandlineOption,
     CommandlineOptionGroup,
     CommandlineOptionFormat,
 )
@@ -133,7 +132,9 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             f"* {self.project.name}: Run instrumentation verifier", indent * " "
         )
 
-    def create_command_line_options_from_fm(self) -> list[CommandlineOption]:
+    def create_command_line_options_from_fm(
+        self
+    ) -> list[CommandlineOptionFormat]:
         feature_model = xml.parse(self.feature_model_path)
         configuration_options = feature_model.findall('.//configurationOption')
         options = []
