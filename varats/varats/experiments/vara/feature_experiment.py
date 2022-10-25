@@ -156,14 +156,14 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             )
                             with cleanup(prj_command):
                                 _, _, err = pb_cmd.run()
-                            xray_log = re.findall(
+                            xray = re.findall(
                                 r"XRay: Log file in '(.+?)'",
                                 err,
                                 flags=re.DOTALL
                             )
 
-                        if xray_log:
-                            xray_log_path = local.cwd / xray_log[0]
+                        if xray:
+                            xray_log_path = local.cwd / xray[0]
                             xray_map_path = local.path(
                                 self.project.primary_source
                             ) / binary.path
@@ -173,8 +173,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             xray_result_path = Path(
                                 tmp_dir
                             ) / f"xray_{prj_command.command.label}.json"
-                            xray = local["llvm-xray"]
-                            xray(
+                            local["llvm-xray"](
                                 [
                                     "convert",
                                     f"--instr_map={xray_map_path}",
@@ -189,7 +188,9 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 tmp_dir
                             ) / f"merge_{prj_command.command.label}.json"
 
-                            with open(merge_result_path, mode="x") as file:
+                            with open(
+                                merge_result_path, mode="x", encoding="UTF-8"
+                            ) as file:
                                 file.write(
                                     json.dumps(
                                         merge_trace(
