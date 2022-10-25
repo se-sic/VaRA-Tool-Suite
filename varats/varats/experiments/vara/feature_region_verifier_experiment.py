@@ -33,6 +33,7 @@ from varats.experiment.wllvm import (
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
+from varats.project.varats_project import VProject
 
 
 class FeatureRegionGeneration(actions.Step):  # type: ignore
@@ -41,6 +42,8 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
 
     NAME = "FeatureRegionGeneration"
     DESCRIPTION = "Analyse the bitcode with -vara-PFTD and -vara-PFTDD -vara-FR-verifier"
+
+    project: VProject
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project, action_fn=self.analyze)
