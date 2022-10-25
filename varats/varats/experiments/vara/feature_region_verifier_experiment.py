@@ -36,7 +36,7 @@ from varats.report.report import ReportSpecification
 from varats.project.varats_project import VProject
 
 
-class FeatureRegionGeneration(actions.Step):  # type: ignore
+class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
     """Analyse a project with VaRA and compare dominator and if-region created
     FeatureRegions."""
 
