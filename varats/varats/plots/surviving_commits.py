@@ -216,7 +216,7 @@ class HeatMapPlot(Plot, plot_name=None):
         self.data_function = data_function
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
+        style.use(self.plot_config.get_dict())
         _, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
         data = self.data_function(case_study)
