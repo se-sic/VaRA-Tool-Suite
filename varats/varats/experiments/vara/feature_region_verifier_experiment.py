@@ -9,7 +9,6 @@ import typing as tp
 import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
-from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from benchbuild.utils.cmd import opt
 
 from varats.data.reports.region_verification_report import (
@@ -17,23 +16,24 @@ from varats.data.reports.region_verification_report import (
 )
 from varats.experiment.experiment_util import (
     ExperimentHandle,
-    exec_func_with_pe_error_handler,
     VersionExperiment,
+    create_default_analysis_failure_handler,
+    create_default_compiler_error_handler,
+    exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     get_varats_result_folder,
     wrap_unlimit_stack_size,
-    create_default_compiler_error_handler,
-    create_default_analysis_failure_handler,
 )
 from varats.experiment.wllvm import (
+    BCFileExtensions,
     RunWLLVM,
     get_bc_cache_actions,
     get_cached_bc_file_path,
-    BCFileExtensions,
 )
+from varats.project.varats_project import VProject
+from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.project.varats_project import VProject
 
 
 class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
@@ -102,6 +102,7 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
                 )
             )
         return actions.StepResult.OK
+
 
 class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
     """Generates a commit flow report (CFR) of the project(s) specified in the
