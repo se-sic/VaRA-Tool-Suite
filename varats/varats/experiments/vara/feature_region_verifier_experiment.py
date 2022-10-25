@@ -77,7 +77,6 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
                 project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS,
-                config_id=None
             )
 
             opt_params = [
