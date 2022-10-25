@@ -43,7 +43,7 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
     DESCRIPTION = "Analyse the bitcode with -vara-PFTD and -vara-PFTDD -vara-FR-verifier"
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
@@ -54,9 +54,9 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
         Flags used:
         """
 
-        if not self.obj:
+        if not self.project:
             return actions.StepResult.ERROR
-        project = self.obj
+        project = self.project
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
@@ -127,7 +127,7 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += [
-            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path={fm_path}",
+            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path=/scratch/zatho/varats/ConfigurableSystems/brotli/FeatureModel.xml",
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g"
         ]
 
