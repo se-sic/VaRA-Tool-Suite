@@ -68,7 +68,7 @@ RSBinary = specify_binary
 
 def workload_commands(
     project: VProject, binary: ProjectBinaryWrapper,
-    requested_workload_tags: tp.List[WorkloadSet]
+    requested_workload_tags: tp.List[WorkloadCategory]
 ) -> tp.List[ProjectCommand]:
     """
     Generates a list of project commands for a project and the specified
