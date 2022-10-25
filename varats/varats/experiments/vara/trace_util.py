@@ -41,14 +41,16 @@ def sanitize_trace(path: Path, category: str) -> OrderedDict:
             missing[name] = event
 
     for event in reversed(missing.values()):
-        normalized_trace_events.append({
-            "name": event["name"],
-            "ph": "E",
-            "ts": end - start,
-            "pid": event["pid"],
-            "tid": event["tid"],
-            "cat": f"{event['cat']} (Missing)"
-        })
+        normalized_trace_events.append(
+            {
+                "name": event["name"],
+                "ph": "E",
+                "ts": end - start,
+                "pid": event["pid"],
+                "tid": event["tid"],
+                "cat": f"{event['cat']} (Missing)"
+            }
+        )
 
     result = OrderedDict()
     result["traceEvents"] = normalized_trace_events

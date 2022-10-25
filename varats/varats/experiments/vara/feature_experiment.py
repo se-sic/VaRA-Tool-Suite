@@ -144,8 +144,9 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             tmp_dir
                         ) / f"trace_{prj_command.command.label}.json"
                         with local.env(
-                                VARA_TRACE_FILE=trace_result_path,
-                                XRAY_OPTIONS="patch_premain=true xray_mode=xray-basic verbosity=1",
+                            VARA_TRACE_FILE=trace_result_path,
+                            XRAY_OPTIONS=
+                            "patch_premain=true xray_mode=xray-basic verbosity=1",
                         ):
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
@@ -155,11 +156,17 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             )
                             with cleanup(prj_command):
                                 _, _, err = pb_cmd.run()
-                            xray_log = re.findall(r"XRay: Log file in '(.+?)'", err, flags=re.DOTALL)
+                            xray_log = re.findall(
+                                r"XRay: Log file in '(.+?)'",
+                                err,
+                                flags=re.DOTALL
+                            )
 
                         if xray_log:
                             xray_log_path = local.cwd / xray_log[0]
-                            xray_map_path = local.path(self.project.primary_source) / binary.path
+                            xray_map_path = local.path(
+                                self.project.primary_source
+                            ) / binary.path
                             print(
                                 f"XRay: Log file in '{xray_log_path}' / '{xray_map_path}'"
                             )
@@ -167,14 +174,16 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 tmp_dir
                             ) / f"xray_{prj_command.command.label}.json"
                             xray = local["llvm-xray"]
-                            xray([
-                                "convert",
-                                f"--instr_map={xray_map_path}",
-                                f"--output={xray_result_path}",
-                                "--output-format=trace_event",
-                                "--symbolize",
-                                xray_log_path,
-                            ])
+                            xray(
+                                [
+                                    "convert",
+                                    f"--instr_map={xray_map_path}",
+                                    f"--output={xray_result_path}",
+                                    "--output-format=trace_event",
+                                    "--symbolize",
+                                    xray_log_path,
+                                ]
+                            )
 
                             merge_result_path = Path(
                                 tmp_dir
