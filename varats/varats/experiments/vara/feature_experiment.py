@@ -5,7 +5,6 @@ import re
 import textwrap
 import typing as tp
 from abc import abstractmethod
-from collections import OrderedDict
 from pathlib import Path
 
 from benchbuild.command import cleanup
@@ -20,6 +19,7 @@ from varats.experiment.experiment_util import (
     ZippedReportFolder,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.experiments.vara.trace_util import merge_trace
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
@@ -122,74 +122,6 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             f"* {self.project.name}: Run instrumentation verifier", indent * " "
         )
 
-    @staticmethod
-    def normalize_trace(path: Path, category: str, unit: int = 1) -> dict:
-        with open(path, "r") as file:
-            values: dict = json.load(file)
-
-        trace_events = []
-        for event in values["traceEvents"]:
-            item: dict = {
-                "name": event["name"],
-                "ph": event["ph"],
-                "ts": int(float(event["ts"]) / unit),
-                "pid": int(event["pid"]),
-                "tid": int(event["tid"]),
-            }
-
-            if "cat" in event:
-                item["cat"] = f"{category} ({event['cat']})"
-            else:
-                item["cat"] = category
-
-            if "args" in event:
-                item["args"] = event["args"]
-
-            trace_events.append(item)
-
-        trace_events.sort(key=lambda i: i["ts"])
-
-        missing = OrderedDict()
-        normalized_trace_events = []
-        start, end = trace_events[0]["ts"], trace_events[-1]["ts"]
-        for event in trace_events:
-            event["ts"] -= start
-            normalized_trace_events.append(event)
-
-            name = event["name"]
-            if name in missing:
-                del missing[name]
-            else:
-                missing[name] = event
-
-        for event in reversed(missing.values()):
-            print(
-                f"Missing endpoint for '{event['name']}'"
-            )
-            event["ts"] = end - start
-            event["cat"] = f"Missing ({event['cat']})"
-            normalized_trace_events.append(event)
-
-        return {
-            "timestampUnit": "us",
-            "stackFrames": {},
-            "traceEvents": trace_events
-        }
-
-    def merge_traces(self, trace_result_path: Path, xray_result_path: Path) -> dict:
-
-        trace_result = self.normalize_trace(trace_result_path, "trace")
-        print(json.dumps(trace_result, indent=2))
-
-        xray_result = self.normalize_trace(xray_result_path, "xray", 1000)
-        print(json.dumps(xray_result, indent=2))
-
-        return {
-            "timestampUnit": "us",
-            "stackFrames": {},
-            "traceEvents": sorted(trace_result["traceEvents"] + xray_result["traceEvents"], key=lambda i: i["ts"])
-        }
-
     def run_traced_code(self) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         for binary in self.project.binaries:
@@ -249,7 +181,15 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             ) / f"merge_{prj_command.command.label}.json"
 
                             with open(merge_result_path, mode="x") as file:
-                                file.write(json.dumps(self.merge_traces(trace_result_path, xray_result_path)))
+                                file.write(
+                                    json.dumps(
+                                        merge_trace(
+                                            (trace_result_path, "Trace"),
+                                            (xray_result_path, "XRay")
+                                        ),
+                                        indent=2
+                                    )
+                                )
 
                         # TODO: figure out how to handle different configs
                         # executable("--slow")
