@@ -5,16 +5,13 @@ The experiment analyses a project with with feature region analysis, and
 compares the results of the dominator to the results of the if-region approach
 """
 import typing as tp
-from os import times
-from pathlib import Path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from varats.provider.feature.feature_model_provider import FeatureModelProvider
-from benchbuild.utils.cmd import mkdir, opt, timeout
+from benchbuild.utils.cmd import opt
 
-from varats.data.reports.empty_report import EmptyReport
 from varats.data.reports.region_verification_report import (
     RegionVerificationReport as FRR,
 )
@@ -34,10 +31,8 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
     BCFileExtensions,
 )
-from varats.report.report import BaseReport
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class FeatureRegionGeneration(actions.Step):  # type: ignore
@@ -80,7 +75,7 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
             )
 
             opt_params = [
-                "-enable-new-pm=0", "-vara-PTFD", "-vara-feature-structure-based", "-vara-PTFDD", "-vara-FR-verifier", "-o", "/dev/null",
+                "-enable-new-pm=0", "-vara-PTFDD", "-vara-PTFD", "-vara-FR-verifier", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
