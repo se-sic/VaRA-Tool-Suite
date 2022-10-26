@@ -750,12 +750,6 @@ class KeyedReportAggregate(
 
     def reports(self, key: tp.Optional[KeyTy] = None) -> tp.List[ReportTy]:
         """Returns the list of parsed reports."""
-<<<<<<< HEAD
-        return self.__reports
-
-
-
-=======
         if key:
             return self.__reports[key]
 
@@ -778,4 +772,3 @@ class ReportAggregate(
 
     def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
         super().__init__(path, report_type, _key_id, 0)
->>>>>>> origin/vara-dev
