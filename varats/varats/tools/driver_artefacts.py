@@ -12,6 +12,7 @@ from pathlib import Path
 
 import click
 import yaml
+from rich.progress import Progress
 
 from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import Artefact, initialize_artefact_types
@@ -108,12 +109,15 @@ def generate(only: tp.Optional[str]) -> None:
     else:
         artefacts = get_paper_config().get_all_artefacts()
 
-    for artefact in artefacts:
-        LOG.info(
-            f"Generating artefact {artefact.name} in location "
-            f"{artefact.output_dir}"
-        )
-        artefact.generate_artefact()
+    with Progress() as progress:
+        for artefact in progress.track(
+            list(artefacts), description="Generating artefacts"
+        ):
+            LOG.info(
+                f"Generating artefact {artefact.name} in location "
+                f"{artefact.output_dir}"
+            )
+            artefact.generate_artefact(progress)
 
     # generate index.html
     _generate_index_html(artefacts, Artefact.base_output_dir() / "index.html")

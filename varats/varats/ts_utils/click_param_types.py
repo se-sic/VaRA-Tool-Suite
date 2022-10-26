@@ -3,23 +3,24 @@
 import typing as tp
 from enum import Enum
 
-import benchbuild as bb
 import click
+from benchbuild.experiment import ExperimentRegistry
 
 from varats.data.discover_reports import initialize_reports
-from varats.experiment.experiment_util import VersionExperiment
 from varats.experiments.discover_experiments import initialize_experiments
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.report.report import BaseReport
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,
     ReportTypeConverter,
+    ExperimentTypeConverter,
 )
 from varats.ts_utils.cli_util import CLIOptionTy, convert_value, make_cli_option
 from varats.utils.exceptions import ConfigurationLookupError
 
 if tp.TYPE_CHECKING:
     # pylint: disable=unused-import
+    from varats.experiment.experiment_util import VersionExperiment
     from varats.paper.case_study import CaseStudy
 
 ChoiceTy = tp.TypeVar("ChoiceTy")
@@ -143,23 +144,42 @@ def create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     return TypedChoice(BaseReport.REPORT_TYPES)
 
 
-def create_experiment_type_choice() -> TypedChoice[tp.Type[VersionExperiment]]:
+def __is_experiment_excluded(experiment_name: str) -> bool:
+    """Checks if an experiment should be excluded, as we don't want to show/use
+    standard BB experiments."""
+    if experiment_name in ('raw', 'empty', 'no-measurement'):
+        return True
+
+    return False
+
+
+def create_experiment_type_choice(
+) -> TypedChoice[tp.Type['VersionExperiment']]:
     """Create a choice parameter type that allows selecting a report type."""
-
-    def is_experiment_excluded(experiment_name: str) -> bool:
-        """Checks if an experiment should be excluded, as we don't want to
-        show/use standard BB experiments."""
-        if experiment_name in ('raw', 'empty', 'no-measurement'):
-            return True
-
-        return False
-
     initialize_experiments()
     return TypedChoice({
         k: v
-        for k, v in bb.experiment.ExperimentRegistry.experiments.items()
-        if not is_experiment_excluded(k)
+        for k, v in ExperimentRegistry.experiments.items()
+        if not __is_experiment_excluded(k)
     })
+
+
+def create_multi_experiment_type_choice(
+) -> TypedMultiChoice['VersionExperiment']:
+    """
+    Create a choice parameter type that allows selecting multiple experiments.
+
+    Multiple experiments can be given as a comma separated list. The special
+    value "all" selects all experiments.
+    """
+    initialize_experiments()
+    value_dict = {
+        k: [v]
+        for k, v in ExperimentRegistry.experiments.items()
+        if not __is_experiment_excluded(k)
+    }
+    value_dict["all"] = list(value_dict.values())
+    return TypedMultiChoice(value_dict)
 
 
 # ------------------------------------------------------------------------------
@@ -216,5 +236,25 @@ OPTIONAL_REPORT_TYPE: CLIOptionTy = convert_value(
         type=create_report_type_choice(),
         required=False,
         help="The report type to use."
+    )
+)
+REQUIRE_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
+    "experiment_type", ExperimentTypeConverter
+)(
+    make_cli_option(
+        "--experiment-type",
+        type=create_experiment_type_choice(),
+        required=True,
+        help="The experiment type to use."
+    )
+)
+REQUIRE_MULTI_EXPERIMENT_TYPE: CLIOptionTy = convert_value(
+    "experiment_type", ExperimentTypeConverter
+)(
+    make_cli_option(
+        "--experiment-type",
+        type=create_multi_experiment_type_choice(),
+        required=True,
+        help="One or more experiment types to use."
     )
 )

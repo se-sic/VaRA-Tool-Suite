@@ -67,6 +67,7 @@ class BlackboxLinearRegression:
 
 
 if __name__ == '__main__':
+    #Set Path with the folder location of the results
     test = BlackboxLinearRegression(Path("/home/aufrichtig/bachelor/xzAggregatedResults"))
 
     X = []
@@ -79,8 +80,9 @@ if __name__ == '__main__':
                 tmp_dic.append(0)
         X.append(tmp_dic)
     for i in range(10):
-        X[0][i] = 1
+        X[i][0] = 1
 
     linear_regression = test.feature_linear_regression(X, test.get_mean_overall_time)
 
     print(linear_regression.predict(py.array([[1,0,1,0,0,0,0,0,0,0]])))
+    print(linear_regression.coef_)
