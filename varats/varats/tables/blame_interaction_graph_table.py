@@ -3,37 +3,38 @@ import typing as tp
 
 import networkx as nx
 import pandas as pd
-from benchbuild.utils.cmd import git
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     AIGNodeAttrs,
     create_file_based_interaction_graph,
 )
-from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.project.project_util import get_local_project_git
+from varats.paper_mgmt.paper_config import get_paper_config
+from varats.project.project_util import get_local_project_git_path
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import FullCommitHash, num_commits, num_authors
 
 
 def _generate_graph_table(
-    case_studies: tp.List[CaseStudy],
     graph_generator: tp.Callable[[str, FullCommitHash], nx.DiGraph],
     table_format: TableFormat, wrap_table: bool
 ) -> str:
     degree_data: tp.List[pd.DataFrame] = []
-    for case_study in case_studies:
+    for case_study in get_paper_config().get_all_case_studies():
         project_name = case_study.project_name
-        project_git = git["-C", get_local_project_git(project_name).path]
+        project_git_path = get_local_project_git_path(project_name)
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             continue
@@ -53,11 +54,9 @@ def _generate_graph_table(
             pd.DataFrame.from_dict({
                 project_name: {
                     ("commits", ""):
-                        int(project_git("rev-list", "--count", revision.hash)),
+                        num_commits(revision.hash, project_git_path),
                     ("authors", ""):
-                        len(
-                            project_git("shortlog", "-s", "--all").splitlines()
-                        ),
+                        num_authors(revision.hash, project_git_path),
                     ("nodes", ""):
                         len(graph.nodes),
                     ("edges", ""):
@@ -88,14 +87,20 @@ def _generate_graph_table(
         )
 
     df = pd.concat(degree_data).round(2)
-
-    kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+    style = df.style
+    kwargs: tp.Dict[str, tp.Any] = {}
     if table_format.is_latex():
-        kwargs["multicolumn_format"] = "c"
-        kwargs["multirow"] = True
+        kwargs["hrules"] = True
+        kwargs["multicol_align"] = "c"
+        style.format(precision=2)
 
     return dataframe_to_table(
-        df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        df,
+        table_format,
+        style,
+        wrap_table=wrap_table,
+        wrap_landscape=True,
+        **kwargs
     )
 
 
@@ -107,19 +112,15 @@ class CommitInteractionGraphMetricsTable(Table, table_name="cig_metrics_table"):
         def create_graph(
             project_name: str, revision: FullCommitHash
         ) -> nx.DiGraph:
-            return create_blame_interaction_graph(project_name, revision
-                                                 ).commit_interaction_graph()
+            return create_blame_interaction_graph(
+                project_name, revision, BlameReportExperiment
+            ).commit_interaction_graph()
 
-        return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format,
-            wrap_table
-        )
+        return _generate_graph_table(create_graph, table_format, wrap_table)
 
 
 class CommitInteractionGraphMetricsTableGenerator(
-    TableGenerator,
-    generator_name="cig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    TableGenerator, generator_name="cig-metrics-table", options=[]
 ):
     """Generates a cig-metrics table for the selected case study(ies)."""
 
@@ -139,19 +140,15 @@ class AuthorInteractionGraphMetricsTable(Table, table_name="aig_metrics_table"):
         def create_graph(
             project_name: str, revision: FullCommitHash
         ) -> nx.DiGraph:
-            return create_blame_interaction_graph(project_name, revision
-                                                 ).author_interaction_graph()
+            return create_blame_interaction_graph(
+                project_name, revision, BlameReportExperiment
+            ).author_interaction_graph()
 
-        return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format,
-            wrap_table
-        )
+        return _generate_graph_table(create_graph, table_format, wrap_table)
 
 
 class AuthorInteractionGraphMetricsTableGenerator(
-    TableGenerator,
-    generator_name="aig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    TableGenerator, generator_name="aig-metrics-table", options=[]
 ):
     """Generates an aig-metrics table for the selected case study(ies)."""
 
@@ -174,19 +171,14 @@ class CommitAuthorInteractionGraphMetricsTable(
             project_name: str, revision: FullCommitHash
         ) -> nx.DiGraph:
             return create_blame_interaction_graph(
-                project_name, revision
+                project_name, revision, BlameReportExperiment
             ).commit_author_interaction_graph()
 
-        return _generate_graph_table(
-            self.table_kwargs["case_study"], create_graph, table_format,
-            wrap_table
-        )
+        return _generate_graph_table(create_graph, table_format, wrap_table)
 
 
 class CommitAuthorInteractionGraphMetricsTableGenerator(
-    TableGenerator,
-    generator_name="caig-metrics-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    TableGenerator, generator_name="caig-metrics-table", options=[]
 ):
     """Generates a caig-metrics table for the selected case study(ies)."""
 
@@ -209,13 +201,14 @@ class AuthorBlameVsFileDegreesTable(
 
         project_name: str = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise TableDataEmpty()
 
-        blame_aig = create_blame_interaction_graph(project_name, revision
-                                                  ).author_interaction_graph()
+        blame_aig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).author_interaction_graph()
         file_aig = create_file_based_interaction_graph(
             project_name, revision
         ).author_interaction_graph()
@@ -229,39 +222,39 @@ class AuthorBlameVsFileDegreesTable(
             file_neighbors = set(file_aig.successors(node)
                                 ).union(file_aig.predecessors(node))
             blame_nodes.append(({
-                "author": f"{node_attrs['author']}",
-                "blame_num_commits": node_attrs['num_commits'],
-                "blame_node_degree": blame_aig.degree(node),
-                "author_diff": len(blame_neighbors.difference(file_neighbors))
+                "Author": f"{node_attrs['author']}",
+                "Blame Num Commits": node_attrs['num_commits'],
+                "Blame Node-deg": blame_aig.degree(node),
+                "Author Diff": len(blame_neighbors.difference(file_neighbors))
             }))
         blame_data = pd.DataFrame(blame_nodes)
-        blame_data.set_index("author", inplace=True)
+        blame_data.set_index("Author", inplace=True)
 
         file_nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in file_aig.nodes:
             node_attrs = tp.cast(AIGNodeAttrs, file_aig.nodes[node])
             file_nodes.append(({
-                "author": f"{node_attrs['author']}",
-                "file_num_commits": node_attrs['num_commits'],
-                "file_node_degree": file_aig.degree(node)
+                "Author": f"{node_attrs['author']}",
+                "File Num Commits": node_attrs['num_commits'],
+                "File Node-deg": file_aig.degree(node)
             }))
         file_data = pd.DataFrame(file_nodes)
-        file_data.set_index("author", inplace=True)
+        file_data.set_index("Author", inplace=True)
 
         degree_data = blame_data.join(file_data, how="outer")
 
+        style = degree_data.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["index"] = True
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
+            kwargs["hrules"] = True
+            style.format(precision=2)
 
         return dataframe_to_table(
             degree_data,
             table_format,
-            wrap_table,
+            style,
+            wrap_table=wrap_table,
             wrap_landscape=True,
-            **kwargs
         )
 
 

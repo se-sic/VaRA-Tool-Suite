@@ -26,6 +26,7 @@ from pathlib import Path
 
 import numpy as np
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 from varats.utils.util import static_vars
 

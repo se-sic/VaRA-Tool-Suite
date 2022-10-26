@@ -3,18 +3,18 @@ import logging
 import typing as tp
 
 import pandas as pd
-from benchbuild.utils.cmd import git
 
 from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
+    get_local_project_git_path,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.utils.git_util import calc_repo_loc
+from varats.utils.git_util import calc_repo_loc, num_commits, num_authors
 
 LOG = logging.Logger(__name__)
 
@@ -32,8 +32,7 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
             commit_map = get_commit_map(project_name)
             project_cls = get_project_cls_by_name(project_name)
             project_repo = get_local_project_git(project_name)
-            project_path = project_repo.path[:-5]
-            project_git = git["-C", project_path]
+            project_git_path = get_local_project_git_path(project_name)
 
             revisions = sorted(
                 case_study.revisions, key=commit_map.time_id, reverse=True
@@ -49,12 +48,9 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
                     "LOC":
                         calc_repo_loc(project_repo, rev_range),
                     "Commits":
-                        int(project_git("rev-list", "--count", rev_range)),
+                        num_commits(revision.hash, project_git_path),
                     "Authors":
-                        len(
-                            project_git("shortlog", "-s",
-                                        rev_range).splitlines()
-                        )
+                        num_authors(revision.hash, project_git_path),
                 }
             }
             if revision:
@@ -64,14 +60,12 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
 
         df = pd.concat(cs_data).sort_index()
 
-        kwargs: tp.Dict[str, tp.Any] = {"bold_rows": True}
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["multicolumn_format"] = "c"
-            kwargs["multirow"] = True
+            kwargs["hrules"] = True
 
-        return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
-        )
+        return dataframe_to_table(df, table_format, style, wrap_table, **kwargs)
 
 
 class CaseStudyMetricsTableGenerator(

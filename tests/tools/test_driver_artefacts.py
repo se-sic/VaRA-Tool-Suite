@@ -80,12 +80,12 @@ class TestDriverArtefacts(unittest.TestCase):
   artefact_type: plot
   artefact_type_version: 2
   dry_run: false
+  experiment_type: JustCompile
   file_type: png
   name: Paper Config Overview
   output_dir: .
   plot_config: {}
   plot_generator: pc-overview-plot
-  report_type: EmptyReport
   view: false
 
 """

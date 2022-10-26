@@ -10,6 +10,7 @@ import logging
 import typing as tp
 
 import click
+from rich.progress import Progress
 
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plots.discover_plots import initialize_plots
@@ -65,7 +66,8 @@ class TableCLI(click.MultiCommand):
                     paper_config.add_artefact(artefact)
                     paper_config.store_artefacts()
                 else:
-                    generator_instance(common_options)
+                    with Progress() as progress:
+                        generator_instance(common_options, progress)
             except TableGeneratorFailed as ex:
                 print(
                     f"Failed to create table generator {generator_cls.NAME}: "

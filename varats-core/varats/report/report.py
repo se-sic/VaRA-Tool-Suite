@@ -5,6 +5,7 @@ import re
 import shutil
 import typing as tp
 import weakref
+from collections import defaultdict
 from enum import Enum
 from pathlib import Path, PosixPath
 from tempfile import TemporaryDirectory
@@ -24,6 +25,7 @@ class FileStatusExtension(Enum):
     value: tp.Tuple[str, Color]  # pylint: disable=invalid-name
 
     SUCCESS = ("success", colors.green)
+    PARTIAL = ("partial", colors.darkturquoise)
     INCOMPLETE = ("incomplete", colors.orangered1)
     FAILED = ("failed", colors.lightred)
     COMPILE_ERROR = ("cerror", colors.red)
@@ -130,6 +132,9 @@ class FileStatusExtension(Enum):
             rhs == FileStatusExtension.SUCCESS and
             lhs != FileStatusExtension.SUCCESS
         ):
+            if FileStatusExtension.PARTIAL in (lhs, rhs):
+                return FileStatusExtension.PARTIAL
+
             return FileStatusExtension.INCOMPLETE
         return lhs
 
@@ -141,8 +146,10 @@ class ReportFilename():
     __RESULT_FILE_REGEX = re.compile(
         r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
-        FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$"
+        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)"
+        r"(\/config-(?P<config_id>\d+))?" + "_" +
+        FileStatusExtension.get_regex_grp() + r"?" + r"(?P<file_ext>\..*)?" +
+        "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
@@ -151,16 +158,43 @@ class ReportFilename():
         "{status_ext}" + "{file_ext}"
     )
 
+    __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (
+        "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
+        "{binary_name}-" + "{project_revision}_" + "{project_uuid}" +
+        "/config-{config_id}_" + "{status_ext}" + "{file_ext}"
+    )
+
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
-        if isinstance(file_name, (Path, PosixPath)):
-            self.__filename = file_name.name
-        else:
-            self.__filename = str(file_name)
+        self.__filename = str(file_name)
+
+    @staticmethod
+    def construct(
+        filepath: Path, base_folder: tp.Optional[Path]
+    ) -> 'ReportFilename':
+        """
+        Constructs a `ReportFilename` from a given path and a base folder.
+
+        The base folder can be omitted should the filepath only contain the
+        file.
+        """
+        if base_folder:
+            return ReportFilename(filepath.relative_to(base_folder))
+
+        return ReportFilename(filepath)
 
     @property
     def filename(self) -> str:
         """Literal file name."""
         return self.__filename
+
+    @property
+    def project_name(self) -> str:
+        """Name of the analyzed project."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return str(match.group("project_name"))
+
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
     def binary_name(self) -> str:
@@ -317,12 +351,48 @@ class ReportFilename():
         raise ValueError('File {file_name} name was wrongly formatted.')
 
     @property
+    def config_id(self) -> tp.Optional[int]:
+        """
+        Configuration ID of the result file. A configuartion ID is only present
+        in configuration specific reports, for others, no ID exists.
+
+        Returns:
+            the configuration ID from a result file
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            config_id_group = match.group("config_id")
+            if config_id_group:
+                return int(config_id_group)
+
+        return None
+
+    def is_configuration_specific_file(self) -> bool:
+        """
+        Check if the file name contains configuration specific information.
+
+        Returns:
+            True, if the file name is configuration specific
+        """
+        return self.config_id is not None
+
+    @property
     def uuid(self) -> str:
         """Report UUID of the result file, genereated by BenchBuild during the
         experiment."""
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
             return match.group("UUID")
+
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
+
+    @property
+    def file_suffix(self) -> str:
+        """File suffix, commonly known as file ending/type (in the codebase
+        referred to as file_ext)."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("file_ext")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
@@ -335,7 +405,8 @@ class ReportFilename():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
+        file_ext: str = ".txt",
+        config_id: tp.Optional[int] = None
     ) -> 'ReportFilename':
         """
         Generates a filename for a report file out the different parts.
@@ -359,6 +430,21 @@ class ReportFilename():
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
 
+        if config_id:
+            return ReportFilename(
+                ReportFilename.__CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE.format(
+                    experiment_shorthand=experiment_shorthand,
+                    report_shorthand=report_shorthand,
+                    project_name=project_name,
+                    binary_name=binary_name,
+                    project_revision=project_revision,
+                    project_uuid=project_uuid,
+                    status_ext=status_ext,
+                    config_id=config_id,
+                    file_ext=file_ext
+                )
+            )
+
         return ReportFilename(
             ReportFilename.__RESULT_FILE_TEMPLATE.format(
                 experiment_shorthand=experiment_shorthand,
@@ -372,11 +458,61 @@ class ReportFilename():
             )
         )
 
+    def with_status(self, new_status: FileStatusExtension) -> 'ReportFilename':
+        """Returns a new report filename, adapted with the new file extension
+        `new_status`."""
+        return self.get_file_name(
+            self.experiment_shorthand, self.report_shorthand, self.project_name,
+            self.binary_name, self.commit_hash, self.uuid, new_status,
+            self.file_suffix, self.config_id
+        )
+
     def __str__(self) -> str:
         return self.filename
 
     def __repr__(self) -> str:
         return self.filename
+
+
+class ReportFilepath():
+    """ReportFilepath combines report filenames with path semantics and presents
+    the file as a full path."""
+
+    def __init__(
+        self, base_path: Path, report_filename: ReportFilename
+    ) -> None:
+        self.__base_path = base_path
+        self.__report_filename = report_filename
+
+    @staticmethod
+    def construct(full_filepath: Path, base_folder: Path) -> 'ReportFilepath':
+        """Constructs a `ReportFilepath` from a given full path, ideally a fully
+        qualified path but this is not strictly required, and a base folder."""
+        return ReportFilepath(
+            base_folder, ReportFilename.construct(full_filepath, base_folder)
+        )
+
+    @property
+    def base_path(self) -> Path:
+        return self.__base_path
+
+    @property
+    def report_filename(self) -> ReportFilename:
+        return self.__report_filename
+
+    def full_path(self) -> Path:
+        return self.base_path / str(self.report_filename)
+
+    def with_status(self, new_status: FileStatusExtension) -> 'ReportFilepath':
+        return ReportFilepath(
+            self.base_path, self.report_filename.with_status(new_status)
+        )
+
+    def __str__(self) -> str:
+        return str(self.full_path())
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class BaseReport():
@@ -457,6 +593,7 @@ class BaseReport():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
+        config_id: tp.Optional[int] = None
     ) -> ReportFilename:
         """
         Generates a filename for a report file.
@@ -474,7 +611,8 @@ class BaseReport():
         """
         return ReportFilename.get_file_name(
             experiment_shorthand, cls.SHORTHAND, project_name, binary_name,
-            project_revision, project_uuid, extension_type, cls.FILE_TYPE
+            project_revision, project_uuid, extension_type, cls.FILE_TYPE,
+            config_id
         )
 
     @property
@@ -563,14 +701,27 @@ class ReportSpecification():
 
 
 ReportTy = tp.TypeVar('ReportTy', bound=BaseReport)
+KeyTy = tp.TypeVar('KeyTy')
 
 
-class ReportAggregate(
-    BaseReport, tp.Generic[ReportTy], shorthand="Agg", file_type="zip"
+class KeyedReportAggregate(
+    BaseReport, tp.Generic[KeyTy, ReportTy], shorthand="Agg", file_type="zip"
 ):
-    """Parses multiple reports of the same type stored inside a zip file."""
+    """
+    Parses and categories multiple reports of the same type stored inside a zip
+    file.
 
-    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+    The `key_func` is used to divide the parsed reports into different
+    categories/buckets.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        report_type: tp.Type[ReportTy],
+        key_func: tp.Callable[[Path], KeyTy],
+        default_key: tp.Optional[KeyTy] = None
+    ) -> None:
         super().__init__(path)
 
         # Create a temporary directory for extraction and register finalizer,
@@ -582,9 +733,10 @@ class ReportAggregate(
         if self.path.exists():
             shutil.unpack_archive(self.path, self.__tmpdir.name)
 
-        self.__reports = [
-            report_type(file) for file in Path(self.__tmpdir.name).iterdir()
-        ]
+        self.__default_key = default_key
+        self.__reports: tp.Dict[KeyTy, tp.List[ReportTy]] = defaultdict(list)
+        for file in Path(self.__tmpdir.name).iterdir():
+            self.__reports[key_func(file)].append(report_type(file))
 
     def remove(self) -> None:
         self.__finalizer()
@@ -593,10 +745,37 @@ class ReportAggregate(
     def removed(self) -> bool:
         return not self.__finalizer.alive
 
-    @property
-    def reports(self) -> tp.List[ReportTy]:
+    def keys(self) -> tp.Collection[KeyTy]:
+        return self.__reports.keys()
+
+    def reports(self, key: tp.Optional[KeyTy] = None) -> tp.List[ReportTy]:
         """Returns the list of parsed reports."""
+<<<<<<< HEAD
         return self.__reports
 
 
 
+=======
+        if key:
+            return self.__reports[key]
+
+        if self.__default_key is None:
+            raise AssertionError("No key or default key was provided.")
+
+        return self.__reports[self.__default_key]
+
+
+def _key_id(_: Path) -> int:
+    return 0
+
+
+class ReportAggregate(
+    KeyedReportAggregate[int, ReportTy],
+    tp.Generic[ReportTy],
+    shorthand="Agg",
+    file_type="zip"
+):
+
+    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+        super().__init__(path, report_type, _key_id, 0)
+>>>>>>> origin/vara-dev

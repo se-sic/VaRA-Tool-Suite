@@ -6,7 +6,9 @@ import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.reports.commit_report import CommitReport
+from varats.experiments.vara.commit_report_experiment import (
+    CommitReportExperiment,
+)
 from varats.jupyterhelper.file import load_commit_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
@@ -21,10 +23,12 @@ from varats.revision.revisions import (
 class CommitInteractionDatabase(
     EvaluationDatabase,
     cache_id="commit_interaction_data",
-    columns=[
-        "CFInteractions", "DFInteractions", "HEAD CF Interactions",
-        "HEAD DF Interactions"
-    ]
+    column_types={
+        "CFInteractions": 'int64',
+        "DFInteractions": 'int64',
+        "HEAD CF Interactions": 'int64',
+        "HEAD DF Interactions": 'int64'
+    }
 ):
     """Provides access to commit interaction data."""
 
@@ -36,12 +40,7 @@ class CommitInteractionDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.CFInteractions = df_layout.CFInteractions.astype('int64')
-            df_layout.DFInteractions = df_layout.DFInteractions.astype('int64')
-            df_layout['HEAD CF Interactions'] = df_layout['HEAD CF Interactions'
-                                                         ].astype('int64')
-            df_layout['HEAD DF Interactions'] = df_layout['HEAD DF Interactions'
-                                                         ].astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(
@@ -70,13 +69,15 @@ class CommitInteractionDatabase(
                                 )
 
         report_files = get_processed_revisions_files(
-            project_name, CommitReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            CommitReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = get_failed_revisions_files(
-            project_name, CommitReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            CommitReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         # cls.CACHE_ID is set by superclass

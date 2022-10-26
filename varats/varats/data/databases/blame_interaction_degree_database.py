@@ -9,11 +9,13 @@ import pandas as pd
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
-    BlameReport,
     generate_author_degree_tuples,
     generate_avg_time_distribution_tuples,
     generate_max_time_distribution_tuples,
     generate_lib_dependent_degrees,
+)
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
@@ -71,9 +73,14 @@ def _split_tuple_values_in_lists_tuple(
 class BlameInteractionDegreeDatabase(
     EvaluationDatabase,
     cache_id="blame_interaction_degree_data",
-    columns=[
-        "degree_type", "base_lib", "inter_lib", "degree", "amount", "fraction"
-    ]
+    column_types={
+        "degree_type": 'str',
+        "base_lib": 'str',
+        "inter_lib": 'str',
+        "degree": 'int64',
+        "amount": 'int64',
+        "fraction": 'float64'
+    }
 ):
     """Provides access to blame interaction degree data."""
 
@@ -86,12 +93,7 @@ class BlameInteractionDegreeDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.base_lib = df_layout.base_lib.astype('str')
-            df_layout.inter_lib = df_layout.inter_lib.astype('str')
-            df_layout.degree = df_layout.degree.astype('int64')
-            df_layout.amount = df_layout.amount.astype('int64')
-            df_layout.fraction = df_layout.fraction.astype('int64')
-
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(
@@ -230,13 +232,15 @@ class BlameInteractionDegreeDatabase(
                                )
 
         report_files = get_processed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = get_failed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         # cls.CACHE_ID is set by superclass

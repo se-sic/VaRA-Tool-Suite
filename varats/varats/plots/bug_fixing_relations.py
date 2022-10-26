@@ -12,6 +12,9 @@ import plotly.graph_objs as gob
 import pygit2
 
 from varats.data.reports.szz_report import SZZUnleashedReport
+from varats.experiments.szz.szz_unleashed_experiment import (
+    SZZUnleashedExperiment,
+)
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.project.project_util import (
     get_project_cls_by_name,
@@ -267,7 +270,7 @@ def _create_line(
     interval = _get_interval(dist)
 
     # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
-    control_points: np.ndarray[tp.Any, npt._DType[np.float64]] = np.array([
+    control_points: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
@@ -491,7 +494,7 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         pydriller_bugs = bug_provider.find_pygit_bugs()
 
         reports = get_processed_revisions_files(
-            project_name, SZZUnleashedReport
+            project_name, SZZUnleashedExperiment
         )
         szzunleashed_bugs = frozenset([
             as_pygit_bug(raw_bug, project_repo)
