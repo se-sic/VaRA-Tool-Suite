@@ -8,6 +8,7 @@ add additional passes/flags, without modifying build files, and later use the
 generated bc files with LLVM.
 """
 
+import sys
 import typing as tp
 from enum import Enum
 from os import getenv, path
@@ -61,7 +62,38 @@ class RunWLLVM(base.Extension):  # type: ignore
     This class is an extension that implements the WLLVM compiler with the
     required flags LLVM_COMPILER=clang and LLVM_OUTPUFILE=<path>. This compiler
     is used to transfer the complete project into LLVM-IR.
+
+    The distcc_hosts argument will instruct WLLVM to call distcc instead of
+    clang directly. It is the user's responsibility to ensure that all
+    distcc hosts are configured to use exactly the same compiler as localhost!
     """
+
+    def __init__(
+        self,
+        distcc_hosts: tp.Optional[str] = None,
+        *extensions: 'Extension',
+        config: tp.Optional[tp.Dict[str, str]] = None,
+        **kwargs: tp.Any
+    ):
+        super().__init__(*extensions, config=config, **kwargs)
+        self._distcc_hosts = distcc_hosts
+
+    def __create_distcc_scripts(self) -> tp.Tuple[Path, Path]:
+        projdir = Path(sys.argv[0]).parent
+        distcc_cc = projdir / "distcc-clang"
+        distcc_cxx = projdir / "distcc-clang++"
+
+        if not distcc_cc.exists():
+            distcc_cc.write_text("""#!/usr/bin/env sh\ndistcc clang $@""")
+            # chmod +x
+            distcc_cc.chmod(distcc_cc.stat().st_mode | 0o111)
+
+        if not distcc_cxx.exists():
+            distcc_cxx.write_text("""#!/usr/bin/env sh\ndistcc clang++ $@""")
+            # chmod +x
+            distcc_cxx.chmod(distcc_cc.stat().st_mode | 0o111)
+
+        return distcc_cc, distcc_cxx
 
     def __call__(self, compiler: cc, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         if str(compiler).endswith("clang++"):
@@ -81,6 +113,12 @@ class RunWLLVM(base.Extension):  # type: ignore
             PATH=list_to_path(env_path_list),
             LD_LIBRARY_PATH=list_to_path(libs_path)
         )
+
+        if self._distcc_hosts:
+            distcc_cc, distcc_cxx = self.__create_distcc_scripts()
+            wllvm.env["DISTCC_HOSTS"] = self._distcc_hosts
+            wllvm.env["LLVM_CC_NAME"] = distcc_cc
+            wllvm.env["LLVM_CXX_NAME"] = distcc_cxx
 
         return self.call_next(wllvm, *args, **kwargs)
 
