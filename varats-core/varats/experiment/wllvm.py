@@ -84,12 +84,12 @@ class RunWLLVM(base.Extension):  # type: ignore
         distcc_cxx = projdir / "distcc-clang++"
 
         if not distcc_cc.exists():
-            distcc_cc.write_text("""#!/usr/bin/env sh\ndistcc clang $@""")
+            distcc_cc.write_text("#!/usr/bin/env sh\ndistcc clang $@")
             # chmod +x
             distcc_cc.chmod(distcc_cc.stat().st_mode | 0o111)
 
         if not distcc_cxx.exists():
-            distcc_cxx.write_text("""#!/usr/bin/env sh\ndistcc clang++ $@""")
+            distcc_cxx.write_text("#!/usr/bin/env sh\ndistcc clang++ $@")
             # chmod +x
             distcc_cxx.chmod(distcc_cc.stat().st_mode | 0o111)
 
