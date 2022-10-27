@@ -280,3 +280,38 @@ class TimeReportAggregate(
             f"std(wall_clock_time) = {np.var(self.measurements_wall_clock_time)}\n" \
             f"variance(wall_clock_time) = {np.std(self.measurements_wall_clock_time)} \n"
 
+    
+class WLTimeReportAggregate(
+    WorkloadSpecificReportAggregate[TimeReport],
+    shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
+    """Context Manager for parsing multiple time reports stored inside a zip
+    file and grouping them based on the workload they belong to."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TimeReport)
+
+    def measurements_wall_clock_time(self,
+                                     workload_name: str) -> tp.List[float]:
+        """Wall clock time measurements of all aggregated reports."""
+        return [
+            report.wall_clock_time.total_seconds()
+            for report in self.reports(workload_name)
+        ]
+
+    def measurements_ctx_switches(self, workload_name: str) -> tp.List[int]:
+        """Context switches measurements of all aggregated reports."""
+        return [
+            report.voluntary_ctx_switches + report.involuntary_ctx_switches
+            for report in self.reports(workload_name)
+        ]
+
+    def max_resident_sizes(self, workload_name: str) -> tp.List[int]:
+        return [report.max_res_size for report in self.reports(workload_name)]
+
+    def summary(self) -> str:
+        return (
+            f"num_reports = {len(self.reports())}\n"
+            f"num_workloads = {len(self.workload_names())}\n"
+        )
