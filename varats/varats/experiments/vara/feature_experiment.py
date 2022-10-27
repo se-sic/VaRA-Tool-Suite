@@ -15,7 +15,7 @@ from varats.base.commandline_option import (
     CommandlineOptionGroup,
     CommandlineOptionFormat,
 )
-from varats.base.configuration import ConfigurationImpl
+from varats.base.configuration import SimpleConfiguration
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -182,24 +182,10 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             Path(
                                 paper_config.path /
                                 f"{case_study.project_name}_{case_study.version}.case_study"
-                            ), ConfigurationImpl
-                        )
-                        all_command_line_options = self.create_command_line_options_from_fm(
+                            ), SimpleConfiguration
                         )
                         for config_id in config_ids:
                             config = config_map.get_configuration(config_id)
-                            option_names = [
-                                option.name for option in config.options()
-                            ]
-                            command_line_options = [
-                                command_line_option for command_line_option in
-                                all_command_line_options
-                                if command_line_option.get_option_name() in
-                                option_names
-                            ]
-                            command_line_option_group = CommandlineOptionGroup(
-                                command_line_options
-                            )
                             for prj_command in workload_commands(
                                 self.project,
                                 binary,
@@ -218,9 +204,6 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                         f"Running example {prj_command.command.label}_{config_id}"
                                     )
                                     with cleanup(prj_command):
-                                        pb_cmd(
-                                            command_line_option_group.
-                                            render(config)
-                                        )
+                                        pb_cmd(config.options())
 
         return StepResult.OK
