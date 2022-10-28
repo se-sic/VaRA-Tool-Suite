@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def __timestamp(event: tp.OrderedDict[str, tp.Any]) -> int:
-    return event["ts"]
+    return int(event["ts"])
 
 
 def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:

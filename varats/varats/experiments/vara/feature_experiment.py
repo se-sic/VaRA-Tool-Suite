@@ -145,8 +145,11 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                         ) / f"trace_{prj_command.command.label}.json"
                         with local.env(
                             VARA_TRACE_FILE=trace_result_path,
-                            XRAY_OPTIONS=
-                            "patch_premain=true xray_mode=xray-basic verbosity=1",
+                            XRAY_OPTIONS=" ".join([
+                                "patch_premain=true",
+                                "xray_mode=xray-basic",
+                                "verbosity=1",
+                            ]),
                         ):
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
@@ -167,9 +170,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             xray_map_path = local.path(
                                 self.project.primary_source
                             ) / binary.path
-                            print(
-                                f"XRay: Log file in '{xray_log_path}' / '{xray_map_path}'"
-                            )
+                            print(f"XRay: Log file in '{xray_log_path}'")
                             xray_result_path = Path(
                                 tmp_dir
                             ) / f"xray_{prj_command.command.label}.json"
