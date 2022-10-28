@@ -62,9 +62,11 @@ def merge_trace(*traces: tp.Tuple[Path, str]) -> tp.OrderedDict[str, tp.Any]:
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []
     for trace in traces:
         trace_events += sanitize_trace(*trace)["traceEvents"]
+
+    trace_events.sort(key=lambda x: x["ts"])
+
     result: tp.OrderedDict[str, tp.Any] = OrderedDict()
-    result["traceEvents"]: tp.List[tp.OrderedDict[
-        str, tp.Any]] = sorted(trace_events, key=lambda x: x["ts"])
+    result["traceEvents"]: tp.List[tp.OrderedDict[str, tp.Any]] = trace_events
     result["stackFrames"] = {}
     result["timestampUnit"] = "us"
     return result

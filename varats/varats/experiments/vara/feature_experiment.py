@@ -18,8 +18,8 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
     ZippedReportFolder,
 )
+from varats.experiment.trace_util import merge_trace
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
-from varats.experiments.vara.trace_util import merge_trace
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
