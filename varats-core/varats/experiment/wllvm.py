@@ -64,24 +64,32 @@ class RunWLLVM(base.Extension):  # type: ignore
     is used to transfer the complete project into LLVM-IR.
 
     The distcc_hosts argument will instruct WLLVM to call distcc instead of
-    clang directly. It is the user's responsibility to ensure that all
-    distcc hosts are configured to use exactly the same compiler as localhost!
+    clang directly. For possible values of distcc_hosts have a look at the
+    "HOST SPECIFICATIONS" in the distcc man page.
+    It is the user's responsibility to ensure that all distcc hosts are
+    configured to use exactly the same compiler as localhost!
+
+    Examples:
+    - Usage without distcc:
+        RunWLLVM()
+    - Usage with distcc enabled:
+        RunWLLVM(distcc_hosts="localhost 192.168.1.1:3634/64")
     """
 
     def __init__(
         self,
-        distcc_hosts: tp.Optional[str] = None,
-        *extensions: 'Extension',
+        *extensions: base.Extension,
         config: tp.Optional[tp.Dict[str, str]] = None,
+        distcc_hosts: tp.Optional[str] = None,
         **kwargs: tp.Any
     ):
         super().__init__(*extensions, config=config, **kwargs)
         self._distcc_hosts = distcc_hosts
 
     def __create_distcc_scripts(self) -> tp.Tuple[Path, Path]:
-        projdir = Path(sys.argv[0]).parent
-        distcc_cc = projdir / "distcc-clang"
-        distcc_cxx = projdir / "distcc-clang++"
+        project_dir = Path(sys.argv[0]).parent
+        distcc_cc = project_dir / "distcc-clang"
+        distcc_cxx = project_dir / "distcc-clang++"
 
         if not distcc_cc.exists():
             distcc_cc.write_text("#!/usr/bin/env sh\ndistcc clang $@")
