@@ -9,7 +9,8 @@ def __timestamp(event: tp.OrderedDict[str, tp.Any]) -> int:
     return int(event["ts"])
 
 
-def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
+def sanitize_trace(path: Path, category: str,
+                   tid: int) -> tp.OrderedDict[str, tp.Any]:
     """Read and clean up a trace file."""
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []
     with open(path, mode="r", encoding="UTF-8") as file:
@@ -19,7 +20,7 @@ def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
             item["ph"] = event["ph"]
             item["ts"] = int(float(event["ts"]))
             item["pid"] = int(event["pid"])
-            item["tid"] = int(event["tid"])
+            item["tid"] = tid
 
             if "cat" in event:
                 item["cat"] = f"{category}: {event['cat']}"
@@ -33,26 +34,10 @@ def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
 
     trace_events.sort(key=__timestamp)
 
-    # # try to fix missing events
-    # missing: tp.OrderedDict[str, tp.Any] = OrderedDict()
-    # start, end = trace_events[0]["ts"], trace_events[-1]["ts"]
-    # for event in trace_events:
-    #     event["ts"] -= start
-    #     name = event["name"]
-    #     if name in missing:
-    #         del missing[name]
-    #     else:
-    #         missing[name] = event
-    #
-    # for event in reversed(missing.values()):
-    #     item: tp.OrderedDict[str, tp.Any] = OrderedDict()
-    #     item["name"] = event["name"]
-    #     item["ph"] = "E"
-    #     item["ts"] = end - start,
-    #     item["pid"] = event["pid"]
-    #     item["tid"] = event["tid"]
-    #     item["cat"] = event['cat']
-    #     trace_events.append(item)
+    if trace_events:
+        start = trace_events[0]["ts"]
+        for event in trace_events:
+            event["ts"] -= start
 
     result: tp.OrderedDict[str, tp.Any] = OrderedDict()
     result["traceEvents"] = trace_events
@@ -61,7 +46,9 @@ def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
     return result
 
 
-def merge_trace(*traces: tp.Tuple[Path, str]) -> tp.OrderedDict[str, tp.Any]:
+def merge_trace(
+    *traces: tp.Tuple[Path, str, int]
+) -> tp.OrderedDict[str, tp.Any]:
     """Merge multiple files into a single trace."""
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []
     for trace in traces:

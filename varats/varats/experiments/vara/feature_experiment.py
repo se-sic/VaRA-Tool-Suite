@@ -67,8 +67,12 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
 
         Returns: list of feature cflags
         """
-        fm_path = FeatureExperiment.get_feature_model_path(project).absolute()
-        return ["-fvara-feature", f"-fvara-fm-path={fm_path}"]
+        try:
+            fm_path = FeatureExperiment.get_feature_model_path(project
+                                                              ).absolute()
+            return ["-fvara-feature", f"-fvara-fm-path={fm_path}"]
+        except FeatureModelNotFound:
+            return ["-fvara-feature", "-fvara-fm-path="]
 
     @staticmethod
     def get_vara_tracing_cflags(instr_type: str,
@@ -155,7 +159,9 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 project=self.project
                             )
                             print(
-                                f"Running example '{prj_command.command.label}'"
+                                "Running example"
+                                f" '{prj_command.command.label}'",
+                                flush=True
                             )
                             with cleanup(prj_command):
                                 _, _, err = pb_cmd.run()
@@ -170,7 +176,11 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             xray_map_path = local.path(
                                 self.project.primary_source
                             ) / binary.path
-                            print(f"XRay: Log file in '{xray_log_path}'")
+                            print(
+                                f"XRay: Log file in '{xray_log_path}' /"
+                                f" {xray_map_path}",
+                                flush=True
+                            )
                             xray_result_path = Path(
                                 tmp_dir
                             ) / f"xray_{prj_command.command.label}.json"
@@ -193,8 +203,8 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 file.write(
                                     json.dumps(
                                         merge_trace(
-                                            (trace_result_path, "Trace"),
-                                            (xray_result_path, "XRay")
+                                            (trace_result_path, "Trace", 1),
+                                            (xray_result_path, "XRay", 2)
                                         ),
                                         indent=2
                                     )
