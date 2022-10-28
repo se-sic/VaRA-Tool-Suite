@@ -51,19 +51,20 @@ def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
     #     trace_events.append(item)
 
     result: tp.OrderedDict[str, tp.Any] = OrderedDict()
-    result["traceEvents"] = trace_events
+    result["traceEvents"]: tp.List[tp.OrderedDict[str, tp.Any]] = trace_events
     result["stackFrames"] = {}
     result["timestampUnit"] = "us"
     return result
 
 
-def merge_trace(*traces) -> tp.OrderedDict[str, tp.Any]:
+def merge_trace(*traces: tp.Tuple[Path, str]) -> tp.OrderedDict[str, tp.Any]:
     """Merge multiple files into a single trace."""
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []
     for trace in traces:
         trace_events += sanitize_trace(*trace)["traceEvents"]
     result: tp.OrderedDict[str, tp.Any] = OrderedDict()
-    result["traceEvents"] = sorted(trace_events, key=lambda x: x["ts"])
+    result["traceEvents"]: tp.List[tp.OrderedDict[
+        str, tp.Any]] = sorted(trace_events, key=lambda x: x["ts"])
     result["stackFrames"] = {}
     result["timestampUnit"] = "us"
     return result
