@@ -61,4 +61,3 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
-
