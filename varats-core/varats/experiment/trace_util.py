@@ -5,6 +5,10 @@ from collections import OrderedDict
 from pathlib import Path
 
 
+def __timestamp(event: tp.OrderedDict[str, tp.Any]) -> int:
+    return event["ts"]
+
+
 def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
     """Read and clean up a trace file."""
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []
@@ -27,7 +31,7 @@ def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
 
             trace_events.append(item)
 
-    trace_events.sort(key=lambda x: x["ts"])
+    trace_events.sort(key=__timestamp)
 
     # # try to fix missing events
     # missing: tp.OrderedDict[str, tp.Any] = OrderedDict()
@@ -51,7 +55,7 @@ def sanitize_trace(path: Path, category: str) -> tp.OrderedDict[str, tp.Any]:
     #     trace_events.append(item)
 
     result: tp.OrderedDict[str, tp.Any] = OrderedDict()
-    result["traceEvents"]: tp.List[tp.OrderedDict[str, tp.Any]] = trace_events
+    result["traceEvents"] = trace_events
     result["stackFrames"] = {}
     result["timestampUnit"] = "us"
     return result
@@ -63,10 +67,10 @@ def merge_trace(*traces: tp.Tuple[Path, str]) -> tp.OrderedDict[str, tp.Any]:
     for trace in traces:
         trace_events += sanitize_trace(*trace)["traceEvents"]
 
-    trace_events.sort(key=lambda x: x["ts"])
+    trace_events.sort(key=__timestamp)
 
     result: tp.OrderedDict[str, tp.Any] = OrderedDict()
-    result["traceEvents"]: tp.List[tp.OrderedDict[str, tp.Any]] = trace_events
+    result["traceEvents"] = trace_events
     result["stackFrames"] = {}
     result["timestampUnit"] = "us"
     return result
