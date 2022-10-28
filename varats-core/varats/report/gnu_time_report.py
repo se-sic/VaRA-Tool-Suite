@@ -280,7 +280,7 @@ class TimeReportAggregate(
             f"std(wall_clock_time) = {np.var(self.measurements_wall_clock_time)}\n" \
             f"variance(wall_clock_time) = {np.std(self.measurements_wall_clock_time)} \n"
 
-    
+
 class WLTimeReportAggregate(
     WorkloadSpecificReportAggregate[TimeReport],
     shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
