@@ -204,6 +204,6 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                         f"Running example {prj_command.command.label}_{config_id}"
                                     )
                                     with cleanup(prj_command):
-                                        pb_cmd(config.options())
+                                        pb_cmd(config.options(), retcode=None)
 
         return StepResult.OK
