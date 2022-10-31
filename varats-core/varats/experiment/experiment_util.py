@@ -20,6 +20,7 @@ else:
 from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
+from benchbuild.source import enumerate_revisions
 from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
@@ -390,8 +391,7 @@ class VersionExperiment(Experiment):  # type: ignore
         return versions
 
     @classmethod
-    def sample(cls,
-               prj_cls: tp.Type[Project]) -> tp.List[source.VariantContext]:
+    def sample(cls, prj_cls: tp.Type[Project]) -> tp.List[source.Revision]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
@@ -402,10 +402,7 @@ class VersionExperiment(Experiment):  # type: ignore
         Returns:
             list of sampled versions
         """
-        from benchbuild.source import enumerate
-        print("Sampling....")
-        # variants = list(source.product(*prj_cls.SOURCE))
-        variants = list(enumerate(prj_cls, *prj_cls.SOURCE))
+        variants = list(enumerate_revisions(prj_cls))
         print(f"Got {variants=}")
 
         if bool(vara_cfg()["experiment"]["random_order"]):
@@ -431,7 +428,7 @@ class VersionExperiment(Experiment):  # type: ignore
                 report_specific_bad_revs.append({
                     revision.hash
                     for revision, file_status in
-                    # TODO (se-sic/VaRA#840): needs updated VariantContext handling
+                    # TODO (se-sic/VaRA#840): needs updated Variant handling
                     revs.get_tagged_revisions(prj_cls, cls, report_type).items()
                     if file_status[None] not in fs_good
                 })
@@ -455,9 +452,9 @@ class VersionExperiment(Experiment):  # type: ignore
         variants = cls._sample_num_versions(variants)
 
         if bool(bb_cfg()["versions"]["full"]):
-            return [source.context(*var) for var in variants]
+            return variants
 
-        return [source.context(*variants[0])]
+        return [variants[0]]
 
 
 class ZippedReportFolder(TempDir):
