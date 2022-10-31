@@ -40,6 +40,7 @@ class FeaturePerfCSCollection(VProject):
         )
     ]
 
+
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
@@ -47,11 +48,11 @@ class FeaturePerfCSCollection(VProject):
                 RSBinary("SingleLocalSimple"),
                 label="SLS-no-input"
             ),
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("MultiSharedMultipleRegions"),
-                label="MSMR-no-input"
-            ),
+            #Command(
+            #    SourceRoot("FeaturePerfCSCollection") /
+            #    RSBinary("MultiSharedMultipleRegions"),
+            #    label="MSMR-no-input"
+            #),
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("MultiSharedMultipleRegions"),
@@ -60,7 +61,6 @@ class FeaturePerfCSCollection(VProject):
             )
         ]
     }
-
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
