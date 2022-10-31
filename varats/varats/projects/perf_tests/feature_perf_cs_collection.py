@@ -51,6 +51,12 @@ class FeaturePerfCSCollection(VProject):
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("MultiSharedMultipleRegions"),
                 label="MSMR-no-input"
+            ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("MultiSharedMultipleRegions"),
+                "--slow", "--header",
+                label="MSMR-Input-slow-header"
             )
         ]
     }
