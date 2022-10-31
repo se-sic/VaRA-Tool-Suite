@@ -333,6 +333,36 @@ class TestVersionExperiment(unittest.TestCase):
             )
         ).is_dir())
 
+    @run_in_test_environment()
+    def test_create_success_result_filepath_config_with_id_zero(self):
+        """Checks if we correctly create new success config-specific result
+        files for config id zero."""
+        new_res_file = EU.create_new_success_result_filepath(
+            self.vers_expr.get_handle(), CR, tp.cast(VProject, BBTestProject()),
+            ProjectBinaryWrapper("foo", Path("bar/foo"), BinaryType.EXECUTABLE),
+            0
+        )
+
+        self.assertTrue(new_res_file.base_path.exists())
+
+        report_filename = new_res_file.report_filename
+        self.assertEqual(
+            report_filename.file_status, FileStatusExtension.SUCCESS
+        )
+        self.assertEqual(report_filename.config_id, 0)
+        self.assertTrue((
+            new_res_file.base_path / Path(
+                "mock-CR-test_empty-foo-rev1000000_"
+                f"{report_filename.uuid}"
+            )
+        ).exists())
+        self.assertTrue((
+            new_res_file.base_path / Path(
+                "mock-CR-test_empty-foo-rev1000000_"
+                f"{report_filename.uuid}"
+            )
+        ).is_dir())
+
 
 class TestZippedReportFolder(unittest.TestCase):
     """Test ZippedReportFolder creation."""

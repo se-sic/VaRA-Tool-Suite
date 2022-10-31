@@ -589,7 +589,7 @@ def __create_new_result_filepath_impl(
         )
     )
 
-    if config_id:
+    if config_id is not None:
         # We need to ensure that the config folder is created in the
         # background, so configuration specific reports can be created.
         config_folder = result_filepath.full_path().parent
