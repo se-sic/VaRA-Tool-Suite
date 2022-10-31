@@ -4,8 +4,7 @@ import typing as tp
 import benchbuild as bb
 import plumbum as pb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
-from benchbuild.source import HTTP, Variant
-from benchbuild.source.base import FetchableSource, ProjectRevision
+from benchbuild.source import HTTP
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
     block_revisions,
@@ -17,11 +16,7 @@ from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
-from varats.paper_mgmt.paper_config import (
-    PaperConfigSpecificGit,
-    get_paper_config,
-    load_paper_config,
-)
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -29,6 +24,7 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
@@ -36,45 +32,6 @@ from varats.utils.git_util import (
     RevisionBinaryMap,
 )
 from varats.utils.settings import bb_cfg
-
-
-class FeatureSource(FetchableSource):
-    """Base for context aware test sources."""
-
-    def version(self, target_dir: str, version: str) -> pb.LocalPath:
-        raise NotImplementedError()
-
-    def versions(self) -> tp.List[Variant]:
-        raise NotImplementedError()
-
-    def fetch(self) -> pb.LocalPath:
-        return NotImplementedError()
-
-    @property
-    def default(self) -> Variant:
-        raise NotImplementedError()
-
-    @property
-    def is_expandable(self) -> bool:
-        return True
-
-    def is_context_free(self) -> bool:
-        return False
-
-    def versions_with_context(self,
-                              ctx: ProjectRevision) -> tp.Sequence[Variant]:
-
-        print(f"{ctx=}")
-        print(f"{ctx.primary=}")
-
-        cs = get_paper_config().get_case_studies(ctx.project_cls.NAME)[0]
-        print(f"{cs=}")
-        config_ids = cs.get_config_ids_for_revision(
-            ShortCommitHash(ctx.primary.version)
-        )
-        print(f"{config_ids=}")
-
-        return [Variant(self, str(config_id)) for config_id in config_ids]
 
 
 class Xz(VProject):

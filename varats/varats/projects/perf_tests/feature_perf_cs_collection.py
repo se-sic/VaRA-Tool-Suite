@@ -3,6 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.source import HTTP
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
@@ -17,6 +18,7 @@ from varats.project.project_util import (
     get_local_project_git_path,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
@@ -37,7 +39,8 @@ class FeaturePerfCSCollection(VProject):
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("FeaturePerfCSCollection")
-        )
+        ),
+        FeatureSource(local="localfoo", remote={"1.0": "remotefoo"})
     ]
 
     WORKLOADS = {
