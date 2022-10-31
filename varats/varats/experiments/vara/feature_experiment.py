@@ -148,10 +148,8 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 f"Running example {prj_command.command.label}"
                             )
                             with cleanup(prj_command):
-                                if prj_command.command.label == "MSMR-Input-slow-header":
-                                    pb_cmd("--slow", "--header")
-                                else:
-                                    pb_cmd()
+                                pb_cmd("--slow", "--header")
+
 
                         # TODO: figure out how to handle different configs
                         # executable("--slow")
