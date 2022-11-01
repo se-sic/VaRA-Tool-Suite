@@ -24,6 +24,7 @@ jobs:
           #    - uses: ./.github/actions/dependenciesActions
     - name: Create and Publish Release
       run: |
+        pwd
         echo $PYPI_TOKEN
         echo $HOME
         echo $TEST_PYPI_TOKEN
