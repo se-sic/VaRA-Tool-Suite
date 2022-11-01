@@ -64,7 +64,7 @@ class Xz(VProject):
                 shallow=False
             )
         ),
-        FeatureSource(local="localfoo", remote={"1.0": "remotefoo"}),
+        FeatureSource(remote={"1.0": "remotefoo"}),
         # TODO: auto unzipper for BB?
         HTTP(
             local="countries-land-1km.geo.json",

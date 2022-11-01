@@ -268,3 +268,35 @@ class ConfigurationImpl(Configuration):
         return json.dumps({
             idx[1].name: idx[1].value for idx in self.__config_values.items()
         })
+
+
+class PlainCommandlineConfiguration(Configuration):
+    """
+    Simple configuration format where command line args are directly written
+    into the file.
+
+    Example: '["--foo", "--bar"]'
+    """
+
+    def __init__(self, config_str_list: tp.List[str]) -> None:
+        self.__config_str_list: tp.List[str] = config_str_list
+
+    @staticmethod
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
+        config_str_list = json.loads(config_str)
+        return PlainCommandlineConfiguration(config_str_list)
+
+    def dump_to_string(self) -> str:
+        return " ".join(self.__config_str_list)
+
+    def options(self) -> tp.List[str]:
+        return self.__config_str_list
+
+    def add_config_option(self, option: ConfigurationOption) -> None:
+        raise NotImplementedError
+
+    def set_config_option(self, option_name: str, value: str) -> None:
+        raise NotImplementedError
+
+    def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+        raise NotImplementedError

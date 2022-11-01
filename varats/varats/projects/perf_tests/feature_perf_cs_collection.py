@@ -40,7 +40,7 @@ class FeaturePerfCSCollection(VProject):
             shallow=False,
             version_filter=project_filter_generator("FeaturePerfCSCollection")
         ),
-        FeatureSource(local="localfoo", remote={"1.0": "remotefoo"})
+        FeatureSource(remote={"1.0": "remotefoo"})
     ]
 
     WORKLOADS = {

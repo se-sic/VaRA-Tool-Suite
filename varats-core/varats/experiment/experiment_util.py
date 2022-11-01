@@ -9,6 +9,7 @@ import textwrap
 import traceback
 import typing as tp
 from abc import abstractmethod
+from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
 
@@ -26,7 +27,10 @@ from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
 import varats.revision.revisions as revs
+from varats.base.configuration import PlainCommandlineConfiguration
+from varats.paper_mgmt.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
@@ -35,6 +39,7 @@ from varats.report.report import (
     ReportSpecification,
     ReportFilename,
 )
+from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -423,27 +428,33 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            report_specific_bad_revs = []
+            report_specific_bad_revs: tp.Dict[
+                str, tp.Set[tp.Optional[int]]] = defaultdict(set)
             for report_type in cls.report_spec():
-                report_specific_bad_revs.append({
-                    revision.hash
-                    for revision, file_status in
-                    # TODO (se-sic/VaRA#840): needs updated Variant handling
-                    revs.get_tagged_revisions(prj_cls, cls, report_type).items()
-                    if file_status[None] not in fs_good
-                })
+                for revision, file_states in revs.get_tagged_revisions(
+                    prj_cls, cls, report_type
+                ).items():
+                    bad_config_ids: tp.Set[tp.Optional[int]] = set()
+                    for config_id, file_status in file_states.items():
+                        if file_status not in fs_good:
+                            bad_config_ids.add(config_id)
 
-            bad_revisions = report_specific_bad_revs[0].intersection(
-                *report_specific_bad_revs[1:]
-            )
+                    if bad_config_ids:
+                        report_specific_bad_revs[revision.hash
+                                                ].update(bad_config_ids)
 
-            print(f"{variants=}")
-            variants = list(
-                filter(
-                    lambda var: str(var.primary.version) not in bad_revisions,
-                    variants
-                )
-            )
+            def keep_variant(variant: source.Revision) -> bool:
+                var_version = str(variant.primary.version)
+                var_config_id = int(
+                    variant.variant_by_name("config_info").version
+                ) if variant.has_variant("config_info") else None
+
+                if var_version in report_specific_bad_revs:
+                    if var_config_id in report_specific_bad_revs[var_version]:
+                        return False  # Exclude variant from processing
+                return True
+
+            variants = list(filter(keep_variant, variants))
 
         if not variants:
             print("Could not find any unprocessed variants.")
@@ -645,3 +656,53 @@ def create_new_failed_result_filepath(
         exp_handle, report_type, project, binary, FileStatusExtension.FAILED,
         config_id
     )
+
+
+def get_current_config_id(project: VProject) -> tp.Optional[int]:
+    """
+    Get, if available, the current config id of project. Should the project be
+    not configuration specific None is returned.
+
+    Args:
+        project: to extract the config id from
+
+    Returns:
+        config_id if available for the given project
+    """
+    if project.active_revision.has_variant(FeatureSource.LOCAL_KEY):
+        return int(
+            project.active_revision.variant_by_name(FeatureSource.LOCAL_KEY
+                                                   ).version
+        )
+
+    return None
+
+
+def get_extra_config_options(project: VProject) -> tp.List[str]:
+    """
+    Get a extra program options that where specified in the particular
+    configuration of \a Project.
+
+    Args:
+        project: to get the extra options for
+
+    Returns:
+        list of command line options as string
+    """
+    config_id = get_current_config_id(project)
+    paper_config = get_paper_config()
+    case_studies = paper_config.get_case_studies(cs_name=project.name)
+
+    if len(case_studies) > 1:
+        raise AssertionError(
+            "Cannot handle multiple case studies of the same project."
+        )
+
+    case_study = case_studies[0]
+
+    config_map = load_configuration_map_for_case_study(
+        paper_config, case_study, PlainCommandlineConfiguration
+    )
+
+    config = config_map.get_configuration(config_id)
+    return config.options()
