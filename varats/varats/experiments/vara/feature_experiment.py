@@ -5,16 +5,11 @@ import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
-import lxml.etree as xml
 from benchbuild.command import cleanup
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
 from plumbum import local
 
-from varats.base.commandline_option import (
-    CommandlineOptionGroup,
-    CommandlineOptionFormat,
-)
 from varats.base.configuration import SimpleConfiguration
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -109,20 +104,16 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
 
 
 class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
-    """Executes the traced project binaries over the specified workloads."""
+    """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
     DESCRIPTION = "Run traced binary on workloads."
 
     project: VProject
 
-    def __init__(
-        self, project: VProject, experiment_handle: ExperimentHandle,
-        feature_model_path: Path
-    ):
+    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
-        self.feature_model_path = feature_model_path
 
     def __call__(self) -> StepResult:
         return self.run_traced_code()
@@ -131,26 +122,6 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
         return textwrap.indent(
             f"* {self.project.name}: Run instrumentation verifier", indent * " "
         )
-
-    def create_command_line_options_from_fm(
-        self
-    ) -> list[CommandlineOptionFormat]:
-        feature_model = xml.parse(self.feature_model_path)
-        configuration_options = feature_model.findall('.//configurationOption')
-        options = []
-        for configuration_option in configuration_options:
-            name = configuration_option.find('name').text.strip()
-            output_string = configuration_option.find('outputString')
-            if output_string is not None:
-                output_string = output_string.text
-                if output_string is not None and output_string.strip() != "":
-                    options.append(
-                        CommandlineOptionFormat(
-                            option_name=name,
-                            flag_format_string=output_string.strip()
-                        )
-                    )
-        return options
 
     def run_traced_code(self) -> StepResult:
         """Runs the binary with the embedded tracing code."""
