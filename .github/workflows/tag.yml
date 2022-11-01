@@ -43,21 +43,21 @@ jobs:
     - name: Create and Publish Release
       run: |
         echo $env.BB_TMP_DIR
-        echo '[distutils]
-          index-servers =
-            testpypi
-            pypi
-        
-        [pypi]
-          repository = https://upload.pypi.org/legacy/
-          username = __token__
-          password = ${{ PYPI_TOKEN }}
-        
-        [testpypi]
-          repository = https://test.pypi.org/legacy/
-          username = __token__
-          password = ${{ TEST_PYPI_TOKEN }}
-        ' > .pypirc
-        cat .pypirc
+        #        echo '[distutils]
+        #          index-servers =
+        #            testpypi
+        #            pypi
+        #        
+        #        [pypi]
+        #          repository = https://upload.pypi.org/legacy/
+        #          username = __token__
+        #          password = ${{ PYPI_TOKEN }}
+        #        
+        #        [testpypi]
+        #          repository = https://test.pypi.org/legacy/
+        #          username = __token__
+        #          password = ${{ TEST_PYPI_TOKEN }}
+        #        ' > .pypirc
+        #        cat .pypirc
         tox -e test-release # TODO: remove test- for production
 
