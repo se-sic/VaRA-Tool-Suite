@@ -15,7 +15,7 @@ env:
   PYPI_TOKEN: ${{ secrets.ALL_PYPI_TOKEN }}
 
 jobs:
-  tox:
+  PublishRelease:
     runs-on: ubuntu-20.04
       #strategy:
       # matrix:
@@ -27,7 +27,16 @@ jobs:
         fetch-depth: 0
     - name: Install dependencies
       run: |
-        pip install wheel tox
+        python -m pip install --upgrade pip
+        pip install wheel
+        pip install -e ./varats-core
+        pip install -e ./varats
+        pip install -r requirements.txt
+        pip install codecov
+        pip install pytest-cov
+        pip install coverage
+        pip install mypy
+        pip install tox
     - name: Create and Publish Release
       run: |
         tox -e release
