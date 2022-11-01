@@ -21,7 +21,8 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - uses: ./.github/actions/dependeciesActions.yml
+    - id: dependencies
+      uses: ./.github/actions/dependeciesActions.yml
     - name: Create and Publish Release
       run: |
         echo $BB_TMP_DIR
