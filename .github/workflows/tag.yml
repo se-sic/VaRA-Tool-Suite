@@ -42,5 +42,5 @@ jobs:
         pip install tox
     - name: Create and Publish Release
       run: |
-        tox -e release
+        tox -e test-release # TODO: remove test- for production
 
