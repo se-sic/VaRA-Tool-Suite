@@ -3,6 +3,8 @@ name: Python Release Tag Pipeline
 on:
   push:
     branches: [fi-pipelinecreation]
+  pull_request
+    branches: [fi-pipelinecreation]
     #tags:
     #  - 'vara-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'
 
