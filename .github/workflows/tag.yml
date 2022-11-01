@@ -3,7 +3,7 @@ name: Python Release Tag Pipeline
 on:
   push:
     tags:
-      - 'vara-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'
+      - 'vara-\d*\.\d*\.\d*'
 
 env:
   BB_TMP_DIR: $(pwd)/benchbuild/tmp
