@@ -24,8 +24,8 @@ jobs:
     - uses: ./.github/actions/dependenciesActions
     - name: Create and Publish Release
       run: |
-        sed -i 's/$PYPI_TOKEN/'$PYPI_TOKEN'/' .pypirc
-        sed -i 's/$TEST_PYPI_TOKEN/'$TEST_PYPI_TOKEN'/' .pypirc
+        #        sed -i 's/$PYPI_TOKEN/'$PYPI_TOKEN'/' .pypirc
+        #        sed -i 's/$TEST_PYPI_TOKEN/'$TEST_PYPI_TOKEN'/' .pypirc
         cat .pypirc
         cp .pypirc $HOME
         tox -e test-release # TODO: remove test- for production
