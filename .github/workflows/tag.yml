@@ -1,13 +1,8 @@
 name: Python Release Tag Pipeline
 
 on:
-  push:
-    branches: [fi-pipelinecreation]
-  pull_request:
-    branches: [fi-pipelinecreation]
-  workflow_dispatch:
-    #tags:
-    #  - 'vara-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'
+  workflow_dispatch: # TODO: for testing only
+  tags: [ 'vara-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)' ]
 
 env:
   BB_TMP_DIR: $(pwd)/benchbuild/tmp
