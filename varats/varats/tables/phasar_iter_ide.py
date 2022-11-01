@@ -248,6 +248,7 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
             style,
             wrap_table=wrap_table,
             wrap_landscape=True,
+            margin=0.0,
             document_decorator=add_extras,
             **kwargs
         )

@@ -62,6 +62,7 @@ def dataframe_to_table(
     style: tp.Optional["pd.io.formats.style.Styler"] = None,
     wrap_table: bool = False,
     wrap_landscape: bool = False,
+    margin: float = 1.5,
     document_decorator: tp.Callable[[Document], None] = lambda x: x,
     **kwargs: tp.Any
 ) -> str:
@@ -90,7 +91,10 @@ def dataframe_to_table(
         table = style.to_latex(**kwargs)
         if wrap_table:
             table = wrap_table_in_latex_document(
-                table, wrap_landscape, document_decorator=document_decorator
+                table,
+                wrap_landscape,
+                margin=margin,
+                document_decorator=document_decorator
             )
 
     elif table_format.is_html():
