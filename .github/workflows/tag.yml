@@ -12,7 +12,7 @@ on:
 env:
   BB_TMP_DIR: $(pwd)/benchbuild/tmp
   TEST_PYPI_TOKEN: ${{ secrets.ALL_TEST_PYPI_TOKEN }}
-  PYPI_TOKEN: ${{ secrets.ALL_PYPI_TOKEN }}
+  PYPI_TOKEN: dummyToken # TODO: use ${{ secrets.ALL_PYPI_TOKEN }}
 
 jobs:
   PublishRelease:
