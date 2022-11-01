@@ -12,7 +12,7 @@ on:
 env:
   BB_TMP_DIR: $(pwd)/benchbuild/tmp
   TEST_PYPI_TOKEN: ${{ secrets.ALL_TEST_PYPI_TOKEN }}
-  PYPI_TOKEN: dummyToken # TODO: use ${{ secrets.ALL_PYPI_TOKEN }}
+  PYPI_TOKEN: ${{ secrets.ALL_PYPI_TOKEN }}
 
 jobs:
   PublishRelease:
@@ -24,9 +24,8 @@ jobs:
     - uses: ./.github/actions/dependenciesActions
     - name: Create and Publish Release
       run: |
-        #        sed -i 's/$PYPI_TOKEN/'$PYPI_TOKEN'/' .pypirc
-        #        sed -i 's/$TEST_PYPI_TOKEN/'$TEST_PYPI_TOKEN'/' .pypirc
-        cat .pypirc
-        cp .pypirc $HOME
+        sed -i 's/$PYPI_TOKEN/'$PYPI_TOKEN'/' .pypirc
+        sed -i 's/$TEST_PYPI_TOKEN/'$TEST_PYPI_TOKEN'/' .pypirc
+        cp .pypirc $HOME # to ensure tox uses the correct pypi config
         tox -e test-release # TODO: remove test- for production
 
