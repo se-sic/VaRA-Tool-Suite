@@ -25,6 +25,9 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
+    - name: Install system dependencies for CI
+      run: |
+         sudo apt-get install time git libgit2-dev ninja-build libyaml-dev libgraphviz-dev
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
