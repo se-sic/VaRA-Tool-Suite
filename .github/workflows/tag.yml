@@ -13,7 +13,6 @@ env:
   BB_TMP_DIR: $(pwd)/benchbuild/tmp
   TEST_PYPI_TOKEN: ${{ secrets.ALL_TEST_PYPI_TOKEN }}
   PYPI_TOKEN: dummyToken # TODO: use ${{ secrets.ALL_PYPI_TOKEN }}
-  HOME: /home/runner/work/VaRA-Tool-Suite/VaRA-Tool-Suite
 
 jobs:
   PublishRelease:
@@ -28,5 +27,6 @@ jobs:
         sed -i 's/$PYPI_TOKEN/'$PYPI_TOKEN'/' .pypirc
         sed -i 's/$TEST_PYPI_TOKEN/'$TEST_PYPI_TOKEN'/' .pypirc
         cat .pypirc
+        cp .pypirc $HOME
         tox -e test-release # TODO: remove test- for production
 
