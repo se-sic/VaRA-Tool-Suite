@@ -1,19 +1,13 @@
-name: Dependencies Template
+name: 'Dependencies Template'
+description: 'Install all system and python dependencies'
 
-on:
-  push:
-    branches: [ vara, vara-dev ]
-  pull_request:
-    branches: [ vara, vara-dev ]
-  workflow_call:
+inputs:
 
-jobs:
-  InstallDependencies:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+outputs:
+
+runs:
+  using: "composite"
+  steps:
     - name: Install system dependencies for CI
       run: |
          sudo apt-get install time git libgit2-dev ninja-build libyaml-dev libgraphviz-dev
