@@ -25,9 +25,10 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-
-    - name: Create and Publish Release
+    - name: Install dependencies
       run: |
         pip install wheel tox
+    - name: Create and Publish Release
+      run: |
         tox -e release
 
