@@ -1,10 +1,13 @@
-"""Module for feature performance experiments that instrument and measure the
-execution performance of each binary that is produced by a project."""
+"""Experiment that instruments a project with verification instrumentation that
+is used during execution to check if regions are correctly opend/closed."""
 import typing as tp
 
-from benchbuild.extensions import compiler, run, time
+from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 
+from varats.data.reports.instrumentation_verifier_report import (
+    InstrVerifierReport,
+)
 from varats.experiment.experiment_util import get_default_compile_error_wrapped
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
@@ -12,15 +15,14 @@ from varats.experiments.vara.feature_experiment import (
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
-from varats.report.tef_report import TEFReport
 
 
-class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
+class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
     """Test runner for feature performance."""
 
-    NAME = "RunFeaturePerf"
+    NAME = "RunInstrVerifier"
 
-    REPORT_SPEC = ReportSpecification(TEFReport)
+    REPORT_SPEC = ReportSpecification(InstrVerifierReport)
 
     def actions_for_project(
         self, project: VProject
@@ -32,25 +34,23 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         Args:
             project: to analyze
         """
-        instr_type = "trace_event"  # trace_event
+        instr_type = "instr_verify"
 
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags(instr_type)
+        project.cflags += self.get_vara_tracing_cflags(instr_type, True)
 
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = run.RuntimeExtension(project, self)
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << run.WithTimeout()
+        project.compiler_extension = compiler.RunCompiler(project, self)
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, TEFReport
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         analysis_actions = []

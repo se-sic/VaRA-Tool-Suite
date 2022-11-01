@@ -94,8 +94,8 @@ class BlameVerifierReportGeneration(actions.ProjectStep):  # type: ignore
             )
 
             # Put together the path to the bc file and the opt command of vara
-            vara_run_cmd = opt["-vara-BD", "-vara-init-commits",
-                               "-vara-verify-blameMD",
+            vara_run_cmd = opt["-enable-new-pm=0", "-vara-BD",
+                               "-vara-init-commits", "-vara-verify-blameMD",
                                "-vara-verifier-options=All",
                                str(bc_target_file), "-o", "/dev/null"]
 
