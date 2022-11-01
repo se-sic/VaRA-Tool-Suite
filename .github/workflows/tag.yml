@@ -16,7 +16,7 @@ env:
 
 jobs:
   InstallDependencies:
-    uses: .github/workflows/dependenciesTemplate.yml
+    uses: .github/workflows/dependenciesTemplate.yml@f-pipelinecreation # TODO: @vara
   PublishRelease:
     runs-on: ubuntu-20.04
     steps:
