@@ -1,9 +1,9 @@
 name: 'Dependencies Template'
 description: 'Install all system and python dependencies'
 
-inputs:
+  #inputs:
 
-outputs:
+  #outputs:
 
 runs:
   using: "composite"
