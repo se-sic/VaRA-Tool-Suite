@@ -15,8 +15,6 @@ env:
   PYPI_TOKEN: dummyToken # TODO: use ${{ secrets.ALL_PYPI_TOKEN }}
 
 jobs:
-  InstallDependencies:
-    uses: ./.github/workflows/dependenciesTemplate.yml
   PublishRelease:
     runs-on: ubuntu-20.04
     steps:
