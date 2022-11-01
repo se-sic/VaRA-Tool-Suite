@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - uses: ./.github/actions/dependenciesActions
+          #    - uses: ./.github/actions/dependenciesActions
     - name: Create and Publish Release
       run: |
         echo $PYPI_TOKEN
