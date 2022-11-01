@@ -1,7 +1,6 @@
 name: Python Release Tag Pipeline
 
 on:
-  workflow_dispatch: # TODO: for testing only
   push:
     tags: [ 'vara-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)' ]
 
