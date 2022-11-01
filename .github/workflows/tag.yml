@@ -1,0 +1,26 @@
+name: Python Release Tag Pipeline
+
+on:
+  push:
+    tags:
+      - 'vara-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'
+
+env:
+  BB_TMP_DIR: $(pwd)/benchbuild/tmp
+  TEST_PYPI_TOKEN: ${{ secrets.ALL_TEST_PYPI_TOKEN }}
+  PYPI_TOKEN: ${{ secrets.ALL_PYPI_TOKEN }}
+
+jobs:
+  PublishRelease:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/dependenciesActions
+      - name: Create and Publish Release
+        run: |
+          sed -i 's/$PYPI_TOKEN/'$PYPI_TOKEN'/' .pypirc
+          sed -i 's/$TEST_PYPI_TOKEN/'$TEST_PYPI_TOKEN'/' .pypirc
+          cp .pypirc $HOME # to ensure tox uses the correct pypi config
+          tox -e release
