@@ -1,10 +1,6 @@
 name: 'Dependencies Template'
 description: 'Install all system and python dependencies'
 
-  #inputs:
-
-  #outputs:
-
 runs:
   using: "composite"
   steps:
