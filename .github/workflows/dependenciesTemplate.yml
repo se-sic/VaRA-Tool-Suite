@@ -5,7 +5,7 @@ on:
     branches: [ vara, vara-dev ]
   pull_request:
     branches: [ vara, vara-dev ]
-
+  workflow_call:
 
 jobs:
   InstallDependencies:
