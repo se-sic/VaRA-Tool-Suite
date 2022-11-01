@@ -26,7 +26,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - use: ./.github/actions/dependenciesActions
+    - uses: ./.github/actions/dependenciesActions
 
     - name: Run unittests
       run: |
