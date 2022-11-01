@@ -22,7 +22,7 @@ jobs:
       with:
         fetch-depth: 0
     - id: dependencies
-      uses: ./.github/actions/dependeciesActions.yml
+      uses: ./.github/actions/dependeciesActions
     - name: Create and Publish Release
       run: |
         echo $BB_TMP_DIR
