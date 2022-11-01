@@ -1,3 +1,4 @@
+
 """Base class experiment and utilities for experiments that work with
 features."""
 import textwrap
@@ -58,10 +59,8 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Returns the cflags needed to enable VaRAs feature support, i.e., passing
         the compiler a feature model and lowering the feature information into
         the LLVM-IR.
-
         Args:
             project: to get the cflags for
-
         Returns: list of feature cflags
         """
         fm_path = FeatureExperiment.get_feature_model_path(project).absolute()
@@ -73,11 +72,9 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         """
         Returns the cflags needed to trace projects with VaRA, using the
         specified tracer code.
-
         Args:
             instr_type: instrumentation type to use
             save_temps: saves temporary LLVM-IR files (good for debugging)
-
         Returns: list of tracing specific cflags
         """
         c_flags = [
@@ -93,7 +90,6 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
     def get_vara_tracing_ldflags() -> tp.List[str]:
         """
         Returns the ldflags needed to instrument projects with VaRA during LTO.
-
         Returns: ldflags for VaRA LTO support
         """
         return ["-flto"]
@@ -149,7 +145,6 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             )
                             with cleanup(prj_command):
                                 pb_cmd("--slow", "--header")
-
 
                         # TODO: figure out how to handle different configs
                         # executable("--slow")
