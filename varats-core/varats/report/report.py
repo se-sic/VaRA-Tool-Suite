@@ -188,6 +188,15 @@ class ReportFilename():
         return self.__filename
 
     @property
+    def project_name(self) -> str:
+        """Name of the analyzed project."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return str(match.group("project_name"))
+
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
+
+    @property
     def binary_name(self) -> str:
         """Name of the analyzed binary."""
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
@@ -377,6 +386,16 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
+    @property
+    def file_suffix(self) -> str:
+        """File suffix, commonly known as file ending/type (in the codebase
+        referred to as file_ext)."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("file_ext")
+
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
+
     @staticmethod
     def get_file_name(
         experiment_shorthand: str,
@@ -439,6 +458,15 @@ class ReportFilename():
             )
         )
 
+    def with_status(self, new_status: FileStatusExtension) -> 'ReportFilename':
+        """Returns a new report filename, adapted with the new file extension
+        `new_status`."""
+        return self.get_file_name(
+            self.experiment_shorthand, self.report_shorthand, self.project_name,
+            self.binary_name, self.commit_hash, self.uuid, new_status,
+            self.file_suffix, self.config_id
+        )
+
     def __str__(self) -> str:
         return self.filename
 
@@ -474,6 +502,11 @@ class ReportFilepath():
 
     def full_path(self) -> Path:
         return self.base_path / str(self.report_filename)
+
+    def with_status(self, new_status: FileStatusExtension) -> 'ReportFilepath':
+        return ReportFilepath(
+            self.base_path, self.report_filename.with_status(new_status)
+        )
 
     def __str__(self) -> str:
         return str(self.full_path())
