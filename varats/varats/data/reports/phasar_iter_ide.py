@@ -13,7 +13,6 @@ class PhasarBCStats():
     def __init__(self, path: Path) -> None:
         with open(path, "r", encoding="utf-8") as stats_file:
             for line in stats_file.readlines():
-                print(f"{line=}")
                 if line.startswith("> Instructions"):
                     self._num_instructions = int(line.split(":")[1])
 
@@ -47,8 +46,6 @@ class PhasarIterIDEStatsReport(
             shutil.unpack_archive(path, tmpdir)
 
             for file in Path(tmpdir).iterdir():
-                print(f"{file=}")
-
                 if file.name.startswith("phasar_bc_stats"):
                     self._bc_stats = PhasarBCStats(file)
                 elif file.name.startswith("old_typestate"):

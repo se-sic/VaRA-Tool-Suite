@@ -5,6 +5,7 @@ from enum import Enum
 from pathlib import Path
 
 from benchbuild import Project
+from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import (
@@ -14,6 +15,7 @@ from benchbuild.utils.cmd import (
     mkdir,
     touch,
 )
+from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import RETCODE
 
 from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
@@ -266,6 +268,8 @@ class IDELinearConstantAnalysisExperiment(
     NAME = "PhasarIterIDE"
 
     REPORT_SPEC = ReportSpecification(PhasarIterIDEStatsReport)
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
+    CONTAINER = ContainerImage().run("apt", "install", "-y", "time")
 
     def actions_for_project(
         self, project: Project
