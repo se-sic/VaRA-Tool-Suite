@@ -235,7 +235,7 @@ class PhasarIterIDEOldVSNew(Table, table_name="phasar-iter-ide-old-new"):
             kwargs[
                 "caption"
             ] = """Results of our overall comparision between the old IDESolver with our newly updated iterative IDESolver. We report the mean runtime of both versions, as well as, the mean speedup $\mathcal{S}$ and it's standard deviation $s$.
-$\mathcal{S}$ was computed as the mean over all speedups in the cartesian product of all old and new measurments.
+$\mathcal{S}$ was computed as the mean over all speedups in the cartesian product of all old and new measurements.
 """
             style.format(precision=2)
 
