@@ -408,7 +408,6 @@ class VersionExperiment(Experiment):  # type: ignore
             list of sampled versions
         """
         variants = list(enumerate_revisions(prj_cls))
-        print(f"Got {variants=}")
 
         if bool(vara_cfg()["experiment"]["random_order"]):
             random.shuffle(variants)
