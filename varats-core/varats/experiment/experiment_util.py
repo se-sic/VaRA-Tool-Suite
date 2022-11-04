@@ -680,7 +680,7 @@ def get_current_config_id(project: VProject) -> tp.Optional[int]:
     return None
 
 
-def get_extra_config_options(project: VProject) -> tp.List[ConfigurationOption]:
+def get_extra_config_options(project: VProject) -> tp.List[str]:
     """
     Get a extra program options that where specified in the particular
     configuration of \a Project.
@@ -716,4 +716,4 @@ def get_extra_config_options(project: VProject) -> tp.List[ConfigurationOption]:
             "Requested config id was not in the map, but should be"
         )
 
-    return config.options()
+    return list(map(lambda option: option.value, config.options()))
