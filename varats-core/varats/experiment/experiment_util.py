@@ -27,7 +27,10 @@ from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
 import varats.revision.revisions as revs
-from varats.base.configuration import PlainCommandlineConfiguration
+from varats.base.configuration import (
+    PlainCommandlineConfiguration,
+    ConfigurationOption,
+)
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.sources import FeatureSource
@@ -677,7 +680,7 @@ def get_current_config_id(project: VProject) -> tp.Optional[int]:
     return None
 
 
-def get_extra_config_options(project: VProject) -> tp.List[str]:
+def get_extra_config_options(project: VProject) -> tp.List[ConfigurationOption]:
     """
     Get a extra program options that where specified in the particular
     configuration of \a Project.
@@ -689,6 +692,9 @@ def get_extra_config_options(project: VProject) -> tp.List[str]:
         list of command line options as string
     """
     config_id = get_current_config_id(project)
+    if config_id is None:
+        return []
+
     paper_config = get_paper_config()
     case_studies = paper_config.get_case_studies(cs_name=project.name)
 
@@ -704,4 +710,10 @@ def get_extra_config_options(project: VProject) -> tp.List[str]:
     )
 
     config = config_map.get_configuration(config_id)
+
+    if config is None:
+        raise AssertionError(
+            "Requested config id was not in the map, but should be"
+        )
+
     return config.options()
