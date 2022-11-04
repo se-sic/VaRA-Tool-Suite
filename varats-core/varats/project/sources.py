@@ -16,7 +16,7 @@ class FeatureSource(bb.source.FetchableSource):  # type: ignore
 
     LOCAL_KEY = "config_info"
 
-    def __init__(self, remote: str) -> None:
+    def __init__(self, remote: tp.Dict[str, str]) -> None:
         super().__init__(local=self.LOCAL_KEY, remote=remote)
 
     def version(self, target_dir: str, version: str) -> pb.LocalPath:
