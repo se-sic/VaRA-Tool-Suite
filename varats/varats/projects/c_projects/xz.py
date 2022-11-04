@@ -2,7 +2,6 @@
 import typing as tp
 
 import benchbuild as bb
-import plumbum as pb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.source import HTTP
 from benchbuild.utils.cmd import autoreconf, make

@@ -2,7 +2,8 @@
 import typing as tp
 from pathlib import Path
 
-from varats.mapping.configuration_map import ConfigurationMap, Configuration
+from varats.base.configuration import Configuration
+from varats.mapping.configuration_map import ConfigurationMap
 from varats.paper.case_study import (
     CaseStudy,
     load_configuration_map_from_case_study_file,
