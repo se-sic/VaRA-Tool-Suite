@@ -1,6 +1,6 @@
 """
 The PaperConfig pins down a specific set of case studies, one or more for each
-project, where each encaspulates a fixed set of revision to evaluate.
+project, where each encapsulates a fixed set of revision to evaluate.
 
 This allows users to specify which revisions of what project have to be
 analyzed. Furthermore, it allows other users to reproduce the exact same set of
