@@ -15,7 +15,11 @@ import yaml
 from rich.progress import Progress
 
 from varats.data.discover_reports import initialize_reports
-from varats.paper_mgmt.artefacts import Artefact, initialize_artefact_types
+from varats.paper_mgmt.artefacts import (
+    Artefact,
+    initialize_artefact_types,
+    load_artefacts,
+)
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
@@ -58,7 +62,7 @@ def list_() -> None:
     """List the available artefacts."""
     paper_config = get_paper_config()
 
-    for artefact in paper_config.artefacts:
+    for artefact in load_artefacts(paper_config):
         print(f"{artefact.name} [{artefact.ARTEFACT_TYPE}]")
 
 
@@ -72,7 +76,7 @@ def show(name: str) -> None:
         name: the name of the artefact
     """
     paper_config = get_paper_config()
-    artefact = paper_config.artefacts.get_artefact(name)
+    artefact = load_artefacts(paper_config).get_artefact(name)
     if artefact:
         print(f"Artefact '{name}':")
         print(textwrap.indent(yaml.dump(artefact.get_dict()), '  '))
@@ -103,11 +107,11 @@ def generate(only: tp.Optional[str]) -> None:
 
     if only:
         artefacts = [
-            art for art in get_paper_config().get_all_artefacts()
+            art for art in load_artefacts(get_paper_config())
             if art.name in only
         ]
     else:
-        artefacts = get_paper_config().get_all_artefacts()
+        artefacts = load_artefacts(get_paper_config())
 
     with Progress() as progress:
         for artefact in progress.track(
