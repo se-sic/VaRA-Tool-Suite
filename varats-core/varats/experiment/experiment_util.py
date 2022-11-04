@@ -663,7 +663,7 @@ def create_new_failed_result_filepath(
 def get_current_config_id(project: VProject) -> tp.Optional[int]:
     """
     Get, if available, the current config id of project. Should the project be
-    not configuration specific None is returned.
+    not configuration specific ``None`` is returned.
 
     Args:
         project: to extract the config id from
@@ -682,7 +682,7 @@ def get_current_config_id(project: VProject) -> tp.Optional[int]:
 
 def get_extra_config_options(project: VProject) -> tp.List[str]:
     """
-    Get a extra program options that where specified in the particular
+    Get extra program options that where specified in the particular
     configuration of \a Project.
 
     Args:
