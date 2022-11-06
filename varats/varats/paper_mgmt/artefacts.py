@@ -12,7 +12,7 @@ import abc
 import logging
 import typing as tp
 from abc import ABC
-from functools import cache
+from functools import lru_cache
 from pathlib import Path
 
 from varats.base.version_header import VersionHeader
@@ -215,7 +215,7 @@ class Artefacts:
         )
 
 
-@cache
+@lru_cache(maxsize=1)
 def load_artefacts(paper_config: 'pc.PaperConfig') -> Artefacts:
     """
     Load the artefacts for a paper config.
