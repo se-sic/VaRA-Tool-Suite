@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(720, 443)
+        MainWindow.resize(757, 443)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding,
             QtWidgets.QSizePolicy.MinimumExpanding
@@ -115,7 +115,7 @@ class Ui_MainWindow(object):
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
         sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(10)
+        sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
             self.revision_list.sizePolicy().hasHeightForWidth()
         )
@@ -161,6 +161,8 @@ class Ui_MainWindow(object):
         self.code_commits.setObjectName("code_commits")
         self.gridLayout_2.addWidget(self.code_commits, 3, 0, 1, 2)
         self.num_revs = QtWidgets.QSpinBox(self.sample_page)
+        self.num_revs.setMinimum(1)
+        self.num_revs.setMaximum(1000000000)
         self.num_revs.setProperty("value", 10)
         self.num_revs.setObjectName("num_revs")
         self.gridLayout_2.addWidget(self.num_revs, 2, 0, 1, 1)
@@ -189,12 +191,13 @@ class Ui_MainWindow(object):
         self.label_3.setObjectName("label_3")
         self.revs_per_year = QtWidgets.QSpinBox(self.per_year_page)
         self.revs_per_year.setGeometry(QtCore.QRect(120, 0, 52, 32))
+        self.revs_per_year.setMaximum(1000000000)
         self.revs_per_year.setObjectName("revs_per_year")
         self.strategie_forms.addWidget(self.per_year_page)
         self.gridLayout.addWidget(self.strategie_forms, 0, 2, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 720, 30))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 757, 22))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -202,7 +205,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.strategie_forms.setCurrentIndex(0)
+        self.strategie_forms.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
