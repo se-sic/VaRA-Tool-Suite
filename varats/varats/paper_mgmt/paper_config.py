@@ -18,12 +18,6 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
 )
-from varats.paper_mgmt.artefacts import (
-    Artefact,
-    Artefacts,
-    load_artefacts_from_file,
-    store_artefacts_to_file,
-)
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
@@ -54,25 +48,11 @@ class PaperConfig():
                 self.__case_studies[case_study.project_name].append(case_study)
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
-        self.__artefacts: tp.Optional[Artefacts] = None
 
     @property
     def path(self) -> Path:
         """Path to the paper config folder."""
         return self.__path
-
-    @property
-    def artefacts(self) -> Artefacts:
-        """The artefacts of this paper config."""
-        if not self.__artefacts:
-            if (self.path / self.__ARTEFACTS_FILE_NAME).exists():
-                self.__artefacts = load_artefacts_from_file(
-                    self.path / self.__ARTEFACTS_FILE_NAME
-                )
-            else:
-                self.__artefacts = Artefacts([])
-
-        return self.__artefacts
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
         """
@@ -97,10 +77,6 @@ class PaperConfig():
             case_study for case_study_list in self.__case_studies.values()
             for case_study in case_study_list
         ]
-
-    def get_all_artefacts(self) -> tp.Iterable[Artefact]:
-        """Returns an iterable of the artefacts of this paper config."""
-        return self.artefacts
 
     def has_case_study(self, cs_name: str) -> bool:
         """
@@ -154,29 +130,12 @@ class PaperConfig():
         """
         self.__case_studies[case_study.project_name] += [case_study]
 
-    def add_artefact(self, artefact: Artefact) -> None:
-        """
-        Add a new artefact to this paper config.
-
-        Args:
-            artefact: the artefact to add
-        """
-        self.artefacts.add_artefact(artefact)
-
-    def store_artefacts(self) -> None:
-        """Store artefacts to file."""
-        if self.artefacts:
-            store_artefacts_to_file(
-                self.artefacts, self.path / self.__ARTEFACTS_FILE_NAME
-            )
-
     def store(self) -> None:
         """Persist the current state of the paper config saving all case studies
         to their corresponding files in the paper config path."""
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
-        self.store_artefacts()
 
     def __str__(self) -> str:
         string = "Loaded case studies:\n"
