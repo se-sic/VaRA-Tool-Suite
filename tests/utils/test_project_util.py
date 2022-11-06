@@ -276,8 +276,8 @@ class TestTaggedCommits(unittest.TestCase):
     def test_get_tagged_commits_lightweight(self) -> None:
         """Check if we can get list of tagged commits from a project when
         lightweight tags are used."""
-        fast_downward_tagged_commits = set(get_tagged_commits("fast_downward"))
-        fast_downward_repo_loc = get_local_project_git_path("fast_downward")
+        fast_downward_tagged_commits = set(get_tagged_commits("FastDownward"))
+        fast_downward_repo_loc = get_local_project_git_path("FastDownward")
         with local.cwd(fast_downward_repo_loc):
             for (hash_value, _) in fast_downward_tagged_commits:
                 self.assertTrue(self.hash_belongs_to_commit(hash_value))
