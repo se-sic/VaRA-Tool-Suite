@@ -2,11 +2,18 @@
 with chrome tracing."""
 
 import json
+import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import BaseReport, ReportAggregate
+from varats.report.report import (
+    BaseReport,
+    ReportAggregate,
+    KeyedReportAggregate,
+    ReportTy,
+)
+from varats.utils.exceptions import auto_unwrap
 
 
 class TraceEventType(Enum):
@@ -104,14 +111,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         with open(self.path, "r", encoding="utf-8") as json_tef_report:
             data = json.load(json_tef_report)
 
-            self.__display_time_unit = str(data["displayTimeUnit"])
+            self.__timestamp_unit = str(data["timestampUnit"])
             self.__trace_events = self._parse_trace_events(data["traceEvents"])
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
 
     @property
-    def display_time_unit(self) -> str:
-        return self.__display_time_unit
+    def timestamp_unit(self) -> str:
+        return self.__timestamp_unit
 
     @property
     def trace_events(self) -> tp.List[TraceEvent]:
@@ -140,3 +147,28 @@ class TEFReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
+
+
+__FILE_REGEX = re.compile(r".*\_(?P<workload>.+)\_(?P<config>\d+)+$")
+
+
+def get_info(report_file: Path) -> tp.Optional[tp.Tuple[str, int]]:
+    match = __FILE_REGEX.search(report_file.stem)
+    if match:
+        return str(match.group("workload")), int(match.group("config"))
+
+    return None
+
+
+class WorkloadAndConfigSpecificTEFReportAggregate(
+    KeyedReportAggregate[str, ReportTy],
+    tp.Generic[ReportTy],
+    shorthand="",
+    file_type=""
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TEFReport, get_info)
+
+    def workload_and_config_ids(self) -> tp.Collection[str]:
+        return self.keys()
