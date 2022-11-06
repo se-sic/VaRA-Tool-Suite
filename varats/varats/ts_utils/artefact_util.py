@@ -5,7 +5,7 @@ from benchbuild.experiment import ExperimentRegistry
 
 from varats.experiment.experiment_util import VersionExperiment
 from varats.paper.case_study import CaseStudy
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.report.report import BaseReport
 from varats.ts_utils.cli_util import (
     CLIOptionConverter,

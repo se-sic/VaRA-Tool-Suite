@@ -8,7 +8,7 @@ from varats.paper.case_study import (
     CaseStudy,
     load_configuration_map_from_case_study_file,
 )
-from varats.paper_mgmt.paper_config import PaperConfig
+from varats.paper.paper_config import PaperConfig
 
 
 def load_configuration_map_for_case_study(

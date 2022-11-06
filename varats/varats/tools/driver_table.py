@@ -12,8 +12,8 @@ import typing as tp
 import click
 from rich.progress import Progress
 
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.artefacts import load_artefacts
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import (

@@ -26,6 +26,7 @@ from varats.paper.case_study import (
     CaseStudy,
     CSStage,
 )
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
@@ -36,7 +37,6 @@ from varats.paper_mgmt.case_study import (
     extend_with_bug_commits,
     extend_with_extra_revs,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots

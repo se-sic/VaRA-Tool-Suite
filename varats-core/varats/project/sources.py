@@ -7,7 +7,7 @@ import plumbum as pb
 from benchbuild.source import Variant
 from benchbuild.source.base import Revision
 
-from varats.paper_mgmt.paper_config import get_paper_config
+from varats.paper.paper_config import get_paper_config
 from varats.utils.git_util import ShortCommitHash
 
 

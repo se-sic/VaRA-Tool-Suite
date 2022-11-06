@@ -31,7 +31,7 @@ from varats.base.configuration import (
     PlainCommandlineConfiguration,
     ConfigurationOption,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
+from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject

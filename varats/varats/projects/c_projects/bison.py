@@ -7,7 +7,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import (
+from varats.paper.paper_config import (
     PaperConfigSpecificGit,
     project_filter_generator,
 )
