@@ -5,7 +5,6 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
-from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.base.just_compile import JustCompileReport
 from varats.paper_mgmt.artefacts import (
     initialize_artefact_types,
