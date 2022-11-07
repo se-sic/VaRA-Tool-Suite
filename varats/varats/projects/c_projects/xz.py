@@ -2,6 +2,8 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.source import HTTP
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
     block_revisions,
@@ -12,6 +14,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -58,6 +61,15 @@ class Xz(VProject):
                 limit=None,
                 shallow=False
             )
+        ),
+        # TODO: auto unzipper for BB?
+        HTTP(
+            local="countries-land-1km.geo.json",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0/countries-land-1km.geo.json"
+            }
         )
     ]
 
@@ -65,6 +77,18 @@ class Xz(VProject):
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
         'autotools-dev', 'libtool', 'pkg-config'
     )
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
+                "countries-land-1km.geo.json",
+                label="countries-land-1km",
+                creates=["countries-land-1km.geo.json.xz"]
+            )
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(

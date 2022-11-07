@@ -3,17 +3,24 @@
 import os
 import random
 import shutil
+import sys
 import tempfile
+import textwrap
 import traceback
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 from types import TracebackType
 
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol, runtime_checkable
+else:
+    from typing import Protocol, runtime_checkable
+
 from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step
+from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
@@ -421,8 +428,8 @@ class VersionExperiment(Experiment):  # type: ignore
                     revision.hash
                     for revision, file_status in
                     # TODO (se-sic/VaRA#840): needs updated VariantContext handling
-                    revs.get_tagged_revisions(prj_cls, cls, report_type)
-                    if file_status not in fs_good
+                    revs.get_tagged_revisions(prj_cls, cls, report_type).items()
+                    if file_status[None] not in fs_good
                 })
 
             bad_revisions = report_specific_bad_revs[0].intersection(
@@ -472,6 +479,69 @@ class ZippedReportFolder(TempDir):
             )
 
         super().__exit__(exc_type, exc_value, exc_traceback)
+
+
+@runtime_checkable
+class NeedsOutputFolder(Protocol):
+
+    def __call__(self, tmp_folder: Path) -> StepResult:
+        ...
+
+
+def run_child_with_output_folder(
+    child: NeedsOutputFolder, tmp_folder: Path
+) -> StepResult:
+    return child(tmp_folder)
+
+
+class ZippedExperimentSteps(MultiStep):
+    """Runs multiple actions, providing them a shared tmp folder that afterwards
+    is zipped into an archive.."""
+
+    NAME = "ZippedSteps"
+    DESCRIPTION = "Run multiple actions with a shared tmp folder"
+
+    def __init__(
+        self, output_filepath: ReportFilepath,
+        actions: tp.Optional[tp.List[NeedsOutputFolder]]
+    ) -> None:
+        super().__init__(actions)
+        self.__output_filepath = output_filepath
+
+    def __run_children(self, tmp_folder: Path) -> tp.List[StepResult]:
+        results: tp.List[StepResult] = []
+
+        for child in self.actions:
+            results.append(
+                run_child_with_output_folder(
+                    tp.cast(NeedsOutputFolder, child), tmp_folder
+                )
+            )
+
+        return results
+
+    def __call__(self) -> StepResult:
+        results: tp.List[StepResult] = []
+
+        with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
+            results = self.__run_children(Path(tmp_dir))
+
+        overall_step_result = max(results) if results else StepResult.OK
+        if overall_step_result is not StepResult.OK:
+            error_filepath = self.__output_filepath.with_status(
+                FileStatusExtension.FAILED
+            )
+            self.__output_filepath.full_path().rename(
+                error_filepath.full_path()
+            )
+
+        return overall_step_result
+
+    def __str__(self, indent: int = 0) -> str:
+        sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
+        return textwrap.indent(
+            f"\nZippedExperimentSteps:\n{sub_actns}", indent * " "
+        )
 
 
 def __create_new_result_filepath_impl(

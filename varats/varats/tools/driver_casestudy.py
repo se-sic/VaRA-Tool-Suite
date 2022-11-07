@@ -19,10 +19,7 @@ from varats.experiments.szz.pydriller_szz_experiment import (
 from varats.experiments.szz.szz_unleashed_experiment import (
     SZZUnleashedExperiment,
 )
-from varats.mapping.commit_map import (
-    create_lazy_commit_map_loader,
-    generate_commit_map,
-)
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
@@ -43,7 +40,10 @@ from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import (
+    get_local_project_git_path,
+    get_primary_project_source,
+)
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
@@ -61,7 +61,6 @@ from varats.ts_utils.click_param_types import (
     EnumChoice,
     create_multi_case_study_choice,
 )
-from varats.utils.git_commands import pull_current_branch
 from varats.utils.git_util import (
     get_initial_commit,
     is_commit_hash,
@@ -203,7 +202,7 @@ def __casestudy_gen(
     ) / (paper_config + f"/{project}_{version}.case_study")
     ctx.obj['git_path'] = get_local_project_git_path(project)
     if update:
-        pull_current_branch(ctx.obj['git_path'])
+        get_primary_project_source(project).fetch()
 
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
@@ -262,7 +261,7 @@ def __casestudy_gen(
 def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
 
-    cmap = generate_commit_map(ctx.obj["git_path"])
+    cmap = get_commit_map(ctx.obj['project'])
     case_study: CaseStudy = ctx.obj['case_study']
 
     repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
@@ -281,9 +280,7 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 
     Revisions: Revisions to add
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
+    cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_extra_revs(
         ctx.obj['case_study'], cmap, revisions, ctx.obj['merge_stage']
     )
@@ -337,7 +334,7 @@ def __gen_sample(
         else:
             start = get_initial_commit(project_repo_path).hash
 
-    cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
+    cmap = get_commit_map(ctx.obj['project'], end, start)
     extend_with_distrib_sampling(
         ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],
         num_rev, ctx.obj['ignore_blocked'], only_code_commits
@@ -359,9 +356,7 @@ def __gen_per_year(
 
     revs-per-year: number of revisions to generate per year
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
+    cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_revs_per_year(
         ctx.obj['case_study'], cmap, ctx.obj['merge_stage'],
         ctx.obj['ignore_blocked'], ctx.obj['git_path'], revs_per_year, separate
@@ -402,9 +397,7 @@ class SmoothPlotCLI(click.MultiCommand):
                         "The given plot generator creates multiple plots"
                         " please select one:", plots, lambda p: p.name, set_plot
                     )
-                cmap = create_lazy_commit_map_loader(
-                    context.obj['project'], None, 'HEAD', None
-                )()
+                cmap = get_commit_map(context.obj['project'], refspec='HEAD')
                 extend_with_smooth_revs(
                     context.obj['case_study'], cmap,
                     context.obj['boundary_gradient'],
@@ -453,9 +446,7 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 
     release_type: Release type to consider
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
+    cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_release_revs(
         ctx.obj['case_study'], cmap, release_type, ctx.obj['ignore_blocked'],
         ctx.obj['merge_stage']

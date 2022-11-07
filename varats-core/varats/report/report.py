@@ -5,6 +5,7 @@ import re
 import shutil
 import typing as tp
 import weakref
+from collections import defaultdict
 from enum import Enum
 from pathlib import Path, PosixPath
 from tempfile import TemporaryDirectory
@@ -185,6 +186,15 @@ class ReportFilename():
     def filename(self) -> str:
         """Literal file name."""
         return self.__filename
+
+    @property
+    def project_name(self) -> str:
+        """Name of the analyzed project."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return str(match.group("project_name"))
+
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
     def binary_name(self) -> str:
@@ -376,6 +386,16 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
+    @property
+    def file_suffix(self) -> str:
+        """File suffix, commonly known as file ending/type (in the codebase
+        referred to as file_ext)."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("file_ext")
+
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
+
     @staticmethod
     def get_file_name(
         experiment_shorthand: str,
@@ -438,6 +458,15 @@ class ReportFilename():
             )
         )
 
+    def with_status(self, new_status: FileStatusExtension) -> 'ReportFilename':
+        """Returns a new report filename, adapted with the new file extension
+        `new_status`."""
+        return self.get_file_name(
+            self.experiment_shorthand, self.report_shorthand, self.project_name,
+            self.binary_name, self.commit_hash, self.uuid, new_status,
+            self.file_suffix, self.config_id
+        )
+
     def __str__(self) -> str:
         return self.filename
 
@@ -473,6 +502,11 @@ class ReportFilepath():
 
     def full_path(self) -> Path:
         return self.base_path / str(self.report_filename)
+
+    def with_status(self, new_status: FileStatusExtension) -> 'ReportFilepath':
+        return ReportFilepath(
+            self.base_path, self.report_filename.with_status(new_status)
+        )
 
     def __str__(self) -> str:
         return str(self.full_path())
@@ -667,14 +701,27 @@ class ReportSpecification():
 
 
 ReportTy = tp.TypeVar('ReportTy', bound=BaseReport)
+KeyTy = tp.TypeVar('KeyTy')
 
 
-class ReportAggregate(
-    BaseReport, tp.Generic[ReportTy], shorthand="Agg", file_type="zip"
+class KeyedReportAggregate(
+    BaseReport, tp.Generic[KeyTy, ReportTy], shorthand="Agg", file_type="zip"
 ):
-    """Parses multiple reports of the same type stored inside a zip file."""
+    """
+    Parses and categories multiple reports of the same type stored inside a zip
+    file.
 
-    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+    The `key_func` is used to divide the parsed reports into different
+    categories/buckets.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        report_type: tp.Type[ReportTy],
+        key_func: tp.Callable[[Path], KeyTy],
+        default_key: tp.Optional[KeyTy] = None
+    ) -> None:
         super().__init__(path)
 
         # Create a temporary directory for extraction and register finalizer,
@@ -686,9 +733,10 @@ class ReportAggregate(
         if self.path.exists():
             shutil.unpack_archive(self.path, self.__tmpdir.name)
 
-        self.__reports = [
-            report_type(file) for file in Path(self.__tmpdir.name).iterdir()
-        ]
+        self.__default_key = default_key
+        self.__reports: tp.Dict[KeyTy, tp.List[ReportTy]] = defaultdict(list)
+        for file in Path(self.__tmpdir.name).iterdir():
+            self.__reports[key_func(file)].append(report_type(file))
 
     def remove(self) -> None:
         self.__finalizer()
@@ -697,7 +745,30 @@ class ReportAggregate(
     def removed(self) -> bool:
         return not self.__finalizer.alive
 
-    @property
-    def reports(self) -> tp.List[ReportTy]:
+    def keys(self) -> tp.Collection[KeyTy]:
+        return self.__reports.keys()
+
+    def reports(self, key: tp.Optional[KeyTy] = None) -> tp.List[ReportTy]:
         """Returns the list of parsed reports."""
-        return self.__reports
+        if key:
+            return self.__reports[key]
+
+        if self.__default_key is None:
+            raise AssertionError("No key or default key was provided.")
+
+        return self.__reports[self.__default_key]
+
+
+def _key_id(_: Path) -> int:
+    return 0
+
+
+class ReportAggregate(
+    KeyedReportAggregate[int, ReportTy],
+    tp.Generic[ReportTy],
+    shorthand="Agg",
+    file_type="zip"
+):
+
+    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+        super().__init__(path, report_type, _key_id, 0)

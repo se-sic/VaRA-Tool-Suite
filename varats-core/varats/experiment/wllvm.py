@@ -26,6 +26,7 @@ from varats.experiment.experiment_util import (
     PEErrorHandler,
 )
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.varats_project import VProject
 from varats.utils.settings import bb_cfg
 
 
@@ -96,13 +97,15 @@ bb_cfg()["varats"] = {
 }
 
 
-class Extract(actions.Step):  # type: ignore
+class Extract(actions.ProjectStep):  # type: ignore
     """Extract step to extract a llvm bitcode file(.bc) from the project."""
 
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
+
+    project: VProject
 
     @staticmethod
     def get_bc_file_name(
@@ -136,40 +139,45 @@ class Extract(actions.Step):  # type: ignore
         bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
-        super().__init__(
-            obj=project,
-            action_fn=FunctionPEErrorWrapper(self.extract, handler)
+        super().__init__(project=project)
+        self.__action_fn = tp.cast(
+            tp.Callable[..., tp.Any],
+            FunctionPEErrorWrapper(self.extract, handler)
             if handler else self.extract
         )
+
         if bc_file_extensions is None:
             bc_file_extensions = []
 
         self.bc_file_extensions = bc_file_extensions
 
+    def __call__(self) -> actions.StepResult:
+        return tp.cast(actions.StepResult, self.__action_fn())
+
     def extract(self) -> actions.StepResult:
         """This step extracts the bitcode of the executable of the project into
         one file."""
-        if not self.obj:
-            return
-        project = self.obj
+        self.project: VProject
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(bb_cfg()["varats"]["result"]),
-            project_name=str(project.name)
+            project_name=str(self.project.name)
         )
         mkdir("-p", local.path() / bc_cache_folder)
 
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             bc_cache_file = bc_cache_folder + self.get_bc_file_name(
-                project_name=str(project.name),
+                project_name=str(self.project.name),
                 binary_name=str(binary.name),
-                project_version=project.version_of_primary,
+                project_version=self.project.version_of_primary,
                 bc_file_extensions=self.bc_file_extensions
             )
 
-            target_binary = Path(project.source_of_primary) / binary.path
+            target_binary = Path(self.project.source_of_primary) / binary.path
             extract_bc(target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
+
+        return actions.StepResult.OK
 
 
 def project_bc_files_in_cache(
