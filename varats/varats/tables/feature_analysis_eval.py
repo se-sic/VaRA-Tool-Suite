@@ -167,6 +167,8 @@ class PhasarFeatureAnalysisProjectEvalTable(
                 f"In total there were {insts} br and switch instructions."
             )
             kwargs["position"] = 't'
+            kwargs["position_float"] = 'centering'
+            kwargs["hrules"] = True
 
         return dataframe_to_table(
             df,
@@ -352,11 +354,13 @@ class PhasarFeatureAnalysisTotalEvalTable(
             kwargs["column_format"] = col_format
             kwargs["multicol_align"] = "c"
             kwargs['position'] = 't'
+            kwargs["position_float"] = 'centering'
+            kwargs["hrules"] = True
 
         return dataframe_to_table(
             df,
             table_format,
-            wrap_tale=wrap_table,
+            wrap_table=wrap_table,
             wrap_landscape=True,
             **kwargs
         )
@@ -485,9 +489,15 @@ class PhasarFeatureAnalysisLocationsEvalTable(
             kwargs["column_format"] = 'c' + len(binaries) * '|c|c'
             kwargs["multicol_align"] = "c"
             kwargs["position"] = 't'
+            kwargs["position_float"] = 'centering'
+            kwargs["hrules"] = True
 
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
     def __create_eval_df(
