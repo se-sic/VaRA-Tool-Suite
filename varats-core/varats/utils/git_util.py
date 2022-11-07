@@ -994,9 +994,11 @@ def branch_has_upstream(
 def calc_surviving_lines(repo: pygit2.Repository, revision) -> tp.Dict[str, int]:
     """
 
-    :param repo: repository to analyze
-    :param revision: revision to analyze at
-    :return: number of lines per prior commit
+    Args:
+        repo: repository to analyze
+        revision: revision to analyze at
+        
+    returns: number of lines per prior commit
     """
     project_path = repo.path[:-5]
     churn_config = ChurnConfig.create_c_style_languages_config()
