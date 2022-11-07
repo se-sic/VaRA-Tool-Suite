@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>720</width>
+    <width>757</width>
     <height>443</height>
    </rect>
   </property>
@@ -169,7 +169,7 @@
        <number>0</number>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="revisionsPage">
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -264,6 +264,12 @@
         </item>
         <item row="2" column="0">
          <widget class="QSpinBox" name="num_revs">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>1000000000</number>
+          </property>
           <property name="value">
            <number>10</number>
           </property>
@@ -340,6 +346,9 @@
           <height>32</height>
          </rect>
         </property>
+        <property name="maximum">
+         <number>1000000000</number>
+        </property>
        </widget>
       </widget>
      </widget>
@@ -351,8 +360,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>720</width>
-     <height>30</height>
+     <width>757</width>
+     <height>22</height>
     </rect>
    </property>
   </widget>

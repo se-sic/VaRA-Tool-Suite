@@ -12,10 +12,11 @@ from benchbuild.utils.cmd import git
 
 from varats.data.cache_helper import build_cached_graph
 from varats.data.reports.blame_report import (
-    BlameReport,
     gen_base_to_inter_commit_repo_pair_mapping,
-    BlameReportDiff,
     BlameTaintData,
+)
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.project.project_util import (
@@ -415,8 +416,8 @@ class BlameInteractionGraph(InteractionGraph):
         if not self.__cached_interaction_graph:
             filename = self.__report_file.report_filename
             self.__cached_interaction_graph = build_cached_graph(
-                f"ig-blame-{self.project_name}-{filename.commit_hash.hash}",
-                create_graph
+                f"ig-{filename.experiment_shorthand}-{self.project_name}-"
+                f"{filename.commit_hash.hash}", create_graph
             )
         return self.__cached_interaction_graph
 
@@ -505,7 +506,8 @@ class FileBasedInteractionGraph(InteractionGraph):
 
 
 def create_blame_interaction_graph(
-    project_name: str, revision: CommitHash
+    project_name: str, revision: FullCommitHash,
+    experiment_type: tp.Type[BlameReportExperiment]
 ) -> BlameInteractionGraph:
     """
     Create a blame interaction graph for a certain project revision.
@@ -513,6 +515,7 @@ def create_blame_interaction_graph(
     Args:
         project_name: name of the project
         revision: project revision
+        experiment_type: experiment that was used to create the blame data
 
     Returns:
         the blame interaction graph
@@ -529,7 +532,7 @@ def create_blame_interaction_graph(
         file_name_filter = match_revision
 
     report_files = get_processed_revisions_files(
-        project_name, BlameReport, file_name_filter
+        project_name, experiment_type, file_name_filter=file_name_filter
     )
     if len(report_files) == 0:
         raise LookupError(f"Found no BlameReport for project {project_name}")
