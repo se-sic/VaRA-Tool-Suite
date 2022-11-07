@@ -10,7 +10,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from plumbum import colors
 
-import varats.paper_mgmt.paper_config as PC
+import varats.paper.paper_config as PC
 from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy

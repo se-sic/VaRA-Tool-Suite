@@ -15,7 +15,7 @@ from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -23,6 +23,7 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
@@ -62,6 +63,7 @@ class Xz(VProject):
                 shallow=False
             )
         ),
+        FeatureSource(version="1.0"),
         # TODO: auto unzipper for BB?
         HTTP(
             local="countries-land-1km.geo.json",

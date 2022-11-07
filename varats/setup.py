@@ -18,7 +18,8 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.4.0,<6.5.0",
+        "benchbuild>=6.5.0",
+        "dill==0.3.4",  # Missing BB dep
         "click>=8.0.2",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
