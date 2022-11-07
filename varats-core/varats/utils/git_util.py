@@ -991,7 +991,7 @@ def branch_has_upstream(
     return tp.cast(bool, exit_code == 0)
 
 
-def calc_surviving_lines(repo: pygit2.Repository, revision) -> dict[str, int]:
+def calc_surviving_lines(repo: pygit2.Repository, revision) -> tp.Dict[str, int]:
     """
 
     :param repo: repository to analyze
