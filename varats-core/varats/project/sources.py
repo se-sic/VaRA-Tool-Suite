@@ -16,8 +16,8 @@ class FeatureSource(bb.source.FetchableSource):  # type: ignore
 
     LOCAL_KEY = "config_info"
 
-    def __init__(self, remote: tp.Dict[str, str]) -> None:
-        super().__init__(local=self.LOCAL_KEY, remote=remote)
+    def __init__(self, version: str) -> None:
+        super().__init__(local=self.LOCAL_KEY, remote={version: "dummy_value"})
 
     def version(self, target_dir: str, version: str) -> pb.LocalPath:
         # TODO: do we need this? Maybe an optional path?
