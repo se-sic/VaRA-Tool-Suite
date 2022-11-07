@@ -1,4 +1,4 @@
-"""Project file for fast_downward."""
+"""Project file for FastDownward."""
 import re
 import typing as tp
 
@@ -32,15 +32,15 @@ from varats.utils.settings import bb_cfg
 class FastDownward(VProject, ReleaseProviderHook):
     """Planning tool FastDownward (fetched by Git)"""
 
-    NAME = 'fast_downward'
+    NAME = 'FastDownward'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.PLANNING
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="fast_downward",
+            project_name="FastDownward",
             remote="https://github.com/aibasel/downward.git",
-            local="fast_downward",
+            local="FastDownward",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
