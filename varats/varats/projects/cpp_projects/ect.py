@@ -5,6 +5,7 @@ import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake, mkdir
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -38,6 +39,10 @@ class Ect(VProject):
             shallow=False
         )
     ]
+
+    CONTAINER = get_base_image(
+        ImageBase.DEBIAN_10
+    ).run('apt', 'install', '-y', 'nasm', 'git', 'cmake', 'make')
 
     @staticmethod
     def binaries_for_revision(
