@@ -45,31 +45,30 @@ class FeaturePerformanceAnalysisTable(
     """
     Table showing ...
 
-    TODO
+    TODO: Doc here + function docs + better function comments
     """
 
     @staticmethod
-    def get_interactions_from_fr_string(string: str):
-        fr_regex = re.compile(r"^(FR\((?P<interactions>.*)\)|Base)$")
-        match = fr_regex.search(string)
-        if match:
-            if "interactions" in match.groups():
-                # TODO: Convert to correct interaction (x*y instead of x,y)
-                interactions = match.group("interactions")
-                print(interactions)
-                return string
-            else:
-                return string
-        else:
-            raise ValueError(string)
+    def get_interactions_from_fr_string(interactions: str):
+        interactions = interactions.replace("FR",
+                                            "").replace("(",
+                                                        "").replace(")", "")
+        interactions = interactions.split(",")
+        # Ignore interactions with base, but do not remove base if it's the only feature
+        if "Base" in interactions and len(interactions) > 1:
+            interactions.remove("Base")
+        # Features cannot interact with itself, so remove duplicastes
+        interactions = list(set(interactions))
+
+        interactions = "*".join(interactions)
+
+        return interactions
 
     @staticmethod
     def get_feature_durations_from_tef_report(
         tef_report: TEFReport
     ) -> tp.Dict[str, int]:
         open_events: tp.List[TraceEvent] = list()
-
-        # TODO: Interactions (FR(x,y)) and Nesting
 
         feature_durations = dict()
 
@@ -99,11 +98,9 @@ class FeaturePerformanceAnalysisTable(
                             )
                         interactions.append(event.name)
 
-                    interaction_string = trace_event.name
-                    for interaction in interactions:
-                        interaction_string += '*' + FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
-                            interaction
-                        )
+                    interaction_string = FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
+                        ",".join(interactions + [trace_event.name])
+                    )
 
                     current_duration = feature_durations.get(
                         interaction_string, 0
