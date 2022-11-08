@@ -84,6 +84,7 @@ def create_new_bb_config(
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
+        'varats.projects.cpp_projects.ect'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
