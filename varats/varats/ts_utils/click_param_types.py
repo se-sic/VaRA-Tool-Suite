@@ -13,7 +13,7 @@ from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperimentRegion,
     BlameReportExperimentCommitInFunction,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
+from varats.paper.paper_config import get_paper_config
 from varats.report.report import BaseReport
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,

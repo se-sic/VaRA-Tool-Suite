@@ -12,7 +12,8 @@ import typing as tp
 import click
 from rich.progress import Progress
 
-from varats.paper_mgmt.paper_config import get_paper_config
+from varats.paper.paper_config import get_paper_config
+from varats.paper_mgmt.artefacts import load_artefacts
 from varats.plot.plots import (
     PlotGenerator,
     CommonPlotOptions,
@@ -54,7 +55,8 @@ class PlotCLI(click.MultiCommand):
                 generator_instance = generator_cls(plot_config, **kwargs)
                 if artefact_name:
                     paper_config = get_paper_config()
-                    if paper_config.artefacts.get_artefact(artefact_name):
+                    artefacts = load_artefacts(paper_config)
+                    if artefacts.get_artefact(artefact_name):
                         LOG.info(
                             f"Updating existing artefact '{artefact_name}'."
                         )
@@ -63,8 +65,8 @@ class PlotCLI(click.MultiCommand):
                     artefact = PlotArtefact.from_generator(
                         artefact_name, generator_instance, common_options
                     )
-                    paper_config.add_artefact(artefact)
-                    paper_config.store_artefacts()
+                    artefacts.add_artefact(artefact)
+                    artefacts.store()
                 else:
                     with Progress() as progress:
                         generator_instance(common_options, progress)

@@ -13,10 +13,10 @@ from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
 from varats.paper.case_study import CaseStudy
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.project.project_util import get_local_project_git_path
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table

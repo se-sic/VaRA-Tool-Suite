@@ -218,11 +218,12 @@ class BlameResultFunctionEntry():
     """Collection of all interactions for a specific function."""
 
     def __init__(
-        self, name: str, demangled_name: str,
+        self, name: str, demangled_name: str, file_name: tp.Optional[str],
         blame_insts: tp.List[BlameInstInteractions], num_instructions: int
     ) -> None:
         self.__name = name
         self.__demangled_name = demangled_name
+        self.__file_name = file_name
         self.__inst_list = blame_insts
         self.__num_instructions = num_instructions
 
@@ -234,6 +235,7 @@ class BlameResultFunctionEntry():
         yaml document section."""
         demangled_name = str(raw_function_entry['demangled-name'])
         num_instructions = int(raw_function_entry['num-instructions'])
+        file_name = tp.cast(tp.Optional[str], raw_function_entry.get('file'))
         inst_list: tp.List[BlameInstInteractions] = []
         for raw_inst_entry in raw_function_entry['insts']:
             inst_list.append(
@@ -241,7 +243,7 @@ class BlameResultFunctionEntry():
                 create_blame_inst_interactions(raw_inst_entry)
             )
         return BlameResultFunctionEntry(
-            name, demangled_name, inst_list, num_instructions
+            name, demangled_name, file_name, inst_list, num_instructions
         )
 
     @property
@@ -258,6 +260,11 @@ class BlameResultFunctionEntry():
     def demangled_name(self) -> str:
         """Demangled name of the function."""
         return self.__demangled_name
+
+    @property
+    def file_name(self) -> tp.Optional[str]:
+        """Name of file containing the function if available."""
+        return self.__file_name
 
     @property
     def num_instructions(self) -> int:
@@ -511,7 +518,8 @@ class BlameReportDiff():
             elif new_func_entry is None and old_func_entry is not None:
                 if old_func_entry.interactions:
                     self.__changes[func_name] = BlameResultFunctionEntry(
-                        old_func_entry.name, old_func_entry.demangled_name, [
+                        old_func_entry.name, old_func_entry.demangled_name,
+                        old_func_entry.file_name, [
                             BlameInstInteractions(
                                 inters.base_taint,
                                 deepcopy(inters.interacting_taints),
@@ -593,12 +601,14 @@ class BlameReportDiff():
         if diff_interactions:
             self.__changes[new_func_entry.name] = BlameResultFunctionEntry(
                 new_func_entry.name, new_func_entry.demangled_name,
-                diff_interactions, diff_num_instructions
+                new_func_entry.file_name, diff_interactions,
+                diff_num_instructions
             )
         if unchanged_interactions:
             self.__unchanged[new_func_entry.name] = BlameResultFunctionEntry(
                 new_func_entry.name, new_func_entry.demangled_name,
-                unchanged_interactions, diff_num_instructions
+                new_func_entry.file_name, unchanged_interactions,
+                diff_num_instructions
             )
 
     def __str__(self) -> str:
