@@ -5,7 +5,7 @@ import typing as tp
 import pandas as pd
 
 from varats.mapping.commit_map import get_commit_map
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,

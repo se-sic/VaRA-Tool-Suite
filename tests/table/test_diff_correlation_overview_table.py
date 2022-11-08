@@ -2,7 +2,7 @@
 import unittest
 
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
-from varats.paper_mgmt.paper_config import load_paper_config
+from varats.paper.paper_config import load_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import TableConfig, TableFormat
 from varats.tables import diff_correlation_overview_table
