@@ -5,7 +5,7 @@ import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake, mkdir
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
