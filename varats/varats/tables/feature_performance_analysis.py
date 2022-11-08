@@ -1,5 +1,6 @@
 """Module for feature performance analysis tables."""
 import logging
+import re
 import typing as tp
 from pathlib import Path
 from pprint import pprint
@@ -27,6 +28,7 @@ from varats.report.tef_report import (
     TEFReportAggregate,
     WorkloadAndConfigSpecificTEFReportAggregate,
     TraceEventType,
+    TraceEvent,
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
@@ -47,12 +49,24 @@ class FeaturePerformanceAnalysisTable(
     """
 
     @staticmethod
+    def get_interactions_from_fr_string(string: str):
+        fr_regex = re.compile(r"^(FR\(?P<interactions>.+\))|Base$")
+        match = fr_regex.search(string)
+        if match:
+            if "interactions" in match.groups():
+                interactions = match.group("interactions")
+                print(interactions)
+                return string
+            else:
+                return string
+        else:
+            raise ValueError
+
+    @staticmethod
     def get_feature_durations_from_tef_report(
         tef_report: TEFReport
     ) -> tp.Dict[str, int]:
-        begin_events = {
-            trace_event.name: list() for trace_event in tef_report.trace_events
-        }
+        open_events: tp.List[TraceEvent] = list()
 
         # TODO: Interactions (FR(x,y)) and Nesting
 
@@ -61,16 +75,41 @@ class FeaturePerformanceAnalysisTable(
         for trace_event in tef_report.trace_events:
             if trace_event.category == "Feature":
                 if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
-                    begin_events[trace_event.name].append(trace_event)
+                    open_events.append(trace_event)
                 elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
-                    current_duration = feature_durations.get(
-                        trace_event.name, 0
-                    )
+                    opening_event = open_events.pop()
+                    assert (opening_event.name == trace_event.name)
+
                     end_timestamp = trace_event.timestamp
-                    begin_timestamp = begin_events[trace_event.name
-                                                  ].pop().timestamp
+                    begin_timestamp = opening_event.timestamp
+
+                    interactions = list()
+                    for event in open_events:
+                        if event.name != trace_event.name:
+                            interaction_string = FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
+                                event.name
+                            )
+                            if event in feature_durations:
+                                feature_durations[interaction_string] -= (
+                                    end_timestamp - begin_timestamp
+                                )
+                            else:
+                                feature_durations[interaction_string] = -(
+                                    end_timestamp - begin_timestamp
+                                )
+                            interactions.append(event.name)
+
+                    interaction_string = trace_event.name
+                    for interaction in interactions:
+                        interaction_string += '*' + FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
+                            interaction
+                        )
+
+                    current_duration = feature_durations.get(
+                        interaction_string, 0
+                    )
                     feature_durations[
-                        trace_event.name
+                        interaction_string
                     ] = current_duration + end_timestamp - begin_timestamp
 
         return feature_durations
@@ -166,11 +205,13 @@ class FeaturePerformanceAnalysisTable(
                             ignore_index=True
                         )
 
-        internal_df.sort_values(["Project"], inplace=True)
-        internal_df.set_index(
+        output_df.sort_values(["Project"], inplace=True)
+        output_df.set_index(
             ["Project"],
             inplace=True,
         )
+
+        print(internal_df.to_string())
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
