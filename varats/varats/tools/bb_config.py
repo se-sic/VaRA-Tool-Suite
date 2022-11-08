@@ -42,6 +42,7 @@ def create_new_bb_config(
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
+        # yapf: disable
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
@@ -123,6 +124,7 @@ def create_new_bb_config(
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
     ]
+    # yapf: enable
 
     # Enable version exploration by default
     new_bb_cfg["versions"]["full"] = True
