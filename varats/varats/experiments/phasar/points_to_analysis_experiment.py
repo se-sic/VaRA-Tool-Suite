@@ -39,7 +39,7 @@ class PointsToAnalysis(actions.Step):  # type: ignore
         self,
         project: Project,
         tool
-    ):
+    ) -> None:
         super().__init__(obj=project, action_fn=self.analyze)
         self.tool = tool
 
