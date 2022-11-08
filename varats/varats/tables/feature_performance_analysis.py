@@ -50,17 +50,18 @@ class FeaturePerformanceAnalysisTable(
 
     @staticmethod
     def get_interactions_from_fr_string(string: str):
-        fr_regex = re.compile(r"^(FR\(?P<interactions>.+\))|Base$")
+        fr_regex = re.compile(r"^(FR\((?P<interactions>.*)\)|Base)$")
         match = fr_regex.search(string)
         if match:
             if "interactions" in match.groups():
+                # TODO: Convert to correct interaction (x*y instead of x,y)
                 interactions = match.group("interactions")
                 print(interactions)
                 return string
             else:
                 return string
         else:
-            raise ValueError
+            raise ValueError(string)
 
     @staticmethod
     def get_feature_durations_from_tef_report(
@@ -85,19 +86,18 @@ class FeaturePerformanceAnalysisTable(
 
                     interactions = list()
                     for event in open_events:
-                        if event.name != trace_event.name:
-                            interaction_string = FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
-                                event.name
+                        interaction_string = FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
+                            event.name
+                        )
+                        if event in feature_durations:
+                            feature_durations[interaction_string] -= (
+                                end_timestamp - begin_timestamp
                             )
-                            if event in feature_durations:
-                                feature_durations[interaction_string] -= (
-                                    end_timestamp - begin_timestamp
-                                )
-                            else:
-                                feature_durations[interaction_string] = -(
-                                    end_timestamp - begin_timestamp
-                                )
-                            interactions.append(event.name)
+                        else:
+                            feature_durations[interaction_string] = -(
+                                end_timestamp - begin_timestamp
+                            )
+                        interactions.append(event.name)
 
                     interaction_string = trace_event.name
                     for interaction in interactions:
