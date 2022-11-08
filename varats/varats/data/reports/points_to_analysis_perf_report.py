@@ -11,7 +11,7 @@ class PointsToAnalysisPerfReport(BaseReport):
         project_version: str,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
+        file_ext: str = PointsToAnalysisPerfReport.FILE_TYPE
     ) -> str:
         """
         Generates a filename for a commit report with 'yaml' as file extension.
