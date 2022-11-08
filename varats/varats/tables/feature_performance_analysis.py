@@ -222,10 +222,11 @@ class FeaturePerformanceAnalysisTable(
         )
 
 
-class CaseStudyMetricsTableGenerator(
+class FeaturePerformanceAnalysisTableGenerator(
     TableGenerator, generator_name="feature-perf-analysis", options=[]
 ):
-    """Generates a cs-metrics table for the selected case study(ies)."""
+    """Generates a feature performance analysis table for the selected case
+    study(ies)."""
 
     def generate(self) -> tp.List[Table]:
         return [
