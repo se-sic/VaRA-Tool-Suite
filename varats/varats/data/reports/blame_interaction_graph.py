@@ -66,6 +66,10 @@ class DiffType(Enum):
 class BIGDiffNodeAttrs(TypedDict):
     """Blame interaction graph node attributes."""
     blame_taint_data: BlameTaintData
+    region: tp.Optional[int]
+    function: tp.Optional[str]
+    commit: str
+    repo: str
     diff_type: DiffType
 
 
@@ -447,9 +451,22 @@ class BlameInteractionGraphDiff():
             def create_node_attrs(
                 blame_taint_data: BlameTaintData, diff_type: DiffType
             ) -> BIGDiffNodeAttrs:
+                func_entry = diff.get_function_entry(
+                    blame_taint_data.function_name
+                ) if blame_taint_data.function_name else None
                 return {
-                    "blame_taint_data": blame_taint_data,
-                    "diff_type": diff_type
+                    "blame_taint_data":
+                        blame_taint_data,
+                    "region":
+                        blame_taint_data.region_id,
+                    "function":
+                        func_entry.demangled_name if func_entry else None,
+                    "commit":
+                        blame_taint_data.commit.commit_hash.short_hash,
+                    "repo":
+                        blame_taint_data.commit.repository_name,
+                    "diff_type":
+                        diff_type
                 }
 
             # pylint: disable=unused-argument
