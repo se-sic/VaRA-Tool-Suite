@@ -39,7 +39,7 @@ class FeaturePerfCSCollection(VProject):
             shallow=False,
             version_filter=project_filter_generator("FeaturePerfCSCollection")
         ),
-        FeatureSource(version="1.0")
+        FeatureSource()
     ]
 
     WORKLOADS = {
