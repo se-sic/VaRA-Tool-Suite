@@ -160,14 +160,22 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
 
         print(df)
 
-        memory_limit = 100000  # mbytes
+        cluster_memory_limit = 128000  # mbytes
+        dev_memory_limit = 32000  # mbytes
 
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             style.highlight_between(
-                left=memory_limit,
+                left=cluster_memory_limit,
                 props='cellcolor:{red};',
+                subset=[('Typestate', 'Mem (mbytes)'),
+                        ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
+            )
+            style.highlight_between(
+                left=dev_memory_limit,
+                right=cluster_memory_limit,
+                props='cellcolor:{orange};',
                 subset=[('Typestate', 'Mem (mbytes)'),
                         ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
             )
@@ -180,7 +188,7 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                 "caption"
             ] = f"""On the left, we see all evaluted projectes with additional information, such as, revision we analyzed, the amount of C/C++ code.
 The three columns on the right show time and memory consumption of the benchmarked analyses utilizing the current version of the IDE solver.
-The red cells indicate that our memory limit of {memory_limit} mbytes was exceeded."""
+The orange cells indicate that the memory of a usual developer maschine ({dev_memory_limit} mbytes) was exceeded and the red cells indicate that even a compute cluster with {cluster_memory_limit} mbytes would be not enough."""
             style.format(precision=2)
 
         return dataframe_to_table(
