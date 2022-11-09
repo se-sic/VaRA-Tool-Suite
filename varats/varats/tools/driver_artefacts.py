@@ -15,12 +15,12 @@ import yaml
 from rich.progress import Progress
 
 from varats.data.discover_reports import initialize_reports
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.artefacts import (
     Artefact,
     initialize_artefact_types,
     load_artefacts,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects

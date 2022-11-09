@@ -14,10 +14,10 @@ from varats.data.reports.blame_report import BlameReport
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
+from varats.paper.paper_config import load_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.paper_mgmt.paper_config import load_paper_config, get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.settings import vara_cfg
 

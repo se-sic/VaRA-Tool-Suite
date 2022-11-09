@@ -15,6 +15,8 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     create_new_success_result_filepath,
     ZippedReportFolder,
+    get_current_config_id,
+    get_extra_config_options,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
 from varats.project.project_util import BinaryType
@@ -129,7 +131,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             result_filepath = create_new_success_result_filepath(
                 self.__experiment_handle,
                 self.__experiment_handle.report_spec().main_report,
-                self.project, binary
+                self.project, binary, get_current_config_id(self.project)
             )
 
             with local.cwd(local.path(self.project.builddir)):
@@ -147,11 +149,11 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             print(
                                 f"Running example {prj_command.command.label}"
                             )
-                            with cleanup(prj_command):
-                                pb_cmd()
 
-                        # TODO: figure out how to handle different configs
-                        # executable("--slow")
-                        # executable()
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd(*extra_options)
 
         return StepResult.OK
