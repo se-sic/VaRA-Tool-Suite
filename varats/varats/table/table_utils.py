@@ -43,7 +43,7 @@ def wrap_table_in_latex_document(
         Package("longtable"),
         Package("multirow"),
         Package('multicol'),
-        Package("xcolor", options=["table"]),
+        Package("xcolor", options=["table", "dvipsnames"]),
     ])
 
     doc.change_document_style("empty")

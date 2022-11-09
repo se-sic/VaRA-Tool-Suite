@@ -3,15 +3,18 @@ import typing as tp
 
 import numpy as np
 import pandas as pd
-from pylatex import Document
+from pylatex import Document, NoEscape, Package
 
-from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
+from varats.data.reports.phasar_iter_ide import (
+    PhasarIterIDEStatsReport,
+    ResultCompare,
+)
 from varats.experiments.phasar.iter_ide import (
     IDELinearConstantAnalysisExperiment,
 )
 from varats.jupyterhelper.file import load_phasar_iter_ide_stats_report
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
@@ -36,13 +39,23 @@ def all_from_kbytes_to_mbytes(kbytes_list: tp.List[float]) -> tp.List[float]:
     return list(map(from_kbytes_to_mbytes, kbytes_list))
 
 
+def get_compare_mark(res_cmp: tp.Optional[ResultCompare]) -> str:
+    if not res_cmp:
+        return "{\color{RedOrange} ?}"
+
+    if res_cmp.results_match:
+        return "{\color{Green} \checkmark}"
+
+    return "{\color{Red} x}"
+
+
 class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         cs_data: tp.List[pd.DataFrame] = []
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
-            print(f"Working on {case_study}")
+            print(f"Working on {case_study.project_name}")
             project_name = case_study.project_name
             report_files = get_processed_revisions_files(
                 case_study.project_name, IDELinearConstantAnalysisExperiment,
@@ -195,20 +208,13 @@ class PhasarIterIDEOldVSNew(Table, table_name="phasar-iter-ide-old-new"):
         cs_data: tp.List[pd.DataFrame] = []
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
-            print(f"Working on {case_study}")
+            print(f"Working on {case_study.project_name}")
             project_name = latex_sanitize_project_name(case_study.project_name)
             report_files = get_processed_revisions_files(
                 case_study.project_name, IDELinearConstantAnalysisExperiment,
                 PhasarIterIDEStatsReport,
                 get_case_study_file_name_filter(case_study)
             )
-
-            revision = None
-            revisions = case_study.revisions
-            if len(revisions) == 1:
-                revision = revisions[0]
-
-            rev_range = revision.hash if revision else "HEAD"
 
             for report_file in report_files:
                 report = load_phasar_iter_ide_stats_report(report_file)
@@ -228,7 +234,7 @@ class PhasarIterIDEOldVSNew(Table, table_name="phasar-iter-ide-old-new"):
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = "l|rrrr|rrrr|rrrr|rrrr|rrrr|rrrr|"
+            kwargs["column_format"] = "l|c|rrrr|rrrr|c|rrrr|rrrr|c|rrrr|rrrr|"
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
@@ -240,7 +246,8 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
             style.format(precision=2)
 
         def add_extras(doc: Document) -> None:
-            pass
+            doc.packages.append(Package("amssymb"))
+            doc.append(NoEscape("\setlength{\\tabcolsep}{4pt}"))
 
         return dataframe_to_table(
             df,
@@ -254,17 +261,35 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
         )
 
     def compute_typestate_stats(self, report: PhasarIterIDEStatsReport):
-        return self.__compute_delta_comp(
-            "Typestate", report.old_typestate, report.new_typestate
+        stats = dict()
+        stats[("Typestate", "", "C")] = get_compare_mark(report.cmp_typestate)
+        stats.update(
+            self.__compute_delta_comp(
+                "Typestate", report.old_typestate, report.new_typestate
+            )
         )
+
+        return stats
 
     def compute_taint(self, report: PhasarIterIDEStatsReport):
-        return self.__compute_delta_comp(
-            "Taint", report.old_taint, report.new_taint
+        stats = dict()
+        stats[("Taint", "", "C")] = get_compare_mark(report.cmp_taint)
+        stats.update(
+            self.__compute_delta_comp(
+                "Taint", report.old_taint, report.new_taint
+            )
         )
 
+        return stats
+
     def compute_lca_stats(self, report: PhasarIterIDEStatsReport):
-        return self.__compute_delta_comp("LCA", report.old_lca, report.new_lca)
+        stats = dict()
+        stats[("LCA", "", "C")] = get_compare_mark(report.cmp_lca)
+        stats.update(
+            self.__compute_delta_comp("LCA", report.old_lca, report.new_lca)
+        )
+
+        return stats
 
     @staticmethod
     def __compute_speedups(
@@ -288,7 +313,7 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
 
         memory_old = np.nan
         memory_new = np.nan
-        memory_speedup = np
+        memory_speedup = np.nan
         memory_stddev = np.nan
 
         if old_time_report:
