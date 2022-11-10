@@ -5,7 +5,8 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
-from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
+from varats.paper.paper_config import get_paper_config, load_paper_config
+from varats.paper_mgmt.artefacts import load_artefacts
 from varats.plot.plots import PlotArtefact
 from varats.tools import driver_plot
 from varats.utils.settings import vara_cfg, save_config
@@ -63,7 +64,7 @@ class TestDriverPlot(unittest.TestCase):
 
         # load new artefact file
         load_paper_config()
-        artefacts = list(get_paper_config().artefacts)
+        artefacts = list(load_artefacts(get_paper_config()).artefacts)
         self.assertEqual(1, len(artefacts))
 
         artefact = artefacts[0]

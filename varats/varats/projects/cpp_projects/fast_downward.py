@@ -1,4 +1,4 @@
-"""Project file for fast_downward."""
+"""Project file for FastDownward."""
 import re
 import typing as tp
 
@@ -7,7 +7,7 @@ from benchbuild.utils.cmd import cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
@@ -32,15 +32,15 @@ from varats.utils.settings import bb_cfg
 class FastDownward(VProject, ReleaseProviderHook):
     """Planning tool FastDownward (fetched by Git)"""
 
-    NAME = 'fast_downward'
+    NAME = 'FastDownward'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.PLANNING
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="fast_downward",
+            project_name="FastDownward",
             remote="https://github.com/aibasel/downward.git",
-            local="fast_downward",
+            local="FastDownward",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
