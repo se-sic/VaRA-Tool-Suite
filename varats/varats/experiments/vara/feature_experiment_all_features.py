@@ -97,11 +97,11 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Returns the ldflags needed to instrument projects with VaRA during LTO.
 
         Returns: ldflags for VaRA LTO support
-        """
+        """ 
         return ["-flto"]
 
     @staticmethod
-    def feature_permutation(self, feature_list: str) -> tp.List[tp.List[str]]:
+    def feature_permutation(feature_list: tp.List[str]) -> tp.List[tp.List[str]]:
         num_sets = 1 << len(feature_list)
         feature_permutation = []
         for current_mask in range(num_sets):
