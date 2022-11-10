@@ -7,6 +7,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import (
     BaseReport,
     ReportAggregate,
@@ -149,26 +150,30 @@ class TEFReportAggregate(
         super().__init__(path, TEFReport)
 
 
-__FILE_REGEX = re.compile(r".*\_(?P<workload>.+)\_(?P<config>\d+)+$")
+__WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 
 
-def get_info(report_file: Path) -> tp.Optional[tp.Tuple[str, int]]:
-    match = __FILE_REGEX.search(report_file.stem)
+def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+    match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
     if match:
-        return str(match.group("workload")), int(match.group("config"))
+        return str(match.group("label"))
 
     return None
 
 
-class WorkloadAndConfigSpecificTEFReportAggregate(
+class WorkloadSpecificTEFReportAggregate(
     KeyedReportAggregate[str, ReportTy],
     tp.Generic[ReportTy],
     shorthand="",
     file_type=""
 ):
 
-    def __init__(self, path: Path) -> None:
-        super().__init__(path, TEFReport, get_info)
+    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+        super().__init__(
+            path,
+            report_type,
+            get_workload_label,
+        )
 
-    def workload_and_config_ids(self) -> tp.Collection[str]:
+    def workload_names(self) -> tp.Collection[str]:
         return self.keys()

@@ -1,17 +1,20 @@
 """Module for feature performance analysis tables."""
 import logging
+import re
 import typing as tp
+from pathlib import Path
 
 import more_itertools
 import pandas as pd
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
 from varats.mapping.commit_map import get_commit_map
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.report.tef_report import (
     TEFReport,
-    WorkloadAndConfigSpecificTEFReportAggregate,
+    WorkloadSpecificTEFReportAggregate,
     TraceEventType,
     TraceEvent,
 )
@@ -117,22 +120,22 @@ class FeaturePerformanceAnalysisTable(
             revisions = list()
 
             for report_filepath in report_files:
-                agg_tef_report = WorkloadAndConfigSpecificTEFReportAggregate(
-                    report_filepath.full_path()
+                agg_tef_report = WorkloadSpecificTEFReportAggregate(
+                    report_filepath.full_path(), TEFReport
                 )
                 report_file = agg_tef_report.filename
+                config_id = report_file.config_id
 
-                for key in agg_tef_report.workload_and_config_ids():
-                    tef_report = agg_tef_report.reports(key)
+                for workload in agg_tef_report.workload_names():
+                    tef_report = agg_tef_report.reports(workload)
                     if len(tef_report) > 1:
                         print(
                             "Table can currently handle only one TEFReport per "
-                            "release, workload and config. Ignoring others."
+                            "revision, workload and config. Ignoring others."
                         )
                     feature_performances = self.get_feature_performance_from_tef_report(
                         tef_report[0]
                     )
-                    workload, config_id = key
                     if workload not in workloads:
                         workloads.append(workload)
                     revision = report_file.commit_hash
