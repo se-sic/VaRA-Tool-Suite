@@ -1,4 +1,3 @@
-
 """Base class experiment and utilities for experiments that work with
 features."""
 import textwrap
@@ -16,6 +15,8 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     create_new_success_result_filepath,
     ZippedReportFolder,
+    get_current_config_id,
+    get_extra_config_options,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
 from varats.project.project_util import BinaryType
@@ -59,8 +60,10 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Returns the cflags needed to enable VaRAs feature support, i.e., passing
         the compiler a feature model and lowering the feature information into
         the LLVM-IR.
+
         Args:
             project: to get the cflags for
+
         Returns: list of feature cflags
         """
         fm_path = FeatureExperiment.get_feature_model_path(project).absolute()
@@ -72,9 +75,11 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         """
         Returns the cflags needed to trace projects with VaRA, using the
         specified tracer code.
+
         Args:
             instr_type: instrumentation type to use
             save_temps: saves temporary LLVM-IR files (good for debugging)
+
         Returns: list of tracing specific cflags
         """
         c_flags = [
@@ -90,6 +95,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
     def get_vara_tracing_ldflags() -> tp.List[str]:
         """
         Returns the ldflags needed to instrument projects with VaRA during LTO.
+
         Returns: ldflags for VaRA LTO support
         """
         return ["-flto"]
@@ -125,7 +131,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             result_filepath = create_new_success_result_filepath(
                 self.__experiment_handle,
                 self.__experiment_handle.report_spec().main_report,
-                self.project, binary
+                self.project, binary, get_current_config_id(self.project)
             )
 
             with local.cwd(local.path(self.project.builddir)):
@@ -143,11 +149,11 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             print(
                                 f"Running example {prj_command.command.label}"
                             )
-                            with cleanup(prj_command):
-                                pb_cmd("--slow", "--header")
 
-                        # TODO: figure out how to handle different configs
-                        # executable("--slow")
-                        # executable()
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd(*extra_options)
 
         return StepResult.OK

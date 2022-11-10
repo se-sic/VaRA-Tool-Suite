@@ -5,17 +5,13 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
-from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.base.just_compile import JustCompileReport
+from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.paper_mgmt.artefacts import (
     initialize_artefact_types,
     Artefacts,
     Artefact,
     load_artefacts_from_file,
-)
-from varats.paper_mgmt.paper_config import (
-    load_paper_config,
-    get_loaded_paper_config,
 )
 from varats.plot.plots import PlotArtefact, PlotConfig, CommonPlotOptions
 from varats.plots.case_study_overview import CaseStudyOverviewGenerator

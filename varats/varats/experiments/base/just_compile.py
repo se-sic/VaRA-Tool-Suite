@@ -15,6 +15,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
+    get_current_config_id,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.varats_project import VProject
@@ -40,9 +41,12 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
 
+        config_id = get_current_config_id(self.project)
+
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, EmptyReport, self.project, binary
+                self.__experiment_handle, EmptyReport, self.project, binary,
+                config_id
             )
 
             run_cmd = touch[f"{result_file}"]

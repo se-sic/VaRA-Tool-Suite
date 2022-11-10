@@ -42,6 +42,7 @@ def create_new_bb_config(
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
+        # yapf: disable
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
@@ -84,6 +85,8 @@ def create_new_bb_config(
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
+        'varats.projects.cpp_projects.ect',
+        'varats.projects.cpp_projects.lepton'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -128,6 +131,7 @@ def create_new_bb_config(
         'varats.experiments.szz.pydriller_szz_experiment',
 
     ]
+    # yapf: enable
 
     # Enable version exploration by default
     new_bb_cfg["versions"]["full"] = True
