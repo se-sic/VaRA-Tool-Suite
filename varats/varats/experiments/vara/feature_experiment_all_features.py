@@ -8,6 +8,7 @@ from pathlib import Path
 from benchbuild.command import cleanup
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
+from benchbuild.utils.cmd import time
 from plumbum import local
 from plumbum.cmd import mv
 
@@ -177,6 +178,10 @@ class RunVaRATracedWorkloadsAllFeatures(ProjectStep):  # type: ignore
                                     name_file = "trace_MSMR.json"
                                     for feature in elements:
                                         name_file += feature
+                                    time_cmd = time["-v", "-o",
+                                                    tmp_dir / f"time_report_compression_{name_file}.txt",
+                                                    pb_cmd(elements)]
+                                    time_cmd()
                                     rename_file = mv[tmp_dir / Path("trace_MSMR.json"), tmp_dir / Path(f"{name_file}.json")]
                                     rename_file()
 
