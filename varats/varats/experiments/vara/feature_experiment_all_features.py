@@ -179,7 +179,7 @@ class RunVaRATracedWorkloadsAllFeatures(ProjectStep):  # type: ignore
                                     for feature in elements:
                                         name_file += feature
                                     time_cmd = time["-v", "-o",
-                                                    tmp_dir / f"time_report_compression_{name_file}.txt",
+                                                    tmp_dir / Path(f"time_report_compression_{name_file}.txt"),
                                                     pb_cmd(elements)]
                                     time_cmd()
                                     rename_file = mv[tmp_dir / Path("trace_MSMR.json"), tmp_dir / Path(f"{name_file}.json")]
