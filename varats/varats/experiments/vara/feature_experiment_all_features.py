@@ -149,7 +149,7 @@ class RunVaRATracedWorkloadsAllFeatures(ProjectStep):  # type: ignore
             )
 
             feature_list = ["--header", "--slow", "--extern", "--cpp"]
-            feature_permutationen = self.feature_permutation(feature_list)
+            feature_permutationen = FeatureExperiment.feature_permutation(feature_list)
 
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
