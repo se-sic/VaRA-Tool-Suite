@@ -270,20 +270,36 @@ class ConfigurationImpl(Configuration):
         })
 
 
-class SimpleConfiguration(Configuration):
+class PlainConfigurationOption(ConfigurationOptionImpl):
+
+    def __init__(self, value: str) -> None:
+        super().__init__(name="UNKNOWN", value=value)
+
+
+class PlainCommandlineConfiguration(Configuration):
+    """
+    Simple configuration format where command line args are directly written
+    into the file.
+
+    Example: '["--foo", "--bar"]'
+    """
 
     def __init__(self, config_str_list: tp.List[str]) -> None:
-        self.__config_str_list: tp.List[str] = config_str_list
+        self.__config_str_list: tp.List[ConfigurationOption] = list(
+            map(PlainConfigurationOption, config_str_list)
+        )
 
     @staticmethod
     def create_configuration_from_str(config_str: str) -> 'Configuration':
         config_str_list = json.loads(config_str)
-        return SimpleConfiguration(config_str_list)
+        return PlainCommandlineConfiguration(config_str_list)
 
     def dump_to_string(self) -> str:
-        return " ".join(self.__config_str_list)
+        return " ".join(
+            map(lambda option: option.value, self.__config_str_list)
+        )
 
-    def options(self) -> tp.List[str]:
+    def options(self) -> tp.List[ConfigurationOption]:
         return self.__config_str_list
 
     def add_config_option(self, option: ConfigurationOption) -> None:

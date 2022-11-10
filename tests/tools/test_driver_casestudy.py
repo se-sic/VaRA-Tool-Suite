@@ -11,7 +11,7 @@ from tests.test_utils import (
     UnitTestFixtures,
 )
 from varats.paper.case_study import load_case_study_from_file
-from varats.paper_mgmt.paper_config import load_paper_config
+from varats.paper.paper_config import load_paper_config
 from varats.tools import driver_casestudy
 from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import vara_cfg, save_config

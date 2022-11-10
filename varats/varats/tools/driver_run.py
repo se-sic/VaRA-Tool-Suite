@@ -18,7 +18,7 @@ from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
 from varats.paper.case_study import CaseStudy
-from varats.paper_mgmt.paper_config import get_paper_config
+from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.utils.exceptions import ConfigurationLookupError
