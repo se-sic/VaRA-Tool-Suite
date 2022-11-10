@@ -102,7 +102,7 @@ Paper and case study modules
 Module: paper_config
 ....................
 
-.. automodule:: varats.paper_mgmt.paper_config
+.. automodule:: varats.paper.paper_config
     :members:
     :undoc-members:
     :show-inheritance:

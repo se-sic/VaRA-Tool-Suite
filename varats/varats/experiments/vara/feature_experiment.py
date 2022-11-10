@@ -10,16 +10,15 @@ from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
 from plumbum import local
 
-from varats.base.configuration import SimpleConfiguration
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
     create_new_success_result_filepath,
     ZippedReportFolder,
+    get_current_config_id,
+    get_extra_config_options,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
-from varats.paper.case_study import load_configuration_map_from_case_study_file
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
@@ -27,7 +26,6 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
 )
 from varats.report.report import ReportSpecification
-from varats.utils.git_util import ShortCommitHash
 
 
 class FeatureExperiment(VersionExperiment, shorthand=""):
@@ -133,48 +131,29 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             result_filepath = create_new_success_result_filepath(
                 self.__experiment_handle,
                 self.__experiment_handle.report_spec().main_report,
-                self.project, binary
+                self.project, binary, get_current_config_id(self.project)
             )
 
-            paper_config = get_paper_config()
-            case_studies = paper_config.get_case_studies(
-                cs_name=self.project.name
-            )
+            with local.cwd(local.path(self.project.builddir)):
+                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
+                    for prj_command in workload_commands(
+                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        local_tracefile_path = Path(
+                            tmp_dir
+                        ) / f"trace_{prj_command.command.label}.json"
+                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
 
-            for case_study in case_studies:
-                with local.cwd(local.path(self.project.builddir)):
-                    with ZippedReportFolder(
-                        result_filepath.full_path()
-                    ) as tmp_dir:
-                        config_ids = case_study.get_config_ids_for_revision(
-                            ShortCommitHash(self.project.version_of_primary)
-                        )
-                        config_map = load_configuration_map_from_case_study_file(
-                            Path(
-                                paper_config.path /
-                                f"{case_study.project_name}_{case_study.version}.case_study"
-                            ), SimpleConfiguration
-                        )
-                        for config_id in config_ids:
-                            config = config_map.get_configuration(config_id)
-                            for prj_command in workload_commands(
-                                self.project,
-                                binary,
-                                [WorkloadCategory.EXAMPLE],
-                            ):
-                                local_tracefile_path = Path(
-                                    tmp_dir
-                                ) / f"trace_{prj_command.command.label}_{config_id}.json"
-                                with local.env(
-                                    VARA_TRACE_FILE=local_tracefile_path
-                                ):
-                                    pb_cmd = prj_command.command.as_plumbum(
-                                        project=self.project
-                                    )
-                                    print(
-                                        f"Running example {prj_command.command.label}_{config_id}"
-                                    )
-                                    with cleanup(prj_command):
-                                        pb_cmd(config.options())
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd(*extra_options)
 
         return StepResult.OK

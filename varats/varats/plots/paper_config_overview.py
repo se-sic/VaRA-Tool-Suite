@@ -10,7 +10,7 @@ import numpy.typing as npt
 import seaborn as sb
 from matplotlib.patches import Patch
 
-import varats.paper_mgmt.paper_config as PC
+import varats.paper.paper_config as PC
 from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot

@@ -430,7 +430,7 @@ class ReportFilename():
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
 
-        if config_id:
+        if config_id is not None:
             return ReportFilename(
                 ReportFilename.__CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE.format(
                     experiment_shorthand=experiment_shorthand,
