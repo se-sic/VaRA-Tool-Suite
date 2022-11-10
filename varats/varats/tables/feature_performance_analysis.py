@@ -1,31 +1,16 @@
 """Module for feature performance analysis tables."""
 import logging
-import re
 import typing as tp
-from pathlib import Path
-from pprint import pprint
 
 import more_itertools
-import numpy as np
 import pandas as pd
 
-from varats.experiment.workload_util import get_workload_label
 from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
 from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
-from varats.project.project_util import (
-    get_local_project_git,
-    get_project_cls_by_name,
-    get_local_project_git_path,
-)
-from varats.report.gnu_time_report import (
-    TimeReportAggregate,
-    WLTimeReportAggregate,
-)
 from varats.report.tef_report import (
     TEFReport,
-    TEFReportAggregate,
     WorkloadAndConfigSpecificTEFReportAggregate,
     TraceEventType,
     TraceEvent,
@@ -34,7 +19,6 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.utils.git_util import calc_repo_loc, num_commits, num_authors
 
 LOG = logging.Logger(__name__)
 
@@ -42,14 +26,13 @@ LOG = logging.Logger(__name__)
 class FeaturePerformanceAnalysisTable(
     Table, table_name="feature_perf_analysis_table"
 ):
-    """
-    Table showing ...
-
-    TODO: Doc here + function docs + better function comments
-    """
+    """Table comparing the performance of features across releases for each
+    workload."""
 
     @staticmethod
     def get_interactions_from_fr_string(interactions: str):
+        """Convert the feature strings in a TEFReport from FR(x,y) to x*y,
+        similar to the format used by SPLConqueror."""
         interactions = interactions.replace("FR",
                                             "").replace("(",
                                                         "").replace(")", "")
@@ -65,12 +48,13 @@ class FeaturePerformanceAnalysisTable(
         return interactions
 
     @staticmethod
-    def get_feature_durations_from_tef_report(
+    def get_feature_performance_from_tef_report(
         tef_report: TEFReport
     ) -> tp.Dict[str, int]:
+        """Extract feature performance from a TEFReport."""
         open_events: tp.List[TraceEvent] = list()
 
-        feature_durations = dict()
+        feature_performances = dict()
 
         for trace_event in tef_report.trace_events:
             if trace_event.category == "Feature":
@@ -88,12 +72,12 @@ class FeaturePerformanceAnalysisTable(
                         interaction_string = FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
                             event.name
                         )
-                        if event in feature_durations:
-                            feature_durations[interaction_string] -= (
+                        if event in feature_performances:
+                            feature_performances[interaction_string] -= (
                                 end_timestamp - begin_timestamp
                             )
                         else:
-                            feature_durations[interaction_string] = -(
+                            feature_performances[interaction_string] = -(
                                 end_timestamp - begin_timestamp
                             )
                         interactions.append(event.name)
@@ -102,14 +86,14 @@ class FeaturePerformanceAnalysisTable(
                         ",".join(interactions + [trace_event.name])
                     )
 
-                    current_duration = feature_durations.get(
+                    current_performance = feature_performances.get(
                         interaction_string, 0
                     )
-                    feature_durations[
+                    feature_performances[
                         interaction_string
-                    ] = current_duration + end_timestamp - begin_timestamp
+                    ] = current_performance + end_timestamp - begin_timestamp
 
-        return feature_durations
+        return feature_performances
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -145,13 +129,13 @@ class FeaturePerformanceAnalysisTable(
                             "Table can currently handle only one TEFReport per "
                             "release, workload and config. Ignoring others."
                         )
-                    feature_durations = self.get_feature_durations_from_tef_report(
+                    feature_performances = self.get_feature_performance_from_tef_report(
                         tef_report[0]
                     )
                     workload, config_id = key
                     if workload not in workloads:
                         workloads.append(workload)
-                    revision = str(report_file.commit_hash)
+                    revision = report_file.commit_hash
                     if revision not in revisions:
                         revisions.append(revision)
                     new_row = {
@@ -159,15 +143,25 @@ class FeaturePerformanceAnalysisTable(
                         "Revision": revision,
                         "Workload": workload,
                         "Config ID": config_id,
-                        "Feature Durations": feature_durations,
+                        "Feature Performances": feature_performances,
                     }
 
                     internal_df = internal_df.append(new_row, ignore_index=True)
 
+            # Sort revisions so that we can compare consecutive releases
+            commit_map = get_commit_map(project_name)
+            project_revisions = sorted(
+                case_study.revisions, key=commit_map.time_id, reverse=True
+            )
+            revisions = [
+                h.to_short_commit_hash()
+                for h in project_revisions
+                if h.to_short_commit_hash() in revisions
+            ]
+
             # Compare reports
             for workload in workloads:
                 # Use sliding window to always compare two consecutive releases
-                # TODO: Only compare consecutive releases
                 for revision_1, revision_2 in more_itertools.windowed(
                     revisions, 2
                 ):
@@ -180,18 +174,19 @@ class FeaturePerformanceAnalysisTable(
                             (internal_df["Project"] == case_study.project_name)
                             & (internal_df["Workload"] == workload) &
                             (internal_df["Revision"] == revision_2)]
-                        feature_durations_df_revision_1 = pd.DataFrame.from_records(
-                            revision_1_data["Feature Durations"].values
+                        feature_performances_df_revision_1 = pd.DataFrame.from_records(
+                            revision_1_data["Feature Performances"].values
                         )
-                        feature_durations_df_revision_2 = pd.DataFrame.from_records(
-                            revision_2_data["Feature Durations"].values
+                        feature_performances_df_revision_2 = pd.DataFrame.from_records(
+                            revision_2_data["Feature Performances"].values
                         )
-                        # TODO: Does using mean make sense here? Do we need to filter configs first?
-                        feature_durations_df_revision_1_mean = feature_durations_df_revision_1.mean(
+                        # TODO: Does using mean make sense here?
+                        # TODO: Should we only respect the minimal configs for this option/interaction or is the mean over all configs in which the option is active (!= NaN) ok?
+                        feature_performances_df_revision_1_mean = feature_performances_df_revision_1.mean(
                         )
-                        feature_durations_df_revision_2_mean = feature_durations_df_revision_2.mean(
+                        feature_performances_df_revision_2_mean = feature_performances_df_revision_2.mean(
                         )
-                        diff = feature_durations_df_revision_2_mean - feature_durations_df_revision_1_mean
+                        diff = feature_performances_df_revision_2_mean - feature_performances_df_revision_1_mean
                         output_df = output_df.append(
                             dict({
                                 "Project": project_name,
@@ -208,11 +203,9 @@ class FeaturePerformanceAnalysisTable(
             inplace=True,
         )
 
-        print(internal_df.to_string())
-
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = "llr|rr|r|r"
+            kwargs["column_format"] = ("c|" * len(output_df.columns)) + "c"
 
         return dataframe_to_table(
             output_df, table_format, wrap_table, wrap_landscape=True, **kwargs
