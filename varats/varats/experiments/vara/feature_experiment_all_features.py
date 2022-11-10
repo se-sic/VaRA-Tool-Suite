@@ -8,7 +8,7 @@ from pathlib import Path
 from benchbuild.command import cleanup
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
-from plumbum import local
+from plumbum import local, mv
 
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -97,7 +97,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Returns the ldflags needed to instrument projects with VaRA during LTO.
 
         Returns: ldflags for VaRA LTO support
-        """ 
+        """
         return ["-flto"]
 
     @staticmethod
@@ -173,5 +173,10 @@ class RunVaRATracedWorkloadsAllFeatures(ProjectStep):  # type: ignore
                             with cleanup(prj_command):
                                 for elements in feature_permutationen:
                                     pb_cmd(elements)
+                                    name_file = "MSMR"
+                                    for feature in elements:
+                                        name_file += feature
+                                    rename_file = mv[tmp_dir / Path("MSMR.json"), tmp_dir / Path(f"{name_file}.json")]
+                                    rename_file()
 
         return StepResult.OK
