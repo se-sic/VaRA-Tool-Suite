@@ -174,13 +174,13 @@ class RunVaRAWorkloadsBlackbox(ProjectStep):  # type: ignore
                             )
                             with cleanup(prj_command):
                                 for elements in feature_permutationen:
-                                    #pb_cmd(elements)
+                                    pb_cmd(elements)
                                     name_file = "trace_MSMR"
                                     for feature in elements:
                                         name_file += feature
-                                    time_cmd = time["-v", "-o",
-                                                    tmp_dir / Path(f"time_report_compression_{name_file}.txt"),
-                                                    pb_cmd(elements)]
-                                    time_cmd()
+                                    #time_cmd = time["-v", "-o",
+                                    #                tmp_dir / Path(f"time_report_compression_{name_file}.txt"),
+                                    #                pb_cmd(elements)]
+                                    #time_cmd()
 
         return StepResult.OK
