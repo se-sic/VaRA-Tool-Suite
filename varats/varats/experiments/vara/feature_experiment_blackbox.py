@@ -174,7 +174,7 @@ class RunVaRAWorkloadsBlackbox(ProjectStep):  # type: ignore
                             )
                             with cleanup(prj_command):
                                 for elements in feature_permutationen:
-                                    pb_cmd(elements)
+                                    #pb_cmd(elements)
                                     name_file = "trace_MSMR"
                                     for feature in elements:
                                         name_file += feature
