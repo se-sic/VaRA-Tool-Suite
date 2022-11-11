@@ -9,7 +9,7 @@ from benchbuild.command import cleanup
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
 from benchbuild.utils.cmd import time
-from benchbuild.extensions import compiler, run, time
+
 from plumbum import local
 from plumbum.cmd import mv
 
