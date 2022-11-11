@@ -81,7 +81,7 @@ class FeaturePerformanceAnalysisTable(
                             .get_interactions_from_fr_string(
                                 event.name
                             )
-                        if event in feature_performances:
+                        if interaction_string in feature_performances:
                             feature_performances[interaction_string] -= (
                                 end_timestamp - begin_timestamp
                             )
@@ -124,7 +124,8 @@ class FeaturePerformanceAnalysisTable(
         case_study: CaseStudy,
         agg_tef_report: WorkloadSpecificTEFReportAggregate,
         workload: str,
-    ):
+    ) -> tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
+                               tp.Optional[int]]]:
         """Returns a dict with information about feature performances from a
         TEFReport for a given workload."""
         tef_report = agg_tef_report.reports(workload)
@@ -147,7 +148,7 @@ class FeaturePerformanceAnalysisTable(
     @staticmethod
     def get_output_row_from_revision_data(
         revision_1_data: pd.DataFrame, revision_2_data: pd.DataFrame
-    ):
+    ) -> tp.Dict[str, str]:
         """Returns a dict with information about feature performance changes
         between two releases."""
         project_name = revision_1_data['Project'].iloc[0]
@@ -207,7 +208,7 @@ class FeaturePerformanceAnalysisTable(
 
             for report_filepath in report_files:
                 agg_tef_report = WorkloadSpecificTEFReportAggregate(
-                    report_filepath.full_path(), TEFReport
+                    report_filepath.full_path()
                 )
                 report_file = agg_tef_report.filename
                 revisions.add(report_file.commit_hash)
@@ -222,13 +223,13 @@ class FeaturePerformanceAnalysisTable(
                     )
 
             # Sort revisions so that we can compare consecutive releases
-            revisions = self.sort_revisions(case_study, list(revisions))
+            sorted_revisions = self.sort_revisions(case_study, list(revisions))
 
             # Compare reports
             for workload in workloads:
                 # Use sliding window to always compare two consecutive releases
                 for revision_1, revision_2 in more_itertools.windowed(
-                    revisions, 2
+                    sorted_revisions, 2
                 ):
                     if revision_2 is not None:
                         revision_1_data = internal_df[
