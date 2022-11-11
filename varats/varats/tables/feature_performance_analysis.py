@@ -33,22 +33,22 @@ class FeaturePerformanceAnalysisTable(
     workload."""
 
     @staticmethod
-    def get_interactions_from_fr_string(interactions: str):
+    def get_interactions_from_fr_string(interactions: str) -> str:
         """Convert the feature strings in a TEFReport from FR(x,y) to x*y,
         similar to the format used by SPLConqueror."""
         interactions = interactions.replace("FR",
                                             "").replace("(",
                                                         "").replace(")", "")
-        interactions = interactions.split(",")
+        interactions_list = interactions.split(",")
         # Ignore interactions with base, but do not remove base if it's the only feature
-        if "Base" in interactions and len(interactions) > 1:
-            interactions.remove("Base")
+        if "Base" in interactions_list and len(interactions_list) > 1:
+            interactions_list.remove("Base")
         # Features cannot interact with itself, so remove duplicastes
-        interactions = list(set(interactions))
+        interactions_list = list(set(interactions_list))
 
-        interactions = "*".join(interactions)
+        interactions_str = "*".join(interactions_list)
 
-        return interactions
+        return interactions_str
 
     @staticmethod
     def get_feature_performance_from_tef_report(
@@ -57,7 +57,7 @@ class FeaturePerformanceAnalysisTable(
         """Extract feature performance from a TEFReport."""
         open_events: tp.List[TraceEvent] = list()
 
-        feature_performances = dict()
+        feature_performances: tp.Dict[str, int] = dict()
 
         for trace_event in tef_report.trace_events:
             if trace_event.category == "Feature":

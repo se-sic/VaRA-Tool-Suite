@@ -153,12 +153,9 @@ class TEFReportAggregate(
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 
 
-def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+def get_workload_label(workload_specific_report_file: Path) -> str:
     match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
-    if match:
-        return str(match.group("label"))
-
-    return None
+    return str(match.group("label"))
 
 
 class WorkloadSpecificTEFReportAggregate(
