@@ -52,7 +52,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPW"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, TEFReport
+            self.get_handle(), project, TimeReport
         )
 
         analysis_actions = []
