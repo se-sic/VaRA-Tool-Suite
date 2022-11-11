@@ -9,6 +9,7 @@ from benchbuild.command import cleanup
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, ProjectStep, StepResult
 from benchbuild.utils.cmd import time
+from benchbuild.extensions import compiler, run, time
 from plumbum import local
 from plumbum.cmd import mv
 
@@ -179,7 +180,7 @@ class RunVaRAWorkloadsBlackbox(ProjectStep):  # type: ignore
                                     for feature in elements:
                                         name_file += feature
                                     time_cmd = time["-v", "-o",
-                                                    tmp_dir / Path(f"time_report_compression_{name_file}.txt"),
+                                                    tmp_dir / Path(f"time_report_{name_file}.txt"),
                                                     pb_cmd(elements)]
                                     time_cmd()
 
