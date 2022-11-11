@@ -8,7 +8,7 @@ from benchbuild.utils import actions
 from varats.experiment.experiment_util import get_default_compile_error_wrapped
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
-    RunVaRATracedWorkloads,
+    RunVaRATracedWorkloads, RunVaRATracedXRayWorkloads,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -97,6 +97,6 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
 
         return [
             actions.Compile(project),
-            RunVaRATracedWorkloads(project, self.get_handle()),
+            RunVaRATracedXRayWorkloads(project, self.get_handle()),
             actions.Clean(project),
         ]

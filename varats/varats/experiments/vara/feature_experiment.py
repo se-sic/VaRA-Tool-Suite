@@ -130,6 +130,64 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
         """Runs the binary with the embedded tracing code."""
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
+                # Skip libaries as we cannot run them
+                continue
+
+            result_filepath = create_new_success_result_filepath(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report,
+                self.project, binary, get_current_config_id(self.project)
+            )
+
+            with local.cwd(local.path(self.project.builddir)):
+                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
+                    for prj_command in workload_commands(
+                            self.project, binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        local_tracefile_path = Path(
+                            tmp_dir
+                        ) / f"trace_{prj_command.command.label}.json"
+                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
+
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd(*extra_options)
+
+        return StepResult.OK
+
+
+class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
+    """Executes the traced project binaries on the specified workloads."""
+
+    NAME = "VaRARunTracedXRayBinaries"
+    DESCRIPTION = "Run traced binary on workloads."
+
+    project: VProject
+
+    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
+        super().__init__(project=project)
+        self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> StepResult:
+        return self.run_traced_code()
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run instrumentation verifier", indent * " "
+        )
+
+    def run_traced_code(self) -> StepResult:
+        """Runs the binary with the embedded tracing code."""
+        for binary in self.project.binaries:
+            if binary.type != BinaryType.EXECUTABLE:
                 # Skip libraries as we cannot run them
                 continue
 
@@ -142,18 +200,18 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
                     for prj_command in workload_commands(
-                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                            self.project, binary, [WorkloadCategory.EXAMPLE]
                     ):
                         trace_result_path = Path(
                             tmp_dir
                         ) / f"trace_{prj_command.command.label}.json"
                         with local.env(
-                            VARA_TRACE_FILE=trace_result_path,
-                            XRAY_OPTIONS=" ".join([
-                                "patch_premain=true",
-                                "xray_mode=xray-basic",
-                                "verbosity=1",
-                            ]),
+                                VARA_TRACE_FILE=trace_result_path,
+                                XRAY_OPTIONS=" ".join([
+                                    "patch_premain=true",
+                                    "xray_mode=xray-basic",
+                                    "verbosity=1",
+                                ]),
                         ):
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
@@ -198,7 +256,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             ) / f"merge_{prj_command.command.label}.json"
 
                             with open(
-                                merge_result_path, mode="x", encoding="UTF-8"
+                                    merge_result_path, mode="x", encoding="UTF-8"
                             ) as file:
                                 file.write(
                                     json.dumps(
@@ -209,9 +267,5 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                         indent=2
                                     )
                                 )
-
-                        # TODO: figure out how to handle different configs
-                        # executable("--slow")
-                        # executable()
 
         return StepResult.OK
