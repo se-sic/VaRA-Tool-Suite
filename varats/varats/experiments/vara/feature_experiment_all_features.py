@@ -175,14 +175,10 @@ class RunVaRATracedWorkloadsAllFeatures(ProjectStep):  # type: ignore
                             with cleanup(prj_command):
                                 for elements in feature_permutationen:
                                     pb_cmd(elements)
-                                    name_file = "trace_MSMR"
+                                    name_file = "trace_MSMR.json"
                                     for feature in elements:
                                         name_file += feature
-                                    #time_cmd = time["-v", "-o",
-                                    #                tmp_dir / Path(f"time_report_compression_{name_file}.txt"),
-                                    #                pb_cmd(elements)]
-                                    time_cmd = pb_cmd(elements)
-                                    time_cmd()
+
                                     rename_file = mv[tmp_dir / Path("trace_MSMR.json"), tmp_dir / Path(f"{name_file}.json")]
                                     rename_file()
 
