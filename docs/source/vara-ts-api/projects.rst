@@ -31,7 +31,7 @@ template for your own project::
     from benchbuild.utils.settings import get_number_of_jobs
     from plumbum import local
 
-    from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+    from varats.paper.paper_config import PaperConfigSpecificGit
     from varats.utils.settings import bb_cfg
     from varats.project.project_util import (
         ProjectBinaryWrapper,

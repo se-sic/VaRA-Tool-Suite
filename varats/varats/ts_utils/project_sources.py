@@ -10,7 +10,7 @@ from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git, mkdir, cp
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_util import copy_renamed_git_to_dest
 
 

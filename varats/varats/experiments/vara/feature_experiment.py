@@ -17,6 +17,8 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     create_new_success_result_filepath,
     ZippedReportFolder,
+    get_current_config_id,
+    get_extra_config_options,
 )
 from varats.experiment.trace_util import merge_trace
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
