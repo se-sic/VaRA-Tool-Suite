@@ -39,9 +39,6 @@ class CommandlineOptionSwitch(CommandlineOption):
 
         return ""
 
-    def get_option_name(self) -> str:
-        return self.__option_name
-
 
 class CommandlineOptionFormat(CommandlineOption):
     """Option that is rendered from a format string, taking feature/option names
@@ -65,9 +62,6 @@ class CommandlineOptionFormat(CommandlineOption):
                 self.__config_to_string_dict(config)
             )
         return ""
-
-    def get_option_name(self) -> str:
-        return self.__option_name
 
     @staticmethod
     def __config_to_string_dict(config: Configuration) -> tp.Dict[str, str]:

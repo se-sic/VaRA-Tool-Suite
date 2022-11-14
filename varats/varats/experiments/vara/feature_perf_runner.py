@@ -53,8 +53,6 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
             self.get_handle(), project, TEFReport
         )
 
-        feature_model_path = self.get_feature_model_path(project)
-
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
