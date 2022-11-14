@@ -98,9 +98,9 @@ class PyDrillerSZZExperiment(VersionExperiment, shorthand="PyDrillerSZZ"):
     REPORT_SPEC = ReportSpecification(SZZReport)
 
     @classmethod
-    def sample(cls, prj_cls: ProjectT) -> tp.List[source.VariantContext]:
-        variants = list(source.product(*prj_cls.SOURCE))
-        return [source.context(*variants[0])]
+    def sample(cls, prj_cls: ProjectT) -> tp.List[source.Revision]:
+        variants = list(source.enumerate_revisions(prj_cls))
+        return [variants[0]]
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the

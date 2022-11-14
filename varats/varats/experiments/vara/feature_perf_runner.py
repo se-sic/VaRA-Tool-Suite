@@ -5,10 +5,7 @@ import typing as tp
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
-from varats.experiment.experiment_util import (
-    get_default_compile_error_wrapped,
-    VersionExperiment,
-)
+from varats.experiment.experiment_util import get_default_compile_error_wrapped
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
@@ -62,9 +59,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
-            RunVaRATracedWorkloads(
-                project, self.get_handle(), feature_model_path
-            )
+            RunVaRATracedWorkloads(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 

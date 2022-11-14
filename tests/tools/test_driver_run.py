@@ -7,7 +7,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
-from varats.paper_mgmt.paper_config import load_paper_config
+from varats.paper.paper_config import load_paper_config
 from varats.tools import driver_run, driver_container
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
 
@@ -33,7 +33,7 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("43", match.group(1))
+        self.assertEqual("44", match.group(1))
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_bb_run_select_revision(self) -> None:
@@ -51,7 +51,7 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("11", match.group(1))
+        self.assertEqual("12", match.group(1))
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_bb_run_all(self) -> None:
@@ -67,7 +67,7 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("51", match.group(1))
+        self.assertEqual("52", match.group(1))
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     @mock.patch("varats.tools.driver_run.sbatch")

@@ -15,10 +15,10 @@ from varats.data.reports.blame_report import BlameReport
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.utils.git_util import FullCommitHash
