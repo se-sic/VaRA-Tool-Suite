@@ -5,12 +5,11 @@ import typing as tp
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, Command, SourceRoot
 from benchbuild.utils.cmd import make
-from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
