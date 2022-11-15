@@ -181,7 +181,7 @@ class RunVaRAWorkloadsBlackbox(ProjectStep):  # type: ignore
                                         name_file += feature
                                     time_cmd = time["-v", "-o",
                                                     tmp_dir / Path(f"time_report_{name_file}.txt"),
-                                                    pb_cmd(elements)]
+                                                    pb_cmd[elements]]
                                     time_cmd()
 
         return StepResult.OK
