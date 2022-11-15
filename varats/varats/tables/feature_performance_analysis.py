@@ -79,7 +79,8 @@ class FeaturePerformanceAnalysisTable(
                     # Performance-Influence models.
                     interactions = [event.name for event in open_events]
                     if open_events:
-                        # Parent is equivalent to interaction of all open events.
+                        # Parent is equivalent to interaction of all open
+                        # events.
                         interaction_string = FeaturePerformanceAnalysisTable\
                             .get_interactions_from_fr_string(
                                 ",".join(interactions)

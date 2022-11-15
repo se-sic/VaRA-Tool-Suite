@@ -8,11 +8,7 @@ from enum import Enum
 from pathlib import Path
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
-from varats.report.report import (
-    BaseReport,
-    ReportAggregate,
-    KeyedReportAggregate,
-)
+from varats.report.report import BaseReport, ReportAggregate
 
 
 class TraceEventType(Enum):
