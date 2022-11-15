@@ -7,6 +7,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import (
     BaseReport,
     ReportAggregate,
@@ -150,16 +151,16 @@ class TEFReportAggregate(
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 
 
-def get_workload_label(workload_specific_report_file: Path) -> str:
-    """Extracts the workload label from a report file path."""
+def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
     match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
-    if match is not None:
+    if match:
         return str(match.group("label"))
-    raise ValueError("Invalid report file path")
+
+    return None
 
 
 class WorkloadSpecificTEFReportAggregate(
-    KeyedReportAggregate[str, TEFReport], shorthand="", file_type=""
+    WorkloadSpecificReportAggregate, shorthand="", file_type=""
 ):
 
     def __init__(self, path: Path) -> None:

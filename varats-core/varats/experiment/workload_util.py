@@ -128,14 +128,19 @@ class WorkloadSpecificReportAggregate(
     file_type=""
 ):
 
-    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
+    def __init__(
+        self,
+        path: Path,
+        report_type: tp.Type[ReportTy],
+        label_method: tp.Callable = get_workload_label
+    ) -> None:
         super().__init__(
             path, report_type,
             auto_unwrap(
                 "Files contained in a WorkloadSpecificReportAggregate should"
                 "always be formatted correctly by the"
                 "create_workload_specific_filename function."
-            )(get_workload_label)
+            )(label_method)
         )
 
     def workload_names(self) -> tp.Collection[str]:
