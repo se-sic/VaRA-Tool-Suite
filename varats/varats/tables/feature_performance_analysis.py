@@ -76,11 +76,12 @@ class FeaturePerformanceAnalysisTable(
 
                     # Subtract feature duration from parent duration such that it is not counted twice,
                     # similar to behavior in Performance-Influence models.
+                    interactions = [event.name for event in open_events]
                     if open_events:
-                        event = open_events[-1]
+                        # Parent is equivalent to interaction of all open events
                         interaction_string = FeaturePerformanceAnalysisTable\
                             .get_interactions_from_fr_string(
-                                event.name
+                                ",".join(interactions)
                             )
                         if interaction_string in feature_performances:
                             feature_performances[interaction_string] -= (
@@ -90,8 +91,6 @@ class FeaturePerformanceAnalysisTable(
                             feature_performances[interaction_string] = -(
                                 end_timestamp - begin_timestamp
                             )
-
-                    interactions = [event.name for event in open_events]
 
                     interaction_string = FeaturePerformanceAnalysisTable\
                         .get_interactions_from_fr_string(
