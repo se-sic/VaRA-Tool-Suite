@@ -160,7 +160,7 @@ def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
 
 
 class WorkloadSpecificTEFReportAggregate(
-    WorkloadSpecificReportAggregate, shorthand="", file_type=""
+    WorkloadSpecificReportAggregate[TEFReport], shorthand="", file_type=""
 ):
 
     def __init__(self, path: Path) -> None:

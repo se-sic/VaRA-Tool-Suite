@@ -132,7 +132,7 @@ class WorkloadSpecificReportAggregate(
         self,
         path: Path,
         report_type: tp.Type[ReportTy],
-        label_method: tp.Callable = get_workload_label
+        label_method: tp.Callable[[Path], tp.Optional[str]] = get_workload_label
     ) -> None:
         super().__init__(
             path, report_type,
