@@ -169,6 +169,3 @@ class WorkloadSpecificTEFReportAggregate(
             TEFReport,
             get_workload_label,
         )
-
-    def workload_names(self) -> tp.Collection[str]:
-        return self.keys()

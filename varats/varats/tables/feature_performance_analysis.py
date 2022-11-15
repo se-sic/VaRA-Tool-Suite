@@ -74,11 +74,12 @@ class FeaturePerformanceAnalysisTable(
                     end_timestamp = trace_event.timestamp
                     begin_timestamp = opening_event.timestamp
 
-                    # Subtract feature duration from parent duration such that it is not counted twice,
-                    # similar to behavior in Performance-Influence models.
+                    # Subtract feature duration from parent duration such that
+                    # it is not counted twice, similar to behavior in
+                    # Performance-Influence models.
                     interactions = [event.name for event in open_events]
                     if open_events:
-                        # Parent is equivalent to interaction of all open events
+                        # Parent is equivalent to interaction of all open events.
                         interaction_string = FeaturePerformanceAnalysisTable\
                             .get_interactions_from_fr_string(
                                 ",".join(interactions)
@@ -225,8 +226,6 @@ class FeaturePerformanceAnalysisTable(
 
             # Sort revisions so that we can compare consecutive releases
             sorted_revisions = self.sort_revisions(case_study, list(revisions))
-
-            print(internal_df.to_string())
 
             # Compare reports
             for workload in workloads:
