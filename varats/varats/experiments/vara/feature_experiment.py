@@ -9,24 +9,24 @@ from pathlib import Path
 
 from benchbuild.command import cleanup
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step, ProjectStep, StepResult
+from benchbuild.utils.actions import ProjectStep, Step, StepResult
 from plumbum import local
 
 from varats.experiment.experiment_util import (
-    VersionExperiment,
     ExperimentHandle,
-    create_new_success_result_filepath,
+    VersionExperiment,
     ZippedReportFolder,
+    create_new_success_result_filepath,
     get_current_config_id,
     get_extra_config_options,
 )
 from varats.experiment.trace_util import merge_trace
-from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.experiment.workload_util import WorkloadCategory, workload_commands
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
-    FeatureModelProvider,
     FeatureModelNotFound,
+    FeatureModelProvider,
 )
 from varats.report.report import ReportSpecification
 
