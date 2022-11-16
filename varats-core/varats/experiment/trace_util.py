@@ -9,11 +9,9 @@ def __timestamp(event: tp.OrderedDict[str, tp.Any]) -> int:
     return int(event["ts"])
 
 
-def sanitize_trace(
-    path: Path,
-    category: tp.Optional[str] = None,
-    tid: tp.Optional[int] = 0
-) -> tp.OrderedDict[str, tp.Any]:
+def sanitize_trace(path: Path,
+                   category: tp.Optional[str] = None,
+                   tid: int = 0) -> tp.OrderedDict[str, tp.Any]:
     """Read and clean up a trace file."""
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []
     with open(path, mode="r", encoding="UTF-8") as file:
