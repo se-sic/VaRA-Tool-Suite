@@ -183,7 +183,8 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: Run VaRA measurements together with XRay", indent * " "
+            f"* {self.project.name}: Run VaRA measurements together with XRay",
+            indent * " "
         )
 
     def run_traced_code(self) -> StepResult:
