@@ -144,7 +144,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
                     for prj_command in workload_commands(
-                            self.project, binary, [WorkloadCategory.EXAMPLE]
+                        self.project, binary, [WorkloadCategory.EXAMPLE]
                     ):
                         local_tracefile_path = Path(
                             tmp_dir
@@ -202,18 +202,18 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
                     for prj_command in workload_commands(
-                            self.project, binary, [WorkloadCategory.EXAMPLE]
+                        self.project, binary, [WorkloadCategory.EXAMPLE]
                     ):
                         trace_result_path = Path(
                             tmp_dir
                         ) / f"trace_{prj_command.command.label}.json"
                         with local.env(
-                                VARA_TRACE_FILE=trace_result_path,
-                                XRAY_OPTIONS=" ".join([
-                                    "patch_premain=true",
-                                    "xray_mode=xray-basic",
-                                    "verbosity=1",
-                                ]),
+                            VARA_TRACE_FILE=trace_result_path,
+                            XRAY_OPTIONS=" ".join([
+                                "patch_premain=true",
+                                "xray_mode=xray-basic",
+                                "verbosity=1",
+                            ]),
                         ):
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
@@ -258,7 +258,7 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                             ) / f"merge_{prj_command.command.label}.json"
 
                             with open(
-                                    merge_result_path, mode="x", encoding="UTF-8"
+                                merge_result_path, mode="x", encoding="UTF-8"
                             ) as file:
                                 file.write(
                                     json.dumps(
