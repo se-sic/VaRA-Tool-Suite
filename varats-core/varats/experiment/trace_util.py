@@ -5,8 +5,8 @@ from collections import OrderedDict
 from pathlib import Path
 
 
-def __timestamp(event: tp.OrderedDict[str, tp.Any]) -> int:
-    return int(event["ts"])
+def __timestamp(event: tp.OrderedDict[str, tp.Any]) -> float:
+    return float(event["ts"])
 
 
 def sanitize_trace(path: Path,
@@ -19,7 +19,7 @@ def sanitize_trace(path: Path,
             item: tp.OrderedDict[str, tp.Any] = OrderedDict()
             item["name"] = event["name"]
             item["ph"] = event["ph"]
-            item["ts"] = int(float(event["ts"]))
+            item["ts"] = float(event["ts"])
             item["pid"] = int(event["pid"])
             item["tid"] = tid + int(event["tid"])
 
