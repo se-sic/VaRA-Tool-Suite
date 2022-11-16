@@ -9,8 +9,11 @@ def __timestamp(event: tp.OrderedDict[str, tp.Any]) -> int:
     return int(event["ts"])
 
 
-def sanitize_trace(path: Path, category: str,
-                   tid: int) -> tp.OrderedDict[str, tp.Any]:
+def sanitize_trace(
+    path: Path,
+    category: tp.Optional[str] = None,
+    tid: tp.Optional[int] = 0
+) -> tp.OrderedDict[str, tp.Any]:
     """Read and clean up a trace file."""
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []
     with open(path, mode="r", encoding="UTF-8") as file:
@@ -20,12 +23,16 @@ def sanitize_trace(path: Path, category: str,
             item["ph"] = event["ph"]
             item["ts"] = int(float(event["ts"]))
             item["pid"] = int(event["pid"])
-            item["tid"] = tid
+            item["tid"] = tid + int(event["tid"])
 
-            if "cat" in event:
-                item["cat"] = f"{category}: {event['cat']}"
+            if category:
+                if "cat" in event:
+                    item["cat"] = f"{category}: {event['cat']}"
+                else:
+                    item["cat"] = category
             else:
-                item["cat"] = category
+                if "cat" in event:
+                    item["cat"] = event["cat"]
 
             if "args" in event:
                 item["args"] = event["args"]
@@ -47,7 +54,7 @@ def sanitize_trace(path: Path, category: str,
 
 
 def merge_trace(
-    *traces: tp.Tuple[Path, str, int]
+    *traces: tp.Union[tp.Tuple[Path, str], tp.Tuple[Path, str, int]]
 ) -> tp.OrderedDict[str, tp.Any]:
     """Merge multiple files into a single trace."""
     trace_events: tp.List[tp.OrderedDict[str, tp.Any]] = []

@@ -263,8 +263,8 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                 file.write(
                                     json.dumps(
                                         merge_trace(
-                                            (trace_result_path, "Trace", 1),
-                                            (xray_result_path, "XRay", 2)
+                                            (trace_result_path, "Trace"),
+                                            (xray_result_path, "XRay")
                                         ),
                                         indent=2
                                     )
