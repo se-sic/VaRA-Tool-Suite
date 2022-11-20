@@ -253,7 +253,7 @@ class ProjectBinaryWrapper():
         path_to_binary: Path,
         binary_type: BinaryType,
         entry_point: tp.Optional[Path] = None,
-        valid_exit_codes: tp.List[int] = None,
+        valid_exit_codes: tp.Optional[tp.List[int]] = None,
     ) -> None:
         self.__binary_name = binary_name
         self.__binary_path = path_to_binary
