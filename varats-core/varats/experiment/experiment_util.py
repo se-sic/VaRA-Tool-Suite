@@ -13,6 +13,8 @@ from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
 
+from plumbum import local
+
 if sys.version_info <= (3, 8):
     from typing_extensions import Protocol, runtime_checkable
 else:
@@ -512,7 +514,7 @@ def run_child_with_output_folder(
     return child(tmp_folder)
 
 
-class ZippedExperimentSteps(MultiStep):
+class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive.."""
 
@@ -559,6 +561,42 @@ class ZippedExperimentSteps(MultiStep):
         sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
         return textwrap.indent(
             f"\nZippedExperimentSteps:\n{sub_actns}", indent * " "
+        )
+
+
+class ZippedExperimentStepsAdapter(MultiStep[Step]):
+    """Wraps multiple steps and makes the tmp folder available via
+    environment."""
+
+    NAME = "ZippedExperimentStepsAdapter"
+    DESCRIPTION = "Wrap multiple steps and make tmp folder available via environment."
+
+    def __init__(self, actions: tp.Optional[tp.List[Step]]) -> None:
+        super().__init__(actions)
+
+    def __call__(self, tmp_folder: tp.Optional[Path] = None) -> StepResult:
+        if tmp_folder is None:
+            raise AssertionError(
+                "ZippedExperimentStepsAdapter must only be used as a child of ZippedExperimentSteps"
+            )
+
+        results: tp.List[StepResult] = []
+
+        with local.env(VARATS_RESULTS_TMP=str(tmp_folder)):
+            for child in self.actions:
+                results.append(
+                    run_child_with_output_folder(
+                        tp.cast(NeedsOutputFolder, child), tmp_folder
+                    )
+                )
+
+        overall_step_result = max(results) if results else StepResult.OK
+        return overall_step_result
+
+    def __str__(self, indent: int = 0) -> str:
+        sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
+        return textwrap.indent(
+            f"\nZippedExperimentStepsAdapter:\n{sub_actns}", indent * " "
         )
 
 
