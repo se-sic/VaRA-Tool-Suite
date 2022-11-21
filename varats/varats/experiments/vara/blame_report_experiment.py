@@ -19,11 +19,12 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     ExperimentHandle,
-    get_varats_result_folder,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
+    ZippedExperimentSteps,
+    adapt_needs_output_folder,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.project.project_util import get_local_project_git_paths
@@ -110,7 +111,7 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT
 
     def actions_for_project(
-        self, project: Project
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -119,11 +120,20 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
         Args:
             project: to analyze
         """
+        result_filepath = create_new_success_result_filepath(
+            self.get_handle(),
+            self.get_handle().report_spec().main_report, project,
+            project.binaries[0]
+        )
+
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
-        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        project.cflags += [
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0",
+            "-fvara-gb-time-report=$VARATS_RESULTS_TMP"
+        ]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,
@@ -132,20 +142,26 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
 
         BE.setup_basic_blame_experiment(self, project, BR)
 
-        analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project,
-            bc_file_extensions,
-            extraction_error_handler=create_default_compiler_error_handler(
-                self.get_handle(), project, self.REPORT_SPEC.main_report
-            )
-        )
-
-        analysis_actions.append(
+        analysis_actions = [
+            ZippedExperimentSteps(
+                result_filepath,
+                adapt_needs_output_folder(
+                    BE.generate_basic_blame_experiment_actions(
+                        project,
+                        bc_file_extensions,
+                        extraction_error_handler=
+                        create_default_compiler_error_handler(
+                            self.get_handle(), project,
+                            self.REPORT_SPEC.main_report
+                        )
+                    )
+                )
+            ),
             BlameReportGeneration(
                 project, self.get_handle(), self.BLAME_TAINT_SCOPE
-            )
-        )
-        analysis_actions.append(actions.Clean(project))
+            ),
+            actions.Clean(project)
+        ]
 
         return analysis_actions
 

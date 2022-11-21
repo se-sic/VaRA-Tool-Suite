@@ -24,15 +24,12 @@ from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.source import enumerate_revisions
-from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
+from benchbuild.utils.actions import Step, MultiStep, StepResult
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
 import varats.revision.revisions as revs
-from varats.base.configuration import (
-    PlainCommandlineConfiguration,
-    ConfigurationOption,
-)
+from varats.base.configuration import PlainCommandlineConfiguration
 from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.sources import FeatureSource
@@ -514,7 +511,7 @@ def run_child_with_output_folder(
     return child(tmp_folder)
 
 
-class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
+class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive.."""
 
@@ -564,40 +561,50 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
         )
 
 
-class ZippedExperimentStepsAdapter(MultiStep[Step]):
-    """Wraps multiple steps and makes the tmp folder available via
-    environment."""
+class ZippedExperimentStepAdapter(Step):  #type: ignore
+    """Wraps a step and makes the tmp folder available via environment."""
 
-    NAME = "ZippedExperimentStepsAdapter"
-    DESCRIPTION = "Wrap multiple steps and make tmp folder available via environment."
+    NAME = "ZippedExperimentStepAdapter"
+    DESCRIPTION = "Wrap a step and make tmp folder available via environment."
 
-    def __init__(self, actions: tp.Optional[tp.List[Step]]) -> None:
-        super().__init__(actions)
+    def __init__(self, wrapped: Step) -> None:
+        super().__init__(StepResult.UNSET)
+        self.__wrapped = wrapped
 
     def __call__(self, tmp_folder: tp.Optional[Path] = None) -> StepResult:
         if tmp_folder is None:
             raise AssertionError(
-                "ZippedExperimentStepsAdapter must only be used as a child of ZippedExperimentSteps"
+                "ZippedExperimentStepAdapter must only be used as a child of "
+                "ZippedExperimentSteps"
             )
 
-        results: tp.List[StepResult] = []
-
         with local.env(VARATS_RESULTS_TMP=str(tmp_folder)):
-            for child in self.actions:
-                results.append(
-                    run_child_with_output_folder(
-                        tp.cast(NeedsOutputFolder, child), tmp_folder
-                    )
-                )
-
-        overall_step_result = max(results) if results else StepResult.OK
-        return overall_step_result
+            return self.__wrapped()
 
     def __str__(self, indent: int = 0) -> str:
-        sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
-        return textwrap.indent(
-            f"\nZippedExperimentStepsAdapter:\n{sub_actns}", indent * " "
-        )
+        return self.__wrapped.__str__(indent)  # type: ignore
+
+
+def adapt_needs_output_folder(
+    steps: tp.List[tp.Union[Step, NeedsOutputFolder]]
+) -> tp.List[NeedsOutputFolder]:
+    """
+    Make steps compatible with the :class:`NeedsOutputFolder` protocol.
+
+    Steps already implementing the protocol are returned as-is.
+    For other steps, the output folder is made available via the environment
+    variable ``VARATS_RESULTS_TMP``.
+
+    Args:
+        steps: the steps to adapt
+
+    Returns:
+        a list of adapted steps
+    """
+    return [
+        step if isinstance(step, NeedsOutputFolder) else
+        ZippedExperimentStepAdapter(step) for step in steps
+    ]
 
 
 def __create_new_result_filepath_impl(
