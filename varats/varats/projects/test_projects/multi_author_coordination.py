@@ -20,7 +20,7 @@ from varats.utils.settings import bb_cfg
 
 
 class MultiAuthorCoordination(VProject):
-    """Example project demonstrating a secnario where multiple authors interact
+    """Example project demonstrating a scenario where multiple authors interact
     with each other through file, function and data-flows."""
 
     NAME = 'MutliMethodAuthorCoordination'

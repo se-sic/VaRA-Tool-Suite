@@ -209,13 +209,16 @@ class BlameResultFunctionEntry():
 
     def __init__(
         self, name: str, demangled_name: str, file_name: tp.Optional[str],
-        blame_insts: tp.List[BlameInstInteractions], num_instructions: int
+        blame_insts: tp.List[BlameInstInteractions], num_instructions: int,
+        callees: tp.List[str], commits: tp.List[CommitRepoPair]
     ) -> None:
         self.__name = name
         self.__demangled_name = demangled_name
         self.__file_name = file_name
         self.__inst_list = blame_insts
         self.__num_instructions = num_instructions
+        self.__callees = callees
+        self.__commits = commits
 
     @staticmethod
     def create_blame_result_function_entry(
@@ -232,8 +235,17 @@ class BlameResultFunctionEntry():
                 BlameInstInteractions.
                 create_blame_inst_interactions(raw_inst_entry)
             )
+        callees = [
+            str(callee) for callee in raw_function_entry.get("callees", [])
+        ]
+        commits = [
+            CommitRepoPair(
+                FullCommitHash(raw_commit["commit"]), raw_commit["repository"]
+            ) for raw_commit in raw_function_entry.get("commits", [])
+        ]
         return BlameResultFunctionEntry(
-            name, demangled_name, file_name, inst_list, num_instructions
+            name, demangled_name, file_name, inst_list, num_instructions,
+            callees, commits
         )
 
     @property
@@ -265,6 +277,16 @@ class BlameResultFunctionEntry():
     def interactions(self) -> tp.List[BlameInstInteractions]:
         """List of found instruction blame-interactions."""
         return self.__inst_list
+
+    @property
+    def callees(self) -> tp.List[str]:
+        """List of functions called by this function."""
+        return self.__callees
+
+    @property
+    def commits(self) -> tp.List[CommitRepoPair]:
+        """List of commits that modified this function."""
+        return self.__commits
 
     def __str__(self) -> str:
         str_representation = f"{self.name} ({self.demangled_name})\n"
@@ -309,9 +331,11 @@ def _calc_diff_between_func_entries(
     # append left over interactions from previous blame report
     diff_interactions += prev_interactions
 
+    # TODO (se-sic/VaRA#959): consider callgraph info in blame report diff
     return BlameResultFunctionEntry(
         base_func_entry.name, base_func_entry.demangled_name,
-        base_func_entry.file_name, diff_interactions, diff_num_instructions
+        base_func_entry.file_name, diff_interactions, diff_num_instructions, [],
+        []
     )
 
 
