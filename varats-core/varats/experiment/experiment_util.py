@@ -1,5 +1,5 @@
 """Utility module for BenchBuild experiments."""
-
+import abc
 import os
 import random
 import shutil
@@ -501,19 +501,19 @@ class ZippedReportFolder(TempDir):
 @runtime_checkable
 class NeedsOutputFolder(Protocol):
 
-    def __call__(self, tmp_folder: Path) -> StepResult:
+    def call_with_tmp(self, tmp_folder: Path) -> StepResult:
         ...
 
 
 def run_child_with_output_folder(
     child: NeedsOutputFolder, tmp_folder: Path
 ) -> StepResult:
-    return child(tmp_folder)
+    return child.call_with_tmp(tmp_folder)
 
 
 class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
-    is zipped into an archive.."""
+    is zipped into an archive."""
 
     NAME = "ZippedSteps"
     DESCRIPTION = "Run multiple actions with a shared tmp folder"
@@ -571,13 +571,13 @@ class ZippedExperimentStepAdapter(Step):  #type: ignore
         super().__init__(StepResult.UNSET)
         self.__wrapped = wrapped
 
-    def __call__(self, tmp_folder: tp.Optional[Path] = None) -> StepResult:
-        if tmp_folder is None:
-            raise AssertionError(
-                "ZippedExperimentStepAdapter must only be used as a child of "
-                "ZippedExperimentSteps"
-            )
+    def __call__(self) -> StepResult:
+        raise AssertionError(
+            "ZippedExperimentStepAdapter must only be used as a child of "
+            "ZippedExperimentSteps"
+        )
 
+    def call_with_tmp(self, tmp_folder: Path) -> StepResult:
         with local.env(VARATS_RESULTS_TMP=str(tmp_folder)):
             return self.__wrapped()
 

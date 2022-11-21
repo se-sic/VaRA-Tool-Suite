@@ -6,6 +6,7 @@ BlameReport.
 """
 
 import typing as tp
+from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -100,6 +101,20 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
+class CompileArgsPatcher(actions.ProjectStep):  # type: ignore
+    """Patch project compile flags."""
+
+    NAME = "CompileArgsPatcher"
+    DESCRIPTION = "Patch project compile flags."
+
+    def __call__(self) -> actions.StepResult:
+        raise AssertionError("CompileArgsPatcher needs an output folder.")
+
+    def call_with_tmp(self, tmp_dir: Path) -> actions.StepResult:
+        self.project.cflags.append(f"-fvara-gb-time-report={tmp_dir}")
+        return actions.StepResult.OK
+
+
 class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     """Generates a blame report of the project(s) specified in the call."""
 
@@ -130,10 +145,7 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
-        project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0",
-            "-fvara-gb-time-report=$VARATS_RESULTS_TMP"
-        ]
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,
@@ -144,18 +156,19 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
 
         analysis_actions = [
             ZippedExperimentSteps(
-                result_filepath,
-                adapt_needs_output_folder(
-                    BE.generate_basic_blame_experiment_actions(
-                        project,
-                        bc_file_extensions,
-                        extraction_error_handler=
-                        create_default_compiler_error_handler(
-                            self.get_handle(), project,
-                            self.REPORT_SPEC.main_report
+                result_filepath, [
+                    CompileArgsPatcher(project), *adapt_needs_output_folder(
+                        BE.generate_basic_blame_experiment_actions(
+                            project,
+                            bc_file_extensions,
+                            extraction_error_handler=
+                            create_default_compiler_error_handler(
+                                self.get_handle(), project,
+                                self.REPORT_SPEC.main_report
+                            )
                         )
                     )
-                )
+                ]
             ),
             BlameReportGeneration(
                 project, self.get_handle(), self.BLAME_TAINT_SCOPE
