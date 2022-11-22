@@ -111,6 +111,7 @@ def create_new_bb_config(
         'varats.experiments.base.time_workload',
         'varats.experiments.base.time_workloads',
         'varats.experiments.phasar.global_analysis_compare',
+        'varats.experiments.phasar.iter_ide',
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
