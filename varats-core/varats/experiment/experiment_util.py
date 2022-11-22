@@ -1,5 +1,4 @@
 """Utility module for BenchBuild experiments."""
-import abc
 import os
 import random
 import shutil
