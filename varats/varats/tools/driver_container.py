@@ -180,7 +180,10 @@ def prepare_slurm(
     click.echo("Preparing slurm script template.")
     __set_research_tool(tool)
     __render_slurm_script_template(
-        template_path, [repr(vara_cfg()["container"]["research_tool"])]
+        template_path, [
+            repr(vara_cfg()["config_file"]),
+            repr(vara_cfg()["container"]["research_tool"])
+        ]
     )
 
     click.echo("Building base images. This could take a while...")
