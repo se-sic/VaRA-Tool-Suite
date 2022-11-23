@@ -138,7 +138,7 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
         """
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
-            self.get_handle().report_spec().main_report, project,
+            self.get_handle().report_spec().report_types[1], project,
             project.binaries[0]
         )
 
