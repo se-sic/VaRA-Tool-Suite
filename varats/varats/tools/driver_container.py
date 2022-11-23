@@ -181,7 +181,8 @@ def prepare_slurm(
     __set_research_tool(tool)
     __render_slurm_script_template(
         template_path, [
-            repr(vara_cfg()["config_file"]),
+            repr(vara_cfg()["paper_config"]["folder"]),
+            repr(vara_cfg()["paper_config"]["current_config"]),
             repr(vara_cfg()["container"]["research_tool"])
         ]
     )
