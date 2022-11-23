@@ -31,6 +31,7 @@ from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
+from varats.report.wall_time_report import WallTimeReportAggregate
 
 
 class BlameReportGeneration(actions.ProjectStep):  # type: ignore
@@ -120,7 +121,7 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
 
     NAME = "GenerateBlameReport"
 
-    REPORT_SPEC = ReportSpecification(BR)
+    REPORT_SPEC = ReportSpecification(BR, WallTimeReportAggregate)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
     BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT
