@@ -1,4 +1,5 @@
 """Utility module for BenchBuild experiments."""
+import logging
 import os
 import random
 import shutil
@@ -48,6 +49,8 @@ if tp.TYPE_CHECKING:
     TempDir = tempfile.TemporaryDirectory[str]
 else:
     TempDir = tempfile.TemporaryDirectory
+
+LOG = logging.Logger(__name__)
 
 
 def get_varats_result_folder(project: Project) -> Path:
@@ -489,6 +492,11 @@ class ZippedReportFolder(TempDir):
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
         # Don't create an empty zip archive.
+        for file in os.listdir(self.name):
+            try:
+                file.encode('utf-8')
+            except UnicodeEncodeError as e:
+                (Path(self.name) / file).unlink()
         if os.listdir(self.name):
             shutil.make_archive(
                 str(self.__result_report_name), "zip", Path(self.name)
