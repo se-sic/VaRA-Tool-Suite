@@ -224,13 +224,10 @@ class CodeRegion(object):
             yield node
 
     def iter_postorder(self) -> tp.Iterator:
-        todo = deque([self])
-
-        while todo:
-            node = todo.pop()
-            childs = [x for x in node.childs]
-            todo.extend(childs)
-            yield node
+        for child in self.childs:
+            for x in child.iter_postorder():
+                yield x
+        yield self
 
     def has_parent(self) -> bool:
         if self.parent is None:

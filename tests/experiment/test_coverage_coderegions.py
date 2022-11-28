@@ -27,6 +27,20 @@ class TestCodeRegion(unittest.TestCase):
         )
         self.CODE_REGION_1.insert(self.CODE_REGION_2)
 
+        global root, left, right, left_left, left_left_2, right_right
+        root = CodeRegion.from_list([0, 0, 100, 100, 5], "main")
+        left = CodeRegion.from_list([0, 1, 49, 100, 5], "main")
+        right = CodeRegion.from_list([50, 0, 100, 99, 5], "main")
+        left_left = CodeRegion.from_list([30, 0, 40, 100, 3], "main")
+        left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3], "main")
+        right_right = CodeRegion.from_list([60, 0, 80, 100, 2], "main")
+
+        root.insert(left)
+        root.insert(right)
+        root.insert(left_left)
+        root.insert(left_left_2)
+        root.insert(right_right)
+
     def test_eq(self):
         self.assertEqual(self.CODE_REGION_1, CODE_REGION_1)
 
@@ -84,20 +98,17 @@ class TestCodeRegion(unittest.TestCase):
         self.assertTrue(self.CODE_REGION_2.has_parent())
         self.assertEqual(self.CODE_REGION_2.parent, self.CODE_REGION_1)
 
+    def test_iter_breadth_first(self):
+        self.assertEqual([
+            root, left, right, left_left_2, left_left, right_right
+        ], [x for x in root.iter_breadth_first()])
+
+    def test_iter_postorder(self):
+        self.assertEqual([
+            left_left_2, left_left, left, right_right, right, root
+        ], [x for x in root.iter_postorder()])
+
     def test_insert(self):
-        root = CodeRegion.from_list([0, 0, 100, 100, 5], "main")
-        left = CodeRegion.from_list([0, 1, 49, 100, 5], "main")
-        right = CodeRegion.from_list([50, 0, 100, 99, 5], "main")
-        left_left = CodeRegion.from_list([30, 0, 40, 100, 3], "main")
-        left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3], "main")
-        right_right = CodeRegion.from_list([60, 0, 80, 100, 2], "main")
-
-        root.insert(left)
-        root.insert(right)
-        root.insert(left_left)
-        root.insert(left_left_2)
-        root.insert(right_right)
-
         self.assertTrue(root.is_subregion(left))
         self.assertTrue(root.is_subregion(right))
         self.assertTrue(root.is_subregion(left_left))
@@ -113,3 +124,9 @@ class TestCodeRegion(unittest.TestCase):
         self.assertFalse(left.is_subregion(right_right))
         self.assertFalse(left.is_subregion(root))
         self.assertFalse(right.is_subregion(root))
+
+        self.assertTrue(left.parent is root)
+        self.assertTrue(right.parent is root)
+        self.assertTrue(left_left.parent is left)
+        self.assertTrue(left_left_2.parent is left)
+        self.assertTrue(right_right.parent is right)
