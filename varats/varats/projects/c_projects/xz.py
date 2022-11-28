@@ -137,6 +137,17 @@ class Xz(VProject):
         with local.cwd(xz_version_source):
             with local.env(CC=str(clang)):
                 bb.watch(autoreconf)("--install")
+                import distro
+                if distro.id() == "arch":
+                    # Workaround until https://bugs.archlinux.org/task/76274 is fixed
+                    sed = local["sed"]
+                    bb.watch(
+                        sed(
+                            "-i.bak",
+                            "s/lt_cv_shlibpath_overrides_runpath=no/lt_cv_shlibpath_overrides_runpath=yes/",
+                            "./configure"
+                        )
+                    )
                 configure = bb.watch(local["./configure"])
 
                 if xz_version in revisions_wo_dynamic_linking:
