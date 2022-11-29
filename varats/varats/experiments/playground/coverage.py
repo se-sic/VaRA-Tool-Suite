@@ -117,6 +117,18 @@ class CodeRegion(object):
         # Should be the first code region where region is a subregion when traversing the tree in postorder
         for node in self.iter_postorder():
             if node.is_subregion(region):
+                if len(node.childs) > 0:
+                    # node is not a leaf node
+                    # check which childs should become childs of regions
+                    childs_to_move = []
+                    for child in node.childs:
+                        if region.is_subregion(child):
+                            childs_to_move.append(child)
+                    region.childs.extend(childs_to_move)
+                    region.childs.sort()
+                    for child in childs_to_move:
+                        child.parent = region
+                        node.childs.remove(child)
                 node.childs.append(region)
                 node.childs.sort()
                 region.parent = node
@@ -126,7 +138,7 @@ class CodeRegion(object):
     # Compare regions only depending on their start lines and columns
 
     def __eq__(self, other) -> bool:
-        return self.start_line == other.start_line and self.start_column == other.start_column and self.end_line == other.end_line and self.end_column == other.end_column
+        return self.start_line == other.start_line and self.start_column == other.start_column and self.end_line == other.end_line and self.end_column == other.end_column and self.kind == other.kind
 
     def __lt__(self, other) -> bool:
         if self.start_line < other.start_line:

@@ -37,10 +37,10 @@ class TestCodeRegion(unittest.TestCase):
         left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3, 0, 0, 0], "main")
         right_right = CodeRegion.from_list([60, 0, 80, 100, 2, 0, 0, 0], "main")
 
-        root.insert(left)
         root.insert(right)
         root.insert(left_left)
         root.insert(left_left_2)
+        root.insert(left)
         root.insert(right_right)
 
     def test_eq(self):
@@ -56,6 +56,10 @@ class TestCodeRegion(unittest.TestCase):
 
     def test_not_eq_3(self):
         self.CODE_REGION_1.end_column = 1
+        self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
+
+    def test_not_eq_4(self):
+        self.CODE_REGION_1.kind = CodeRegionKind.Gap
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_less_1(self):
