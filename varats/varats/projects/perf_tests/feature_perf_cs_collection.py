@@ -34,7 +34,7 @@ class FeaturePerfCSCollection(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="FeaturePerfCSCollection",
-            refspec="origin/HEAD",
+            refspec="origin/ba-messerig",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("FeaturePerfCSCollection")
@@ -86,17 +86,17 @@ class FeaturePerfCSCollection(VProject):
             )
         )
         binary_map.specify_binary(
-            "build/bin/SimpleBusyLoop",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "c77bca4c6888970fb721069c82455137943ccf49", "master"
-            )
-        )
-        binary_map.specify_binary(
             "build/bin/MultiSharedMultipleRegions",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "c051e44a973ee31b3baa571407694467a513ba68", "master"
+            )
+        )
+        binary_map.specify_binary(
+            "build/bin/FeatureCallingFeature",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "", "master"
             )
         )
 
