@@ -92,13 +92,13 @@ class FeaturePerfCSCollection(VProject):
                 "c051e44a973ee31b3baa571407694467a513ba68", "master"
             )
         )
-        binary_map.specify_binary(
-            "build/bin/FeatureCallingFeature",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "", "master"
-            )
-        )
+        #binary_map.specify_binary(
+        #    "build/bin/FeatureCallingFeature",
+        #    BinaryType.EXECUTABLE,
+        #    only_valid_in=RevisionRange(
+        #        "", "master"
+        #    )
+        #)
 
         return binary_map[revision]
 
