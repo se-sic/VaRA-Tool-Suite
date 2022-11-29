@@ -1,6 +1,6 @@
 import unittest
 
-from varats.experiments.playground.coverage import CodeRegion
+from varats.experiments.playground.coverage import CodeRegion, CodeRegionKind
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
 
@@ -15,6 +15,7 @@ class TestCodeRegion(unittest.TestCase):
             end_line=17,
             end_column=2,
             count=4,
+            kind=CodeRegionKind.Code,
             function="main"
         )
         self.CODE_REGION_2 = CodeRegion(
@@ -23,17 +24,18 @@ class TestCodeRegion(unittest.TestCase):
             end_line=17,
             end_column=1,
             count=0,
+            kind=CodeRegionKind.Code,
             function="main"
         )
         self.CODE_REGION_1.insert(self.CODE_REGION_2)
 
         global root, left, right, left_left, left_left_2, right_right
-        root = CodeRegion.from_list([0, 0, 100, 100, 5], "main")
-        left = CodeRegion.from_list([0, 1, 49, 100, 5], "main")
-        right = CodeRegion.from_list([50, 0, 100, 99, 5], "main")
-        left_left = CodeRegion.from_list([30, 0, 40, 100, 3], "main")
-        left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3], "main")
-        right_right = CodeRegion.from_list([60, 0, 80, 100, 2], "main")
+        root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main")
+        left = CodeRegion.from_list([0, 1, 49, 100, 5, 0, 0, 0], "main")
+        right = CodeRegion.from_list([50, 0, 100, 99, 5, 0, 0, 0], "main")
+        left_left = CodeRegion.from_list([30, 0, 40, 100, 3, 0, 0, 0], "main")
+        left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3, 0, 0, 0], "main")
+        right_right = CodeRegion.from_list([60, 0, 80, 100, 2, 0, 0, 0], "main")
 
         root.insert(left)
         root.insert(right)
