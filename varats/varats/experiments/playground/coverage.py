@@ -135,7 +135,14 @@ class CodeRegion(object):
                 assert region.count <= node.count
                 break
 
-    # Compare regions only depending on their start lines and columns
+    def diff(self, region: CodeRegion):
+        """Builds the difference between self and region by subtracting all
+        counts in region from self."""
+        for s, r in zip(self.iter_breadth_first(), region.iter_breadth_first()):
+            assert s == r, "CodeRegions are not identical"
+            s.count -= r.count
+
+    # Compare regions only depending on their start lines and columns + their type
 
     def __eq__(self, other) -> bool:
         return self.start_line == other.start_line and self.start_column == other.start_column and self.end_line == other.end_line and self.end_column == other.end_column and self.kind == other.kind

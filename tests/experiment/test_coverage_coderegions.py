@@ -1,4 +1,5 @@
 import unittest
+from copy import deepcopy
 
 from varats.experiments.playground.coverage import CodeRegion, CodeRegionKind
 
@@ -136,3 +137,24 @@ class TestCodeRegion(unittest.TestCase):
         self.assertTrue(left_left.parent is left)
         self.assertTrue(left_left_2.parent is left)
         self.assertTrue(right_right.parent is right)
+
+    def test_diff(self):
+        root_2 = deepcopy(root)
+        root_3 = deepcopy(root)
+
+        root_2.diff(root_3)
+
+        for x in root_2.iter_breadth_first():
+            self.assertEqual(x.count, 0)
+
+        left_left.count = 5
+        left_left_2.count = 1
+        right_right.count = 3
+
+        root.diff(root_3)
+        self.assertEqual(root.count, 0)
+        self.assertEqual(right.count, 0)
+        self.assertEqual(left.count, 0)
+        self.assertEqual(left_left.count, 2)
+        self.assertEqual(left_left_2.count, -2)
+        self.assertEqual(right_right.count, 1)
