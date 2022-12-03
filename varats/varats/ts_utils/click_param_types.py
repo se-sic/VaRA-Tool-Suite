@@ -8,7 +8,7 @@ from benchbuild.experiment import ExperimentRegistry
 
 from varats.data.discover_reports import initialize_reports
 from varats.experiments.discover_experiments import initialize_experiments
-from varats.paper_mgmt.paper_config import get_paper_config
+from varats.paper.paper_config import get_paper_config
 from varats.report.report import BaseReport
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,

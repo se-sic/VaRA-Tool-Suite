@@ -7,8 +7,8 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.mapping.commit_map import get_commit_map
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import get_unique_cs_name
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
