@@ -4,7 +4,7 @@ Container Guide
 VaRA-TS supports running experiments inside containers to make them more portable and reproducible.
 This guide walks you through the steps how to prepare and execute experiments in containers and assumes that your system has already been set up for executing containers.
 You can find the instructions for setting up containers on your system :ref:`here <Running BenchBuild in a Container>`.
-More details about the inner workings of the container support in VaRA-TS can be found :ref:`here <Container support>`.
+More details about the inner workings of the container support in VaRA-TS can be found :ref:`here <Container support>`. Note that, by default, the most recent version of VaRA-TS will be used inside the container. If you want to install VaRA-TS from source, you have to specify this in the ``.varats.yml`` configuration by setting the value of ``from_source`` to true and the value of ``varats_source`` to the directory containing the source code of the VaRA-TS.
 
 1. Preparing the research tool
 
@@ -14,6 +14,20 @@ More details about the inner workings of the container support in VaRA-TS can be
    .. code-block:: console
 
        vara-buildsetup build vara --container=DEBIAN_10
+
+   Note that the underlying tools do not support network file systems. In the ``.benchbuild.yml`` configuration, you need to set the values of ``root`` and ``runroot`` to a directory that is locally available on the current machine. For example, you can use the following values:
+
+   .. code-block:: yaml
+
+            root:
+                default: !create-if-needed '/scratch/<username>/vara-root/benchbuild/containers/lib'
+                desc: Permanent storage for container images
+                value: !create-if-needed '/local/storage/<username>/benchbuild/containers/lib'
+            runroot:
+                default: !create-if-needed '/scratch/<username>/vara-root/benchbuild/containers/run'
+                desc: Runtime storage for containers
+                value: !create-if-needed '/local/storage/<username>/benchbuild/containers/run'
+
 
 2. Building the base images
 
@@ -40,3 +54,11 @@ More details about the inner workings of the container support in VaRA-TS can be
    .. code-block:: console
 
        vara-run -E JustCompile --container
+
+   Do not forget to run
+
+   .. code-block:: console
+
+       vara-gen-bbconfig
+
+   and to adapt the values as described in step 1 before running your experiments.
