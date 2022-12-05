@@ -4,7 +4,9 @@ Container Guide
 VaRA-TS supports running experiments inside containers to make them more portable and reproducible.
 This guide walks you through the steps how to prepare and execute experiments in containers and assumes that your system has already been set up for executing containers.
 You can find the instructions for setting up containers on your system :ref:`here <Running BenchBuild in a Container>`.
-More details about the inner workings of the container support in VaRA-TS can be found :ref:`here <Container support>`. Note that, by default, the most recent version of VaRA-TS will be used inside the container. If you want to install VaRA-TS from source, you have to specify this in the ``.varats.yml`` configuration by setting the value of ``from_source`` to true and the value of ``varats_source`` to the directory containing the source code of the VaRA-TS.
+More details about the inner workings of the container support in VaRA-TS can be found :ref:`here <Container support>`.
+Note that, by default, the most recent version of VaRA-TS available from PyPI will be used inside the container.
+If you want to use your local development version of VaRA-TS instead, you have to specify this in the ``.varats.yml`` configuration file by setting the value of ``from_source`` to true and the value of ``varats_source`` to the directory containing the source code of the VaRA-TS.
 
 1. Preparing the research tool
 
