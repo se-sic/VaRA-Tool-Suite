@@ -1,5 +1,6 @@
 """Utility module for handling git repos."""
 import abc
+import logging
 import re
 import typing as tp
 from enum import Enum
@@ -22,6 +23,8 @@ from varats.project.project_util import (
 
 if tp.TYPE_CHECKING:
     import varats.mapping.commit_map as cm  # pylint: disable=W0611
+
+LOG = logging.Logger(__name__)
 
 _FULL_COMMIT_HASH_LENGTH = 40
 _SHORT_COMMIT_HASH_LENGTH = 10
@@ -386,6 +389,9 @@ def num_project_commits(project_name: str, revision: FullCommitHash) -> int:
     commits = num_commits(revision.hash, main_repo)
     for submodule, sub_rev in get_submodule_commits(revision.hash,
                                                     main_repo).items():
+        if submodule not in project_repos:
+            LOG.warning("Ignoring unknown submodule {}", submodule)
+            continue
         commits += num_commits(sub_rev.hash, project_repos[submodule])
     return commits
 
@@ -401,7 +407,7 @@ def num_project_authors(project_name: str, revision: FullCommitHash) -> int:
     Returns:
         the number of authors in the project
     """
-    author_regex = re.compile(r"\s*\d+\w+(?P<author>.+)$")
+    author_regex = re.compile(r"\s*\d+\s+(?P<author>.+)$")
 
     def get_authors(repo_path: Path, rev: str) -> tp.Set[str]:
         lines = git(__get_git_path_arg(repo_path), "shortlog", "-s",
@@ -419,6 +425,9 @@ def num_project_authors(project_name: str, revision: FullCommitHash) -> int:
     authors = get_authors(main_repo, revision.hash)
     for submodule, sub_rev in get_submodule_commits(revision.hash,
                                                     main_repo).items():
+        if submodule not in project_repos:
+            LOG.warning("Ignoring unknown submodule {}", submodule)
+            continue
         authors.update(get_authors(project_repos[submodule], sub_rev.hash))
     return len(authors)
 
@@ -982,6 +991,9 @@ def calc_project_loc(project_name: str, revision: FullCommitHash) -> int:
     loc = calc_repo_loc(main_repo, revision.hash)
     for submodule, sub_rev in get_submodule_commits(revision.hash,
                                                     main_repo).items():
+        if submodule not in project_repos:
+            LOG.warning("Ignoring unknown submodule {}", submodule)
+            continue
         loc += calc_repo_loc(project_repos[submodule], sub_rev.hash)
     return loc
 
