@@ -2,7 +2,6 @@
 
 import typing as tp
 
-import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import seaborn as sns
@@ -69,12 +68,11 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
                         "# Interacting Authors": caig.degree(node) / authors
                     }))
 
-        data = pd.DataFrame(nodes)
+        data = pd.DataFrame(nodes).sort_values(by=["Project"])
         ax = sns.violinplot(
             x="Project",
             y="# Interacting Authors",
             data=data,
-            order=sorted(project_names),
             inner=None,
             linewidth=1,
             color=".95"
@@ -85,7 +83,6 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
             hue="Project",
             data=data,
             palette=sns.color_palette("husl", len(project_names)),
-            order=sorted(project_names),
             alpha=.25,
             size=3
         )
@@ -95,6 +92,7 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
         ax.tick_params(axis='y', labelsize=8)
         ax.set_xlabel(None)
         ax.yaxis.label.set_size(9)
+        ax.get_legend().remove()
 
     def calc_missing_revisions(
         self, boundary_gradient: float
