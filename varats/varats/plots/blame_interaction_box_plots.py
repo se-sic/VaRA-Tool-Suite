@@ -199,10 +199,10 @@ class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
 
         ax.set_aspect(0.3 / ax.get_data_ratio())
         ax.set_xticks([])
-        ax.tick_params(axis='y', labelsize=8)
+        ax.tick_params(axis='y', labelsize=15)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
-        ax.set_title(project_name, fontsize=20)
+        ax.set_title(project_name, fontsize=25)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
