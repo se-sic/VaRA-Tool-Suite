@@ -42,6 +42,7 @@ def create_new_bb_config(
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
+        # yapf: disable
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
@@ -84,6 +85,8 @@ def create_new_bb_config(
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
+        'varats.projects.cpp_projects.ect',
+        'varats.projects.cpp_projects.lepton'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -96,6 +99,7 @@ def create_new_bb_config(
             'varats.projects.test_projects.example_test_repo',
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
+            'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection',
             'varats.projects.test_projects.library_analysis.lib_upgrade_bug'
@@ -123,6 +127,7 @@ def create_new_bb_config(
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
     ]
+    # yapf: enable
 
     # Enable version exploration by default
     new_bb_cfg["versions"]["full"] = True

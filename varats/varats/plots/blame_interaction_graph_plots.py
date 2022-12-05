@@ -57,13 +57,14 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
         pass
 
     def save(self, plot_dir: Path, filetype: str = 'svg') -> None:
-        project_name = self.plot_kwargs["project"]
+        project_name = self.plot_kwargs["case_study"].project_name
         revision = ShortCommitHash(self.plot_kwargs["revision"])
         cig = create_blame_interaction_graph(
             project_name, revision, BlameReportExperiment
         ).commit_interaction_graph()
         nx.set_node_attributes(
-            cig, {node: cig.nodes[node]["commit_hash"] for node in cig.nodes},
+            cig,
+            {node: cig.nodes[node]["commit"].commit_hash for node in cig.nodes},
             "label"
         )
 

@@ -16,11 +16,10 @@ class FeatureSource(bb.source.FetchableSource):  # type: ignore
 
     LOCAL_KEY = "config_info"
 
-    def __init__(self, version: str) -> None:
-        super().__init__(local=self.LOCAL_KEY, remote={version: "dummy_value"})
+    def __init__(self) -> None:
+        super().__init__(local=self.LOCAL_KEY, remote={"fv_1": "dummy_value"})
 
     def version(self, target_dir: str, version: str) -> pb.LocalPath:
-        # TODO: do we need this? Maybe an optional path?
         return pb.LocalPath('.')
 
     def versions(self) -> tp.List[Variant]:
