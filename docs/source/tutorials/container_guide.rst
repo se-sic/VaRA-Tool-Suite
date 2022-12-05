@@ -17,7 +17,9 @@ If you want to use your local development version of VaRA-TS instead, you have t
 
        vara-buildsetup build vara --container=DEBIAN_10
 
-   Note that the underlying tools do not support network file systems. In the ``.benchbuild.yml`` configuration, you need to set the values of ``root`` and ``runroot`` to a directory that is locally available on the current machine. For example, you can use the following values:
+   Note that the underlying tools may not support network file systems (i.e., if you are using podman in `rootless mode <https://github.com/containers/podman/blob/master/rootless.md>`_).
+   In the ``.benchbuild.yml`` configuration, you need to set the values of ``root`` and ``runroot`` to a directory that is locally available on the current machine.
+   For example, you can use the following values:
 
    .. code-block:: yaml
 
