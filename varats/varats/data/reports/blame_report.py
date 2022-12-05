@@ -347,7 +347,7 @@ class BlameReportMetaData():
         self, num_functions: int, num_instructions: int,
         num_phasar_empty_tracked_vars: tp.Optional[int],
         num_phasar_total_tracked_vars: tp.Optional[int],
-        bta_wall_time: tp.Optional[int]
+        bta_wall_time: tp.Optional[float]
     ) -> None:
         self.__number_of_functions_in_module = num_functions
         self.__number_of_instructions_in_module = num_instructions
@@ -376,7 +376,7 @@ class BlameReportMetaData():
         return self.__num_phasar_total_tracked_vars
 
     @property
-    def bta_wall_time(self) -> tp.Optional[int]:
+    def bta_wall_time(self) -> tp.Optional[float]:
         """Wall time of the blame taint analysis."""
         return self.__bta_wall_time
 
