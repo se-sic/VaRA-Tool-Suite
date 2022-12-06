@@ -186,7 +186,8 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         if self.selected_project != self.revision_list_project:
             self.revision_details.setText("Loading Revisions")
             self.revision_details.repaint()
-            get_local_project_git(self.selected_project).remotes[0].fetch()
+            # Update the local project git
+            get_primary_project_source(self.selected_project).fetch()
             git_path = get_local_project_git_path(self.selected_project)
             initial_commit = get_initial_commit(git_path).hash
             commits = get_all_revisions_between(
@@ -196,7 +197,9 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
                 self.selected_project
             )
             project = get_project_cls_by_name(self.selected_project)
-            repo_name = get_primary_project_source(self.selected_project).local
+            repo_name = Path(
+                get_primary_project_source(self.selected_project).local
+            ).name
             commits = map(
                 lambda commit: CommitRepoPair(commit, repo_name), commits
             )

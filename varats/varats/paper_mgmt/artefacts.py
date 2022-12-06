@@ -1,7 +1,7 @@
 """
 This module allows to attach :class:`artefact definitions<Artefact>` to a.
 
-:class:`paper config<varats.paper_mgmt.paper_config>`. This way, the artefacts,
+:class:`paper config<varats.paper.paper_config>`. This way, the artefacts,
 like :class:`plots<PlotArtefact>` or result tables, can be generated from
 result files automatically.
 
@@ -12,6 +12,7 @@ import abc
 import logging
 import typing as tp
 from abc import ABC
+from functools import lru_cache
 from pathlib import Path
 
 from varats.base.version_header import VersionHeader
@@ -22,6 +23,7 @@ if tp.TYPE_CHECKING:
     from rich.progress import Progress  # pylint: disable=unused-import
 
     import varats.paper.case_study as cs  # pylint: disable=unused-import
+    import varats.paper.paper_config as pc  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
 
@@ -148,12 +150,17 @@ class Artefact(ABC):
         """
 
 
-class Artefacts:
-    r"""
-    A collection of :class:`Artefact`\ s.
-    """
+_ARTEFACTS_FILE_NAME = 'artefacts.yaml'
+_ARTEFACTS_FILE_VERSION = 2
 
-    def __init__(self, artefacts: tp.Iterable[Artefact]) -> None:
+
+class Artefacts:
+    r"""A collection of :class:`Artefact`\ s."""
+
+    def __init__(
+        self, file_path: Path, artefacts: tp.Iterable[Artefact]
+    ) -> None:
+        self.__file_path = file_path
         self.__artefacts = {artefact.name: artefact for artefact in artefacts}
 
     @property
@@ -186,6 +193,16 @@ class Artefacts:
         """
         self.__artefacts[artefact.name] = artefact
 
+    def store(self) -> None:
+        """Store artefacts in their artefacts file."""
+        store_as_yaml(
+            self.__file_path, [
+                VersionHeader.from_version_number(
+                    'Artefacts', _ARTEFACTS_FILE_VERSION
+                ), self
+            ]
+        )
+
     def __iter__(self) -> tp.Iterator[Artefact]:
         return self.__artefacts.values().__iter__()
 
@@ -198,7 +215,21 @@ class Artefacts:
         )
 
 
-__ARTEFACTS_FILE_VERSION = 2
+@lru_cache(maxsize=1)
+def load_artefacts(paper_config: 'pc.PaperConfig') -> Artefacts:
+    """
+    Load the artefacts for a paper config.
+
+    Args:
+        paper_config: the paper config to load the artefacts for
+
+    Returns:
+        the artefacts object for the given paper config
+    """
+    file_path = paper_config.path / _ARTEFACTS_FILE_NAME
+    if file_path.exists():
+        return load_artefacts_from_file(file_path)
+    return Artefacts(file_path, [])
 
 
 def load_artefacts_from_file(file_path: Path) -> Artefacts:
@@ -214,7 +245,7 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
     documents = load_yaml(file_path)
     version_header = VersionHeader(next(documents))
     version_header.raise_if_not_type("Artefacts")
-    version_header.raise_if_version_is_less_than(__ARTEFACTS_FILE_VERSION)
+    version_header.raise_if_version_is_less_than(_ARTEFACTS_FILE_VERSION)
 
     raw_artefacts = next(documents)
     artefacts: tp.List[Artefact] = []
@@ -242,24 +273,7 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
             artefact_type.create_artefact(name, output_dir, **raw_artefact)
         )
 
-    return Artefacts(artefacts)
-
-
-def store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
-    """
-    Store artefacts in a file.
-
-    Args:
-        artefacts: the artefacts to store
-        file_path: the file to store in
-    """
-    store_as_yaml(
-        file_path, [
-            VersionHeader.from_version_number(
-                'Artefacts', __ARTEFACTS_FILE_VERSION
-            ), artefacts
-        ]
-    )
+    return Artefacts(file_path, artefacts)
 
 
 def initialize_artefact_types() -> None:

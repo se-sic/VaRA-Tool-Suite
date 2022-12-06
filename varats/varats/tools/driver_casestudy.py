@@ -26,6 +26,7 @@ from varats.paper.case_study import (
     CaseStudy,
     CSStage,
 )
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
@@ -36,11 +37,13 @@ from varats.paper_mgmt.case_study import (
     extend_with_bug_commits,
     extend_with_extra_revs,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import (
+    get_local_project_git_path,
+    get_primary_project_source,
+)
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
@@ -58,7 +61,6 @@ from varats.ts_utils.click_param_types import (
     EnumChoice,
     create_multi_case_study_choice,
 )
-from varats.utils.git_commands import pull_current_branch
 from varats.utils.git_util import (
     get_initial_commit,
     is_commit_hash,
@@ -200,7 +202,7 @@ def __casestudy_gen(
     ) / (paper_config + f"/{project}_{version}.case_study")
     ctx.obj['git_path'] = get_local_project_git_path(project)
     if update:
-        pull_current_branch(ctx.obj['git_path'])
+        get_primary_project_source(project).fetch()
 
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
