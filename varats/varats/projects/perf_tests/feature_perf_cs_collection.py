@@ -59,16 +59,16 @@ class FeaturePerfCSCollection(VProject):
             #    RSBinary("MultiSharedMultipleRegions"),
             #    label="MSMR"
             #)
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("FeatureCallingFeature"),
-                label="FCF"
-            )
             #Command(
-            #    SourceRoot("CollinearFeature") /
-            #    RSBinary("CollinearFeature"),
-            #    label="CF"
+            #    SourceRoot("FeaturePerfCSCollection") /
+            #    RSBinary("FeatureCallingFeature"),
+            #    label="FCF"
             #)
+            Command(
+                SourceRoot("CollinearFeature") /
+                RSBinary("CollinearFeature"),
+                label="CF"
+            )
         ]
     }
 
