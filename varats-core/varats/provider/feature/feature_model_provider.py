@@ -85,9 +85,9 @@ class FeatureModelProvider(Provider):
         fm_source = bb.source.Git(
             remote="https://github.com/se-sic/ConfigurableSystems.git",
             local="ConfigurableSystems",
-            refspec="origin/HEAD",
+            refspec="origin/ba-messerig",
             limit=1,
         )
-        fm_source.fetch()
+        #fm_source.fetch() DISABLED BECAUSE DESTROYS LOCAL
 
         return Path(Path(target_prefix()) / fm_source.local)

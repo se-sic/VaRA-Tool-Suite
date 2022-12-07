@@ -151,9 +151,6 @@ class RunVaRAWorkloadsBlackbox(ProjectStep):  # type: ignore
                 self.project, binary, get_current_config_id(self.project)
             )
 
-            feature_list = ["--header", "--slow", "--extern", "--cpp"]
-            feature_permutationen = FeatureExperiment.feature_permutation(feature_list)
-
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
                     for prj_command in workload_commands(
@@ -174,14 +171,29 @@ class RunVaRAWorkloadsBlackbox(ProjectStep):  # type: ignore
                                 self.project
                             )
                             with cleanup(prj_command):
-                                for elements in feature_permutationen:
-                                    pb_cmd(elements)
-                                    name_file = "trace_MSMR"
-                                    for feature in elements:
-                                        name_file += feature
-                                    time_cmd = time["-v", "-o",
-                                                    tmp_dir / Path(f"time_report_{name_file}.txt"),
-                                                    pb_cmd[elements]]
-                                    time_cmd()
-
+                                if prj_command.command.label == "MSMR":
+                                    feature_list = ["--header", "--slow", "--extern", "--cpp"]
+                                    feature_permutationen = FeatureExperiment.feature_permutation(feature_list)
+                                    for elements in feature_permutationen:
+                                        pb_cmd(elements)
+                                        name_file = "trace_MSMR"
+                                        for feature in elements:
+                                            name_file += feature
+                                        time_cmd = time["-v", "-o",
+                                                        tmp_dir / Path(f"time_report_{name_file}.txt"),
+                                                        pb_cmd[elements]]
+                                        time_cmd()
+                                
+                                if  prj_command.command.label == "FCF":
+                                    feature_list = ["--a", "--b", "--c"]
+                                    feature_permutationen = FeatureExperiment.feature_permutation(feature_list)
+                                    for elements in feature_permutationen:
+                                        name_file = "black_box_FCF"
+                                        for feature in elements:
+                                            name_file += feature + "_"
+                                        time_cmd = time["-v", "-o",
+                                                        tmp_dir / Path(f"time_report_{name_file}.txt"),
+                                                        pb_cmd[elements]]
+                                        time_cmd()
+                                    
         return StepResult.OK

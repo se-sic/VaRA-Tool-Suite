@@ -54,11 +54,21 @@ class FeaturePerfCSCollection(VProject):
             #    RSBinary("MultiSharedMultipleRegions"),
             #    label="MSMR-no-input"
             #),
+            #Command(
+            #    SourceRoot("FeaturePerfCSCollection") /
+            #    RSBinary("MultiSharedMultipleRegions"),
+            #    label="MSMR"
+            #)
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("MultiSharedMultipleRegions"),
-                label="MSMR"
+                RSBinary("FeatureCallingFeature"),
+                label="FCF"
             )
+            #Command(
+            #    SourceRoot("CollinearFeature") /
+            #    RSBinary("CollinearFeature"),
+            #    label="CF"
+            #)
         ]
     }
 
@@ -96,7 +106,11 @@ class FeaturePerfCSCollection(VProject):
             "build/bin/FeatureCallingFeature",
             BinaryType.EXECUTABLE
         )
-
+        binary_map.specify_binary(
+            "build/bin/CollinearFeature",
+            BinaryType.EXECUTABLE
+        )
+        
         return binary_map[revision]
 
     def run_tests(self) -> None:
