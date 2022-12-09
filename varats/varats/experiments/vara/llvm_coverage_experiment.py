@@ -43,12 +43,24 @@ class CodeRegionKind(Enum):
 
 
 @dataclass
+class Segment:
+    line: int
+    column: int
+
+
+class RegionStart(Segment):
+    pass
+
+
+class RegionEnd(Segment):
+    pass
+
+
+@dataclass
 class CodeRegion:
     """Code region tree."""
-    start_line: int
-    start_column: int
-    end_line: int
-    end_column: int
+    start: RegionStart
+    end: RegionEnd
     count: int
     kind: CodeRegionKind
     function: str
@@ -63,10 +75,8 @@ class CodeRegion:
                 0, 0
             ]  # Not quite sure yet what the zeros stand for.
         return cls(
-            start_line=region[0],
-            start_column=region[1],
-            end_line=region[2],
-            end_column=region[3],
+            start=RegionStart(line=region[0], column=region[1]),
+            end=RegionEnd(line=region[2], column=region[3]),
             count=region[4],
             kind=CodeRegionKind(region[7]),
             function=function,
@@ -102,15 +112,15 @@ class CodeRegion:
         start_ok = False
         end_ok = False
 
-        if self.start_line < other.start_line:
+        if self.start.line < other.start.line:
             start_ok = True
-        elif self.start_line == other.start_line:
-            start_ok = self.start_column < other.start_column
+        elif self.start.line == other.start.line:
+            start_ok = self.start.column < other.start.column
 
-        if self.end_line > other.end_line:
+        if self.end.line > other.end.line:
             end_ok = True
-        elif self.end_line == other.end_line:
-            end_ok = self.end_column > other.end_column
+        elif self.end.line == other.end.line:
+            end_ok = self.end.column > other.end.column
 
         return start_ok and end_ok
 
@@ -162,17 +172,17 @@ class CodeRegion:
         if not isinstance(other, CodeRegion):
             return False
         return (
-            self.start_line == other.start_line and
-            self.start_column == other.start_column and
-            self.end_line == other.end_line and
-            self.end_column == other.end_column and self.kind == other.kind
+            self.start.line == other.start.line and
+            self.start.column == other.start.column and
+            self.end.line == other.end.line and
+            self.end.column == other.end.column and self.kind == other.kind
         )
 
     def __lt__(self, other: CodeRegion) -> bool:
         if (
-            self.start_line < other.start_line or
-            self.start_line == other.start_line and
-            self.start_column < other.start_column
+            self.start.line < other.start.line or
+            self.start.line == other.start.line and
+            self.start.column < other.start.column
         ):
             return True
         return False
@@ -301,9 +311,31 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 name, regions, function_region_mapping
             )
 
+        # sanity checking
+        self.__region_import_sanity_check(totals, function_region_mapping)
+
         filename_function_mapping[filename] = function_region_mapping
 
-        # sanity checking
+        return filename_function_mapping
+
+    def _import_code_regions(
+        self,
+        function: str,
+        regions: tp.List[tp.List[int]],
+        function_region_mapping: FunctionCodeRegionMapping,
+    ) -> FunctionCodeRegionMapping:
+        code_region: CodeRegion = CodeRegion.from_list(regions[0], function)
+        for region in regions[1:]:
+            to_insert = CodeRegion.from_list(region, function)
+            code_region.insert(to_insert)
+
+        function_region_mapping[function] = code_region
+        return function_region_mapping
+
+    def __region_import_sanity_check(
+        self, totals: tp.Dict[str, tp.Any],
+        function_region_mapping: FunctionCodeRegionMapping
+    ) -> None:
         total_functions_count: int = totals["functions"]["count"]
         total_regions_count: int = totals["regions"]["count"]
         total_regions_covered: int = totals["regions"]["covered"]
@@ -330,22 +362,6 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         assert counted_code_regions != 0
         assert covered_regions == total_regions_covered
         assert notcovered_regions == total_regions_notcovered
-
-        return filename_function_mapping
-
-    def _import_code_regions(
-        self,
-        function: str,
-        regions: tp.List[tp.List[int]],
-        function_region_mapping: FunctionCodeRegionMapping,
-    ) -> FunctionCodeRegionMapping:
-        code_region: CodeRegion = CodeRegion.from_list(regions[0], function)
-        for region in regions[1:]:
-            to_insert = CodeRegion.from_list(region, function)
-            code_region.insert(to_insert)
-
-        function_region_mapping[function] = code_region
-        return function_region_mapping
 
 
 # Please take care when changing this file, see docs experiments/just_compile

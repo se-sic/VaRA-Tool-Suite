@@ -4,6 +4,8 @@ from copy import deepcopy
 from varats.experiments.vara.llvm_coverage_experiment import (
     CodeRegion,
     CodeRegionKind,
+    RegionStart,
+    RegionEnd,
 )
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
@@ -14,19 +16,15 @@ class TestCodeRegion(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.CODE_REGION_1 = CodeRegion(
-            start_line=9,
-            start_column=79,
-            end_line=17,
-            end_column=2,
+            RegionStart(line=9, column=79),
+            RegionEnd(line=17, column=2),
             count=4,
             kind=CodeRegionKind.CODE,
             function="main"
         )
         self.CODE_REGION_2 = CodeRegion(
-            start_line=9,
-            start_column=80,
-            end_line=17,
-            end_column=1,
+            RegionStart(line=9, column=80),
+            RegionEnd(line=17, column=1),
             count=0,
             kind=CodeRegionKind.CODE,
             function="main"
@@ -53,15 +51,15 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_not_eq_1(self):
-        self.CODE_REGION_1.start_line = 1
+        self.CODE_REGION_1.start.line = 1
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_not_eq_2(self):
-        self.CODE_REGION_1.end_line = 18
+        self.CODE_REGION_1.end.line = 18
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_not_eq_3(self):
-        self.CODE_REGION_1.end_column = 1
+        self.CODE_REGION_1.end.column = 1
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_not_eq_4(self):
@@ -72,7 +70,7 @@ class TestCodeRegion(unittest.TestCase):
         self.assertFalse(self.CODE_REGION_1 < CODE_REGION_1)
         self.assertTrue(self.CODE_REGION_1 <= CODE_REGION_1)
 
-        self.CODE_REGION_1.start_column = 78
+        self.CODE_REGION_1.start.column = 78
         self.assertTrue(self.CODE_REGION_1 < CODE_REGION_1)
         self.assertFalse(CODE_REGION_1 < self.CODE_REGION_1)
 
@@ -80,7 +78,7 @@ class TestCodeRegion(unittest.TestCase):
         self.assertFalse(self.CODE_REGION_1 > CODE_REGION_1)
         self.assertTrue(self.CODE_REGION_1 >= CODE_REGION_1)
 
-        self.CODE_REGION_1.start_column = 80
+        self.CODE_REGION_1.start.column = 80
         self.assertTrue(self.CODE_REGION_1 > CODE_REGION_1)
         self.assertFalse(CODE_REGION_1 > self.CODE_REGION_1)
 
@@ -90,8 +88,8 @@ class TestCodeRegion(unittest.TestCase):
         self.assertTrue(self.CODE_REGION_1.is_subregion(self.CODE_REGION_2))
         self.assertFalse(self.CODE_REGION_2.is_subregion(self.CODE_REGION_1))
 
-        self.CODE_REGION_1.start_line = 10
-        self.CODE_REGION_2.end_column = 2
+        self.CODE_REGION_1.start.line = 10
+        self.CODE_REGION_2.end.column = 2
         self.assertFalse(self.CODE_REGION_1.is_subregion(self.CODE_REGION_2))
         self.assertFalse(self.CODE_REGION_2.is_subregion(self.CODE_REGION_1))
 
