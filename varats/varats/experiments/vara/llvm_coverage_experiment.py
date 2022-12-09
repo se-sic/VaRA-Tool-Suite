@@ -1,3 +1,4 @@
+""""Coverage experiment."""
 from __future__ import annotations
 
 import json
@@ -33,6 +34,7 @@ from varats.report.report import ReportSpecification
 
 
 class CodeRegionKind(Enum):
+    """Code region kinds."""
     CODE = 0
     EXPANSION = 1
     SKIPPED = 2
@@ -42,6 +44,7 @@ class CodeRegionKind(Enum):
 
 @dataclass
 class CodeRegion:
+    """Code region tree."""
     start_line: int
     start_column: int
     end_line: int
@@ -54,6 +57,7 @@ class CodeRegion:
 
     @classmethod
     def from_list(cls, region: tp.List[int], function: str) -> CodeRegion:
+        """Instantiates a CodeRegion from a list."""
         if len(region) > 5:
             assert region[5:7] == [
                 0, 0
@@ -69,6 +73,7 @@ class CodeRegion:
         )
 
     def iter_breadth_first(self) -> tp.Iterator:
+        """Yields childs breadth_first."""
         todo = deque([self])
 
         while todo:
@@ -78,6 +83,7 @@ class CodeRegion:
             yield node
 
     def iter_postorder(self) -> tp.Iterator:
+        """Yields childs in postorder."""
         for child in self.childs:
             for x in child.iter_postorder():
                 yield x
@@ -145,9 +151,9 @@ class CodeRegion:
     def diff(self, region: CodeRegion) -> None:
         """Builds the difference between self and region by subtracting all
         counts in region from self."""
-        for s, r in zip(self.iter_breadth_first(), region.iter_breadth_first()):
-            assert s == r, "CodeRegions are not identical"
-            s.count -= r.count
+        for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
+            assert x == y, "CodeRegions are not identical"
+            x.count -= y.count
 
     # Compare regions only depending on their
     # start lines and columns + their type
@@ -196,11 +202,12 @@ FilenameFunctionMapping = tp.NewType(
 
 
 class GenerateCoverage(actions.ProjectStep):  # type: ignore
-    """."""
+    """GenerateCoverage experiment."""
 
     NAME = "GenerateCoverage"
     DESCRIPTION = (
-        "Runs the instrumented binary file in order to obtain the coverage information."
+        "Runs the instrumented binary file in \
+        order to obtain the coverage information."
     )
 
     project: VProject
@@ -219,9 +226,11 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        """Runs project and export coverage."""
         with local.cwd(self.project.builddir):
             if not self.__workload_cmds:
-                # No workload to execute. Fail because we don't get any coverage data
+                # No workload to execute.
+                # Fail because we don't get any coverage data
                 return actions.StepResult.ERROR
             for prj_command in self.__workload_cmds:
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
@@ -260,18 +269,17 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         self, json_file: Path,
         filename_function_mapping: FilenameFunctionMapping
     ) -> FilenameFunctionMapping:
-        with json_file.open() as f:
-            j = json.load(f)
+        with json_file.open() as file:
+            j = json.load(file)
         # Compatibility check
         try:
             j_type = j["type"]
             j_version = j["version"].split(".")
             assert j_type == "llvm.coverage.json.export" and j_version[0] == "2"
-        except Exception as e:
-            print(e)
+        except Exception as err:
             raise NotImplementedError(
                 "Cannot import functions. Json format unknown"
-            )
+            ) from err
 
         data: tp.Dict[str, tp.Any] = j["data"][0]
         # files: tp.List = data["files"]
@@ -318,7 +326,8 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                     else:
                         notcovered_regions += 1
         assert counted_functions == total_functions_count
-        assert counted_code_regions == total_regions_count and counted_code_regions != 0
+        assert counted_code_regions == total_regions_count
+        assert counted_code_regions != 0
         assert covered_regions == total_regions_covered
         assert notcovered_regions == total_regions_notcovered
 
