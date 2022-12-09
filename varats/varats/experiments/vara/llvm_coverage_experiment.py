@@ -109,7 +109,7 @@ class CodeRegion(object):
 
         return start_ok and end_ok
 
-    def insert(self, region: CodeRegion):
+    def insert(self, region: CodeRegion) -> None:
         """
         Inserts the given code region into the tree.
 
@@ -263,10 +263,10 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 "Cannot import functions. Json format unknown"
             )
 
-        data: tp.Dict = j["data"][0]
+        data: tp.Dict[str, tp.Any] = j["data"][0]
         #files: tp.List = data["files"]
-        functions: tp.List = data["functions"]
-        totals: tp.Dict = data["totals"]
+        functions: tp.List[tp.Any] = data["functions"]
+        totals: tp.Dict[str, tp.Any] = data["totals"]
 
         function_region_mapping = FunctionCodeRegionMapping({})
 
@@ -274,7 +274,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
             name: str = function["name"]
             #count: int = function["count"]
             #branches: list = function["branches"]
-            filenames: tp.List = function["filenames"]
+            filenames: tp.List[str] = function["filenames"]
             assert len(filenames) == 1
             filename: str = filenames[0]
             regions: tp.List[tp.List[int]] = function["regions"]
