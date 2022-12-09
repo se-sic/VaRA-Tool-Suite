@@ -1,7 +1,10 @@
 import unittest
 from copy import deepcopy
 
-from varats.experiments.playground.coverage import CodeRegion, CodeRegionKind
+from varats.experiments.vara.llvm_coverage_experiment import (
+    CodeRegion,
+    CodeRegionKind,
+)
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
 

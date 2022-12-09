@@ -1,4 +1,3 @@
-"""Implements an empty experiment that just compiles the project."""
 from __future__ import annotations
 
 import json
@@ -135,7 +134,7 @@ class CodeRegion(object):
                 assert region.count <= node.count
                 break
 
-    def diff(self, region: CodeRegion):
+    def diff(self, region: CodeRegion) -> None:
         """Builds the difference between self and region by subtracting all
         counts in region from self."""
         for s, r in zip(self.iter_breadth_first(), region.iter_breadth_first()):
@@ -171,10 +170,10 @@ class CodeRegion(object):
 
 
 FunctionCodeRegionMapping = tp.NewType(
-    "FunctionCodeRegionMapping", dict[str, CodeRegion]
+    "FunctionCodeRegionMapping", tp.Dict[str, CodeRegion]
 )
 FilenameFunctionMapping = tp.NewType(
-    "FilenameFunctionMapping", dict[str, FunctionCodeRegionMapping]
+    "FilenameFunctionMapping", tp.Dict[str, FunctionCodeRegionMapping]
 )
 
 
@@ -235,8 +234,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
     def _import_functions(
         self,
         json_file: Path,
-        filename_function_mapping:
-        FilenameFunctionMapping = FilenameFunctionMapping({})
+        filename_function_mapping: tp.Optional[FilenameFunctionMapping] = None
     ) -> FilenameFunctionMapping:
         with json_file.open() as f:
             j = json.load(f)
@@ -253,10 +251,10 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 "Cannot import code segments. Json format unknown"
             )
 
-        data: dict = j["data"][0]
-        #files: list = data["files"]
-        functions: list = data["functions"]
-        totals: dict = data["totals"]
+        data: tp.Dict = j["data"][0]
+        #files: tp.List = data["files"]
+        functions: tp.List = data["functions"]
+        totals: tp.Dict = data["totals"]
 
         function_region_mapping = None
 
@@ -264,10 +262,10 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
             name: str = function["name"]
             count: int = function["count"]
             #branches: list = function["branches"]
-            filenames: list = function["filenames"]
+            filenames: tp.List = function["filenames"]
             assert len(filenames) == 1
             filename: str = filenames[0]
-            regions: list[list[int]] = function["regions"]
+            regions: tp.List[tp.List[int]] = function["regions"]
 
             if function_region_mapping is None:
                 function_region_mapping = self._import_code_regions(
@@ -278,6 +276,8 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                     name, regions, function_region_mapping
                 )
 
+        if filename_function_mapping is None:
+            filename_function_mapping = FilenameFunctionMapping({})
         filename_function_mapping[filename] = function_region_mapping
 
         # sanity checking
@@ -291,17 +291,16 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         covered_regions = 0
         notcovered_regions = 0
 
-        for file in filename_function_mapping:
-            for function in filename_function_mapping[file]:
-                counted_functions += 1
-                code_region = filename_function_mapping[file][function]
-                for region in code_region.iter_breadth_first():
-                    if region.kind == CodeRegionKind.Code:
-                        counted_code_regions += 1
-                        if region.is_covered():
-                            covered_regions += 1
-                        else:
-                            notcovered_regions += 1
+        for function in function_region_mapping:
+            counted_functions += 1
+            code_region = function_region_mapping[function]
+            for region in code_region.iter_breadth_first():
+                if region.kind == CodeRegionKind.Code:
+                    counted_code_regions += 1
+                    if region.is_covered():
+                        covered_regions += 1
+                    else:
+                        notcovered_regions += 1
         assert counted_functions == total_functions_count
         assert counted_code_regions == total_regions_count and counted_code_regions != 0
         assert covered_regions == total_regions_covered
@@ -312,9 +311,8 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
     def _import_code_regions(
         self,
         function: str,
-        regions: list[list[int]],
-        function_region_mapping:
-        FunctionCodeRegionMapping = FunctionCodeRegionMapping({})
+        regions: tp.List[tp.List[int]],
+        function_region_mapping: tp.Optional[FunctionCodeRegionMapping] = None
     ) -> FunctionCodeRegionMapping:
         code_region = None
         for region in regions:
@@ -324,6 +322,8 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 to_insert = CodeRegion.from_list(region, function)
                 code_region.insert(to_insert)
 
+        if function_region_mapping is None:
+            function_region_mapping = FunctionCodeRegionMapping({})
         function_region_mapping[function] = code_region
         return function_region_mapping
 
@@ -361,9 +361,10 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         # Only consider binaries with a workload
         workload_cmds_list = []
         for binary in project.binaries:
-            if workload_cmds := workload_commands(
+            workload_cmds = workload_commands(
                 project, binary, [WorkloadCategory.EXAMPLE]
-            ):
+            )
+            if workload_cmds:
                 workload_cmds_list.append(workload_cmds)
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
