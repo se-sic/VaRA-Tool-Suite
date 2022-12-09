@@ -50,11 +50,11 @@ class CodeRegion(object):
     count: int
     kind: CodeRegionKind
     function: str
-    parent: CodeRegion = None
-    childs: list[CodeRegion] = field(default_factory=list)
+    parent: tp.Optional[CodeRegion] = None
+    childs: tp.List[CodeRegion] = field(default_factory=list)
 
     @classmethod
-    def from_list(cls, region: list, function: str):
+    def from_list(cls, region: tp.List[int], function: str) -> CodeRegion:
         if len(region) > 5:
             assert region[5:7] == [
                 0, 0
@@ -84,7 +84,7 @@ class CodeRegion(object):
     def is_covered(self) -> bool:
         return self.count != 0
 
-    def is_subregion(self, other) -> bool:
+    def is_subregion(self, other: CodeRegion) -> bool:
         """Tests if the 'other' region fits fully into self."""
         start_ok = False
         end_ok = False
@@ -143,26 +143,28 @@ class CodeRegion(object):
 
     # Compare regions only depending on their start lines and columns + their type
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CodeRegion):
+            return False
         return self.start_line == other.start_line and self.start_column == other.start_column and self.end_line == other.end_line and self.end_column == other.end_column and self.kind == other.kind
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: CodeRegion) -> bool:
         if self.start_line < other.start_line:
             return True
         elif self.start_line == other.start_line and self.start_column < other.start_column:
             return True
         return False
 
-    def __gt__(self, other) -> bool:
+    def __gt__(self, other: CodeRegion) -> bool:
         return not (self == other) and other < self
 
-    def __le__(self, other) -> bool:
+    def __le__(self, other: CodeRegion) -> bool:
         return self == other or other < self
 
-    def __ge__(self, other) -> bool:
+    def __ge__(self, other: CodeRegion) -> bool:
         return self == other or other > self
 
-    def __contains__(self, element) -> bool:
+    def __contains__(self, element: CodeRegion) -> bool:
         for child in self.iter_breadth_first():
             if child == element:
                 return True
@@ -278,6 +280,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
 
         if filename_function_mapping is None:
             filename_function_mapping = FilenameFunctionMapping({})
+        assert function_region_mapping is not None
         filename_function_mapping[filename] = function_region_mapping
 
         # sanity checking
@@ -291,6 +294,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         covered_regions = 0
         notcovered_regions = 0
 
+        assert function_region_mapping is not None
         for function in function_region_mapping:
             counted_functions += 1
             code_region = function_region_mapping[function]
@@ -314,7 +318,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         regions: tp.List[tp.List[int]],
         function_region_mapping: tp.Optional[FunctionCodeRegionMapping] = None
     ) -> FunctionCodeRegionMapping:
-        code_region = None
+        code_region: tp.Optional[CodeRegion] = None
         for region in regions:
             if code_region is None:
                 code_region = CodeRegion.from_list(region, function)
