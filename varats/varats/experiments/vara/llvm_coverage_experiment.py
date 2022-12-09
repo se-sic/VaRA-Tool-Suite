@@ -59,7 +59,15 @@ class CodeRegion(object):
             assert region[5:7] == [
                 0, 0
             ]  # Not quite sure yet what the zeros stand for.
-        return cls(*region[:5], CodeRegionKind(region[7]), function)
+        return cls(
+            start_line=region[0],
+            start_column=region[1],
+            end_line=region[2],
+            end_column=region[3],
+            count=region[4],
+            kind=CodeRegionKind(region[7]),
+            function=function
+        )
 
     def iter_breadth_first(self) -> tp.Iterator:
         todo = deque([self])
@@ -229,14 +237,16 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                         "merge", profile_raw_name, "-o", profdata_name
                     )
                     (llvm_cov > str(json_name))()
-                    self._import_functions(json_file=json_name)
+                    filename_function_mapping = self._import_functions(
+                        json_file=json_name,
+                        filename_function_mapping=FilenameFunctionMapping({})
+                    )
 
         return actions.StepResult.OK
 
     def _import_functions(
-        self,
-        json_file: Path,
-        filename_function_mapping: tp.Optional[FilenameFunctionMapping] = None
+        self, json_file: Path,
+        filename_function_mapping: FilenameFunctionMapping
     ) -> FilenameFunctionMapping:
         with json_file.open() as f:
             j = json.load(f)
@@ -250,7 +260,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         except Exception as e:
             print(e)
             raise NotImplementedError(
-                "Cannot import code segments. Json format unknown"
+                "Cannot import functions. Json format unknown"
             )
 
         data: tp.Dict = j["data"][0]
@@ -258,29 +268,21 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         functions: tp.List = data["functions"]
         totals: tp.Dict = data["totals"]
 
-        function_region_mapping = None
+        function_region_mapping = FunctionCodeRegionMapping({})
 
         for function in functions:
             name: str = function["name"]
-            count: int = function["count"]
+            #count: int = function["count"]
             #branches: list = function["branches"]
             filenames: tp.List = function["filenames"]
             assert len(filenames) == 1
             filename: str = filenames[0]
             regions: tp.List[tp.List[int]] = function["regions"]
 
-            if function_region_mapping is None:
-                function_region_mapping = self._import_code_regions(
-                    name, regions
-                )
-            else:
-                function_region_mapping = self._import_code_regions(
-                    name, regions, function_region_mapping
-                )
+            function_region_mapping = self._import_code_regions(
+                name, regions, function_region_mapping
+            )
 
-        if filename_function_mapping is None:
-            filename_function_mapping = FilenameFunctionMapping({})
-        assert function_region_mapping is not None
         filename_function_mapping[filename] = function_region_mapping
 
         # sanity checking
@@ -313,22 +315,14 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         return filename_function_mapping
 
     def _import_code_regions(
-        self,
-        function: str,
-        regions: tp.List[tp.List[int]],
-        function_region_mapping: tp.Optional[FunctionCodeRegionMapping] = None
+        self, function: str, regions: tp.List[tp.List[int]],
+        function_region_mapping: FunctionCodeRegionMapping
     ) -> FunctionCodeRegionMapping:
-        code_region: tp.Optional[CodeRegion] = None
-        for region in regions:
-            if code_region is None:
-                code_region = CodeRegion.from_list(region, function)
-            else:
-                to_insert = CodeRegion.from_list(region, function)
-                code_region.insert(to_insert)
+        code_region: CodeRegion = CodeRegion.from_list(regions[0], function)
+        for region in regions[1:]:
+            to_insert = CodeRegion.from_list(region, function)
+            code_region.insert(to_insert)
 
-        if function_region_mapping is None:
-            function_region_mapping = FunctionCodeRegionMapping({})
-        assert code_region is not None
         function_region_mapping[function] = code_region
         return function_region_mapping
 
