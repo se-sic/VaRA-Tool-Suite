@@ -33,7 +33,6 @@ from varats.report.report import ReportSpecification
 
 
 class CodeRegionKind(Enum):
-    # Taken from https://github.com/xd009642/llvm-profparser/blob/eeb2f839ec2e3709526f047b86930a4a2e2a0739/src/coverage/mod.rs#L69
     CODE = 0
     EXPANSION = 1
     SKIPPED = 2
@@ -42,7 +41,7 @@ class CodeRegionKind(Enum):
 
 
 @dataclass
-class CodeRegion(object):
+class CodeRegion:
     start_line: int
     start_column: int
     end_line: int
@@ -66,7 +65,7 @@ class CodeRegion(object):
             end_column=region[3],
             count=region[4],
             kind=CodeRegionKind(region[7]),
-            function=function
+            function=function,
         )
 
     def iter_breadth_first(self) -> tp.Iterator:
@@ -74,7 +73,7 @@ class CodeRegion(object):
 
         while todo:
             node = todo.popleft()
-            childs = [x for x in node.childs]
+            childs = list(node.childs)
             todo.extend(childs)
             yield node
 
@@ -121,7 +120,8 @@ class CodeRegion(object):
             raise ValueError("The given region exists already!")
 
         # Find the right child to append to
-        # Should be the first code region where region is a subregion when traversing the tree in postorder
+        # Should be the first code region where region is a subregion
+        # when traversing the tree in postorder
         for node in self.iter_postorder():
             if node.is_subregion(region):
                 if len(node.childs) > 0:
@@ -149,17 +149,25 @@ class CodeRegion(object):
             assert s == r, "CodeRegions are not identical"
             s.count -= r.count
 
-    # Compare regions only depending on their start lines and columns + their type
+    # Compare regions only depending on their
+    # start lines and columns + their type
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CodeRegion):
             return False
-        return self.start_line == other.start_line and self.start_column == other.start_column and self.end_line == other.end_line and self.end_column == other.end_column and self.kind == other.kind
+        return (
+            self.start_line == other.start_line and
+            self.start_column == other.start_column and
+            self.end_line == other.end_line and
+            self.end_column == other.end_column and self.kind == other.kind
+        )
 
     def __lt__(self, other: CodeRegion) -> bool:
-        if self.start_line < other.start_line:
-            return True
-        elif self.start_line == other.start_line and self.start_column < other.start_column:
+        if (
+            self.start_line < other.start_line or
+            self.start_line == other.start_line and
+            self.start_column < other.start_column
+        ):
             return True
         return False
 
@@ -191,13 +199,17 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
     """."""
 
     NAME = "GenerateCoverage"
-    DESCRIPTION = "Runs the instrumented binary file in order to obtain the coverage information."
+    DESCRIPTION = (
+        "Runs the instrumented binary file in order to obtain the coverage information."
+    )
 
     project: VProject
 
     def __init__(
-        self, project: Project, workload_cmds: tp.List[ProjectCommand],
-        experiment_handle: ExperimentHandle
+        self,
+        project: Project,
+        workload_cmds: tp.List[ProjectCommand],
+        experiment_handle: ExperimentHandle,
     ):
         super().__init__(project=project)
         self.__workload_cmds = workload_cmds
@@ -239,7 +251,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                     (llvm_cov > str(json_name))()
                     filename_function_mapping = self._import_functions(
                         json_file=json_name,
-                        filename_function_mapping=FilenameFunctionMapping({})
+                        filename_function_mapping=FilenameFunctionMapping({}),
                     )
 
         return actions.StepResult.OK
@@ -254,9 +266,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         try:
             j_type = j["type"]
             j_version = j["version"].split(".")
-            assert (
-                j_type == "llvm.coverage.json.export" and j_version[0] == "2"
-            )
+            assert j_type == "llvm.coverage.json.export" and j_version[0] == "2"
         except Exception as e:
             print(e)
             raise NotImplementedError(
@@ -264,7 +274,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
             )
 
         data: tp.Dict[str, tp.Any] = j["data"][0]
-        #files: tp.List = data["files"]
+        # files: tp.List = data["files"]
         functions: tp.List[tp.Any] = data["functions"]
         totals: tp.Dict[str, tp.Any] = data["totals"]
 
@@ -272,8 +282,8 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
 
         for function in functions:
             name: str = function["name"]
-            #count: int = function["count"]
-            #branches: list = function["branches"]
+            # count: int = function["count"]
+            # branches: list = function["branches"]
             filenames: tp.List[str] = function["filenames"]
             assert len(filenames) == 1
             filename: str = filenames[0]
@@ -315,8 +325,10 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         return filename_function_mapping
 
     def _import_code_regions(
-        self, function: str, regions: tp.List[tp.List[int]],
-        function_region_mapping: FunctionCodeRegionMapping
+        self,
+        function: str,
+        regions: tp.List[tp.List[int]],
+        function_region_mapping: FunctionCodeRegionMapping,
     ) -> FunctionCodeRegionMapping:
         code_region: CodeRegion = CodeRegion.from_list(regions[0], function)
         for region in regions[1:]:
@@ -341,17 +353,20 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
-        # Activate source-based code coverage: https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
+        # Activate source-based code coverage:
+        # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
         project.cflags += ["-fprofile-instr-generate", "-fcoverage-mapping"]
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
+        )
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM() \
-            << run.WithTimeout()
+        project.compiler_extension = (
+            compiler.RunCompiler(project, self) << RunWLLVM() <<
+            run.WithTimeout()
+        )
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -367,7 +382,9 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
                 workload_cmds_list.append(workload_cmds)
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary
+            self.get_handle().report_spec().main_report,
+            project,
+            binary,
         )
 
         analysis_actions = []
@@ -375,10 +392,11 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         analysis_actions.append(actions.Echo(result_filepath))
         analysis_actions.append(
             ZippedExperimentSteps(
-                result_filepath, [
+                result_filepath,
+                [
                     GenerateCoverage(project, workload_cmds, self.get_handle())
                     for workload_cmds in workload_cmds_list
-                ]
+                ],
             )
         )
         analysis_actions.append(actions.Clean(project))
