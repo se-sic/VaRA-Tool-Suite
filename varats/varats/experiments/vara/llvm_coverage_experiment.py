@@ -34,11 +34,11 @@ from varats.report.report import ReportSpecification
 
 class CodeRegionKind(Enum):
     # Taken from https://github.com/xd009642/llvm-profparser/blob/eeb2f839ec2e3709526f047b86930a4a2e2a0739/src/coverage/mod.rs#L69
-    Code = 0
-    Expansion = 1
-    Skipped = 2
-    Gap = 3
-    Branch = 4
+    CODE = 0
+    EXPANSION = 1
+    SKIPPED = 2
+    GAP = 3
+    BRANCH = 4
 
 
 @dataclass
@@ -299,7 +299,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
             counted_functions += 1
             code_region = function_region_mapping[function]
             for region in code_region.iter_breadth_first():
-                if region.kind == CodeRegionKind.Code:
+                if region.kind == CodeRegionKind.CODE:
                     counted_code_regions += 1
                     if region.is_covered():
                         covered_regions += 1
@@ -328,6 +328,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
 
         if function_region_mapping is None:
             function_region_mapping = FunctionCodeRegionMapping({})
+        assert code_region is not None
         function_region_mapping[function] = code_region
         return function_region_mapping
 

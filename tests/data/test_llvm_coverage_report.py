@@ -19,7 +19,7 @@ class TestCodeRegion(unittest.TestCase):
             end_line=17,
             end_column=2,
             count=4,
-            kind=CodeRegionKind.Code,
+            kind=CodeRegionKind.CODE,
             function="main"
         )
         self.CODE_REGION_2 = CodeRegion(
@@ -28,24 +28,26 @@ class TestCodeRegion(unittest.TestCase):
             end_line=17,
             end_column=1,
             count=0,
-            kind=CodeRegionKind.Code,
+            kind=CodeRegionKind.CODE,
             function="main"
         )
         self.CODE_REGION_1.insert(self.CODE_REGION_2)
 
-        global root, left, right, left_left, left_left_2, right_right
-        root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main")
-        left = CodeRegion.from_list([0, 1, 49, 100, 5, 0, 0, 0], "main")
-        right = CodeRegion.from_list([50, 0, 100, 99, 5, 0, 0, 0], "main")
-        left_left = CodeRegion.from_list([30, 0, 40, 100, 3, 0, 0, 0], "main")
-        left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3, 0, 0, 0], "main")
-        right_right = CodeRegion.from_list([60, 0, 80, 100, 2, 0, 0, 0], "main")
+        self.root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main")
+        self.left = CodeRegion.from_list([0, 1, 49, 100, 5, 0, 0, 0], "main")
+        self.right = CodeRegion.from_list([50, 0, 100, 99, 5, 0, 0, 0], "main")
+        self.left_left = CodeRegion.from_list([30, 0, 40, 100, 3, 0, 0, 0],
+                                              "main")
+        self.left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3, 0, 0, 0],
+                                                "main")
+        self.right_right = CodeRegion.from_list([60, 0, 80, 100, 2, 0, 0, 0],
+                                                "main")
 
-        root.insert(right)
-        root.insert(left_left)
-        root.insert(left_left_2)
-        root.insert(left)
-        root.insert(right_right)
+        self.root.insert(self.right)
+        self.root.insert(self.left_left)
+        self.root.insert(self.left_left_2)
+        self.root.insert(self.left)
+        self.root.insert(self.right_right)
 
     def test_eq(self):
         self.assertEqual(self.CODE_REGION_1, CODE_REGION_1)
@@ -63,7 +65,7 @@ class TestCodeRegion(unittest.TestCase):
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_not_eq_4(self):
-        self.CODE_REGION_1.kind = CodeRegionKind.Gap
+        self.CODE_REGION_1.kind = CodeRegionKind.GAP
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_less_1(self):
@@ -110,54 +112,56 @@ class TestCodeRegion(unittest.TestCase):
 
     def test_iter_breadth_first(self):
         self.assertEqual([
-            root, left, right, left_left_2, left_left, right_right
-        ], [x for x in root.iter_breadth_first()])
+            self.root, self.left, self.right, self.left_left_2, self.left_left,
+            self.right_right
+        ], [x for x in self.root.iter_breadth_first()])
 
     def test_iter_postorder(self):
         self.assertEqual([
-            left_left_2, left_left, left, right_right, right, root
-        ], [x for x in root.iter_postorder()])
+            self.left_left_2, self.left_left, self.left, self.right_right,
+            self.right, self.root
+        ], [x for x in self.root.iter_postorder()])
 
     def test_insert(self):
-        self.assertTrue(root.is_subregion(left))
-        self.assertTrue(root.is_subregion(right))
-        self.assertTrue(root.is_subregion(left_left))
-        self.assertTrue(root.is_subregion(right_right))
-        self.assertTrue(left.is_subregion(left_left))
-        self.assertTrue(left.is_subregion(left_left_2))
-        self.assertTrue(right.is_subregion(right_right))
+        self.assertTrue(self.root.is_subregion(self.left))
+        self.assertTrue(self.root.is_subregion(self.right))
+        self.assertTrue(self.root.is_subregion(self.left_left))
+        self.assertTrue(self.root.is_subregion(self.right_right))
+        self.assertTrue(self.left.is_subregion(self.left_left))
+        self.assertTrue(self.left.is_subregion(self.left_left_2))
+        self.assertTrue(self.right.is_subregion(self.right_right))
 
-        self.assertFalse(right.is_subregion(left))
-        self.assertFalse(right.is_subregion(left_left))
-        self.assertFalse(right.is_subregion(left_left_2))
-        self.assertFalse(left.is_subregion(right))
-        self.assertFalse(left.is_subregion(right_right))
-        self.assertFalse(left.is_subregion(root))
-        self.assertFalse(right.is_subregion(root))
+        self.assertFalse(self.right.is_subregion(self.left))
+        self.assertFalse(self.right.is_subregion(self.left_left))
+        self.assertFalse(self.right.is_subregion(self.left_left_2))
+        self.assertFalse(self.left.is_subregion(self.right))
+        self.assertFalse(self.left.is_subregion(self.right_right))
+        self.assertFalse(self.left.is_subregion(self.root))
+        self.assertFalse(self.right.is_subregion(self.root))
 
-        self.assertTrue(left.parent is root)
-        self.assertTrue(right.parent is root)
-        self.assertTrue(left_left.parent is left)
-        self.assertTrue(left_left_2.parent is left)
-        self.assertTrue(right_right.parent is right)
+        self.assertTrue(self.left.parent is self.root)
+        self.assertTrue(self.right.parent is self.root)
+        self.assertTrue(self.left_left.parent is self.left)
+        self.assertTrue(self.left_left_2.parent is self.left)
+        self.assertTrue(self.right_right.parent is self.right)
 
     def test_diff(self):
-        root_2 = deepcopy(root)
-        root_3 = deepcopy(root)
+        root_2 = deepcopy(self.root)
+        root_3 = deepcopy(self.root)
 
         root_2.diff(root_3)
 
         for x in root_2.iter_breadth_first():
             self.assertEqual(x.count, 0)
 
-        left_left.count = 5
-        left_left_2.count = 1
-        right_right.count = 3
+        self.left_left.count = 5
+        self.left_left_2.count = 1
+        self.right_right.count = 3
 
-        root.diff(root_3)
-        self.assertEqual(root.count, 0)
-        self.assertEqual(right.count, 0)
-        self.assertEqual(left.count, 0)
-        self.assertEqual(left_left.count, 2)
-        self.assertEqual(left_left_2.count, -2)
-        self.assertEqual(right_right.count, 1)
+        self.root.diff(root_3)
+        self.assertEqual(self.root.count, 0)
+        self.assertEqual(self.right.count, 0)
+        self.assertEqual(self.left.count, 0)
+        self.assertEqual(self.left_left.count, 2)
+        self.assertEqual(self.left_left_2.count, -2)
+        self.assertEqual(self.right_right.count, 1)
