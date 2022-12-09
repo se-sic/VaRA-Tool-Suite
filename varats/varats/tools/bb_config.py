@@ -122,6 +122,7 @@ def create_new_bb_config(
         'varats.experiments.vara.instrumentation_point_printer',
         'varats.experiments.vara.instrumentation_stats',
         'varats.experiments.vara.instrumentation_verifier',
+        'varats.experiments.vara.llvm_coverage_experiment',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
     ]
