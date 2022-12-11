@@ -103,7 +103,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        self.__key_name_map = list()
+        self.__key_name_map: tp.List[str] = list()
         self._parse_json()
         # Parsing stackFrames is currently not implemented
         # x = data["stackFrames"]
@@ -142,8 +142,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         # TODO: The following way to extract the timestampUnit is certainly not the best solution. However, I am not yet sure what's the best alternative.
         with open(self.path, "r", encoding="utf-8") as f:
             for timestamp_unit in ijson.items(f, "timestampUnit"):
-                self.__timestamp_unit = str(timestamp_unit)
-        self.__trace_events = trace_events
+                self.__timestamp_unit: str = str(timestamp_unit)
+        self.__trace_events: tp.List[TraceEvent] = trace_events
 
 
 class TEFReportAggregate(
