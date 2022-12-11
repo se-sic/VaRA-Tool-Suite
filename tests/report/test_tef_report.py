@@ -164,7 +164,7 @@ class TestTraceEvent(unittest.TestCase):
     def test_category_parsing(self):
         """Test if we can correctly parse event categories."""
         self.assertEqual(self.trace_event.category, "Feature")
-        self.assertNotEqual(self.trace_event.name_id, 42)
+        self.assertNotEqual(self.trace_event.category, "Foo")
 
     def test_event_type_parsing(self):
         """Test if we can correctly parse event type."""
@@ -181,26 +181,26 @@ class TestTraceEvent(unittest.TestCase):
         self.assertEqual(self.trace_event.timestamp, 1637675341728008439)
         self.assertIsInstance(self.trace_event.timestamp, int)
 
-        self.assertNotEqual(self.trace_event.name_id, 42)
-        self.assertNotEqual(self.trace_event.name_id, 0)
+        self.assertNotEqual(self.trace_event.timestamp, 1637675341728008438)
+        self.assertNotEqual(self.trace_event.timestamp, 0)
 
     def test_pid_parsing(self):
         """Test if we can correctly parse event pid."""
         self.assertEqual(self.trace_event.pid, 91098)
         self.assertIsInstance(self.trace_event.pid, int)
 
-        self.assertNotEqual(self.trace_event.name_id, 91099)
-        self.assertNotEqual(self.trace_event.name_id, 91097)
-        self.assertNotEqual(self.trace_event.name_id, 0)
+        self.assertNotEqual(self.trace_event.pid, 91099)
+        self.assertNotEqual(self.trace_event.pid, 91097)
+        self.assertNotEqual(self.trace_event.pid, 0)
 
     def test_tid_parsing(self):
         """Test if we can correctly parse event tid."""
         self.assertEqual(self.trace_event.tid, 91099)
         self.assertIsInstance(self.trace_event.tid, int)
 
-        self.assertNotEqual(self.trace_event.name_id, 91100)
-        self.assertNotEqual(self.trace_event.name_id, 91098)
-        self.assertNotEqual(self.trace_event.name_id, 0)
+        self.assertNotEqual(self.trace_event.tid, 91100)
+        self.assertNotEqual(self.trace_event.tid, 91098)
+        self.assertNotEqual(self.trace_event.tid, 0)
 
 
 class TestTEFReportParser(unittest.TestCase):

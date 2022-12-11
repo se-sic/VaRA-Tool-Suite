@@ -110,6 +110,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     @property
     def timestamp_unit(self) -> str:
+        print("TEST")
         return self.__timestamp_unit
 
     @property
@@ -139,8 +140,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     self.__key_name_map.append(trace_event["name"])
                     name_id = len(self.__key_name_map) - 1
                 trace_events.append(TraceEvent(trace_event, name_id))
-            # TODO: This is certainly not the best solution. However, I am not sure how to do it better without slowing down the code above significantly.
-            f.seek(0)
+        # TODO: The following way to extract the timestampUnit is certainly not the best solution. However, I am not yet sure what's the best alternative.
+        with open(self.path, "r", encoding="utf-8") as f:
             for timestamp_unit in ijson.items(f, "timestampUnit"):
                 self.__timestamp_unit = str(timestamp_unit)
         self.__trace_events = trace_events
