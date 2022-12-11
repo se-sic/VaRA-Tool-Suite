@@ -1,10 +1,11 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
 
-import json
 import typing as tp
 from enum import Enum
 from pathlib import Path
+
+import ijson
 
 from varats.report.report import BaseReport, ReportAggregate
 
@@ -46,8 +47,10 @@ class TraceEvent():
     """Represents a trace event that was captured during the analysis of a
     target program."""
 
-    def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
-        self.__name = str(json_trace_event["name"])
+    def __init__(
+        self, json_trace_event: tp.Dict[str, tp.Any], name_id: int
+    ) -> None:
+        self.__name_id = name_id
         self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
             json_trace_event["ph"]
@@ -57,8 +60,8 @@ class TraceEvent():
         self.__tid = int(json_trace_event["tid"])
 
     @property
-    def name(self) -> str:
-        return self.__name
+    def name_id(self) -> int:
+        return self.__name_id
 
     @property
     def category(self) -> str:
@@ -82,7 +85,7 @@ class TraceEvent():
 
     def __str__(self) -> str:
         return f"""{{
-    name: {self.name}
+    name_id: {self.name_id}
     cat: {self.category}
     ph: {self.event_type}
     ts: {self.timestamp}
@@ -100,18 +103,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-
-        with open(self.path, "r", encoding="utf-8") as json_tef_report:
-            data = json.load(json_tef_report)
-
-            self.__display_time_unit = str(data["displayTimeUnit"])
-            self.__trace_events = self._parse_trace_events(data["traceEvents"])
-            # Parsing stackFrames is currently not implemented
-            # x = data["stackFrames"]
+        self.__key_name_map = list()
+        self._parse_json()
+        # Parsing stackFrames is currently not implemented
+        # x = data["stackFrames"]
 
     @property
-    def display_time_unit(self) -> str:
-        return self.__display_time_unit
+    def timestamp_unit(self) -> str:
+        return self.__timestamp_unit
 
     @property
     def trace_events(self) -> tp.List[TraceEvent]:
@@ -123,11 +122,28 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
-    @staticmethod
-    def _parse_trace_events(
-        raw_event_list: tp.List[tp.Dict[str, tp.Any]]
-    ) -> tp.List[TraceEvent]:
-        return [TraceEvent(data_item) for data_item in raw_event_list]
+    @property
+    def key_name_map(self) -> tp.List[str]:
+        return self.__key_name_map
+
+    def get_name_by_id(self, name_id: int) -> str:
+        return self.key_name_map[name_id]
+
+    def _parse_json(self) -> None:
+        trace_events = list()
+        with open(self.path, "r", encoding="utf-8") as f:
+            for trace_event in ijson.items(f, "traceEvents.item"):
+                if trace_event["name"] in self.__key_name_map:
+                    name_id = self.__key_name_map.index(trace_event["name"])
+                else:
+                    self.__key_name_map.append(trace_event["name"])
+                    name_id = len(self.__key_name_map) - 1
+                trace_events.append(TraceEvent(trace_event, name_id))
+            # TODO: This is certainly not the best solution. However, I am not sure how to do it better without slowing down the code above significantly.
+            f.seek(0)
+            for timestamp_unit in ijson.items(f, "timestampUnit"):
+                self.__timestamp_unit = str(timestamp_unit)
+        self.__trace_events = trace_events
 
 
 class TEFReportAggregate(
