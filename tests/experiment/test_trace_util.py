@@ -36,7 +36,7 @@ TRACE_1 = {
         "ts": "2.99",
         "sf": "0"
     }],
-    "displayTimeUnit": "ns",
+    "timestampUnit": "ns",
     "stackFrames": {
         "0": {
             "name": "main"

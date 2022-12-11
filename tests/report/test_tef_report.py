@@ -65,7 +65,7 @@ TRACE_EVENT_FORMAT_OUTPUT = """{
         "pid": 91098,
         "tid": 91098
     } ],
-    "displayTimeUnit": "ns",
+    "timestampUnit": "ns",
     "stackFrames": {}
 }
 """
@@ -154,17 +154,17 @@ class TestTraceEvent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Load trace event."""
-        cls.trace_event = TraceEvent(json.loads(SINGLE_TRACE_EVENT))
+        cls.trace_event = TraceEvent(json.loads(SINGLE_TRACE_EVENT), 42)
 
     def test_name_parsing(self):
-        """Test if we can correctly parse event names."""
-        self.assertEqual(self.trace_event.name, "Base")
-        self.assertNotEqual(self.trace_event.name, "Foo")
+        """Test if we can correctly parse event name IDs."""
+        self.assertEqual(self.trace_event.name_id, 42)
+        self.assertNotEqual(self.trace_event.name_id, 1337)
 
     def test_category_parsing(self):
         """Test if we can correctly parse event categories."""
         self.assertEqual(self.trace_event.category, "Feature")
-        self.assertNotEqual(self.trace_event.name, "Foo")
+        self.assertNotEqual(self.trace_event.name_id, 42)
 
     def test_event_type_parsing(self):
         """Test if we can correctly parse event type."""
@@ -181,26 +181,26 @@ class TestTraceEvent(unittest.TestCase):
         self.assertEqual(self.trace_event.timestamp, 1637675341728008439)
         self.assertIsInstance(self.trace_event.timestamp, int)
 
-        self.assertNotEqual(self.trace_event.name, 1637675341728008438)
-        self.assertNotEqual(self.trace_event.name, 0)
+        self.assertNotEqual(self.trace_event.name_id, 42)
+        self.assertNotEqual(self.trace_event.name_id, 0)
 
     def test_pid_parsing(self):
         """Test if we can correctly parse event pid."""
         self.assertEqual(self.trace_event.pid, 91098)
         self.assertIsInstance(self.trace_event.pid, int)
 
-        self.assertNotEqual(self.trace_event.name, 91099)
-        self.assertNotEqual(self.trace_event.name, 91097)
-        self.assertNotEqual(self.trace_event.name, 0)
+        self.assertNotEqual(self.trace_event.name_id, 91099)
+        self.assertNotEqual(self.trace_event.name_id, 91097)
+        self.assertNotEqual(self.trace_event.name_id, 0)
 
     def test_tid_parsing(self):
         """Test if we can correctly parse event tid."""
         self.assertEqual(self.trace_event.tid, 91099)
         self.assertIsInstance(self.trace_event.tid, int)
 
-        self.assertNotEqual(self.trace_event.name, 91100)
-        self.assertNotEqual(self.trace_event.name, 91098)
-        self.assertNotEqual(self.trace_event.name, 0)
+        self.assertNotEqual(self.trace_event.name_id, 91100)
+        self.assertNotEqual(self.trace_event.name_id, 91098)
+        self.assertNotEqual(self.trace_event.name_id, 0)
 
 
 class TestTEFReportParser(unittest.TestCase):
@@ -219,14 +219,17 @@ class TestTEFReportParser(unittest.TestCase):
 
     def test_parse_time_unit(self) -> None:
         """Test if the time unit field is correclty parsed."""
-        self.assertEqual(self.report.display_time_unit, "ns")
-        self.assertNotEqual(self.report.display_time_unit, "ms")
+        self.assertEqual(self.report.timestamp_unit, "ns")
+        self.assertNotEqual(self.report.timestamp_unit, "ms")
 
     def test_parse_trace_events(self) -> None:
         """Test if we correctly parse the listed trace events."""
         self.assertEqual(len(self.report.trace_events), 8)
 
-        self.assertEqual(self.report.trace_events[0].name, "Base")
+        self.assertEqual(
+            self.report.get_name_by_id(self.report.trace_events[0].name_id),
+            "Base"
+        )
 
     def test_parse_stack_frames(self) -> None:
         """Test if we correctly parse stack frames."""
