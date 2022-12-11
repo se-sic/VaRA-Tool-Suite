@@ -110,7 +110,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     @property
     def timestamp_unit(self) -> str:
-        print("TEST")
         return self.__timestamp_unit
 
     @property
