@@ -268,7 +268,7 @@ class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
 
         rev_list = list(filter(self.version_filter, rev_list))
         rev_list = rev_list[:self.limit] if self.limit else rev_list
-        variants = [base.Variant(version=rev, owner=self) for rev in rev_list]
+        return [base.Variant(version=rev, owner=self) for rev in rev_list if proj_filter(rev)]
 
         proj_filter = project_filter_generator(self.__project_name)
 
