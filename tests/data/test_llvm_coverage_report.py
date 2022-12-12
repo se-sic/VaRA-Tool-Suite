@@ -1,7 +1,7 @@
 import unittest
 from copy import deepcopy
 
-from varats.experiments.vara.llvm_coverage_experiment import (
+from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
     RegionStart,
