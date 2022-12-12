@@ -131,7 +131,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     def _parse_json(self) -> None:
         trace_events = list()
-        with open(self.path, "r", encoding="utf-8") as f:
+        with open(self.path, "rb") as f:
             for trace_event in ijson.items(f, "traceEvents.item"):
                 if trace_event["name"] in self.__key_name_map:
                     name_id = self.__key_name_map.index(trace_event["name"])
@@ -140,7 +140,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     name_id = len(self.__key_name_map) - 1
                 trace_events.append(TraceEvent(trace_event, name_id))
         # TODO: The following way to extract the timestampUnit is certainly not the best solution. However, I am not yet sure what's the best alternative.
-        with open(self.path, "r", encoding="utf-8") as f:
+        with open(self.path, "rb") as f:
             for timestamp_unit in ijson.items(f, "timestampUnit"):
                 self.__timestamp_unit: str = str(timestamp_unit)
         self.__trace_events: tp.List[TraceEvent] = trace_events
