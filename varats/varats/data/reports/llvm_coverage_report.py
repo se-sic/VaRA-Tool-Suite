@@ -1,3 +1,5 @@
+"""Code region tree and coverage report."""
+
 from __future__ import annotations
 
 import json
@@ -191,6 +193,7 @@ FilenameFunctionMapping = tp.NewType(
 
 
 class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
+    """Parses llvm-cov export json files and displays them."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
