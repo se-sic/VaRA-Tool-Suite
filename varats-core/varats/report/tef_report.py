@@ -48,8 +48,10 @@ class TraceEvent():
     target program."""
 
     def __init__(
-        self, json_trace_event: tp.Dict[str, tp.Any], name_id: int
+        self, json_trace_event: tp.Dict[str, tp.Any], name_id: int,
+        name_id_mapper: 'TEFReport.NameIDMapper'
     ) -> None:
+        self.__name_id_mapper = name_id_mapper
         self.__name_id = name_id
         self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
@@ -60,8 +62,8 @@ class TraceEvent():
         self.__tid = int(json_trace_event["tid"])
 
     @property
-    def name_id(self) -> int:
-        return self.__name_id
+    def name(self) -> str:
+        return self.__name_id_mapper.infer_name(self.__name_id)
 
     @property
     def category(self) -> str:
@@ -85,7 +87,7 @@ class TraceEvent():
 
     def __str__(self) -> str:
         return f"""{{
-    name_id: {self.name_id}
+    name: {self.name}
     cat: {self.category}
     ph: {self.event_type}
     ts: {self.timestamp}
@@ -101,9 +103,15 @@ class TraceEvent():
 class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     """Report class to access trace event format files."""
 
+    class NameIDMapper(list):
+        """Helper class to map name IDs to names."""
+
+        def infer_name(self, name_id: int) -> str:
+            return self[name_id]
+
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        self.__key_name_map: tp.List[str] = list()
+        self.__name_id_mapper: TEFReport.NameIDMapper = TEFReport.NameIDMapper()
         self._parse_json()
         # Parsing stackFrames is currently not implemented
         # x = data["stackFrames"]
@@ -122,23 +130,18 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
-    @property
-    def key_name_map(self) -> tp.List[str]:
-        return self.__key_name_map
-
-    def get_name_by_id(self, name_id: int) -> str:
-        return self.key_name_map[name_id]
-
     def _parse_json(self) -> None:
         trace_events = list()
         with open(self.path, "rb") as f:
             for trace_event in ijson.items(f, "traceEvents.item"):
-                if trace_event["name"] in self.__key_name_map:
-                    name_id = self.__key_name_map.index(trace_event["name"])
+                if trace_event["name"] in self.__name_id_mapper:
+                    name_id = self.__name_id_mapper.index(trace_event["name"])
                 else:
-                    self.__key_name_map.append(trace_event["name"])
-                    name_id = len(self.__key_name_map) - 1
-                trace_events.append(TraceEvent(trace_event, name_id))
+                    self.__name_id_mapper.append(trace_event["name"])
+                    name_id = len(self.__name_id_mapper) - 1
+                trace_events.append(
+                    TraceEvent(trace_event, name_id, self.__name_id_mapper)
+                )
         # TODO: The following way to extract the timestampUnit is certainly not the best solution. However, I am not yet sure what's the best alternative.
         with open(self.path, "rb") as f:
             for timestamp_unit in ijson.items(f, "timestampUnit"):
