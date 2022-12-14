@@ -103,7 +103,7 @@ class TraceEvent():
 class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     """Report class to access trace event format files."""
 
-    class NameIDMapper(list):
+    class NameIDMapper(tp.List[str]):
         """Helper class to map name IDs to names."""
 
         def infer_name(self, name_id: int) -> str:
