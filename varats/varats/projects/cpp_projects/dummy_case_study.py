@@ -29,7 +29,7 @@ class DummyCaseStudy(VProject, ReleaseProviderHook):
     """Test project for feature performance case studies."""
 
     NAME = 'DummyCaseStudy'
-    GROUP = 'perf_tests'
+    GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
