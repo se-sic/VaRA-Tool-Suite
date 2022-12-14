@@ -80,6 +80,7 @@ def create_new_bb_config(
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
         'varats.projects.cpp_projects.clasp',
+        'varats.projects.cpp_projects.dummy_case_study',
         'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',

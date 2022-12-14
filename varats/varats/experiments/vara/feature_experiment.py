@@ -91,7 +91,8 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         """
         c_flags = [
             "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
-            "-fuse-ld=lld", "-flegacy-pass-manager"
+            "-fuse-ld=lld", "-flegacy-pass-manager",
+            "-fvara-instruction-threshold=1"
         ]
         if save_temps:
             c_flags += ["-Wl,-plugin-opt=save-temps"]
