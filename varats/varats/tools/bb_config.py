@@ -80,7 +80,6 @@ def create_new_bb_config(
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
         'varats.projects.cpp_projects.clasp',
-        'varats.projects.cpp_projects.dummy_case_study',
         'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
@@ -102,7 +101,8 @@ def create_new_bb_config(
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
-            'varats.projects.perf_tests.feature_perf_cs_collection'
+            'varats.projects.perf_tests.feature_perf_cs_collection',
+            'varats.projects.perf_tests.dummy_case_study',
         ]
 
     # Experiments for VaRA

@@ -24,12 +24,12 @@ from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
-# TODO: Name
+# TODO: Name: RegressionCaseStudy?
 class DummyCaseStudy(VProject, ReleaseProviderHook):
-    """Test project for feature performance case studies."""
+    """Test project for identifying performance regressions across revisions."""
 
     NAME = 'DummyCaseStudy'
-    GROUP = 'cpp_projects'
+    GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
