@@ -113,9 +113,7 @@ class FeaturePerformanceAnalysisTable(
                        revisions: tp.List[CommitHash]) -> tp.List[CommitHash]:
         """Sorts revision by time."""
         commit_map = get_commit_map(case_study.project_name)
-        project_revisions = sorted(
-            case_study.revisions, key=commit_map.time_id, reverse=True
-        )
+        project_revisions = sorted(case_study.revisions, key=commit_map.time_id)
         return [
             h.to_short_commit_hash()
             for h in project_revisions
