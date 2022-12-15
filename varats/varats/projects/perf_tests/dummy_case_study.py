@@ -75,11 +75,11 @@ class DummyCaseStudy(VProject, ReleaseProviderHook):
             self.source_of(self.primary_source)
         )
 
-        cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
-
         # Decrease instruction threshold and disable exceptions
         self.cflags += ["-fvara-instruction-threshold=1", "-fno-exceptions"]
+
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
 
         mkdir("-p", dummy_case_study_source / "build")
 
