@@ -4,6 +4,7 @@ import typing as tp
 
 import more_itertools
 import pandas as pd
+from pandas import CategoricalDtype
 
 from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
 from varats.mapping.commit_map import get_commit_map
@@ -143,56 +144,11 @@ class FeaturePerformanceAnalysisTable(
             "Revision": agg_tef_report.filename.commit_hash,
             "Workload": workload,
             "Config ID": agg_tef_report.filename.config_id,
-            "Feature Performances": feature_performances,
+            **feature_performances
         }
 
-    @staticmethod
-    def get_output_row_from_revision_data(
-        revision_1_data: pd.DataFrame, revision_2_data: pd.DataFrame
-    ) -> tp.Dict[str, str]:
-        """Returns a dict with information about feature performance changes
-        between two releases."""
-        project_name = revision_1_data['Project'].iloc[0]
-        workload = revision_1_data['Workload'].iloc[0]
-        revision_1 = revision_1_data['Revision'].iloc[0]
-        revision_2 = revision_2_data['Revision'].iloc[0]
-
-        feature_performances_df_revision_1 = (
-            pd.DataFrame.from_records(
-                revision_1_data["Feature Performances"].values
-            )
-        )
-        feature_performances_df_revision_2 = (
-            pd.DataFrame.from_records(
-                revision_2_data["Feature Performances"].values
-            )
-        )
-
-        # TODO: Does using mean make sense here?
-        # TODO: Should we only respect the minimal configs for
-        # this option/interaction or is the mean over all
-        # configs in which the option is active (!= NaN) ok?
-        feature_performances_df_revision_1_mean = (
-            feature_performances_df_revision_1.mean()
-        )
-        feature_performances_df_revision_2_mean = (
-            feature_performances_df_revision_2.mean()
-        )
-        diff = (
-            feature_performances_df_revision_2_mean -
-            feature_performances_df_revision_1_mean
-        )
-
-        return dict({
-            "Project": project_name,
-            "Workload": workload,
-            "Revision 1": revision_1,
-            "Revision 2": revision_2,
-        }, **diff)
-
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        internal_df = pd.DataFrame()
-        output_df = pd.DataFrame()
+        df = pd.DataFrame()
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
             # Parse reports
@@ -216,52 +172,36 @@ class FeaturePerformanceAnalysisTable(
 
                 for workload in agg_tef_report.workload_names():
                     workloads.add(workload)
-                    internal_df = internal_df.append(
+                    df = df.append(
                         self.get_feature_performances_row(
                             case_study, agg_tef_report, workload
                         ),
                         ignore_index=True,
                     )
 
-            # Sort revisions so that we can compare consecutive releases
-            sorted_revisions = self.sort_revisions(case_study, list(revisions))
+            if not df.empty:
+                # Sort revisions so that we can compare consecutive releases later
+                sorted_revisions = self.sort_revisions(
+                    case_study, list(revisions)
+                )
+                sorted_revisions = CategoricalDtype(
+                    sorted_revisions, ordered=True
+                )
+                df['Revision'] = df['Revision'].astype(sorted_revisions)
 
-            # Compare reports
-            for workload in workloads:
-                # Use sliding window to always compare two consecutive releases
-                for revision_1, revision_2 in more_itertools.windowed(
-                    sorted_revisions, 2
-                ):
-                    if revision_2 is not None:
-                        revision_1_data = internal_df[
-                            (internal_df["Project"] == case_study.project_name)
-                            & (internal_df["Workload"] == workload) &
-                            (internal_df["Revision"] == revision_1)]
-                        revision_2_data = internal_df[
-                            (internal_df["Project"] == case_study.project_name)
-                            & (internal_df["Workload"] == workload) &
-                            (internal_df["Revision"] == revision_2)]
-                        output_row = self.get_output_row_from_revision_data(
-                            revision_1_data,
-                            revision_2_data,
-                        )
-                        output_df = output_df.append(
-                            output_row,
-                            ignore_index=True,
-                        )
-
-        output_df.sort_values(["Project"], inplace=True)
-        output_df.set_index(
+        df.sort_values(["Project", "Revision", "Workload", "Config ID"],
+                       inplace=True)
+        df.set_index(
             ["Project"],
             inplace=True,
         )
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = ("c|" * len(output_df.columns)) + "c"
+            kwargs["column_format"] = ("c|" * len(df.columns)) + "c"
 
         return dataframe_to_table(
-            output_df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df, table_format, wrap_table, wrap_landscape=True, **kwargs
         )
 
 
