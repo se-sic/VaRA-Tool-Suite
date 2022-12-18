@@ -144,7 +144,8 @@ class FeaturePerformanceAnalysisTable(
             "Revision": agg_tef_report.filename.commit_hash,
             "Workload": workload,
             "Config_ID": agg_tef_report.filename.config_id,
-            **feature_performances
+            "Timestamp_Unit": tef_report[0].timestamp_unit,
+            **feature_performances,
         }
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
