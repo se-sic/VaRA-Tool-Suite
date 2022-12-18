@@ -143,7 +143,7 @@ class FeaturePerformanceAnalysisTable(
             "Project": case_study.project_name,
             "Revision": agg_tef_report.filename.commit_hash,
             "Workload": workload,
-            "Config ID": agg_tef_report.filename.config_id,
+            "Config_ID": agg_tef_report.filename.config_id,
             **feature_performances
         }
 
@@ -189,7 +189,7 @@ class FeaturePerformanceAnalysisTable(
                 )
                 df['Revision'] = df['Revision'].astype(sorted_revisions)
 
-        df.sort_values(["Project", "Revision", "Workload", "Config ID"],
+        df.sort_values(["Project", "Revision", "Workload", "Config_ID"],
                        inplace=True)
         df.set_index(
             ["Project"],
