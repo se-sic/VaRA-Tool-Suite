@@ -15,6 +15,7 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
+    get_extra_config_options,
     ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import RunWLLVM
@@ -60,15 +61,17 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 return actions.StepResult.ERROR
             for prj_command in self.__workload_cmds:
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
-                print(f"{pb_cmd}")
 
+                extra_args = get_extra_config_options(self.project)
                 profdata_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",
                     prj_command.command,
-                    file_suffix=".profdata"
+                    file_suffix=f".{extra_args}.profdata"
                 )
                 json_name = tmp_dir / create_workload_specific_filename(
-                    "coverage_report", prj_command.command, file_suffix=".json"
+                    "coverage_report",
+                    prj_command.command,
+                    file_suffix=f".{extra_args}.json"
                 )
 
                 profile_raw_name = f"{prj_command.path.name}.profraw"
@@ -79,7 +82,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                                     f"--instr-profile={profdata_name}"]
 
                 with cleanup(prj_command):
-                    run_cmd()
+                    run_cmd(*extra_args)
                     llvm_profdata(
                         "merge", profile_raw_name, "-o", profdata_name
                     )
@@ -121,33 +124,34 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
+        analysis_actions = []
+        analysis_actions.append(actions.Compile(project))
+
         # Only consider binaries with a workload
-        workload_cmds_list = []
         for binary in project.binaries:
             workload_cmds = workload_commands(
                 project, binary, [WorkloadCategory.EXAMPLE]
             )
-            if workload_cmds:
-                workload_cmds_list.append(workload_cmds)
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report,
-            project,
-            binary,
-        )
-
-        analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(actions.Echo(result_filepath))
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath,
-                [
-                    GenerateCoverage(project, workload_cmds, self.get_handle())
-                    for workload_cmds in workload_cmds_list
-                ],
+            if not workload_cmds:
+                continue
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report,
+                project,
+                binary,
             )
-        )
+
+            analysis_actions.append(actions.Echo(result_filepath))
+            analysis_actions.append(
+                ZippedExperimentSteps(
+                    result_filepath,
+                    [
+                        GenerateCoverage(
+                            project, workload_cmds, self.get_handle()
+                        )
+                    ],
+                )
+            )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
