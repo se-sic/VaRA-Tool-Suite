@@ -42,17 +42,25 @@ def create_new_bb_config(
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
+        # yapf: disable
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
-        'varats.projects.c_projects.brotli', 'varats.projects.c_projects.bzip2',
+        'varats.projects.c_projects.brotli',
+        'varats.projects.c_projects.bzip2',
         'varats.projects.c_projects.coreutils',
-        'varats.projects.c_projects.curl', 'varats.projects.c_projects.file',
-        'varats.projects.c_projects.gawk', 'varats.projects.c_projects.git',
-        'varats.projects.c_projects.glib', 'varats.projects.c_projects.glibc',
-        'varats.projects.c_projects.gravity', 'varats.projects.c_projects.grep',
-        'varats.projects.c_projects.gzip', 'varats.projects.c_projects.htop',
-        'varats.projects.c_projects.hypre', 'varats.projects.c_projects.irssi',
+        'varats.projects.c_projects.curl',
+        'varats.projects.c_projects.file',
+        'varats.projects.c_projects.gawk',
+        'varats.projects.c_projects.git',
+        'varats.projects.c_projects.glib',
+        'varats.projects.c_projects.glibc',
+        'varats.projects.c_projects.gravity',
+        'varats.projects.c_projects.grep',
+        'varats.projects.c_projects.gzip',
+        'varats.projects.c_projects.htop',
+        'varats.projects.c_projects.hypre',
+        'varats.projects.c_projects.irssi',
         'varats.projects.c_projects.libjpeg_turbo',
         'varats.projects.c_projects.libpng',
         'varats.projects.c_projects.libsigrok',
@@ -60,18 +68,25 @@ def create_new_bb_config(
         'varats.projects.c_projects.libtiff',
         'varats.projects.c_projects.libvpx',
         'varats.projects.c_projects.libxml2',
-        'varats.projects.c_projects.lrzip', 'varats.projects.c_projects.lz4',
+        'varats.projects.c_projects.lrzip',
+        'varats.projects.c_projects.lz4',
         'varats.projects.c_projects.openssl',
-        'varats.projects.c_projects.openvpn', 'varats.projects.c_projects.opus',
-        'varats.projects.c_projects.qemu', 'varats.projects.c_projects.redis',
-        'varats.projects.c_projects.tmux', 'varats.projects.c_projects.vim',
-        'varats.projects.c_projects.x264', 'varats.projects.c_projects.xz',
+        'varats.projects.c_projects.openvpn',
+        'varats.projects.c_projects.opus',
+        'varats.projects.c_projects.qemu',
+        'varats.projects.c_projects.redis',
+        'varats.projects.c_projects.tmux',
+        'varats.projects.c_projects.vim',
+        'varats.projects.c_projects.x264',
+        'varats.projects.c_projects.xz',
         'varats.projects.cpp_projects.clasp',
+        'varats.projects.cpp_projects.ect',
         'varats.projects.cpp_projects.fast_downward',
+        'varats.projects.cpp_projects.lepton',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
-        'varats.projects.cpp_projects.z3', 'varats.projects.cpp_projects.ect'
+        'varats.projects.cpp_projects.z3'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -84,6 +99,7 @@ def create_new_bb_config(
             'varats.projects.test_projects.example_test_repo',
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
+            'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection'
         ]
@@ -109,6 +125,7 @@ def create_new_bb_config(
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
     ]
+    # yapf: enable
 
     # Enable version exploration by default
     new_bb_cfg["versions"]["full"] = True

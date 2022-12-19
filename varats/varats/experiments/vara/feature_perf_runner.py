@@ -9,6 +9,7 @@ from varats.experiment.experiment_util import get_default_compile_error_wrapped
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
+    RunVaRATracedXRayWorkloads,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -62,3 +63,41 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
+
+
+class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
+    """Test runner for feature performance with XRay."""
+
+    NAME = "RunFeatureXRayPerf"
+
+    REPORT_SPEC = ReportSpecification(TEFReport)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        project.cflags += self.get_vara_feature_cflags(project)
+
+        project.cflags += self.get_vara_tracing_cflags("trace_event")
+
+        project.cflags += [
+            "-fxray-instrument",
+            "-fxray-instruction-threshold=1",
+        ]
+
+        project.ldflags += self.get_vara_tracing_ldflags()
+
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+            << time.RunWithTime()
+
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << run.WithTimeout()
+
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, TEFReport
+        )
+
+        return [
+            actions.Compile(project),
+            RunVaRATracedXRayWorkloads(project, self.get_handle()),
+            actions.Clean(project),
+        ]

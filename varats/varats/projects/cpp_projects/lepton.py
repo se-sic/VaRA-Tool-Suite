@@ -1,4 +1,4 @@
-"""Project file for ECT."""
+"""Project file for lepton."""
 import typing as tp
 
 import benchbuild as bb
@@ -18,22 +18,19 @@ from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
 
-class Ect(VProject):
-    """
-    Efficient Compression Tool (or ECT) is a C++ file optimizer.
+class Lepton(VProject):
+    """Lepton is a tool and file format for losslessly compressing JPEGs by an
+    average of 22%."""
 
-    It supports PNG, JPEG, GZIP and ZIP files.
-    """
-
-    NAME = 'ect'
+    NAME = 'lepton'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.COMPRESSION
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="ect",
-            remote="https://github.com/fhanau/Efficient-Compression-Tool.git",
-            local="ect",
+            project_name="lepton",
+            remote="https://github.com/dropbox/lepton",
+            local="lepton",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
@@ -42,15 +39,15 @@ class Ect(VProject):
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'nasm', 'git', 'cmake', 'make')
+    ).run('apt', 'install', '-y', 'git', 'cmake', 'make')
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Ect.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_git_path(Lepton.NAME))
 
-        binary_map.specify_binary("build/ect", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("build/lepton", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -59,15 +56,15 @@ class Ect(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        ect_source = local.path(self.source_of_primary)
+        lepton_source = local.path(self.source_of_primary)
 
         cpp_compiler = bb.compiler.cxx(self)
-        mkdir(ect_source / "build")
-        with local.cwd(ect_source / "build"):
+        mkdir("-p", lepton_source / "build")
+        with local.cwd(lepton_source / "build"):
             with local.env(CXX=str(cpp_compiler)):
-                bb.watch(cmake)("../src")
+                bb.watch(cmake)("..")
 
-            bb.watch(make)()
+            bb.watch(make)("-j8")
 
-        with local.cwd(ect_source):
+        with local.cwd(lepton_source):
             verify_binaries(self)
