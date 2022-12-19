@@ -143,7 +143,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
-                    for repetition in range(0, 2):
+                    for repetition in range(0, 5):
                         for prj_command in workload_commands(
                             self.project, binary, [WorkloadCategory.EXAMPLE]
                         ):
