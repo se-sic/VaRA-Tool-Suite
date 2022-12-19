@@ -33,7 +33,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from benchbuild.utils.cmd import git
-from packaging.version import LegacyVersion, Version
+from packaging.version import Version
 from packaging.version import parse as parse_version
 from plumbum import local
 
@@ -164,8 +164,7 @@ def __collect_via_version(
     results: CVEDict = defaultdict(__create_cve_dict_entry)
 
     # Collect tagged commits
-    tag_list: tp.Dict[tp.Union[LegacyVersion, Version], tp.Dict[str,
-                                                                tp.Any]] = {}
+    tag_list: tp.Dict[Version, tp.Dict[str, tp.Any]] = {}
     for number, commit_data in enumerate(reversed(commits)):
         commit, message = commit_data
         tag = re.findall(r'\(tag:\s*.*\)', message, re.IGNORECASE)
