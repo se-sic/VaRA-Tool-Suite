@@ -1,18 +1,29 @@
 """Display the coverage data."""
 
 import typing as tp
-from pathlib import Path
+from collections import defaultdict
 
+from varats.base.configuration import (
+    PlainCommandlineConfiguration,
+    Configuration,
+)
 from varats.data.reports.llvm_coverage_report import CoverageReport
-from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.report.report import ReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
+from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash
+
+ConfigsCoverageReportMapping = tp.NewType(
+    "ConfigsCoverageReportMapping", tp.Dict[Configuration, CoverageReport]
+)
+
+BinaryConfigsMapping = tp.NewType(
+    "BinaryConfigsMapping", tp.DefaultDict[str, ConfigsCoverageReportMapping]
+)
 
 
 class CoveragePlot(Plot, plot_name="coverage"):
@@ -31,23 +42,35 @@ class CoveragePlot(Plot, plot_name="coverage"):
             project_name = case_study.project_name
 
             report_files = get_processed_revisions_files(
-                project_name, self.plot_kwargs["experiment_type"][0],
-                WLCoverageReportAggregate,
-                get_case_study_file_name_filter(case_study)
+                project_name,
+                self.plot_kwargs["experiment_type"][0],
+                CoverageReport,
+                get_case_study_file_name_filter(case_study),
+                only_newest=False,
+            )
+
+            config_map = load_configuration_map_for_case_study(
+                get_loaded_paper_config(), case_study,
+                PlainCommandlineConfiguration
+            )
+
+            binary_config_map: BinaryConfigsMapping = BinaryConfigsMapping(
+                defaultdict(lambda: ConfigsCoverageReportMapping({}))
             )
 
             for report_filepath in report_files:
-                coverage_report = WLCoverageReportAggregate(
-                    report_filepath.full_path()
-                )
-                report_file = coverage_report.filename
+                binary = report_filepath.report_filename.binary_name
+                config_id = report_filepath.report_filename.config_id
+                assert config_id is not None
 
-                for workload_name in coverage_report.workload_names():
-                    for wall_clock_time in \
-                            coverage_report.measurements_wall_clock_time(
-                        workload_name
-                    ):
-                        pass
+                coverage_report = CoverageReport(report_filepath.full_path())
+                config = config_map.get_configuration(config_id)
+                assert config is not None
+                binary_config_map[binary][config] = coverage_report
+
+                #report_file = coverage_report.filename
+                #config_id = coverage_report.filename.config_id
+            print(binary_config_map)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -64,17 +87,3 @@ class CoveragePlotGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [CoveragePlot(self.plot_config, **self.plot_kwargs)]
-
-
-class WLCoverageReportAggregate(
-    WorkloadSpecificReportAggregate[CoverageReport],
-    shorthand=CoverageReport.SHORTHAND + ReportAggregate.SHORTHAND,
-    file_type=ReportAggregate.FILE_TYPE
-):
-    """Aggregate CoverageReports."""
-
-    def __init__(self, path: Path) -> None:
-        super().__init__(path, CoverageReport)
-
-    def workload_names(self) -> tp.Collection[str]:
-        return self.keys()

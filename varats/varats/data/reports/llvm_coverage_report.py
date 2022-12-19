@@ -136,7 +136,10 @@ class CodeRegion:
                 node.childs.append(region)
                 node.childs.sort()
                 region.parent = node
-                assert region.count <= node.count
+                # Actually this is possible,
+                # e.g. a for loop can be executed
+                # more often than its function.
+                #assert region.count <= node.count
                 break
 
     def diff(self, region: CodeRegion) -> None:
@@ -204,14 +207,12 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             def json_filter(x: Path) -> bool:
                 return x.name.endswith(".json")
 
-            filename_function_mapping = FilenameFunctionMapping({})
+            self.filename_function_mapping = FilenameFunctionMapping({})
             for json_file in filter(json_filter, Path(tmpdir).iterdir()):
-                filename_function_mapping = self._import_functions(
+                self.filename_function_mapping = self._import_functions(
                     json_file,
-                    filename_function_mapping,
+                    self.filename_function_mapping,
                 )
-
-        print(filename_function_mapping)
 
     def _import_functions(
         self, json_file: Path,

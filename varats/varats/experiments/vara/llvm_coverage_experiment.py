@@ -16,6 +16,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
     get_extra_config_options,
+    get_current_config_id,
     ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import RunWLLVM
@@ -47,7 +48,6 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
     ):
         super().__init__(project=project)
         self.__workload_cmds = workload_cmds
-        self.__experiment_handle = experiment_handle
 
     def __call__(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
@@ -139,6 +139,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
                 self.get_handle().report_spec().main_report,
                 project,
                 binary,
+                get_current_config_id(project),
             )
 
             analysis_actions.append(actions.Echo(result_filepath))
