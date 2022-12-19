@@ -143,19 +143,22 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
-                    for prj_command in workload_commands(
-                        self.project, binary, [WorkloadCategory.EXAMPLE]
-                    ):
-                        local_tracefile_path = Path(
-                            tmp_dir
-                        ) / f"trace_{prj_command.command.label}.json"
-                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
-                            pb_cmd = prj_command.command.as_plumbum(
-                                project=self.project
-                            )
-                            print(
-                                f"Running example {prj_command.command.label}"
-                            )
+                    for repetition in range(0, 2):
+                        for prj_command in workload_commands(
+                            self.project, binary, [WorkloadCategory.EXAMPLE]
+                        ):
+                            local_tracefile_path = Path(
+                                tmp_dir
+                            ) / f"trace_{prj_command.command.label}_{repetition}.json"
+                            with local.env(
+                                VARA_TRACE_FILE=local_tracefile_path
+                            ):
+                                pb_cmd = prj_command.command.as_plumbum(
+                                    project=self.project
+                                )
+                                print(
+                                    f"Running example {prj_command.command.label}"
+                                )
 
                             extra_options = get_extra_config_options(
                                 self.project
