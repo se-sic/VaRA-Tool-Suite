@@ -44,7 +44,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         self,
         project: Project,
         workload_cmds: tp.List[ProjectCommand],
-        experiment_handle: ExperimentHandle,
+        _experiment_handle: ExperimentHandle,
     ):
         super().__init__(project=project)
         self.__workload_cmds = workload_cmds
