@@ -96,6 +96,8 @@ class PhASARFTACheck(actions.ProjectStep):  # type: ignore
                 )
             )
 
+        return actions.StepResult.OK
+
 
 class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
     """Generates a feature taint analysis (FTA) of the project(s) specified in
