@@ -197,11 +197,12 @@ class FeaturePerformanceAnalysisTable(
                 std_df = df.groupby([
                     'Project', 'Revision', 'Workload', 'Config_ID',
                     'Timestamp_Unit'
-                ]).std() / df.groupby([
+                ]).std()
+                rel_std_df = std_df / df.groupby([
                     'Project', 'Revision', 'Workload', 'Config_ID',
                     'Timestamp_Unit'
                 ]).mean()
-                too_high_std_df = std_df[(std_df > 0.05).any(1)]
+                too_high_std_df = rel_std_df[(rel_std_df > 0.05).any(1)]
                 if not too_high_std_df.empty:
                     LOG.warning(
                         "There is a measurement that has a relative standard deviation of more than 5%."
@@ -214,7 +215,7 @@ class FeaturePerformanceAnalysisTable(
                     'Timestamp_Unit'
                 ]).mean()
 
-                df = df.join(std_df, rsuffix="_std").fillna(0)
+                df = df.join(std_df, rsuffix="_std")
 
         df.reset_index(inplace=True)
         df.sort_values(["Project", "Revision", "Workload", "Config_ID"],
