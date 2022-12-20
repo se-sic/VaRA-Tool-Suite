@@ -160,11 +160,11 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                     f"Running example {prj_command.command.label}"
                                 )
 
-                                extra_options = get_extra_config_options(
-                                    self.project
-                                )
-                                with cleanup(prj_command):
-                                    pb_cmd(*extra_options)
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd(*extra_options)
 
         return StepResult.OK
 
