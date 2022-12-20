@@ -190,31 +190,6 @@ class FeaturePerformanceAnalysisTable(
                 )
                 df['Revision'] = df['Revision'].astype(sorted_revisions)
 
-                df.insert(3, 'Repetition', '')
-                df[['Workload',
-                    'Repetition']] = df['Workload'].str.split('_', expand=True)
-
-                std_df = df.groupby([
-                    'Project', 'Revision', 'Workload', 'Config_ID',
-                    'Timestamp_Unit'
-                ]).std() / df.groupby([
-                    'Project', 'Revision', 'Workload', 'Config_ID',
-                    'Timestamp_Unit'
-                ]).mean()
-                too_high_std_df = std_df[(std_df > 0.05).any(1)]
-                if not too_high_std_df.empty:
-                    LOG.warning(
-                        "There is a measurement that has a relative standard deviation of more than 5%."
-                    )
-                    LOG.warning(df)
-                    LOG.warning(too_high_std_df)
-
-                df = df.groupby([
-                    'Project', 'Revision', 'Workload', 'Config_ID',
-                    'Timestamp_Unit'
-                ]).mean()
-
-        df.reset_index(inplace=True)
         df.sort_values(["Project", "Revision", "Workload", "Config_ID"],
                        inplace=True)
         df.set_index(
