@@ -2,7 +2,6 @@
 import logging
 import typing as tp
 
-import more_itertools
 import pandas as pd
 from pandas import CategoricalDtype
 
@@ -181,7 +180,8 @@ class FeaturePerformanceAnalysisTable(
                     )
 
             if not df.empty:
-                # Sort revisions so that we can compare consecutive releases later
+                # Sort revisions so that we can compare consecutive releases
+                # later
                 sorted_revisions = self.sort_revisions(
                     case_study, list(revisions)
                 )
