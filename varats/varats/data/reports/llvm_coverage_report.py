@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import shutil
 import typing as tp
-from collections import deque
+from collections import deque, defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -142,6 +142,13 @@ class CodeRegion:
                 #assert region.count <= node.count
                 break
 
+    def merge(self, region: CodeRegion) -> None:
+        """Merges region into self by adding all counts of region to the counts
+        of self."""
+        for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
+            assert x == y, "CodeRegions are not identical"
+            x.count += y.count
+
     def diff(self, region: CodeRegion) -> None:
         """Builds the difference between self and region by subtracting all
         counts in region from self."""
@@ -191,7 +198,7 @@ FunctionCodeRegionMapping = tp.NewType(
     "FunctionCodeRegionMapping", tp.Dict[str, CodeRegion]
 )
 FilenameFunctionMapping = tp.NewType(
-    "FilenameFunctionMapping", tp.Dict[str, FunctionCodeRegionMapping]
+    "FilenameFunctionMapping", tp.DefaultDict[str, FunctionCodeRegionMapping]
 )
 
 
@@ -207,12 +214,34 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             def json_filter(x: Path) -> bool:
                 return x.name.endswith(".json")
 
-            self.filename_function_mapping = FilenameFunctionMapping({})
+            self.filename_function_mapping = FilenameFunctionMapping(
+                defaultdict(lambda: FunctionCodeRegionMapping({}))
+            )
             for json_file in filter(json_filter, Path(tmpdir).iterdir()):
                 self.filename_function_mapping = self._import_functions(
                     json_file,
                     self.filename_function_mapping,
                 )
+
+    def merge(self, report: CoverageReport):
+        """Merge report into self."""
+        for filename_a, filename_b in zip(
+            self.filename_function_mapping, report.filename_function_mapping
+        ):
+            assert filename_a == filename_b
+
+            for function_a, function_b in zip(
+                self.filename_function_mapping[filename_a],
+                report.filename_function_mapping[filename_b]
+            ):
+                assert function_a == function_b
+                code_region_a = self.filename_function_mapping[filename_a][
+                    function_a]
+                code_region_b = self.filename_function_mapping[filename_b][
+                    function_b]
+                assert code_region_a == code_region_b
+
+                code_region_a.merge(code_region_b)
 
     def _import_functions(
         self, json_file: Path,
@@ -235,8 +264,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         functions: tp.List[tp.Any] = data["functions"]
         totals: tp.Dict[str, tp.Any] = data["totals"]
 
-        function_region_mapping = FunctionCodeRegionMapping({})
-
         for function in functions:
             name: str = function["name"]
             # count: int = function["count"]
@@ -246,14 +273,12 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             filename: str = filenames[0]
             regions: tp.List[tp.List[int]] = function["regions"]
 
-            function_region_mapping = self._import_code_regions(
-                name, regions, function_region_mapping
+            filename_function_mapping[filename] = self._import_code_regions(
+                name, regions, filename_function_mapping[filename]
             )
 
         # sanity checking
-        self.__region_import_sanity_check(totals, function_region_mapping)
-
-        filename_function_mapping[filename] = function_region_mapping
+        self.__region_import_sanity_check(totals, filename_function_mapping)
 
         return filename_function_mapping
 
@@ -273,7 +298,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
     def __region_import_sanity_check(
         self, totals: tp.Dict[str, tp.Any],
-        function_region_mapping: FunctionCodeRegionMapping
+        filename_function_mapping: FilenameFunctionMapping
     ) -> None:
         total_functions_count: int = totals["functions"]["count"]
         total_regions_count: int = totals["regions"]["count"]
@@ -285,17 +310,18 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         covered_regions = 0
         notcovered_regions = 0
 
-        assert function_region_mapping is not None
-        for function in function_region_mapping:
-            counted_functions += 1
-            code_region = function_region_mapping[function]
-            for region in code_region.iter_breadth_first():
-                if region.kind == CodeRegionKind.CODE:
-                    counted_code_regions += 1
-                    if region.is_covered():
-                        covered_regions += 1
-                    else:
-                        notcovered_regions += 1
+        for filename in filename_function_mapping:
+            function_region_mapping = filename_function_mapping[filename]
+            for function in function_region_mapping:
+                counted_functions += 1
+                code_region = function_region_mapping[function]
+                for region in code_region.iter_breadth_first():
+                    if region.kind == CodeRegionKind.CODE:
+                        counted_code_regions += 1
+                        if region.is_covered():
+                            covered_regions += 1
+                        else:
+                            notcovered_regions += 1
         assert counted_functions == total_functions_count
         assert counted_code_regions == total_regions_count
         assert counted_code_regions != 0

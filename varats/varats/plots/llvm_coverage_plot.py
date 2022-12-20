@@ -68,9 +68,8 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 assert config is not None
                 binary_config_map[binary][config] = coverage_report
 
-                #report_file = coverage_report.filename
-                #config_id = coverage_report.filename.config_id
-            print(binary_config_map)
+            #if binary_config_map:
+            #    coverage_report.merge(coverage_report)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
