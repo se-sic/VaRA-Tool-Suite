@@ -206,8 +206,8 @@ class FeaturePerformanceAnalysisTable(
                     LOG.warning(
                         "There is a measurement that has a relative standard deviation of more than 5%."
                     )
-                    LOG.warning(df.to_string())
-                    LOG.warning(too_high_std_df.to_string())
+                    LOG.warning(df)
+                    LOG.warning(too_high_std_df)
 
                 df = df.groupby([
                     'Project', 'Revision', 'Workload', 'Config_ID',
