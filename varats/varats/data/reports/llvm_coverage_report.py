@@ -223,7 +223,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     self.filename_function_mapping,
                 )
 
-    def merge(self, report: CoverageReport):
+    def merge(self, report: CoverageReport) -> None:
         """Merge report into self."""
         for filename_a, filename_b in zip(
             self.filename_function_mapping, report.filename_function_mapping
