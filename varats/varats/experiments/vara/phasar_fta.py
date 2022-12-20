@@ -80,7 +80,7 @@ class PhASARFTACheck(actions.ProjectStep):  # type: ignore
                 "-vara-PFA",
                 "-S",
                 "-vara-FAR",
-                f"-vara-report-outfile={vara_result_folder}/{result_file}",
+                f"-vara-report-outfile={result_file}",
                 str(bc_target_file),
             ]
 
