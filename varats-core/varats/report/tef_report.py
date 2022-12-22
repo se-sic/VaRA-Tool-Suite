@@ -1,12 +1,13 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
-
+import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
 
 import ijson
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -176,3 +177,26 @@ class TEFReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
+
+
+__WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
+
+
+def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+    match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
+    if match:
+        return str(match.group("label"))
+
+    return None
+
+
+class WorkloadSpecificTEFReportAggregate(
+    WorkloadSpecificReportAggregate[TEFReport], shorthand="", file_type=""
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(
+            path,
+            TEFReport,
+            get_workload_label,
+        )
