@@ -40,6 +40,9 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
 
         project.cflags += self.get_vara_tracing_cflags(instr_type, True)
 
+        # Ensure that we detect all regions, when verifying
+        project.cflags += ["-fvara-instruction-threshold=0"]
+
         # Add debug information, so traces can be better interpreted
         project.cflags += ["-g"]
 
