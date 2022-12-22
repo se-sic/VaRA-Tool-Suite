@@ -40,6 +40,9 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
 
         project.cflags += self.get_vara_tracing_cflags(instr_type, True)
 
+        # Add debug information, so traces can be better interpreted
+        project.cflags += ["-g"]
+
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
