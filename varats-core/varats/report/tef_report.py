@@ -133,18 +133,16 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         )
 
     def _parse_json(self) -> None:
-        trace_events = list()
+        trace_events: tp.List[TraceEvent] = list()
         with open(self.path, "rb") as f:
             parser = ijson.parse(f)
-            trace_event = None
+            trace_event: tp.Optional[tp.Dict[str, tp.Union[str, int]]] = None
             for prefix, event, value in parser:
                 if event == "map_key":
                     key = value
                 if prefix.startswith("traceEvents.item"):
                     if prefix == "traceEvents.item" and event == "start_map":
-                        trace_event: tp.Optional[tp.Dict[str,
-                                                         tp.Union[str,
-                                                                  int]]] = {}
+                        trace_event = {}
                     if prefix == "traceEvents.item" and event == "end_map":
                         if trace_event is not None:
                             if trace_event["name"] in self.__name_id_mapper:
