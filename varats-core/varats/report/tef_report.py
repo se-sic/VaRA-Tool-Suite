@@ -142,7 +142,9 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     key = value
                 if prefix.startswith("traceEvents.item"):
                     if prefix == "traceEvents.item" and event == "start_map":
-                        trace_event = {}
+                        trace_event: tp.Optional[tp.Dict[str,
+                                                         tp.Union[str,
+                                                                  int]]] = {}
                     if prefix == "traceEvents.item" and event == "end_map":
                         if trace_event is not None:
                             if trace_event["name"] in self.__name_id_mapper:
