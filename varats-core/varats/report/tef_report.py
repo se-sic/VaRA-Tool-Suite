@@ -1,5 +1,6 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
+
 import re
 import typing as tp
 from enum import Enum
