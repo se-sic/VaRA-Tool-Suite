@@ -43,6 +43,9 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         # Ensure that we detect all regions, when verifying
         project.cflags += ["-fvara-instruction-threshold=0"]
 
+        # Add debug information, so traces can be better interpreted
+        project.cflags += ["-g"]
+
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
