@@ -136,7 +136,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         trace_events: tp.List[TraceEvent] = list()
         with open(self.path, "rb") as f:
             parser = ijson.parse(f)
-            trace_event: tp.Optional[tp.Dict[str, tp.Union[str, int]]] = None
+            trace_event: tp.Dict[str, str] = {}
             for prefix, event, value in parser:
                 if event == "map_key":
                     key = value
@@ -164,7 +164,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                         trace_event[key] = value
                 elif prefix.startswith("timestampUnit"):
                     if event == "string":
-                        self.__timestamp_unit = value
+                        self.__timestamp_unit: str = str(value)
         self.__trace_events: tp.List[TraceEvent] = trace_events
 
 
