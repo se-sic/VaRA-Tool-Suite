@@ -133,19 +133,36 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     def _parse_json(self) -> None:
         trace_events = list()
         with open(self.path, "rb") as f:
-            for trace_event in ijson.items(f, "traceEvents.item"):
-                if trace_event["name"] in self.__name_id_mapper:
-                    name_id = self.__name_id_mapper.index(trace_event["name"])
-                else:
-                    self.__name_id_mapper.append(trace_event["name"])
-                    name_id = len(self.__name_id_mapper) - 1
-                trace_events.append(
-                    TraceEvent(trace_event, name_id, self.__name_id_mapper)
-                )
-        # TODO: The following way to extract the timestampUnit is certainly not the best solution. However, I am not yet sure what's the best alternative.
-        with open(self.path, "rb") as f:
-            for timestamp_unit in ijson.items(f, "timestampUnit"):
-                self.__timestamp_unit: str = str(timestamp_unit)
+            parser = ijson.parse(f)
+            trace_event = None
+            for prefix, event, value in parser:
+                if event == "map_key":
+                    key = value
+                if prefix.startswith("traceEvents.item"):
+                    if prefix == "traceEvents.item" and event == "start_map":
+                        trace_event = {}
+                    if prefix == "traceEvents.item" and event == "end_map":
+                        if trace_event is not None:
+                            if trace_event["name"] in self.__name_id_mapper:
+                                name_id = self.__name_id_mapper.index(
+                                    trace_event["name"]
+                                )
+                            else:
+                                self.__name_id_mapper.append(
+                                    trace_event["name"]
+                                )
+                                name_id = len(self.__name_id_mapper) - 1
+                            trace_events.append(
+                                TraceEvent(
+                                    trace_event, name_id, self.__name_id_mapper
+                                )
+                            )
+
+                    elif event == "string" or event == "number":
+                        trace_event[key] = value
+                elif prefix.startswith("timestampUnit"):
+                    if event == "string":
+                        self.__timestamp_unit = value
         self.__trace_events: tp.List[TraceEvent] = trace_events
 
 
