@@ -2,10 +2,12 @@
 with chrome tracing."""
 
 import json
+import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -104,14 +106,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         with open(self.path, "r", encoding="utf-8") as json_tef_report:
             data = json.load(json_tef_report)
 
-            self.__display_time_unit = str(data["displayTimeUnit"])
+            self.__timestamp_unit = str(data["timestampUnit"])
             self.__trace_events = self._parse_trace_events(data["traceEvents"])
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
 
     @property
-    def display_time_unit(self) -> str:
-        return self.__display_time_unit
+    def timestamp_unit(self) -> str:
+        return self.__timestamp_unit
 
     @property
     def trace_events(self) -> tp.List[TraceEvent]:
@@ -140,3 +142,26 @@ class TEFReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
+
+
+__WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
+
+
+def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+    match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
+    if match:
+        return str(match.group("label"))
+
+    return None
+
+
+class WorkloadSpecificTEFReportAggregate(
+    WorkloadSpecificReportAggregate[TEFReport], shorthand="", file_type=""
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(
+            path,
+            TEFReport,
+            get_workload_label,
+        )
