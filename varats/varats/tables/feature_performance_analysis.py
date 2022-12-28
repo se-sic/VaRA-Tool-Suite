@@ -191,8 +191,8 @@ class FeaturePerformanceAnalysisTable(
                 df['Revision'] = df['Revision'].astype(sorted_revisions)
 
                 df.insert(3, 'Repetition', '')
-                df[['Workload',
-                    'Repetition']] = df['Workload'].str.split('_', expand=True)
+                df[['Workload', 'Repetition']
+                  ] = df['Workload'].str.rsplit('_', 1, expand=True)
 
                 std_df = df.groupby([
                     'Project', 'Revision', 'Workload', 'Config_ID',
