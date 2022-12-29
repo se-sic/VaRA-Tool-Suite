@@ -450,6 +450,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         Args:
             image_context: the base image creation context
         """
+        # TODO: split into deps, tool, config and make it a protocol
         img_name = image_context.base.name
         vara_install_dir = str(self.install_location()) + "_" + img_name
         if not self.install_exists(Path(vara_install_dir)):

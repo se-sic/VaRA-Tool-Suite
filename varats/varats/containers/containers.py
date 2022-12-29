@@ -33,20 +33,10 @@ LOG = logging.getLogger(__name__)
 
 class ImageBase(Enum):
     """Container image bases that can be used by projects."""
-    DEBIAN_10 = ("localhost/debian:10_varats", Distro.DEBIAN)
+    DEBIAN_10 = Distro.DEBIAN
 
-    def __init__(self, name: str, distro: Distro):
-        self.__name = name
+    def __init__(self, distro: Distro):
         self.__distro = distro
-
-    @property
-    def image_name(self) -> str:
-        """Name of the base image."""
-        image_name = self.__name
-        configured_research_tool = vara_cfg()["container"]["research_tool"]
-        if configured_research_tool:
-            image_name += f"_{str(configured_research_tool).lower()}"
-        return image_name
 
     @property
     def distro(self) -> Distro:
@@ -54,24 +44,12 @@ class ImageBase(Enum):
         return self.__distro
 
 
-# yapf: disable
-_BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[], ContainerImage]] = {
-    ImageBase.DEBIAN_10:
-        lambda: ContainerImage()
-            .from_("docker.io/library/debian:10")
-            .run('apt', 'update')
-            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
-                 'software-properties-common', 'python3', 'python3-dev',
-                 'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
-                 'libffi-dev', 'libyaml-dev', 'graphviz-dev')
-            .run('wget', 'https://apt.llvm.org/llvm.sh')
-            .run('chmod', '+x', './llvm.sh')
-            .run('./llvm.sh', '13', 'all')
-            .run('ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang')
-            .run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld')
-}
-# yapf: enable
+class ImageStage(Enum):
+    """The stages that make up a base image."""
+    STAGE_00_BASE = 00
+    STAGE_10_VARATS = 10
+    STAGE_20_TOOL = 20
+    STAGE_30_CONFIG = 30
 
 
 class BaseImageCreationContext():
@@ -81,12 +59,25 @@ class BaseImageCreationContext():
     This class stores context information when creating a base image.
     """
 
-    def __init__(self, base: ImageBase, tmpdir: Path):
+    def __init__(self, base: ImageBase, stage: ImageStage):
         self.__base = base
-        self.__layers = _BASE_IMAGES[base]()
-        self.__image_name = base.image_name
-        self.__tmpdir = tmpdir
+        self.__stage = stage
+        self.__layers = ContainerImage()
+        self.__image_name = get_image_name(base, stage)
+        self.__tmp_dir = TemporaryDirectory()
         self.__env: tp.Dict[str, tp.List[str]] = defaultdict(list)
+
+    def __enter__(self) -> 'BaseImageCreationContext':
+        return self
+
+    def __exit__(
+        self, exc_type: tp.Any, exc_val: tp.Any, exc_tb: tp.Any
+    ) -> None:
+        #TODO: handle env
+        bootstrap.bus().publish(CreateImage(self.image_name, self.layers))
+
+        if self.__tmp_dir:
+            self.__tmp_dir.cleanup()
 
     @property
     def base(self) -> ImageBase:
@@ -97,6 +88,18 @@ class BaseImageCreationContext():
             the base image
         """
         return self.__base
+
+    @property
+    def stage(self) -> ImageStage:
+        """
+        Stage of the base image that should be built/updated.
+
+        Only the given stage and subsequent stages shall be considered.
+
+        Returns:
+            the image stage
+        """
+        return self.__stage
 
     @property
     def layers(self) -> ContainerImage:
@@ -152,7 +155,7 @@ class BaseImageCreationContext():
         Returns:
             the path to the temporary directory
         """
-        return self.__tmpdir
+        return Path(self.__tmp_dir.name)
 
     @property
     def env(self) -> tp.Dict[str, tp.List[str]]:
@@ -184,6 +187,89 @@ class BaseImageCreationContext():
             values: value of the env var to set
         """
         self.__env[env_var].extend(values)
+
+
+def _create_stage_00_base_layers(
+    image_context: BaseImageCreationContext
+) -> None:
+    return _BASE_IMAGES[image_context.base](image_context)
+
+
+def _create_stage_01_varats_layers(
+    image_context: BaseImageCreationContext
+) -> None:
+    # image_context.layers.from_() TODO
+    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+    _add_varats_layers(image_context)
+    if bb_cfg()['container']['from_source']:
+        add_benchbuild_layers(image_context.layers)
+    _add_vara_config(image_context)
+    _add_benchbuild_config(image_context)
+    image_context.layers.workingdir(str(image_context.bb_root))
+
+
+def _create_stage_02_tool_layers(
+    image_context: BaseImageCreationContext
+) -> None:
+    configured_research_tool = vara_cfg()["container"]["research_tool"]
+    if configured_research_tool:
+        research_tool = get_research_tool(str(configured_research_tool))
+        research_tool.container_install_dependencies(image_context)
+        research_tool.container_install_tool(image_context)
+
+
+# yapf: disable
+_BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[BaseImageCreationContext], None]] = {
+    ImageBase.DEBIAN_10:
+        lambda ctx: ctx.layers
+            .from_("docker.io/library/debian:10")
+            .run('apt', 'update')
+            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+                 'software-properties-common', 'python3', 'python3-dev',
+                 'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
+                 'libffi-dev', 'libyaml-dev', 'graphviz-dev')
+            .run('wget', 'https://apt.llvm.org/llvm.sh')
+            .run('chmod', '+x', './llvm.sh')
+            .run('./llvm.sh', '13', 'all')
+            .run('ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld')
+}
+
+_STAGE_LAYERS: tp.Dict[ImageStage,
+                       tp.Callable[[BaseImageCreationContext], None]] = {
+    ImageStage.STAGE_00_BASE:   _create_stage_00_base_layers,
+    ImageStage.STAGE_10_VARATS: _create_stage_01_varats_layers,
+    ImageStage.STAGE_20_TOOL:   _create_stage_02_tool_layers
+}
+
+_BASE_IMAGE_STAGES: tp.List[ImageStage] = [
+    ImageStage.STAGE_00_BASE,
+    ImageStage.STAGE_10_VARATS,
+    ImageStage.STAGE_20_TOOL,
+    ImageStage.STAGE_30_CONFIG
+]
+_DEV_IMAGE_STAGES: tp.List[ImageStage] = [
+    ImageStage.STAGE_00_BASE,
+    ImageStage.STAGE_10_VARATS,
+    ImageStage.STAGE_30_CONFIG
+]
+# yapf: enable
+
+
+def create_base_image(base: ImageBase, stage: ImageStage) -> None:
+    """
+    Build/update a base image for the given image base and the current research
+    tool.
+
+    Args:
+        base:  the image base
+        stage: the image stage to create/update
+    """
+    for current_stage in _BASE_IMAGE_STAGES:
+        if current_stage.value <= stage.value:
+            with BaseImageCreationContext(base, current_stage) as image_context:
+                _STAGE_LAYERS[current_stage](image_context)
 
 
 def _unset_varats_source_mount(image_context: BaseImageCreationContext) -> None:
@@ -288,36 +374,6 @@ def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
     )
 
 
-def _create_base_image_layers(image_context: BaseImageCreationContext) -> None:
-    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-    _add_varats_layers(image_context)
-    if bb_cfg()['container']['from_source']:
-        add_benchbuild_layers(image_context.layers)
-    # add research tool if configured
-    configured_research_tool = vara_cfg()["container"]["research_tool"]
-    if configured_research_tool:
-        research_tool = get_research_tool(str(configured_research_tool))
-        research_tool.container_install_dependencies(image_context)
-        research_tool.container_install_tool(image_context)
-    _add_vara_config(image_context)
-    _add_benchbuild_config(image_context)
-    image_context.layers.workingdir(str(image_context.bb_root))
-
-
-def create_base_image(base: ImageBase) -> None:
-    """
-    Build a base image for the given image base and the current research tool.
-
-    Args:
-        base: the image base
-    """
-    with TemporaryDirectory() as tmpdir:
-        publish = bootstrap.bus()
-        image_context = BaseImageCreationContext(base, Path(tmpdir))
-        _create_base_image_layers(image_context)
-        publish(CreateImage(base.image_name, image_context.layers))
-
-
 def _create_dev_image_layers(
     image_context: BaseImageCreationContext, research_tool: ResearchTool[tp.Any]
 ) -> None:
@@ -370,6 +426,15 @@ def get_base_image(base: ImageBase) -> ContainerImage:
         the requested base image
     """
     return ContainerImage().from_(base.image_name)
+
+
+def get_image_name(
+    base: ImageBase, stage: ImageStage, include_tool: bool
+) -> str:
+    name = f"{base.name}:{stage.name}"
+    configured_research_tool = vara_cfg()["container"]["research_tool"]
+    if include_tool and configured_research_tool:
+        name += f"_{str(configured_research_tool).lower()}"
 
 
 def delete_base_image(base: ImageBase) -> None:
