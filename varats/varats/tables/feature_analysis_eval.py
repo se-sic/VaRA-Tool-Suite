@@ -151,16 +151,12 @@ class PhasarFeatureAnalysisProjectEvalTable(
 
             insts += report.meta_data.num_br_switch_insts
 
-        if len(features) > 7:
-            df = pd.concat(data, axis=1)
-        else:
-            df = pd.concat(data)
+        df = pd.concat(data)
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = self.__get_col_format(
-                len(features), len(binaries)
-            )
+            kwargs["column_format"
+                  ] = 'c|c|c|c|c|c' if len(binaries) > 1 else 'c|c|c|c|c'
             kwargs["multicol_align"] = "c"
             kwargs["caption"] = (
                 f"Evaluation of project {case_study.project_name}. "
@@ -182,6 +178,9 @@ class PhasarFeatureAnalysisProjectEvalTable(
         self, evaluation: FeatureAnalysisReportEval, entries: tp.List[str],
         binary: str
     ) -> pd.DataFrame:
+        col_header: tp.List[str] = [
+            'True Positive', 'True Negative', 'False Positive', 'False Negative'
+        ]
         data: tp.List[pd.DataFrame] = []
         for entry in entries:
             true_pos = evaluation.get_true_pos(entry)
@@ -189,65 +188,22 @@ class PhasarFeatureAnalysisProjectEvalTable(
             false_neg = evaluation.get_false_neg(entry)
             true_neg = evaluation.get_true_neg(entry)
 
-            if len(entries) > 8:
-                if binary:
-                    data.append(
-                        pd.DataFrame([[true_pos, false_pos],
-                                      [false_neg, true_neg]],
-                                     index=pd.MultiIndex.from_product([[
-                                         'Analysis Results'
-                                     ], [entry], ['Pos', 'Neg']]),
-                                     columns=pd.MultiIndex.from_product([[
-                                         'Ground Truth'
-                                     ], [binary], ['Pos', 'Neg']]))
-                    )
-                else:
-                    data.append(
-                        pd.DataFrame([[true_pos, false_pos],
-                                      [false_neg, true_neg]],
-                                     index=pd.MultiIndex.from_product([[
-                                         'Analysis Results'
-                                     ], [entry], ['Pos', 'Neg']]),
-                                     columns=pd.MultiIndex.from_product([[
-                                         'Ground Truth'
-                                     ], ['Pos', 'Neg']]))
-                    )
+            if binary:
+                data.append(
+                    pd.DataFrame([[true_pos, true_neg, false_pos, false_neg]],
+                                 index=pd.MultiIndex.from_product([[binary],
+                                                                   [entry]]),
+                                 columns=col_header)
+                )
             else:
-                if binary:
-                    data.append(
-                        pd.DataFrame([[true_pos, false_pos],
-                                      [false_neg, true_neg]],
-                                     index=pd.MultiIndex.from_product([[
-                                         'Analysis Results'
-                                     ], [binary], ['Pos', 'Neg']]),
-                                     columns=pd.MultiIndex.from_product([[
-                                         'Ground Truth'
-                                     ], [entry], ['Pos', 'Neg']]))
-                    )
-                else:
-                    data.append(
-                        pd.DataFrame([[true_pos, false_pos],
-                                      [false_neg, true_neg]],
-                                     index=pd.MultiIndex.from_product([[
-                                         'Analysis Results'
-                                     ], ['Pos', 'Neg']]),
-                                     columns=pd.MultiIndex.from_product([[
-                                         'Ground Truth'
-                                     ], [entry], ['Pos', 'Neg']]))
-                    )
+                data.append(
+                    pd.DataFrame([[true_pos, true_neg, false_pos, false_neg]],
+                                 index=[entry],
+                                 columns=col_header)
+                )
 
-        if len(entries) > 8:
-            df = pd.concat(data)
-        else:
-            df = pd.concat(data, axis=1)
+        df = pd.concat(data)
         return df
-
-    def __get_col_format(self, num_features: int, num_binaries: int) -> str:
-        if num_features > 7:
-            return 'ccc' + '|cc' * num_binaries
-        if num_binaries == 1:
-            return 'cc|cc' + '|cc' * num_features
-        return 'ccc|cc' + '|cc' * num_features
 
 
 class PhasarFeatureAnalysisProjectEvalTableGenerator(
@@ -273,7 +229,6 @@ class PhasarFeatureAnalysisTotalEvalTable(
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         cs_data: tp.List[pd.DataFrame] = []
-        col_format = 'cc'
 
         gt_files: tp.List[Path] = [
             Path(gt) for gt in \
@@ -345,13 +300,11 @@ class PhasarFeatureAnalysisTotalEvalTable(
 
                 cs_data.append(self.__create_eval_df(evaluation, name))
 
-                col_format += '|cc'
-
-        df = pd.concat(cs_data, axis=1)
+        df = pd.concat(cs_data)
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = col_format
+            kwargs["column_format"] = 'c|c|c|c|c'
             kwargs["multicol_align"] = "c"
             kwargs['position'] = 't'
             kwargs["position_float"] = 'centering'
@@ -368,18 +321,18 @@ class PhasarFeatureAnalysisTotalEvalTable(
     def __create_eval_df(
         self, evaluation: FeatureAnalysisReportEval, entry: str
     ) -> pd.DataFrame:
+        col_header: tp.List[str] = [
+            'True Positive', 'True Negative', 'False Positive', 'False Negative'
+        ]
+
         true_pos = evaluation.get_true_pos()
         false_pos = evaluation.get_false_pos()
         false_neg = evaluation.get_false_neg()
         true_neg = evaluation.get_true_neg()
 
-        df = pd.DataFrame([[true_pos, false_pos], [false_neg, true_neg]],
-                          index=pd.MultiIndex.from_product([[
-                              'Analysis Results'
-                          ], ['Pos', 'Neg']]),
-                          columns=pd.MultiIndex.from_product([['Ground Truth'],
-                                                              [entry],
-                                                              ['Pos', 'Neg']]))
+        df = pd.DataFrame([[true_pos, true_neg, false_pos, false_neg]],
+                          index=[entry],
+                          columns=col_header)
         return df
 
 
