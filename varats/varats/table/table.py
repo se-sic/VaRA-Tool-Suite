@@ -147,8 +147,12 @@ class Table:
         """
         table_ident = ''
         if 'case_study' in self.table_kwargs:
-            case_study: 'CaseStudy' = self.table_kwargs['case_study']
-            table_ident = f"{case_study.project_name}_{case_study.version}_"
+            case_study = self.table_kwargs['case_study']
+            if type(case_study) is not list:
+                table_ident = f"{case_study.project_name}_{case_study.version}_"
+            else:
+                for cs in case_study:
+                    table_ident += f"{cs.project_name}_{cs.version}_"
         elif 'project' in self.table_kwargs:
             table_ident = f"{self.table_kwargs['project']}_"
 

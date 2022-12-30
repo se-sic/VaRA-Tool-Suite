@@ -19,7 +19,6 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     wrap_unlimit_stack_size,
-    get_varats_result_folder,
     ExperimentHandle,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
