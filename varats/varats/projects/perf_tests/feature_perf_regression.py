@@ -24,19 +24,18 @@ from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
-# TODO: Name: RegressionCaseStudy?
-class DummyCaseStudy(VProject, ReleaseProviderHook):
+class FeaturePerfRegression(VProject, ReleaseProviderHook):
     """Test project for identifying performance regressions across revisions."""
 
-    NAME = 'DummyCaseStudy'
+    NAME = 'FeaturePerfRegression'
     GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="DummyCaseStudy",
-            remote="https://github.com/bnico99/DummyCaseStudy.git",
-            local="DummyCaseStudy",
+            project_name="FeaturePerfRegression",
+            remote="https://github.com/bnico99/FeaturePerfRegression.git",
+            local="FeaturePerfRegression",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
@@ -47,8 +46,9 @@ class DummyCaseStudy(VProject, ReleaseProviderHook):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("DummyCaseStudy") / RSBinary("CompressionTool"),
-                label="DummyCaseStudy-no-input"
+                SourceRoot("FeaturePerfRegression") /
+                RSBinary("CompressionTool"),
+                label="FeaturePerfRegression-no-input"
             )
         ]
     }
@@ -58,7 +58,7 @@ class DummyCaseStudy(VProject, ReleaseProviderHook):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(DummyCaseStudy.NAME)
+            get_local_project_git_path(FeaturePerfRegression.NAME)
         )
         binary_map.specify_binary(
             'build/bin/CompressionTool', BinaryType.EXECUTABLE
@@ -71,7 +71,7 @@ class DummyCaseStudy(VProject, ReleaseProviderHook):
 
     def compile(self) -> None:
         """Compile the project."""
-        dummy_case_study_source = local.path(
+        feature_perf_regression_source = local.path(
             self.source_of(self.primary_source)
         )
 
@@ -81,13 +81,13 @@ class DummyCaseStudy(VProject, ReleaseProviderHook):
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        mkdir("-p", dummy_case_study_source / "build")
+        mkdir("-p", feature_perf_regression_source / "build")
 
-        with local.cwd(dummy_case_study_source / "build"):
+        with local.cwd(feature_perf_regression_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
-        with local.cwd(dummy_case_study_source):
+        with local.cwd(feature_perf_regression_source):
             verify_binaries(self)
