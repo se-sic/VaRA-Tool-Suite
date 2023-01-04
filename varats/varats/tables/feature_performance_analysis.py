@@ -218,6 +218,8 @@ class FeaturePerformanceAnalysisTable(
                 df = df.join(std_df, rsuffix="_std")
 
         df.fillna(0, inplace=True)
+        # Rename "Base" to "root" to harmonize naming with black-box side
+        df.rename(columns={"Base": "root"}, inplace=True)
         df.reset_index(inplace=True)
         df.sort_values(["Project", "Revision", "Workload", "Config_ID"],
                        inplace=True)
