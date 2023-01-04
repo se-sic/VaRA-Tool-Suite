@@ -217,6 +217,7 @@ class FeaturePerformanceAnalysisTable(
 
                 df = df.join(std_df, rsuffix="_std")
 
+        df.fillna(0, inplace=True)
         df.reset_index(inplace=True)
         df.sort_values(["Project", "Revision", "Workload", "Config_ID"],
                        inplace=True)
