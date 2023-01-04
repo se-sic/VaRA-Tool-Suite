@@ -1,10 +1,12 @@
 """Module for BlameInteractionGraph plots."""
 
 import typing as tp
+from math import ceil, floor
 
 import networkx as nx
 import pandas as pd
 import seaborn as sns
+from matplotlib.ticker import MaxNLocator, FixedLocator, StrMethodFormatter
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -200,6 +202,25 @@ class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
         ax.set_aspect(0.3 / ax.get_data_ratio())
         ax.set_xticks([])
         ax.tick_params(axis='y', labelsize=15)
+        ax.yaxis.set_major_formatter(StrMethodFormatter("{x: >4}"))
+
+        max_val = floor(file_data["additional_authors"].max())
+        min_val = ceil(file_data["removed_authors"].min())
+        ticks = {min_val, max_val}
+        threshold = 0.15
+        val_range = max_val - min_val
+        if val_range == 0:
+            ax.yaxis.set_major_locator(FixedLocator([0]))
+        else:
+            max_frac = max_val / val_range
+            min_frac = abs(min_val) / val_range
+            if min_frac > threshold and max_frac > threshold:
+                ticks.add(0)
+            ax.yaxis.set_major_locator(FixedLocator(list(ticks)))
+
+        for label in ax.get_yticklabels():
+            label.set_fontproperties({"family": "monospace", "size": 15})
+
         ax.set_xlabel(None)
         ax.set_ylabel(None)
         ax.set_title(project_name, fontsize=25)
