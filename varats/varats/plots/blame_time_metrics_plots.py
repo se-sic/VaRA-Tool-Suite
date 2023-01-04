@@ -2,14 +2,13 @@
 import logging
 import typing as tp
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from scipy.stats import pearsonr, spearmanr
 
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
-from varats.jupyterhelper.file import load_blame_report
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
@@ -20,11 +19,7 @@ from varats.plot.plots import PlotGenerator
 from varats.report.report import ReportFilename
 from varats.report.wall_time_report import WallTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
-from varats.utils.git_util import (
-    calc_project_loc,
-    num_project_commits,
-    FullCommitHash,
-)
+from varats.utils.git_util import num_project_commits, FullCommitHash
 
 LOG = logging.Logger(__name__)
 
@@ -78,8 +73,6 @@ class BlameTimeMetricsPlot(Plot, plot_name="blame_time_metrics_plot"):
             cs_data.append(cs_dict)
 
         df = pd.concat(cs_data).sort_index()
-        blame_vs_commits_p, _ = pearsonr(df["Commits"], df["Blame Time"])
-        blame_vs_commits_s, _ = spearmanr(df["Commits"], df["Blame Time"])
 
         grid = sns.lmplot(
             df,
@@ -88,16 +81,20 @@ class BlameTimeMetricsPlot(Plot, plot_name="blame_time_metrics_plot"):
             ci=0,
             robust=True,
             scatter_kws={
-                "s": 100,
+                "s": 200,
                 "alpha": 0.5
+            },
+            line_kws={
+                "color": "#777777",
+                "linewidth": 4
             }
         )
         ax = grid.ax
         annotate_correlation(
             x_values=df["Commits"], y_values=df["Blame Time"], ax=ax
         )
-        ax.set_xlabel("# Commits", fontsize=25)
-        ax.set_ylabel("$t_{\\mathrm{Blame}}$", fontsize=25)
+        ax.set_xlabel(None)
+        ax.set_ylabel(None)
         ax.tick_params(labelsize=15)
 
     def calc_missing_revisions(
