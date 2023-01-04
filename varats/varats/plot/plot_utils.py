@@ -113,7 +113,7 @@ def annotate_correlation(
     ax = ax or plt.gca()
     pearson_rho, _ = pearsonr(x_values, y_values)
     ax.annotate(
-        f'$\\mathit{{\\rho_{{\\mathrm{{pearson}}}}}}$ = {pearson_rho:.2f}',
+        f'$\\mathit{{\\rho_{{\\mathsf{{pearson}}}}}}$ = {pearson_rho:.2f}',
         xy=(.1, .9),
         xycoords=ax.transAxes,
         fontsize=20
@@ -121,7 +121,7 @@ def annotate_correlation(
 
     spearman_rho, _ = spearmanr(x_values, y_values)
     ax.annotate(
-        f'$\\mathit{{\\rho_{{\\mathrm{{spearman}}}}}}$ = {spearman_rho:.2f}',
+        f'$\\mathit{{\\rho_{{\\mathsf{{spearman}}}}}}$ = {spearman_rho:.2f}',
         xy=(.1, .8),
         xycoords=ax.transAxes,
         fontsize=20
