@@ -1,6 +1,7 @@
 """Module for feature performance analysis tables."""
 import logging
 import typing as tp
+from abc import ABC
 
 import pandas as pd
 from pandas import CategoricalDtype
@@ -25,8 +26,117 @@ from varats.utils.git_util import CommitHash
 LOG = logging.Logger(__name__)
 
 
+class PerformanceAnalysisTable(
+    Table, ABC, table_name="performance_analysis_table"
+):
+
+    @staticmethod
+    def sort_revisions(case_study: CaseStudy,
+                       revisions: tp.List[CommitHash]) -> tp.List[CommitHash]:
+        """Sorts revision by time."""
+        commit_map = get_commit_map(case_study.project_name)
+        project_revisions = sorted(case_study.revisions, key=commit_map.time_id)
+        return [
+            h.to_short_commit_hash()
+            for h in project_revisions
+            if h.to_short_commit_hash() in revisions
+        ]
+
+    def tabulate_gen(self, table_format: TableFormat, wrap_table: bool,
+                     row_gen_method: tp.Callable[['PerformanceAnalysisTable', CaseStudy,
+                                                  WorkloadSpecificTEFReportAggregate, str],
+                                                  tp.Dict[str,
+                                                  tp.Union[str, CommitHash, tp.Dict[str, int], tp.Optional[int]]]]) \
+            -> str:
+        df = pd.DataFrame()
+
+        for case_study in get_loaded_paper_config().get_all_case_studies():
+            # Parse reports
+            report_files = get_processed_revisions_files(
+                case_study.project_name,
+                FeaturePerfRunner,
+                TEFReport,
+                get_case_study_file_name_filter(case_study),
+                only_newest=False,
+            )
+
+            workloads = set()
+            revisions = set()
+
+            for report_filepath in report_files:
+                agg_tef_report = WorkloadSpecificTEFReportAggregate(
+                    report_filepath.full_path()
+                )
+                report_file = agg_tef_report.filename
+                revisions.add(report_file.commit_hash)
+
+                for workload in agg_tef_report.workload_names():
+                    workloads.add(workload)
+                    df = df.append(
+                        row_gen_method(case_study, agg_tef_report, workload),
+                        ignore_index=True,
+                    )
+
+            if not df.empty:
+                # Sort revisions so that we can compare consecutive releases
+                # later
+                sorted_revisions = self.sort_revisions(
+                    case_study, list(revisions)
+                )
+                sorted_revisions = CategoricalDtype(
+                    sorted_revisions, ordered=True
+                )
+                df['Revision'] = df['Revision'].astype(sorted_revisions)
+
+                df.insert(3, 'Repetition', '')
+                df[['Workload', 'Repetition']
+                  ] = df['Workload'].str.rsplit('_', 1, expand=True)
+
+                std_df = df.groupby([
+                    'Project', 'Revision', 'Workload', 'Config_ID',
+                    'Timestamp_Unit'
+                ]).std()
+                rel_std_df = std_df / df.groupby([
+                    'Project', 'Revision', 'Workload', 'Config_ID',
+                    'Timestamp_Unit'
+                ]).mean()
+                too_high_std_df = rel_std_df[(rel_std_df > 0.05).any(1)]
+                if not too_high_std_df.empty:
+                    LOG.warning(
+                        "There is a measurement that has a relative standard deviation of more than 5%."
+                    )
+                    LOG.warning(df.to_string())
+                    LOG.warning(too_high_std_df.to_string())
+
+                df = df.groupby([
+                    'Project', 'Revision', 'Workload', 'Config_ID',
+                    'Timestamp_Unit'
+                ]).mean()
+
+                df = df.join(std_df, rsuffix="_std")
+
+        df.fillna(0, inplace=True)
+        # Rename "Base" to "root" to harmonize naming with black-box side
+        df.rename(columns={"Base": "root"}, inplace=True)
+        df.reset_index(inplace=True)
+        df.sort_values(["Project", "Revision", "Workload", "Config_ID"],
+                       inplace=True)
+        df.set_index(
+            ["Project"],
+            inplace=True,
+        )
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["column_format"] = ("c|" * len(df.columns)) + "c"
+
+        return dataframe_to_table(
+            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+        )
+
+
 class FeaturePerformanceAnalysisTable(
-    Table, table_name="feature_perf_analysis_table"
+    PerformanceAnalysisTable, table_name="feature_perf_analysis_table"
 ):
     """Table comparing the performance of features across releases for each
     workload."""
@@ -108,18 +218,6 @@ class FeaturePerformanceAnalysisTable(
 
         return feature_performances
 
-    @staticmethod
-    def sort_revisions(case_study: CaseStudy,
-                       revisions: tp.List[CommitHash]) -> tp.List[CommitHash]:
-        """Sorts revision by time."""
-        commit_map = get_commit_map(case_study.project_name)
-        project_revisions = sorted(case_study.revisions, key=commit_map.time_id)
-        return [
-            h.to_short_commit_hash()
-            for h in project_revisions
-            if h.to_short_commit_hash() in revisions
-        ]
-
     def get_feature_performances_row(
         self,
         case_study: CaseStudy,
@@ -148,92 +246,95 @@ class FeaturePerformanceAnalysisTable(
         }
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        df = pd.DataFrame()
-
-        for case_study in get_loaded_paper_config().get_all_case_studies():
-            # Parse reports
-            report_files = get_processed_revisions_files(
-                case_study.project_name,
-                FeaturePerfRunner,
-                TEFReport,
-                get_case_study_file_name_filter(case_study),
-                only_newest=False,
-            )
-
-            workloads = set()
-            revisions = set()
-
-            for report_filepath in report_files:
-                agg_tef_report = WorkloadSpecificTEFReportAggregate(
-                    report_filepath.full_path()
-                )
-                report_file = agg_tef_report.filename
-                revisions.add(report_file.commit_hash)
-
-                for workload in agg_tef_report.workload_names():
-                    workloads.add(workload)
-                    df = df.append(
-                        self.get_feature_performances_row(
-                            case_study, agg_tef_report, workload
-                        ),
-                        ignore_index=True,
-                    )
-
-            if not df.empty:
-                # Sort revisions so that we can compare consecutive releases
-                # later
-                sorted_revisions = self.sort_revisions(
-                    case_study, list(revisions)
-                )
-                sorted_revisions = CategoricalDtype(
-                    sorted_revisions, ordered=True
-                )
-                df['Revision'] = df['Revision'].astype(sorted_revisions)
-
-                df.insert(3, 'Repetition', '')
-                df[['Workload', 'Repetition']
-                  ] = df['Workload'].str.rsplit('_', 1, expand=True)
-
-                std_df = df.groupby([
-                    'Project', 'Revision', 'Workload', 'Config_ID',
-                    'Timestamp_Unit'
-                ]).std()
-                rel_std_df = std_df / df.groupby([
-                    'Project', 'Revision', 'Workload', 'Config_ID',
-                    'Timestamp_Unit'
-                ]).mean()
-                too_high_std_df = rel_std_df[(rel_std_df > 0.05).any(1)]
-                if not too_high_std_df.empty:
-                    LOG.warning(
-                        "There is a measurement that has a relative standard deviation of more than 5%."
-                    )
-                    LOG.warning(df.to_string())
-                    LOG.warning(too_high_std_df.to_string())
-
-                df = df.groupby([
-                    'Project', 'Revision', 'Workload', 'Config_ID',
-                    'Timestamp_Unit'
-                ]).mean()
-
-                df = df.join(std_df, rsuffix="_std")
-
-        df.fillna(0, inplace=True)
-        # Rename "Base" to "root" to harmonize naming with black-box side
-        df.rename(columns={"Base": "root"}, inplace=True)
-        df.reset_index(inplace=True)
-        df.sort_values(["Project", "Revision", "Workload", "Config_ID"],
-                       inplace=True)
-        df.set_index(
-            ["Project"],
-            inplace=True,
+        return self.tabulate_gen(
+            table_format, wrap_table, self.get_feature_performances_row
         )
 
-        kwargs: tp.Dict[str, tp.Any] = {}
-        if table_format.is_latex():
-            kwargs["column_format"] = ("c|" * len(df.columns)) + "c"
 
-        return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+class RegionPerformanceAnalysisTable(
+    PerformanceAnalysisTable, table_name="region_perf_analysis_table"
+):
+    """Table comparing the performance of regions across releases for each
+    workload."""
+
+    @staticmethod
+    def get_region_performance_from_tef_report(
+        tef_report: TEFReport,
+    ) -> tp.Dict[str, int]:
+        """Extract region performance from a TEFReport."""
+        open_events: tp.List[TraceEvent] = []
+
+        region_performances: tp.Dict[str, int] = {}
+
+        for trace_event in tef_report.trace_events:
+            if trace_event.category == "Feature":
+                if (
+                    trace_event.event_type ==
+                    TraceEventType.DURATION_EVENT_BEGIN
+                ):
+                    open_events.append(trace_event)
+                elif (
+                    trace_event.event_type == TraceEventType.DURATION_EVENT_END
+                ):
+                    opening_event = open_events.pop()
+
+                    end_timestamp = trace_event.timestamp
+                    begin_timestamp = opening_event.timestamp
+
+                    # Subtract region duration from direct parent region
+                    # duration such that it is not counted twice, similar
+                    # to behavior in Performance-Influence models.
+                    parents = [str(event.region_id) for event in open_events]
+                    if len(parents) > 0:
+                        direct_parent = parents[len(parents) - 1]
+                        if direct_parent in region_performances:
+                            region_performances[direct_parent] -= (
+                                end_timestamp - begin_timestamp
+                            )
+                        else:
+                            region_performances[direct_parent] = -(
+                                end_timestamp - begin_timestamp
+                            )
+
+                    current_performance = region_performances.get(
+                        str(trace_event.region_id), 0
+                    )
+                    region_performances[
+                        str(trace_event.region_id)
+                    ] = (current_performance + end_timestamp - begin_timestamp)
+
+        return region_performances
+
+    def get_region_performances_row(
+        self,
+        case_study: CaseStudy,
+        agg_tef_report: WorkloadSpecificTEFReportAggregate,
+        workload: str,
+    ) -> tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
+                               tp.Optional[int]]]:
+        """Returns a dict with information about feature performances from a
+        TEFReport for a given workload."""
+        tef_report = agg_tef_report.reports(workload)
+        if len(tef_report) > 1:
+            print(
+                "Table can currently handle only one TEFReport per "
+                "revision, workload and config. Ignoring others."
+            )
+        region_performances = self.get_region_performance_from_tef_report(
+            tef_report[0]
+        )
+        return {
+            "Project": case_study.project_name,
+            "Revision": agg_tef_report.filename.commit_hash,
+            "Workload": workload,
+            "Config_ID": agg_tef_report.filename.config_id,
+            "Timestamp_Unit": tef_report[0].timestamp_unit,
+            **region_performances,
+        }
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        return self.tabulate_gen(
+            table_format, wrap_table, self.get_region_performances_row
         )
 
 
@@ -246,6 +347,20 @@ class FeaturePerformanceAnalysisTableGenerator(
     def generate(self) -> tp.List[Table]:
         return [
             FeaturePerformanceAnalysisTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
+
+
+class RegionPerformanceAnalysisTableGenerator(
+    TableGenerator, generator_name="region-perf-analysis", options=[]
+):
+    """Generates a region performance analysis table for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            RegionPerformanceAnalysisTable(
                 self.table_config, **self.table_kwargs
             )
         ]

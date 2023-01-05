@@ -57,6 +57,10 @@ class TraceEvent():
         self.__tracing_clock_timestamp = int(json_trace_event["ts"])
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
+        if "ID" in json_trace_event:
+            self.__region_id = int(json_trace_event["ID"])
+        else:
+            self.__region_id = None
 
     @property
     def name(self) -> str:
@@ -82,6 +86,10 @@ class TraceEvent():
     def tid(self) -> int:
         return self.__tid
 
+    @property
+    def region_id(self) -> tp.Optional[int]:
+        return self.__region_id
+
     def __str__(self) -> str:
         return f"""{{
     name: {self.name}
@@ -90,6 +98,7 @@ class TraceEvent():
     ts: {self.timestamp}
     pid: {self.pid}
     tid: {self.tid}
+    region_id: {self.region_id}
 }}
 """
 
