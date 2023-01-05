@@ -8,7 +8,6 @@ import matplotlib.ticker as mtick
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from matplotlib import style
 from sklearn import preprocessing
 
 from varats.data.databases.blame_verifier_report_database import (
@@ -18,13 +17,9 @@ from varats.data.databases.blame_verifier_report_database import (
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotGenerator,
-    PlotConfig,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -283,7 +278,6 @@ class BlameVerifierReportPlot(Plot, plot_name=None):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        style.use(self.plot_config.style())
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -308,7 +302,7 @@ class BlameVerifierReportNoOptPlot(
 class BlameVerifierReportNoOptPlotGenerator(
     PlotGenerator,
     generator_name="verifier-no-opt-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a verifier-no-opt plot for the selected case study(ies)."""
 
@@ -332,7 +326,7 @@ class BlameVerifierReportOptPlot(
 class BlameVerifierReportOptPlotGenerator(
     PlotGenerator,
     generator_name="verifier-opt-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a verifier-opt plot for the selected case study(ies)."""
 

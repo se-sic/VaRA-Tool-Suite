@@ -3,47 +3,41 @@ import logging
 import typing as tp
 
 import pandas as pd
-from benchbuild.utils.cmd import git
-from tabulate import tabulate
 
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
+from varats.mapping.commit_map import get_commit_map
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
+    get_local_project_git_path,
 )
-from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat
-from varats.utils.git_util import calc_repo_loc
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
+from varats.table.tables import TableFormat, TableGenerator
+from varats.utils.git_util import calc_repo_loc, num_commits, num_authors
 
 LOG = logging.Logger(__name__)
 
 
-class CaseStudyMetricsTable(Table):
+class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
     """Table showing some general information about the case studies in a paper
     config."""
 
-    NAME = "cs_metrics"
-
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
-
-    def tabulate(self) -> str:
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         cs_data: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
+            commit_map = get_commit_map(project_name)
             project_cls = get_project_cls_by_name(project_name)
             project_repo = get_local_project_git(project_name)
-            project_path = project_repo.path[:-5]
-            project_git = git["-C", project_path]
+            project_git_path = get_local_project_git_path(project_name)
 
-            revision = self.table_kwargs.get("revisions", {}).get(
-                case_study.project_name, None
+            revisions = sorted(
+                case_study.revisions, key=commit_map.time_id, reverse=True
             )
-            revisions = case_study.revisions
-            if not revision and len(revisions) == 1:
-                revision = revisions[0]
+            revision = revisions[0]
             rev_range = revision.hash if revision else "HEAD"
 
             cs_dict = {
@@ -54,12 +48,9 @@ class CaseStudyMetricsTable(Table):
                     "LOC":
                         calc_repo_loc(project_repo, rev_range),
                     "Commits":
-                        int(project_git("rev-list", "--count", rev_range)),
+                        num_commits(revision.hash, project_git_path),
                     "Authors":
-                        len(
-                            project_git("shortlog", "-s",
-                                        rev_range).splitlines()
-                        )
+                        num_authors(revision.hash, project_git_path),
                 }
             }
             if revision:
@@ -68,14 +59,19 @@ class CaseStudyMetricsTable(Table):
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
         df = pd.concat(cs_data).sort_index()
-        if self.format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            table = df.to_latex(
-                bold_rows=True, multicolumn_format="c", multirow=True
-            )
-            return str(table) if table else ""
-        return tabulate(df, df.columns, self.format.value)
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+
+        return dataframe_to_table(df, table_format, style, wrap_table, **kwargs)
+
+
+class CaseStudyMetricsTableGenerator(
+    TableGenerator, generator_name="cs-metrics-table", options=[]
+):
+    """Generates a cs-metrics table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [CaseStudyMetricsTable(self.table_config, **self.table_kwargs)]

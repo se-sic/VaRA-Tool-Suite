@@ -15,6 +15,7 @@ from varats.data.reports.blame_report import (
     generate_degree_tuples,
     generate_lib_dependent_degrees,
     gen_base_to_inter_commit_repo_pair_mapping,
+    BlameTaintData,
     get_interacting_commits_for_commit,
 )
 from varats.utils.git_util import CommitRepoPair, FullCommitHash
@@ -25,7 +26,7 @@ FAKE_REPORT_PATH = (
 
 YAML_DOC_HEADER = """---
 DocType:         BlameReport
-Version:         4
+Version:         5
 ...
 """
 
@@ -209,9 +210,161 @@ result-map:
 """
 
 
+class TestBlameTaintData(unittest.TestCase):
+
+    def test_eq_commit(self) -> None:
+        commit_taint_a = BlameTaintData.create_taint_data({
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        commit_taint_b = BlameTaintData.create_taint_data({
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertFalse(commit_taint_a == commit_taint_b)
+
+    def test_eq_commit_in_function(self) -> None:
+        cif_taint_a = BlameTaintData.create_taint_data({
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint_b = BlameTaintData.create_taint_data({
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+        cif_taint_c = BlameTaintData.create_taint_data({
+            "function": "baz",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertFalse(cif_taint_a == cif_taint_b)
+        self.assertFalse(cif_taint_a == cif_taint_c)
+        self.assertFalse(cif_taint_b == cif_taint_c)
+
+    def test_eq_region(self) -> None:
+        region_taint_a = BlameTaintData.create_taint_data({
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint_b = BlameTaintData.create_taint_data({
+            "region": 2,
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertFalse(region_taint_a == region_taint_b)
+
+    def test_eq_cross_scopes(self) -> None:
+        commit_taint = BlameTaintData.create_taint_data({
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint = BlameTaintData.create_taint_data({
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint = BlameTaintData.create_taint_data({
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+
+        self.assertFalse(commit_taint == cif_taint)
+        self.assertFalse(commit_taint == region_taint)
+        self.assertFalse(cif_taint == region_taint)
+
+    def test_lower_than_commit(self) -> None:
+        commit_taint_a = BlameTaintData.create_taint_data({
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        commit_taint_b = BlameTaintData.create_taint_data({
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(commit_taint_a < commit_taint_b)
+        self.assertFalse(commit_taint_b < commit_taint_a)
+
+    def test_lower_than_commit_in_function(self) -> None:
+        cif_taint_a = BlameTaintData.create_taint_data({
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint_b = BlameTaintData.create_taint_data({
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+        cif_taint_c = BlameTaintData.create_taint_data({
+            "function": "baz",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(cif_taint_a < cif_taint_b)
+        self.assertFalse(cif_taint_b < cif_taint_a)
+        self.assertTrue(cif_taint_a < cif_taint_c)
+        self.assertFalse(cif_taint_c < cif_taint_a)
+        self.assertTrue(cif_taint_b < cif_taint_c)
+        self.assertFalse(cif_taint_c < cif_taint_b)
+
+    def test_lower_than_region(self) -> None:
+        region_taint_a = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint_b = BlameTaintData.create_taint_data({
+            "is-global": False,
+            "region": 2,
+            "function": "bar",
+            "commit": "97c573ee98a1c2143b6876433697e363c9eca98b",
+            "repository": "foo"
+        })
+
+        self.assertTrue(region_taint_a < region_taint_b)
+        self.assertFalse(region_taint_b < region_taint_a)
+
+    def test_lower_than_cross_scopes(self) -> None:
+        commit_taint = BlameTaintData.create_taint_data({
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        cif_taint = BlameTaintData.create_taint_data({
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+        region_taint = BlameTaintData.create_taint_data({
+            "region": 1,
+            "function": "bar",
+            "commit": "58ec513bd231f384038d9612ffdfb14affa6263f",
+            "repository": "foo"
+        })
+
+        self.assertTrue(commit_taint < cif_taint)
+        self.assertFalse(cif_taint < commit_taint)
+        self.assertTrue(commit_taint < region_taint)
+        self.assertFalse(region_taint < commit_taint)
+        self.assertTrue(cif_taint < region_taint)
+        self.assertFalse(region_taint < cif_taint)
+
+
 class TestBlameInstInteractions(unittest.TestCase):
-    """Test if a blame inst interactions are correctly reconstruction from
-    yaml."""
+    """Test if blame inst interactions are correctly reconstructed from yaml."""
 
     blame_interaction_1: BlameInstInteractions
     blame_interaction_2: BlameInstInteractions
@@ -239,47 +392,49 @@ class TestBlameInstInteractions(unittest.TestCase):
     def test_base_hash(self) -> None:
         """Test if base_hash is loaded correctly."""
         self.assertEqual(
-            self.blame_interaction_1.base_commit.commit_hash,
+            self.blame_interaction_1.base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
-            self.blame_interaction_1.base_commit.repository_name, 'Unknown'
+            self.blame_interaction_1.base_taint.commit.repository_name,
+            'Unknown'
         )
 
         self.assertEqual(
-            self.blame_interaction_2.base_commit.commit_hash,
+            self.blame_interaction_2.base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
-            self.blame_interaction_2.base_commit.repository_name, 'Unknown'
+            self.blame_interaction_2.base_taint.commit.repository_name,
+            'Unknown'
         )
 
     def test_interactions(self) -> None:
         """Test if interactions are loaded correctly."""
         self.assertEqual(
-            self.blame_interaction_1.interacting_commits[0].commit_hash,
+            self.blame_interaction_1.interacting_taints[0].commit.commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
-            self.blame_interaction_1.interacting_commits[0].repository_name,
-            'Unknown'
+            self.blame_interaction_1.interacting_taints[0].commit.
+            repository_name, 'Unknown'
         )
 
         self.assertEqual(
-            self.blame_interaction_2.interacting_commits[0].commit_hash,
+            self.blame_interaction_2.interacting_taints[0].commit.commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
-            self.blame_interaction_2.interacting_commits[0].repository_name,
-            'Unknown'
+            self.blame_interaction_2.interacting_taints[0].commit.
+            repository_name, 'Unknown'
         )
         self.assertEqual(
-            self.blame_interaction_2.interacting_commits[1].commit_hash,
+            self.blame_interaction_2.interacting_taints[1].commit.commit_hash,
             FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
         )
         self.assertEqual(
-            self.blame_interaction_2.interacting_commits[1].repository_name,
-            'Unknown'
+            self.blame_interaction_2.interacting_taints[1].commit.
+            repository_name, 'Unknown'
         )
 
     def test_amount(self) -> None:
@@ -289,7 +444,7 @@ class TestBlameInstInteractions(unittest.TestCase):
 
 
 class TestResultFunctionEntry(unittest.TestCase):
-    """Test if a result function entry is correctly reconstruction from yaml."""
+    """Test if a result function entry is correctly reconstructed from yaml."""
 
     func_entry_c: BlameResultFunctionEntry
     func_entry_cxx: BlameResultFunctionEntry
@@ -326,22 +481,22 @@ class TestResultFunctionEntry(unittest.TestCase):
             self.func_entry_cxx.demangled_name, 'doStuff(int, int)'
         )
 
-    def test_instructions_name(self) -> None:
+    def test_instructions_num(self) -> None:
         """Test if num instructions is saved correctly."""
         self.assertEqual(self.func_entry_c.num_instructions, 42)
         self.assertEqual(self.func_entry_cxx.num_instructions, 2)
 
     def test_found_interactions(self) -> None:
-        """Test if all interactions where found."""
+        """Test if all interactions were found."""
         c_interaction_list = self.func_entry_c.interactions
         self.assertEqual(len(c_interaction_list), 2)
         self.assertEqual(
-            c_interaction_list[0].base_commit.commit_hash,
+            c_interaction_list[0].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(c_interaction_list[0].amount, 22)
         self.assertEqual(
-            c_interaction_list[1].base_commit.commit_hash,
+            c_interaction_list[1].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(c_interaction_list[1].amount, 5)
@@ -463,11 +618,11 @@ class TestBlameReportWithRepoData(unittest.TestCase):
         interaction = entry.interactions[0]
 
         self.assertEqual(
-            interaction.interacting_commits[0].commit_hash,
+            interaction.interacting_taints[0].commit.commit_hash,
             FullCommitHash("a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9")
         )
         self.assertEqual(
-            interaction.interacting_commits[0].repository_name, "Unknown"
+            interaction.interacting_taints[0].commit.repository_name, "Unknown"
         )
 
     def test_correct_repo_interacting(self) -> None:
@@ -476,11 +631,11 @@ class TestBlameReportWithRepoData(unittest.TestCase):
         interaction = entry.interactions[0]
 
         self.assertEqual(
-            interaction.interacting_commits[1].commit_hash,
+            interaction.interacting_taints[1].commit.commit_hash,
             FullCommitHash("e8999a84efbd9c3e739bff7af39500d14e61bfbc")
         )
         self.assertEqual(
-            interaction.interacting_commits[1].repository_name, "gzip"
+            interaction.interacting_taints[1].commit.repository_name, "gzip"
         )
 
     def test_reponame_parsing_with_extra_dashes(self) -> None:
@@ -489,11 +644,11 @@ class TestBlameReportWithRepoData(unittest.TestCase):
         interaction = entry.interactions[0]
 
         self.assertEqual(
-            interaction.interacting_commits[2].commit_hash,
+            interaction.interacting_taints[2].commit.commit_hash,
             FullCommitHash("ff999a84efbd9c3e739bff7af39500d14e61bfbc")
         )
         self.assertEqual(
-            interaction.interacting_commits[2].repository_name,
+            interaction.interacting_taints[2].commit.repository_name,
             "repo-with-dashes"
         )
 
@@ -503,10 +658,10 @@ class TestBlameReportWithRepoData(unittest.TestCase):
         interaction = entry.interactions[0]
 
         self.assertEqual(
-            interaction.base_commit.commit_hash,
+            interaction.base_taint.commit.commit_hash,
             FullCommitHash("48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33")
         )
-        self.assertEqual(interaction.base_commit.repository_name, "xz")
+        self.assertEqual(interaction.base_taint.commit.repository_name, "xz")
 
 
 class TestBlameReportDiff(unittest.TestCase):
@@ -541,12 +696,12 @@ class TestBlameReportDiff(unittest.TestCase):
         self.assertEqual(new_func.demangled_name, 'doStuff(double, double)')
         self.assertEqual(len(new_func.interactions), 1)
         self.assertEqual(
-            new_func.interactions[0].base_commit.commit_hash,
+            new_func.interactions[0].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
-        self.assertEqual(len(new_func.interactions[0].interacting_commits), 1)
+        self.assertEqual(len(new_func.interactions[0].interacting_taints), 1)
         self.assertEqual(
-            new_func.interactions[0].interacting_commits[0].commit_hash,
+            new_func.interactions[0].interacting_taints[0].commit.commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(new_func.interactions[0].amount, 2)
@@ -574,28 +729,28 @@ class TestBlameReportDiff(unittest.TestCase):
         self.assertEqual(len(del_func.interactions), 2)
         # Check first interaction
         self.assertEqual(
-            del_func.interactions[0].base_commit.commit_hash,
+            del_func.interactions[0].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
-        self.assertEqual(len(del_func.interactions[0].interacting_commits), 1)
+        self.assertEqual(len(del_func.interactions[0].interacting_taints), 1)
         self.assertEqual(
-            del_func.interactions[0].interacting_commits[0].commit_hash,
+            del_func.interactions[0].interacting_taints[0].commit.commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(del_func.interactions[0].amount, 22)
 
         # Check second interaction
         self.assertEqual(
-            del_func.interactions[1].base_commit.commit_hash,
+            del_func.interactions[1].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
-        self.assertEqual(len(del_func.interactions[1].interacting_commits), 2)
+        self.assertEqual(len(del_func.interactions[1].interacting_taints), 2)
         self.assertEqual(
-            del_func.interactions[1].interacting_commits[0].commit_hash,
+            del_func.interactions[1].interacting_taints[0].commit.commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
-            del_func.interactions[1].interacting_commits[1].commit_hash,
+            del_func.interactions[1].interacting_taints[1].commit.commit_hash,
             FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
         )
         self.assertEqual(del_func.interactions[1].amount, 5)
@@ -622,14 +777,15 @@ class TestBlameReportDiff(unittest.TestCase):
         self.assertEqual(len(changed_func.interactions), 1)
         # Check first interaction
         self.assertEqual(
-            changed_func.interactions[0].base_commit.commit_hash,
+            changed_func.interactions[0].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
-            len(changed_func.interactions[0].interacting_commits), 1
+            len(changed_func.interactions[0].interacting_taints), 1
         )
         self.assertEqual(
-            changed_func.interactions[0].interacting_commits[0].commit_hash,
+            changed_func.interactions[0].interacting_taints[0].commit.
+            commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(changed_func.interactions[0].amount, 3)
@@ -646,12 +802,12 @@ class TestBlameReportDiff(unittest.TestCase):
         self.assertEqual(len(del_func.interactions), 1)
         # Check first interaction
         self.assertEqual(
-            del_func.interactions[0].base_commit.commit_hash,
+            del_func.interactions[0].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
-        self.assertEqual(len(del_func.interactions[0].interacting_commits), 1)
+        self.assertEqual(len(del_func.interactions[0].interacting_taints), 1)
         self.assertEqual(
-            del_func.interactions[0].interacting_commits[0].commit_hash,
+            del_func.interactions[0].interacting_taints[0].commit.commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(del_func.interactions[0].amount, 22)
@@ -669,18 +825,20 @@ class TestBlameReportDiff(unittest.TestCase):
 
         # Check second interaction, that was increased
         self.assertEqual(
-            changed_func.interactions[1].base_commit.commit_hash,
+            changed_func.interactions[1].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
-            len(changed_func.interactions[1].interacting_commits), 2
+            len(changed_func.interactions[1].interacting_taints), 2
         )
         self.assertEqual(
-            changed_func.interactions[1].interacting_commits[0].commit_hash,
+            changed_func.interactions[1].interacting_taints[0].commit.
+            commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
-            changed_func.interactions[1].interacting_commits[1].commit_hash,
+            changed_func.interactions[1].interacting_taints[1].commit.
+            commit_hash,
             FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
         )
         self.assertEqual(changed_func.interactions[1].amount, 2)
@@ -698,14 +856,15 @@ class TestBlameReportDiff(unittest.TestCase):
 
         # Check first interaction, that was decreased
         self.assertEqual(
-            changed_func.interactions[0].base_commit.commit_hash,
+            changed_func.interactions[0].base_taint.commit.commit_hash,
             FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
-            len(changed_func.interactions[0].interacting_commits), 1
+            len(changed_func.interactions[0].interacting_taints), 1
         )
         self.assertEqual(
-            changed_func.interactions[0].interacting_commits[0].commit_hash,
+            changed_func.interactions[0].interacting_taints[0].commit.
+            commit_hash,
             FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(changed_func.interactions[0].amount, -3)
@@ -778,29 +937,41 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
             self.reports[1]
         )
 
-        elem_e6 = CommitRepoPair(
-            FullCommitHash("e64923e69eab82332c1bed7fe1e80e14c2c5cb7f"),
-            "Elementalist"
+        elem_e6 = BlameTaintData(
+            CommitRepoPair(
+                FullCommitHash("e64923e69eab82332c1bed7fe1e80e14c2c5cb7f"),
+                "Elementalist"
+            )
         )
-        elem_5e = CommitRepoPair(
-            FullCommitHash("5e030723d70f4894c21881e32dba4decec815c7e"),
-            "Elementalist"
+        elem_5e = BlameTaintData(
+            CommitRepoPair(
+                FullCommitHash("5e030723d70f4894c21881e32dba4decec815c7e"),
+                "Elementalist"
+            )
         )
-        elem_97 = CommitRepoPair(
-            FullCommitHash("97c573ee98a1c2143b6876433697e363c9eca98b"),
-            "Elementalist"
+        elem_97 = BlameTaintData(
+            CommitRepoPair(
+                FullCommitHash("97c573ee98a1c2143b6876433697e363c9eca98b"),
+                "Elementalist"
+            )
         )
-        elem_bd = CommitRepoPair(
-            FullCommitHash("bd693d7bc2e4ae5be93e300506ba1efea149e5b7"),
-            "Elementalist"
+        elem_bd = BlameTaintData(
+            CommitRepoPair(
+                FullCommitHash("bd693d7bc2e4ae5be93e300506ba1efea149e5b7"),
+                "Elementalist"
+            )
         )
-        water_58 = CommitRepoPair(
-            FullCommitHash("58ec513bd231f384038d9612ffdfb14affa6263f"),
-            "water_lib"
+        water_58 = BlameTaintData(
+            CommitRepoPair(
+                FullCommitHash("58ec513bd231f384038d9612ffdfb14affa6263f"),
+                "water_lib"
+            )
         )
-        fire_ea = CommitRepoPair(
-            FullCommitHash("ead5e00960478e1d270aea5f373aece97b4b7e74"),
-            "fire_lib"
+        fire_ea = BlameTaintData(
+            CommitRepoPair(
+                FullCommitHash("ead5e00960478e1d270aea5f373aece97b4b7e74"),
+                "fire_lib"
+            )
         )
 
         self.assertEqual(base_inter_mapping[elem_e6][elem_5e], 1)

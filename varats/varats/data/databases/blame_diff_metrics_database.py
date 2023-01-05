@@ -20,12 +20,15 @@ from varats.data.reports.blame_report import (
     count_interacting_commits,
     count_interacting_authors,
 )
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import get_local_project_git
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
@@ -40,7 +43,7 @@ from varats.utils.git_util import (
 )
 
 
-def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+def id_from_paths(paths: tp.Tuple[ReportFilepath, ReportFilepath]) -> str:
     """
     Concatenates the commit hashes of two result files separated by an
     underscore.
@@ -53,11 +56,13 @@ def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     """
 
     return \
-        f"{ReportFilename(paths[0]).commit_hash}_" \
-        f"{ReportFilename(paths[1]).commit_hash}"
+        f"{paths[0].report_filename.commit_hash}_" \
+        f"{paths[1].report_filename.commit_hash}"
 
 
-def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+def timestamp_from_paths(
+    paths: tp.Tuple[ReportFilepath, ReportFilepath]
+) -> str:
     """
     Concatenates the timestamp of two result files separated by an underscore.
 
@@ -67,7 +72,8 @@ def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     Returns:
         the combined timestamp string of the result files
     """
-    return f"{paths[0].stat().st_mtime_ns}_{paths[1].stat().st_mtime_ns}"
+    return f"{paths[0].full_path().stat().st_mtime_ns}_" \
+        + f"{paths[1].full_path().stat().st_mtime_ns}"
 
 
 def compare_timestamps(ts1: str, ts2: str) -> bool:
@@ -107,8 +113,8 @@ def build_report_files_tuple(
         ReportFilename(report).commit_hash: report
         for report in get_processed_revisions_files(
             project_name,
-            BlameReport,
-            get_case_study_file_name_filter(case_study)
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
             if case_study else lambda x: False,
         )
     }
@@ -117,8 +123,8 @@ def build_report_files_tuple(
         ReportFilename(report).commit_hash: report
         for report in get_failed_revisions_files(
             project_name,
-            BlameReport,
-            get_case_study_file_name_filter(case_study)
+            BlameReportExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
             if case_study else lambda x: False,
         )
     }
@@ -156,7 +162,9 @@ def build_report_pairs_tuple(
             rev.to_short_commit_hash() for rev in case_study.revisions
         ]
     else:
-        sampled_revs = get_processed_revisions(project_name, BlameReport)
+        sampled_revs = get_processed_revisions(
+            project_name, BlameReportExperiment
+        )
     short_time_id_cache: tp.Dict[ShortCommitHash, int] = {
         rev: commit_map.short_time_id(rev) for rev in sampled_revs
     }
@@ -258,29 +266,29 @@ def get_successor_report_file(
 
 class BlameDiffMetrics(Enum):
     """Blame interaction metrics."""
-    value: str  # pylint: disable=invalid-name
+    value: tp.Tuple[str, str]  # pylint: disable=invalid-name
 
-    CHURN = "churn"
-    NUM_INTERACTIONS = "num_interactions"
-    NUM_INTERACTING_COMMITS = "num_interacting_commits"
-    NUM_INTERACTING_AUTHORS = "num_interacting_authors"
-    CI_DEGREE_MEAN = "ci_degree_mean"
-    AUTHOR_MEAN = "author_mean"
-    AVG_TIME_MEAN = "avg_time_mean"
-    CI_DEGREE_MAX = "ci_degree_max"
-    AUTHOR_MAX = "author_max"
-    AVG_TIME_MAX = "avg_time_max"
-    YEAR = "year"
+    CHURN = ("churn", 'int64')
+    NUM_INTERACTIONS = ("num_interactions", 'int64')
+    NUM_INTERACTING_COMMITS = ("num_interacting_commits", 'int64')
+    NUM_INTERACTING_AUTHORS = ("num_interacting_authors", 'int64')
+    CI_DEGREE_MEAN = ("ci_degree_mean", 'int')
+    AUTHOR_MEAN = ("author_mean", 'int')
+    AVG_TIME_MEAN = ("avg_time_mean", 'int')
+    CI_DEGREE_MAX = ("ci_degree_max", 'int')
+    AUTHOR_MAX = ("author_max", 'int')
+    AVG_TIME_MAX = ("avg_time_max", 'int')
+    YEAR = ("year", 'int64')
 
     @staticmethod
-    def to_str_list() -> tp.List[str]:
-        return [metric.value for metric in BlameDiffMetrics]
+    def to_str_dict() -> tp.Dict[str, str]:
+        return {metric.value[0]: metric.value[1] for metric in BlameDiffMetrics}
 
 
 class BlameDiffMetricsDatabase(
     EvaluationDatabase,
     cache_id="blame_diff_metrics_data",
-    columns=BlameDiffMetrics.to_str_list()
+    column_types=BlameDiffMetrics.to_str_dict()
 ):
     """Metrics database that contains all different blame-interaction metrics
     that are based on a diff between two `BlameReports`."""
@@ -295,14 +303,7 @@ class BlameDiffMetricsDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.churn = df_layout.churn.astype('int64')
-            df_layout.num_interactions = \
-                df_layout.num_interactions.astype('int64')
-            df_layout.num_interacting_commits = \
-                df_layout.num_interacting_commits.astype('int64')
-            df_layout.num_interacting_authors = \
-                df_layout.num_interacting_authors.astype('int64')
-            df_layout.year = df_layout.year.astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(

@@ -76,7 +76,7 @@ def create_new_varats_config() -> s.Configuration:
     cfg["vara"] = {
         "version": {
             "desc": "VaRA version.",
-            "default": 120,
+            "default": 140,
         },
         "llvm_source_dir": {
             "desc": "LLVM source dir",
@@ -183,6 +183,10 @@ def create_new_varats_config() -> s.Configuration:
         "sample_limit": {
             "default": None,
             "desc": "Randomize the order of versions to explore."
+        },
+        "workloads_base_location": {
+            "default": str(Path.home()),
+            "desc": "Location of directory containing workloads for binaries."
         },
     }
 

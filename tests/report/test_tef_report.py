@@ -65,7 +65,7 @@ TRACE_EVENT_FORMAT_OUTPUT = """{
         "pid": 91098,
         "tid": 91098
     } ],
-    "displayTimeUnit": "ns",
+    "timestampUnit": "ns",
     "stackFrames": {}
 }
 """
@@ -219,8 +219,8 @@ class TestTEFReportParser(unittest.TestCase):
 
     def test_parse_time_unit(self) -> None:
         """Test if the time unit field is correclty parsed."""
-        self.assertEqual(self.report.display_time_unit, "ns")
-        self.assertNotEqual(self.report.display_time_unit, "ms")
+        self.assertEqual(self.report.timestamp_unit, "ns")
+        self.assertNotEqual(self.report.timestamp_unit, "ms")
 
     def test_parse_trace_events(self) -> None:
         """Test if we correctly parse the listed trace events."""

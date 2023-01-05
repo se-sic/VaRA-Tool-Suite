@@ -3,28 +3,46 @@
 import os
 import random
 import shutil
+import sys
 import tempfile
+import textwrap
 import traceback
 import typing as tp
 from abc import abstractmethod
+from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
+
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol, runtime_checkable
+else:
+    from typing import Protocol, runtime_checkable
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step
+from benchbuild.source import enumerate_revisions
+from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
+import varats.revision.revisions as revs
+from varats.base.configuration import (
+    PlainCommandlineConfiguration,
+    ConfigurationOption,
+)
+from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.sources import FeatureSource
+from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
     FileStatusExtension,
+    ReportFilepath,
     ReportSpecification,
     ReportFilename,
 )
-from varats.revision.revisions import get_tagged_revisions
+from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -155,8 +173,7 @@ def get_default_compile_error_wrapped(
     return FunctionPEErrorWrapper(
         project.compile,
         create_default_compiler_error_handler(
-            experiment_handle, project, report_type,
-            get_varats_result_folder(project)
+            experiment_handle, project, report_type
         )
     )
 
@@ -165,7 +182,6 @@ def create_default_compiler_error_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
-    output_folder: tp.Optional[Path] = None,
     binary: tp.Optional[ProjectBinaryWrapper] = None
 ) -> PEErrorHandler:
     """
@@ -176,14 +192,13 @@ def create_default_compiler_error_handler(
         experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
-        output_folder: where the errors will be placed
         binary: if only a specific binary is handled
 
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
         experiment_handle, project, report_type,
-        FileStatusExtension.COMPILE_ERROR, output_folder, binary
+        FileStatusExtension.COMPILE_ERROR, binary
     )
 
 
@@ -191,7 +206,6 @@ def create_default_analysis_failure_handler(
     experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
-    output_folder: tp.Optional[Path] = None,
     binary: tp.Optional[ProjectBinaryWrapper] = None,
     timeout_duration: tp.Optional[str] = None,
 ) -> PEErrorHandler:
@@ -203,7 +217,6 @@ def create_default_analysis_failure_handler(
         experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
-        output_folder: where the errors will be placed
         binary: if only a specific binary is handled
         timeout_duration: set timeout
 
@@ -211,7 +224,7 @@ def create_default_analysis_failure_handler(
     """
     return create_default_error_handler(
         experiment_handle, project, report_type, FileStatusExtension.FAILED,
-        output_folder, binary, timeout_duration
+        binary, timeout_duration
     )
 
 
@@ -220,7 +233,6 @@ def create_default_error_handler(
     project: Project,
     report_type: tp.Type[BaseReport],
     error_type: FileStatusExtension,
-    output_folder: tp.Optional[Path] = None,
     binary: tp.Optional[ProjectBinaryWrapper] = None,
     timeout_duration: tp.Optional[str] = None,
 ) -> PEErrorHandler:
@@ -232,15 +244,12 @@ def create_default_error_handler(
         project: currently under analysis
         report_type: that should be generated
         error_type: a FSE describing the problem type
-        output_folder: where the errors will be placed
         timeout_duration: set timeout
         binary: if only a specific binary is handled
 
     Retruns: a initialized PEErrorHandler
     """
-    error_output_folder = output_folder if output_folder else Path(
-        f"{bb_cfg()['varats']['outfile']}/{project.name}"
-    )
+    error_output_folder = get_varats_result_folder(project)
 
     return PEErrorHandler(
         error_output_folder,
@@ -290,6 +299,7 @@ class ExperimentHandle():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
+        config_id: tp.Optional[int] = None
     ) -> ReportFilename:
         """
         Generates a filename for a report file that is generated by the
@@ -310,7 +320,7 @@ class ExperimentHandle():
         return self.__experiment.report_spec(
         ).get_report_type(report_shorthand).get_file_name(
             self.__experiment.shorthand(), project_name, binary_name,
-            project_revision, project_uuid, extension_type
+            project_revision, project_uuid, extension_type, config_id
         )
 
     def report_spec(self) -> ReportSpecification:
@@ -389,8 +399,7 @@ class VersionExperiment(Experiment):  # type: ignore
         return versions
 
     @classmethod
-    def sample(cls,
-               prj_cls: tp.Type[Project]) -> tp.List[source.VariantContext]:
+    def sample(cls, prj_cls: tp.Type[Project]) -> tp.List[source.Revision]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
@@ -401,7 +410,7 @@ class VersionExperiment(Experiment):  # type: ignore
         Returns:
             list of sampled versions
         """
-        variants = list(source.product(*prj_cls.SOURCE))
+        variants = list(enumerate_revisions(prj_cls))
 
         if bool(vara_cfg()["experiment"]["random_order"]):
             random.shuffle(variants)
@@ -421,22 +430,33 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            report_specific_bad_revs = []
+            report_specific_bad_revs: tp.Dict[
+                str, tp.Set[tp.Optional[int]]] = defaultdict(set)
             for report_type in cls.report_spec():
-                report_specific_bad_revs.append({
-                    revision.hash for revision, file_status in
-                    get_tagged_experiment_specific_revisions(
-                        prj_cls, report_type, experiment_type=cls
-                    ) if file_status not in fs_good
-                })
+                for revision, file_states in revs.get_tagged_revisions(
+                    prj_cls, cls, report_type
+                ).items():
+                    bad_config_ids: tp.Set[tp.Optional[int]] = set()
+                    for config_id, file_status in file_states.items():
+                        if file_status not in fs_good:
+                            bad_config_ids.add(config_id)
 
-            bad_revisions = report_specific_bad_revs[0].intersection(
-                *report_specific_bad_revs[1:]
-            )
+                    if bad_config_ids:
+                        report_specific_bad_revs[revision.hash
+                                                ].update(bad_config_ids)
 
-            variants = list(
-                filter(lambda var: str(var[0]) not in bad_revisions, variants)
-            )
+            def keep_variant(variant: source.Revision) -> bool:
+                var_version = str(variant.primary.version)
+                var_config_id = int(
+                    variant.variant_by_name("config_info").version
+                ) if variant.has_variant("config_info") else None
+
+                if var_version in report_specific_bad_revs:
+                    if var_config_id in report_specific_bad_revs[var_version]:
+                        return False  # Exclude variant from processing
+                return True
+
+            variants = list(filter(keep_variant, variants))
 
         if not variants:
             print("Could not find any unprocessed variants.")
@@ -445,41 +465,9 @@ class VersionExperiment(Experiment):  # type: ignore
         variants = cls._sample_num_versions(variants)
 
         if bool(bb_cfg()["versions"]["full"]):
-            return [source.context(*var) for var in variants]
+            return variants
 
-        return [source.context(*variants[0])]
-
-
-def get_tagged_experiment_specific_revisions(
-    project_cls: tp.Type[Project],
-    result_file_type: tp.Type[BaseReport],
-    tag_blocked: bool = True,
-    experiment_type: tp.Optional[tp.Type[VersionExperiment]] = None
-) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
-    """
-    Calculates a list of revisions of a project that belong to an experiment,
-    tagged with the file status. If two files exists the newest is considered
-    for detecting the status.
-
-    Args:
-        project_cls: target project
-        result_file_type: the type of the result file
-        tag_blocked: whether to tag blocked revisions as blocked
-        experiment_type: target experiment type
-
-    Returns:
-        list of tuples (revision, ``FileStatusExtension``)
-    """
-
-    def experiment_filter(file_path: Path) -> bool:
-        if experiment_type is None:
-            return True
-
-        return experiment_type.file_belongs_to_experiment(file_path.name)
-
-    return get_tagged_revisions(
-        project_cls, result_file_type, tag_blocked, experiment_filter
-    )
+        return [variants[0]]
 
 
 class ZippedReportFolder(TempDir):
@@ -509,3 +497,223 @@ class ZippedReportFolder(TempDir):
             )
 
         super().__exit__(exc_type, exc_value, exc_traceback)
+
+
+@runtime_checkable
+class NeedsOutputFolder(Protocol):
+
+    def __call__(self, tmp_folder: Path) -> StepResult:
+        ...
+
+
+def run_child_with_output_folder(
+    child: NeedsOutputFolder, tmp_folder: Path
+) -> StepResult:
+    return child(tmp_folder)
+
+
+class ZippedExperimentSteps(MultiStep):
+    """Runs multiple actions, providing them a shared tmp folder that afterwards
+    is zipped into an archive.."""
+
+    NAME = "ZippedSteps"
+    DESCRIPTION = "Run multiple actions with a shared tmp folder"
+
+    def __init__(
+        self, output_filepath: ReportFilepath,
+        actions: tp.Optional[tp.List[NeedsOutputFolder]]
+    ) -> None:
+        super().__init__(actions)
+        self.__output_filepath = output_filepath
+
+    def __run_children(self, tmp_folder: Path) -> tp.List[StepResult]:
+        results: tp.List[StepResult] = []
+
+        for child in self.actions:
+            results.append(
+                run_child_with_output_folder(
+                    tp.cast(NeedsOutputFolder, child), tmp_folder
+                )
+            )
+
+        return results
+
+    def __call__(self) -> StepResult:
+        results: tp.List[StepResult] = []
+
+        with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
+            results = self.__run_children(Path(tmp_dir))
+
+        overall_step_result = max(results) if results else StepResult.OK
+        if overall_step_result is not StepResult.OK:
+            error_filepath = self.__output_filepath.with_status(
+                FileStatusExtension.FAILED
+            )
+            self.__output_filepath.full_path().rename(
+                error_filepath.full_path()
+            )
+
+        return overall_step_result
+
+    def __str__(self, indent: int = 0) -> str:
+        sub_actns = "\n".join([a.__str__(indent + 1) for a in self.actions])
+        return textwrap.indent(
+            f"\nZippedExperimentSteps:\n{sub_actns}", indent * " "
+        )
+
+
+def __create_new_result_filepath_impl(
+    exp_handle: ExperimentHandle,
+    report_type: tp.Type[BaseReport],
+    project: VProject,
+    binary: ProjectBinaryWrapper,
+    extension_type: FileStatusExtension,
+    config_id: tp.Optional[int] = None
+) -> ReportFilepath:
+    """
+    Create a result filepath for the specified file extension and report of the
+    executed experiment/project combination.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+        extension_type: of the report
+        config_id: optional id to specify the used configuration
+
+    Returns: formatted filepath
+    """
+    varats_result_folder = get_varats_result_folder(project)
+
+    result_filepath = ReportFilepath(
+        varats_result_folder,
+        exp_handle.get_file_name(
+            report_type.shorthand(),
+            project_name=str(project.name),
+            binary_name=binary.name,
+            project_revision=ShortCommitHash(project.version_of_primary),
+            project_uuid=str(project.run_uuid),
+            extension_type=extension_type,
+            config_id=config_id
+        )
+    )
+
+    if config_id is not None:
+        # We need to ensure that the config folder is created in the
+        # background, so configuration specific reports can be created.
+        config_folder = result_filepath.full_path().parent
+        config_folder.mkdir(parents=True, exist_ok=True)
+
+    return result_filepath
+
+
+def create_new_success_result_filepath(
+    exp_handle: ExperimentHandle,
+    report_type: tp.Type[BaseReport],
+    project: VProject,
+    binary: ProjectBinaryWrapper,
+    config_id: tp.Optional[int] = None
+) -> ReportFilepath:
+    """
+    Create a result filepath for a successfull report of the executed
+    experiment/project combination.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+        config_id: optional id to specify the used configuration
+
+    Returns: formatted success filepath
+    """
+    return __create_new_result_filepath_impl(
+        exp_handle, report_type, project, binary, FileStatusExtension.SUCCESS,
+        config_id
+    )
+
+
+def create_new_failed_result_filepath(
+    exp_handle: ExperimentHandle,
+    report_type: tp.Type[BaseReport],
+    project: VProject,
+    binary: ProjectBinaryWrapper,
+    config_id: tp.Optional[int] = None
+) -> ReportFilepath:
+    """
+    Create a result filepath for a failed report of the executed
+    experiment/project combination.
+
+    Args:
+        exp_handle: handle to the current experiment
+        report_type: type of the report
+        project: current project
+        binary: current binary
+        config_id: optional id to specify the used configuration
+
+    Returns: formatted fail filepath
+    """
+    return __create_new_result_filepath_impl(
+        exp_handle, report_type, project, binary, FileStatusExtension.FAILED,
+        config_id
+    )
+
+
+def get_current_config_id(project: VProject) -> tp.Optional[int]:
+    """
+    Get, if available, the current config id of project. Should the project be
+    not configuration specific ``None`` is returned.
+
+    Args:
+        project: to extract the config id from
+
+    Returns:
+        config_id if available for the given project
+    """
+    if project.active_revision.has_variant(FeatureSource.LOCAL_KEY):
+        return int(
+            project.active_revision.variant_by_name(FeatureSource.LOCAL_KEY
+                                                   ).version
+        )
+
+    return None
+
+
+def get_extra_config_options(project: VProject) -> tp.List[str]:
+    """
+    Get extra program options that where specified in the particular
+    configuration of \a Project.
+
+    Args:
+        project: to get the extra options for
+
+    Returns:
+        list of command line options as string
+    """
+    config_id = get_current_config_id(project)
+    if config_id is None:
+        return []
+
+    paper_config = get_paper_config()
+    case_studies = paper_config.get_case_studies(cs_name=project.name)
+
+    if len(case_studies) > 1:
+        raise AssertionError(
+            "Cannot handle multiple case studies of the same project."
+        )
+
+    case_study = case_studies[0]
+
+    config_map = load_configuration_map_for_case_study(
+        paper_config, case_study, PlainCommandlineConfiguration
+    )
+
+    config = config_map.get_configuration(config_id)
+
+    if config is None:
+        raise AssertionError(
+            "Requested config id was not in the map, but should be"
+        )
+
+    return list(map(lambda option: option.value, config.options()))

@@ -26,6 +26,7 @@ from pathlib import Path
 
 import numpy as np
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 from varats.utils.util import static_vars
 
@@ -66,7 +67,17 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                         TimeReport._parse_wall_clock_time(line)
                     continue
 
-                print("Not matched: ", line)
+                if line.startswith("Voluntary context switches"):
+                    self.__voluntary_ctx_switches: int = \
+                        TimeReport._parse_voluntary_ctx_switches(line)
+                    continue
+
+                if line.startswith("Involuntary context switches"):
+                    self.__involuntary_ctx_switches: int = \
+                        TimeReport._parse_involuntary_ctx_switches(line)
+                    continue
+
+                # print("Not matched: ", line)
 
     @property
     def command_name(self) -> str:
@@ -93,6 +104,16 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         """Maximum resident size."""
         return self.__max_resident_size
 
+    @property
+    def voluntary_ctx_switches(self) -> int:
+        """Number of voluntary context switches."""
+        return self.__voluntary_ctx_switches
+
+    @property
+    def involuntary_ctx_switches(self) -> int:
+        """Number of involuntary context switches."""
+        return self.__involuntary_ctx_switches
+
     def __str__(self) -> str:
         return repr(self)
 
@@ -101,7 +122,11 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         str_repr += f"User time: {self.user_time}\n"
         str_repr += f"System time: {self.system_time}\n"
         str_repr += f"Elapsed wall clock time: {self.wall_clock_time}\n"
-        str_repr += f"Max Resident Size (kbytes): {self.max_res_size}"
+        str_repr += f"Max Resident Size (kbytes): {self.max_res_size}\n"
+        str_repr += \
+            f"Voluntary context switches: {self.voluntary_ctx_switches}\n"
+        str_repr += \
+            f"Involuntary context switches: {self.involuntary_ctx_switches}"
         return str_repr
 
     @staticmethod
@@ -201,6 +226,24 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
             "Could not parse max resident set size: ", line
         )
 
+    @staticmethod
+    def _parse_voluntary_ctx_switches(line: str) -> int:
+        if line.startswith("Voluntary context switches"):
+            return int(line.split(":")[1])
+
+        raise WrongTimeReportFormat(
+            "Could not parse voluntary context switches: ", line
+        )
+
+    @staticmethod
+    def _parse_involuntary_ctx_switches(line: str) -> int:
+        if line.startswith("Involuntary context switches"):
+            return int(line.split(":")[1])
+
+        raise WrongTimeReportFormat(
+            "Could not parse involuntary context switches: ", line
+        )
+
 
 class TimeReportAggregate(
     ReportAggregate[TimeReport],
@@ -212,23 +255,72 @@ class TimeReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)
-
-    @property
-    def wall_clock_times(self) -> tp.List[float]:
-        return [
-            report.wall_clock_time.total_seconds() for report in self.reports
+        self._measurements_wall_clock_time = [
+            report.wall_clock_time.total_seconds() for report in self.reports()
+        ]
+        self._measurements_ctx_switches = [
+            report.voluntary_ctx_switches + report.involuntary_ctx_switches
+            for report in self.reports()
         ]
 
     @property
-    def mean_wall_clock_time(self) -> float:
-        return np.mean(self.wall_clock_times)
+    def measurements_wall_clock_time(self) -> tp.List[float]:
+        """Wall clock time measurements of all aggregated reports."""
+        return self._measurements_wall_clock_time
 
     @property
-    def std_wall_clock_time(self) -> float:
-        return np.std(self.wall_clock_times)
+    def measurements_ctx_switches(self) -> tp.List[int]:
+        """Context switches measurements of all aggregated reports."""
+        return self._measurements_ctx_switches
+
+    @property
+    def max_resident_sizes(self) -> tp.List[int]:
+        return [report.max_res_size for report in self.reports()]
 
     @property
     def summary(self) -> str:
-        return f"num_reports = {len(self.reports)}\n" \
-            f"mean(wall_clock_time) = {self.mean_wall_clock_time}\n" \
-            f"std(wall_clock_time) = {self.std_wall_clock_time}\n"
+        return (
+            f"num_reports = {len(self.reports())}\n"
+            "mean (std) of wall clock time = "
+            f"{np.mean(self.measurements_wall_clock_time):.2f}"
+            f" ({np.std(self.measurements_wall_clock_time):.2f})\n"
+            "mean (std) of context switches = "
+            f"{np.mean(self.measurements_ctx_switches):.2f}"
+            f" ({np.std(self.measurements_ctx_switches):.2f})\n"
+        )
+
+
+class WLTimeReportAggregate(
+    WorkloadSpecificReportAggregate[TimeReport],
+    shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
+    """Context Manager for parsing multiple time reports stored inside a zip
+    file and grouping them based on the workload they belong to."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TimeReport)
+
+    def measurements_wall_clock_time(self,
+                                     workload_name: str) -> tp.List[float]:
+        """Wall clock time measurements of all aggregated reports."""
+        return [
+            report.wall_clock_time.total_seconds()
+            for report in self.reports(workload_name)
+        ]
+
+    def measurements_ctx_switches(self, workload_name: str) -> tp.List[int]:
+        """Context switches measurements of all aggregated reports."""
+        return [
+            report.voluntary_ctx_switches + report.involuntary_ctx_switches
+            for report in self.reports(workload_name)
+        ]
+
+    def max_resident_sizes(self, workload_name: str) -> tp.List[int]:
+        return [report.max_res_size for report in self.reports(workload_name)]
+
+    def summary(self) -> str:
+        return (
+            f"num_reports = {len(self.reports())}\n"
+            f"num_workloads = {len(self.workload_names())}\n"
+        )

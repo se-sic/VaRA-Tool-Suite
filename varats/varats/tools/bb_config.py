@@ -42,10 +42,12 @@ def create_new_bb_config(
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
+        # yapf: disable
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.brotli',
+        'varats.projects.c_projects.bzip2',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.file',
@@ -57,6 +59,7 @@ def create_new_bb_config(
         'varats.projects.c_projects.grep',
         'varats.projects.c_projects.gzip',
         'varats.projects.c_projects.htop',
+        'varats.projects.c_projects.hypre',
         'varats.projects.c_projects.irssi',
         'varats.projects.c_projects.libjpeg_turbo',
         'varats.projects.c_projects.libpng',
@@ -76,9 +79,14 @@ def create_new_bb_config(
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
+        'varats.projects.cpp_projects.clasp',
+        'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
+        'varats.projects.cpp_projects.z3',
+        'varats.projects.cpp_projects.ect',
+        'varats.projects.cpp_projects.lepton'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -91,6 +99,7 @@ def create_new_bb_config(
             'varats.projects.test_projects.example_test_repo',
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
+            'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection'
         ]
@@ -100,17 +109,23 @@ def create_new_bb_config(
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
+        'varats.experiments.base.time_workload',
+        'varats.experiments.base.time_workloads',
+        'varats.experiments.phasar.global_analysis_compare',
+        'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.szz.pydriller_szz_experiment',
+        'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.vara.blame_report_experiment',
+        'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
+        'varats.experiments.vara.instrumentation_point_printer',
+        'varats.experiments.vara.instrumentation_stats',
+        'varats.experiments.vara.instrumentation_verifier',
         'varats.experiments.vara.marker_tester',
-        'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
-        'varats.experiments.phasar.ide_linear_constant_experiment',
-        'varats.experiments.phasar.global_analysis_compare',
-        'varats.experiments.szz.szz_unleashed_experiment',
-        'varats.experiments.szz.pydriller_szz_experiment',
     ]
+    # yapf: enable
 
     # Enable version exploration by default
     new_bb_cfg["versions"]["full"] = True

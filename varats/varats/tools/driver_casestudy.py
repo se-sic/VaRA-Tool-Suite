@@ -12,18 +12,21 @@ from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
-from varats.data.reports.szz_report import SZZReport
 from varats.experiment.experiment_util import VersionExperiment
-from varats.mapping.commit_map import (
-    create_lazy_commit_map_loader,
-    generate_commit_map,
+from varats.experiments.szz.pydriller_szz_experiment import (
+    PyDrillerSZZExperiment,
 )
+from varats.experiments.szz.szz_unleashed_experiment import (
+    SZZUnleashedExperiment,
+)
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
     CaseStudy,
     CSStage,
 )
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
@@ -34,15 +37,16 @@ from varats.paper_mgmt.case_study import (
     extend_with_bug_commits,
     extend_with_extra_revs,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import (
+    get_local_project_git_path,
+    get_primary_project_source,
+)
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
-from varats.tools.research_tools.vara_manager import pull_current_branch
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -192,13 +196,13 @@ def __casestudy_gen(
             "You need to create a paper config first"
             " using vara-pc create"
         )
-        return
+        raise click.Abort()
     ctx.obj['path'] = Path(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
     ctx.obj['git_path'] = get_local_project_git_path(project)
     if update:
-        pull_current_branch(ctx.obj['git_path'])
+        get_primary_project_source(project).fetch()
 
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
@@ -245,7 +249,10 @@ def __casestudy_gen(
             ctx.obj['merge_stage'] = stage_index
 
         else:
-            ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
+            if new_stage:
+                ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
+            else:
+                ctx.obj['merge_stage'] = max(case_study.num_stages - 1, 0)
     ctx.obj['case_study'] = case_study
 
 
@@ -254,7 +261,7 @@ def __casestudy_gen(
 def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
 
-    cmap = generate_commit_map(ctx.obj["git_path"])
+    cmap = get_commit_map(ctx.obj['project'])
     case_study: CaseStudy = ctx.obj['case_study']
 
     repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
@@ -273,9 +280,7 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 
     Revisions: Revisions to add
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
+    cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_extra_revs(
         ctx.obj['case_study'], cmap, revisions, ctx.obj['merge_stage']
     )
@@ -329,7 +334,7 @@ def __gen_sample(
         else:
             start = get_initial_commit(project_repo_path).hash
 
-    cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
+    cmap = get_commit_map(ctx.obj['project'], end, start)
     extend_with_distrib_sampling(
         ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],
         num_rev, ctx.obj['ignore_blocked'], only_code_commits
@@ -351,9 +356,7 @@ def __gen_per_year(
 
     revs-per-year: number of revisions to generate per year
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
+    cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_revs_per_year(
         ctx.obj['case_study'], cmap, ctx.obj['merge_stage'],
         ctx.obj['ignore_blocked'], ctx.obj['git_path'], revs_per_year, separate
@@ -394,9 +397,7 @@ class SmoothPlotCLI(click.MultiCommand):
                         "The given plot generator creates multiple plots"
                         " please select one:", plots, lambda p: p.name, set_plot
                     )
-                cmap = create_lazy_commit_map_loader(
-                    context.obj['project'], None, 'HEAD', None
-                )()
+                cmap = get_commit_map(context.obj['project'], refspec='HEAD')
                 extend_with_smooth_revs(
                     context.obj['case_study'], cmap,
                     context.obj['boundary_gradient'],
@@ -445,9 +446,7 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 
     release_type: Release type to consider
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
+    cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_release_revs(
         ctx.obj['case_study'], cmap, release_type, ctx.obj['ignore_blocked'],
         ctx.obj['merge_stage']
@@ -456,17 +455,18 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 
 
 @__casestudy_gen.command("select_bug")
-@click.argument(
-    "report_type",
+@click.option(
+    "--experiment-type",
     type=TypedChoice({
-        k: v
-        for (k, v) in BaseReport.REPORT_TYPES.items()
-        if isinstance(v, SZZReport)
-    })
+        SZZUnleashedExperiment.NAME: SZZUnleashedExperiment,
+        PyDrillerSZZExperiment.NAME: PyDrillerSZZExperiment
+    }),
+    required=True,
+    help="Experiment type of the result files."
 )
 @click.pass_context
 def __gen_bug_commits(
-    ctx: click.Context, report_type: tp.Type['BaseReport']
+    ctx: click.Context, experiment_type: tp.Type['VersionExperiment']
 ) -> None:
     """
     Extend a case study with revisions that either introduced or fixed a bug as
@@ -474,11 +474,8 @@ def __gen_bug_commits(
 
     REPORT_TYPE: report to use for determining bug regions
     """
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
     extend_with_bug_commits(
-        ctx.obj['case_study'], cmap, report_type, ctx.obj['merge_stage'],
+        ctx.obj['case_study'], experiment_type, ctx.obj['merge_stage'],
         ctx.obj['ignore_blocked']
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
@@ -528,9 +525,15 @@ def __casestudy_package(
 
 @main.command("view")
 @click.option(
+    "--experiment-type",
+    type=create_experiment_type_choice(),
+    required=True,
+    help="Experiment type of the result files."
+)
+@click.option(
     "--report-type",
     type=create_report_type_choice(),
-    required=True,
+    required=False,
     help="Report type of the result files."
 )
 @click.option(
@@ -543,17 +546,20 @@ def __casestudy_package(
     help="Only report the newest file for each matched commit hash"
 )
 def __casestudy_view(
-    report_type: tp.Type[BaseReport], project: str,
+    experiment_type: tp.Type[VersionExperiment],
+    report_type: tp.Optional[tp.Type[BaseReport]], project: str,
     commit_hash: ShortCommitHash, newest_only: bool
 ) -> None:
     """View report files."""
     try:
-        commit_hash = __init_commit_hash(report_type, project, commit_hash)
+        commit_hash = __init_commit_hash(
+            project, experiment_type, report_type, commit_hash
+        )
     except LookupError:
         return
 
     result_files = PCM.get_result_files(
-        report_type, project, commit_hash, newest_only
+        project, experiment_type, report_type, commit_hash, newest_only
     )
     result_files.sort(
         key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
@@ -609,7 +615,8 @@ def __casestudy_view(
 
 
 def __init_commit_hash(
-    report_type: tp.Type[BaseReport], project: str, commit_hash: ShortCommitHash
+    project: str, experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]], commit_hash: ShortCommitHash
 ) -> ShortCommitHash:
     if not commit_hash:
         # Ask the user to provide a commit hash
@@ -620,7 +627,7 @@ def __init_commit_hash(
         for case_study in paper_config.get_case_studies(project):
             available_commit_hashes.extend(
                 get_revisions_status_for_case_study(
-                    case_study, report_type, tag_blocked=False
+                    case_study, experiment_type, report_type, tag_blocked=False
                 )
             )
 

@@ -15,8 +15,10 @@ How to add a new project to VaRA-TS
 
 To add a new project, create a new class with ``benchbuild.Project``
 as its superclass.
-Place the class in one ot the ``varats/projects/<group>`` folders, where
+Place the class in one of the ``varats/projects/<group>`` folders, where
 ``<group>`` refers to the language of the project.
+
+Additionally, add the project to the ``bb_config.py`` file in ``varats/tools``.
 
 Below, you can see a simplified version of the project *Gravity* with comments
 explaining the different parts of the project definition. You can use this as a
@@ -29,7 +31,7 @@ template for your own project::
     from benchbuild.utils.settings import get_number_of_jobs
     from plumbum import local
 
-    from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+    from varats.paper.paper_config import PaperConfigSpecificGit
     from varats.utils.settings import bb_cfg
     from varats.project.project_util import (
         ProjectBinaryWrapper,

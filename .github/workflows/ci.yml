@@ -26,21 +26,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install system dependencies for CI
-      run: |
-         sudo apt-get install time git libgit2-dev ninja-build libyaml-dev libgraphviz-dev
+    - uses: ./.github/actions/dependenciesActions
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install wheel
-        pip install -e ./varats-core
-        pip install -e ./varats
-        pip install -r requirements.txt
-        pip install codecov
-        pip install pytest-cov
-        pip install coverage
-        pip install mypy
     - name: Run unittests
       run: |
         echo $BB_TMP_DIR
@@ -48,9 +35,8 @@ jobs:
         coverage run -p -m pytest varats varats-core tests
         rm -rf benchbuild
 
-    - name: Run integration tests
+    - name: Combine Coverage
       run: |
-        ./run_extra_tests.sh
         coverage combine -a --rcfile=.coveragerc
         coverage xml
     - name: Upload coverage report

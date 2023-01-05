@@ -10,8 +10,10 @@ import logging
 import typing as tp
 
 import click
+from rich.progress import Progress
 
-from varats.paper_mgmt.paper_config import get_paper_config
+from varats.paper.paper_config import get_paper_config
+from varats.paper_mgmt.artefacts import load_artefacts
 from varats.plot.plots import (
     PlotGenerator,
     CommonPlotOptions,
@@ -21,6 +23,7 @@ from varats.plot.plots import (
 )
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
+from varats.tables.discover_tables import initialize_tables
 from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 
 LOG = logging.getLogger(__name__)
@@ -52,7 +55,8 @@ class PlotCLI(click.MultiCommand):
                 generator_instance = generator_cls(plot_config, **kwargs)
                 if artefact_name:
                     paper_config = get_paper_config()
-                    if paper_config.artefacts.get_artefact(artefact_name):
+                    artefacts = load_artefacts(paper_config)
+                    if artefacts.get_artefact(artefact_name):
                         LOG.info(
                             f"Updating existing artefact '{artefact_name}'."
                         )
@@ -61,10 +65,11 @@ class PlotCLI(click.MultiCommand):
                     artefact = PlotArtefact.from_generator(
                         artefact_name, generator_instance, common_options
                     )
-                    paper_config.add_artefact(artefact)
-                    paper_config.store_artefacts()
+                    artefacts.add_artefact(artefact)
+                    artefacts.store()
                 else:
-                    generator_instance(common_options)
+                    with Progress() as progress:
+                        generator_instance(common_options, progress)
             except PlotGeneratorFailed as ex:
                 print(
                     f"Failed to create plot generator {generator_cls.NAME}: "
@@ -103,6 +108,8 @@ def main(context: click.Context, **kwargs: tp.Any) -> None:
 
     initialize_cli_tool()
     initialize_projects()
+    initialize_tables()
+    initialize_plots()
 
 
 if __name__ == '__main__':

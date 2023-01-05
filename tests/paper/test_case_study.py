@@ -8,7 +8,6 @@ from tempfile import NamedTemporaryFile
 import varats.paper.case_study as CS
 from varats.base.configuration import ConfigurationImpl
 from varats.base.sampling_method import UniformSamplingMethod
-from varats.mapping.commit_map import CommitMap
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 YAML_CASE_STUDY = """---
@@ -54,44 +53,6 @@ stages:
 2: '{}'
 ...
 """
-
-GIT_LOG_OUT = """7620b817357d6f14356afd004ace2da426cf8c36
-622e9b1d024da1343b83fc47fb1891e1d245add3
-8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9
-2e654f9963154e5af9d3081fc871d54d783a1270
-edfad78619d52479e02228a5789a2e98d7b0f9f6
-a3db5806d012082b9e25cc36d09f19cd736a468f
-e75f428c0ddc90a7011cfda82a7114a16c537e34
-1e7e3769dc4efd55249c475470152acbcf804bb3
-9872ba420c99323195e96cafe56ff247c3011ad5
-b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
-
-
-def mocked_create_lazy_commit_map_loader(
-    project_name: str,  # pylint: disable=unused-argument
-    cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
-    end: str = "HEAD",  # pylint: disable=unused-argument
-    start: tp.Optional[str] = None
-) -> tp.Callable[[], CommitMap]:  # pylint: disable=unused-argument
-    """
-    Mock function to replace a lazy commit map loader callback.
-
-    Args:
-        project_name: name of the project
-        cmap_path: path to commit map file
-        end: commit to end loading, e.g, HEAD
-        start: commit from which to start loading
-    """
-
-    def get_test_case_study_cmap() -> CommitMap:
-
-        def format_stream() -> tp.Generator[str, None, None]:
-            for number, line in enumerate(reversed(GIT_LOG_OUT.split('\n'))):
-                yield f"{number}, {line}\n"
-
-        return CommitMap(format_stream())
-
-    return get_test_case_study_cmap
 
 
 class TestCaseStudy(unittest.TestCase):
@@ -172,7 +133,7 @@ class TestCaseStudy(unittest.TestCase):
         self.assertEqual(
             self.case_study.get_config_ids_for_revision(
                 FullCommitHash('8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9')
-            ), [-1]
+            ), []
         )
 
     def test_get_config_ids_for_multiple_revs(self) -> None:
@@ -195,7 +156,7 @@ class TestCaseStudy(unittest.TestCase):
         self.assertEqual(
             self.case_study.get_config_ids_for_revision_in_stage(
                 FullCommitHash('7620b817357d6f14356afd004ace2da426cf8c36'), 1
-            ), [-1]
+            ), []
         )
 
 

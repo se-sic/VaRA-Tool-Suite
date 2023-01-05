@@ -5,19 +5,21 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib import style
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CIGNodeAttrs,
 )
-from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotGenerator, REQUIRE_CASE_STUDY
+from varats.plot.plots import PlotGenerator
 from varats.project.project_util import get_local_project_gits
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
@@ -36,7 +38,6 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]
 
-        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
@@ -47,14 +48,15 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
-            case_study, BlameReport
+            case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
         churn_config = ChurnConfig.create_c_style_languages_config()
-        cig = create_blame_interaction_graph(project_name, revision
-                                            ).commit_interaction_graph()
+        cig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).commit_interaction_graph()
         commit_lookup = create_commit_lookup_helper(project_name)
         repo_lookup = get_local_project_gits(project_name)
 

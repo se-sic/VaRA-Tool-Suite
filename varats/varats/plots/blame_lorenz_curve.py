@@ -5,7 +5,7 @@ import typing as tp
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib import axes, style
+from matplotlib import axes
 
 from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
@@ -14,16 +14,13 @@ from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotGenerator,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
 )
 from varats.project.project_util import get_local_project_git
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
@@ -143,8 +140,6 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
     NAME = 'b_lorenz_curve'
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
-
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
         commit_map = get_commit_map(project_name)
@@ -220,7 +215,7 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 class BlameLorenzCurveGenerator(
     PlotGenerator,
     generator_name="lorenz-curve-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates lorenz-curve plot(s) for the selected case study(ies)."""
 
@@ -368,8 +363,6 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
     NAME = 'b_gini_overtime'
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
-
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         project_name = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)
@@ -442,7 +435,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 class BlameGiniOverTimeGenerator(
     PlotGenerator,
     generator_name="gini-overtime-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates gini-overtime plot(s) for the selected case study(ies)."""
 

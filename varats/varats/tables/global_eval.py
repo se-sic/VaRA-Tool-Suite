@@ -5,25 +5,26 @@ from pathlib import Path
 
 import pandas as pd
 from scipy.stats import pearsonr
-from tabulate import tabulate
 
 from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
     GlobalsReport,
 )
+from varats.experiments.phasar.global_analysis_compare import GlobalsComparision
 from varats.jupyterhelper.file import (
     load_globals_with_report,
     load_globals_without_report,
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
-from varats.table.table import Table, wrap_table_in_document
-from varats.table.tables import TableFormat
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
+from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 
 LOG = logging.Logger(__name__)
 
@@ -95,43 +96,31 @@ def filter_report_paths_binary(
     )
 
 
-class PhasarGlobalsDataComparision(Table):
-    """Comparision overview of gathered phasar globals analysis data to compare
-    the effect of using gloabls analysis."""
+class PhasarGlobalsDataComparision(Table, table_name="phasar_globals_table"):
+    """Comparison overview of gathered phasar globals analysis data to compare
+    the effect of using globals analysis."""
 
-    NAME = "phasar_globals"
-
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
-
-    def tabulate(self) -> str:
-        case_studies: tp.List[CaseStudy] = get_loaded_paper_config(
-        ).get_all_case_studies()
-
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         cs_data: tp.List[pd.DataFrame] = []
 
-        for case_study in sorted(case_studies, key=lambda x: x.project_name):
+        for case_study in sorted(
+            tp.cast(tp.List[CaseStudy], self.table_kwargs["case_study"]),
+            key=lambda x: x.project_name
+        ):
             report_files_with = get_processed_revisions_files(
-                case_study.project_name, GlobalsReportWith,
+                case_study.project_name, GlobalsComparision, GlobalsReportWith,
                 get_case_study_file_name_filter(case_study)
             )
             report_files_without = get_processed_revisions_files(
-                case_study.project_name, GlobalsReportWithout,
+                case_study.project_name,
+                GlobalsComparision, GlobalsReportWithout,
                 get_case_study_file_name_filter(case_study)
             )
 
             if len(report_files_with) > 1 or len(report_files_without) > 1:
                 LOG.debug(f"report_files_with={report_files_with}")
                 LOG.debug(f"report_files_without={report_files_with}")
-                raise AssertionError("To many report files given!")
-
-            def insert_data_if_present(
-                report: tp.Optional[GlobalsReport], name_id: str,
-                cs_data: tp.List[pd.DataFrame]
-            ) -> None:
-                res = create_df_for_report(report, name_id)
-                if res is not None:
-                    cs_data.append(res)
+                raise AssertionError("Too many report files given!")
 
             if len(case_study.revisions) > 1:
                 LOG.debug(
@@ -140,14 +129,11 @@ class PhasarGlobalsDataComparision(Table):
                     "one are ignored."
                 )
 
-            for binary in case_study.project_cls.binaries_for_revision(
+            binaries = case_study.project_cls.binaries_for_revision(
                 case_study.revisions[0]
-            ):
-                if len(
-                    case_study.project_cls.binaries_for_revision(
-                        case_study.revisions[0]
-                    )
-                ) > 1:
+            )
+            for binary in binaries:
+                if len(binaries) > 1:
                     unique_cs_name = case_study.project_name + "-" + binary.name
                 else:
                     unique_cs_name = case_study.project_name
@@ -163,7 +149,9 @@ class PhasarGlobalsDataComparision(Table):
                         report_files_with_for_binary[0]
                     )
 
-                insert_data_if_present(report_with, unique_cs_name, cs_data)
+                cs_data.append(
+                    create_df_for_report(report_with, unique_cs_name)
+                )
 
                 # Without
                 report_files_without_for_binary = filter_report_paths_binary(
@@ -176,7 +164,9 @@ class PhasarGlobalsDataComparision(Table):
                         report_files_without_for_binary[0]
                     )
 
-                insert_data_if_present(report_without, unique_cs_name, cs_data)
+                cs_data.append(
+                    create_df_for_report(report_without, unique_cs_name)
+                )
 
         df = pd.concat(cs_data)
         df = df.round(2)
@@ -188,27 +178,37 @@ class PhasarGlobalsDataComparision(Table):
 
         mean_stddev = df[df["SDev %"] != '-']["SDev %"].mean()
 
-        if self.format in [
-            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
-        ]:
-            caption = (
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["caption"] = (
                 "Pearson correlation coefficient between RGG and Speedup "
                 "(TimeWithout / TimeWith) "
                 f"is: $\\rho$ = {rho_p[0]:.3f} with a two-sided p-value of "
                 f"{rho_p[1]:.3f}."
                 f" In total we analyzed {len(rggs)} binaries from "
-                f"{len(rggs)-1} different projects. "
+                f"{len(rggs) - 1} different projects. "
                 f"Relative mean stddev {mean_stddev:.1f}$\\%$"
             )
-            table = df.to_latex(
-                bold_rows=True,
-                multicolumn_format="c",
-                multirow=True,
-                longtable=True,
-                caption=caption
-            )
-            return str(table) if table else ""
-        return tabulate(df, df.columns, self.format.value)
 
-    def wrap_table(self, table: str) -> str:
-        return wrap_table_in_document(table=table, landscape=True)
+        return dataframe_to_table(
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
+
+
+class PhasarGlobalsDataComparisionGenerator(
+    TableGenerator,
+    generator_name="phasar-globals-table",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates a phasar-globals table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarGlobalsDataComparision(
+                self.table_config, **self.table_kwargs
+            )
+        ]

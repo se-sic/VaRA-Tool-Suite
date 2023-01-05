@@ -2,12 +2,14 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.paper.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -15,6 +17,7 @@ from varats.project.project_util import (
     get_local_project_git_path,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
@@ -35,8 +38,24 @@ class FeaturePerfCSCollection(VProject):
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("FeaturePerfCSCollection")
-        )
+        ),
+        FeatureSource()
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SingleLocalSimple"),
+                label="SLS-no-input"
+            ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("MultiSharedMultipleRegions"),
+                label="MSMR-no-input"
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -53,6 +72,27 @@ class FeaturePerfCSCollection(VProject):
             "build/bin/SingleLocalMultipleRegions",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("162db88346", "master")
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleSleepLoop",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            )
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleBusyLoop",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            )
+        )
+        binary_map.specify_binary(
+            "build/bin/MultiSharedMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c051e44a973ee31b3baa571407694467a513ba68", "master"
+            )
         )
 
         return binary_map[revision]
