@@ -43,7 +43,7 @@ class PerformanceAnalysisTable(
         ]
 
     def tabulate_gen(self, table_format: TableFormat, wrap_table: bool,
-                     row_gen_method: tp.Callable[['PerformanceAnalysisTable', CaseStudy,
+                     row_gen_method: tp.Callable[[CaseStudy,
                                                   WorkloadSpecificTEFReportAggregate, str],
                                                   tp.Dict[str,
                                                   tp.Union[str, CommitHash, tp.Dict[str, int], tp.Optional[int]]]]) \
