@@ -62,7 +62,8 @@ class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
             # - vara-PFTDD to generate feature regions
             # - vara-IPP (Instrumentation Point Printer)
             opt_params = [
-                "--vara-PTFDD", "-vara-IPP", "-o", "/dev/null",
+                "--enable-new-pm=0", "--vara-PTFDD", "-vara-IPP", "-o",
+                "/dev/null",
                 get_cached_bc_file_path(
                     self.project, binary,
                     [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]

@@ -12,6 +12,9 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
+import plumbum as pb
+from benchbuild.source import base
+from benchbuild.utils.cmd import git
 
 from varats.paper.case_study import (
     CaseStudy,
@@ -256,9 +259,19 @@ class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
         self.__project_name = project_name
 
     def versions(self) -> tp.List[bb.source.base.Variant]:
-        proj_filter = project_filter_generator(self.__project_name)
+        cache_path = self.fetch()
+        git_rev_list = git['rev-list', '--abbrev-commit', '--abbrev=10',
+                           '--all']
+        rev_list: tp.List[str] = []
+        with pb.local.cwd(cache_path):
+            rev_list = list(git_rev_list(self.refspec).strip().split('\n'))
 
+        rev_list = list(filter(self.version_filter, rev_list))
+        rev_list = rev_list[:self.limit] if self.limit else rev_list
+
+        proj_filter = project_filter_generator(self.__project_name)
         return [
-            variant for variant in super().versions()
-            if proj_filter(variant.version)
+            base.Variant(version=rev, owner=self)
+            for rev in rev_list
+            if proj_filter(rev)
         ]
