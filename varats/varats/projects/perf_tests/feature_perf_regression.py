@@ -1,10 +1,10 @@
 """Project file for the feature performance case study collection."""
+import re
 import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
-from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -16,11 +16,19 @@ from varats.project.project_util import (
     BinaryType,
     get_local_project_git_path,
     verify_binaries,
+    get_tagged_commits,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
-from varats.provider.release.release_provider import ReleaseProviderHook
-from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
+from varats.provider.release.release_provider import (
+    ReleaseProviderHook,
+    ReleaseType,
+)
+from varats.utils.git_util import (
+    RevisionBinaryMap,
+    ShortCommitHash,
+    FullCommitHash,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -91,3 +99,14 @@ class FeaturePerfRegression(VProject, ReleaseProviderHook):
 
         with local.cwd(feature_perf_regression_source):
             verify_binaries(self)
+
+    @classmethod
+    def get_release_revisions(
+        cls, release_type: ReleaseType
+    ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
+        release_regex = "^v[0-9]+$"
+
+        tagged_commits = get_tagged_commits(cls.NAME)
+        return [(FullCommitHash(h), tag)
+                for h, tag in tagged_commits
+                if re.match(release_regex, tag)]
