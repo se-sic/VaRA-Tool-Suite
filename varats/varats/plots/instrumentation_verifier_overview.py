@@ -5,6 +5,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 import varats.paper.paper_config as PC
+from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
@@ -18,7 +19,7 @@ class InstrumentationOverviewPlot(
 ):
 
     def plot(self, view_mode: bool) -> None:
-        self._generate_plot()
+        self._generate_plot(**self.plot_kwargs)
         pass
 
     def calc_missing_revisions(
@@ -26,9 +27,9 @@ class InstrumentationOverviewPlot(
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
-    def _generate_plot(self, experiment_type=None):
-        print("Called generate plot")
+    def _generate_plot(self, **kwargs: tp.Any):
         current_config = PC.get_paper_config()
+        experiment_type: tp.Type[VersionExperiment] = kwargs['experiment_type']
 
         projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
             ShortCommitHash, FileStatusExtension]]]] = OrderedDict()
@@ -41,9 +42,9 @@ class InstrumentationOverviewPlot(
 
         fig, ax = plt.subplots()
 
-        labels = [projects.keys()]
+        labels = list(projects.keys())
 
-        results = dict()
+        results = {label: [] for label in ["success", "blocked", "failed"]}
 
         for _, revisions in projects.items():
             revs_success = len([
