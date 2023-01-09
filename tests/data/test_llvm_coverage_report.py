@@ -1,11 +1,19 @@
 import unittest
 from copy import deepcopy
 
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
     RegionStart,
     RegionEnd,
+)
+from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
+from varats.plot.plots import PlotArtefact, PlotConfig, CommonPlotOptions
+from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
+from varats.utils.settings import vara_cfg, save_config
+from varats.varats.experiments.vara.llvm_coverage_experiment import (
+    GenerateCoverageExperiment,
 )
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
@@ -163,3 +171,55 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(self.left_left.count, 2)
         self.assertEqual(self.left_left_2.count, -2)
         self.assertEqual(self.right_right.count, 1)
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_merging(self):
+        # setup config
+        vara_cfg()['paper_config']['current_config'] = "test_coverage_plot"
+        load_paper_config()
+        save_config()
+
+        plot_generator = CoveragePlotGenerator(
+            PlotConfig.from_kwargs(view=False),
+            experiment_type=[GenerateCoverageExperiment],
+            case_study=get_loaded_paper_config().
+            get_case_studies("FeaturePerfCSCollection")[0]
+        )
+        plots = plot_generator.generate()
+        self.assertEqual(len(plots), 1)
+        coverage_plot = plots[0]
+
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        self.assertEqual(len(case_studies), 1)
+        case_study = case_studies[0]
+
+        binary_config_map = coverage_plot._get_binary_config_map(case_study)
+        self.assertTrue(binary_config_map)
+
+        config_map = binary_config_map[next(iter(binary_config_map))]
+        self.assertEqual(len(config_map), 3)
+
+        configs = iter(config_map)
+        header_slow = next(configs)
+        self.assertEqual(header_slow.options()[0].value, "--slow")
+        self.assertEqual(header_slow.options()[1].value, "--header")
+        header = next(configs)
+        self.assertEqual(header.options()[0].value, "--header")
+        slow = next(configs)
+        self.assertEqual(slow.options()[0].value, "--slow")
+
+        header_slow_report = config_map[header_slow]
+        header_report = config_map[header]
+        slow_report = config_map[slow]
+
+        merged_header_slow_report_1 = deepcopy(header_report)
+        merged_header_slow_report_1.merge(deepcopy(slow_report))
+        merged_header_slow_report_2 = deepcopy(slow_report)
+        merged_header_slow_report_2.merge(deepcopy(header_report))
+
+        self.assertEqual(
+            merged_header_slow_report_1, merged_header_slow_report_2
+        )
+        #self.assertNotEqual(merged_header_slow_report_1, header_slow_report)

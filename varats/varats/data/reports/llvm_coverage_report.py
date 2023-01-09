@@ -228,7 +228,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         for filename_a, filename_b in zip(
             self.filename_function_mapping, report.filename_function_mapping
         ):
-            assert filename_a == filename_b
+            assert Path(filename_a).name == Path(filename_b).name
 
             for function_a, function_b in zip(
                 self.filename_function_mapping[filename_a],
@@ -237,7 +237,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 assert function_a == function_b
                 code_region_a = self.filename_function_mapping[filename_a][
                     function_a]
-                code_region_b = self.filename_function_mapping[filename_b][
+                code_region_b = report.filename_function_mapping[filename_b][
                     function_b]
                 assert code_region_a == code_region_b
 
@@ -327,3 +327,17 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         assert counted_code_regions != 0
         assert covered_regions == total_regions_covered
         assert notcovered_regions == total_regions_notcovered
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CoverageReport):
+            return False
+        for filename_a, filename_b in zip(
+            self.filename_function_mapping, other.filename_function_mapping
+        ):
+            if Path(filename_a).name == Path(
+                filename_b
+            ).name and self.filename_function_mapping[
+                filename_a] == other.filename_function_mapping[filename_b]:
+                continue
+            return False
+        return True
