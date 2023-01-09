@@ -201,14 +201,14 @@ class TestCodeRegion(unittest.TestCase):
         config_map = binary_config_map[next(iter(binary_config_map))]
         self.assertEqual(len(config_map), 3)
 
-        configs = iter(config_map)
-        header_slow = next(configs)
-        self.assertEqual(header_slow.options()[0].value, "--slow")
-        self.assertEqual(header_slow.options()[1].value, "--header")
-        header = next(configs)
-        self.assertEqual(header.options()[0].value, "--header")
-        slow = next(configs)
-        self.assertEqual(slow.options()[0].value, "--slow")
+        for config in config_map:
+            options = [x.value for x in config.options()]
+            if options == ["--slow", "--header"]:
+                header_slow = config
+            elif options == ["--header"]:
+                header = config
+            elif options == ["--slow"]:
+                slow = config
 
         header_slow_report = config_map[header_slow]
         header_report = config_map[header]

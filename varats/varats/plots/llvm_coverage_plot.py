@@ -8,11 +8,9 @@ from varats.base.configuration import (
     Configuration,
 )
 from varats.data.reports.llvm_coverage_report import CoverageReport
+from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
-from varats.paper_mgmt.case_study import (
-    get_case_study_file_name_filter,
-    CaseStudy,
-)
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.revision.revisions import get_processed_revisions_files
@@ -76,8 +74,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
         for case_study in case_studies:
             binary_config_map = self._get_binary_config_map(case_study)
 
-            #if binary_config_map:
-            #    coverage_report.merge(coverage_report)
+            if binary_config_map:
+                pass
+                #coverage_report.merge(coverage_report)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
