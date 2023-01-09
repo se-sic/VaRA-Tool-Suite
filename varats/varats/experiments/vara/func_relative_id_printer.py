@@ -7,7 +7,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
-from varats.data.reports.vara_ipp_report import VaraIPPReport
+from varats.data.reports.vara_fridpp_report import VaraFRIDPPReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -55,7 +55,7 @@ class CollectFuncRelativeIDs(actions.ProjectStep):  # type: ignore
 
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, VaraIPPReport, self.project, binary
+                self.__experiment_handle, VaraFRIDPPReport, self.project, binary
             )
 
             # Need the following passes:
@@ -78,7 +78,7 @@ class CollectFuncRelativeIDs(actions.ProjectStep):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project, VaraIPPReport
+                    self.__experiment_handle, self.project, VaraFRIDPPReport
                 )
             )
 
@@ -91,7 +91,7 @@ class FuncRelativeIDPrinter(VersionExperiment, shorthand="FRIDPP"):
 
     NAME = "VaraFRIDPP"
 
-    REPORT_SPEC = ReportSpecification(VaraIPPReport)
+    REPORT_SPEC = ReportSpecification(VaraFRIDPPReport)
 
     def actions_for_project(
         self, project: Project
