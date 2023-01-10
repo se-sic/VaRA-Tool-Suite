@@ -5,11 +5,15 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 import varats.paper.paper_config as PC
+from varats.data.reports.instrumentation_verifier_report import (
+    InstrVerifierReport,
+)
 from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.report.report import FileStatusExtension, BaseReport
+from varats.revision.revisions import get_all_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
@@ -70,6 +74,20 @@ class InstrumentationOverviewPlot(
 
         ax.set_ylabel("Number of revisions")
         ax.legend()
+
+        self._parse_trace_files(**kwargs)
+
+    def _parse_trace_files(self, **kwargs: tp.Any):
+        current_config = PC.get_paper_config()
+        experiment_type: tp.Type[VersionExperiment] = kwargs['experiment_type']
+
+        for case_study in current_config.get_all_case_studies():
+            revision_files = get_all_revisions_files(
+                case_study.project_name, experiment_type
+            )
+
+            for revision_file in revision_files:
+                report = InstrVerifierReport(revision_file.full_path())
 
 
 class PaperConfigOverviewGenerator(
