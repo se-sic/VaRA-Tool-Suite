@@ -56,7 +56,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
             config_id = report_filepath.report_filename.config_id
             assert config_id is not None
 
-            coverage_report = CoverageReport(report_filepath.full_path())
+            coverage_report = CoverageReport.from_report(
+                report_filepath.full_path()
+            )
             config = config_map.get_configuration(config_id)
             assert config is not None
             binary_config_map[binary][config] = coverage_report

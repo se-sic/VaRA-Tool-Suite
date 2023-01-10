@@ -1,15 +1,21 @@
 import unittest
 from copy import deepcopy
+from pathlib import Path
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.test_utils import (
+    run_in_test_environment,
+    UnitTestFixtures,
+    TEST_INPUTS_DIR,
+)
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
     RegionStart,
     RegionEnd,
+    CoverageReport,
 )
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
-from varats.plot.plots import PlotArtefact, PlotConfig, CommonPlotOptions
+from varats.plot.plots import PlotConfig
 from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
 from varats.utils.settings import vara_cfg, save_config
 from varats.varats.experiments.vara.llvm_coverage_experiment import (
@@ -120,13 +126,13 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual([
             self.root, self.left, self.right, self.left_left_2, self.left_left,
             self.right_right
-        ], [x for x in self.root.iter_breadth_first()])
+        ], list(self.root.iter_breadth_first()))
 
     def test_iter_postorder(self):
         self.assertEqual([
             self.left_left_2, self.left_left, self.left, self.right_right,
             self.right, self.root
-        ], [x for x in self.root.iter_postorder()])
+        ], list(self.root.iter_postorder()))
 
     def test_insert(self):
         self.assertTrue(self.root.is_subregion(self.left))
@@ -172,6 +178,8 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(self.left_left_2.count, -2)
         self.assertEqual(self.right_right.count, 1)
 
+        self.assertFalse(self.root.is_identical(root_3))
+
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
@@ -214,6 +222,14 @@ class TestCodeRegion(unittest.TestCase):
         header_report = config_map[header]
         slow_report = config_map[slow]
 
+        self.assertIsNot(header_slow_report, header_report)
+        self.assertIsNot(header_slow_report, slow_report)
+        self.assertIsNot(header_slow, slow_report)
+
+        self.assertNotEqual(header_report, slow_report)
+        self.assertNotEqual(header_slow_report, header_report)
+        self.assertNotEqual(header_slow_report, slow_report)
+
         merged_header_slow_report_1 = deepcopy(header_report)
         merged_header_slow_report_1.merge(deepcopy(slow_report))
         merged_header_slow_report_2 = deepcopy(slow_report)
@@ -222,4 +238,17 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(
             merged_header_slow_report_1, merged_header_slow_report_2
         )
-        #self.assertNotEqual(merged_header_slow_report_1, header_slow_report)
+        self.assertNotEqual(merged_header_slow_report_1, header_slow_report)
+
+        llvm_profdata_merged_slow_and_header_report = CoverageReport.from_json(
+            Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+            "llvm-profdata_merged_slow_and_header.json"
+        )
+
+        self.assertNotEqual(
+            llvm_profdata_merged_slow_and_header_report, header_slow_report
+        )
+        self.assertEqual(
+            llvm_profdata_merged_slow_and_header_report,
+            merged_header_slow_report_1
+        )

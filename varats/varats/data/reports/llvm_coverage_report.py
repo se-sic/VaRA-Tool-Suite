@@ -156,6 +156,22 @@ class CodeRegion:
             assert x == y, "CodeRegions are not identical"
             x.count -= y.count
 
+    def is_identical(self, other: object) -> bool:
+        """Is the code region equal and has the same coverage?"""
+        if not isinstance(other, CodeRegion):
+            return False
+        if not (self == other and self.count == other.count):
+            return False
+        for code_region_a, code_region_b in zip(
+            self.iter_breadth_first(), other.iter_breadth_first()
+        ):
+            if not (
+                code_region_a == code_region_b and
+                code_region_a.count == code_region_b.count
+            ):
+                return False
+        return True
+
     # Compare regions only depending on their
     # start lines and columns + their type
 
@@ -194,9 +210,18 @@ class CodeRegion:
         return False
 
 
-FunctionCodeRegionMapping = tp.NewType(
-    "FunctionCodeRegionMapping", tp.Dict[str, CodeRegion]
-)
+class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
+    """Mapping from function names to CodeRegion objects."""
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FunctionCodeRegionMapping):
+            return False
+        for self_value, other_value in zip(self.values(), other.values()):
+            if not self_value.is_identical(other_value):
+                return False
+        return True
+
+
 FilenameFunctionMapping = tp.NewType(
     "FilenameFunctionMapping", tp.DefaultDict[str, FunctionCodeRegionMapping]
 )
@@ -205,23 +230,39 @@ FilenameFunctionMapping = tp.NewType(
 class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     """Parses llvm-cov export json files and displays them."""
 
-    def __init__(self, path: Path) -> None:
-        super().__init__(path)
+    @classmethod
+    def from_json(cls, json_file: Path) -> CoverageReport:
+        """CoverageReport from JSON file."""
+        c_r = cls(json_file)
+        c_r.filename_function_mapping = c_r._import_functions(
+            json_file,
+            c_r.filename_function_mapping,
+        )
+        return c_r
 
+    @classmethod
+    def from_report(cls, report_file: Path) -> CoverageReport:
+        """CoverageReport from report file."""
+        c_r = cls(report_file)
         with TemporaryDirectory() as tmpdir:
-            shutil.unpack_archive(path, tmpdir)
+            shutil.unpack_archive(report_file, tmpdir)
 
             def json_filter(x: Path) -> bool:
                 return x.name.endswith(".json")
 
-            self.filename_function_mapping = FilenameFunctionMapping(
-                defaultdict(lambda: FunctionCodeRegionMapping({}))
-            )
             for json_file in filter(json_filter, Path(tmpdir).iterdir()):
-                self.filename_function_mapping = self._import_functions(
+                c_r.filename_function_mapping = c_r._import_functions(
                     json_file,
-                    self.filename_function_mapping,
+                    c_r.filename_function_mapping,
                 )
+        return c_r
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+
+        self.filename_function_mapping = FilenameFunctionMapping(
+            defaultdict(lambda: FunctionCodeRegionMapping({}))
+        )
 
     def merge(self, report: CoverageReport) -> None:
         """Merge report into self."""
@@ -334,10 +375,10 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         for filename_a, filename_b in zip(
             self.filename_function_mapping, other.filename_function_mapping
         ):
-            if Path(filename_a).name == Path(
-                filename_b
-            ).name and self.filename_function_mapping[
-                filename_a] == other.filename_function_mapping[filename_b]:
+            if (Path(filename_a).name == Path(filename_b).name) and (
+                self.filename_function_mapping[filename_a]
+                == other.filename_function_mapping[filename_b]
+            ):
                 continue
             return False
         return True
