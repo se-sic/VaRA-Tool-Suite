@@ -1,5 +1,6 @@
 """Instrumentation verifier report implementation for checkif if projects get
 correctly instrumented."""
+import re
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -17,6 +18,8 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
 
         archive = ZipFile(path, "r")
 
+        pattern = re.compile(r"[a-zA-Z\s]:\s*(\d+).*")
+
         for file in archive.namelist():
             if not file.endswith(".ivr"):
                 continue
@@ -28,12 +31,14 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                 binary_name = file.split("_")[-1].split(".")[0]
 
                 regions_entered = [
-                    line[16:35]
+                    pattern.search(line).group(1)
                     for line in content
                     if line.startswith('Entered')
                 ]
                 regions_left = [
-                    line[16:35] for line in content if line.startswith('Left')
+                    pattern.search(line).group(1)
+                    for line in content
+                    if line.startswith('Left')
                 ]
                 state = [
                     line.split(' ')[1]
@@ -48,6 +53,7 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                 )
 
                 if state == "Failure":
+                    pattern = re.compile(r"\s+(\d+).*")
                     wrong_leaves = content[content.index('Wrong Leave-ID(s):') +
                                            1:-1]
                     unclosed_regions = content[
@@ -57,14 +63,18 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                     if len(wrong_leaves) == 1 and wrong_leaves[0] == 'None':
                         wrong_leaves = []
                     else:
-                        wrong_leaves = [line[2:21] for line in wrong_leaves]
+                        wrong_leaves = [
+                            pattern.search(line).group(1)
+                            for line in wrong_leaves
+                        ]
 
                     if len(unclosed_regions
                           ) == 1 and unclosed_regions[0] == 'None':
                         unclosed_regions = []
                     else:
                         unclosed_regions = [
-                            line[2:21] for line in unclosed_regions
+                            pattern.search(line).group(1)
+                            for line in unclosed_regions
                         ]
 
                 self.__report_data[binary_name] = {
