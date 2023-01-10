@@ -57,8 +57,10 @@ def _is_vara_project(project_key: str) -> bool:
     False
     """
     return any(
-        project_key.endswith(x)
-        for x in ("c_projects", "cpp_projects", "test_projects", "perf_tests")
+        project_key.endswith(x) for x in (
+            "c_projects", "cpp_projects", "test_projects", "library_analysis",
+            "perf_tests"
+        )
     )
 
 
