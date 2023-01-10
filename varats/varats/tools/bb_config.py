@@ -102,7 +102,7 @@ def create_new_bb_config(
             'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection',
-            'varats.projects.test_projects.library_analysis.examples'
+            'varats.projects.test_projects.library_analysis.examples',
             'varats.projects.test_projects.library_analysis.graph_lib',
             'varats.projects.test_projects.library_analysis.lib_upgrade_bug'
         ]
