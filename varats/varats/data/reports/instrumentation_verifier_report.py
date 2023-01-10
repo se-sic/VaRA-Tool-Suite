@@ -18,7 +18,7 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
 
         archive = ZipFile(path, "r")
 
-        pattern = re.compile(r"[a-zA-Z\s]:\s*(\d+).*")
+        pattern = re.compile(r"[a-zA-Z\s]*:\s*(\d+).*")
 
         for file in archive.namelist():
             if not file.endswith(".ivr"):
@@ -26,7 +26,8 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
 
             with archive.open(file, "r") as json_file:
                 content = [
-                    line.decode("utf-8") for line in json_file.readlines()
+                    line.decode("utf-8").strip()
+                    for line in json_file.readlines()
                 ]
                 binary_name = file.split("_")[-1].split(".")[0]
 
@@ -95,3 +96,30 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                     'unclosed_regions':
                         unclosed_regions if state == "Failure" else []
                 }
+
+    def num_enters(self):
+        return sum(
+            len(self.__report_data[binary]['regions_entered'])
+            for binary in self.__report_data
+        )
+
+    def num_leaves(self):
+        return sum(
+            len(self.__report_data[binary]['regions_left'])
+            for binary in self.__report_data
+        )
+
+    def num_unclosed_enters(self):
+        return sum(
+            len(self.__report_data[binary]['unclosed_regions'])
+            for binary in self.__report_data
+        )
+
+    def num_unentered_leave(self):
+        return sum(
+            len(self.__report_data[binary]['wrong_leaves'])
+            for binary in self.__report_data
+        )
+
+    def state(self):
+        return self.__report_data['state']

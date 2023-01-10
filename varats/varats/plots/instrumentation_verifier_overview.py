@@ -75,19 +75,24 @@ class InstrumentationOverviewPlot(
         ax.set_ylabel("Number of revisions")
         ax.legend()
 
-        self._parse_trace_files(**kwargs)
+        reports = self._parse_trace_files(**kwargs)
+        for r in reports:
+            print(r)
 
     def _parse_trace_files(self, **kwargs: tp.Any):
         current_config = PC.get_paper_config()
         experiment_type: tp.Type[VersionExperiment] = kwargs['experiment_type']
+        result = []
 
         for case_study in current_config.get_all_case_studies():
             revision_files = get_all_revisions_files(
-                case_study.project_name, experiment_type
+                case_study.project_name, experiment_type, only_newest=False
             )
 
             for revision_file in revision_files:
-                report = InstrVerifierReport(revision_file.full_path())
+                result.append(InstrVerifierReport(revision_file.full_path()))
+
+        return result
 
 
 class PaperConfigOverviewGenerator(
