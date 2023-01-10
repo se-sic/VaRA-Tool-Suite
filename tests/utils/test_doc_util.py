@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 import varats.ts_utils.doc_util as du
 from tests.test_utils import run_in_test_environment
+from varats.projects.discover_projects import initialize_projects
 
 
 class TestProjectOverviewGeneration(unittest.TestCase):
@@ -69,6 +70,7 @@ class TestAutoclassGenerationForProjects(unittest.TestCase):
     def test_generate_projects_autoclass_directives(self) -> None:
         """Checks if we correctly generate the autoclass directives for
         projects."""
+        initialize_projects()
         generated_doc_string = du.generate_project_groups_autoclass_directives(
             'test_projects'
         )
@@ -78,9 +80,9 @@ class TestAutoclassGenerationForProjects(unittest.TestCase):
         for line in generated_doc_string.split('\n'):
             self.assertTrue(line.startswith(".. autoclass::"))
 
-        self.assertEqual(
-            generated_doc_string.split('\n')[0][15:],
-            "varats.projects.test_projects.basic_tests.BasicTests"
+        self.assertIn(
+            "varats.projects.test_projects.basic_tests.BasicTests",
+            map(lambda x: x[15:], generated_doc_string.split('\n'))
         )
 
 

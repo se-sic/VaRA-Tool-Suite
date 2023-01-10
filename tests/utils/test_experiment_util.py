@@ -124,8 +124,8 @@ class TestVersionExperiment(unittest.TestCase):
         vara_cfg["experiment"]["file_status_blacklist"] = []
 
     @staticmethod
-    def generate_get_tagged_revisions_output(
-    ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
+    def generate_get_tagged_revisions_output() -> tp.Dict[
+        ShortCommitHash, tp.Dict[tp.Optional[int], FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""
         return {
             ShortCommitHash('rev1000000'): {
