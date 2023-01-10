@@ -6,7 +6,7 @@ from zipfile import ZipFile
 from varats.report.report import BaseReport
 
 
-class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="txt"):
+class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
     """An instrumentation verifier report for testing how well projects were
     instrumented."""
 
@@ -18,7 +18,7 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="txt"):
         archive = ZipFile(path, "r")
 
         for file in archive.namelist():
-            if not file.endswith(".json"):
+            if not file.endswith(".ivr"):
                 continue
 
             with archive.open(file, "r") as json_file:
