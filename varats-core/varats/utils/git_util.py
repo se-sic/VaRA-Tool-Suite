@@ -205,9 +205,10 @@ def get_all_revisions_between(
     It is assumed that the current working directory is the git repository.
 
     Args:
-        c_start: first commit of the range c_end: last commit of the range
-        short: shorten revision hashes repo_folder: where the git repository is
-        located
+        c_start: first commit of the range
+        c_end: last commit of the range
+        short: shorten revision hashes
+        repo_folder: where the git repository is located
     """
     result = [c_start]
     result.extend(
