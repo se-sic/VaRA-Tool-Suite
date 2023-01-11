@@ -62,8 +62,8 @@ class CollectFuncRelativeIDs(actions.ProjectStep):  # type: ignore
             # - vara-PFTDD to generate feature regions
             # - vara-FRIDPP (Function-Relative ID Printer)
             opt_params = [
-                "--enable-new-pm=0", "--vara-PTFDD", "-vara-FRIDPP", "-o",
-                "/dev/null",
+                "--enable-new-pm=0", "--vara-PTFDD", "-vara-BD", "-vara-FRIDPP",
+                "-o", "/dev/null",
                 get_cached_bc_file_path(
                     self.project, binary,
                     [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
@@ -110,7 +110,8 @@ class FuncRelativeIDPrinter(VersionExperiment, shorthand="FRIDPP"):
         # We need debug info to later determine source code locations in a
         # utility pass. Also, include feature information.
         project.cflags += [
-            "-g", "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}"
+            "-g", "-fvara-GB", "-fvara-feature",
+            f"-fvara-fm-path={fm_path.absolute()}"
         ]
 
         # Add the required runtime extensions to the project(s).
