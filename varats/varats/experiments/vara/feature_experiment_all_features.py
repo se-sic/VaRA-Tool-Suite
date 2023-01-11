@@ -156,9 +156,6 @@ class RunVaRATracedWorkloadsAllFeatures(ProjectStep):  # type: ignore
                     for prj_command in workload_commands(
                         self.project, binary, [WorkloadCategory.EXAMPLE]
                     ):
-                        print("-------------")
-                        print(prj_command.path)
-                        print("-------------")
                         local_tracefile_path = Path(
                             tmp_dir
                         ) / f"trace_{prj_command.command.label}.json"

@@ -65,7 +65,7 @@ class FeaturePerfCSCollection(VProject):
             #    label="FCF"
             #)
             Command(
-                SourceRoot("CollinearFeature") /
+                SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("CollinearFeature"),
                 label="CF"
             )

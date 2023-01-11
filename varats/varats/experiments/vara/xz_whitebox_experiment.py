@@ -100,17 +100,13 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                                         rm_unparsed()
 
 
-
-
                                     #executable("--slow")
                                     # executable()
 
                                     if Path(file_path_xz).is_file():
                                         rm_cmd()
 
-                        tef_time_aggregate = TEFReportAggregate(aggregated_time_reports_dir / Path(
-                                    f"XZCompressionLevel{compression_level}.zip"))
-                        tef_time_aggregate.wall_clock_times
+                        
                         rename_file = mv[aggregated_time_reports_dir / Path("result_aggregate.json"), aggregated_time_reports_dir
                                          / Path(f"result_aggregate_{compression_level}.json")]
                         rename_file()

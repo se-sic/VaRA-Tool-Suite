@@ -195,5 +195,17 @@ class RunVaRAWorkloadsBlackbox(ProjectStep):  # type: ignore
                                                         tmp_dir / Path(f"time_report_{name_file}.txt"),
                                                         pb_cmd[elements]]
                                         time_cmd()
+                                if prj_command.command.label == "CF":
+                                    feature_list = ["--a", "--b", "--c", "--d"]
+                                    feature_permutationen = FeatureExperiment.feature_permutation(feature_list)
+                                    for elements in feature_permutationen:
+                                        pb_cmd(elements)
+                                        name_file = "black_box_CF"
+                                        for feature in elements:
+                                            name_file += feature
+                                        time_cmd = time["-v", "-o",
+                                                        tmp_dir / Path(f"time_report_{name_file}.txt"),
+                                                        pb_cmd[elements]]
+                                        time_cmd()
                                     
         return StepResult.OK
