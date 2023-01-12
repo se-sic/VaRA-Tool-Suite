@@ -1,12 +1,17 @@
 """Module for feature performance analysis tables."""
 import logging
+import re
 import typing as tp
 from abc import ABC
 
 import pandas as pd
 from pandas import CategoricalDtype
 
+from varats.data.reports.vara_fridpp_report import VaraFRIDPPReport
 from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
+from varats.experiments.vara.func_relative_id_printer import (
+    FuncRelativeIDPrinter,
+)
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
@@ -52,7 +57,7 @@ class PerformanceAnalysisTable(
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
             # Parse reports
-            report_files = get_processed_revisions_files(
+            tef_report_files = get_processed_revisions_files(
                 case_study.project_name,
                 FeaturePerfRunner,
                 TEFReport,
@@ -63,7 +68,7 @@ class PerformanceAnalysisTable(
             workloads = set()
             revisions = set()
 
-            for report_filepath in report_files:
+            for report_filepath in tef_report_files:
                 agg_tef_report = WorkloadSpecificTEFReportAggregate(
                     report_filepath.full_path()
                 )
@@ -260,6 +265,7 @@ class RegionPerformanceAnalysisTable(
     @staticmethod
     def get_region_performance_from_tef_report(
         tef_report: TEFReport,
+        fridpp_report: VaraFRIDPPReport,
     ) -> tp.Dict[str, int]:
         """Extract region performance from a TEFReport."""
         open_events: tp.List[TraceEvent] = []
@@ -303,6 +309,15 @@ class RegionPerformanceAnalysisTable(
                         str(trace_event.region_id)
                     ] = (current_performance + end_timestamp - begin_timestamp)
 
+        # Translate region IDs to function-relative IDs
+        region_performances = {
+            fridpp_report.get_function_relative_id_by_uuid(region_id):
+            performance
+            for region_id, performance in region_performances.items()
+        }
+
+        # TODO: We still need to check if the performance of a column is actually 0 in a release or the region ID simply did not exist (-> different amount of regions)!!!
+
         return region_performances
 
     def get_region_performances_row(
@@ -320,12 +335,31 @@ class RegionPerformanceAnalysisTable(
                 "Table can currently handle only one TEFReport per "
                 "revision, workload and config. Ignoring others."
             )
+
+        revision = agg_tef_report.filename.commit_hash
+
+        fridpp_report_files = get_processed_revisions_files(
+            case_study.project_name,
+            FuncRelativeIDPrinter,
+            VaraFRIDPPReport,
+            lambda file_name: not bool(
+                re.match(
+                    f".*-{case_study.project_name}-.*-{revision}_.*", file_name
+                )
+            ),
+            only_newest=False,
+        )
+
+        # All FRIDPP reports within a revision are identical, so just use the
+        # first one.
+        fridpp_report_file = fridpp_report_files[0]
+
         region_performances = self.get_region_performance_from_tef_report(
-            tef_report[0]
+            tef_report[0], VaraFRIDPPReport(fridpp_report_file.full_path())
         )
         return {
             "Project": case_study.project_name,
-            "Revision": agg_tef_report.filename.commit_hash,
+            "Revision": revision,
             "Workload": workload,
             "Config_ID": agg_tef_report.filename.config_id,
             "Timestamp_Unit": tef_report[0].timestamp_unit,
