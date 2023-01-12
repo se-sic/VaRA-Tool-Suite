@@ -28,7 +28,7 @@ class ExampleTestRepo(VProject):
             project_name="example_test_repo",
             remote="BasicTestRepos/ExampleRepo",
             local="example_repo",
-            refspec="origin/HEAD",
+            refspec="HEAD",
             limit=None
         )
     ]
