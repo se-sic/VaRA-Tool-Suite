@@ -37,7 +37,7 @@ class InstrumentationOverviewPlot(
         raise NotImplementedError
 
     @staticmethod
-    def _generate_plot(**kwargs: tp.Any):
+    def _generate_plot(**kwargs: tp.Any) -> None:
         case_study = kwargs['case_study']
         experiment_type: tp.Type[VersionExperiment] = kwargs['experiment_type']
 

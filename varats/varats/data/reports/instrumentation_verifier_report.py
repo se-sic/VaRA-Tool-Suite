@@ -1,6 +1,6 @@
 """Instrumentation verifier report implementation for check if projects get
 correctly instrumented."""
-import re
+import typing as tp
 from zipfile import ZipFile
 
 from varats.report.report import BaseReport, ReportFilepath
@@ -16,7 +16,6 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
         self.__report_data = {}
 
         with ZipFile(report_path.full_path(), "r") as archive:
-            pattern = re.compile(r"[a-zA-Z\s]*:\s*(\d+).*")
 
             for file in archive.namelist():
                 if not file.endswith(".ivr"):
@@ -30,12 +29,12 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                     binary_name = file.split("_")[-1].split(".")[0]
 
                     regions_entered = [
-                        pattern.search(line).group(1)
+                        line[16:35]
                         for line in content
                         if line.startswith('Entered')
                     ]
                     regions_left = [
-                        pattern.search(line).group(1)
+                        line[16:35]
                         for line in content
                         if line.startswith('Left')
                     ]
@@ -52,7 +51,6 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                     )
 
                     if state == "Failure":
-                        pattern = re.compile(r"\s+(\d+).*")
                         wrong_leaves_begin = content.index(
                             'Wrong Leave-ID(s):'
                         ) + 1
@@ -67,7 +65,7 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                             wrong_leaves = []
                         else:
                             wrong_leaves = [
-                                pattern.search(line).group(1)
+                                line.strip().split(' ')[0]
                                 for line in wrong_leaves
                             ]
 
@@ -76,7 +74,7 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                             unclosed_regions = []
                         else:
                             unclosed_regions = [
-                                pattern.search(line).group(1)
+                                line.strip().split(' ')[0]
                                 for line in unclosed_regions
                             ]
 
@@ -99,47 +97,48 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                             unclosed_regions if state == "Failure" else []
                     }
 
-    def binaries(self):
-        return self.__report_data.keys()
+    def binaries(self) -> tp.List[str]:
+        return list(self.__report_data.keys())
 
-    def num_enters_total(self):
+    def num_enters_total(self) -> int:
         return sum(
             len(data['regions_entered'])
             for _, data in self.__report_data.items()
         )
 
-    def num_enters(self, binary: str):
+    def num_enters(self, binary: str) -> int:
         return len(self.__report_data[binary]['regions_entered'])
 
-    def num_leaves_total(self):
+    def num_leaves_total(self) -> int:
         return sum(
             len(data['regions_left']) for _, data in self.__report_data.items()
         )
 
-    def num_leaves(self, binary: str):
+    def num_leaves(self, binary: str) -> int:
         return len(self.__report_data[binary]['regions_left'])
 
-    def num_unclosed_enters_total(self):
+    def num_unclosed_enters_total(self) -> int:
         return sum(
             len(data['unclosed_regions'])
             for _, data in self.__report_data.items()
         )
 
-    def num_unclosed_enters(self, binary: str):
+    def num_unclosed_enters(self, binary: str) -> int:
         return len(self.__report_data[binary]['unclosed_regions'])
 
-    def num_unentered_leaves_total(self):
+    def num_unentered_leaves_total(self) -> int:
         return sum(
             len(data['wrong_leaves']) for _, data in self.__report_data.items()
         )
 
-    def num_unentered_leaves(self, binary: str):
+    def num_unentered_leaves(self, binary: str) -> int:
         return len(self.__report_data[binary]['wrong_leaves'])
 
-    def states(self):
+    def states(self) -> tp.Dict[str, str]:
         return {
-            binary: data['state'] for binary, data in self.__report_data.items()
+            binary: data['state']
+            for binary, data in self.__report_data.items()  # type: ignore
         }
 
-    def state(self, binary: str):
-        return self.__report_data[binary]['state']
+    def state(self, binary: str) -> str:
+        return self.__report_data[binary]['state']  # type: ignore
