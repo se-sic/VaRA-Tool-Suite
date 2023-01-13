@@ -1,3 +1,6 @@
+"""Generates tables for the instrumentation verifier experiment status for all
+case studies in the paper config."""
+
 import typing as tp
 
 import numpy as np
@@ -17,39 +20,47 @@ from varats.table.tables import TableFormat, TableGenerator
 class InstrumentationVerifierTable(
     Table, table_name="instrumentation_verifier_table"
 ):
+    """
+    Generates a table for the instrumentation verifier experiment status for a
+    specific case study.
+
+    Each traced binary of the case study is listed with its current state, the
+    number of enters and leaves, the number of unclosed enters and the number of
+    unentered leaves.
+    """
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         variables = [
-            "Case Study", "#Traced Binaries", "#Enters", "#Leaves",
-            "#Unclosed Enters", "#Unentered Leaves"
+            "Workload name", "State", "#Enters", "#Leaves", "#Unclosed Enters",
+            "#Unentered Leaves"
         ]
 
-        current_config = PC.get_paper_config()
         experiment_type = RunInstrVerifier
+        project_name: str = self.table_kwargs['case_study'].project_name
+
         data = []
-        for case_study in current_config.get_all_case_studies():
-            revision_files = get_all_revisions_files(
-                case_study.project_name, experiment_type, only_newest=False
-            )
 
-            reports = [
-                InstrVerifierReport(rev_file.full_path())
-                for rev_file in revision_files
-            ]
+        revision_files = get_all_revisions_files(
+            project_name, experiment_type, only_newest=False
+        )
 
-            data.append([
-                case_study.project_name,
-                len(revision_files),
-                sum(report.num_enters() for report in reports),
-                sum(report.num_leaves() for report in reports),
-                sum(report.num_unclosed_enters() for report in reports),
-                sum(report.num_unentered_leave() for report in reports)
-            ])
+        reports = [InstrVerifierReport(rev_file) for rev_file in revision_files]
 
-        pddata = pd.DataFrame(columns=variables, data=np.array(data))
+        for report in reports:
+            for binary in report.binaries():
+                data.append([
+                    f"{report.filename.commit_hash} - {binary}",
+                    report.state(binary),
+                    report.num_enters(binary),
+                    report.num_leaves(binary),
+                    report.num_unclosed_enters(binary),
+                    report.num_unentered_leaves(binary)
+                ])
+
+        pd_data = pd.DataFrame(columns=variables, data=np.array(data))
 
         return dataframe_to_table(
-            pddata, table_format, wrap_table=wrap_table, wrap_landscape=True
+            pd_data, table_format, wrap_table=wrap_table, wrap_landscape=True
         )
 
 
@@ -60,10 +71,8 @@ class InstrVerifierTableGenerator(
     experiment."""
 
     def generate(self) -> tp.List[Table]:
-        # TODO: Add option to differ between aggregating all binaries for one CS
-        #  , or create separate tables per CS with each binary representing one row
         return [
             InstrumentationVerifierTable(
-                self.table_config, **self.table_kwargs
-            )
+                self.table_config, case_study=cs, **self.table_kwargs
+            ) for cs in PC.get_paper_config().get_all_case_studies()
         ]

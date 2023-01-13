@@ -1,6 +1,7 @@
+"""Generate graphs that show an overview of the instrumentation verifier
+experiment state for all case studies in the paper config."""
+
 import typing as tp
-from collections import OrderedDict, defaultdict
-from datetime import datetime
 
 import matplotlib.pyplot as plt
 
@@ -9,90 +10,73 @@ from varats.data.reports.instrumentation_verifier_report import (
     InstrVerifierReport,
 )
 from varats.experiment.experiment_util import VersionExperiment
-from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.report.report import FileStatusExtension, BaseReport
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_all_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
-from varats.utils.git_util import FullCommitHash, ShortCommitHash
+from varats.utils.git_util import FullCommitHash
 
 
 class InstrumentationOverviewPlot(
     Plot, plot_name="instrumentation_overview_plot"
 ):
+    """
+    Plot configuration for the instrumentation verifier experiment.
+
+    This plot shows an overview of the instrumentation verifier state for all
+    case studies in the paper config.
+    """
 
     def plot(self, view_mode: bool) -> None:
         self._generate_plot(**self.plot_kwargs)
-        pass
 
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
-    def _generate_plot(self, **kwargs: tp.Any):
-        current_config = PC.get_paper_config()
+    @staticmethod
+    def _generate_plot(**kwargs: tp.Any):
+        case_study = kwargs['case_study']
         experiment_type: tp.Type[VersionExperiment] = kwargs['experiment_type']
 
-        projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
-            ShortCommitHash, FileStatusExtension]]]] = OrderedDict()
+        revisions_files: tp.List[ReportFilepath] = get_all_revisions_files(
+            case_study.project_name, experiment_type, only_newest=False
+        )
 
-        projects = {
-            case_study.project_name:
-            get_revisions_status_for_case_study(case_study, experiment_type)
-            for case_study in current_config.get_all_case_studies()
-        }
+        _, ax = plt.subplots()
 
-        fig, ax = plt.subplots()
+        labels: tp.List[str] = []
 
-        labels = list(projects.keys())
+        reports: tp.List[InstrVerifierReport] = [
+            InstrVerifierReport(rev_file) for rev_file in revisions_files
+        ]
 
-        results = {label: [] for label in ["success", "blocked", "failed"]}
+        num_enters: tp.List[int] = []
+        num_leaves: tp.List[int] = []
+        num_unclosed_enters: tp.List[int] = []
+        num_unentered_leaves: tp.List[int] = []
 
-        for _, revisions in projects.items():
-            revs_success = len([
-                rev for (rev, status) in revisions
-                if status == FileStatusExtension.SUCCESS
-            ])
-            revs_blocked = len([
-                rev for (rev, status) in revisions
-                if status == FileStatusExtension.BLOCKED
-            ])
-            revs_failed = len([
-                rev for (rev, status) in revisions
-                if status == FileStatusExtension.FAILED
-            ])
+        for report in reports:
+            for binary in report.binaries():
+                labels.append(f"{report.filename.commit_hash} - {binary}")
+                num_enters.append(report.num_enters(binary))
+                num_leaves.append(report.num_leaves(binary))
+                num_unclosed_enters.append(report.num_unclosed_enters(binary))
+                num_unentered_leaves.append(report.num_unentered_leaves(binary))
 
-            results["success"].append(revs_success)
-            results["blocked"].append(revs_blocked)
-            results["failed"].append(revs_failed)
+        ax.bar(labels, num_enters, label="#Enters")
+        ax.bar(labels, num_leaves, label="#Leaves")
+        ax.bar(labels, num_unclosed_enters, label="#Unclosed Enters")
+        ax.bar(labels, num_unentered_leaves, label="#Unentered Leaves")
 
-        ax.bar(labels, results["success"], label="Success")
-        ax.bar(labels, results["blocked"], label="Blocked")
-        ax.bar(labels, results["failed"], label="Failed")
-
-        ax.set_ylabel("Number of revisions")
+        ax.set_ylabel("Number of events")
+        ax.set_title(
+            f"Instrumentation Verifier "
+            f"Overview for {case_study.project_name}"
+        )
         ax.legend()
-
-        reports = self._parse_trace_files(**kwargs)
-        for r in reports:
-            print(r)
-
-    def _parse_trace_files(self, **kwargs: tp.Any):
-        current_config = PC.get_paper_config()
-        experiment_type: tp.Type[VersionExperiment] = kwargs['experiment_type']
-        result = []
-
-        for case_study in current_config.get_all_case_studies():
-            revision_files = get_all_revisions_files(
-                case_study.project_name, experiment_type, only_newest=False
-            )
-
-            for revision_file in revision_files:
-                result.append(InstrVerifierReport(revision_file.full_path()))
-
-        return result
 
 
 class PaperConfigOverviewGenerator(
@@ -104,5 +88,7 @@ class PaperConfigOverviewGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            InstrumentationOverviewPlot(self.plot_config, **self.plot_kwargs)
+            InstrumentationOverviewPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in PC.get_paper_config().get_all_case_studies()
         ]
