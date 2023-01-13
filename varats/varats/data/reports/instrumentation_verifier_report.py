@@ -136,8 +136,8 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
 
     def states(self) -> tp.Dict[str, str]:
         return {
-            binary: data['state']
-            for binary, data in self.__report_data.items()  # type: ignore
+            binary: data['state']  # type: ignore
+            for binary, data in self.__report_data.items()
         }
 
     def state(self, binary: str) -> str:
