@@ -54,7 +54,7 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
         if uuid in self.__feature_regions:
             return self.__feature_regions[uuid].function_relative_id
         else:
-            return ""
+            return "Base"
 
     def _parse_report(self):
         feature_regions = {}
