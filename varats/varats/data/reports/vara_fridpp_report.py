@@ -56,6 +56,9 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
     def feature_regions(self) -> tp.Dict[str, FeatureRegionEntry]:
         return self.__feature_regions
 
+    def get_fr_entry(self, uuid: str) -> FeatureRegionEntry:
+        return self.__feature_regions[uuid]
+
     def get_function_relative_id_by_uuid(self, uuid: str) -> str:
         if uuid in self.__feature_regions:
             return self.__feature_regions[uuid].function_relative_id
@@ -95,6 +98,7 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
                     feature_regions[uuid] = FeatureRegionEntry(
                         name, uuid, function_relative_id, last_modifying_commit
                     )
+        feature_regions["0"] = FeatureRegionEntry("Base", "0", "None", "None")
         self.__feature_regions: tp.Dict[str,
                                         FeatureRegionEntry] = feature_regions
         self.__count_feature_regions: tp.Dict[str, int] = count_feature_regions

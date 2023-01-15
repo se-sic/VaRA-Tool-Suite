@@ -37,6 +37,25 @@ class PerformanceAnalysisTable(
 ):
 
     @staticmethod
+    def get_interactions_from_fr_string(interactions: str) -> str:
+        """Convert the feature strings in a TEFReport from FR(x,y) to x*y,
+        similar to the format used by SPLConqueror."""
+        interactions = (
+            interactions.replace("FR", "").replace("(", "").replace(")", "")
+        )
+        interactions_list = interactions.split(",")
+        # Ignore interactions with base, but do not remove base if it's the only
+        # feature
+        if "Base" in interactions_list and len(interactions_list) > 1:
+            interactions_list.remove("Base")
+        # Features cannot interact with itself, so remove duplicastes
+        interactions_list = list(set(interactions_list))
+
+        interactions_str = "*".join(interactions_list)
+
+        return interactions_str
+
+    @staticmethod
     def sort_revisions(case_study: CaseStudy,
                        revisions: tp.List[CommitHash]) -> tp.List[CommitHash]:
         """Sorts revision by time."""
@@ -152,25 +171,6 @@ class FeaturePerformanceAnalysisTable(
 ):
     """Table comparing the performance of features across releases for each
     workload."""
-
-    @staticmethod
-    def get_interactions_from_fr_string(interactions: str) -> str:
-        """Convert the feature strings in a TEFReport from FR(x,y) to x*y,
-        similar to the format used by SPLConqueror."""
-        interactions = (
-            interactions.replace("FR", "").replace("(", "").replace(")", "")
-        )
-        interactions_list = interactions.split(",")
-        # Ignore interactions with base, but do not remove base if it's the only
-        # feature
-        if "Base" in interactions_list and len(interactions_list) > 1:
-            interactions_list.remove("Base")
-        # Features cannot interact with itself, so remove duplicastes
-        interactions_list = list(set(interactions_list))
-
-        interactions_str = "*".join(interactions_list)
-
-        return interactions_str
 
     @staticmethod
     def get_feature_performance_from_tef_report(
