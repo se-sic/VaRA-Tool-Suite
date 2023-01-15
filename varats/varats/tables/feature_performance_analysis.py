@@ -1,6 +1,7 @@
 """Module for feature performance analysis tables."""
 import logging
 import re
+import sys
 import typing as tp
 from abc import ABC
 
@@ -47,12 +48,16 @@ class PerformanceAnalysisTable(
             if h.to_short_commit_hash() in revisions
         ]
 
-    def tabulate_gen(self, table_format: TableFormat, wrap_table: bool,
-                     row_gen_method: tp.Callable[[CaseStudy,
-                                                  WorkloadSpecificTEFReportAggregate, str],
-                                                  tp.Dict[str,
-                                                  tp.Union[str, CommitHash, tp.Dict[str, int], tp.Optional[int]]]]) \
-            -> str:
+    def tabulate_gen(
+        self,
+        table_format: TableFormat,
+        wrap_table: bool,
+        row_gen_method: tp.Callable[
+            [CaseStudy, WorkloadSpecificTEFReportAggregate, str],
+            tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
+                                  tp.Optional[int]]]],
+        fillna=True
+    ) -> str:
         df = pd.DataFrame()
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
@@ -120,7 +125,9 @@ class PerformanceAnalysisTable(
 
                 df = df.join(std_df, rsuffix="_std")
 
-        df.fillna(0, inplace=True)
+        if fillna:
+            df.fillna(0, inplace=True)
+
         # Rename "Base" to "root" to harmonize naming with black-box side
         df.rename(columns={"Base": "root"}, inplace=True)
         df.reset_index(inplace=True)
@@ -232,15 +239,20 @@ class FeaturePerformanceAnalysisTable(
                                tp.Optional[int]]]:
         """Returns a dict with information about feature performances from a
         TEFReport for a given workload."""
+
         tef_report = agg_tef_report.reports(workload)
         if len(tef_report) > 1:
             print(
                 "Table can currently handle only one TEFReport per "
                 "revision, workload and config. Ignoring others."
             )
+
+        print("Currently processing " + str(tef_report[0].path), flush=True)
+
         feature_performances = self.get_feature_performance_from_tef_report(
             tef_report[0]
         )
+
         return {
             "Project": case_study.project_name,
             "Revision": agg_tef_report.filename.commit_hash,
@@ -316,7 +328,16 @@ class RegionPerformanceAnalysisTable(
             for region_id, performance in region_performances.items()
         }
 
-        # TODO: We still need to check if the performance of a column is actually 0 in a release or the region ID simply did not exist (-> different amount of regions)!!!
+        # Fill regions that exist in the code, but were not in the TEFReport,
+        # with 0 such that we can differentiate missing regions and
+        # regions that were not executed.
+        for region_id in fridpp_report.feature_regions:
+            if fridpp_report.get_function_relative_id_by_uuid(
+                region_id
+            ) not in region_performances:
+                region_performances[
+                    fridpp_report.get_function_relative_id_by_uuid(region_id)
+                ] = 0
 
         return region_performances
 
@@ -357,6 +378,7 @@ class RegionPerformanceAnalysisTable(
         region_performances = self.get_region_performance_from_tef_report(
             tef_report[0], VaraFRIDPPReport(fridpp_report_file.full_path())
         )
+
         return {
             "Project": case_study.project_name,
             "Revision": revision,
@@ -368,7 +390,10 @@ class RegionPerformanceAnalysisTable(
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         return self.tabulate_gen(
-            table_format, wrap_table, self.get_region_performances_row
+            table_format,
+            wrap_table,
+            self.get_region_performances_row,
+            fillna=False
         )
 
 

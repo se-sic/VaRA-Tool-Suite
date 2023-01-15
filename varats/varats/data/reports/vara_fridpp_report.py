@@ -48,7 +48,13 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
+        self.__feature_regions = None
+        self.__count_feature_regions = None
         self._parse_report()
+
+    @property
+    def feature_regions(self) -> tp.Dict[str, FeatureRegionEntry]:
+        return self.__feature_regions
 
     def get_function_relative_id_by_uuid(self, uuid: str) -> str:
         if uuid in self.__feature_regions:
@@ -56,8 +62,15 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
         else:
             return "Base"
 
-    def _parse_report(self):
+    def count_feature_regions(self, function_relative_id_base: str) -> int:
+        if function_relative_id_base in self.__count_feature_regions:
+            return self.__count_feature_regions[function_relative_id_base]
+        else:
+            return 0
+
+    def _parse_report(self) -> None:
         feature_regions = {}
+        count_feature_regions = {}
         with open(self.path, "r") as f:
             for line in f:
                 line = line.strip()
@@ -69,6 +82,13 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
                     function_relative_id = next(f).strip().replace(
                         "FunctionRelativeID: ", ""
                     )
+                    function_relative_id_base = function_relative_id.rsplit(
+                        "_", 1
+                    )[0]
+                    if function_relative_id_base in count_feature_regions:
+                        count_feature_regions[function_relative_id_base] += 1
+                    else:
+                        count_feature_regions[function_relative_id_base] = 1
                     last_modifying_commit = next(f).strip().replace(
                         "LastModifyingCommit: ", ""
                     )
@@ -77,3 +97,4 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
                     )
         self.__feature_regions: tp.Dict[str,
                                         FeatureRegionEntry] = feature_regions
+        self.__count_feature_regions: tp.Dict[str, int] = count_feature_regions
