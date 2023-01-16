@@ -59,10 +59,15 @@ def generate_project_overview_table() -> str:
     for project_type in get_loaded_vara_projects():
         df = df.append(
             pandas.DataFrame({
-                "Project": _insert_class_reference_to_project(project_type),
-                "Group": project_type.GROUP,
-                "Domain": project_type.DOMAIN,
-                "Main Source": project_type.SOURCE[0].remote
+                "Project":
+                    _insert_class_reference_to_project(project_type),
+                "Group":
+                    project_type.GROUP,
+                "Domain":
+                    project_type.DOMAIN,
+                "Main Source":
+                    project_type.SOURCE[0].remote
+                    if project_type.SOURCE else None
             },
                              index=[0]),
             ignore_index=True
