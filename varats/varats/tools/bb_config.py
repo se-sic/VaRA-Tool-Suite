@@ -101,7 +101,8 @@ def create_new_bb_config(
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
-            'varats.projects.perf_tests.feature_perf_cs_collection'
+            'varats.projects.perf_tests.feature_perf_cs_collection',
+            'varats.projects.perf_tests.feature_perf_regression',
         ]
 
     # Experiments for VaRA
@@ -119,6 +120,7 @@ def create_new_bb_config(
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
+        'varats.experiments.vara.func_relative_id_printer',
         'varats.experiments.vara.instrumentation_point_printer',
         'varats.experiments.vara.instrumentation_stats',
         'varats.experiments.vara.instrumentation_verifier',

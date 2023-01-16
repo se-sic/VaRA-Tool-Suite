@@ -1,4 +1,4 @@
-"""Implements experiment for VaRA's InstrumentationPointPrinter utility pass."""
+"""Implements experiment for VaRA's FuncRelativeIDPrinter utility pass."""
 
 import typing as tp
 
@@ -7,7 +7,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
-from varats.data.reports.vara_ipp_report import VaraIPPReport
+from varats.data.reports.vara_fridpp_report import VaraFRIDPPReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -31,13 +31,13 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 
 
-class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
-    """Runs utility pass on LLVM-IR to extract instrumentation point
+class CollectFuncRelativeIDs(actions.ProjectStep):  # type: ignore
+    """Runs utility pass on LLVM-IR to extract function relative ID
     information."""
 
-    NAME = "CollectInstrumentationPoints"
-    DESCRIPTION = "Runs utility pass on LLVM-IR to extract instrumentation " \
-        "point information."
+    NAME = "CollectFuncRelativeIDs"
+    DESCRIPTION = "Runs utility pass on LLVM-IR to extract function-relative" \
+        "ID information."
 
     project: VProject
 
@@ -49,21 +49,21 @@ class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
         return self.analyze()
 
     def analyze(self) -> actions.StepResult:
-        """Run VaRA-IPP utility pass and extract instrumentation point
+        """Run VaRA-FRIDPP utility pass and extract function-relative ID
         information."""
         vara_result_folder = get_varats_result_folder(self.project)
 
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, VaraIPPReport, self.project, binary
+                self.__experiment_handle, VaraFRIDPPReport, self.project, binary
             )
 
             # Need the following passes:
             # - vara-PFTDD to generate feature regions
-            # - vara-IPP (Instrumentation Point Printer)
+            # - vara-FRIDPP (Function-Relative ID Printer)
             opt_params = [
-                "--enable-new-pm=0", "--vara-PTFDD", "-vara-IPP", "-o",
-                "/dev/null",
+                "--enable-new-pm=0", "--vara-PTFDD", "-vara-BD", "-vara-FRIDPP",
+                "-o", "/dev/null",
                 get_cached_bc_file_path(
                     self.project, binary,
                     [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
@@ -78,21 +78,20 @@ class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project, VaraIPPReport
+                    self.__experiment_handle, self.project, VaraFRIDPPReport
                 )
             )
 
         return actions.StepResult.OK
 
 
-class InstrumentationPointPrinter(VersionExperiment, shorthand="IPP"):
-    """Experiment, which uses VaRA's InstrumentationPointPrinter utility pass to
-    collect source code locations of instrumentation points of VaRA's feature
-    regions."""
+class FuncRelativeIDPrinter(VersionExperiment, shorthand="FRIDPP"):
+    """Experiment, which uses VaRA's FuncRelativeIDPrinter utility pass to
+    collect function-relative IDs of VaRA's feature regions."""
 
-    NAME = "VaraIPP"
+    NAME = "VaraFRIDPP"
 
-    REPORT_SPEC = ReportSpecification(VaraIPPReport)
+    REPORT_SPEC = ReportSpecification(VaraFRIDPPReport)
 
     def actions_for_project(
         self, project: Project
@@ -111,7 +110,8 @@ class InstrumentationPointPrinter(VersionExperiment, shorthand="IPP"):
         # We need debug info to later determine source code locations in a
         # utility pass. Also, include feature information.
         project.cflags += [
-            "-g", "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}"
+            "-g", "-fvara-GB", "-fvara-feature",
+            f"-fvara-fm-path={fm_path.absolute()}"
         ]
 
         # Add the required runtime extensions to the project(s).
@@ -134,7 +134,7 @@ class InstrumentationPointPrinter(VersionExperiment, shorthand="IPP"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(Extract(project, bc_file_extensions))
         analysis_actions.append(
-            CollectInstrumentationPoints(project, self.get_handle())
+            CollectFuncRelativeIDs(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 
