@@ -1,21 +1,22 @@
 """Instrumentation verifier report implementation for check if projects get
 correctly instrumented."""
 import typing as tp
+from pathlib import Path
 from zipfile import ZipFile
 
-from varats.report.report import BaseReport, ReportFilepath
+from varats.report.report import BaseReport
 
 
 class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
     """An instrumentation verifier report for testing how well projects were
     instrumented."""
 
-    def __init__(self, report_path: ReportFilepath) -> None:
-        super().__init__(report_path.full_path())
+    def __init__(self, report_path: Path) -> None:
+        super().__init__(report_path)
 
         self.__report_data = {}
 
-        with ZipFile(report_path.full_path(), "r") as archive:
+        with ZipFile(report_path, "r") as archive:
 
             for file in archive.namelist():
                 if not file.endswith(".ivr"):

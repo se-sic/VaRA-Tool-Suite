@@ -44,7 +44,10 @@ class InstrumentationVerifierTable(
             project_name, experiment_type, only_newest=False
         )
 
-        reports = [InstrVerifierReport(rev_file) for rev_file in revision_files]
+        reports = [
+            InstrVerifierReport(rev_file.full_path())
+            for rev_file in revision_files
+        ]
 
         for report in reports:
             for binary in report.binaries():

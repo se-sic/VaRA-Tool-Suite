@@ -50,7 +50,8 @@ class InstrumentationOverviewPlot(
         labels: tp.List[str] = []
 
         reports: tp.List[InstrVerifierReport] = [
-            InstrVerifierReport(rev_file) for rev_file in revisions_files
+            InstrVerifierReport(rev_file.full_path())
+            for rev_file in revisions_files
         ]
 
         num_enters: tp.List[int] = []
