@@ -131,18 +131,6 @@ class RunWLLVM(base.Extension):  # type: ignore
         return self.call_next(wllvm, *args, **kwargs)
 
 
-bb_cfg()["varats"] = {
-    "outfile": {
-        "default": "",
-        "desc": "Path to store results of VaRA CFR analysis."
-    },
-    "result": {
-        "default": "",
-        "desc": "Path to store already annotated projects."
-    },
-}
-
-
 class Extract(actions.ProjectStep):  # type: ignore
     """Extract step to extract a llvm bitcode file(.bc) from the project."""
 
