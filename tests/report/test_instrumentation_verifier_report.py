@@ -51,6 +51,7 @@ Unclosed Region-ID(s):
   0000000000000000001 ( SrcLoc: src/SingleLocalSimple/SLSmain.cpp:14:7 [F: main ])
   0000000000000000002 ( SrcLoc: src/SingleLocalSimple/SLSmain.cpp:14:7 [F: main ])
 Wrong Leave-ID(s):
+  None
 ---------------------
 """,
     """Entered region: 1729382256910270467 ( SrcLoc: src/SingleLocalSimple/SLSmain.cpp:14:7 [F: main ])
@@ -58,6 +59,7 @@ Left region:    1729382256910270467 ( SrcLoc: ??? [F: main ])
 
 Finalization: Failure
 Unclosed Region-ID(s):
+  None
 Wrong Leave-ID(s):
   0000000000000000001 ( SrcLoc: src/SingleLocalSimple/SLSmain.cpp:14:7 [F: main ])
   0000000000000000002 ( SrcLoc: src/SingleLocalSimple/SLSmain.cpp:14:7 [F: main ])
