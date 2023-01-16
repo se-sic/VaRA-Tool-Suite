@@ -23,43 +23,29 @@ class CompilationError(Exception):
 
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
-    """Look up a BenchBuild project by it's name."""
-    for project_map_key in bb.project.ProjectRegistry.projects:
-        if not _is_vara_project(project_map_key):
-            # currently we only support vara provided projects
+    """Look up a BenchBuild project by its name."""
+    from varats.project.varats_project import VProject  # pylint: disable=W0611
+    for project_cls in bb.project.ProjectRegistry.projects.itervalues(
+        prefix=project_name
+    ):
+        if not issubclass(project_cls, VProject):
+            # currently we only support varats provided projects
             continue
 
-        if project_map_key.startswith(project_name):
-            project: tp.Type[
-                bb.Project
-            ] = bb.project.ProjectRegistry.projects[project_map_key]
-            return project
+        return tp.cast(tp.Type[bb.Project], project_cls)
 
     raise LookupError
 
 
 def get_loaded_vara_projects() -> tp.Generator[tp.Type[bb.Project], None, None]:
     """Get all loaded vara projects."""
-    for project_map_key in bb.project.ProjectRegistry.projects:
-        if not _is_vara_project(project_map_key):
-            # currently we only support vara provided projects
+    from varats.project.varats_project import VProject  # pylint: disable=W0611
+    for project_cls in bb.project.ProjectRegistry.projects.values():
+        if not issubclass(project_cls, VProject):
+            # currently we only support varats provided projects
             continue
 
-        yield bb.project.ProjectRegistry.projects[project_map_key]
-
-
-def _is_vara_project(project_key: str) -> bool:
-    """
-    >>> _is_vara_project("Xz/c_projects")
-    True
-
-    >>> _is_vara_project("BZip2/gentoo")
-    False
-    """
-    return any(
-        project_key.endswith(x)
-        for x in ("c_projects", "cpp_projects", "test_projects", "perf_tests")
-    )
+        yield project_cls
 
 
 def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
