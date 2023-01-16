@@ -2,6 +2,7 @@
 
 import typing as tp
 from collections import defaultdict
+from itertools import chain, combinations
 
 from varats.base.configuration import (
     PlainCommandlineConfiguration,
@@ -14,7 +15,10 @@ from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.revision.revisions import get_processed_revisions_files
-from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
+from varats.ts_utils.click_param_types import (
+    REQUIRE_MULTI_EXPERIMENT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash
 
@@ -71,14 +75,37 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 "ignoring everything else."
             )
 
-        case_studies = get_loaded_paper_config().get_all_case_studies()
+        loaded_paper_config = get_loaded_paper_config()
+        case_studies = self.plot_kwargs["case_study"]
 
         for case_study in case_studies:
             binary_config_map = self._get_binary_config_map(case_study)
 
-            if binary_config_map:
-                pass
-                #coverage_report.merge(coverage_report)
+            if not binary_config_map:
+                raise Exception(
+                    f"Cannot load configs for case study '{case_study.project_name}'!"
+                )
+
+            #coverage_report.merge(coverage_report)
+            for binary in binary_config_map:
+                config_report_map = binary_config_map[binary]
+                for config_set in self._powerset(config_report_map.keys()):
+                    print(len(config_set), config_set)
+
+    def _powerset(self, iterable: tp.Iterable[tp.Any]) -> tp.Iterable[tp.Any]:
+        """
+        Powerset without empty set.
+
+        powerset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
+
+        Modified version of:
+        https://docs.python.org/3/library/itertools.html#itertools-recipes
+        """
+        s = list(iterable)
+        return chain.from_iterable(
+            combinations(s, r) for r in range(1,
+                                              len(s) + 1)
+        )
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -89,7 +116,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
 class CoveragePlotGenerator(
     PlotGenerator,
     generator_name="coverage",
-    options=[REQUIRE_MULTI_EXPERIMENT_TYPE]
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates repo-churn plot(s) for the selected case study(ies)."""
 
