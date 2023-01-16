@@ -16,9 +16,6 @@ from varats.data.reports.blame_report import (
     BlameTaintData,
     BlameResultFunctionEntry,
 )
-from varats.experiments.vara.blame_report_experiment import (
-    BlameReportExperiment,
-)
 from varats.jupyterhelper.file import load_blame_report
 from varats.project.project_util import (
     get_local_project_git_path,
@@ -39,6 +36,12 @@ if sys.version_info <= (3, 8):
     from typing_extensions import TypedDict
 else:
     from typing import TypedDict
+
+if tp.TYPE_CHECKING:
+    # pylint: disable=W0611
+    from varats.experiments.vara.blame_report_experiment import (
+        BlameReportExperiment,
+    )
 
 BIGNodeTy = BlameTaintData
 
@@ -488,7 +491,7 @@ class FileBasedInteractionGraph(InteractionGraph):
 
 def create_blame_interaction_graph(
     project_name: str, revision: FullCommitHash,
-    experiment_type: tp.Type[BlameReportExperiment]
+    experiment_type: tp.Type['BlameReportExperiment']
 ) -> BlameInteractionGraph:
     """
     Create a blame interaction graph for a certain project revision.
@@ -522,7 +525,7 @@ def create_blame_interaction_graph(
 
 def create_callgraph_based_interaction_graph(
     project_name: str, revision: FullCommitHash,
-    experiment_type: tp.Type[BlameReportExperiment]
+    experiment_type: tp.Type['BlameReportExperiment']
 ) -> CallgraphBasedInteractionGraph:
     """
     Create a callgraph-based interaction graph for a certain project revision.
