@@ -149,8 +149,17 @@ class Plot:
         """
         plot_ident = ''
         if 'case_study' in self.plot_kwargs:
-            case_study: 'CaseStudy' = self.plot_kwargs['case_study']
-            plot_ident = f"{case_study.project_name}_{case_study.version}_"
+            if isinstance(self.plot_kwargs['case_study'], list):
+                case_studies: tp.List[CaseStudy] = self.plot_kwargs['case_study'
+                                                                   ]
+                plot_ident += "-".join([
+                    f"{case_study.project_name}_{case_study.version}"
+                    for case_study in case_studies
+                ])
+                plot_ident += "_"
+            else:
+                case_study: CaseStudy = self.plot_kwargs['case_study']
+                plot_ident = f"{case_study.project_name}_{case_study.version}_"
         elif 'project' in self.plot_kwargs:
             plot_ident = f"{self.plot_kwargs['project']}_"
 
