@@ -137,6 +137,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         with open(self.path, "rb") as f:
             parser = ijson.parse(f)
             trace_event: tp.Dict[str, str] = {}
+            key = ""
             for prefix, event, value in parser:
                 if event == "map_key":
                     key = value
