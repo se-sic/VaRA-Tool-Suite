@@ -97,6 +97,7 @@ def create_new_bb_config(
             'varats.projects.test_projects.basic_tests',
             'varats.projects.test_projects.bug_provider_test_repos',
             'varats.projects.test_projects.example_test_repo',
+            'varats.projects.test_projects.feature_test_repo',
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.multi_author_coordination',
