@@ -1,7 +1,6 @@
 """Module for feature performance analysis tables."""
 import logging
 import re
-import sys
 import typing as tp
 from abc import ABC
 
@@ -35,6 +34,8 @@ LOG = logging.Logger(__name__)
 class PerformanceAnalysisTable(
     Table, ABC, table_name="performance_analysis_table"
 ):
+    """Base class for table comparing the performance of features or regions
+    across releases for each workload."""
 
     @staticmethod
     def get_interactions_from_fr_string(interactions: str) -> str:
@@ -75,8 +76,10 @@ class PerformanceAnalysisTable(
             [CaseStudy, WorkloadSpecificTEFReportAggregate, str],
             tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
                                   tp.Optional[int]]]],
-        fillna=True
+        fillna: bool = True
     ) -> str:
+        """Generates a performance analysis table with a given
+        row_gen_method."""
         df = pd.DataFrame()
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
@@ -132,7 +135,8 @@ class PerformanceAnalysisTable(
                 too_high_std_df = rel_std_df[(rel_std_df > 0.05).any(1)]
                 if not too_high_std_df.empty:
                     LOG.warning(
-                        "There is a measurement that has a relative standard deviation of more than 5%."
+                        "There is a measurement that has a relative standard "
+                        "deviation of more than 5%."
                     )
                     LOG.warning(df.to_string())
                     LOG.warning(too_high_std_df.to_string())

@@ -68,8 +68,7 @@ class VaraFRIDPPReport(BaseReport, shorthand="VaraFRIDPP", file_type="txt"):
     def count_feature_regions(self, function_relative_id_base: str) -> int:
         if function_relative_id_base in self.__count_feature_regions:
             return self.__count_feature_regions[function_relative_id_base]
-        else:
-            return 0
+        return 0
 
     def _parse_report(self) -> None:
         feature_regions: tp.Dict[str, FeatureRegionEntry] = {}
