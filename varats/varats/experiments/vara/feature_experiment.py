@@ -149,7 +149,8 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                         ):
                             local_tracefile_path = Path(
                                 tmp_dir
-                            ) / f"trace_{prj_command.command.label}_{repetition}.json"
+                            ) / f"trace_{prj_command.command.label}" \
+                                f"_{repetition}.json"
                             with local.env(
                                 VARA_TRACE_FILE=local_tracefile_path
                             ):
@@ -157,7 +158,8 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                     project=self.project
                                 )
                                 print(
-                                    f"Running example {prj_command.command.label}"
+                                    f"Running example "
+                                    f"{prj_command.command.label}"
                                 )
 
                                 extra_options = get_extra_config_options(
