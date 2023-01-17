@@ -7,6 +7,7 @@ import pandas
 import tabulate as tb
 
 from varats.project.project_util import get_loaded_vara_projects
+from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from varats.tools.research_tools.vara import VaRA
 
 
@@ -46,6 +47,26 @@ def generate_project_overview_table_file(output_file: Path) -> None:
         inc_file.write(generate_project_overview_table())
 
 
+def construct_feature_model_link(project_type: tp.Type[bb.Project]) -> str:
+    """
+    Construct a link to the feature-model folder of our online feature model
+    collection.
+
+    Args:
+        project_type: type of the project to link the feature model for
+    """
+    fm_provider = FeatureModelProvider.get_provider_for_project(project_type)
+    feature_model = fm_provider.get_feature_model_path("currently_not_needed")
+    fm_doc_link = ""
+
+    if feature_model:
+        sanitized_repo = FeatureModelProvider.fm_repository.replace('.git', '')
+        fm_sub_path = feature_model.parent.name
+        fm_doc_link = f"`Model <{sanitized_repo}/tree/master/{fm_sub_path}>`_"
+
+    return fm_doc_link
+
+
 def generate_project_overview_table() -> str:
     """
     Generates an overview table that shows all project information for vara
@@ -54,9 +75,12 @@ def generate_project_overview_table() -> str:
     Returns: overview table
     """
 
-    df = pandas.DataFrame(columns=["Project", "Group", "Domain", "Main Source"])
+    df = pandas.DataFrame(
+        columns=["Project", "Group", "Domain", "FeatureModel", "Main Source"]
+    )
 
     for project_type in get_loaded_vara_projects():
+
         df = df.append(
             pandas.DataFrame({
                 "Project":
@@ -65,6 +89,8 @@ def generate_project_overview_table() -> str:
                     project_type.GROUP,
                 "Domain":
                     project_type.DOMAIN,
+                "FeatureModel":
+                    construct_feature_model_link(project_type),
                 "Main Source":
                     project_type.SOURCE[0].remote
                     if project_type.SOURCE else None
