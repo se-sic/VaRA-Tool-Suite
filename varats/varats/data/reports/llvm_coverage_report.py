@@ -284,6 +284,26 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
                 code_region_a.merge(code_region_b)
 
+    def diff(self, report: CoverageReport) -> None:
+        """Diff report from self."""
+        for filename_a, filename_b in zip(
+            self.filename_function_mapping, report.filename_function_mapping
+        ):
+            assert Path(filename_a).name == Path(filename_b).name
+
+            for function_a, function_b in zip(
+                self.filename_function_mapping[filename_a],
+                report.filename_function_mapping[filename_b]
+            ):
+                assert function_a == function_b
+                code_region_a = self.filename_function_mapping[filename_a][
+                    function_a]
+                code_region_b = report.filename_function_mapping[filename_b][
+                    function_b]
+                assert code_region_a == code_region_b
+
+                code_region_a.diff(code_region_b)
+
     def _import_functions(
         self, json_file: Path,
         filename_function_mapping: FilenameFunctionMapping
