@@ -238,11 +238,17 @@ class ProjectBinaryWrapper():
         binary_name: str,
         path_to_binary: Path,
         binary_type: BinaryType,
-        entry_point: tp.Optional[Path] = None
+        entry_point: tp.Optional[Path] = None,
+        valid_exit_codes: tp.Optional[tp.List[int]] = None,
     ) -> None:
         self.__binary_name = binary_name
         self.__binary_path = path_to_binary
         self.__type = binary_type
+
+        if valid_exit_codes is not None:
+            self.__valid_exit_codes = valid_exit_codes
+        else:
+            self.__valid_exit_codes = [0]
 
         if binary_type is BinaryType.EXECUTABLE:
             self.__entry_point = entry_point
@@ -272,6 +278,12 @@ class ProjectBinaryWrapper():
         """Entry point to an executable "thing" that executes the wrapped
         binary, if possible."""
         return self.__entry_point
+
+    @property
+    def valid_exit_codes(self) -> tp.List[int]:
+        """Specifies which exit codes indicate a successful execution of the
+        binary."""
+        return self.__valid_exit_codes
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         if self.type is not BinaryType.EXECUTABLE:
