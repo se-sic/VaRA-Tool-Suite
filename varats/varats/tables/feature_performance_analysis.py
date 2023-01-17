@@ -26,6 +26,7 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import CommitHash
 
 LOG = logging.Logger(__name__)
@@ -82,7 +83,10 @@ class PerformanceAnalysisTable(
         row_gen_method."""
         df = pd.DataFrame()
 
-        for case_study in get_loaded_paper_config().get_all_case_studies():
+        project_name: str = self.table_kwargs['case_study'].project_name
+
+        for case_study in get_loaded_paper_config(
+        ).get_case_studies(project_name):
             # Parse reports
             tef_report_files = get_processed_revisions_files(
                 case_study.project_name,
@@ -407,7 +411,9 @@ class RegionPerformanceAnalysisTable(
 
 
 class FeaturePerformanceAnalysisTableGenerator(
-    TableGenerator, generator_name="feature-perf-analysis", options=[]
+    TableGenerator,
+    generator_name="feature-perf-analysis",
+    options=[REQUIRE_CASE_STUDY]
 ):
     """Generates a feature performance analysis table for the selected case
     study(ies)."""
@@ -421,7 +427,9 @@ class FeaturePerformanceAnalysisTableGenerator(
 
 
 class RegionPerformanceAnalysisTableGenerator(
-    TableGenerator, generator_name="region-perf-analysis", options=[]
+    TableGenerator,
+    generator_name="region-perf-analysis",
+    options=[REQUIRE_CASE_STUDY]
 ):
     """Generates a region performance analysis table for the selected case
     study(ies)."""
