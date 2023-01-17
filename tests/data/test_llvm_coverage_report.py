@@ -193,7 +193,7 @@ class TestCodeRegion(unittest.TestCase):
             PlotConfig.from_kwargs(view=False),
             experiment_type=[GenerateCoverageExperiment],
             case_study=get_loaded_paper_config().
-            get_case_studies("FeaturePerfCSCollection")[0]
+            get_case_studies("FeaturePerfCSCollection")
         )
         plots = plot_generator.generate()
         self.assertEqual(len(plots), 1)

@@ -58,7 +58,7 @@ def _merge_reports(reports: tp.Iterable[CoverageReport]) -> CoverageReport:
 class RuntimeConfig:
     """All features that were enabled/disabled during one run."""
 
-    def __init__(self, features=tp.Tuple[str, bool]) -> None:
+    def __init__(self, features: tp.Tuple[str, bool]) -> None:
         super().__init__()
         self.features: tp.FrozenSet[tp.Tuple[str, bool]] = frozenset(features)
 
@@ -117,7 +117,7 @@ class CoverageFeatureDiffer:
     def _add(
         self, config_combinations: tp.List[tp.List[str]],
         coverage_report: CoverageReport
-    ):
+    ) -> None:
         runtime_configs = []
         for combination in config_combinations:
             for feature in combination:
