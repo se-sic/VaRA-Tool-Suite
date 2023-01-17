@@ -199,7 +199,8 @@ class CoverageFeatureDiffer:
             )
         )
 
-        return report_with_features.diff(report_without_features)
+        report_with_features.diff(report_without_features)
+        return report_with_features
 
 
 class CoveragePlot(Plot, plot_name="coverage"):
@@ -246,29 +247,28 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 "ignoring everything else."
             )
 
-        case_studies = self.plot_kwargs["case_study"]
+        case_study = self.plot_kwargs["case_study"]
 
-        for case_study in case_studies:
-            binary_config_map = self._get_binary_config_map(case_study)
+        binary_config_map = self._get_binary_config_map(case_study)
 
-            if not binary_config_map:
-                raise Exception(
-                    "Cannot load configs for case study " +
-                    case_study.project_name + " !"
-                )
+        if not binary_config_map:
+            raise Exception(
+                "Cannot load configs for case study " +
+                case_study.project_name + " !"
+            )
 
-            for binary in binary_config_map:
-                config_report_map = binary_config_map[binary]
+        for binary in binary_config_map:
+            config_report_map = binary_config_map[binary]
 
-                coverage_feature_differ = CoverageFeatureDiffer.from_config_report_map(
-                    config_report_map
-                )
-                for feature in coverage_feature_differ.available_features:
-                    print(f"Diff for '{feature}':")
-                    diff = coverage_feature_differ.diff({feature: True})
+            coverage_feature_differ = CoverageFeatureDiffer.from_config_report_map(
+                config_report_map
+            )
+            for feature in coverage_feature_differ.available_features:
+                print(f"Diff for '{feature}':")
+                diff = coverage_feature_differ.diff({feature: True})
 
-                    if diff:
-                        pass
+                if diff:
+                    pass
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -284,4 +284,9 @@ class CoveragePlotGenerator(
     """Generates repo-churn plot(s) for the selected case study(ies)."""
 
     def generate(self) -> tp.List[Plot]:
-        return [CoveragePlot(self.plot_config, **self.plot_kwargs)]
+        result: tp.List[Plot] = []
+        for case_study in self.plot_kwargs["case_study"]:
+            plot_kwargs = deepcopy(self.plot_kwargs)
+            plot_kwargs["case_study"] = deepcopy(case_study)
+            result.append(CoveragePlot(self.plot_config, **plot_kwargs))
+        return result
