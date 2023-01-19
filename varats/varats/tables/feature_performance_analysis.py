@@ -239,6 +239,12 @@ class FeaturePerformanceAnalysisTable(
             only_newest=False,
         )
 
+        if len(fridpp_report_files) == 0:
+            print(
+                f"Please generate VaraFRIDPPReports first. "
+                f"Skipping {revision}, {workload}"
+            )
+            return {}
         # All FRIDPP reports within a revision are identical, so just use the
         # first one.
         fridpp_report_file = fridpp_report_files[0]
@@ -331,6 +337,12 @@ class RegionPerformanceAnalysisTable(
             only_newest=False,
         )
 
+        if len(fridpp_report_files) == 0:
+            print(
+                f"Please generate VaraFRIDPPReports first. "
+                f"Skipping {revision}, {workload}"
+            )
+            return {}
         # All FRIDPP reports within a revision are identical, so just use the
         # first one.
         fridpp_report_file = fridpp_report_files[0]
