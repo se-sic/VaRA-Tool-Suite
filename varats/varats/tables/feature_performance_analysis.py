@@ -8,7 +8,9 @@ import pandas as pd
 from pandas import CategoricalDtype
 
 from varats.data.reports.vara_fridpp_report import VaraFRIDPPReport
-from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
+from varats.experiments.vara.agg_region_interaction_perf_runner import (
+    AggregatedRegionInteractionPerfRunner,
+)
 from varats.experiments.vara.func_relative_id_printer import (
     FuncRelativeIDPrinter,
 )
@@ -16,11 +18,9 @@ from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.tef_report import (
-    TEFReport,
-    WorkloadSpecificTEFReportAggregate,
-    TraceEventType,
-    TraceEvent,
+from varats.report.rit_report import (
+    RITReport,
+    WorkloadSpecificRITReportAggregate,
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
@@ -40,7 +40,7 @@ class PerformanceAnalysisTable(
 
     @staticmethod
     def get_interactions_from_fr_string(interactions: str) -> str:
-        """Convert the feature strings in a TEFReport from FR(x,y) to x*y,
+        """Convert the feature strings in a RITReport from FR(x,y) to x*y,
         similar to the format used by SPLConqueror."""
         interactions = (
             interactions.replace("FR", "").replace("(", "").replace(")", "")
@@ -74,7 +74,7 @@ class PerformanceAnalysisTable(
         table_format: TableFormat,
         wrap_table: bool,
         row_gen_method: tp.Callable[
-            [CaseStudy, WorkloadSpecificTEFReportAggregate, str],
+            [CaseStudy, WorkloadSpecificRITReportAggregate, str],
             tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
                                   tp.Optional[int]]]],
         fillna: bool = True
@@ -88,10 +88,10 @@ class PerformanceAnalysisTable(
         for case_study in get_loaded_paper_config(
         ).get_case_studies(project_name):
             # Parse reports
-            tef_report_files = get_processed_revisions_files(
+            rit_report_files = get_processed_revisions_files(
                 case_study.project_name,
-                FeaturePerfRunner,
-                TEFReport,
+                AggregatedRegionInteractionPerfRunner,
+                RITReport,
                 get_case_study_file_name_filter(case_study),
                 only_newest=False,
             )
@@ -99,17 +99,17 @@ class PerformanceAnalysisTable(
             workloads = set()
             revisions = set()
 
-            for report_filepath in tef_report_files:
-                agg_tef_report = WorkloadSpecificTEFReportAggregate(
+            for report_filepath in rit_report_files:
+                agg_rit_report = WorkloadSpecificRITReportAggregate(
                     report_filepath.full_path()
                 )
-                report_file = agg_tef_report.filename
+                report_file = agg_rit_report.filename
                 revisions.add(report_file.commit_hash)
 
-                for workload in agg_tef_report.workload_names():
+                for workload in agg_rit_report.workload_names():
                     workloads.add(workload)
                     df = df.append(
-                        row_gen_method(case_study, agg_tef_report, workload),
+                        row_gen_method(case_study, agg_rit_report, workload),
                         ignore_index=True,
                     )
 
@@ -186,191 +186,46 @@ class FeaturePerformanceAnalysisTable(
     workload."""
 
     @staticmethod
-    def get_feature_performance_from_tef_report(
-        tef_report: TEFReport,
+    def get_feature_performance_from_rit_report(
+        rit_report: RITReport,
+        fridpp_report: VaraFRIDPPReport,
     ) -> tp.Dict[str, int]:
-        """Extract feature performance from a TEFReport."""
-        open_events: tp.List[TraceEvent] = []
-
+        """Extract feature performance from a RITReport."""
         feature_performances: tp.Dict[str, int] = {}
 
-        for trace_event in tef_report.trace_events:
-            if trace_event.category == "Feature":
-                if (
-                    trace_event.event_type ==
-                    TraceEventType.DURATION_EVENT_BEGIN
-                ):
-                    open_events.append(trace_event)
-                elif (
-                    trace_event.event_type == TraceEventType.DURATION_EVENT_END
-                ):
-                    opening_event = open_events.pop()
-
-                    end_timestamp = trace_event.timestamp
-                    begin_timestamp = opening_event.timestamp
-
-                    # Subtract feature duration from parent duration such that
-                    # it is not counted twice, similar to behavior in
-                    # Performance-Influence models.
-                    interactions = [event.name for event in open_events]
-                    if open_events:
-                        # Parent is equivalent to interaction of all open
-                        # events.
-                        interaction_string = FeaturePerformanceAnalysisTable\
-                            .get_interactions_from_fr_string(
-                                ",".join(interactions)
-                            )
-                        if interaction_string in feature_performances:
-                            feature_performances[interaction_string] -= (
-                                end_timestamp - begin_timestamp
-                            )
-                        else:
-                            feature_performances[interaction_string] = -(
-                                end_timestamp - begin_timestamp
-                            )
-
-                    interaction_string = FeaturePerformanceAnalysisTable\
-                        .get_interactions_from_fr_string(
-                            ",".join(interactions + [trace_event.name])
-                        )
-
-                    current_performance = feature_performances.get(
-                        interaction_string, 0
-                    )
-                    feature_performances[interaction_string] = (
-                        current_performance + end_timestamp - begin_timestamp
-                    )
+        for region_interaction_entry in rit_report.region_interaction_entries:
+            involved_regions = region_interaction_entry.interaction.split("*")
+            if len(involved_regions) > 1:
+                # Remove Base if it's not the only feature
+                involved_regions.remove("0")
+            involved_features = [
+                FeaturePerformanceAnalysisTable.get_interactions_from_fr_string(
+                    fridpp_report.get_fr_entry(uuid).name
+                ) for uuid in involved_regions
+            ]
+            feature_performances["*".join(involved_features)
+                                ] = region_interaction_entry.time
 
         return feature_performances
 
     def get_feature_performances_row(
         self,
         case_study: CaseStudy,
-        agg_tef_report: WorkloadSpecificTEFReportAggregate,
+        agg_rit_report: WorkloadSpecificRITReportAggregate,
         workload: str,
     ) -> tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
                                tp.Optional[int]]]:
         """Returns a dict with information about feature performances from a
-        TEFReport for a given workload."""
+        RITReport for a given workload."""
 
-        tef_report = agg_tef_report.reports(workload)
-        if len(tef_report) > 1:
+        rit_report = agg_rit_report.reports(workload)
+        if len(rit_report) > 1:
             print(
-                "Table can currently handle only one TEFReport per "
+                "Table can currently handle only one RITReport per "
                 "revision, workload and config. Ignoring others."
             )
 
-        print("Currently processing " + str(tef_report[0].path), flush=True)
-
-        feature_performances = self.get_feature_performance_from_tef_report(
-            tef_report[0]
-        )
-
-        return {
-            "Project": case_study.project_name,
-            "Revision": agg_tef_report.filename.commit_hash,
-            "Workload": workload,
-            "Config_ID": agg_tef_report.filename.config_id,
-            "Timestamp_Unit": tef_report[0].timestamp_unit,
-            **feature_performances,
-        }
-
-    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        return self.tabulate_gen(
-            table_format, wrap_table, self.get_feature_performances_row
-        )
-
-
-class RegionPerformanceAnalysisTable(
-    PerformanceAnalysisTable, table_name="region_perf_analysis_table"
-):
-    """Table comparing the performance of regions across releases for each
-    workload."""
-
-    @staticmethod
-    def get_region_performance_from_tef_report(
-        tef_report: TEFReport,
-        fridpp_report: VaraFRIDPPReport,
-    ) -> tp.Dict[str, int]:
-        """Extract region performance from a TEFReport."""
-        open_events: tp.List[TraceEvent] = []
-
-        region_performances: tp.Dict[str, int] = {}
-
-        for trace_event in tef_report.trace_events:
-            if trace_event.category == "Feature":
-                if (
-                    trace_event.event_type ==
-                    TraceEventType.DURATION_EVENT_BEGIN
-                ):
-                    open_events.append(trace_event)
-                elif (
-                    trace_event.event_type == TraceEventType.DURATION_EVENT_END
-                ):
-                    opening_event = open_events.pop()
-
-                    end_timestamp = trace_event.timestamp
-                    begin_timestamp = opening_event.timestamp
-
-                    # Subtract region duration from direct parent region
-                    # duration such that it is not counted twice, similar
-                    # to behavior in Performance-Influence models.
-                    parents = [str(event.region_id) for event in open_events]
-                    if len(parents) > 0:
-                        direct_parent = parents[len(parents) - 1]
-                        if direct_parent in region_performances:
-                            region_performances[direct_parent] -= (
-                                end_timestamp - begin_timestamp
-                            )
-                        else:
-                            region_performances[direct_parent] = -(
-                                end_timestamp - begin_timestamp
-                            )
-
-                    current_performance = region_performances.get(
-                        str(trace_event.region_id), 0
-                    )
-                    region_performances[
-                        str(trace_event.region_id)
-                    ] = (current_performance + end_timestamp - begin_timestamp)
-
-        # Translate region IDs to function-relative IDs
-        region_performances = {
-            fridpp_report.get_function_relative_id_by_uuid(region_id):
-            performance
-            for region_id, performance in region_performances.items()
-        }
-
-        # Fill regions that exist in the code, but were not in the TEFReport,
-        # with 0 such that we can differentiate missing regions and
-        # regions that were not executed.
-        for region_id in fridpp_report.feature_regions:
-            if fridpp_report.get_function_relative_id_by_uuid(
-                region_id
-            ) not in region_performances:
-                region_performances[
-                    fridpp_report.get_function_relative_id_by_uuid(region_id)
-                ] = 0
-
-        return region_performances
-
-    def get_region_performances_row(
-        self,
-        case_study: CaseStudy,
-        agg_tef_report: WorkloadSpecificTEFReportAggregate,
-        workload: str,
-    ) -> tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
-                               tp.Optional[int]]]:
-        """Returns a dict with information about feature performances from a
-        TEFReport for a given workload."""
-        tef_report = agg_tef_report.reports(workload)
-        if len(tef_report) > 1:
-            print(
-                "Table can currently handle only one TEFReport per "
-                "revision, workload and config. Ignoring others."
-            )
-
-        revision = agg_tef_report.filename.commit_hash
+        revision = agg_rit_report.filename.commit_hash
 
         fridpp_report_files = get_processed_revisions_files(
             case_study.project_name,
@@ -388,16 +243,108 @@ class RegionPerformanceAnalysisTable(
         # first one.
         fridpp_report_file = fridpp_report_files[0]
 
-        region_performances = self.get_region_performance_from_tef_report(
-            tef_report[0], VaraFRIDPPReport(fridpp_report_file.full_path())
+        feature_performances = self.get_feature_performance_from_rit_report(
+            rit_report[0], VaraFRIDPPReport(fridpp_report_file.full_path())
+        )
+
+        return {
+            "Project": case_study.project_name,
+            "Revision": agg_rit_report.filename.commit_hash,
+            "Workload": workload,
+            "Config_ID": agg_rit_report.filename.config_id,
+            "Timestamp_Unit": rit_report[0].timestamp_unit,
+            **feature_performances,
+        }
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        return self.tabulate_gen(
+            table_format, wrap_table, self.get_feature_performances_row
+        )
+
+
+class RegionPerformanceAnalysisTable(
+    PerformanceAnalysisTable, table_name="region_perf_analysis_table"
+):
+    """Table comparing the performance of regions across releases for each
+    workload."""
+
+    @staticmethod
+    def get_region_performance_from_rit_report(
+        rit_report: RITReport,
+        fridpp_report: VaraFRIDPPReport,
+    ) -> tp.Dict[str, int]:
+        """Extract region performance from a RITReport."""
+        region_performances: tp.Dict[str, int] = {}
+
+        for region_interaction_entry in rit_report.region_interaction_entries:
+            involved_regions = region_interaction_entry.interaction.split("*")
+            if len(involved_regions) > 1:
+                # Remove Base if it's not the only feature
+                involved_regions.remove("0")
+            involved_regions_frid = [
+                fridpp_report.get_function_relative_id_by_uuid(uuid)
+                for uuid in involved_regions
+            ]
+            region_performances["*".join(involved_regions_frid)
+                               ] = region_interaction_entry.time
+
+        # Fill regions that exist in the code, but were not in the RITReport,
+        # with 0 such that we can differentiate missing regions and
+        # regions that were not executed.
+        for region_id in fridpp_report.feature_regions:
+            if fridpp_report.get_function_relative_id_by_uuid(
+                region_id
+            ) not in region_performances:
+                region_performances[
+                    fridpp_report.get_function_relative_id_by_uuid(region_id)
+                ] = 0
+
+        return region_performances
+
+    def get_region_performances_row(
+        self,
+        case_study: CaseStudy,
+        agg_rit_report: WorkloadSpecificRITReportAggregate,
+        workload: str,
+    ) -> tp.Dict[str, tp.Union[str, CommitHash, tp.Dict[str, int],
+                               tp.Optional[int]]]:
+        """Returns a dict with information about feature performances from a
+        RITReport for a given workload."""
+        rit_report = agg_rit_report.reports(workload)
+        if len(rit_report) > 1:
+            print(
+                "Table can currently handle only one RITReport per "
+                "revision, workload and config. Ignoring others."
+            )
+
+        revision = agg_rit_report.filename.commit_hash
+
+        fridpp_report_files = get_processed_revisions_files(
+            case_study.project_name,
+            FuncRelativeIDPrinter,
+            VaraFRIDPPReport,
+            lambda file_name: not bool(
+                re.match(
+                    f".*-{case_study.project_name}-.*-{revision}_.*", file_name
+                )
+            ),
+            only_newest=False,
+        )
+
+        # All FRIDPP reports within a revision are identical, so just use the
+        # first one.
+        fridpp_report_file = fridpp_report_files[0]
+
+        region_performances = self.get_region_performance_from_rit_report(
+            rit_report[0], VaraFRIDPPReport(fridpp_report_file.full_path())
         )
 
         return {
             "Project": case_study.project_name,
             "Revision": revision,
             "Workload": workload,
-            "Config_ID": agg_tef_report.filename.config_id,
-            "Timestamp_Unit": tef_report[0].timestamp_unit,
+            "Config_ID": agg_rit_report.filename.config_id,
+            "Timestamp_Unit": rit_report[0].timestamp_unit,
             **region_performances,
         }
 
