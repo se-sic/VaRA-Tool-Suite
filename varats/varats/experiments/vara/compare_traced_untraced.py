@@ -1,119 +1,31 @@
 """Module for feature performance eperiments that instrument and measure the
 execution performance of each binary that is produced by a project."""
-import os
 import typing as tp
 
-from pathlib import Path
-
-from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import time as time_cmd
-from plumbum import local
 
 from varats.experiment.experiment_util import (
-    exec_func_with_pe_error_handler,
-    get_default_compile_error_wrapped,
-    create_default_analysis_failure_handler,
-    ExperimentHandle,
-    get_varats_result_folder,
-    VersionExperiment,
-    get_default_compile_error_wrapped,
-)
-from varats.project.project_util import BinaryType
-from varats.provider.feature.feature_model_provider import (
-    FeatureModelProvider,
-    FeatureModelNotFound,
+    create_new_success_result_filepath, get_default_compile_error_wrapped,
+    get_default_compile_error_wrapped, ZippedExperimentSteps
 )
 from varats.report.report import ReportSpecification
-from varats.report.report import FileStatusExtension as FSE
-from varats.report.report import BaseReport
 from varats.report.gnu_time_report import TimeReport
-from varats.utils.git_util import ShortCommitHash
+from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.experiments.base.time_workloads import TimeProjectWorkloads
+
+from varats.project.varats_project import VProject
 
 
-class TimeBinary(actions.Step):
-    """Executes the specified binaries and record the time it took to run"""
+class RunTracedUnoptimized(FeatureExperiment, shorthand="RTUnopt"):
+    """Build and run the traced version of the binary"""
 
-    NAME = "TimeBinary"
-    DESCRIPTION = "Executes each binary and times it"
-
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.time_run)
-        self.__experiment_handle = experiment_handle
-
-    def time_run(self) -> actions.StepResult:
-        """Execute the specified binaries of the project, in specific
-        configurations, against one or multiple workloads."""
-        project: Project = self.obj
-
-        print(f"PWD {os.getcwd()}")
-
-        vara_result_folder = get_varats_result_folder(project)
-
-        for binary in project.binaries:
-            if binary.type != BinaryType.EXECUTABLE:
-                continue
-
-            result_file = self.__experiment_handle.get_file_name(
-                TimeReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=ShortCommitHash(project.version_of_primary),
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS,
-            )
-
-            with local.cwd(local.path(project.source_of_primary)):
-                print(f"Currently at {local.path(project.source_of_primary)}")
-                print(f"Bin path {binary.path}")
-
-                # TODO(d.gusenburger): In future versions, we can pass arguments to the binary here
-                # run_cmd = time_cmd[
-                #     "-o",
-                #     f"{vara_result_folder}/{result_file}",
-                #     "-v",
-                #     binary["--args", "that", "are", "passed", "to", "the", "binary"],
-                # ]
-                run_cmd = time_cmd[
-                    "-o", f"{vara_result_folder}/{result_file}", "-v", binary.path
-                ]
-
-                # REVIEW: Is this correct ? Copied it from JustCompile
-                exec_func_with_pe_error_handler(
-                    run_cmd,
-                    create_default_analysis_failure_handler(
-                        self.__experiment_handle,
-                        project,
-                        TimeReport,
-                        Path(vara_result_folder),
-                    ),
-                )
-
-        return actions.StepResult.OK
-
-
-class BaseRunner(VersionExperiment, shorthand="BR"):
-
-    NAME = "BaseRunner"
+    NAME = "RunTracedUnoptimized"
     REPORT_SPEC = ReportSpecification(TimeReport)
 
-    def __init__(
-        self,
-        report_type: tp.Type[BaseReport],
-        analysis_type: tp.Type[actions.Step],
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.cflags = []
-        self.report_type = report_type
-        self.analysis_type = analysis_type
-
-    def set_cflags(self, *flags):
-        self.cflags = flags
-
-    def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
@@ -121,7 +33,13 @@ class BaseRunner(VersionExperiment, shorthand="BR"):
         Args:
             project: to analyze
         """
-        project.cflags.extend(self.cflags)
+        instr_type = "trace_event"  # trace_event
+
+        project.cflags += self.get_vara_feature_cflags(project)
+
+        project.cflags += self.get_vara_tracing_cflags(instr_type)
+
+        project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = (
@@ -135,29 +53,42 @@ class BaseRunner(VersionExperiment, shorthand="BR"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.report_type
+            self.get_handle(), project, TimeReport
         )
+
+        measurement_reps = 5
 
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(self.analysis_type(project, self.get_handle()))
+
+        for binary in project.binaries:
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary
+            )
+            analysis_actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        TimeProjectWorkloads(project, num, binary)
+                        for num in range(measurement_reps)
+                    ]
+                )
+            )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
 
 
-class RunTraced(BaseRunner, shorthand="RTTIME"):
+class RunTracedNaive(FeatureExperiment, shorthand="RTNaive"):
     """Build and run the traced version of the binary"""
 
-    NAME = "RunTracedTime"
-
+    NAME = "RunTracedNaiveOptimization"
     REPORT_SPEC = ReportSpecification(TimeReport)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(TimeReport, TimeBinary, *args, **kwargs)
-
-    def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
@@ -165,39 +96,64 @@ class RunTraced(BaseRunner, shorthand="RTTIME"):
         Args:
             project: to analyze
         """
+        instr_type = "trace_event"  # trace_event
 
-        fm_provider = FeatureModelProvider.create_provider_for_project(project)
-        if fm_provider is None:
-            raise Exception("Could not get FeatureModelProvider!")
+        project.cflags += self.get_vara_feature_cflags(project)
 
-        fm_path = fm_provider.get_feature_model_path(project.version_of_primary)
-        if fm_path is None or not fm_path.exists():
-            raise FeatureModelNotFound(project, fm_path)
+        project.cflags += self.get_vara_tracing_cflags(instr_type)
 
-        self.set_cflags(
-            "-fvara-feature",
-            f"-fvara-fm-path={fm_path.absolute()}",
-            "-fsanitize=vara",
-            "-fvara-instr=trace_event",
-            # Temporary. Instructions to enable instrumentation placement optimization
-            "-mllvm",
-            "--vara-optimizer-policy=naive",
+        project.cflags += ["-mllvm", "--vara-optimizer-policy=naive"]
+
+        project.ldflags += self.get_vara_tracing_ldflags()
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
         )
 
-        return super().actions_for_project(project)
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = (
+            compiler.RunCompiler(project, self) << run.WithTimeout()
+        )
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, TimeReport
+        )
+
+        measurement_reps = 5
+
+        analysis_actions = []
+
+        analysis_actions.append(actions.Compile(project))
+        for binary in project.binaries:
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary
+            )
+            analysis_actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        TimeProjectWorkloads(project, num, binary)
+                        for num in range(measurement_reps)
+                    ]
+                )
+            )
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
 
 
-class RunUntraced(BaseRunner, shorthand="RU"):
+class RunUntraced(FeatureExperiment, shorthand="RU"):
     """Build and run the untraced version of the binary"""
 
     NAME = "RunUntraced"
 
     REPORT_SPEC = ReportSpecification(TimeReport)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(TimeReport, TimeBinary, *args, **kwargs)
-
-    def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
@@ -205,4 +161,41 @@ class RunUntraced(BaseRunner, shorthand="RU"):
         Args:
             project: to analyze
         """
-        return super().actions_for_project(project)
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
+        )
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = (
+            compiler.RunCompiler(project, self) << run.WithTimeout()
+        )
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, TimeReport
+        )
+
+        measurement_reps = 5
+
+        analysis_actions = []
+
+        analysis_actions.append(actions.Compile(project))
+
+        for binary in project.binaries:
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary
+            )
+            analysis_actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        TimeProjectWorkloads(project, num, binary)
+                        for num in range(measurement_reps)
+                    ]
+                )
+            )
+
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions

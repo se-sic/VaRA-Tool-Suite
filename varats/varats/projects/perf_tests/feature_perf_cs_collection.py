@@ -53,6 +53,21 @@ class FeaturePerfCSCollection(VProject):
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("MultiSharedMultipleRegions"),
                 label="MSMR-no-input"
+            ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SimpleSleepLoop"), "--iterations", "10000", "--sleepns", "10000",
+                label="SSL-10K-10K"
+            ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SimpleBusyLoop"), "--iterations", "10000", "--count_to", "1000000",
+                label="SBL-10K-1M"
+            ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SingleLocalMultipleRegions"),
+                label="SLMR-not-slow"
             )
         ]
     }

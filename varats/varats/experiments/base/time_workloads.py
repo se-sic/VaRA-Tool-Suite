@@ -94,6 +94,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         binary = project.binaries[0]
 
         measurement_repetitions = 2
+
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
             self.get_handle().report_spec().main_report, project, binary
