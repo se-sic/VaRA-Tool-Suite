@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import dataclass
 from itertools import filterfalse
 
 from more_itertools import powerset
@@ -55,12 +56,29 @@ def _merge_reports(reports: tp.Iterable[CoverageReport]) -> CoverageReport:
     return report
 
 
+@dataclass(frozen=True)
+class ConfigValue:
+    x: tp.Union[bool, str]
+
+    def __bool__(self) -> bool:
+        if isinstance(self.x, bool):
+            return self.x
+        elif isinstance(self.x, str):
+            return True
+        else:
+            raise NotImplementedError()
+
+    def __repr__(self) -> str:
+        return repr(self.x)
+
+
 class RuntimeConfig:
     """All features that were enabled/disabled during one run."""
 
-    def __init__(self, features: tp.Tuple[str, bool]) -> None:
+    def __init__(self, features: tp.List[tp.Tuple[str, ConfigValue]]) -> None:
         super().__init__()
-        self.features: tp.FrozenSet[tp.Tuple[str, bool]] = frozenset(features)
+        self.features: tp.FrozenSet[tp.Tuple[str, ConfigValue]
+                                   ] = frozenset(features)
 
     @classmethod
     def from_iterable(
@@ -70,9 +88,9 @@ class RuntimeConfig:
         """RuntimeConfig from iterables."""
         runtime_config = []
         for feature in enabled_features:
-            runtime_config.append((feature, True))
+            runtime_config.append((feature, ConfigValue(True)))
         for feature in disabled_features:
-            runtime_config.append((feature, False))
+            runtime_config.append((feature, ConfigValue(False)))
 
         return cls(runtime_config)
 
@@ -80,14 +98,14 @@ class RuntimeConfig:
         for item in self:
             yield item[0]
 
-    def values(self) -> tp.Iterator[bool]:
+    def values(self) -> tp.Iterator[ConfigValue]:
         for item in self:
             yield item[1]
 
-    def items(self) -> tp.Iterator[tp.Tuple[str, bool]]:
+    def items(self) -> tp.Iterator[tp.Tuple[str, ConfigValue]]:
         return iter(self)
 
-    def get(self, feature: str) -> tp.Optional[bool]:
+    def get(self, feature: str) -> tp.Optional[ConfigValue]:
         """Returns either value of feature or None."""
         for item in self:
             if item[0] == feature:
@@ -95,10 +113,10 @@ class RuntimeConfig:
 
         return None
 
-    def contains(self, feature: str, value: bool) -> bool:
+    def contains(self, feature: str, value: ConfigValue) -> bool:
         return (feature, value) in self
 
-    def __iter__(self) -> tp.Iterator[tp.Tuple[str, bool]]:
+    def __iter__(self) -> tp.Iterator[tp.Tuple[str, ConfigValue]]:
         return iter(self.features)
 
     def __repr__(self) -> str:
@@ -166,7 +184,7 @@ class CoverageFeatureDiffer:
             """filter all configs that contain the given features."""
             for config in configs:
                 for feature, value in features.items():
-                    if not config.contains(feature, value):
+                    if not config.contains(feature, ConfigValue(value)):
                         return False
 
             return True
