@@ -285,8 +285,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 print(f"Diff for '{feature}':")
                 diff = coverage_feature_differ.diff({feature: True})
 
-                if diff:
-                    pass
+                print(diff.to_json())
 
     def calc_missing_revisions(
         self, boundary_gradient: float

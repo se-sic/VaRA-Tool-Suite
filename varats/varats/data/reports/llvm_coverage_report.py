@@ -6,7 +6,7 @@ import json
 import shutil
 import typing as tp
 from collections import deque, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from varats.report.report import BaseReport
 
 
-class CodeRegionKind(Enum):
+class CodeRegionKind(int, Enum):
     """Code region kinds."""
     CODE = 0
     EXPANSION = 1
@@ -402,3 +402,28 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 continue
             return False
         return True
+
+    def to_json(self) -> str:
+        """
+        Exports the internal representation as json.
+
+        Note this json format is differs from the llvm-cov export json format!
+        """
+
+        class EnhancedJSONEncoder(json.JSONEncoder):
+
+            def default(self, o):
+                if isinstance(o, CodeRegion):
+                    result = {}
+                    for (k, v) in o.__dict__.items():
+                        # Exclude parent to avoid endless loops
+                        if k != "parent":
+                            result[k] = self.encode(v)
+                    return result
+                elif is_dataclass(o):
+                    return asdict(o)
+                return super().default(o)
+
+        return json.dumps(
+            self.filename_function_mapping, cls=EnhancedJSONEncoder
+        )
