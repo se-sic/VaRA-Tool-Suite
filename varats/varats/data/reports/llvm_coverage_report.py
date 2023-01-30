@@ -63,7 +63,7 @@ class CodeRegion:
             function=function,
         )
 
-    def iter_breadth_first(self) -> tp.Iterator:
+    def iter_breadth_first(self) -> tp.Iterator[CodeRegion]:
         """Yields childs breadth_first."""
         todo = deque([self])
 
@@ -73,7 +73,14 @@ class CodeRegion:
             todo.extend(childs)
             yield node
 
-    def iter_postorder(self) -> tp.Iterator:
+    def iter_preorder(self) -> tp.Iterator[CodeRegion]:
+        """Yields childs in preorder."""
+        yield self
+        for child in self.childs:
+            for x in child.iter_preorder():
+                yield x
+
+    def iter_postorder(self) -> tp.Iterator[CodeRegion]:
         """Yields childs in postorder."""
         for child in self.childs:
             for x in child.iter_postorder():
@@ -407,12 +414,12 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         """
         Exports the internal representation as json.
 
-        Note this json format is differs from the llvm-cov export json format!
+        Note this json format differs from the llvm-cov export json format!
         """
 
         class EnhancedJSONEncoder(json.JSONEncoder):
 
-            def default(self, o):
+            def default(self, o: tp.Any) -> tp.Dict[str, tp.Any]:
                 if isinstance(o, CodeRegion):
                     result = {}
                     for (k, v) in o.__dict__.items():
@@ -427,3 +434,149 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         return json.dumps(
             self.filename_function_mapping, cls=EnhancedJSONEncoder
         )
+
+
+def cov_show(report: CoverageReport, base_dir: tp.Optional[Path] = None) -> str:
+    result = []
+    for file in report.filename_function_mapping:
+        function_region_mapping = report.filename_function_mapping[file]
+        path = Path(file)
+        result.append(
+            "".join(_cov_show_file(path, function_region_mapping, []))
+        )
+
+    return "\n\n".join(result)
+
+
+def _cov_show_file(
+    path: Path, function_region_mapping: FunctionCodeRegionMapping,
+    buffer: tp.List[str]
+) -> tp.List[str]:
+
+    lines: tp.Dict[int, str] = {}
+    with open(path) as file:
+        line_number = 1
+        for line in file.readlines():
+            lines[line_number] = line
+            line_number += 1
+
+    # used to print everything that is not a code region in the file.
+    last_line = 1
+    last_column = 1
+    buffer.append(f"\033[0;36m{path}\033[00m\n")
+    for function in function_region_mapping:
+        region = function_region_mapping[function]
+        buffer, last_line, last_column = _cov_show_function(
+            region, last_line, last_column, lines, buffer
+        )
+    return buffer
+
+
+def _cov_show_function(
+    region: CodeRegion, last_line: int, last_column: int,
+    lines: tp.Dict[int, str], buffer: tp.List[str]
+) -> tp.Tuple[tp.List[str], int, int]:
+
+    for child in region.childs:
+        buffer, last_line, last_column = _cov_show_function_inner(
+            child, last_line, last_column, lines, buffer
+        )
+
+    # Print lines after regions.
+    buffer, last_line, last_column = __cov_fill_buffer(
+        start_line=last_line,
+        start_column=last_column,
+        end_line=len(lines),
+        end_column=len(lines[len(lines)]),
+        count=None,
+        lines=lines,
+        buffer=buffer
+    )
+
+    return (buffer, last_line, last_column)
+
+
+def _cov_show_function_inner(
+    region: CodeRegion, last_line: int, last_column: int,
+    lines: tp.Dict[int, str], buffer: tp.List[str]
+) -> tp.Tuple[tp.List[str], int, int]:
+
+    # Print lines before region.
+    buffer, last_line, last_column = __cov_fill_buffer(
+        start_line=last_line,
+        start_column=last_column,
+        end_line=region.start.line,
+        end_column=region.start.column,
+        count=None,
+        lines=lines,
+        buffer=buffer
+    )
+
+    # Print region until first child.
+    if len(region.childs) >= 1:
+        child = region.childs[0]
+        buffer, last_line, last_column = __cov_fill_buffer(
+            start_line=last_line,
+            start_column=last_column,
+            end_line=child.start.line,
+            end_column=child.start.column,
+            count=region.count,
+            lines=lines,
+            buffer=buffer
+        )
+        # Print childs
+        for child in region.childs:
+            buffer, last_line, last_column = _cov_show_function_inner(
+                child, last_line, last_column, lines, buffer
+            )
+
+    # Print remaining region
+    buffer, last_line, last_column = __cov_fill_buffer(
+        start_line=last_line,
+        start_column=last_column,
+        end_line=region.end.line,
+        end_column=region.end.column,
+        count=region.count,
+        lines=lines,
+        buffer=buffer
+    )
+
+    return (buffer, last_line, last_column)
+
+
+def __cov_fill_buffer(
+    start_line: int, start_column: int, end_line: int, end_column: int,
+    count: tp.Optional[int], lines: tp.Dict[int, str], buffer: tp.List[str]
+) -> tp.Tuple[tp.List[str], int, int]:
+
+    for line_number in range(start_line, end_line + 1):
+        if line_number == start_line and line_number == end_line:
+            text = lines[line_number][start_column - 1:end_column - 1]
+        elif line_number == start_line:
+            text = lines[line_number][start_column - 1:]
+            if start_column == 1:
+                buffer.append(
+                    "{:>5}|{:>7}|".format(
+                        line_number, count if count is not None else ""
+                    )
+                )
+
+        elif line_number == end_line:
+            text = lines[line_number][:end_column - 1]
+            buffer.append(
+                "{:>5}|{:>7}|".format(
+                    line_number, count if count is not None else ""
+                )
+            )
+
+        else:
+            text = lines[line_number]
+            buffer.append(
+                "{:>5}|{:>7}|".format(
+                    line_number, count if count is not None else ""
+                )
+            )
+
+        buffer.append(text)
+
+    return buffer, end_line, end_column

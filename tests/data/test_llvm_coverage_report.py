@@ -128,6 +128,16 @@ class TestCodeRegion(unittest.TestCase):
             self.right_right
         ], list(self.root.iter_breadth_first()))
 
+    def test_iter_preorder(self):
+        self.assertEqual([
+            self.root,
+            self.left,
+            self.left_left_2,
+            self.left_left,
+            self.right,
+            self.right_right,
+        ], list(self.root.iter_preorder()))
+
     def test_iter_postorder(self):
         self.assertEqual([
             self.left_left_2, self.left_left, self.left, self.right_right,

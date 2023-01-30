@@ -14,7 +14,7 @@ from varats.base.configuration import (
     PlainCommandlineConfiguration,
     Configuration,
 )
-from varats.data.reports.llvm_coverage_report import CoverageReport
+from varats.data.reports.llvm_coverage_report import CoverageReport, cov_show
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -285,7 +285,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 print(f"Diff for '{feature}':")
                 diff = coverage_feature_differ.diff({feature: True})
 
-                print(diff.to_json())
+                print(cov_show(diff))
 
     def calc_missing_revisions(
         self, boundary_gradient: float
