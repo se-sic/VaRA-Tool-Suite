@@ -60,10 +60,11 @@ class CollectFuncRelativeIDs(actions.ProjectStep):  # type: ignore
 
             # Need the following passes:
             # - vara-PFTDD to generate feature regions
+            # - vara-FBFD to enable function-based feature detection
             # - vara-FRIDPP (Function-Relative ID Printer)
             opt_params = [
-                "--enable-new-pm=0", "--vara-PTFDD", "-vara-BD", "-vara-FRIDPP",
-                "-o", "/dev/null",
+                "--enable-new-pm=0", "--vara-FBFD", "--vara-PTFDD", "-vara-BD",
+                "-vara-FRIDPP", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     self.project, binary,
                     [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
