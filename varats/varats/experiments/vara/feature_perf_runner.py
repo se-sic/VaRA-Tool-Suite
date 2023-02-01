@@ -44,7 +44,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         project.cflags += self.get_vara_tracing_cflags(instr_type)
         
         #CFlags to deactivate optimizations
-        project.cflags += ["-O0", "-fno-exceptions"]
+        #project.cflags += ["-O0", "-fno-exceptions"]
 
         project.ldflags += self.get_vara_tracing_ldflags()
 
