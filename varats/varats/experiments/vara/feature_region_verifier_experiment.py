@@ -80,7 +80,7 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "-enable-new-pm=0", "-vara-PTFDD", "-vara-PTFD", "-vara-FR-verifier", "-o", "/dev/null",
+                "-enable-new-pm=0", "-verifier-dbg-print-insts", "-vara-PTFDD", "-vara-PTFD", "-vara-FR-verifier", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
@@ -133,11 +133,9 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += [
-            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path=/scratch/zatho/varats/ConfigurableSystems/brotli/FeatureModel.xml",
+            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path={fm_path}",
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g"
         ]
-
-        # TODO: missing arg for feature model
 
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
