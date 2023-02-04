@@ -146,41 +146,40 @@ class StageBuilder():
         return Path(self.__tmp_dir.name)
 
 
-def _create_stage_00_base_layers(image_context: StageBuilder) -> None:
-    _BASE_IMAGES[image_context.base](image_context)
-    configured_research_tool = vara_cfg()["container"]["research_tool"]
-    if configured_research_tool:
-        research_tool = get_research_tool(str(configured_research_tool))
-        research_tool.container_install_dependencies(image_context)
-
-
-def _create_stage_10_varats_layers(image_context: StageBuilder) -> None:
-    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-    _add_varats_layers(image_context)
-    if bb_cfg()['container']['from_source']:
-        add_benchbuild_layers(image_context.layers)
-
-
-def _create_stage_20_tool_layers(image_context: StageBuilder) -> None:
+def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
+    _BASE_IMAGES[stage_builder.base](stage_builder)
     research_tool = _get_installable_research_tool()
     if research_tool:
-        research_tool.container_install_tool(image_context)
+        research_tool.container_install_dependencies(stage_builder)
 
 
-def _create_stage_30_config_layers(image_context: StageBuilder) -> None:
+def _create_stage_10_varats_layers(stage_builder: StageBuilder) -> None:
+    stage_builder.layers.run('pip3', 'install', '--upgrade', 'pip')
+    _add_varats_layers(stage_builder)
+    if bb_cfg()['container']['from_source']:
+        add_benchbuild_layers(stage_builder.layers)
+
+
+def _create_stage_20_tool_layers(stage_builder: StageBuilder) -> None:
+    research_tool = _get_installable_research_tool()
+    if research_tool:
+        research_tool.container_install_tool(stage_builder)
+
+
+def _create_stage_30_config_layers(stage_builder: StageBuilder) -> None:
     env: tp.Dict[str, tp.List[str]] = {}
     research_tool = _get_installable_research_tool()
     if research_tool:
-        env = research_tool.container_tool_env(image_context)
+        env = research_tool.container_tool_env(stage_builder)
 
-    _add_vara_config(image_context)
-    _add_benchbuild_config(image_context, env)
-    image_context.layers.workingdir(str(image_context.bb_root))
+    _add_vara_config(stage_builder)
+    _add_benchbuild_config(stage_builder, env)
+    stage_builder.layers.workingdir(str(stage_builder.bb_root))
 
 
-def _create_stage_31_config_dev_layers(image_context: StageBuilder) -> None:
-    image_context.layers.workingdir(str(image_context.varats_root))
-    image_context.layers.entrypoint("vara-buildsetup")
+def _create_stage_31_config_dev_layers(stage_builder: StageBuilder) -> None:
+    stage_builder.layers.workingdir(str(stage_builder.varats_root))
+    stage_builder.layers.entrypoint("vara-buildsetup")
 
 
 def _create_layers_helper(
@@ -247,6 +246,10 @@ def _create_container_image(
     Args:
         base:  the image base
         stage: the image stage to create/update
+        stages: a list of stages the complete image stack consists of
+        image_name: a function that returns the image's name for a given stage
+    Returns:
+        the name of the final container image
     """
     # delete stages that will be (re-)created
     delete_base_image(base, stage)
@@ -256,13 +259,13 @@ def _create_container_image(
         if current_stage.value >= stage.value:
             LOG.debug(f"Working on {current_stage}.")
             name = image_name(current_stage)
-            with StageBuilder(base, current_stage, name) as image_context:
+            with StageBuilder(base, current_stage, name) as stage_builder:
                 # build on previous stage if not the first
-                if current_stage != ImageStage.STAGE_00_BASE:
-                    image_context.layers.from_(
+                if current_stage != stages[0]:
+                    stage_builder.layers.from_(
                         image_name(stages[stages.index(current_stage) - 1])
                     )
-                _STAGE_LAYERS[current_stage](image_context)
+                _STAGE_LAYERS[current_stage](stage_builder)
     return name
 
 
@@ -305,7 +308,7 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip3', 'install', '--ignore-installed']
+        pip_args = ['pip3', 'install']
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
@@ -313,23 +316,13 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         if buildah_version() >= (1, 24, 0):
             mount += ',rw'
         image.run(
-            *pip_args,
-            str(tgt_dir / 'varats-core'),
-            str(tgt_dir / 'varats'),
-            mount=mount,
-            runtime=crun
+            *pip_args, str(tgt_dir / 'varats-core'), mount=mount, runtime=crun
         )
+        image.run(*pip_args, str(tgt_dir / 'varats'), mount=mount, runtime=crun)
 
     def from_pip(image: ContainerImage) -> None:
         LOG.debug("installing varats from pip release.")
-        image.run(
-            'pip3',
-            'install',
-            '--ignore-installed',
-            'varats-core',
-            'varats',
-            runtime=crun
-        )
+        image.run('pip3', 'install', 'varats-core', 'varats', runtime=crun)
 
     _unset_varats_source_mount(image_context)
     if bool(vara_cfg()['container']['dev_mode']):
@@ -369,14 +362,16 @@ def _add_benchbuild_config(
             bb_cfg()["env"].value["LD_LIBRARY_PATH"],
             str(image_context.varats_root / "libs")
         )
-        env["LD_LIBRARY_PATH"].extend([str(image_context.varats_root / "libs")])
+        bb_env["LD_LIBRARY_PATH"].extend([
+            str(image_context.varats_root / "libs")
+        ])
 
     # set BB config via env vars
     image_context.layers.env(
         BB_VARATS_OUTFILE=str(image_context.varats_root / "results"),
         BB_VARATS_RESULT=str(image_context.varats_root / "BC_files"),
         BB_JOBS=str(bb_cfg()["jobs"]),
-        BB_ENV=to_yaml(env)
+        BB_ENV=to_yaml(dict(bb_env))
     )
 
 
@@ -434,6 +429,17 @@ def get_base_image(base: ImageBase) -> ContainerImage:
 def get_image_name(
     base: ImageBase, stage: ImageStage, include_tool: bool
 ) -> str:
+    """
+    Get the name for a container image.
+
+    Args:
+        base: the container's image base
+        stage: the container's stage
+        include_tool: whether to include the research tool name or not
+
+    Returns:
+        the container's name
+    """
     name = f"{base.name.lower()}:{stage.name.lower()}"
     configured_research_tool = vara_cfg()["container"]["research_tool"]
     if include_tool and configured_research_tool:

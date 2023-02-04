@@ -543,30 +543,22 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             True, if the build was correct.
         """
 
+
+@tp.runtime_checkable
+class ContainerInstallable(tp.Protocol):
+    """Protocol for installing a research tool inside a container."""
+
     def container_install_dependencies(
-        self, image_context: 'containers.StageBuilder'
+        self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
         Add layers for installing this research tool's dependencies to the given
         container.
 
         Args:
-            image_context: the base image creation context
+            stage_builder: the builder object for the current container stage
         """
-        if self.get_dependencies().has_dependencies_for_distro(
-            image_context.base.distro
-        ):
-            image_context.layers.run(
-                *(
-                    self.get_dependencies().
-                    get_install_command(image_context.base.distro).split(" ")
-                )
-            )
-
-
-@tp.runtime_checkable
-class ContainerInstallable(tp.Protocol):
-    """Protocol for installing a research tool inside a container."""
+        ...
 
     def container_install_tool(
         self, stage_builder: 'containers.StageBuilder'
