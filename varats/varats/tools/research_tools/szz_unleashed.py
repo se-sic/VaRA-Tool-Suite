@@ -19,9 +19,6 @@ from varats.tools.research_tools.research_tool import (
 from varats.tools.research_tools.vara_manager import BuildType
 from varats.utils.settings import vara_cfg, save_config
 
-if tp.TYPE_CHECKING:
-    from varats.containers import containers  # pylint: disable=W0611
-
 LOG = logging.getLogger(__name__)
 
 
@@ -177,25 +174,3 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
     ) -> bool:
         return True
-
-    def container_add_build_layer(
-        self, image_context: 'containers.BaseImageCreationContext'
-    ) -> None:
-        """
-        Add layers for building this research tool to the given container.
-
-        Args:
-            image_context: the base image creation context
-        """
-        raise NotImplementedError
-
-    def container_install_tool(
-        self, image_context: 'containers.BaseImageCreationContext'
-    ) -> None:
-        """
-        Add layers for installing this research tool to the given container.
-
-        Args:
-            image_context: the base image creation context
-        """
-        raise NotImplementedError

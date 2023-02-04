@@ -544,7 +544,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     def container_install_dependencies(
-        self, image_context: 'containers.BaseImageCreationContext'
+        self, image_context: 'containers.StageBuilder'
     ) -> None:
         """
         Add layers for installing this research tool's dependencies to the given
@@ -563,13 +563,32 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
                 )
             )
 
-    @abc.abstractmethod
+
+@tp.runtime_checkable
+class ContainerInstallable(tp.Protocol):
+    """Protocol for installing a research tool inside a container."""
+
     def container_install_tool(
-        self, image_context: 'containers.BaseImageCreationContext'
+        self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
         Add layers for installing this research tool to the given container.
 
         Args:
-            image_context: the base image creation context
+            stage_builder: the builder object for the current container stage
         """
+        ...
+
+    def container_tool_env(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> tp.Dict[str, tp.List[str]]:
+        """
+        Tool-specific container configuration in the form of environment
+        variables.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        Returns:
+            a dictionary of environment variables as keys and lists of their values as values
+        """
+        ...

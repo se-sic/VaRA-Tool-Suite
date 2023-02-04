@@ -24,7 +24,11 @@ from benchbuild.environments.domain.declarative import (
 from benchbuild.utils.settings import to_yaml
 from plumbum import local
 
-from varats.tools.research_tools.research_tool import Distro, ResearchTool
+from varats.tools.research_tools.research_tool import (
+    Distro,
+    ContainerInstallable,
+)
+from varats.tools.research_tools.vara_manager import BuildType
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg, save_bb_config
 
@@ -50,31 +54,39 @@ class ImageStage(Enum):
     STAGE_10_VARATS = 10
     STAGE_20_TOOL = 20
     STAGE_30_CONFIG = 30
+    STAGE_31_CONFIG_DEV = 31
 
 
-class BaseImageCreationContext():
+class StageBuilder():
     """
-    Context for base image creation.
+    Context manager for creating a base image stage.
 
-    This class stores context information when creating a base image.
+    The image is built automatically when exiting the context manager.
     """
 
-    def __init__(self, base: ImageBase, stage: ImageStage):
+    varats_root = Path("/varats_root/")
+    """VaRA-TS root inside the container."""
+
+    varats_source_mount_target = Path("/varats")
+    """VaRA-TS root inside the container."""
+
+    bb_root = Path("/app/")
+    """BenchBuild root inside the container."""
+
+    def __init__(self, base: ImageBase, stage: ImageStage, image_name: str):
         self.__base = base
         self.__stage = stage
         self.__layers = ContainerImage()
-        self.__image_name = get_image_name(base, stage)
+        self.__image_name = image_name
         self.__tmp_dir = TemporaryDirectory()
-        self.__env: tp.Dict[str, tp.List[str]] = defaultdict(list)
 
-    def __enter__(self) -> 'BaseImageCreationContext':
+    def __enter__(self) -> 'StageBuilder':
         return self
 
     def __exit__(
         self, exc_type: tp.Any, exc_val: tp.Any, exc_tb: tp.Any
     ) -> None:
-        #TODO: handle env
-        bootstrap.bus().publish(CreateImage(self.image_name, self.layers))
+        bootstrap.bus()(CreateImage(self.image_name, self.layers))
 
         if self.__tmp_dir:
             self.__tmp_dir.cleanup()
@@ -124,30 +136,6 @@ class BaseImageCreationContext():
         return self.__image_name
 
     @property
-    def varats_root(self) -> Path:
-        """
-        VaRA-TS root inside the container.
-
-        Returns:
-            the VaRA-TS root inside the container
-        """
-        return Path("/varats_root/")
-
-    @property
-    def varats_source_mount_target(self) -> Path:
-        return Path("/varats")
-
-    @property
-    def bb_root(self) -> Path:
-        """
-        BenchBuild root inside the container.
-
-        Returns:
-            the BenchBuild root inside the container
-        """
-        return Path("/app/")
-
-    @property
     def tmpdir(self) -> Path:
         """
         Temporary directory that can be used during image creation.
@@ -157,71 +145,58 @@ class BaseImageCreationContext():
         """
         return Path(self.__tmp_dir.name)
 
-    @property
-    def env(self) -> tp.Dict[str, tp.List[str]]:
-        """
-        The current state of the environment to add to the container.
 
-        The environment variables in this dict will be applied to the
-        `BB_ENV` environment variable inside the container.
-
-        Returns:
-            the current state of the environment to add to the container
-        """
-        return dict(self.__env)
-
-    def append_to_env(self, env_var: str, values: tp.List[str]) -> None:
-        """
-        Set a environment variable inside the container.
-
-        Use this instead of calling `layers.env()` directly, except you know
-        what you are doing. Using `layers.env()` directly overrides previously
-        set environment variables in the container (very bad, e.g., for PATH).
-        Environment variables added this way will be applied to the `BB_ENV`
-        environment variable inside the container. This mechanism ensures that
-        the same environment variable can be modified from multiple locations
-        during image creation.
-
-        Args:
-            env_var: name of the env var to set
-            values: value of the env var to set
-        """
-        self.__env[env_var].extend(values)
-
-
-def _create_stage_00_base_layers(
-    image_context: BaseImageCreationContext
-) -> None:
-    return _BASE_IMAGES[image_context.base](image_context)
-
-
-def _create_stage_01_varats_layers(
-    image_context: BaseImageCreationContext
-) -> None:
-    # image_context.layers.from_() TODO
-    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-    _add_varats_layers(image_context)
-    if bb_cfg()['container']['from_source']:
-        add_benchbuild_layers(image_context.layers)
-    _add_vara_config(image_context)
-    _add_benchbuild_config(image_context)
-    image_context.layers.workingdir(str(image_context.bb_root))
-
-
-def _create_stage_02_tool_layers(
-    image_context: BaseImageCreationContext
-) -> None:
+def _create_stage_00_base_layers(image_context: StageBuilder) -> None:
+    _BASE_IMAGES[image_context.base](image_context)
     configured_research_tool = vara_cfg()["container"]["research_tool"]
     if configured_research_tool:
         research_tool = get_research_tool(str(configured_research_tool))
         research_tool.container_install_dependencies(image_context)
+
+
+def _create_stage_10_varats_layers(image_context: StageBuilder) -> None:
+    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+    _add_varats_layers(image_context)
+    if bb_cfg()['container']['from_source']:
+        add_benchbuild_layers(image_context.layers)
+
+
+def _create_stage_20_tool_layers(image_context: StageBuilder) -> None:
+    research_tool = _get_installable_research_tool()
+    if research_tool:
         research_tool.container_install_tool(image_context)
 
 
+def _create_stage_30_config_layers(image_context: StageBuilder) -> None:
+    env: tp.Dict[str, tp.List[str]] = {}
+    research_tool = _get_installable_research_tool()
+    if research_tool:
+        env = research_tool.container_tool_env(image_context)
+
+    _add_vara_config(image_context)
+    _add_benchbuild_config(image_context, env)
+    image_context.layers.workingdir(str(image_context.bb_root))
+
+
+def _create_stage_31_config_dev_layers(image_context: StageBuilder) -> None:
+    image_context.layers.workingdir(str(image_context.varats_root))
+    image_context.layers.entrypoint("vara-buildsetup")
+
+
+def _create_layers_helper(
+    create_layers: tp.Callable[[StageBuilder], tp.Any]
+) -> tp.Callable[[StageBuilder], None]:
+
+    def wrapped(stage_builder: StageBuilder) -> None:
+        create_layers(stage_builder)
+
+    return wrapped
+
+
 # yapf: disable
-_BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[BaseImageCreationContext], None]] = {
+_BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
     ImageBase.DEBIAN_10:
-        lambda ctx: ctx.layers
+        _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:10")
             .run('apt', 'update')
             .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
@@ -233,14 +208,16 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[BaseImageCreationContext], None]] 
             .run('./llvm.sh', '13', 'all')
             .run('ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang')
             .run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld')
+            .run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld'))
 }
 
 _STAGE_LAYERS: tp.Dict[ImageStage,
-                       tp.Callable[[BaseImageCreationContext], None]] = {
-    ImageStage.STAGE_00_BASE:   _create_stage_00_base_layers,
-    ImageStage.STAGE_10_VARATS: _create_stage_01_varats_layers,
-    ImageStage.STAGE_20_TOOL:   _create_stage_02_tool_layers
+                       tp.Callable[[StageBuilder], None]] = {
+    ImageStage.STAGE_00_BASE:       _create_stage_00_base_layers,
+    ImageStage.STAGE_10_VARATS:     _create_stage_10_varats_layers,
+    ImageStage.STAGE_20_TOOL:       _create_stage_20_tool_layers,
+    ImageStage.STAGE_30_CONFIG:     _create_stage_30_config_layers,
+    ImageStage.STAGE_31_CONFIG_DEV: _create_stage_31_config_dev_layers
 }
 
 _BASE_IMAGE_STAGES: tp.List[ImageStage] = [
@@ -252,27 +229,53 @@ _BASE_IMAGE_STAGES: tp.List[ImageStage] = [
 _DEV_IMAGE_STAGES: tp.List[ImageStage] = [
     ImageStage.STAGE_00_BASE,
     ImageStage.STAGE_10_VARATS,
-    ImageStage.STAGE_30_CONFIG
+    ImageStage.STAGE_31_CONFIG_DEV,
 ]
 # yapf: enable
 
 
-def create_base_image(base: ImageBase, stage: ImageStage) -> None:
+def _create_container_image(
+    base: ImageBase, stage: ImageStage, stages: tp.List[ImageStage],
+    image_name: tp.Callable[[ImageStage], str]
+) -> str:
     """
     Build/update a base image for the given image base and the current research
     tool.
+
+    Only rebuild the given stage and subsequent stages.
 
     Args:
         base:  the image base
         stage: the image stage to create/update
     """
-    for current_stage in _BASE_IMAGE_STAGES:
-        if current_stage.value <= stage.value:
-            with BaseImageCreationContext(base, current_stage) as image_context:
+    # delete stages that will be (re-)created
+    delete_base_image(base, stage)
+
+    name = ""
+    for current_stage in stages:
+        if current_stage.value >= stage.value:
+            LOG.debug(f"Working on {current_stage}.")
+            name = image_name(current_stage)
+            with StageBuilder(base, current_stage, name) as image_context:
+                # build on previous stage if not the first
+                if current_stage != ImageStage.STAGE_00_BASE:
+                    image_context.layers.from_(
+                        image_name(stages[stages.index(current_stage) - 1])
+                    )
                 _STAGE_LAYERS[current_stage](image_context)
+    return name
 
 
-def _unset_varats_source_mount(image_context: BaseImageCreationContext) -> None:
+def _get_installable_research_tool() -> tp.Optional[ContainerInstallable]:
+    configured_research_tool = vara_cfg()["container"]["research_tool"]
+    if configured_research_tool:
+        research_tool = get_research_tool(str(configured_research_tool))
+        if isinstance(research_tool, ContainerInstallable):
+            return research_tool
+    return None
+
+
+def _unset_varats_source_mount(image_context: StageBuilder) -> None:
     mounts = bb_cfg()["container"]["mounts"].value
     mounts[:] = [
         mount for mount in mounts
@@ -281,16 +284,14 @@ def _unset_varats_source_mount(image_context: BaseImageCreationContext) -> None:
     save_bb_config()
 
 
-def _set_varats_source_mount(
-    image_context: BaseImageCreationContext, mnt_src: str
-) -> None:
+def _set_varats_source_mount(image_context: StageBuilder, mnt_src: str) -> None:
     bb_cfg()["container"]["mounts"].value[:] += [[
         mnt_src, str(image_context.varats_source_mount_target)
     ]]
     save_bb_config()
 
 
-def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
+def _add_varats_layers(image_context: StageBuilder) -> None:
     crun = bb_cfg()['container']['runtime'].value
 
     def from_source(
@@ -339,7 +340,7 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         from_pip(image_context.layers)
 
 
-def _add_vara_config(image_context: BaseImageCreationContext) -> None:
+def _add_vara_config(image_context: StageBuilder) -> None:
     config = deepcopy(vara_cfg())
     config_file = str(image_context.tmpdir / ".varats.yaml")
 
@@ -355,43 +356,31 @@ def _add_vara_config(image_context: BaseImageCreationContext) -> None:
     image_context.layers.env(VARATS_CONFIG_FILE=config["config_file"].value)
 
 
-def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
+def _add_benchbuild_config(
+    image_context: StageBuilder, env: tp.Dict[str, tp.List[str]]
+) -> None:
+    bb_env: tp.Dict[str, tp.List[str]] = defaultdict(list)
+    for key, value in env.items():
+        bb_env[key].extend(value)
+
     # copy libraries to image if LD_LIBRARY_PATH is set
     if "LD_LIBRARY_PATH" in bb_cfg()["env"].value.keys():
         image_context.layers.copy_(
             bb_cfg()["env"].value["LD_LIBRARY_PATH"],
             str(image_context.varats_root / "libs")
         )
-        image_context.append_to_env(
-            "LD_LIBRARY_PATH", [str(image_context.varats_root / "libs")]
-        )
+        env["LD_LIBRARY_PATH"].extend([str(image_context.varats_root / "libs")])
+
     # set BB config via env vars
     image_context.layers.env(
         BB_VARATS_OUTFILE=str(image_context.varats_root / "results"),
         BB_VARATS_RESULT=str(image_context.varats_root / "BC_files"),
         BB_JOBS=str(bb_cfg()["jobs"]),
-        BB_ENV=to_yaml(image_context.env)
+        BB_ENV=to_yaml(env)
     )
 
 
-def _create_dev_image_layers(
-    image_context: BaseImageCreationContext, research_tool: ResearchTool[tp.Any]
-) -> None:
-    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-    _add_varats_layers(image_context)
-    if bb_cfg()['container']['from_source']:
-        add_benchbuild_layers(image_context.layers)
-
-    research_tool.container_install_dependencies(image_context)
-    _add_vara_config(image_context)
-    _add_benchbuild_config(image_context)
-    image_context.layers.workingdir(str(image_context.varats_root))
-    image_context.layers.entrypoint("vara-buildsetup")
-
-
-def create_dev_image(
-    base: ImageBase, research_tool: ResearchTool[tp.Any]
-) -> None:
+def create_dev_image(base: ImageBase, build_type: BuildType) -> str:
     """
     Build a dev image for the given image base and research tool.
 
@@ -399,20 +388,33 @@ def create_dev_image(
 
     Args:
         base: the image base
-        research_tool: the research tool
+        build_type: the build type for the reserach tool
     """
-    with TemporaryDirectory() as tmpdir:
-        publish = bootstrap.bus()
-        image_context = BaseImageCreationContext(base, Path(tmpdir))
-        _create_dev_image_layers(image_context, research_tool)
-        publish(CreateImage(f"{base.image_name}_dev", image_context.layers))
+
+    def image_name(stage: ImageStage) -> str:
+        return f"{get_image_name(base, stage, True)}_{build_type.name}"
+
+    return _create_container_image(
+        base, _DEV_IMAGE_STAGES[0], _DEV_IMAGE_STAGES, image_name
+    )
 
 
-def create_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
+def create_base_image(base: ImageBase, stage: ImageStage) -> None:
+
+    def image_name(stage: ImageStage) -> str:
+        return get_image_name(base, stage, True)
+
+    _create_container_image(base, stage, _BASE_IMAGE_STAGES, image_name)
+
+
+def create_base_images(
+    images: tp.Iterable[ImageBase] = ImageBase,
+    stage: ImageStage = _BASE_IMAGE_STAGES[0]
+) -> None:
     """Builds all base images for the current research tool."""
     for base in images:
-        LOG.info(f"Building base image {base.image_name}.")
-        create_base_image(base)
+        LOG.info(f"Building base image {base}.")
+        create_base_image(base, stage)
 
 
 def get_base_image(base: ImageBase) -> ContainerImage:
@@ -425,54 +427,69 @@ def get_base_image(base: ImageBase) -> ContainerImage:
     Returns:
         the requested base image
     """
-    return ContainerImage().from_(base.image_name)
+    image_name = get_image_name(base, _BASE_IMAGE_STAGES[-1], True)
+    return ContainerImage().from_(image_name)
 
 
 def get_image_name(
     base: ImageBase, stage: ImageStage, include_tool: bool
 ) -> str:
-    name = f"{base.name}:{stage.name}"
+    name = f"{base.name.lower()}:{stage.name.lower()}"
     configured_research_tool = vara_cfg()["container"]["research_tool"]
     if include_tool and configured_research_tool:
         name += f"_{str(configured_research_tool).lower()}"
+    return name
 
 
-def delete_base_image(base: ImageBase) -> None:
+def delete_base_image(base: ImageBase, stage: ImageStage) -> None:
     """
-    Delete the base image for the given image base and the current research
-    tool.
+    Delete a base image.
 
     Args:
         base: the image base
+        stage: delete this stage and all subsequent stages
     """
     publish = bootstrap.bus()
-    publish(DeleteImage(base.image_name))
+    for current_stage in _BASE_IMAGE_STAGES:
+        if current_stage.value >= stage.value:
+            image_name = get_image_name(base, stage, True)
+            LOG.debug(
+                f"Deleting image {image_name} (base={base.name}, stage={current_stage}."
+            )
+            publish(DeleteImage(image_name))
 
 
-def delete_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
-    """Deletes the selected base images for the current research tool."""
+def delete_base_images(
+    images: tp.Iterable[ImageBase] = ImageBase,
+    stage: ImageStage = _BASE_IMAGE_STAGES[-1]
+) -> None:
+    """Deletes the selected base images."""
     for base in images:
-        LOG.info(f"Deleting base image {base.image_name}.")
-        delete_base_image(base)
+        LOG.info(f"Deleting base image {base}.")
+        delete_base_image(base, stage)
 
 
-def export_base_image(base: ImageBase) -> None:
+def export_base_image(base: ImageBase, stage: ImageStage) -> None:
     """Export the base image to the filesystem."""
     publish = bootstrap.bus()
-    export_name = fs_compliant_name(base.image_name)
+    image_name = get_image_name(base, stage, True)
+    export_name = fs_compliant_name(image_name)
     export_path = Path(
         local.path(bb_cfg()["container"]["export"].value) / export_name + ".tar"
     )
     if export_path.exists() and export_path.is_file():
         export_path.unlink()
-    publish(ExportImage(base.image_name, str(export_path)))
+    publish(ExportImage(image_name, str(export_path)))
 
 
-def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
-    """Exports the selected base images for the current research tool."""
+def export_base_images(
+    images: tp.Iterable[ImageBase] = ImageBase,
+    stage: ImageStage = _BASE_IMAGE_STAGES[-1]
+) -> None:
+    """Exports the selected base images."""
     for base in images:
-        LOG.info(f"Exporting base image {base.image_name}.")
-        export_base_image(base)
+        LOG.info(f"Exporting base image {base}.")
+        export_base_image(base, stage)
 
 
 def run_container(
