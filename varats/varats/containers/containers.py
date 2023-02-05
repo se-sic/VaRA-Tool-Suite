@@ -311,7 +311,7 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip3', 'install', '--force-reinstall']
+        pip_args = ['pip3', 'install', '--ignore-installed']
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
@@ -328,7 +328,7 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         image.run(
             'pip3',
             'install',
-            '--force-reinstall',
+            '--ignore-installed',
             'varats-core',
             'varats',
             runtime=crun
