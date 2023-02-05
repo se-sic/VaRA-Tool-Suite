@@ -45,6 +45,11 @@ def main() -> None:
     "--export", is_flag=True, help="Export the built images to the filesystem."
 )
 @click.option(
+    "--force-rebuild",
+    is_flag=True,
+    help="Rebuild all stages of the base image even if they already exist."
+)
+@click.option(
     "--update-tool-suite",
     is_flag=True,
     help=
@@ -65,8 +70,9 @@ def main() -> None:
     help="Only build the given image."
 )
 def build(
-    images: tp.List[ImageBase], update_config: bool, update_research_tool: bool,
-    update_tool_suite: bool, export: bool, debug: bool
+    images: tp.List[ImageBase], force_rebuild: bool, update_config: bool,
+    update_research_tool: bool, update_tool_suite: bool, export: bool,
+    debug: bool
 ) -> None:
     """
     Build base containers for the current research tool.
@@ -77,6 +83,7 @@ def build(
         debug: if ``True``, debug failed image builds interactively
     """
     stage = ImageStage.STAGE_00_BASE
+
     if update_tool_suite:
         stage = ImageStage.STAGE_10_VARATS
     elif update_research_tool:
@@ -84,7 +91,7 @@ def build(
     elif update_config:
         stage = ImageStage.STAGE_30_CONFIG
 
-    __build_images(images, stage, export, debug)
+    __build_images(images, stage, force_rebuild, export, debug)
 
 
 @main.command(help="Delete base containers for the current research tool.")
@@ -212,7 +219,7 @@ def prepare_slurm(
     )
 
     click.echo("Building base images. This could take a while...")
-    __build_images(images, True, debug)
+    __build_images(images, ImageStage.STAGE_00_BASE, False, True, debug)
     click.echo("Done.")
 
     click.echo(
@@ -222,16 +229,17 @@ def prepare_slurm(
 
 
 def __build_images(
-    images: tp.List[ImageBase], stage: ImageStage, export: bool, debug: bool
+    images: tp.List[ImageBase], stage: ImageStage, force_rebuild: bool,
+    export: bool, debug: bool
 ) -> None:
     bb_cfg()["container"]["keep"] = debug
 
     if images:
-        create_base_images(images, stage)
+        create_base_images(images, stage, force_rebuild)
         if export:
             export_base_images(images)
     else:
-        create_base_images(stage=stage)
+        create_base_images(stage=stage, force_rebuild=force_rebuild)
         if export:
             export_base_images()
 

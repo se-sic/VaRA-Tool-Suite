@@ -235,7 +235,7 @@ _DEV_IMAGE_STAGES: tp.List[ImageStage] = [
 
 def _create_container_image(
     base: ImageBase, stage: ImageStage, stages: tp.List[ImageStage],
-    image_name: tp.Callable[[ImageStage], str]
+    image_name: tp.Callable[[ImageStage], str], force_rebuild: bool
 ) -> str:
     """
     Build/update a base image for the given image base and the current research
@@ -252,7 +252,8 @@ def _create_container_image(
         the name of the final container image
     """
     # delete stages that will be (re-)created
-    delete_base_image(base, stage)
+    if force_rebuild or stage != stages[0]:
+        delete_base_image(base, stage)
 
     name = ""
     for current_stage in stages:
@@ -310,7 +311,7 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip3', 'install']
+        pip_args = ['pip3', 'install', '--force-reinstall']
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
@@ -324,7 +325,14 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
 
     def from_pip(image: ContainerImage) -> None:
         LOG.debug("installing varats from pip release.")
-        image.run('pip3', 'install', 'varats-core', 'varats', runtime=crun)
+        image.run(
+            'pip3',
+            'install',
+            '--force-reinstall',
+            'varats-core',
+            'varats',
+            runtime=crun
+        )
 
     _unset_varats_source_mount(image_context)
     if bool(vara_cfg()['container']['dev_mode']):
@@ -392,26 +400,31 @@ def create_dev_image(base: ImageBase, build_type: BuildType) -> str:
         return f"{get_image_name(base, stage, True)}_{build_type.name}"
 
     return _create_container_image(
-        base, _DEV_IMAGE_STAGES[0], _DEV_IMAGE_STAGES, image_name
+        base, _DEV_IMAGE_STAGES[0], _DEV_IMAGE_STAGES, image_name, False
     )
 
 
-def create_base_image(base: ImageBase, stage: ImageStage) -> None:
+def create_base_image(
+    base: ImageBase, stage: ImageStage, force_rebuild: bool
+) -> None:
 
     def image_name(stage: ImageStage) -> str:
         return get_image_name(base, stage, True)
 
-    _create_container_image(base, stage, _BASE_IMAGE_STAGES, image_name)
+    _create_container_image(
+        base, stage, _BASE_IMAGE_STAGES, image_name, force_rebuild
+    )
 
 
 def create_base_images(
     images: tp.Iterable[ImageBase] = ImageBase,
-    stage: ImageStage = _BASE_IMAGE_STAGES[0]
+    stage: ImageStage = _BASE_IMAGE_STAGES[0],
+    force_rebuild: bool = False
 ) -> None:
     """Builds all base images for the current research tool."""
     for base in images:
         LOG.info(f"Building base image {base}.")
-        create_base_image(base, stage)
+        create_base_image(base, stage, force_rebuild)
 
 
 def get_base_image(base: ImageBase) -> ContainerImage:
