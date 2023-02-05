@@ -257,8 +257,10 @@ def _create_container_image(
     name = ""
     for current_stage in stages:
         if current_stage.value >= stage.value:
-            LOG.debug(f"Working on {current_stage}.")
             name = image_name(current_stage)
+            LOG.debug(
+                f"Working on image {name} (base={base.name}, stage={current_stage})."
+            )
             with StageBuilder(base, current_stage, name) as stage_builder:
                 # build on previous stage if not the first
                 if current_stage != stages[0]:
@@ -460,7 +462,7 @@ def delete_base_image(base: ImageBase, stage: ImageStage) -> None:
         if current_stage.value >= stage.value:
             image_name = get_image_name(base, stage, True)
             LOG.debug(
-                f"Deleting image {image_name} (base={base.name}, stage={current_stage}."
+                f"Deleting image {image_name} (base={base.name}, stage={current_stage})"
             )
             publish(DeleteImage(image_name))
 
@@ -475,10 +477,10 @@ def delete_base_images(
         delete_base_image(base, stage)
 
 
-def export_base_image(base: ImageBase, stage: ImageStage) -> None:
+def export_base_image(base: ImageBase) -> None:
     """Export the base image to the filesystem."""
     publish = bootstrap.bus()
-    image_name = get_image_name(base, stage, True)
+    image_name = get_image_name(base, _BASE_IMAGE_STAGES[-1], True)
     export_name = fs_compliant_name(image_name)
     export_path = Path(
         local.path(bb_cfg()["container"]["export"].value) / export_name + ".tar"
@@ -488,14 +490,11 @@ def export_base_image(base: ImageBase, stage: ImageStage) -> None:
     publish(ExportImage(image_name, str(export_path)))
 
 
-def export_base_images(
-    images: tp.Iterable[ImageBase] = ImageBase,
-    stage: ImageStage = _BASE_IMAGE_STAGES[-1]
-) -> None:
+def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     """Exports the selected base images."""
     for base in images:
         LOG.info(f"Exporting base image {base}.")
-        export_base_image(base, stage)
+        export_base_image(base)
 
 
 def run_container(

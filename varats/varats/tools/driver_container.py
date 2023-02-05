@@ -17,6 +17,7 @@ from varats.containers.containers import (
     ImageBase,
     delete_base_images,
     export_base_images,
+    ImageStage,
 )
 from varats.tools.tool_util import get_supported_research_tool_names
 from varats.ts_utils.cli_util import initialize_cli_tool
@@ -44,6 +45,18 @@ def main() -> None:
     "--export", is_flag=True, help="Export the built images to the filesystem."
 )
 @click.option(
+    "--update-tool-suite",
+    is_flag=True,
+    help=
+    "Only update the tool suite. Implies --update-research-tool and --update-config."
+)
+@click.option(
+    "--update-research-tool",
+    is_flag=True,
+    help="Only update the research tool. Implies --update config."
+)
+@click.option("--update-config", is_flag=True, help="Only update the config.")
+@click.option(
     "-i",
     "--image",
     "images",
@@ -51,7 +64,10 @@ def main() -> None:
     multiple=True,
     help="Only build the given image."
 )
-def build(images: tp.List[ImageBase], export: bool, debug: bool) -> None:
+def build(
+    images: tp.List[ImageBase], update_config: bool, update_research_tool: bool,
+    update_tool_suite: bool, export: bool, debug: bool
+) -> None:
     """
     Build base containers for the current research tool.
 
@@ -60,7 +76,15 @@ def build(images: tp.List[ImageBase], export: bool, debug: bool) -> None:
         export: if ``True``, export the built images to the filesystem
         debug: if ``True``, debug failed image builds interactively
     """
-    __build_images(images, export, debug)
+    stage = ImageStage.STAGE_00_BASE
+    if update_tool_suite:
+        stage = ImageStage.STAGE_10_VARATS
+    elif update_research_tool:
+        stage = ImageStage.STAGE_20_TOOL
+    elif update_config:
+        stage = ImageStage.STAGE_30_CONFIG
+
+    __build_images(images, stage, export, debug)
 
 
 @main.command(help="Delete base containers for the current research tool.")
@@ -198,16 +222,16 @@ def prepare_slurm(
 
 
 def __build_images(
-    images: tp.List[ImageBase], export: bool, debug: bool
+    images: tp.List[ImageBase], stage: ImageStage, export: bool, debug: bool
 ) -> None:
     bb_cfg()["container"]["keep"] = debug
 
     if images:
-        create_base_images(images)
+        create_base_images(images, stage)
         if export:
             export_base_images(images)
     else:
-        create_base_images()
+        create_base_images(stage=stage)
         if export:
             export_base_images()
 
