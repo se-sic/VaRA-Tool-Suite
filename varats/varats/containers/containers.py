@@ -473,7 +473,7 @@ def delete_base_image(base: ImageBase, stage: ImageStage) -> None:
     publish = bootstrap.bus()
     for current_stage in _BASE_IMAGE_STAGES:
         if current_stage.value >= stage.value:
-            image_name = get_image_name(base, stage, True)
+            image_name = get_image_name(base, current_stage, True)
             LOG.debug(
                 f"Deleting image {image_name} (base={base.name}, stage={current_stage})"
             )
