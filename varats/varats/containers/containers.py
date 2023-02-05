@@ -21,7 +21,7 @@ from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
     ContainerImage,
 )
-from benchbuild.utils.settings import to_yaml
+from benchbuild.utils.settings import to_yaml, get_number_of_jobs
 from plumbum import local
 
 from varats.tools.research_tools.research_tool import (
@@ -202,6 +202,24 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
                  'software-properties-common', 'python3', 'python3-dev',
                  'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
                  'libffi-dev', 'libyaml-dev', 'graphviz-dev')
+            # install python 3.10
+            .run('apt', 'install', '-y', 'build-essential', 'gdb', 'lcov',
+                 'pkg-config', 'libbz2-dev', 'libffi-dev', 'libgdbm-dev',
+                 'libgdbm-compat-dev', 'liblzma-dev', 'libncurses5-dev',
+                 'libreadline6-dev', 'libsqlite3-dev', 'libssl-dev',
+                 'lzma', 'lzma-dev', 'tk-dev', 'uuid-dev', 'zlib1g-dev')
+            # .run('wget', 'https://www.python.org/ftp/python/3.11.1/Python-3.11.1.tgz')
+            # .run('tar', '-xf', 'Python-3.11.1.tgz')
+            # .workingdir('Python-3.11.1')
+            .run('wget', 'https://www.python.org/ftp/python/3.10.9/Python-3.10.9.tgz')
+            .run('tar', '-xf', 'Python-3.10.9.tgz')
+            .workingdir('Python-3.10.9')
+            .run('./configure', '--enable-optimizations')
+            .run('make', '-j', str(get_number_of_jobs(bb_cfg())))
+            # .run('make', 'test')
+            .run('make', 'install')
+            .workingdir('/')
+            # install llvm 13
             .run('wget', 'https://apt.llvm.org/llvm.sh')
             .run('chmod', '+x', './llvm.sh')
             .run('./llvm.sh', '13', 'all')
@@ -311,7 +329,7 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip3', 'install', '--ignore-installed']
+        pip_args = ['pip3', 'install']
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
