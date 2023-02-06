@@ -36,8 +36,8 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                 )
 
             report_files = get_processed_revisions_files(
-                project_name,
-                self.table_kwargs["experiment_type"][0], TimeReportAggregate,
+                project_name, self.table_kwargs["experiment_type"][0],
+                WLTimeReportAggregate,
                 get_case_study_file_name_filter(case_study)
             )
 

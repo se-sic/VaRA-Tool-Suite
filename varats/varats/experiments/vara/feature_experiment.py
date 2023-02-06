@@ -161,7 +161,10 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 self.project
                             )
                             with cleanup(prj_command):
-                                pb_cmd(*extra_options)
+                                pb_cmd(
+                                    *extra_options,
+                                    retcode=binary.valid_exit_codes
+                                )
 
         return StepResult.OK
 

@@ -1035,9 +1035,11 @@ class RevisionBinaryMap(tp.Container[str]):
         if override_entry_point:
             override_entry_point = Path(override_entry_point)
         validity_range = kwargs.get("only_valid_in", None)
+        valid_exit_codes = kwargs.get("valid_exit_codes", None)
 
         wrapped_binary = ProjectBinaryWrapper(
-            binary_name, binary_location_path, binary_type, override_entry_point
+            binary_name, binary_location_path, binary_type,
+            override_entry_point, valid_exit_codes
         )
 
         if validity_range:
