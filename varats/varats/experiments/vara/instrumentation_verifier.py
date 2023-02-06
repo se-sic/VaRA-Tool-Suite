@@ -8,7 +8,10 @@ from benchbuild.utils import actions
 from varats.data.reports.instrumentation_verifier_report import (
     InstrVerifierReport,
 )
-from varats.experiment.experiment_util import get_default_compile_error_wrapped
+from varats.experiment.experiment_util import (
+    get_default_compile_error_wrapped,
+    WithUnlimitedStackSize,
+)
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
@@ -52,7 +55,8 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         project.runtime_extension = run.RuntimeExtension(project, self)
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self)
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << WithUnlimitedStackSize()
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
