@@ -49,11 +49,11 @@ class FeaturePerfCSCollection(VProject):
             #    RSBinary("SingleLocalSimple"),
             #    label="SLS-no-input"
             #),
-            #Command(
-            #    SourceRoot("FeaturePerfCSCollection") /
-            #    RSBinary("MultiSharedMultipleRegions"),
-            #    label="MSMR-no-input"
-            #),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("MultiSharedMultipleRegions"),
+                label="MSMR-no-input"
+            ),
             #Command(
             #    SourceRoot("FeaturePerfCSCollection") /
             #    RSBinary("MultiSharedMultipleRegions"),
@@ -64,11 +64,11 @@ class FeaturePerfCSCollection(VProject):
             #    RSBinary("FeatureCallingFeature"),
             #    label="FCF"
             #)
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("CollinearFeature"),
-                label="CF"
-            )
+            #Command(
+            #    SourceRoot("FeaturePerfCSCollection") /
+            #    RSBinary("CollinearFeature"),
+            #    label="CF"
+            #)
         ]
     }
 
@@ -85,31 +85,31 @@ class FeaturePerfCSCollection(VProject):
         )
         binary_map.specify_binary(
             "build/bin/SingleLocalMultipleRegions",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("162db88346", "master")
+            BinaryType.EXECUTABLE
+        #    only_valid_in=RevisionRange("162db88346", "master")
         )
         binary_map.specify_binary(
             "build/bin/SimpleSleepLoop",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "c77bca4c6888970fb721069c82455137943ccf49", "master"
-            )
+            BinaryType.EXECUTABLE
+        #    only_valid_in=RevisionRange(
+        #        "c77bca4c6888970fb721069c82455137943ccf49", "master"
+        #    )
         )
         binary_map.specify_binary(
             "build/bin/MultiSharedMultipleRegions",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "c051e44a973ee31b3baa571407694467a513ba68", "master"
-            )
-        )
-        binary_map.specify_binary(
-            "build/bin/FeatureCallingFeature",
             BinaryType.EXECUTABLE
+        #    only_valid_in=RevisionRange(
+        #        "c051e44a973ee31b3baa571407694467a513ba68", "master"
+        #    )
         )
-        binary_map.specify_binary(
-            "build/bin/CollinearFeature",
-            BinaryType.EXECUTABLE
-        )
+        #binary_map.specify_binary(
+        #    "build/bin/FeatureCallingFeature",
+        #    BinaryType.EXECUTABLE
+        #)
+        #binary_map.specify_binary(
+        #    "build/bin/CollinearFeature",
+        #    BinaryType.EXECUTABLE
+        #)
         
         return binary_map[revision]
 

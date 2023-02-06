@@ -65,7 +65,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
 
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
-                    for compression_level in range(0, 10):
+                    #Compression level 6 currently only, 6 is default
+                    for compression_level in range(6, 7):
                         print(f"Currently at {local.path(project.source_of_primary)}")
                         print(f"Bin path {binary.path}")
 

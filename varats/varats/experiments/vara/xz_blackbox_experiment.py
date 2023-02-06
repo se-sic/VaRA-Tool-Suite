@@ -27,7 +27,7 @@ from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
 
-class xzBlackboxAnalysis(actions.Step):  # type: ignore
+class xzBlackboxAnalysis(actions.ProjectStep):  # type: ignore
     """Empty analysis step for testing."""
 
     NAME = "xzBlackboxAnalysis"
@@ -37,14 +37,18 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
     ):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+    
+    def __call__(self):
+        #raise Exception()
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
-        if not self.obj:
+        if not self.project:
             return actions.StepResult.ERROR
-        project = self.obj
+        project = self.project
         vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
@@ -64,7 +68,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
-                    for x in range(0, 10):
+                    for x in range(6, 7):
                         self.compression_level = x
                         xz_params = [
                             "-{compression}".format(compression=self.compression_level),

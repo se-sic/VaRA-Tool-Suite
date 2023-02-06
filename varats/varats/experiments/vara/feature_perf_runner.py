@@ -65,7 +65,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
-            RunVaRATracedWorkloadsAllFeatures(project, self.get_handle())
+            RunVaRATracedWorkloads(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 
