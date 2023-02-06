@@ -31,8 +31,8 @@ class InstrumentationVerifierTable(
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         variables = [
-            "Workload name", "State", "#Enters", "#Leaves", "#Unclosed Enters",
-            "#Unentered Leaves"
+            "Workload name", "State", "ConfigID", "#Enters", "#Leaves",
+            "#Unclosed Enters", "#Unentered Leaves"
         ]
 
         experiment_type = RunInstrVerifier
@@ -53,7 +53,7 @@ class InstrumentationVerifierTable(
             for binary in report.binaries():
                 data.append([
                     f"{report.filename.commit_hash} - {binary}",
-                    report.state(binary),
+                    report.state(binary), report.filename.config_id,
                     report.num_enters(binary),
                     report.num_leaves(binary),
                     report.num_unclosed_enters(binary),
