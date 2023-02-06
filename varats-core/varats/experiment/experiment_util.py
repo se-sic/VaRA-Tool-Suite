@@ -1,5 +1,4 @@
 """Utility module for BenchBuild experiments."""
-import logging
 import os
 import random
 import shutil
@@ -49,8 +48,6 @@ if tp.TYPE_CHECKING:
     TempDir = tempfile.TemporaryDirectory[str]
 else:
     TempDir = tempfile.TemporaryDirectory
-
-LOG = logging.Logger(__name__)
 
 
 def get_varats_result_folder(project: Project) -> Path:
@@ -492,11 +489,6 @@ class ZippedReportFolder(TempDir):
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
         # Don't create an empty zip archive.
-        for file in os.listdir(self.name):
-            try:
-                file.encode('utf-8')
-            except UnicodeEncodeError as e:
-                (Path(self.name) / file).unlink()
         if os.listdir(self.name):
             shutil.make_archive(
                 str(self.__result_report_name), "zip", Path(self.name)
@@ -508,14 +500,14 @@ class ZippedReportFolder(TempDir):
 @runtime_checkable
 class NeedsOutputFolder(Protocol):
 
-    def call_with_tmp(self, tmp_folder: Path) -> StepResult:
+    def __call__(self, tmp_folder: Path) -> StepResult:
         ...
 
 
 def run_child_with_output_folder(
     child: NeedsOutputFolder, tmp_folder: Path
 ) -> StepResult:
-    return child.call_with_tmp(tmp_folder)
+    return child(tmp_folder)
 
 
 class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
@@ -566,52 +558,6 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
         return textwrap.indent(
             f"\nZippedExperimentSteps:\n{sub_actns}", indent * " "
         )
-
-
-class ZippedExperimentStepAdapter(Step):  #type: ignore
-    """Wraps a step and makes the tmp folder available via environment."""
-
-    NAME = "ZippedExperimentStepAdapter"
-    DESCRIPTION = "Wrap a step and make tmp folder available via environment."
-
-    def __init__(self, wrapped: Step) -> None:
-        super().__init__(StepResult.UNSET)
-        self.__wrapped = wrapped
-
-    def __call__(self) -> StepResult:
-        raise AssertionError(
-            "ZippedExperimentStepAdapter must only be used as a child of "
-            "ZippedExperimentSteps"
-        )
-
-    def call_with_tmp(self, tmp_folder: Path) -> StepResult:
-        with local.env(VARATS_RESULTS_TMP=str(tmp_folder)):
-            return self.__wrapped()
-
-    def __str__(self, indent: int = 0) -> str:
-        return self.__wrapped.__str__(indent)  # type: ignore
-
-
-def adapt_needs_output_folder(
-    steps: tp.List[tp.Union[Step, NeedsOutputFolder]]
-) -> tp.List[NeedsOutputFolder]:
-    """
-    Make steps compatible with the :class:`NeedsOutputFolder` protocol.
-
-    Steps already implementing the protocol are returned as-is.
-    For other steps, the output folder is made available via the environment
-    variable ``VARATS_RESULTS_TMP``.
-
-    Args:
-        steps: the steps to adapt
-
-    Returns:
-        a list of adapted steps
-    """
-    return [
-        step if isinstance(step, NeedsOutputFolder) else
-        ZippedExperimentStepAdapter(step) for step in steps
-    ]
 
 
 def __create_new_result_filepath_impl(

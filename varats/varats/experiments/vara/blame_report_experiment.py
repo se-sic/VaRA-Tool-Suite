@@ -6,7 +6,6 @@ BlameReport.
 """
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -24,14 +23,11 @@ from varats.experiment.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
-    ZippedExperimentSteps,
-    adapt_needs_output_folder,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
-from varats.report.wall_time_report import WallTimeReportAggregate
 
 
 class BlameReportGeneration(actions.ProjectStep):  # type: ignore
@@ -102,26 +98,12 @@ class BlameReportGeneration(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-class CompileArgsPatcher(actions.ProjectStep):  # type: ignore
-    """Patch project compile flags."""
-
-    NAME = "CompileArgsPatcher"
-    DESCRIPTION = "Patch project compile flags."
-
-    def __call__(self) -> actions.StepResult:
-        raise AssertionError("CompileArgsPatcher needs an output folder.")
-
-    def call_with_tmp(self, tmp_dir: Path) -> actions.StepResult:
-        self.project.cflags.append(f"-fvara-gb-time-report={tmp_dir}")
-        return actions.StepResult.OK
-
-
 class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     """Generates a blame report of the project(s) specified in the call."""
 
     NAME = "GenerateBlameReport"
 
-    REPORT_SPEC = ReportSpecification(BR, WallTimeReportAggregate)
+    REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
     BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT
@@ -136,12 +118,6 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
         Args:
             project: to analyze
         """
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().report_types[1], project,
-            project.binaries[0]
-        )
-
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
@@ -155,27 +131,19 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
 
         BE.setup_basic_blame_experiment(self, project, BR)
 
-        analysis_actions = [
-            ZippedExperimentSteps(
-                result_filepath, [
-                    CompileArgsPatcher(project), *adapt_needs_output_folder(
-                        BE.generate_basic_blame_experiment_actions(
-                            project,
-                            bc_file_extensions,
-                            extraction_error_handler=
-                            create_default_compiler_error_handler(
-                                self.get_handle(), project,
-                                self.REPORT_SPEC.main_report
-                            )
-                        )
-                    )
-                ]
-            ),
+        analysis_actions = BE.generate_basic_blame_experiment_actions(
+            project,
+            bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
+            )
+        )
+        analysis_actions.append(
             BlameReportGeneration(
                 project, self.get_handle(), self.BLAME_TAINT_SCOPE
-            ),
-            actions.Clean(project)
-        ]
+            )
+        )
+        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
 

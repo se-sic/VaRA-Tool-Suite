@@ -42,10 +42,7 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
         self.__num = num
         self.__binary = binary
 
-    def __call__(self) -> actions.StepResult:
-        raise AssertionError("TimeProjectWorkloads needs an output folder.")
-
-    def call_with_tmp(self, tmp_dir: Path) -> actions.StepResult:
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
