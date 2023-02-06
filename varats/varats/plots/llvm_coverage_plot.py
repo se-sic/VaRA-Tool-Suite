@@ -120,7 +120,8 @@ class RuntimeConfig:
         return iter(self.features)
 
     def __repr__(self) -> str:
-        return str(self.features)
+        tmp = list(str(x) for x in self.features)
+        return f"|{', '.join(tmp)}|"
 
 
 class CoverageFeatureDiffer:
@@ -198,10 +199,10 @@ class CoverageFeatureDiffer:
         )
 
         print(
-            f"Configs with features:\n{list(deepcopy(configs_with_features))}"
+            f"Configs with features:\n[{','.join(chr(10)+str(set(x)) for x in deepcopy(configs_with_features))}\n]"
         )
         print(
-            f"Configs without features:\n{list(deepcopy(configs_without_features))}"
+            f"Configs without features:\n[{','.join(chr(10)+str(set(x)) for x in deepcopy(configs_without_features))}\n]"
         )
 
         report_with_features = _merge_reports(

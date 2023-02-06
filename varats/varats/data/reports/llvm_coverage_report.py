@@ -436,13 +436,17 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         )
 
 
-def cov_show(report: CoverageReport, base_dir: tp.Optional[Path] = None) -> str:
+def cov_show(
+    report: CoverageReport,
+    base_dir: tp.Optional[Path] = None,
+    color=True
+) -> str:
     result = []
     for file in report.filename_function_mapping:
         function_region_mapping = report.filename_function_mapping[file]
         path = Path(file)
         result.append(
-            "".join(_cov_show_file(path, function_region_mapping, []))
+            "".join(_cov_show_file(path, function_region_mapping, [], color))
         )
 
     return "\n\n".join(result)
@@ -450,7 +454,7 @@ def cov_show(report: CoverageReport, base_dir: tp.Optional[Path] = None) -> str:
 
 def _cov_show_file(
     path: Path, function_region_mapping: FunctionCodeRegionMapping,
-    buffer: tp.List[str]
+    buffer: tp.List[str], color: bool
 ) -> tp.List[str]:
 
     lines: tp.Dict[int, str] = {}
@@ -463,24 +467,58 @@ def _cov_show_file(
     # used to print everything that is not a code region in the file.
     last_line = 1
     last_column = 1
-    buffer.append(f"\033[0;36m{path}\033[00m\n")
+    if color:
+        buffer.append(f"\033[0;36m{path}:\033[00m\n")
+    else:
+        buffer.append(f"{path}")
+    segments_dict = defaultdict(
+        list
+    )  # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
     for function in function_region_mapping:
         region = function_region_mapping[function]
-        buffer, last_line, last_column = _cov_show_function(
-            region, last_line, last_column, lines, buffer
+        segments_dict, last_line, last_column = _cov_show_function(
+            region, last_line, last_column, lines, segments_dict
         )
+    for line_number, segments in segments_dict.items():
+        #buffer.append(str(segments) + "\n")
+        counts = [segment[0] for segment in segments]
+        non_none_counts = list(filter(lambda item: item is not None, counts))
+        if len(non_none_counts) > 0:
+            count = max(non_none_counts, key=abs)
+        else:
+            count = ""
+        buffer.append("{:>5}|{:>7}|".format(line_number, count))
+
+        texts = [segment[1] for segment in segments]
+        if color == False:
+            buffer.append(texts)
+        else:
+            colored_texts = []
+            for x, y in zip(counts, texts):
+                if x is None:
+                    colored_texts.append(y)
+                elif x > 0:
+                    colored_texts.append(y)
+                elif x < 0:
+                    colored_texts.append(y)
+                elif x == 0:
+                    colored_texts.append(f"\033[0;41m{y}\033[00m")
+                else:
+                    raise NotImplementedError
+
+            buffer.append("".join(colored_texts))
     return buffer
 
 
 def _cov_show_function(
-    region: CodeRegion, last_line: int, last_column: int,
-    lines: tp.Dict[int, str], buffer: tp.List[str]
-) -> tp.Tuple[tp.List[str], int, int]:
+    region: CodeRegion, last_line: int, last_column: int, lines: tp.Dict[int,
+                                                                         str],
+    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
+) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
 
-    for child in region.childs:
-        buffer, last_line, last_column = _cov_show_function_inner(
-            child, last_line, last_column, lines, buffer
-        )
+    buffer, last_line, last_column = _cov_show_function_inner(
+        region, last_line, last_column, lines, buffer
+    )
 
     # Print lines after regions.
     buffer, last_line, last_column = __cov_fill_buffer(
@@ -497,9 +535,10 @@ def _cov_show_function(
 
 
 def _cov_show_function_inner(
-    region: CodeRegion, last_line: int, last_column: int,
-    lines: tp.Dict[int, str], buffer: tp.List[str]
-) -> tp.Tuple[tp.List[str], int, int]:
+    region: CodeRegion, last_line: int, last_column: int, lines: tp.Dict[int,
+                                                                         str],
+    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
+) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
 
     # Print lines before region.
     buffer, last_line, last_column = __cov_fill_buffer(
@@ -526,9 +565,10 @@ def _cov_show_function_inner(
         )
         # Print childs
         for child in region.childs:
-            buffer, last_line, last_column = _cov_show_function_inner(
-                child, last_line, last_column, lines, buffer
-            )
+            if child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
+                buffer, last_line, last_column = _cov_show_function_inner(
+                    child, last_line, last_column, lines, buffer
+                )
 
     # Print remaining region
     buffer, last_line, last_column = __cov_fill_buffer(
@@ -546,37 +586,32 @@ def _cov_show_function_inner(
 
 def __cov_fill_buffer(
     start_line: int, start_column: int, end_line: int, end_column: int,
-    count: tp.Optional[int], lines: tp.Dict[int, str], buffer: tp.List[str]
-) -> tp.Tuple[tp.List[str], int, int]:
+    count: tp.Optional[int], lines: tp.Dict[int, str],
+    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
+) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
 
     for line_number in range(start_line, end_line + 1):
         if line_number == start_line and line_number == end_line:
             text = lines[line_number][start_column - 1:end_column - 1]
+
         elif line_number == start_line:
             text = lines[line_number][start_column - 1:]
-            if start_column == 1:
-                buffer.append(
-                    "{:>5}|{:>7}|".format(
-                        line_number, count if count is not None else ""
-                    )
-                )
 
         elif line_number == end_line:
             text = lines[line_number][:end_column - 1]
-            buffer.append(
-                "{:>5}|{:>7}|".format(
-                    line_number, count if count is not None else ""
-                )
-            )
 
         else:
             text = lines[line_number]
-            buffer.append(
-                "{:>5}|{:>7}|".format(
-                    line_number, count if count is not None else ""
-                )
-            )
-
-        buffer.append(text)
+        #if add_stats:
+        #    buffer.append(
+        #        "{:>5}|{:>7}|".format(
+        #            line_number, count if count is not None else ""
+        #        )
+        # )
+        #if count == 0:
+        #    buffer.append(f"\033[0;41m{text}\033[00m")
+        #else:
+        #    buffer.append(text)
+        buffer[line_number].append((count, text))
 
     return buffer, end_line, end_column
