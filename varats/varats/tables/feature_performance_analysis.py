@@ -203,8 +203,15 @@ class FeaturePerformanceAnalysisTable(
                     fridpp_report.get_fr_entry(uuid).name
                 ) for uuid in involved_regions
             ]
-            feature_performances["*".join(involved_features)
-                                ] = region_interaction_entry.time
+            # Features cannot interact with itself, so remove duplicastes
+            involved_features = list(set(involved_features))
+            feature_str = "*".join(involved_features)
+            if feature_str in feature_performances:
+                feature_performances[feature_str
+                                    ] += region_interaction_entry.time
+            else:
+                feature_performances[feature_str
+                                    ] = region_interaction_entry.time
 
         return feature_performances
 
