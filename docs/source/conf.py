@@ -28,7 +28,7 @@ except DistributionNotFound:
     pass
 
 project = 'VaRA'
-copyright = '2020, Florian Sattler'
+copyright = '2023, Florian Sattler'
 author = 'Florian Sattler'
 
 # The full version, including alpha/beta/rc tags
