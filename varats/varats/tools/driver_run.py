@@ -15,7 +15,9 @@ from subprocess import PIPE
 
 import click
 import jinja2
+import yaml
 from benchbuild.utils.cmd import benchbuild, sbatch
+from benchbuild.utils.settings import ConfigLoader
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
@@ -160,10 +162,19 @@ def main(
         )
     )
 
+    env = {}
+    # TODO: this is hacky; implement proper conversion of BB config to env
+    for entry in repr(bb_cfg()).split('\n'):
+        key, value = entry.split('=', maxsplit=1)
+        if value[0] in ['"']:
+            value = value[1:-1]
+        env[key] = value
+
+
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
             with benchbuild[bb_args].bgrun(
-                stdout=PIPE, stderr=PIPE, env=bb_cfg().to_env_dict()
+                stdout=PIPE, stderr=PIPE, env=env
             ) as bb_proc:
                 try:
                     _, stdout, _ = tee(bb_proc)
