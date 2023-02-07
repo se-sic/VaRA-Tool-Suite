@@ -4,7 +4,6 @@ experiment state for all case studies in the paper config."""
 import typing as tp
 
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib import ticker
 
 import varats.paper.paper_config as PC

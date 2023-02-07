@@ -154,7 +154,8 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                     ):
                         local_tracefile_path = Path(
                             tmp_dir
-                        ) / f"trace_{prj_command.command.label}.{self.__report_file_ending}"
+                        ) / f"trace_{prj_command.command.label}" \
+                            f".{self.__report_file_ending}"
                         with local.env(VARA_TRACE_FILE=local_tracefile_path):
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
