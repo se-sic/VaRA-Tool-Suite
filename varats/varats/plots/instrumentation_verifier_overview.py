@@ -4,13 +4,15 @@ experiment state for all case studies in the paper config."""
 import typing as tp
 
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import ticker
 
 import varats.paper.paper_config as PC
 from varats.data.reports.instrumentation_verifier_report import (
     InstrVerifierReport,
 )
 from varats.experiment.experiment_util import VersionExperiment
-from varats.plot.plot import Plot
+from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_all_revisions_files
@@ -47,12 +49,18 @@ class InstrumentationOverviewPlot(
 
         _, ax = plt.subplots()
 
+        # Ensure integer labels for the y-axis
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
         labels: tp.List[str] = []
 
         reports: tp.List[InstrVerifierReport] = [
             InstrVerifierReport(rev_file.full_path())
             for rev_file in revisions_files
         ]
+
+        if len(reports) == 0:
+            raise PlotDataEmpty()
 
         num_enters: tp.List[int] = []
         num_leaves: tp.List[int] = []
@@ -72,8 +80,21 @@ class InstrumentationOverviewPlot(
 
         ax.bar(labels, num_enters, label="#Enters")
         ax.bar(labels, num_leaves, label="#Leaves", bottom=num_enters)
-        ax.bar(labels, num_unclosed_enters, label="#Unclosed Enters", bottom=num_enters+num_leaves)
-        ax.bar(labels, num_unentered_leaves, label="#Unentered Leaves", bottom=num_enters+num_leaves+num_unclosed_enters)
+        ax.bar(
+            labels,
+            num_unclosed_enters,
+            label="#Unclosed Enters",
+            bottom=[a + b for a, b in zip(num_enters, num_leaves)]
+        )
+        ax.bar(
+            labels,
+            num_unentered_leaves,
+            label="#Unentered Leaves",
+            bottom=[
+                a + b + c
+                for a, b, c in zip(num_enters, num_leaves, num_unclosed_enters)
+            ]
+        )
 
         ax.set_ylabel("Number of events")
         ax.set_title(

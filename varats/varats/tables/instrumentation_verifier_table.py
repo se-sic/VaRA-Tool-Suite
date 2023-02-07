@@ -12,7 +12,7 @@ from varats.data.reports.instrumentation_verifier_report import (
 )
 from varats.experiments.vara.instrumentation_verifier import RunInstrVerifier
 from varats.revision.revisions import get_all_revisions_files
-from varats.table.table import Table
+from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 
@@ -59,6 +59,9 @@ class InstrumentationVerifierTable(
                     report.num_unclosed_enters(binary),
                     report.num_unentered_leaves(binary)
                 ])
+
+        if len(data) == 0:
+            raise TableDataEmpty()
 
         pd_data = pd.DataFrame(columns=variables, data=np.array(data))
 
