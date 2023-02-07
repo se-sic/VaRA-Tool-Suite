@@ -64,7 +64,7 @@ class xzBlackboxAnalysis(actions.ProjectStep):  # type: ignore
             file_path = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json"
             file_path_xz = "/scratch/messerig/varaRoot/experimentFiles/countries-land-1m.geo.json.xz"
             path_to_xz = Path(file_path_xz)
-            number_of_repetition = 30
+            number_of_repetition = 2
 
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
@@ -96,8 +96,9 @@ class xzBlackboxAnalysis(actions.ProjectStep):  # type: ignore
 
                         pre, ext = os.path.splitext(aggregated_time_reports_dir / Path(f"XZCompressionLevel{x}"))
                         result_zip_path = Path((pre + '.zip'))
-
-                        with open(vara_result_folder/ "xzAggregatedResults" / f"aggregated-result-{self.compression_level}.txt", "w") as f:
+                        
+                        #TO do move folder into result folder
+                        with open(vara_result_folder/ f"aggregated-result-{self.compression_level}.txt", "w") as f:
                             time_aggregate = TimeReportAggregate(result_zip_path)
                             f.write(time_aggregate.summary)
 

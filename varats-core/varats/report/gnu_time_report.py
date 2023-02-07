@@ -255,12 +255,13 @@ class TimeReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)
+                                
         self._measurements_wall_clock_time = [
-            report.wall_clock_time.total_seconds() for report in self.reports
+            report.wall_clock_time.total_seconds() for report in self.reports()
         ]
         self._measurements_ctx_switches = [
             report.voluntary_ctx_switches + report.involuntary_ctx_switches
-            for report in self.reports
+            for report in self.reports()
         ]
 
     @property
@@ -275,7 +276,7 @@ class TimeReportAggregate(
 
     @property
     def summary(self) -> str:
-        return f"num_reports = {len(self.reports)}\n" \
+        return f"num_reports = {len(self.reports())}\n" \
             f"mean(wall_clock_time) = {np.mean(self.measurements_wall_clock_time)}\n" \
             f"std(wall_clock_time) = {np.var(self.measurements_wall_clock_time)}\n" \
             f"variance(wall_clock_time) = {np.std(self.measurements_wall_clock_time)} \n"
