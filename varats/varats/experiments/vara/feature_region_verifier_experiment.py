@@ -139,7 +139,8 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         # FeatureModelProvider
         fm_provider = FeatureModelProvider.create_provider_for_project(project)
         if fm_provider is None:
-            raise Exception("Could not get FeatureModelProvider!")
+            raise FeatureModelNotFound(
+                project, "Could not get FeatureModelProvider!")
 
         fm_path = fm_provider.get_feature_model_path(project)
 
