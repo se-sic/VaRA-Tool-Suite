@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 import varats.ts_utils.doc_util as du
 from tests.test_utils import run_in_test_environment
+from varats.projects.c_projects.opus import Opus
 
 
 class TestProjectOverviewGeneration(unittest.TestCase):
@@ -29,7 +30,8 @@ class TestProjectOverviewGeneration(unittest.TestCase):
         self.assertEqual(cleaned_headerline[0], "Project")
         self.assertEqual(cleaned_headerline[1], "Group")
         self.assertEqual(cleaned_headerline[2], "Domain")
-        self.assertEqual(cleaned_headerline[3], "Main Source")
+        self.assertEqual(cleaned_headerline[3], "FeatureModel")
+        self.assertEqual(cleaned_headerline[4], "Main Source")
 
         self.assertEqual(
             cleaned_first_row[0],
@@ -37,8 +39,16 @@ class TestProjectOverviewGeneration(unittest.TestCase):
         )
         self.assertEqual(cleaned_first_row[1], "c_projects")
         self.assertEqual(cleaned_first_row[2], "C Library")
+        self.assertEqual(cleaned_first_row[3], "")
         self.assertEqual(
-            cleaned_first_row[3], "git://sourceware.org/git/glibc.git"
+            cleaned_first_row[4], "git://sourceware.org/git/glibc.git"
+        )
+
+    def test_construct_feature_model_link(self) -> None:
+        opus_fm_link = du.construct_feature_model_link(Opus)
+        self.assertEqual(
+            opus_fm_link,
+            "`Model <https://github.com/se-sic/ConfigurableSystems/tree/master/Opus>`_"
         )
 
 
