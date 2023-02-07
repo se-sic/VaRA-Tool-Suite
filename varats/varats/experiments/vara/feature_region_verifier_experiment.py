@@ -6,10 +6,10 @@ compares the results of the dominator to the results of the if-region approach
 """
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import opt
+from benchbuild.utils.actions import actions
 
 from varats.data.reports.region_verification_report import (
     RegionVerificationReport as FRR,
@@ -33,7 +33,7 @@ from varats.experiment.wllvm import (
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
-    FeatureModelProvider
+    FeatureModelProvider,
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
@@ -44,7 +44,8 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
     FeatureRegions."""
 
     NAME = "FeatureRegionGeneration"
-    DESCRIPTION = "Analyse the bitcode with -vara-PFTD and -vara-PFTDD -vara-FR-verifier"
+    DESCRIPTION = """Analyse the bitcode with -vara-PFTD and
+        -vara-PFTDD -vara-FR-verifier"""
 
     project: VProject
 
@@ -128,8 +129,8 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
-        Returns the specified steps to run the project(s) specified in the call
-        in a fixed order.
+        Returns the specified steps to run the project(s) specified
+        in the call in a fixed order.
 
         Args:
             project: to analyze
@@ -150,8 +151,9 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += [
-            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-g"
+            "-fvara-IFA", "-fvara-feature",
+            f"-fvara-fm-path={fm_path.absolute()}", "-O1", "-Xclang",
+            "-disable-llvm-optzns", "-g"
         ]
 
         project.runtime_extension = run.RuntimeExtension(project, self) \
