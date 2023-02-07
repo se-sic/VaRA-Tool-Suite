@@ -8,8 +8,8 @@ import typing as tp
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
-from benchbuild.utils.actions import actions
 
 from varats.data.reports.region_verification_report import (
     RegionVerificationReport as FRR,
@@ -129,8 +129,8 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
-        Returns the specified steps to run the project(s) specified
-        in the call in a fixed order.
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
 
         Args:
             project: to analyze
