@@ -31,7 +31,10 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
 )
 from varats.project.varats_project import VProject
-from varats.provider.feature.feature_model_provider import FeatureModelNotFound, FeatureModelProvider
+from varats.provider.feature.feature_model_provider import (
+    FeatureModelNotFound,
+    FeatureModelProvider
+)
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
@@ -84,8 +87,7 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
                 "-vara-PTFD", "-vara-FR-verifier", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     project, binary, [
-                        BCFileExtensions.NO_OPT,
-                        BCFileExtensions.TBAA,
+                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
                         BCFileExtensions.FEATURE
                     ]
                 )
@@ -102,7 +104,10 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, FRR, timeout_duration=timeout_duration
+                    self.__experiment_handle,
+                    project,
+                    FRR,
+                    timeout_duration=timeout_duration
                 )
             )
         return actions.StepResult.OK
@@ -116,7 +121,9 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
 
     REPORT_SPEC = ReportSpecification(FRR)
     REQUIRED_EXTENSIONS = [
-        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA, BCFileExtensions.FEATURE,
+        BCFileExtensions.NO_OPT,
+        BCFileExtensions.TBAA,
+        BCFileExtensions.FEATURE,
     ]
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
