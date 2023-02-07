@@ -22,7 +22,7 @@ from varats.data.databases.blame_diff_metrics_database import (
 )
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
 from varats.plot.plots import PlotGenerator
@@ -310,7 +310,7 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
         if "churn" in df:
             df.drop(df[df.churn == 0].index, inplace=True)
 
-        multivariate_grid(x_col=var_x, y_col=var_y, hue='project', data=df)
+        multivariate_grid(df, var_x, var_y, hue='project')
 
     def plot_file_name(self, filetype: str) -> str:
         """

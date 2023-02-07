@@ -7,7 +7,10 @@ from pathlib import Path
 import varats.paper_mgmt.case_study as MCS
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.commit_report import CommitReport as CR
-from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
+from varats.experiments.vara.commit_report_experiment import (
+    CommitReportExperiment,
+)
+from varats.paper.paper_config import get_paper_config, load_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
@@ -31,7 +34,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         newest_processed = MCS.newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertEqual(
@@ -46,7 +50,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         newest_processed = MCS.newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertIsNone(newest_processed)
@@ -61,7 +66,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         failed_revs = MCS.failed_revisions_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertEqual(len(failed_revs), 1)
@@ -80,7 +86,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         process_revs = MCS.processed_revisions_for_case_study(
-            get_paper_config().get_case_studies('brotli')[0], CR
+            get_paper_config().get_case_studies('brotli')[0],
+            CommitReportExperiment
         )
 
         self.assertEqual(len(process_revs), 1)
@@ -91,14 +98,16 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_get_revisions_status_for_case_study_to_high_stage(self) -> None:
-        """Check if we correctly handle look ups where the stage selected is
+        """Check if we correctly handle lookups where the stage selected is
         larger than the biggest one in the case study."""
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         load_paper_config()
 
         self.assertListEqual(
             MCS.get_revisions_status_for_case_study(
-                get_paper_config().get_case_studies('brotli')[0], CR, 9001
+                get_paper_config().get_case_studies('brotli')[0],
+                CommitReportExperiment,
+                stage_num=9001
             ), []
         )
 
@@ -112,7 +121,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertRaises(
             ValueError, MCS.get_revision_status_for_case_study,
             get_paper_config().get_case_studies('brotli')[0],
-            ShortCommitHash('0000000000'), CR
+            ShortCommitHash('0000000000'), CommitReportExperiment, CR
         )
 
     @run_in_test_environment(
@@ -127,7 +136,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         self.assertEqual(
             MCS.get_revision_status_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0],
-                ShortCommitHash('21ac39f7c8'), CR
+                ShortCommitHash('21ac39f7c8'), CommitReportExperiment, CR
             ), FileStatusExtension.SUCCESS
         )
 

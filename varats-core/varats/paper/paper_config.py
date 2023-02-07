@@ -1,6 +1,6 @@
 """
 The PaperConfig pins down a specific set of case studies, one or more for each
-project, where each encaspulates a fixed set of revision to evaluate.
+project, where each encapsulates a fixed set of revision to evaluate.
 
 This allows users to specify which revisions of what project have to be
 analyzed. Furthermore, it allows other users to reproduce the exact same set of
@@ -12,17 +12,14 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
+import plumbum as pb
+from benchbuild.source import base
+from benchbuild.utils.cmd import git
 
 from varats.paper.case_study import (
     CaseStudy,
     load_case_study_from_file,
     store_case_study,
-)
-from varats.paper_mgmt.artefacts import (
-    Artefact,
-    Artefacts,
-    load_artefacts_from_file,
-    store_artefacts_to_file,
 )
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
@@ -54,25 +51,11 @@ class PaperConfig():
                 self.__case_studies[case_study.project_name].append(case_study)
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
-        self.__artefacts: tp.Optional[Artefacts] = None
 
     @property
     def path(self) -> Path:
         """Path to the paper config folder."""
         return self.__path
-
-    @property
-    def artefacts(self) -> Artefacts:
-        """The artefacts of this paper config."""
-        if not self.__artefacts:
-            if (self.path / self.__ARTEFACTS_FILE_NAME).exists():
-                self.__artefacts = load_artefacts_from_file(
-                    self.path / self.__ARTEFACTS_FILE_NAME
-                )
-            else:
-                self.__artefacts = Artefacts([])
-
-        return self.__artefacts
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
         """
@@ -97,10 +80,6 @@ class PaperConfig():
             case_study for case_study_list in self.__case_studies.values()
             for case_study in case_study_list
         ]
-
-    def get_all_artefacts(self) -> tp.Iterable[Artefact]:
-        """Returns an iterable of the artefacts of this paper config."""
-        return self.artefacts
 
     def has_case_study(self, cs_name: str) -> bool:
         """
@@ -154,29 +133,12 @@ class PaperConfig():
         """
         self.__case_studies[case_study.project_name] += [case_study]
 
-    def add_artefact(self, artefact: Artefact) -> None:
-        """
-        Add a new artefact to this paper config.
-
-        Args:
-            artefact: the artefact to add
-        """
-        self.artefacts.add_artefact(artefact)
-
-    def store_artefacts(self) -> None:
-        """Store artefacts to file."""
-        if self.artefacts:
-            store_artefacts_to_file(
-                self.artefacts, self.path / self.__ARTEFACTS_FILE_NAME
-            )
-
     def store(self) -> None:
         """Persist the current state of the paper config saving all case studies
         to their corresponding files in the paper config path."""
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
-        self.store_artefacts()
 
     def __str__(self) -> str:
         string = "Loaded case studies:\n"
@@ -297,9 +259,19 @@ class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
         self.__project_name = project_name
 
     def versions(self) -> tp.List[bb.source.base.Variant]:
-        proj_filter = project_filter_generator(self.__project_name)
+        cache_path = self.fetch()
+        git_rev_list = git['rev-list', '--abbrev-commit', '--abbrev=10',
+                           '--all']
+        rev_list: tp.List[str] = []
+        with pb.local.cwd(cache_path):
+            rev_list = list(git_rev_list(self.refspec).strip().split('\n'))
 
+        rev_list = list(filter(self.version_filter, rev_list))
+        rev_list = rev_list[:self.limit] if self.limit else rev_list
+
+        proj_filter = project_filter_generator(self.__project_name)
         return [
-            variant for variant in super().versions()
-            if proj_filter(variant.version)
+            base.Variant(version=rev, owner=self)
+            for rev in rev_list
+            if proj_filter(rev)
         ]

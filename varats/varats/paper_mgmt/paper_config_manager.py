@@ -10,9 +10,9 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from plumbum import colors
 
-import varats.paper_mgmt.paper_config as PC
+import varats.paper.paper_config as PC
 from varats.experiment.experiment_util import VersionExperiment
-from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
@@ -108,15 +108,18 @@ def get_revision_list(case_study: CaseStudy) -> str:
 
 
 def get_result_files(
-    result_file_type: tp.Type[BaseReport], project_name: str,
-    commit_hash: ShortCommitHash, only_newest: bool
+    project_name: str, experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]], commit_hash: ShortCommitHash,
+    only_newest: bool
 ) -> tp.List[Path]:
     """
     Returns a list of result files that (partially) match the given commit hash.
 
     Args:
-        result_file_type: the type of the result file
         project_name: target project
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         commit_hash: the commit hash to search result files for
         only_newest: whether to include all result files, or only the newest;
                      if ``False``, result files for the same revision are sorted
@@ -132,7 +135,8 @@ def get_result_files(
         return not file_commit_hash == commit_hash
 
     return get_all_revisions_files(
-        project_name, result_file_type, file_name_filter, only_newest
+        project_name, experiment_type, report_type, file_name_filter,
+        only_newest
     )
 
 
@@ -288,7 +292,7 @@ def get_status(
     ) + "\n"
 
     if sort:
-        cmap = create_lazy_commit_map_loader(case_study.project_name)()
+        cmap = get_commit_map(case_study.project_name)
 
     def rev_time(rev: tp.Tuple[ShortCommitHash, FileStatusExtension]) -> int:
         return cmap.short_time_id(rev[0])
@@ -417,14 +421,14 @@ def _combine_tagged_revs_for_experiment(
     """
     combined_tagged_revisions: tp.Dict[ShortCommitHash,
                                        FileStatusExtension] = {}
-    for report in experiment_type.report_spec():
+    for report_type in experiment_type.report_spec():
         if stage_num:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, report, stage_num, experiment_type=experiment_type
+                case_study, experiment_type, report_type, stage_num
             )
         else:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, report, experiment_type=experiment_type
+                case_study, experiment_type, report_type
             )
 
         for tagged_rev in tagged_revs:

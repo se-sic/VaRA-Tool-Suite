@@ -60,7 +60,7 @@ class TestFileStatusExtension(unittest.TestCase):
 
 
 class TestReportFilename(unittest.TestCase):
-    """Test basic TestReportFilename functionality."""
+    """Test basic ReportFilename functionality."""
 
     correct_UUID: str
     raw_filename: str
@@ -130,6 +130,10 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(
             self.report_filename.file_status, FileStatusExtension.SUCCESS
         )
+        self.assertEqual(self.report_filename.config_id, None)
+
+    def test_is_configuration_specific_file(self):
+        self.assertFalse(self.report_filename.is_configuration_specific_file())
 
     def test_accessors_broken(self):
         """Tests if the different accessor functions work correctly even for
@@ -151,6 +155,47 @@ class TestReportFilename(unittest.TestCase):
         """Check if we can extract the UUID from a filename."""
         self.assertEqual(self.report_filename.uuid, self.correct_UUID)
         self.assertRaises(ValueError, lambda: self.broken_report_filename.uuid)
+
+
+class TestConfigReportFilename(unittest.TestCase):
+    """Test configuration specific ReportFilename functionality."""
+
+    raw_filepath: str
+    report_filename: ReportFilename
+    correct_UUID: str
+
+    @classmethod
+    def setUpClass(cls):
+        """Setup file and CommitReport."""
+        cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
+        cls.raw_filepath = (
+            "CRE-CR-foo-bar-7bb9ef5f8c/"
+            f"{cls.correct_UUID}_config-42_"
+            "success.txt"
+        )
+        cls.report_filename = ReportFilename(cls.raw_filepath)
+
+    def test_is_configuration_specific_file(self):
+        self.assertTrue(self.report_filename.is_configuration_specific_file())
+
+    def test_configuration_id(self):
+        self.assertEqual(self.report_filename.config_id, 42)
+
+    def test_create_filename_with_id_zero(self) -> None:
+        """Checks that we correctly generate a report name for a config id 0,
+        which would convert to false if checked and converted to bool."""
+        report_name_with_zero = ReportFilename.get_file_name(
+            "Foo",
+            "Bar",
+            "Prj_name",
+            "Bin_name",
+            ShortCommitHash("7bb9ef5f8c"),
+            "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+            FileStatusExtension.SUCCESS,
+            config_id=0
+        )
+        self.assertTrue(report_name_with_zero.is_configuration_specific_file())
+        self.assertEqual(report_name_with_zero.config_id, 0)
 
 
 class TestBaseReport(unittest.TestCase):
