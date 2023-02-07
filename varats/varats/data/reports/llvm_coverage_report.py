@@ -442,7 +442,7 @@ def cov_show(
     color=True
 ) -> str:
     result = []
-    for file in report.filename_function_mapping:
+    for file in sorted(list(report.filename_function_mapping)):
         function_region_mapping = report.filename_function_mapping[file]
         path = Path(file)
         result.append(
@@ -470,7 +470,7 @@ def _cov_show_file(
     if color:
         buffer.append(f"\033[0;36m{path}:\033[00m\n")
     else:
-        buffer.append(f"{path}")
+        buffer.append(f"{path}:\n")
     segments_dict = defaultdict(
         list
     )  # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
@@ -479,6 +479,18 @@ def _cov_show_file(
         segments_dict, last_line, last_column = _cov_show_function(
             region, last_line, last_column, lines, segments_dict
         )
+
+    # Print lines after regions.
+    segments_dict, last_line, last_column = __cov_fill_buffer(
+        start_line=last_line,
+        start_column=last_column,
+        end_line=len(lines),
+        end_column=len(lines[len(lines)]),
+        count=None,
+        lines=lines,
+        buffer=segments_dict
+    )
+
     for line_number, segments in segments_dict.items():
         #buffer.append(str(segments) + "\n")
         counts = [segment[0] for segment in segments]
@@ -491,7 +503,7 @@ def _cov_show_file(
 
         texts = [segment[1] for segment in segments]
         if color == False:
-            buffer.append(texts)
+            buffer.append("".join(texts))
         else:
             colored_texts = []
             for x, y in zip(counts, texts):
@@ -518,17 +530,6 @@ def _cov_show_function(
 
     buffer, last_line, last_column = _cov_show_function_inner(
         region, last_line, last_column, lines, buffer
-    )
-
-    # Print lines after regions.
-    buffer, last_line, last_column = __cov_fill_buffer(
-        start_line=last_line,
-        start_column=last_column,
-        end_line=len(lines),
-        end_column=len(lines[len(lines)]),
-        count=None,
-        lines=lines,
-        buffer=buffer
     )
 
     return (buffer, last_line, last_column)

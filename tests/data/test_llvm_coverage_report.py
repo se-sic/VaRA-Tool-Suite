@@ -1,6 +1,8 @@
+import shutil
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from tests.test_utils import (
     run_in_test_environment,
@@ -13,6 +15,7 @@ from varats.data.reports.llvm_coverage_report import (
     RegionStart,
     RegionEnd,
     CoverageReport,
+    cov_show,
 )
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.plot.plots import PlotConfig
@@ -262,3 +265,32 @@ class TestCodeRegion(unittest.TestCase):
             llvm_profdata_merged_slow_and_header_report,
             merged_header_slow_report_1
         )
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_cov_show_simple(self):
+        self.maxDiff = None
+        with TemporaryDirectory() as tmpdir:
+            shutil.unpack_archive(
+                Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+                "GenCov-CovR-FeaturePerfCSCollection-MultiSharedMultipleRegions-27f1708037"
+                / "cca2928a-70d1-4c30-bd8e-6585f7edc9ce_config-0_success.zip",
+                tmpdir
+            )
+
+            for file in Path(tmpdir).iterdir():
+                if file.suffix == ".json":
+                    json_file = file
+
+            assert json_file
+
+            slow_report = CoverageReport.from_json(json_file)
+
+        with open(
+            Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+            "cov_show_slow.txt"
+        ) as tmp:
+            cov_show_slow_txt = tmp.read()
+
+        self.assertEqual(cov_show_slow_txt, cov_show(slow_report, color=False))
