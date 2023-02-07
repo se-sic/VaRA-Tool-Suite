@@ -2,11 +2,13 @@
 with chrome tracing."""
 
 import json
+import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
 import numpy as np
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -125,8 +127,8 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             print("Visiting the TEFReport")
 
     @property
-    def display_time_unit(self) -> str:
-        return self.__display_time_unit
+    def timestamp_unit(self) -> str:
+        return self.__timestamp_unit
 
     @property
     def trace_events(self) -> tp.List[TraceEvent]:

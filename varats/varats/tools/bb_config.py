@@ -73,6 +73,7 @@ def create_new_bb_config(
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.openvpn',
         'varats.projects.c_projects.opus',
+        'varats.projects.c_projects.picosat',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
         'varats.projects.c_projects.tmux',
@@ -97,8 +98,10 @@ def create_new_bb_config(
             'varats.projects.test_projects.basic_tests',
             'varats.projects.test_projects.bug_provider_test_repos',
             'varats.projects.test_projects.example_test_repo',
+            'varats.projects.test_projects.feature_test_repo',
             'varats.projects.test_projects.linker_check',
             'varats.projects.test_projects.taint_tests',
+            'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection'
         ]
