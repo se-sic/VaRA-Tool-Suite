@@ -31,7 +31,7 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
 )
 from varats.project.varats_project import VProject
-from varats.provider.feature.feature_model_provider import FeatureModelProvider
+from varats.provider.feature.feature_model_provider import FeatureModelNotFound, FeatureModelProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 
@@ -80,10 +80,12 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "-enable-new-pm=0", "-verifier-dbg-print-insts", "-vara-PTFDD", "-vara-PTFD", "-vara-FR-verifier", "-o", "/dev/null",
+                "-enable-new-pm=0", "-verifier-dbg-print-insts", "-vara-PTFDD",
+                "-vara-PTFD", "-vara-FR-verifier", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     project, binary, [
-                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                        BCFileExtensions.NO_OPT,
+                        BCFileExtensions.TBAA,
                         BCFileExtensions.FEATURE
                     ]
                 )
@@ -95,10 +97,12 @@ class FeatureRegionGeneration(actions.ProjectStep):  # type: ignore
 
             run_cmd = run_cmd > f"{vara_result_folder}/{result_file}"
 
+            timeout_duration = '1h'
+
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, FRR, vara_result_folder
+                    self.__experiment_handle, project, FRR, timeout_duration=timeout_duration
                 )
             )
         return actions.StepResult.OK
@@ -126,14 +130,20 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
 
         # FeatureModelProvider
         fm_provider = FeatureModelProvider.create_provider_for_project(project)
+        if fm_provider is None:
+            raise Exception("Could not get FeatureModelProvider!")
+
         fm_path = fm_provider.get_feature_model_path(project)
+
+        if fm_path is None or not fm_path.exists():
+            raise FeatureModelNotFound(project, fm_path)
 
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += [
-            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path={fm_path}",
+            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g"
         ]
 
