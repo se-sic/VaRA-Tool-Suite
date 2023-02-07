@@ -286,7 +286,7 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
 class WithUnlimitedStackSize(base.Extension):  # type: ignore
     """Sets the stack size of the wrapped command to unlimited (16GB)."""
 
-    def __init__(self, *extensions, **kwargs) -> None:
+    def __init__(self, *extensions: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(*extensions, **kwargs)
 
     def __call__(
