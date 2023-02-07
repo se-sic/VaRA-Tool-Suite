@@ -61,16 +61,19 @@ class InstrumentationOverviewPlot(
 
         for report in reports:
             for binary in report.binaries():
-                labels.append(f"{report.filename.commit_hash} - {binary}")
+                labels.append(
+                    f"{report.filename.commit_hash}\nCID: "
+                    f"{report.filename.config_id}\n{binary}"
+                )
                 num_enters.append(report.num_enters(binary))
                 num_leaves.append(report.num_leaves(binary))
                 num_unclosed_enters.append(report.num_unclosed_enters(binary))
                 num_unentered_leaves.append(report.num_unentered_leaves(binary))
 
         ax.bar(labels, num_enters, label="#Enters")
-        ax.bar(labels, num_leaves, label="#Leaves")
-        ax.bar(labels, num_unclosed_enters, label="#Unclosed Enters")
-        ax.bar(labels, num_unentered_leaves, label="#Unentered Leaves")
+        ax.bar(labels, num_leaves, label="#Leaves", bottom=num_enters)
+        ax.bar(labels, num_unclosed_enters, label="#Unclosed Enters", bottom=num_enters+num_leaves)
+        ax.bar(labels, num_unentered_leaves, label="#Unentered Leaves", bottom=num_enters+num_leaves+num_unclosed_enters)
 
         ax.set_ylabel("Number of events")
         ax.set_title(
@@ -78,6 +81,8 @@ class InstrumentationOverviewPlot(
             f"Overview for {case_study.project_name}"
         )
         ax.legend()
+        plt.xticks(rotation=90, ha='right')
+        plt.subplots_adjust(bottom=0.25)
 
 
 class PaperConfigOverviewGenerator(
