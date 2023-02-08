@@ -154,7 +154,10 @@ class TestTraceEvent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Load trace event."""
-        cls.trace_event = TraceEvent(json.loads(SINGLE_TRACE_EVENT))
+        name_id_mapper = TEFReport.NameIDMapper(["Base", "Foo", "Bar"])
+        cls.trace_event = TraceEvent(
+            json.loads(SINGLE_TRACE_EVENT), 0, name_id_mapper
+        )
 
     def test_name_parsing(self):
         """Test if we can correctly parse event names."""
