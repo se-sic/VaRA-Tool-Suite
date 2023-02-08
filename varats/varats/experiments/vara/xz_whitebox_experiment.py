@@ -29,7 +29,7 @@ from varats.report.tef_report import TEFReport
 from varats.report.tef_report import TEFReportAggregate
 
 
-class ExecAndTraceBinary(actions.Step):  # type: ignore
+class ExecAndTraceBinary(actions.ProjectStep):  # type: ignore
     """Executes the specified binaries of the project, in specific
     configurations, against one or multiple workloads."""
 
@@ -38,16 +38,20 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
         "performance traces."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run_perf_tracing)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+    
+    def __call__(self):
+        #raise Exception()
+        return self.run_perf_tracing()
 
     def run_perf_tracing(self) -> actions.StepResult:
         """Execute the specified binaries of the project, in specific
         configurations, against one or multiple workloads."""
-        project: Project = self.obj
+        project: Project = self.project
         print(f"PWD {os.getcwd()}")
 
-        number_of_repetition = 2
+        number_of_repetition = 1
 
         vara_result_folder = get_varats_result_folder(project)
         for binary in project.binaries:
@@ -66,6 +70,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
             with local.cwd(local.path(project.source_of_primary)):
                 with ZippedReportFolder(vara_result_folder / result_file.filename) as aggregated_time_reports_dir:
                     #Compression level 6 currently only, 6 is default
+
                     for compression_level in range(6, 7):
                         print(f"Currently at {local.path(project.source_of_primary)}")
                         print(f"Bin path {binary.path}")
@@ -91,26 +96,25 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
 
                                     result_path = Path(time_reports_dir) / f"tefreport_compression_{compression_level}_{i}"
 
-                                    mv_cmd = mv[Path(vara_result_folder / result_file.filename), result_path]
-                                    mv_cmd()
-                                    tef_report = TEFReport(Path(time_reports_dir) /f"tefreport_compression_{compression_level}_{i}")
-                                    tef_report.feature_time_accumulator()
+                                    #mv_cmd = mv[Path(vara_result_folder / result_file.filename), result_path]
+                                    #mv_cmd()
+                                    #tef_report = TEFReport(Path(time_reports_dir) /f"tefreport_compression_{compression_level}_{i}")
+                                    #tef_report.feature_time_accumulator()
 
-                                    if result_path.is_file():
-                                        rm_unparsed = rm[result_path]
-                                        rm_unparsed()
+                                    #if result_path.is_file():
+                                    #    rm_unparsed = rm[result_path]
+                                    #    rm_unparsed()
 
 
                                     #executable("--slow")
                                     # executable()
 
-                                    if Path(file_path_xz).is_file():
-                                        rm_cmd()
-
+                                    #if Path(file_path_xz).is_file():
+                                    #    rm_cmd()
                         
-                        rename_file = mv[aggregated_time_reports_dir / Path("result_aggregate.json"), aggregated_time_reports_dir
-                                         / Path(f"result_aggregate_{compression_level}.json")]
-                        rename_file()
+                        #rename_file = mv[aggregated_time_reports_dir / Path("result_aggregate.json"), aggregated_time_reports_dir
+                        #                 / Path(f"result_aggregate_{compression_level}.json")]
+                        #rename_file()
 
         return actions.StepResult.OK
 

@@ -98,7 +98,7 @@ class xzBlackboxAnalysis(actions.ProjectStep):  # type: ignore
                         result_zip_path = Path((pre + '.zip'))
                         
                         #TO do move folder into result folder
-                        with open(vara_result_folder/ f"aggregated-result-{self.compression_level}.txt", "w") as f:
+                        with open(vara_result_folder/ Path(f"XZCompressionLevelAggregated") / f"aggregated-result-{self.compression_level}.txt", "w") as f:
                             time_aggregate = TimeReportAggregate(result_zip_path)
                             f.write(time_aggregate.summary)
 
