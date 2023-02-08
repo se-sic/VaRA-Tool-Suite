@@ -16,6 +16,7 @@ from varats.experiment.experiment_util import (
     create_default_analysis_failure_handler,
     get_varats_result_folder,
     create_new_success_result_filepath,
+    wrap_unlimit_stack_size,
 )
 from varats.experiment.wllvm import (
     BCFileExtensions,
@@ -72,7 +73,7 @@ class CollectFuncRelativeIDs(actions.ProjectStep):  # type: ignore
             ]
 
             # Store the collected information in report.
-            run_cmd = opt[opt_params] > str(
+            run_cmd = wrap_unlimit_stack_size(opt[opt_params]) > str(
                 vara_result_folder / str(result_file)
             )
 
