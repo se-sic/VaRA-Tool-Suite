@@ -116,9 +116,15 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
+    def __init__(
+        self,
+        project: VProject,
+        experiment_handle: ExperimentHandle,
+        report_file_ending: str = "json"
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.__report_file_ending = report_file_ending
 
     def __call__(self) -> StepResult:
         return self.run_traced_code()
@@ -148,7 +154,8 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                     ):
                         local_tracefile_path = Path(
                             tmp_dir
-                        ) / f"trace_{prj_command.command.label}.json"
+                        ) / f"trace_{prj_command.command.label}" \
+                            f".{self.__report_file_ending}"
                         with local.env(VARA_TRACE_FILE=local_tracefile_path):
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
