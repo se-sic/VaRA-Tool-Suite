@@ -126,6 +126,7 @@ def create_new_bb_config(
         'varats.experiments.vara.instrumentation_verifier',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
+        'varats.experiments.vara.feature_region_verifier_experiment',
     ]
     # yapf: enable
 
