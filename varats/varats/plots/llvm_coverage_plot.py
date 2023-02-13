@@ -58,15 +58,16 @@ def _merge_reports(reports: tp.Iterable[CoverageReport]) -> CoverageReport:
 
 @dataclass(frozen=True)
 class ConfigValue:
+    """Wrapper for config flag values."""
+
     x: tp.Union[bool, str]
 
     def __bool__(self) -> bool:
         if isinstance(self.x, bool):
             return self.x
-        elif isinstance(self.x, str):
+        if isinstance(self.x, str):
             return True
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
 
     def __repr__(self) -> str:
         return repr(self.x)

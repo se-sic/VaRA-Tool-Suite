@@ -1,5 +1,6 @@
 import shutil
 import unittest
+from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -16,6 +17,9 @@ from varats.data.reports.llvm_coverage_report import (
     RegionEnd,
     CoverageReport,
     cov_show,
+)
+from varats.data.reports.llvm_coverage_report import (
+    __cov_fill_buffer as cov_fill_buffer,
 )
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.plot.plots import PlotConfig
@@ -294,3 +298,64 @@ class TestCodeRegion(unittest.TestCase):
             cov_show_slow_txt = tmp.read()
 
         self.assertEqual(cov_show_slow_txt, cov_show(slow_report, color=False))
+
+    def test_cov_fill_buffer(self):
+        lines = {1: "Hello World!\n", 2: "Goodbye;\n"}
+        buffer = defaultdict(list)
+
+        next_line = 1
+        next_column = 1
+        buffer, next_line, next_column = cov_fill_buffer(
+            start_line=next_line,
+            start_column=next_column,
+            end_line=1,
+            end_column=5,
+            count=0,
+            lines=lines,
+            buffer=buffer
+        )
+        self.assertEqual(buffer, {1: [(0, "Hello")]})
+        buffer, next_line, next_column = cov_fill_buffer(
+            start_line=next_line,
+            start_column=next_column,
+            end_line=1,
+            end_column=13,
+            count=1,
+            lines=lines,
+            buffer=buffer
+        )
+        self.assertEqual(buffer, {1: [(0, "Hello"), (1, " World!\n")]})
+        buffer, next_line, next_column = cov_fill_buffer(
+            start_line=next_line,
+            start_column=next_column,
+            end_line=2,
+            end_column=9,
+            count=42,
+            lines=lines,
+            buffer=buffer
+        )
+        self.assertEqual(
+            buffer, {
+                1: [(0, "Hello"), (1, " World!\n")],
+                2: [(42, "Goodbye;\n")]
+            }
+        )
+
+        buffer = defaultdict(list)
+        next_line = 1
+        last_column = 1
+        buffer, next_line, next_column = cov_fill_buffer(
+            start_line=next_line,
+            start_column=next_column,
+            end_line=2,
+            end_column=9,
+            count=None,
+            lines=lines,
+            buffer=buffer
+        )
+        self.assertEqual(
+            buffer, {
+                1: [(None, "Hello World!\n")],
+                2: [(None, "Goodbye;\n")]
+            }
+        )
