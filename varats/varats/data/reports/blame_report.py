@@ -638,6 +638,13 @@ class BlameReportDiff():
                 diff_num_instructions, [], []
             )
 
+        # Special case: function has no interactions
+        if not diff_interactions and not unchanged_interactions:
+            self.__unchanged[new_func_entry.name] = BlameResultFunctionEntry(
+                new_func_entry.name, new_func_entry.demangled_name,
+                new_func_entry.file_name, [], diff_num_instructions, [], []
+            )
+
     def __str__(self) -> str:
         str_representation = ""
         for function in self.__changes.values():
