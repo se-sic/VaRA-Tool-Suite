@@ -477,14 +477,16 @@ def _cov_show_file(
         region = function_region_mapping[function]
         segments_dict = _cov_show_function(region, lines, segments_dict)
 
-    # Print rest of file.
-    segments_dict = __cov_fill_buffer(
-        end_line=len(lines),
-        end_column=len(lines[len(lines)]),
-        count=None,
-        lines=lines,
-        buffer=segments_dict
-    )
+    # Print rest of file if necessary
+    if (len(lines), len(lines[len(lines)]
+                       )) != __get_next_line_and_column(lines, segments_dict):
+        segments_dict = __cov_fill_buffer(
+            end_line=len(lines),
+            end_column=len(lines[len(lines)]),
+            count=None,
+            lines=lines,
+            buffer=segments_dict
+        )
 
     for line_number, segments in segments_dict.items():
         #buffer.append(str(segments) + "\n")
@@ -553,14 +555,16 @@ def _cov_show_function_inner(
         )
         # Print childs
         for child in region.childs:
-            if child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
+            if child.kind == CodeRegionKind.SKIPPED:
+                # Skip skipped regions
+                continue
+            elif child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
                 buffer = _cov_show_function_inner(child, lines, buffer)
-            """else:
-                # Gap Region
+            elif child.kind == CodeRegionKind.GAP:
                 child.count = None
-                buffer, next_line, next_column = _cov_show_function_inner(
-                    child, next_line, next_column, lines, buffer
-                )"""
+                buffer = _cov_show_function_inner(child, lines, buffer)
+            else:
+                raise NotImplementedError
 
     # Print remaining region
     buffer = __cov_fill_buffer(
