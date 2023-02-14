@@ -549,7 +549,9 @@ class BlameReportDiff():
                                 deepcopy(inters.interacting_taints),
                                 -inters.amount
                             ) for inters in old_func_entry.interactions
-                        ], -old_func_entry.num_instructions
+                        ], -old_func_entry.num_instructions,
+                        deepcopy(old_func_entry.callees),
+                        deepcopy(old_func_entry.commits)
                     )
 
             # Both reports have the same function
