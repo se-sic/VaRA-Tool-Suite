@@ -1,11 +1,14 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
 
-import json
+import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
 
+import ijson
+
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -46,8 +49,12 @@ class TraceEvent():
     """Represents a trace event that was captured during the analysis of a
     target program."""
 
-    def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
-        self.__name = str(json_trace_event["name"])
+    def __init__(
+        self, json_trace_event: tp.Dict[str, tp.Any], name_id: int,
+        name_id_mapper: 'TEFReport.NameIDMapper'
+    ) -> None:
+        self.__name_id_mapper = name_id_mapper
+        self.__name_id = name_id
         self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
             json_trace_event["ph"]
@@ -58,7 +65,7 @@ class TraceEvent():
 
     @property
     def name(self) -> str:
-        return self.__name
+        return self.__name_id_mapper.infer_name(self.__name_id)
 
     @property
     def category(self) -> str:
@@ -98,20 +105,22 @@ class TraceEvent():
 class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     """Report class to access trace event format files."""
 
+    class NameIDMapper(tp.List[str]):
+        """Helper class to map name IDs to names."""
+
+        def infer_name(self, name_id: int) -> str:
+            return self[name_id]
+
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-
-        with open(self.path, "r", encoding="utf-8") as json_tef_report:
-            data = json.load(json_tef_report)
-
-            self.__display_time_unit = str(data["displayTimeUnit"])
-            self.__trace_events = self._parse_trace_events(data["traceEvents"])
-            # Parsing stackFrames is currently not implemented
-            # x = data["stackFrames"]
+        self.__name_id_mapper: TEFReport.NameIDMapper = TEFReport.NameIDMapper()
+        self._parse_json()
+        # Parsing stackFrames is currently not implemented
+        # x = data["stackFrames"]
 
     @property
-    def display_time_unit(self) -> str:
-        return self.__display_time_unit
+    def timestamp_unit(self) -> str:
+        return self.__timestamp_unit
 
     @property
     def trace_events(self) -> tp.List[TraceEvent]:
@@ -123,11 +132,41 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
-    @staticmethod
-    def _parse_trace_events(
-        raw_event_list: tp.List[tp.Dict[str, tp.Any]]
-    ) -> tp.List[TraceEvent]:
-        return [TraceEvent(data_item) for data_item in raw_event_list]
+    def _parse_json(self) -> None:
+        trace_events: tp.List[TraceEvent] = list()
+        with open(self.path, "rb") as f:
+            parser = ijson.parse(f)
+            trace_event: tp.Dict[str, str] = {}
+            key = ""
+            for prefix, event, value in parser:
+                if event == "map_key":
+                    key = value
+                if prefix.startswith("traceEvents.item"):
+                    if prefix == "traceEvents.item" and event == "start_map":
+                        trace_event = {}
+                    if prefix == "traceEvents.item" and event == "end_map":
+                        if trace_event is not None:
+                            if trace_event["name"] in self.__name_id_mapper:
+                                name_id = self.__name_id_mapper.index(
+                                    trace_event["name"]
+                                )
+                            else:
+                                self.__name_id_mapper.append(
+                                    trace_event["name"]
+                                )
+                                name_id = len(self.__name_id_mapper) - 1
+                            trace_events.append(
+                                TraceEvent(
+                                    trace_event, name_id, self.__name_id_mapper
+                                )
+                            )
+
+                    elif event == "string" or event == "number":
+                        trace_event[key] = value
+                elif prefix.startswith("timestampUnit"):
+                    if event == "string":
+                        self.__timestamp_unit: str = str(value)
+        self.__trace_events: tp.List[TraceEvent] = trace_events
 
 
 class TEFReportAggregate(
@@ -140,3 +179,26 @@ class TEFReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
+
+
+__WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
+
+
+def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+    match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
+    if match:
+        return str(match.group("label"))
+
+    return None
+
+
+class WorkloadSpecificTEFReportAggregate(
+    WorkloadSpecificReportAggregate[TEFReport], shorthand="", file_type=""
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(
+            path,
+            TEFReport,
+            get_workload_label,
+        )

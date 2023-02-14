@@ -20,11 +20,13 @@ else:
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
+from benchbuild.extensions import base
 from benchbuild.project import Project
 from benchbuild.source import enumerate_revisions
 from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
+from plumbum.commands.base import BoundCommand
 
 import varats.revision.revisions as revs
 from varats.base.configuration import (
@@ -279,6 +281,20 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     """
     max_stacksize_16gb = 17179869184
     return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
+
+
+class WithUnlimitedStackSize(base.Extension):  # type: ignore
+    """Sets the stack size of the wrapped command to unlimited (16GB)."""
+
+    def __init__(self, *extensions: tp.Any, **kwargs: tp.Any) -> None:
+        super().__init__(*extensions, **kwargs)
+
+    def __call__(
+        self, binary_command: BoundCommand, *args: tp.Any, **kwargs: tp.Any
+    ) -> tp.Any:
+        return self.call_next(
+            wrap_unlimit_stack_size(binary_command), *args, **kwargs
+        )
 
 
 VersionType = tp.TypeVar('VersionType')

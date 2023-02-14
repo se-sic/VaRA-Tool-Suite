@@ -97,24 +97,24 @@ class TestRevisionHelpers(unittest.TestCase):
             ReportFilepath(
                 Path(),
                 ReportFilename(
-                    "CRE-CR-foo-bar-7bb9ef5f8c_"
-                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be/config-42_"
+                    "CRE-CR-foo-bar-7bb9ef5f8c/"
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_config-42_"
                     "success.txt"
                 )
             ),
             ReportFilepath(
                 Path(),
                 ReportFilename(
-                    "CRE-CR-foo-bar-7bb9ef5f8c_"
-                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be/config-21_"
+                    "CRE-CR-foo-bar-7bb9ef5f8c/"
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_config-21_"
                     "success.txt"
                 )
             ),
             ReportFilepath(
                 Path(),
                 ReportFilename(
-                    "CRE-CR-foo-bar-7bb9ef5f8c_"
-                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864bb/config-42_"
+                    "CRE-CR-foo-bar-7bb9ef5f8c/"
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864bb_config-42_"
                     "success.txt"
                 )
             ),

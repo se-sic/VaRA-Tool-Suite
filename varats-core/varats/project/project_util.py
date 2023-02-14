@@ -23,43 +23,29 @@ class CompilationError(Exception):
 
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
-    """Look up a BenchBuild project by it's name."""
-    for project_map_key in bb.project.ProjectRegistry.projects:
-        if not _is_vara_project(project_map_key):
-            # currently we only support vara provided projects
+    """Look up a BenchBuild project by its name."""
+    from varats.project.varats_project import VProject  # pylint: disable=W0611
+    for project_cls in bb.project.ProjectRegistry.projects.itervalues(
+        prefix=project_name
+    ):
+        if not issubclass(project_cls, VProject):
+            # currently we only support varats provided projects
             continue
 
-        if project_map_key.startswith(project_name):
-            project: tp.Type[
-                bb.Project
-            ] = bb.project.ProjectRegistry.projects[project_map_key]
-            return project
+        return tp.cast(tp.Type[bb.Project], project_cls)
 
     raise LookupError
 
 
 def get_loaded_vara_projects() -> tp.Generator[tp.Type[bb.Project], None, None]:
     """Get all loaded vara projects."""
-    for project_map_key in bb.project.ProjectRegistry.projects:
-        if not _is_vara_project(project_map_key):
-            # currently we only support vara provided projects
+    from varats.project.varats_project import VProject  # pylint: disable=W0611
+    for project_cls in bb.project.ProjectRegistry.projects.values():
+        if not issubclass(project_cls, VProject):
+            # currently we only support varats provided projects
             continue
 
-        yield bb.project.ProjectRegistry.projects[project_map_key]
-
-
-def _is_vara_project(project_key: str) -> bool:
-    """
-    >>> _is_vara_project("Xz/c_projects")
-    True
-
-    >>> _is_vara_project("BZip2/gentoo")
-    False
-    """
-    return any(
-        project_key.endswith(x)
-        for x in ("c_projects", "cpp_projects", "test_projects", "perf_tests")
-    )
+        yield project_cls
 
 
 def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
@@ -256,11 +242,17 @@ class ProjectBinaryWrapper():
         binary_name: str,
         path_to_binary: Path,
         binary_type: BinaryType,
-        entry_point: tp.Optional[Path] = None
+        entry_point: tp.Optional[Path] = None,
+        valid_exit_codes: tp.Optional[tp.List[int]] = None,
     ) -> None:
         self.__binary_name = binary_name
         self.__binary_path = path_to_binary
         self.__type = binary_type
+
+        if valid_exit_codes is not None:
+            self.__valid_exit_codes = valid_exit_codes
+        else:
+            self.__valid_exit_codes = [0]
 
         if binary_type is BinaryType.EXECUTABLE:
             self.__entry_point = entry_point
@@ -290,6 +282,12 @@ class ProjectBinaryWrapper():
         """Entry point to an executable "thing" that executes the wrapped
         binary, if possible."""
         return self.__entry_point
+
+    @property
+    def valid_exit_codes(self) -> tp.List[int]:
+        """Specifies which exit codes indicate a successful execution of the
+        binary."""
+        return self.__valid_exit_codes
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         if self.type is not BinaryType.EXECUTABLE:

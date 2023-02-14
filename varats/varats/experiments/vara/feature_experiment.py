@@ -1,5 +1,7 @@
 """Base class experiment and utilities for experiments that work with
 features."""
+import json
+import re
 import textwrap
 import typing as tp
 from abc import abstractmethod
@@ -7,23 +9,24 @@ from pathlib import Path
 
 from benchbuild.command import cleanup
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step, ProjectStep, StepResult
+from benchbuild.utils.actions import ProjectStep, Step, StepResult
 from plumbum import local
 
 from varats.experiment.experiment_util import (
-    VersionExperiment,
     ExperimentHandle,
-    create_new_success_result_filepath,
+    VersionExperiment,
     ZippedReportFolder,
+    create_new_success_result_filepath,
     get_current_config_id,
     get_extra_config_options,
 )
-from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.experiment.trace_util import merge_trace
+from varats.experiment.workload_util import WorkloadCategory, workload_commands
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
-    FeatureModelProvider,
     FeatureModelNotFound,
+    FeatureModelProvider,
 )
 from varats.report.report import ReportSpecification
 
@@ -66,8 +69,12 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
 
         Returns: list of feature cflags
         """
-        fm_path = FeatureExperiment.get_feature_model_path(project).absolute()
-        return ["-fvara-feature", f"-fvara-fm-path={fm_path}"]
+        try:
+            fm_path = FeatureExperiment.get_feature_model_path(project
+                                                              ).absolute()
+            return ["-fvara-feature", f"-fvara-fm-path={fm_path}"]
+        except FeatureModelNotFound:
+            return ["-fvara-feature", "-fvara-fm-path="]
 
     @staticmethod
     def get_vara_tracing_cflags(instr_type: str,
@@ -109,9 +116,15 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
+    def __init__(
+        self,
+        project: VProject,
+        experiment_handle: ExperimentHandle,
+        report_file_ending: str = "json"
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.__report_file_ending = report_file_ending
 
     def __call__(self) -> StepResult:
         return self.run_traced_code()
@@ -141,7 +154,8 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                     ):
                         local_tracefile_path = Path(
                             tmp_dir
-                        ) / f"trace_{prj_command.command.label}.json"
+                        ) / f"trace_{prj_command.command.label}" \
+                            f".{self.__report_file_ending}"
                         with local.env(VARA_TRACE_FILE=local_tracefile_path):
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
@@ -154,6 +168,117 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                                 self.project
                             )
                             with cleanup(prj_command):
-                                pb_cmd(*extra_options)
+                                pb_cmd(
+                                    *extra_options,
+                                    retcode=binary.valid_exit_codes
+                                )
+
+        return StepResult.OK
+
+
+class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
+    """Executes the traced project binaries on the specified workloads."""
+
+    NAME = "VaRARunTracedXRayBinaries"
+    DESCRIPTION = "Run traced binary on workloads."
+
+    project: VProject
+
+    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
+        super().__init__(project=project)
+        self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> StepResult:
+        return self.run_traced_code()
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run VaRA measurements together with XRay",
+            indent * " "
+        )
+
+    def run_traced_code(self) -> StepResult:
+        """Runs the binary with the embedded tracing code."""
+        for binary in self.project.binaries:
+            if binary.type != BinaryType.EXECUTABLE:
+                # Skip libraries as we cannot run them
+                continue
+
+            result_filepath = create_new_success_result_filepath(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report,
+                self.project, binary
+            )
+
+            with local.cwd(local.path(self.project.builddir)):
+                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
+                    for prj_command in workload_commands(
+                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        trace_result_path = Path(
+                            tmp_dir
+                        ) / f"trace_{prj_command.command.label}.json"
+                        with local.env(
+                            VARA_TRACE_FILE=trace_result_path,
+                            XRAY_OPTIONS=" ".join([
+                                "patch_premain=true",
+                                "xray_mode=xray-basic",
+                                "verbosity=1",
+                            ]),
+                        ):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                "Running example"
+                                f" '{prj_command.command.label}'",
+                                flush=True
+                            )
+                            with cleanup(prj_command):
+                                _, _, err = pb_cmd.run()
+                            xray = re.findall(
+                                r"XRay: Log file in '(.+?)'",
+                                err,
+                                flags=re.DOTALL
+                            )
+
+                        if xray:
+                            xray_log_path = local.cwd / xray[0]
+                            xray_map_path = local.path(
+                                self.project.primary_source
+                            ) / binary.path
+                            print(
+                                f"XRay: Log file in '{xray_log_path}' /"
+                                f" {xray_map_path}",
+                                flush=True
+                            )
+                            xray_result_path = Path(
+                                tmp_dir
+                            ) / f"xray_{prj_command.command.label}.json"
+                            local["llvm-xray"]([
+                                "convert",
+                                f"--instr_map={xray_map_path}",
+                                f"--output={xray_result_path}",
+                                "--output-format=trace_event",
+                                "--symbolize",
+                                xray_log_path,
+                            ])
+
+                            merge_result_path = Path(
+                                tmp_dir
+                            ) / f"merge_{prj_command.command.label}.json"
+
+                            with open(
+                                merge_result_path, mode="x", encoding="UTF-8"
+                            ) as file:
+                                file.write(
+                                    json.dumps(
+                                        merge_trace(
+                                            (trace_result_path, "Trace"),
+                                            (xray_result_path, "XRay")
+                                        ),
+                                        indent=2
+                                    )
+                                )
 
         return StepResult.OK
