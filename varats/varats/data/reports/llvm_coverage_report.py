@@ -418,16 +418,17 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         """
 
         class EnhancedJSONEncoder(json.JSONEncoder):
+            """Custom JSON Encoder to handle converting CodeRegions to json."""
 
-            def default(self, o: tp.Any) -> tp.Dict[str, tp.Any]:
+            def default(self, o: tp.Any) -> tp.Any:
                 if isinstance(o, CodeRegion):
                     result = {}
-                    for (k, v) in o.__dict__.items():
+                    for (key, value) in o.__dict__.items():
                         # Exclude parent to avoid endless loops
-                        if k != "parent":
-                            result[k] = self.encode(v)
+                        if key != "parent":
+                            result[key] = self.encode(value)
                     return result
-                elif is_dataclass(o):
+                if is_dataclass(o):
                     return asdict(o)
                 return super().default(o)
 
@@ -436,11 +437,15 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         )
 
 
+SegmentBuffer = tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int], str]]]
+
+
 def cov_show(
     report: CoverageReport,
     base_dir: tp.Optional[Path] = None,
     color=True
 ) -> str:
+    """Returns a the coverage in text form similar to llvm-cov show."""
     result = []
     for file in sorted(list(report.filename_function_mapping)):
         function_region_mapping = report.filename_function_mapping[file]
@@ -467,12 +472,11 @@ def _cov_show_file(
             line_number += 1
 
     if color:
-        buffer.append(f"\033[0;36m{path}:\033[00m\n")
+        buffer.append(_color_str(str(path), "\033[0;36m"))
     else:
         buffer.append(f"{path}:\n")
-    segments_dict = defaultdict(
-        list
-    )  # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
+    # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
+    segments_dict: SegmentBuffer = defaultdict(list)
     for function in function_region_mapping:
         region = function_region_mapping[function]
         segments_dict = _cov_show_function(region, lines, segments_dict)
@@ -486,6 +490,16 @@ def _cov_show_file(
         buffer=segments_dict
     )
 
+    buffer.append(__segments_dict_to_str(segments_dict, color))
+    return buffer
+
+
+def __segments_dict_to_str(
+    segments_dict: tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int],
+                                                        str]]], color: bool
+) -> str:
+    """Constructs a str from the given segments dictionary."""
+    buffer = []
     for line_number, segments in segments_dict.items():
         if len(segments) > 1:
             # Workaround: Ignore counts for last segment with whitespaces
@@ -496,38 +510,38 @@ def _cov_show_file(
                            ) else segments[-1]
         #buffer.append(str(segments) + "\n")
         counts = [segment[0] for segment in segments]
-        non_none_counts = list(filter(lambda item: item is not None, counts))
+
+        def filter_nones(a: tp.List[tp.Optional[int]]) -> tp.Iterator[int]:
+            for item in a:
+                if item is not None:
+                    yield item
+
+        non_none_counts = list(filter_nones(counts))
+        count: tp.Union[int, str] = ""
         if len(non_none_counts) > 0:
             count = max(non_none_counts, key=abs)
-        else:
-            count = ""
-        buffer.append("{:>5}|{:>7}|".format(line_number, count))
+        buffer.append(f"{line_number:>5}|{count:>7}|")
 
         texts = [segment[1] for segment in segments]
-        if color == False:
+        if color is False:
             buffer.append("".join(texts))
         else:
             colored_texts = []
             for x, y in zip(counts, texts):
-                if x is None:
-                    colored_texts.append(y)
-                elif x > 0:
-                    colored_texts.append(y)
-                elif x < 0:
+                if x is None or x != 0:
                     colored_texts.append(y)
                 elif x == 0:
-                    colored_texts.append(f"\033[0;41m{y}\033[00m")
+                    colored_texts.append(_color_str(y, "\033[0;41m"))
                 else:
                     raise NotImplementedError
 
             buffer.append("".join(colored_texts))
-    return buffer
+    return "".join(buffer)
 
 
 def _cov_show_function(
-    region: CodeRegion, lines: tp.Dict[int, str],
-    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
-) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
+    region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer
+) -> SegmentBuffer:
 
     # Print lines before region.
     prev_line, prev_column = __get_previous_line_and_column(
@@ -547,9 +561,8 @@ def _cov_show_function(
 
 
 def _cov_show_function_inner(
-    region: CodeRegion, lines: tp.Dict[int, str],
-    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
-) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]]:
+    region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer
+) -> SegmentBuffer:
 
     # Print childs
     for child in region.childs:
@@ -569,13 +582,13 @@ def _cov_show_function_inner(
                 lines=lines,
                 buffer=buffer
             )
-        if child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
+        if child.kind in (CodeRegionKind.CODE, CodeRegionKind.EXPANSION):
             buffer = _cov_show_function_inner(child, lines, buffer)
         elif child.kind == CodeRegionKind.GAP:
-            #child.count = None
+            #child.count = None  # type: ignore
             buffer = _cov_show_function_inner(child, lines, buffer)
         elif child.kind == CodeRegionKind.SKIPPED:
-            child.count = None
+            child.count = None  # type: ignore
             buffer = _cov_show_function_inner(child, lines, buffer)
         else:
             raise NotImplementedError
@@ -594,12 +607,9 @@ def _cov_show_function_inner(
 
 def __cov_fill_buffer(
     end_line: int, end_column: int, count: tp.Optional[int],
-    lines: tp.Dict[int, str],
-    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
-) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]]:
+    lines: tp.Dict[int, str], buffer: SegmentBuffer
+) -> SegmentBuffer:
 
-    #if end_column == 0:
-    #    return buffer
     start_line, start_column = __get_next_line_and_column(lines, buffer)
 
     assert start_line >= 1 and start_line <= len(lines)
@@ -626,10 +636,8 @@ def __cov_fill_buffer(
     return buffer
 
 
-def __get_next_line_and_column(
-    lines: tp.Dict[int, str],
-    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
-) -> tp.Tuple[int, int]:
+def __get_next_line_and_column(lines: tp.Dict[int, str],
+                               buffer: SegmentBuffer) -> tp.Tuple[int, int]:
     """
     Outputs the next line + column that is not yet in the buffer.
 
@@ -662,3 +670,8 @@ def __get_previous_line_and_column(
     if column - 1 == 0:
         return line - 1, len(lines[line - 1])
     return line, column - 1
+
+
+def _color_str(a: str, color: str) -> str:
+    """Wraps the string inside the color characters."""
+    return f"{color}{a}\033[00m"
