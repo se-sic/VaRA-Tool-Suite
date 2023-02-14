@@ -487,8 +487,14 @@ def _cov_show_file(
     )
 
     for line_number, segments in segments_dict.items():
-        #segments = list(map(lambda item: (None, item[1]) if str.isspace(item[1]) else item, segments))
-        buffer.append(str(segments) + "\n")
+        if len(segments) > 1:
+            # Workaround: Ignore counts for last segment with whitespaces
+            # and single ';' that ends with "\n"
+            segments[-1] = (None, segments[-1][1]
+                           ) if segments[-1][1].endswith("\n") and (
+                               str.isspace(segments[-1][1].replace(";", "", 1))
+                           ) else segments[-1]
+        #buffer.append(str(segments) + "\n")
         counts = [segment[0] for segment in segments]
         non_none_counts = list(filter(lambda item: item is not None, counts))
         if len(non_none_counts) > 0:
@@ -545,31 +551,34 @@ def _cov_show_function_inner(
     buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
 ) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]]:
 
-    # Print region until first child.
-    if len(region.childs) >= 1:
-        child = region.childs[0]
+    # Print childs
+    for child in region.childs:
         prev_line, prev_column = __get_previous_line_and_column(
             child.start.line, child.start.column, lines
         )
-        buffer = __cov_fill_buffer(
-            end_line=prev_line,
-            end_column=prev_column,
-            count=region.count,
-            lines=lines,
-            buffer=buffer
-        )
-        # Print childs
-        for child in region.childs:
-            if child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
-                buffer = _cov_show_function_inner(child, lines, buffer)
-            elif child.kind == CodeRegionKind.GAP:
-                child.count = None
-                buffer = _cov_show_function_inner(child, lines, buffer)
-            elif child.kind == CodeRegionKind.SKIPPED:
-                child.count = None
-                buffer = _cov_show_function_inner(child, lines, buffer)
-            else:
-                raise NotImplementedError
+        next_line, next_column = __get_next_line_and_column(lines, buffer)
+        if not (
+            next_line > prev_line or
+            next_line == prev_line and next_column >= prev_column
+        ):
+            # There is a gap until the next child begins that must be filled
+            buffer = __cov_fill_buffer(
+                end_line=prev_line,
+                end_column=prev_column,
+                count=region.count,
+                lines=lines,
+                buffer=buffer
+            )
+        if child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
+            buffer = _cov_show_function_inner(child, lines, buffer)
+        elif child.kind == CodeRegionKind.GAP:
+            #child.count = None
+            buffer = _cov_show_function_inner(child, lines, buffer)
+        elif child.kind == CodeRegionKind.SKIPPED:
+            child.count = None
+            buffer = _cov_show_function_inner(child, lines, buffer)
+        else:
+            raise NotImplementedError
 
     # Print remaining region
     buffer = __cov_fill_buffer(
@@ -611,10 +620,8 @@ def __cov_fill_buffer(
 
         else:
             text = lines[line_number]
-        if False and text == "\n":
-            buffer[line_number].append((None, text))
-        else:
-            buffer[line_number].append((count, text))
+
+        buffer[line_number].append((count, text))
 
     return buffer
 
