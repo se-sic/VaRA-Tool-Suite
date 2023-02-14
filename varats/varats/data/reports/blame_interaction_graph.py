@@ -69,6 +69,7 @@ class BIGDiffNodeAttrs(TypedDict):
     blame_taint_data: BlameTaintData
     region: tp.Optional[int]
     function: tp.Optional[str]
+    demangled_function: tp.Optional[str]
     commit: str
     repo: str
     diff_type: DiffType
@@ -461,6 +462,8 @@ class BlameInteractionGraphDiff():
                     "region":
                         blame_taint_data.region_id,
                     "function":
+                        blame_taint_data.function_name,
+                    "demangled_function":
                         func_entry.demangled_name if func_entry else None,
                     "commit":
                         blame_taint_data.commit.commit_hash.short_hash,
@@ -543,10 +546,8 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
             for function_entry in report.function_entries:
                 sources = _nodes_for_func_entry(function_entry)
                 sinks = [
-                    sink for callee in function_entry.callees
-                    for sink in _nodes_for_func_entry(
-                        report.get_blame_result_function_entry(callee)
-                    )
+                    sink for callee in function_entry.callees for sink in
+                    _nodes_for_func_entry(report.get_function_entry(callee))
                 ]
 
                 for node in [*sources, *sinks]:
@@ -568,12 +569,14 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
 
 
 def _nodes_for_func_entry(
-    function_entry: BlameResultFunctionEntry
+    function_entry: tp.Optional[BlameResultFunctionEntry]
 ) -> tp.Set[BIGNodeTy]:
-    return {
-        BlameTaintData(commit, function_name=function_entry.name)
-        for commit in function_entry.commits
-    }
+    if function_entry:
+        return {
+            BlameTaintData(commit, function_name=function_entry.name)
+            for commit in function_entry.commits
+        }
+    return set()
 
 
 class FileBasedInteractionGraph(InteractionGraph):
@@ -727,19 +730,8 @@ def create_callgraph_based_interaction_graph(
     Returns:
         the blame interaction graph
     """
-    file_name_filter: tp.Callable[[str], bool] = lambda x: False
-
-    if revision:
-
-        def match_revision(file_name: str) -> bool:
-            return ReportFilename(
-                file_name
-            ).commit_hash != revision.to_short_commit_hash()
-
-        file_name_filter = match_revision
-
-    report_files = get_processed_revisions_files(
-        project_name, experiment_type, file_name_filter=file_name_filter
+    report_files = get_processed_revision_files(
+        project_name, revision.to_short_commit_hash(), experiment_type
     )
     if len(report_files) == 0:
         raise LookupError(f"Found no BlameReport for project {project_name}")
