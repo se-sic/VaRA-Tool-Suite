@@ -307,17 +307,17 @@ class TestCodeRegion(unittest.TestCase):
         buffer = defaultdict(list)
 
         buffer = cov_fill_buffer(
-            end_line=1, end_column=5, count=0, lines=lines, buffer=buffer
+            end_line=1, end_column=6, count=0, lines=lines, buffer=buffer
         )
         self.assertEqual(buffer, {1: [(0, "Hello")]})
         self.assertEqual((1, 6), get_next_line_and_column(lines, buffer))
         buffer = cov_fill_buffer(
-            end_line=1, end_column=13, count=1, lines=lines, buffer=buffer
+            end_line=1, end_column=14, count=1, lines=lines, buffer=buffer
         )
         self.assertEqual(buffer, {1: [(0, "Hello"), (1, " World!\n")]})
         self.assertEqual((2, 1), get_next_line_and_column(lines, buffer))
         buffer = cov_fill_buffer(
-            end_line=2, end_column=9, count=42, lines=lines, buffer=buffer
+            end_line=2, end_column=10, count=42, lines=lines, buffer=buffer
         )
         self.assertEqual(
             buffer, {
@@ -329,7 +329,7 @@ class TestCodeRegion(unittest.TestCase):
 
         buffer = defaultdict(list)
         buffer = cov_fill_buffer(
-            end_line=2, end_column=9, count=None, lines=lines, buffer=buffer
+            end_line=2, end_column=10, count=None, lines=lines, buffer=buffer
         )
         self.assertEqual(
             buffer, {

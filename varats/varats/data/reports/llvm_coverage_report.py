@@ -477,19 +477,18 @@ def _cov_show_file(
         region = function_region_mapping[function]
         segments_dict = _cov_show_function(region, lines, segments_dict)
 
-    # Print rest of file if necessary
-    if (len(lines), len(lines[len(lines)]
-                       )) != __get_next_line_and_column(lines, segments_dict):
-        segments_dict = __cov_fill_buffer(
-            end_line=len(lines),
-            end_column=len(lines[len(lines)]),
-            count=None,
-            lines=lines,
-            buffer=segments_dict
-        )
+    # Print rest of file
+    segments_dict = __cov_fill_buffer(
+        end_line=len(lines),
+        end_column=len(lines[len(lines)]) + 1,
+        count=None,
+        lines=lines,
+        buffer=segments_dict
+    )
 
     for line_number, segments in segments_dict.items():
-        #buffer.append(str(segments) + "\n")
+        #segments = list(map(lambda item: (None, item[1]) if str.isspace(item[1]) else item, segments))
+        buffer.append(str(segments) + "\n")
         counts = [segment[0] for segment in segments]
         non_none_counts = list(filter(lambda item: item is not None, counts))
         if len(non_none_counts) > 0:
@@ -525,9 +524,12 @@ def _cov_show_function(
 ) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
 
     # Print lines before region.
+    prev_line, prev_column = __get_previous_line_and_column(
+        region.start.line, region.start.column, lines
+    )
     buffer = __cov_fill_buffer(
-        end_line=region.start.line,
-        end_column=max(region.start.column - 1, 1),
+        end_line=prev_line,
+        end_column=prev_column,
         count=None,
         lines=lines,
         buffer=buffer
@@ -546,21 +548,24 @@ def _cov_show_function_inner(
     # Print region until first child.
     if len(region.childs) >= 1:
         child = region.childs[0]
+        prev_line, prev_column = __get_previous_line_and_column(
+            child.start.line, child.start.column, lines
+        )
         buffer = __cov_fill_buffer(
-            end_line=child.start.line,
-            end_column=max(child.start.column - 1, 1),
+            end_line=prev_line,
+            end_column=prev_column,
             count=region.count,
             lines=lines,
             buffer=buffer
         )
         # Print childs
         for child in region.childs:
-            if child.kind == CodeRegionKind.SKIPPED:
-                # Skip skipped regions
-                continue
-            elif child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
+            if child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
                 buffer = _cov_show_function_inner(child, lines, buffer)
             elif child.kind == CodeRegionKind.GAP:
+                child.count = None
+                buffer = _cov_show_function_inner(child, lines, buffer)
+            elif child.kind == CodeRegionKind.SKIPPED:
                 child.count = None
                 buffer = _cov_show_function_inner(child, lines, buffer)
             else:
@@ -584,27 +589,32 @@ def __cov_fill_buffer(
     buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
 ) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]]:
 
+    #if end_column == 0:
+    #    return buffer
     start_line, start_column = __get_next_line_and_column(lines, buffer)
 
     assert start_line >= 1 and start_line <= len(lines)
     assert start_column >= 1 and start_column - 1 <= len(lines[start_line])
     assert end_line >= 1 and end_line <= len(lines) and end_line >= start_line
-    assert end_column >= 1 and end_column <= len(lines[end_line])
+    assert end_column >= 1 and end_column - 1 <= len(lines[end_line])
     assert (end_column >= start_column if start_line == end_line else True)
 
     for line_number in range(start_line, end_line + 1):
         if line_number == start_line and line_number == end_line:
-            text = lines[line_number][start_column - 1:end_column]
+            text = lines[line_number][start_column - 1:end_column - 1]
 
         elif line_number == start_line:
             text = lines[line_number][start_column - 1:]
 
         elif line_number == end_line:
-            text = lines[line_number][:end_column]
+            text = lines[line_number][:end_column - 1]
 
         else:
             text = lines[line_number]
-        buffer[line_number].append((count, text))
+        if False and text == "\n":
+            buffer[line_number].append((None, text))
+        else:
+            buffer[line_number].append((count, text))
 
     return buffer
 
@@ -635,3 +645,13 @@ def __get_next_line_and_column(
         next_column = min(last_column + 1, len_line)
 
     return next_line, next_column
+
+
+def __get_previous_line_and_column(
+    line: int, column: int, lines: tp.Dict[int, str]
+):
+    assert line >= 2
+    assert column >= 1
+    if column - 1 == 0:
+        return line - 1, len(lines[line - 1])
+    return line, column - 1
