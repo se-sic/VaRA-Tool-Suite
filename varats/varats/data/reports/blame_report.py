@@ -480,9 +480,9 @@ class BlameReportDiff():
         return self.__prev_head
 
     @property
-    def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
+    def function_entries(self) -> tp.Set[BlameResultFunctionEntry]:
         """Iterate over all function entries in the diff."""
-        return self.__changes.values()
+        return set(*self.__changes.values(), *self.__unchanged.values())
 
     def get_function_entry(
         self, mangled_function_name: str
@@ -493,7 +493,9 @@ class BlameReportDiff():
         Args:
             mangled_function_name: mangled name of the function to look up
         """
-        return self.__changes.get(mangled_function_name)
+        return self.__changes.get(
+            mangled_function_name
+        ) or self.__unchanged.get(mangled_function_name)
 
     def changes(self) -> tp.Generator[BlameInstInteractions, None, None]:
         for func_entry_delta in self.__changes.values():
