@@ -466,9 +466,6 @@ def _cov_show_file(
             lines[line_number] = line
             line_number += 1
 
-    # used to print everything that is not a code region in the file.
-    next_line = 1
-    next_column = 1
     if color:
         buffer.append(f"\033[0;36m{path}:\033[00m\n")
     else:
@@ -478,14 +475,10 @@ def _cov_show_file(
     )  # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
     for function in function_region_mapping:
         region = function_region_mapping[function]
-        segments_dict, next_line, next_column = _cov_show_function(
-            region, next_line, next_column, lines, segments_dict
-        )
+        segments_dict = _cov_show_function(region, lines, segments_dict)
 
-    # Print lines after regions.
-    segments_dict, next_line, next_column = __cov_fill_buffer(
-        start_line=min(next_line, len(lines)),
-        start_column=next_column,
+    # Print rest of file.
+    segments_dict = __cov_fill_buffer(
         end_line=len(lines),
         end_column=len(lines[len(lines)]),
         count=None,
@@ -525,28 +518,12 @@ def _cov_show_file(
 
 
 def _cov_show_function(
-    region: CodeRegion, next_line: int, next_column: int, lines: tp.Dict[int,
-                                                                         str],
-    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
-) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
-
-    buffer, next_line, next_column = _cov_show_function_inner(
-        region, next_line, next_column, lines, buffer
-    )
-
-    return (buffer, next_line, next_column)
-
-
-def _cov_show_function_inner(
-    region: CodeRegion, next_line: int, next_column: int, lines: tp.Dict[int,
-                                                                         str],
+    region: CodeRegion, lines: tp.Dict[int, str],
     buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
 ) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
 
     # Print lines before region.
-    buffer, next_line, next_column = __cov_fill_buffer(
-        start_line=next_line,
-        start_column=next_column,
+    buffer = __cov_fill_buffer(
         end_line=region.start.line,
         end_column=max(region.start.column - 1, 1),
         count=None,
@@ -554,12 +531,20 @@ def _cov_show_function_inner(
         buffer=buffer
     )
 
+    buffer = _cov_show_function_inner(region, lines, buffer)
+
+    return buffer
+
+
+def _cov_show_function_inner(
+    region: CodeRegion, lines: tp.Dict[int, str],
+    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
+) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]]:
+
     # Print region until first child.
     if len(region.childs) >= 1:
         child = region.childs[0]
-        buffer, next_line, next_column = __cov_fill_buffer(
-            start_line=next_line,
-            start_column=next_column,
+        buffer = __cov_fill_buffer(
             end_line=child.start.line,
             end_column=max(child.start.column - 1, 1),
             count=region.count,
@@ -569,9 +554,7 @@ def _cov_show_function_inner(
         # Print childs
         for child in region.childs:
             if child.kind == CodeRegionKind.CODE or child.kind == CodeRegionKind.EXPANSION:
-                buffer, next_line, next_column = _cov_show_function_inner(
-                    child, next_line, next_column, lines, buffer
-                )
+                buffer = _cov_show_function_inner(child, lines, buffer)
             """else:
                 # Gap Region
                 child.count = None
@@ -580,9 +563,7 @@ def _cov_show_function_inner(
                 )"""
 
     # Print remaining region
-    buffer, next_line, next_column = __cov_fill_buffer(
-        start_line=next_line,
-        start_column=next_column,
+    buffer = __cov_fill_buffer(
         end_line=region.end.line,
         end_column=region.end.column,
         count=region.count,
@@ -590,18 +571,16 @@ def _cov_show_function_inner(
         buffer=buffer
     )
 
-    return (buffer, next_line, next_column)
+    return buffer
 
 
 def __cov_fill_buffer(
-    start_line: int, start_column: int, end_line: int, end_column: int,
-    count: tp.Optional[int], lines: tp.Dict[int, str],
+    end_line: int, end_column: int, count: tp.Optional[int],
+    lines: tp.Dict[int, str],
     buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
-) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]], int, int]:
+) -> tp.Tuple[tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]]:
 
-    if start_line == end_line and end_column <= start_column:
-        # Skip negative or zero fills
-        return buffer, end_line, end_column
+    start_line, start_column = __get_next_line_and_column(lines, buffer)
 
     assert start_line >= 1 and start_line <= len(lines)
     assert start_column >= 1 and start_column - 1 <= len(lines[start_line])
@@ -623,21 +602,32 @@ def __cov_fill_buffer(
             text = lines[line_number]
         buffer[line_number].append((count, text))
 
-    next_line, next_column = __get_next_line_and_column(
-        lines, end_line, end_column
-    )
-    return buffer, next_line, next_column
-    #return buffer, end_line, end_column
+    return buffer
 
 
 def __get_next_line_and_column(
-    lines: tp.Dict[int, str], end_line: int, end_column: int
+    lines: tp.Dict[int, str],
+    buffer: tp.DefaultDict[int, tp.List[tp.Tuple[int, str]]]
 ) -> tp.Tuple[int, int]:
-    len_column = len(lines[end_line])
-    if end_column >= len_column:
-        end_line += 1
-        end_column = 1
-    else:
-        end_column += 1
+    """
+    Outputs the next line + column that is not yet in the buffer.
 
-    return end_line, end_column
+    Max ist last line + last_column of lines.
+    """
+    last_line = len(buffer)
+
+    if last_line == 0:
+        # Empty buffer, start at first line, first column
+        return 1, 1
+
+    len_line = len(lines[last_line])
+    last_column = sum(map(lambda x: len(x[1]), buffer[last_line]))
+
+    if last_column >= len_line and last_line < len(lines):
+        next_line = last_line + 1
+        next_column = 1
+    else:
+        next_line = last_line
+        next_column = min(last_column + 1, len_line)
+
+    return next_line, next_column

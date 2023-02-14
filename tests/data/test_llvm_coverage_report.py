@@ -21,6 +21,9 @@ from varats.data.reports.llvm_coverage_report import (
 from varats.data.reports.llvm_coverage_report import (
     __cov_fill_buffer as cov_fill_buffer,
 )
+from varats.data.reports.llvm_coverage_report import (
+    __get_next_line_and_column as get_next_line_and_column,
+)
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.plot.plots import PlotConfig
 from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
@@ -303,36 +306,18 @@ class TestCodeRegion(unittest.TestCase):
         lines = {1: "Hello World!\n", 2: "Goodbye;\n"}
         buffer = defaultdict(list)
 
-        next_line = 1
-        next_column = 1
-        buffer, next_line, next_column = cov_fill_buffer(
-            start_line=next_line,
-            start_column=next_column,
-            end_line=1,
-            end_column=5,
-            count=0,
-            lines=lines,
-            buffer=buffer
+        buffer = cov_fill_buffer(
+            end_line=1, end_column=5, count=0, lines=lines, buffer=buffer
         )
         self.assertEqual(buffer, {1: [(0, "Hello")]})
-        buffer, next_line, next_column = cov_fill_buffer(
-            start_line=next_line,
-            start_column=next_column,
-            end_line=1,
-            end_column=13,
-            count=1,
-            lines=lines,
-            buffer=buffer
+        self.assertEqual((1, 6), get_next_line_and_column(lines, buffer))
+        buffer = cov_fill_buffer(
+            end_line=1, end_column=13, count=1, lines=lines, buffer=buffer
         )
         self.assertEqual(buffer, {1: [(0, "Hello"), (1, " World!\n")]})
-        buffer, next_line, next_column = cov_fill_buffer(
-            start_line=next_line,
-            start_column=next_column,
-            end_line=2,
-            end_column=9,
-            count=42,
-            lines=lines,
-            buffer=buffer
+        self.assertEqual((2, 1), get_next_line_and_column(lines, buffer))
+        buffer = cov_fill_buffer(
+            end_line=2, end_column=9, count=42, lines=lines, buffer=buffer
         )
         self.assertEqual(
             buffer, {
@@ -340,18 +325,11 @@ class TestCodeRegion(unittest.TestCase):
                 2: [(42, "Goodbye;\n")]
             }
         )
+        self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))
 
         buffer = defaultdict(list)
-        next_line = 1
-        last_column = 1
-        buffer, next_line, next_column = cov_fill_buffer(
-            start_line=next_line,
-            start_column=next_column,
-            end_line=2,
-            end_column=9,
-            count=None,
-            lines=lines,
-            buffer=buffer
+        buffer = cov_fill_buffer(
+            end_line=2, end_column=9, count=None, lines=lines, buffer=buffer
         )
         self.assertEqual(
             buffer, {
@@ -359,3 +337,4 @@ class TestCodeRegion(unittest.TestCase):
                 2: [(None, "Goodbye;\n")]
             }
         )
+        self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))
