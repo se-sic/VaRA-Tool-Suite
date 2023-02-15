@@ -282,3 +282,54 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                 )
 
         return StepResult.OK
+
+"""class RunVaRATracedWhiteboxWorkloads(ProjectStep):  # type: ignore
+    Executes the specified binaries of the project, in specific
+    configurations, against one or multiple workloads.
+
+    NAME = "xzWhiteboxAnalysis"
+    DESCRIPTION = "Executes each binary and captures white-box " +\
+        "performance traces."
+
+    def __init__(self, 
+                 project: Project, 
+                 experiment_handle: ExperimentHandle,
+                 report_file_ending: str = "json"
+    ):
+        super().__init__(project=project)
+        self.__experiment_handle = experiment_handle
+        self.__report_file_ending = report_file_ending
+    
+    def __call__(self) -> StepResult:
+        #raise Exception()
+        return self.run_perf_tracing()
+
+    def run_perf_tracing(self) -> StepResult:
+        project: Project = self.project
+
+        number_of_repetition = 1
+
+        vara_result_folder = create_new_success_result_filepath(
+                self.__experiment_handle,
+                self.__experiment_handle.report_spec().main_report,
+                self.project, binary, get_current_config_id(self.project)
+            )
+        
+        for binary in project.binaries:
+            if binary.type != BinaryType.EXECUTABLE:
+                continue
+
+            #result_file = self.__experiment_handle.get_file_name(
+            #    TEFReport.shorthand(),
+            #    project_name=str(project.name),
+            #    binary_name=binary.name,
+            #    project_revision=project.version_of_primary,
+            #    project_uuid=str(project.run_uuid),
+            #    extension_type=FSE.SUCCESS
+            #)
+
+            with local.cwd(local.path(self.project.builddir)):
+                with ZippedReportFolder(vara_result_folder.full_path()) as aggregated_time_reports_dir:
+                    #Compression level 6 currently only, 6 is default
+"""
+

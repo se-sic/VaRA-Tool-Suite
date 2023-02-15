@@ -116,3 +116,50 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
             RunVaRATracedXRayWorkloads(project, self.get_handle()),
             actions.Clean(project),
         ]
+
+
+"""class FeaturePerfWhiteboxRunner(FeatureExperiment, shorthand="xzW"):
+    Test runner for feature performance
+
+    NAME = "xzWhiteboxAnalysisReport"
+
+    REPORT_SPEC = ReportSpecification(TEFReport)
+
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
+        
+        ""
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        ""
+        
+        project.cflags += self.get_vara_feature_cflags(project)
+
+        project.cflags += self.get_vara_tracing_cflags("trace_event")
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+            << time.RunWithTime()
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << run.WithTimeout()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, TEFReport
+        )
+
+        analysis_actions = []
+
+        analysis_actions.append(actions.Compile(project))
+        analysis_actions.append(ExecAndTraceBinary(project, self.get_handle()))
+
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+"""
