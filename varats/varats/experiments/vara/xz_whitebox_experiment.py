@@ -152,9 +152,10 @@ class FeaturePerfRunner(VersionExperiment, shorthand="xzW"):
         # Sets vara tracing flags
         project.cflags += [
             "-fsanitize=vara", "-fvara-instr=trace_event", "-flto",
-            "-fuse-ld=lld"
+            "-fuse-ld=lld", "-flegacy-pass-manager"
         ]
         project.ldflags += ["-flto"]
+        
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
