@@ -1,12 +1,18 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
 
+<<<<<< Manuel_Messerig_Bachelor_Project
 import json
+=======
+>>>>>> vara-dev
 import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
 import numpy as np
+
+import ijson
+
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
@@ -49,12 +55,21 @@ class TraceEvent():
     """Represents a trace event that was captured during the analysis of a
     target program."""
 
+<<<<<< Manuel_Messerig_Bachelor_Project
     def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
         self.__name = str(json_trace_event["name"])
         self.__name = self.__name.replace("FR(", "")
         if self.__name[-1] == ")":
             self.__name = self.__name[:-1]
 
+======
+    def __init__(
+        self, json_trace_event: tp.Dict[str, tp.Any], name_id: int,
+        name_id_mapper: 'TEFReport.NameIDMapper'
+    ) -> None:
+        self.__name_id_mapper = name_id_mapper
+        self.__name_id = name_id
+>>>>>> vara-dev
         self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
             json_trace_event["ph"]
@@ -66,7 +81,7 @@ class TraceEvent():
 
     @property
     def name(self) -> str:
-        return self.__name
+        return self.__name_id_mapper.infer_name(self.__name_id)
 
     @property
     def category(self) -> str:
@@ -111,12 +126,13 @@ class TraceEvent():
 class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     """Report class to access trace event format files."""
 
-    def __init__(self, path: Path) -> None:
-        super().__init__(path)
+    class NameIDMapper(tp.List[str]):
+        """Helper class to map name IDs to names."""
 
-        with open(self.path, "r", encoding="utf-8") as json_tef_report:
-            data = json.load(json_tef_report)
+        def infer_name(self, name_id: int) -> str:
+            return self[name_id]
 
+<<<<<< Manuel_Messerig_Bachelor_Project
             if "displayTimeUnit" in data:
                 self.__display_time_unit = str(data["displayTimeUnit"])
             if "traceEvents" in data:
@@ -125,6 +141,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
             print("Visiting the TEFReport")
+======
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+        self.__name_id_mapper: TEFReport.NameIDMapper = TEFReport.NameIDMapper()
+        self._parse_json()
+        # Parsing stackFrames is currently not implemented
+        # x = data["stackFrames"]
+>>>>>> vara-dev
 
     @property
     def timestamp_unit(self) -> str:
@@ -140,11 +164,49 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
+<<<<<< Manuel_Messerig_Bachelor_Project
     @staticmethod
     def _parse_trace_events(
             raw_event_list: tp.List[tp.Dict[str, tp.Any]]
     ) -> tp.List[TraceEvent]:
         return [TraceEvent(data_item) for data_item in raw_event_list]
+======
+    def _parse_json(self) -> None:
+        trace_events: tp.List[TraceEvent] = list()
+        with open(self.path, "rb") as f:
+            parser = ijson.parse(f)
+            trace_event: tp.Dict[str, str] = {}
+            key = ""
+            for prefix, event, value in parser:
+                if event == "map_key":
+                    key = value
+                if prefix.startswith("traceEvents.item"):
+                    if prefix == "traceEvents.item" and event == "start_map":
+                        trace_event = {}
+                    if prefix == "traceEvents.item" and event == "end_map":
+                        if trace_event is not None:
+                            if trace_event["name"] in self.__name_id_mapper:
+                                name_id = self.__name_id_mapper.index(
+                                    trace_event["name"]
+                                )
+                            else:
+                                self.__name_id_mapper.append(
+                                    trace_event["name"]
+                                )
+                                name_id = len(self.__name_id_mapper) - 1
+                            trace_events.append(
+                                TraceEvent(
+                                    trace_event, name_id, self.__name_id_mapper
+                                )
+                            )
+
+                    elif event == "string" or event == "number":
+                        trace_event[key] = value
+                elif prefix.startswith("timestampUnit"):
+                    if event == "string":
+                        self.__timestamp_unit: str = str(value)
+        self.__trace_events: tp.List[TraceEvent] = trace_events
+>>>>>> vara-dev
 
     # Gets the current_feature list and return a string of all features concatenated
     # Contains no duplicate and alphabetical sorted
@@ -256,6 +318,7 @@ class TEFReportAggregate(
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
 
+<<<<<< Manuel_Messerig_Bachelor_Project
     @property
     def wall_clock_times(self) -> None:
         print("Enter Function")
@@ -289,3 +352,27 @@ class TEFReportAggregate(
 
         with open(Path(result_location + "result_aggregate.json" ), "w", encoding="utf-8") as json_result_file:
             json.dump(result_dict, json_result_file)
+======
+
+__WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
+
+
+def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+    match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
+    if match:
+        return str(match.group("label"))
+
+    return None
+
+
+class WorkloadSpecificTEFReportAggregate(
+    WorkloadSpecificReportAggregate[TEFReport], shorthand="", file_type=""
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(
+            path,
+            TEFReport,
+            get_workload_label,
+        )
+>>>>>> vara-dev
