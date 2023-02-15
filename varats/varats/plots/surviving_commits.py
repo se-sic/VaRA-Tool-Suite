@@ -3,7 +3,6 @@ import typing as tp
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import numpy as np
 import seaborn as sns
 from matplotlib import style
@@ -246,13 +245,10 @@ class HeatMapPlot(Plot, plot_name=None):
                 commit = commit_lookup_helper(
                     CommitRepoPair(FullCommitHash(label.get_text()), repo)
                 )
-                label.set(color=color_map[commit.author.name])
-            axis.yaxis.set_major_formatter(
-                mticker.FuncFormatter(
-                    lambda x, pos: axis.get_yticklabels()[pos].get_text()
-                    [:ShortCommitHash.hash_length()] + " █"
+                label.set(
+                    color=color_map[commit.author.name],
+                    text=label.get_text()[:ShortCommitHash.hash_length()] + " █"
                 )
-            )
             legend = []
             for author, color in color_map.items():
                 legend.append(mpatches.Patch(color=color, label=author))
