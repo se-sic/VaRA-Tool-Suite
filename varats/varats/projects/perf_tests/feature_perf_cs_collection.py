@@ -77,7 +77,8 @@ class FeaturePerfCSCollection(VProject):
             "build/bin/SimpleSleepLoop",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
-                "c77bca4c6888970fb721069c82455137943ccf49", "master"
+                "c77bca4c6888970fb721069c82455137943ccf49",
+                "27f17080376e409860405c40744887d81d6b3f34"
             )
         )
         binary_map.specify_binary(
