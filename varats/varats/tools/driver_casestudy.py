@@ -42,14 +42,12 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import (
-    get_project_cls_by_name,
     get_local_project_git_path,
     get_primary_project_source,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
-from varats.revision.revisions import is_revision_blocked
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -69,7 +67,6 @@ from varats.utils.git_util import (
     is_commit_hash,
     get_commits_before_timestamp,
     ShortCommitHash,
-    FullCommitHash,
 )
 from varats.utils.settings import vara_cfg
 
