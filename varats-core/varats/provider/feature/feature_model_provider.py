@@ -25,6 +25,8 @@ class FeatureModelNotFound(FileNotFoundError):
 class FeatureModelProvider(Provider):
     """Provider for accessing project related FeatureModels."""
 
+    fm_repository = "https://github.com/se-sic/ConfigurableSystems.git"
+
     @classmethod
     def create_provider_for_project(
         cls, project: tp.Type[Project]
@@ -83,7 +85,7 @@ class FeatureModelProvider(Provider):
     @staticmethod
     def _get_feature_model_repository_path() -> Path:
         fm_source = bb.source.Git(
-            remote="https://github.com/se-sic/ConfigurableSystems.git",
+            remote=FeatureModelProvider.fm_repository,
             local="ConfigurableSystems",
             refspec="origin/ba-messerig",
             limit=1,

@@ -15,7 +15,7 @@ import zipfile
 from datetime import datetime
 
 import requests
-from packaging.version import LegacyVersion, Version
+from packaging.version import Version
 from packaging.version import parse as version_parse
 from tabulate import tabulate
 
@@ -31,7 +31,7 @@ class CVE:
     def __init__(
         self, cve_id: str, score: float, published: datetime,
         vector: tp.FrozenSet[str], references: tp.FrozenSet[str], summary: str,
-        vulnerable_versions: tp.FrozenSet[tp.Union[LegacyVersion, Version]]
+        vulnerable_versions: tp.FrozenSet[Version]
     ) -> None:
         self.__cve_id = cve_id
         self.__score = score
@@ -72,9 +72,7 @@ class CVE:
         return self.__summary
 
     @property
-    def vulnerable_versions(
-        self
-    ) -> tp.FrozenSet[tp.Union[LegacyVersion, Version]]:
+    def vulnerable_versions(self) -> tp.FrozenSet[Version]:
         """The set of vulnerable version numbers."""
         return self.__vulnerable_versions
 
