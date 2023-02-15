@@ -400,8 +400,8 @@ def extend_with_latest_rev(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
         merge_stage: stage to add the new revisions to
-        git_path: git path to the project
         ignore_blocked: ignore blocked revisions'
+        git_path: git path to the project
     """
     repo = pygit2.Repository(pygit2.discover_repository(git_path))
 
