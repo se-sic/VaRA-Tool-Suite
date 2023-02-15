@@ -22,6 +22,7 @@ from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import base
 from benchbuild.project import Project
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.source import enumerate_revisions
 from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
 from benchbuild.utils.cmd import prlimit, mkdir
@@ -480,7 +481,8 @@ class VersionExperiment(Experiment):  # type: ignore
 
         variants = cls._sample_num_versions(variants)
 
-        if bool(bb_cfg()["versions"]["full"]):
+        # TODO: fix properly
+        if bool(BB_CFG["versions"]["full"]):
             return variants
 
         return [variants[0]]
