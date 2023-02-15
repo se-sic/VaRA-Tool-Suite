@@ -389,6 +389,35 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 ###############################################################################
 # Case-study extender
 ###############################################################################
+def extend_with_latest_rev(
+    case_study: CaseStudy, cmap: CommitMap, merge_stage: int,
+    ignore_blocked: bool, git_path: str
+) -> None:
+    """
+    Extend a case_study with the latest revision.
+
+    Args:
+        case_study: to extend
+        cmap: commit map to map revisions to unique IDs
+        merge_stage: stage to add the new revisions to
+        ignore_blocked: ignore blocked revisions'
+        git_path: git path to the project
+    """
+    repo = pygit2.Repository(pygit2.discover_repository(git_path))
+
+    last_pygit_commit: pygit2.Commit = repo[repo.head.target]
+    last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
+
+    while ignore_blocked and is_revision_blocked(
+        last_commit, case_study.project_cls
+    ):
+        last_pygit_commit = last_pygit_commit.parents[0]
+        last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
+
+    case_study.include_revisions([(last_commit, cmap.time_id(last_commit))],
+                                 merge_stage)
+
+
 def extend_with_extra_revs(
     case_study: CaseStudy, cmap: CommitMap, extra_revs: tp.List[str],
     merge_stage: int

@@ -127,6 +127,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         def infer_name(self, name_id: int) -> str:
             return self[name_id]
 
+#            if "displayTimeUnit" in data:
+#                self.__display_time_unit = str(data["displayTimeUnit"])
+#            if "traceEvents" in data:
+#                self.__trace_events = self._parse_trace_events(data["traceEvents"])
+
+            # Parsing stackFrames is currently not implemented
+            # x = data["stackFrames"]
+#            print("Visiting the TEFReport")
     def __init__(self, path: Path) -> None:
         super().__init__(path)
         self.__name_id_mapper: TEFReport.NameIDMapper = TEFReport.NameIDMapper()
@@ -327,8 +335,7 @@ class TEFReportAggregate(
                 result_location = result_location[:-1]
 
         with open(Path(result_location + "result_aggregate.json" ), "w", encoding="utf-8") as json_result_file:
-            json.dump(result_dict, json_result_file)
-#======"""
+            ijson.dump(result_dict, json_result_file)"""
 
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 
@@ -351,4 +358,3 @@ class WorkloadSpecificTEFReportAggregate(
             TEFReport,
             get_workload_label,
         )
-#>>>>>> vara-dev

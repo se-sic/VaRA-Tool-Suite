@@ -62,8 +62,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << WithUnlimitedStackSize() \
-            << run.WithTimeout()
+            << WithUnlimitedStackSize()
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
@@ -106,8 +105,7 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
             << time.RunWithTime()
 
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << WithUnlimitedStackSize() \
-            << run.WithTimeout()
+            << WithUnlimitedStackSize()
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, TEFReport
