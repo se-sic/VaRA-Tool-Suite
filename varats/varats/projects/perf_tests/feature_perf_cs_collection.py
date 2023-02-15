@@ -44,21 +44,21 @@ class FeaturePerfCSCollection(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            #Command(
-            #    SourceRoot("FeaturePerfCSCollection") /
-            #    RSBinary("SingleLocalSimple"),
-            #    label="SLS-no-input"
-            #),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SingleLocalSimple"),
+                label="SLS-no-input"
+            ),
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("MultiSharedMultipleRegions"),
                 label="MSMR-no-input"
             ),
-            #Command(
-            #    SourceRoot("FeaturePerfCSCollection") /
-            #    RSBinary("MultiSharedMultipleRegions"),
-            #    label="MSMR"
-            #)
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("MultiSharedMultipleRegions"),
+                label="MSMR"
+            )
             #Command(
             #    SourceRoot("FeaturePerfCSCollection") /
             #    RSBinary("FeatureCallingFeature"),

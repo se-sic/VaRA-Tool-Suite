@@ -295,7 +295,7 @@ class TEFReportAggregate(
         super().__init__(path, TEFReport)
 
 #<<<<<< Manuel_Messerig_Bachelor_Project
-    @property
+"""    @property
     def wall_clock_times(self) -> None:
         print("Enter Function")
         result_dict = dict()
@@ -328,7 +328,7 @@ class TEFReportAggregate(
 
         with open(Path(result_location + "result_aggregate.json" ), "w", encoding="utf-8") as json_result_file:
             json.dump(result_dict, json_result_file)
-#======
+#======"""
 
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 
