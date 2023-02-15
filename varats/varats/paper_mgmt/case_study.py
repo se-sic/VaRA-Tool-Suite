@@ -414,7 +414,8 @@ def extend_with_latest_rev(
         last_pygit_commit = last_pygit_commit.parents[0]
         last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
 
-    case_study.include_revisions([(last_commit, cmap.time_id(last_commit))])
+    case_study.include_revisions([(last_commit, cmap.time_id(last_commit))],
+                                 merge_stage)
 
 
 def extend_with_extra_revs(
