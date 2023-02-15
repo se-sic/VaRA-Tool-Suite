@@ -1,10 +1,8 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
 
-<<<<<< Manuel_Messerig_Bachelor_Project
 import json
-=======
->>>>>> vara-dev
+
 import re
 import typing as tp
 from enum import Enum
@@ -55,21 +53,18 @@ class TraceEvent():
     """Represents a trace event that was captured during the analysis of a
     target program."""
 
-<<<<<< Manuel_Messerig_Bachelor_Project
-    def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
-        self.__name = str(json_trace_event["name"])
-        self.__name = self.__name.replace("FR(", "")
-        if self.__name[-1] == ")":
-            self.__name = self.__name[:-1]
+#    def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
+#        self.__name = str(json_trace_event["name"])
+#        self.__name = self.__name.replace("FR(", "")
+#        if self.__name[-1] == ")":
+#            self.__name = self.__name[:-1]
 
-======
     def __init__(
         self, json_trace_event: tp.Dict[str, tp.Any], name_id: int,
         name_id_mapper: 'TEFReport.NameIDMapper'
     ) -> None:
         self.__name_id_mapper = name_id_mapper
         self.__name_id = name_id
->>>>>> vara-dev
         self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
             json_trace_event["ph"]
@@ -132,23 +127,12 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         def infer_name(self, name_id: int) -> str:
             return self[name_id]
 
-<<<<<< Manuel_Messerig_Bachelor_Project
-            if "displayTimeUnit" in data:
-                self.__display_time_unit = str(data["displayTimeUnit"])
-            if "traceEvents" in data:
-                self.__trace_events = self._parse_trace_events(data["traceEvents"])
-
-            # Parsing stackFrames is currently not implemented
-            # x = data["stackFrames"]
-            print("Visiting the TEFReport")
-======
     def __init__(self, path: Path) -> None:
         super().__init__(path)
         self.__name_id_mapper: TEFReport.NameIDMapper = TEFReport.NameIDMapper()
         self._parse_json()
         # Parsing stackFrames is currently not implemented
         # x = data["stackFrames"]
->>>>>> vara-dev
 
     @property
     def timestamp_unit(self) -> str:
@@ -164,13 +148,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
-<<<<<< Manuel_Messerig_Bachelor_Project
-    @staticmethod
-    def _parse_trace_events(
-            raw_event_list: tp.List[tp.Dict[str, tp.Any]]
-    ) -> tp.List[TraceEvent]:
-        return [TraceEvent(data_item) for data_item in raw_event_list]
-======
     def _parse_json(self) -> None:
         trace_events: tp.List[TraceEvent] = list()
         with open(self.path, "rb") as f:
@@ -206,7 +183,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     if event == "string":
                         self.__timestamp_unit: str = str(value)
         self.__trace_events: tp.List[TraceEvent] = trace_events
->>>>>> vara-dev
 
     # Gets the current_feature list and return a string of all features concatenated
     # Contains no duplicate and alphabetical sorted
@@ -318,7 +294,7 @@ class TEFReportAggregate(
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReport)
 
-<<<<<< Manuel_Messerig_Bachelor_Project
+#<<<<<< Manuel_Messerig_Bachelor_Project
     @property
     def wall_clock_times(self) -> None:
         print("Enter Function")
@@ -326,16 +302,16 @@ class TEFReportAggregate(
         print(self.reports)
         number_of_repetitions = 0
         for report in self.reports:
-            f = open(report.path)
-            number_of_repetitions = number_of_repetitions + 1
-            data = json.load(f)
-            for feature in data:
-                if feature not in result_dict:
-                    result_dict[feature] = dict()
-                for elements in data[feature]:
-                    if data[feature][elements] not in result_dict[feature]:
-                        result_dict[feature][elements] = list()
-                    result_dict[feature][elements].append(data[feature][elements])
+            with open(report.path) as f:
+                number_of_repetitions += 1
+                data = ijson.load(f)
+                for feature in data:
+                    if feature not in result_dict:
+                        result_dict[feature] = dict()
+                    for elements in data[feature]:
+                        if data[feature][elements] not in result_dict[feature]:
+                            result_dict[feature][elements] = list()
+                        result_dict[feature][elements].append(data[feature][elements])
 
         tmp_dict = dict()
         tmp_dict["Repetitions"] = number_of_repetitions
@@ -352,7 +328,7 @@ class TEFReportAggregate(
 
         with open(Path(result_location + "result_aggregate.json" ), "w", encoding="utf-8") as json_result_file:
             json.dump(result_dict, json_result_file)
-======
+#======
 
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 
@@ -375,4 +351,4 @@ class WorkloadSpecificTEFReportAggregate(
             TEFReport,
             get_workload_label,
         )
->>>>>> vara-dev
+#>>>>>> vara-dev
