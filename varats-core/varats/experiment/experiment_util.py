@@ -528,7 +528,7 @@ def run_child_with_output_folder(
     return child(tmp_folder)
 
 
-class ZippedExperimentSteps(MultiStep):
+class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive.."""
 
