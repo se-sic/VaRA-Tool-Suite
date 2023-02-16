@@ -111,7 +111,6 @@ def create_new_bb_config(
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
-        'varats.experiments.base.time_workload',
         'varats.experiments.base.time_workloads',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.phasar.ide_linear_constant_experiment',
