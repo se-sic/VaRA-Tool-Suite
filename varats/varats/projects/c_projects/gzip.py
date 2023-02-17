@@ -78,6 +78,14 @@ class Gzip(VProject, ReleaseProviderHook):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0/countries-land-1km.geo.json"
             }
+        ),
+        HTTP(
+            local="countries-land-1m.geo.json",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0/countries-land-1m.geo.json"
+            }
         )
     ]
 
@@ -95,6 +103,19 @@ class Gzip(VProject, ReleaseProviderHook):
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=["countries-land-1km.geo.json.gz"]
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("gzip") / RSBinary("gzip"),
+                "--keep",
+                "--name",
+                "--verbose",
+                "--best",
+                "--force",  # needed because BB creates symlinks for the inputs
+                "countries-land-1m.geo.json",
+                label="countries-land-1m",
+                creates=["countries-land-1m.geo.json.gz"]
             )
         ],
     }

@@ -72,6 +72,14 @@ class Xz(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0/countries-land-1km.geo.json"
             }
+        ),
+        HTTP(
+            local="countries-land-250m.geo.json",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0/countries-land-250m.geo.json"
+            }
         )
     ]
 
@@ -88,6 +96,20 @@ class Xz(VProject):
                 "countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=["countries-land-1km.geo.json.xz"]
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
+                "-9e",
+                "--compress",
+                "--threads=1",
+                "--format=xz",
+                "-vv",
+                "countries-land-250m.geo.json",
+                label="countries-land-250m",
+                creates=["countries-land-250m.geo.json.xz"]
             )
         ],
     }
