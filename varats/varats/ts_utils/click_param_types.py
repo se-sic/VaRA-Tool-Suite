@@ -72,11 +72,12 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
         if isinstance(value, str):
             values = list(map(str.strip, value.split(",")))
 
-        return [
-            item for v in values for item in self.__choices[
+        converted = []
+        for value in values:
+            converted += self.__choices[
                 #  pylint: disable=super-with-arguments
-                super(TypedMultiChoice, self).convert(v, param, ctx)]
-        ]
+                super(TypedMultiChoice, self).convert(value, param, ctx)]
+        return converted
 
 
 EnumTy = tp.TypeVar("EnumTy", bound=Enum)
@@ -174,11 +175,11 @@ def create_multi_experiment_type_choice(
     """
     initialize_experiments()
     value_dict = {
-        k: [v]
+        k: [v]  # make value a list to be consistent with entry for 'all'
         for k, v in ExperimentRegistry.experiments.items()
         if not __is_experiment_excluded(k)
     }
-    value_dict["all"] = list(value_dict.values())
+    value_dict["all"] = [v[0] for v in value_dict.values()]
     return TypedMultiChoice(value_dict)
 
 
