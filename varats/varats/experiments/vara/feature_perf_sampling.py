@@ -66,11 +66,6 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
             # copy binary to allow investigation of instrumentation
             binaries_dir = vara_results_dir / "compiled_binaries"
             mkdir("-p", binaries_dir)
-            print(
-                "source_of_primary:",
-                self.project.source_of_primary,
-                flush=True
-            )
             cp(
                 Path(self.project.source_of_primary,
                      binary.path), binaries_dir /
