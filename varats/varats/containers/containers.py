@@ -415,7 +415,7 @@ def create_dev_image(base: ImageBase, build_type: BuildType) -> str:
     """
 
     def image_name(stage: ImageStage) -> str:
-        return f"{get_image_name(base, stage, True)}_{build_type.name}"
+        return f"{get_image_name(base, stage, True)}_{build_type.name.lower()}"
 
     return _create_container_image(
         base, _DEV_IMAGE_STAGES[0], _DEV_IMAGE_STAGES, image_name, False
