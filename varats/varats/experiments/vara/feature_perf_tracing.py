@@ -403,7 +403,7 @@ class FeaturePerfTracingTefRawUsdt(
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
-        instr_type = FeatureInstrType.USDT
+        instr_type = FeatureInstrType.USDT_RAW
         return self.get_common_tracing_actions(
             project,
             instr_type,
