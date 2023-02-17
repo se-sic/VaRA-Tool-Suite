@@ -120,6 +120,7 @@ def create_new_bb_config(
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
+        'varats.experiments.vara.feature_perf_sampling',
         'varats.experiments.vara.feature_perf_tracing',
         'varats.experiments.vara.feature_tracing_stats',
         'varats.experiments.vara.feature_instrumentation_points',
