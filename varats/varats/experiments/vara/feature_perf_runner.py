@@ -13,6 +13,7 @@ from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
     RunVaRATracedXRayWorkloads,
+    FeatureInstrType,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -36,7 +37,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         Args:
             project: to analyze
         """
-        instr_type = "trace_event"  # trace_event
+        instr_type = FeatureInstrType.TEF
 
         project.cflags += self.get_vara_feature_cflags(project)
 
@@ -80,7 +81,7 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
     ) -> tp.MutableSequence[actions.Step]:
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags("trace_event")
+        project.cflags += self.get_vara_tracing_cflags(FeatureInstrType.TEF)
 
         project.cflags += [
             "-fxray-instrument",

@@ -29,10 +29,7 @@ from plumbum.commands import ProcessExecutionError
 from plumbum.commands.base import BoundCommand
 
 import varats.revision.revisions as revs
-from varats.base.configuration import (
-    PlainCommandlineConfiguration,
-    ConfigurationOption,
-)
+from varats.base.configuration import PlainCommandlineConfiguration
 from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.sources import FeatureSource
@@ -343,6 +340,10 @@ class ExperimentHandle():
         """Experiment report specification."""
         return self.__experiment.report_spec()
 
+    def shorthand(self) -> str:
+        """Experiment shorthand."""
+        return self.__experiment.shorthand()
+
 
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
@@ -528,7 +529,7 @@ def run_child_with_output_folder(
     return child(tmp_folder)
 
 
-class ZippedExperimentSteps(MultiStep):
+class ZippedExperimentSteps(MultiStep):  # type: ignore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive.."""
 
@@ -698,7 +699,7 @@ def get_current_config_id(project: VProject) -> tp.Optional[int]:
 
 def get_extra_config_options(project: VProject) -> tp.List[str]:
     """
-    Get extra program options that where specified in the particular
+    Get extra program options that were specified in the particular
     configuration of \a Project.
 
     Args:
