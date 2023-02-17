@@ -167,7 +167,7 @@ class TraceFeaturePerfAndTime(ProjectStep):  # type: ignore
                                 raise RuntimeError(
                                     "BCC is unsupported for raw USDT probes."
                                 )
-                            elif self.bpf_prog_type is BPFProgType.BPFTRACE:
+                            if self.bpf_prog_type is BPFProgType.BPFTRACE:
                                 bpf_runner = self.attach_usdt_raw_tracing(
                                     tef_report.full_path(),
                                     self.project.source_of_primary / binary.path

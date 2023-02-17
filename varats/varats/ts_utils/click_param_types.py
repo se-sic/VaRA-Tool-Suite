@@ -73,10 +73,10 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
             values = list(map(str.strip, value.split(",")))
 
         converted = []
-        for value in values:
+        for item in values:
             converted += self.__choices[
                 #  pylint: disable=super-with-arguments
-                super(TypedMultiChoice, self).convert(value, param, ctx)]
+                super(TypedMultiChoice, self).convert(item, param, ctx)]
         return converted
 
 
