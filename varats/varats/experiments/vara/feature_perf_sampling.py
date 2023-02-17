@@ -185,7 +185,7 @@ class FeaturePerfSampling997Hz(FeatureExperiment, shorthand="FPS997Hz"):
     """Sample feature performance using a sampling frequency of 997 Hz and
     measure total execution time."""
 
-    NAME = "FeaturePerfSampling97Hz"
+    NAME = "FeaturePerfSampling997Hz"
     REPORT_SPEC = ReportSpecification(
         TimeReportAggregate, PerfProfileReportAggregate
     )
