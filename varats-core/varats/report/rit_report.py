@@ -59,7 +59,9 @@ class RITReport(BaseReport, shorthand="RIT", file_type="json"):
         return self.__region_interaction_entries
 
     @staticmethod
-    def _parse_region_interaction_entries(entry_dict: tp.Dict[str, str]):
+    def _parse_region_interaction_entries(
+        entry_dict: tp.Dict[str, str]
+    ) -> tp.List[RegionInteractionEntry]:
         region_interaction_entries: tp.List[RegionInteractionEntry] = []
         for interaction, time in entry_dict.items():
             region_interaction_entries.append(
