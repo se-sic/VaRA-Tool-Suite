@@ -1,90 +1,54 @@
 """Implements experiment for VaRA's FuncRelativeIDPrinter utility pass."""
 
 import typing as tp
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import opt
+from benchbuild.utils.actions import Compile, StepResult
+from benchbuild.utils.cmd import cp
+from plumbum import local
 
 from varats.data.reports.vara_fridpp_report import VaraFRIDPPReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
-    ExperimentHandle,
-    exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
-    create_default_analysis_failure_handler,
-    get_varats_result_folder,
+    WithUnlimitedStackSize,
     create_new_success_result_filepath,
-    wrap_unlimit_stack_size,
+    ExperimentHandle,
 )
-from varats.experiment.wllvm import (
-    BCFileExtensions,
-    Extract,
-    RunWLLVM,
-    get_cached_bc_file_path,
-)
+from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.varats_project import VProject
-from varats.provider.feature.feature_model_provider import (
-    FeatureModelNotFound,
-    FeatureModelProvider,
-)
 from varats.report.report import ReportSpecification
 
 
-class CollectFuncRelativeIDs(actions.ProjectStep):  # type: ignore
-    """Runs utility pass on LLVM-IR to extract function relative ID
-    information."""
-
-    NAME = "CollectFuncRelativeIDs"
-    DESCRIPTION = "Runs utility pass on LLVM-IR to extract function-relative" \
-        "ID information."
+class CompileWithFRIDPPOutput(Compile):
+    NAME = "COMPILE_WITH_FRIDPP_OUTPUT"
+    DESCRIPTION = "Compile the project"
 
     project: VProject
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
 
-    def __call__(self) -> actions.StepResult:
-        return self.analyze()
+    def __call__(self) -> StepResult:
+        result_filepath = create_new_success_result_filepath(
+            self.__experiment_handle,
+            self.__experiment_handle.report_spec().main_report, self.project,
+            self.project.binaries[0], None
+        )
 
-    def analyze(self) -> actions.StepResult:
-        """Run VaRA-FRIDPP utility pass and extract function-relative ID
-        information."""
-        vara_result_folder = get_varats_result_folder(self.project)
-
-        for binary in self.project.binaries:
-            result_file = create_new_success_result_filepath(
-                self.__experiment_handle, VaraFRIDPPReport, self.project, binary
-            )
-
-            # Need the following passes:
-            # - vara-PFTDD to generate feature regions
-            # - vara-FBFD to enable function-based feature detection
-            # - vara-FRIDPP (Function-Relative ID Printer)
-            opt_params = [
-                "--enable-new-pm=0", "--vara-FBFD", "--vara-PTFDD", "-vara-BD",
-                "-vara-FRIDPP", "-o", "/dev/null",
-                get_cached_bc_file_path(
-                    self.project, binary,
-                    [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
-                )
-            ]
-
-            # Store the collected information in report.
-            run_cmd = wrap_unlimit_stack_size(opt[opt_params]) > str(
-                vara_result_folder / str(result_file)
-            )
-
-            exec_func_with_pe_error_handler(
-                run_cmd,
-                create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project, VaraFRIDPPReport
-                )
-            )
-
-        return actions.StepResult.OK
+        with TemporaryDirectory() as tmp_dir:
+            local_fridpp_path = Path(
+                tmp_dir
+            ) / f"fridpp_{self.project.version_of_primary}.txt"
+            with local.env(VARA_FRIDPP_FILE=local_fridpp_path):
+                status_code = super().__call__()
+                cp(local_fridpp_path, result_filepath)
+                return status_code
 
 
 class FuncRelativeIDPrinter(VersionExperiment, shorthand="FRIDPP"):
@@ -101,42 +65,32 @@ class FuncRelativeIDPrinter(VersionExperiment, shorthand="FRIDPP"):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
-        fm_provider = FeatureModelProvider.create_provider_for_project(project)
-        if fm_provider is None:
-            raise Exception("Could not get FeatureModelProvider!")
+        project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
+        project.cflags += FeatureExperiment.get_vara_tracing_cflags(
+            "rit_trace_event"
+        )
+        project.cflags += ["-fvara-GB", "-Wl,-mllvm,--vara-ifridpp"]
 
-        fm_path = fm_provider.get_feature_model_path(project.version_of_primary)
-        if fm_path is None or not fm_path.exists():
-            raise FeatureModelNotFound(project, fm_path)
-
-        # We need debug info to later determine source code locations in a
-        # utility pass. Also, include feature information.
-        project.cflags += [
-            "-g", "-fvara-GB", "-fvara-feature",
-            f"-fvara-fm-path={fm_path.absolute()}"
-        ]
+        project.ldflags += FeatureExperiment.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
 
-        # Add the required compiler extensions to the project(s). We want to
-        # transfer the whole project into LLVM-IR.
+        # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM() \
+            << WithUnlimitedStackSize() \
             << run.WithTimeout()
 
+        # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
+            self.get_handle(), project, VaraFRIDPPReport
         )
 
-        bc_file_extensions = [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
-
         analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(Extract(project, bc_file_extensions))
+
         analysis_actions.append(
-            CollectFuncRelativeIDs(project, self.get_handle())
+            CompileWithFRIDPPOutput(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 
