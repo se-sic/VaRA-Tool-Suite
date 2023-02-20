@@ -99,7 +99,7 @@ class TraceEvent():
         return self.__tid
 
     @property
-    def args_id(self):
+    def args_id(self) -> int:
         return self.__args_id
 
     def __str__(self) -> str:
@@ -201,7 +201,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     # Gets the current_feature list and return a string of all features concatenated
     # Contains no duplicate and alphabetical sorted
     @staticmethod
-    def features_to_string(current_feature):
+    def features_to_string(current_feature) -> str:
         tmp_list = current_feature
         alphabet_list = list()
         tmp_set = set()
@@ -217,13 +217,13 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         result = result[:-1]
         return result
 
-    def feature_time_accumulator(self, path:Path):
+    def feature_time_accumulator(self, path:Path) -> None:
         # feature_dict contains a list of all measurements for each feature
-        feature_dict = dict()
+        feature_dict:tp.Dict[list(str),list(float)] = dict()
         # id_dict maps id to current occurrences of that id
-        id_dict = dict()
+        id_dict:tp.Dict[int, int] = dict()
         # current_active_feature is a list of lists, containing lists of features for a active process
-        current_active_feature = list()
+        current_active_feature:tp.List[str] = list()
         for trace_event in self.trace_events:
             if feature_dict.get(trace_event.name) is None:
                 feature_dict.setdefault(trace_event.name, list())
