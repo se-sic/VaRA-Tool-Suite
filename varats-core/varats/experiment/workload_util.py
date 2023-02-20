@@ -49,11 +49,6 @@ class RevisionBinaryRenderer:
 
     def rendered(self, project: VProject, **kwargs: tp.Any) -> Path:
         for binary in project.binaries:
-            print("_____________________________________________")
-            print(f"{binary.name=}")
-            print(f"{self.__binary_name=    }")
-            print(f"{binary.entry_point=}")
-            print("_____________________________________________")
             if binary.name == self.__binary_name:
                 entry_point = binary.entry_point
                 if entry_point:

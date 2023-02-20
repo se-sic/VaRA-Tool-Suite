@@ -47,18 +47,32 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         """
         instr_type = "trace_event"  # trace_event
 
-        project.cflags += self.get_vara_feature_cflags(project)
-
-        project.cflags += self.get_vara_tracing_cflags(instr_type)
+        print(project.cflags)
+        print("------------")
         
+        project.cflags += self.get_vara_feature_cflags(project)
+        
+        print(project.cflags)
+        print("------------")
+        
+        project.cflags += self.get_vara_tracing_cflags(instr_type, True)
+        
+        print(project.cflags)
+        print("------------")
+        
+        # Ensure that we detect all regions
+        project.cflags += ["-fvara-instruction-threshold=0"]
+        
+        print(project.cflags)
+        print("------------")
         #CFlags to deactivate optimizations
         #project.cflags += ["-O0", "-fno-exceptions"]
 
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = run.RuntimeExtension(project, self) #\
+        #    << time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \

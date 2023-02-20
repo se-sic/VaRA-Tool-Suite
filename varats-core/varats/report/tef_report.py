@@ -72,7 +72,7 @@ class TraceEvent():
         self.__tracing_clock_timestamp = int(json_trace_event["ts"])
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
-        self.__args_id = int(json_trace_event["args"]["ID"])
+        self.__args_id = int(json_trace_event["ID"])
 
     @property
     def name(self) -> str:
@@ -170,13 +170,19 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                         trace_event = {}
                     if prefix == "traceEvents.item" and event == "end_map":
                         if trace_event is not None:
+                            
+                            name = trace_event["name"]
+                            name = name.replace("FR(", "")
+                            if name[-1] == ")":
+                                name = name[:-1]
+                                
                             if trace_event["name"] in self.__name_id_mapper:
                                 name_id = self.__name_id_mapper.index(
                                     trace_event["name"]
                                 )
                             else:
                                 self.__name_id_mapper.append(
-                                    trace_event["name"]
+                                    name
                                 )
                                 name_id = len(self.__name_id_mapper) - 1
                             trace_events.append(
@@ -211,7 +217,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         result = result[:-1]
         return result
 
-    def feature_time_accumulator(self):
+    def feature_time_accumulator(self, path:Path):
         # feature_dict contains a list of all measurements for each feature
         feature_dict = dict()
         # id_dict maps id to current occurrences of that id
@@ -267,7 +273,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     feature_dict[self.features_to_string(current_active_feature)].append(trace_event.timestamp)
             # ToDo raise error for unexpcted event type
 
-        with open(Path(str(self.path) + "_parsed"), "w", encoding="utf-8") as file:
+        with open(path , "w", encoding="utf-8") as file:
             result_dict = dict()
             overall_time = 0
 
@@ -291,27 +297,14 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             json.dump(result_dict, file)
 
 
-class TEFReportAggregate(
-    ReportAggregate[TEFReport],
-    shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
-    file_type=ReportAggregate.FILE_TYPE
-):
-    """Context Manager for parsing multiple TEF reports stored inside a zip
-    file."""
-
-    def __init__(self, path: Path) -> None:
-        super().__init__(path, TEFReport)
-
-    @property
-    def wall_clock_times(self) -> None:
-        print("Enter Function")
+    @staticmethod
+    def wall_clock_times(path:Path) -> None:
         result_dict = dict()
-        print(self.reports)
         number_of_repetitions = 0
-        for report in self.reports:
-            with open(report.path) as f:
+        for report in path.iterdir():
+            with open(report) as f:
                 number_of_repetitions += 1
-                data = ijson.load(f)
+                data = json.load(f)
                 for feature in data:
                     if feature not in result_dict:
                         result_dict[feature] = dict()
@@ -326,15 +319,10 @@ class TEFReportAggregate(
             for elements in result_dict[feature]:
                 result_dict[feature][elements] = np.sum(result_dict[feature][elements]) / len(result_dict[feature][elements])
         result_dict["Number of Repetitions"] = tmp_dict
-        result_location = str(self.path)
-        while len(result_location) > 0:
-            if result_location[-1] == '/':
-                break
-            else:
-                result_location = result_location[:-1]
 
-        with open(Path(result_location + "result_aggregate.json" ), "w", encoding="utf-8") as json_result_file:
-            ijson.dump(result_dict, json_result_file)
+
+        with open(path / "result_aggregate.json" , "w", encoding="utf-8") as json_result_file:
+            json.dump(result_dict, json_result_file)
 
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 

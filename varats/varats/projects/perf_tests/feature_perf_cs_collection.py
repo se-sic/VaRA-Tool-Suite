@@ -44,31 +44,31 @@ class FeaturePerfCSCollection(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SingleLocalSimple"),
-                label="SLS-no-input"
-            ),
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("MultiSharedMultipleRegions"),
-                label="MSMR-no-input"
-            ),
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("MultiSharedMultipleRegions"),
-                label="MSMR"
-            )
+            #Command(
+            #    SourceRoot("FeaturePerfCSCollection") /
+            #    RSBinary("SingleLocalSimple"),
+            #    label="SLS-no-input"
+            #),
+            #Command(
+            #    SourceRoot("FeaturePerfCSCollection") /
+            #    RSBinary("MultiSharedMultipleRegions"),
+            #    label="MSMR-no-input"
+            #),
+            #Command(
+            #    SourceRoot("FeaturePerfCSCollection") /
+            #    RSBinary("MultiSharedMultipleRegions"),
+            #    label="MSMR"
+            #)
             #Command(
             #    SourceRoot("FeaturePerfCSCollection") /
             #    RSBinary("FeatureCallingFeature"),
             #    label="FCF"
             #)
-            #Command(
-            #    SourceRoot("FeaturePerfCSCollection") /
-            #    RSBinary("CollinearFeature"),
-            #    label="CF"
-            #)
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("CollinearFeature"),
+                label="CF"
+            )
         ]
     }
 
@@ -88,20 +88,20 @@ class FeaturePerfCSCollection(VProject):
             BinaryType.EXECUTABLE
         #    only_valid_in=RevisionRange("162db88346", "master")
         )
-        binary_map.specify_binary(
-            "build/bin/SimpleSleepLoop",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "c77bca4c6888970fb721069c82455137943ccf49",
-                "27f17080376e409860405c40744887d81d6b3f34"
-            )
-        )
+        #binary_map.specify_binary(
+        #    "build/bin/SimpleSleepLoop",
+        #    BinaryType.EXECUTABLE,
+            #only_valid_in=RevisionRange(
+            #    "c77bca4c6888970fb721069c82455137943ccf49",
+            #    "27f17080376e409860405c40744887d81d6b3f34"
+            #)
+        #)
         binary_map.specify_binary(
             "build/bin/SimpleBusyLoop",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "c77bca4c6888970fb721069c82455137943ccf49", "master"
-            )
+            #only_valid_in=RevisionRange(
+            #    "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            #)
         )
         binary_map.specify_binary(
             "build/bin/MultiSharedMultipleRegions",
@@ -114,10 +114,10 @@ class FeaturePerfCSCollection(VProject):
         #    "build/bin/FeatureCallingFeature",
         #    BinaryType.EXECUTABLE
         #)
-        #binary_map.specify_binary(
-        #    "build/bin/CollinearFeature",
-        #    BinaryType.EXECUTABLE
-        #)
+        binary_map.specify_binary(
+            "build/bin/CollinearFeature",
+            BinaryType.EXECUTABLE
+        )
         
         return binary_map[revision]
 
