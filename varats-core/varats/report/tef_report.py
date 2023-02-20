@@ -201,7 +201,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     # Gets the current_feature list and return a string of all features concatenated
     # Contains no duplicate and alphabetical sorted
     @staticmethod
-    def features_to_string(current_feature) -> str:
+    def features_to_string(current_feature:tp.List[str]) -> str:
         tmp_list = current_feature
         alphabet_list = list()
         tmp_set = set()
@@ -219,7 +219,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     def feature_time_accumulator(self, path:Path) -> None:
         # feature_dict contains a list of all measurements for each feature
-        feature_dict:tp.Dict[list(str),list(float)] = dict()
+        feature_dict:tp.Dict[list[str],list[float]] = dict()
         # id_dict maps id to current occurrences of that id
         id_dict:tp.Dict[int, int] = dict()
         # current_active_feature is a list of lists, containing lists of features for a active process
