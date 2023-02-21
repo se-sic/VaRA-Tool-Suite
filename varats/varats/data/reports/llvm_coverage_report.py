@@ -11,6 +11,9 @@ from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from plumbum import colors
+from plumbum.colorlib.styles import Color
+
 from varats.report.report import BaseReport
 
 
@@ -472,7 +475,7 @@ def _cov_show_file(
             line_number += 1
 
     if color:
-        buffer.append(_color_str(str(path), "\033[0;36m"))
+        buffer.append(_color_str(f"{path}:\n", colors.cyan))
     else:
         buffer.append(f"{path}:\n")
     # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
@@ -531,7 +534,7 @@ def __segments_dict_to_str(
                 if x is None or x != 0:
                     colored_texts.append(y)
                 elif x == 0:
-                    colored_texts.append(_color_str(y, "\033[0;41m"))
+                    colored_texts.append(_color_str(y, colors.bg.red))
                 else:
                     raise NotImplementedError
 
@@ -672,6 +675,6 @@ def __get_previous_line_and_column(
     return line, column - 1
 
 
-def _color_str(a: str, color: str) -> str:
+def _color_str(a: str, color: Color) -> str:
     """Wraps the string inside the color characters."""
-    return f"{color}{a}\033[00m"
+    return color | a

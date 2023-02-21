@@ -272,7 +272,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
         binary_config_map = self._get_binary_config_map(case_study)
 
         if not binary_config_map:
-            raise Exception(
+            raise ValueError(
                 "Cannot load configs for case study " +
                 case_study.project_name + " !"
             )

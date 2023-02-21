@@ -9,6 +9,7 @@ from tests.test_utils import (
     run_in_test_environment,
     UnitTestFixtures,
     TEST_INPUTS_DIR,
+    LoadRepositoryForTest,
 )
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
@@ -300,7 +301,10 @@ class TestCodeRegion(unittest.TestCase):
         ) as tmp:
             cov_show_slow_txt = tmp.read()
 
-        self.assertEqual(cov_show_slow_txt, cov_show(slow_report, color=False))
+        with LoadRepositoryForTest("FeaturePerfCSCollection", "27f1708037"):
+            self.assertEqual(
+                cov_show_slow_txt, cov_show(slow_report, color=False)
+            )
 
     def test_cov_fill_buffer(self):
         lines = {1: "Hello World!\n", 2: "Goodbye;\n"}

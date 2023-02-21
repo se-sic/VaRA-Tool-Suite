@@ -78,8 +78,9 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 run_cmd = pb_cmd.with_env(LLVM_PROFILE_FILE=profile_raw_name)
                 llvm_profdata = local["llvm-profdata"]
                 llvm_cov = local["llvm-cov"]
-                llvm_cov = llvm_cov["export", run_cmd.cmd,
-                                    f"--instr-profile={profdata_name}"]
+                llvm_cov = llvm_cov[
+                    "export", f"--instr-profile={profdata_name}",
+                    f"--compilation-dir={self.project.builddir}", run_cmd.cmd]
 
                 with cleanup(prj_command):
                     run_cmd(*extra_args)
@@ -107,7 +108,10 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
 
         # Activate source-based code coverage:
         # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
-        project.cflags += ["-fprofile-instr-generate", "-fcoverage-mapping"]
+        project.cflags += [
+            "-fprofile-instr-generate", "-fcoverage-mapping",
+            f"-fcoverage-compilation-dir={project.builddir}"
+        ]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = (
