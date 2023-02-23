@@ -103,8 +103,7 @@ def create_new_bb_config(
             'varats.projects.test_projects.taint_tests',
             'varats.projects.test_projects.multi_author_coordination',
             'varats.projects.test_projects.test_suite',
-            'varats.projects.perf_tests.feature_perf_cs_collection',
-            'varats.projects.perf_tests.feature_perf_regression',
+            'varats.projects.perf_tests.feature_perf_cs_collection'
         ]
 
     # Experiments for VaRA
