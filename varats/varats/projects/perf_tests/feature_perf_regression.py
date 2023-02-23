@@ -42,7 +42,7 @@ class FeaturePerfRegression(VProject, ReleaseProviderHook):
     SOURCE = [
         PaperConfigSpecificGit(
             project_name="FeaturePerfRegression",
-            remote="https://github.com/bnico99/FeaturePerfRegression.git",
+            remote="https://github.com/se-sic/FeaturePerfRegression.git",
             local="FeaturePerfRegression",
             refspec="origin/HEAD",
             limit=None,
