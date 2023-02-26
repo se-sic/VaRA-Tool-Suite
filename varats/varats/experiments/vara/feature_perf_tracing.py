@@ -45,26 +45,26 @@ class BPFProgType(Enum):
 
 
 class TraceFeaturePerfAndTime(ProjectStep):  # type: ignore
-    """See `DESCRIPTION`."""
+    """
+    Step to trace feature performance and collect execution time using GNU Time.
+    Additionally, compiled binaries are copied to the results directory for
+    further investigation afterwards.
+
+    Each binary is executed `num_iterations` times. A `TimeReportAggregate`
+    is produced for each binary, which contains the execution time of each
+    iteration. Additionally, a single `TEFReport` is produced per binary
+    containing the information of the last iteration. Trace files can get
+    quite large which is why we decided to not use a `TEFReportAggregate`
+    for now.
+
+    IMPORTANT: Attaching eBPF tracing programs requires root privileges,
+    make sure that bpftrace and VaRA's BCC Python script can be invoked with
+    sudo without having to enter the passwort first. This can be achieved by
+    adding a file to `/etc/sudoers.d/`.
+    """
 
     NAME = "TraceFeaturePerfWithTime"
-    DESCRIPTION = """Trace feature performance and collect execution time using
-                  GNU Time. Additionally, compiled binaries are copied to the
-                  results directory for further investigation afterwards.
-
-                  Each binary is executed `num_iterations` times. A
-                  `TimeReportAggregate` is produced for each binary, which
-                  contains the execution time of each iteration. Additionally, a
-                  single `TEFReport` is produced per binary containing the
-                  information of the last iteration. Trace files can get quite
-                  large which is why we decided to not use a
-                  `TEFReportAggregate` for now.
-
-                  IMPORTANT: Attaching eBPF tracing programs requires root
-                  privileges, make sure that bpftrace and VaRA's BCC Python
-                  script can be invoked with sudo without having to enter the
-                  passwort first. This can be achieved by adding a file to
-                  `/etc/sudoers.d/`."""
+    DESCRIPTION = ("Trace feature performance and collect total execution time")
 
     project: VProject
 

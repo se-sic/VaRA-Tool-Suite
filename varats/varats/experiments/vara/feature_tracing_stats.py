@@ -33,17 +33,18 @@ from varats.tools.research_tools.vara import VaRA
 
 
 class CaptureTracingStats(actions.ProjectStep):  # type: ignore
-    """See `DESCRIPTION`."""
+    """
+    Step to collect execution statistics about the events produced during
+    tracing using USDT probes and VaRA's UsdtExecutionStats.bt bpftrace script.
+
+    IMPORTANT: Attaching eBPF tracing programs requires root privileges, make
+    sure that bpftrace can be invoked with sudo without having to enter the
+    passwort first. This can be achieved by adding a file to
+    `/etc/sudoers.d/`.
+    """
 
     NAME = "CaptureTracingStats"
-    DESCRIPTION = """Collect execution statistics about the events produced
-                  during tracing using USDT probes and VaRA's
-                  UsdtExecutionStats.bt bpftrace script.
-
-                  IMPORTANT: Attaching eBPF tracing programs requires root
-                  privileges, make sure that bpftrace can be invoked with sudo
-                  without having to enter the passwort first. This can be
-                  achieved by adding a file to `/etc/sudoers.d/`."""
+    DESCRIPTION = "Capture feature tracing event statistics"
 
     project: VProject
 

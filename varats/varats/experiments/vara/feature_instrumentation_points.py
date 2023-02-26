@@ -26,17 +26,23 @@ from varats.experiment.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
 )
-from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.experiments.vara.feature_experiment import (
+    FeatureExperiment,
+    FeatureInstrType,
+)
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
 class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
-    """See `DESCRIPTION`."""
+    """Step that collects instrumentation points using VaRA's instrumentation
+    point printer."""
 
-    NAME = "CollectnstrumentationPoints"
-    DESCRIPTION = """Collect instrumentation points using VaRA's instrumentation
-                  point printer."""
+    NAME = "CollectInstrumentationPoints"
+    DESCRIPTION = (
+        "Collect instrumentation points using VaRA's instrumentation point"
+        "printer"
+    )
 
     project: VProject
 
@@ -82,30 +88,22 @@ class FeatureInstrumentationPoints(FeatureExperiment, shorthand="FIP"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
+        analysis_actions = self.get_common_tracing_actions(
+            project, FeatureInstrType.NONE, [
+                Extract(
+                    project, [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
+                ),
+                CollectInstrumentationPoints(project, self.get_handle())
+            ]
+        )
 
-        project.cflags += self.get_vara_feature_cflags(project)
+        project.cflags = self.get_vara_feature_cflags(project)
         project.cflags.append("-g")  # debug info for source code locations
-
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.ldflags = []
 
         # Transfer the whole project into LLVM-IR.
         project.compiler_extension = compiler.RunCompiler(project, self) \
             << RunWLLVM() \
             << WithUnlimitedStackSize()
-
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
-        )
-
-        bc_file_extensions = [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
-
-        analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(Extract(project, bc_file_extensions))
-        analysis_actions.append(
-            CollectInstrumentationPoints(project, self.get_handle())
-        )
-        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

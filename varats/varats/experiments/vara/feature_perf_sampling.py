@@ -31,17 +31,20 @@ from varats.report.report import ReportSpecification
 
 
 class SampleWithPerfAndTime(ProjectStep):  # type: ignore
-    """See `DESCRIPTION`."""
+    """
+    Step to sample call stack with perf and measure total execution using GNU
+    Time. Additionally, compiled binaries are copied to the results directory
+    for further investigation afterwards.
+
+    Each binary is executed `num_iterations` times. A `TimeReportAggregate` and
+    `PerfProfileReportAggregate` are produced for each binary, which contains
+    the respective information from each iteration.
+    """
 
     NAME = "SampleWithPerfAndTime"
-    DESCRIPTION = """Sample call stack with perf and measure total execution
-                  using GNU Time. Additionally, compiled binaries are copied to
-                  the results directory for further investigation afterwards.
-
-                  Each binary is executed `num_iterations` times. A
-                  `TimeReportAggregate` and `PerfProfileReportAggregate` are
-                  produced for each binary, which contains the respective
-                  information from each iteration."""
+    DESCRIPTION = (
+        "Sample call stack using perf and measure total execution time"
+    )
 
     project: VProject
 
@@ -59,6 +62,7 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
 
     def __call__(self) -> StepResult:
         vara_results_dir = get_varats_result_folder(self.project)
+
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
@@ -132,13 +136,14 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
 
 
 class TranslateCallStackSamples(ProjectStep):  # type: ignore
-    """See `DESCRIPTION`."""
+    """Step to translate the collected call stack samples into feature region
+    stack samples using the locations of USDT raw probes instrumented at entry
+    and exit locations of feature regions."""
 
     NAME = "TranslateCallStackSamples"
-    DESCRIPTION = """Translate the collected call stack samples into feature
-                  region stack samples using the locations of USDT raw probes
-                  instrumented at entry and exit locations of feature
-                  regions."""
+    DESCRIPTION = (
+        "Translate collected call stack samples to feature region stack samples"
+    )
 
     project: VProject
 
