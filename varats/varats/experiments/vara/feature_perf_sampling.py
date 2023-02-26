@@ -9,6 +9,7 @@ from benchbuild.utils.actions import ProjectStep, Step, StepResult
 from benchbuild.utils.cmd import time, cp, perf
 from plumbum import local
 
+from varats.data.reports.compiled_binary_report import CompiledBinaryReport
 from varats.data.reports.perf_profile_report import (
     PerfProfileReport,
     PerfProfileReportAggregate,
@@ -19,7 +20,6 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
-from varats.experiments.vara.compiled_binary_report import CompiledBinaryReport
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     FeatureInstrType,

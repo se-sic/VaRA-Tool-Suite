@@ -11,13 +11,13 @@ from benchbuild.utils.cmd import time, cp, numactl, sudo, bpftrace
 from plumbum import BG, local
 from plumbum.commands.modifiers import Future
 
+from varats.data.reports.compiled_binary_report import CompiledBinaryReport
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     ZippedReportFolder,
     create_new_success_result_filepath,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
-from varats.experiments.vara.compiled_binary_report import CompiledBinaryReport
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     FeatureInstrType,
