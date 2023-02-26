@@ -340,10 +340,6 @@ class ExperimentHandle():
         """Experiment report specification."""
         return self.__experiment.report_spec()
 
-    def shorthand(self) -> str:
-        """Experiment shorthand."""
-        return self.__experiment.shorthand()
-
 
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project

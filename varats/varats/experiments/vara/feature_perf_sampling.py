@@ -6,7 +6,7 @@ from pathlib import Path
 
 from benchbuild.command import cleanup
 from benchbuild.utils.actions import ProjectStep, Step, StepResult
-from benchbuild.utils.cmd import time, cp, mkdir, perf
+from benchbuild.utils.cmd import time, cp, perf
 from plumbum import local
 
 from varats.data.reports.perf_profile_report import (
@@ -16,10 +16,10 @@ from varats.data.reports.perf_profile_report import (
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     ZippedReportFolder,
-    get_varats_result_folder,
     create_new_success_result_filepath,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.experiments.vara.compiled_binary_report import CompiledBinaryReport
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     FeatureInstrType,
@@ -61,20 +61,16 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
         self.num_iterations = num_iterations
 
     def __call__(self) -> StepResult:
-        vara_results_dir = get_varats_result_folder(self.project)
-
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
             # copy binary to allow investigation of instrumentation
-            binaries_dir = vara_results_dir / "compiled_binaries"
-            mkdir("-p", binaries_dir)
-            cp(
-                Path(self.project.source_of_primary,
-                     binary.path), binaries_dir /
-                (f"{binary.name}_" + self.experiment_handle.shorthand())
+            binary_report = create_new_success_result_filepath(
+                self.experiment_handle, CompiledBinaryReport, self.project,
+                binary
             )
+            cp(Path(self.project.source_of_primary, binary.path), binary_report)
 
             # get workload to use
             workloads = workload_commands(
@@ -166,7 +162,7 @@ class FeaturePerfSampling97Hz(FeatureExperiment, shorthand="FPS97Hz"):
 
     NAME = "FeaturePerfSampling97Hz"
     REPORT_SPEC = ReportSpecification(
-        TimeReportAggregate, PerfProfileReportAggregate
+        TimeReportAggregate, PerfProfileReportAggregate, CompiledBinaryReport
     )
 
     def actions_for_project(
@@ -187,7 +183,7 @@ class FeaturePerfSampling997Hz(FeatureExperiment, shorthand="FPS997Hz"):
 
     NAME = "FeaturePerfSampling997Hz"
     REPORT_SPEC = ReportSpecification(
-        TimeReportAggregate, PerfProfileReportAggregate
+        TimeReportAggregate, PerfProfileReportAggregate, CompiledBinaryReport
     )
 
     def actions_for_project(

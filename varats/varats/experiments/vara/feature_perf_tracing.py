@@ -7,17 +7,17 @@ from time import sleep
 
 from benchbuild.command import cleanup
 from benchbuild.utils.actions import ProjectStep, Step, StepResult
-from benchbuild.utils.cmd import time, cp, mkdir, numactl, sudo, bpftrace
+from benchbuild.utils.cmd import time, cp, numactl, sudo, bpftrace
 from plumbum import BG, local
 from plumbum.commands.modifiers import Future
 
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     ZippedReportFolder,
-    get_varats_result_folder,
     create_new_success_result_filepath,
 )
 from varats.experiment.workload_util import workload_commands, WorkloadCategory
+from varats.experiments.vara.compiled_binary_report import CompiledBinaryReport
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     FeatureInstrType,
@@ -83,19 +83,16 @@ class TraceFeaturePerfAndTime(ProjectStep):  # type: ignore
         self.num_iterations = num_iterations
 
     def __call__(self) -> StepResult:
-        vara_results_dir = get_varats_result_folder(self.project)
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
             # copy binary to allow investigation of instrumentation
-            binaries_dir = vara_results_dir / "compiled_binaries"
-            mkdir("-p", binaries_dir)
-            cp(
-                Path(self.project.source_of_primary,
-                     binary.path), binaries_dir /
-                (f"{binary.name}_" + self.experiment_handle.shorthand())
+            binary_report = create_new_success_result_filepath(
+                self.experiment_handle, CompiledBinaryReport, self.project,
+                binary
             )
+            cp(Path(self.project.source_of_primary, binary.path), binary_report)
 
             # get workload to use
             workloads = workload_commands(
@@ -254,7 +251,9 @@ class FeaturePerfTracingDry(FeatureExperiment, shorthand="FPT_Dry"):
     without any instrumentation."""
 
     NAME = "FeaturePerfTracingDry"
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
+    REPORT_SPEC = ReportSpecification(
+        TimeReportAggregate, TEFReport, CompiledBinaryReport
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -272,7 +271,9 @@ class FeaturePerfTracingDryUsdt(FeatureExperiment, shorthand="FPT_Dry_USDT"):
     instrumentation."""
 
     NAME = "FeaturePerfTracingDryUsdt"
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
+    REPORT_SPEC = ReportSpecification(
+        TimeReportAggregate, TEFReport, CompiledBinaryReport
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -298,7 +299,9 @@ class FeaturePerfTracingDryRawUsdt(
     instrumentation."""
 
     NAME = "FeaturePerfTracingDryRawUsdt"
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
+    REPORT_SPEC = ReportSpecification(
+        TimeReportAggregate, TEFReport, CompiledBinaryReport
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -322,7 +325,9 @@ class FeaturePerfTracingTef(FeatureExperiment, shorthand="FPT_TEF"):
     (Trace Event File) instrumentation."""
 
     NAME = "FeaturePerfTracingTef"
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
+    REPORT_SPEC = ReportSpecification(
+        TimeReportAggregate, TEFReport, CompiledBinaryReport
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -344,7 +349,9 @@ class FeaturePerfTracingTefUsdt(FeatureExperiment, shorthand="FPT_TEF_USDT"):
     """
 
     NAME = "FeaturePerfTracingTefUsdt"
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
+    REPORT_SPEC = ReportSpecification(
+        TimeReportAggregate, TEFReport, CompiledBinaryReport
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -369,7 +376,9 @@ class FeaturePerfTracingTefUsdtBcc(
     """
 
     NAME = "FeaturePerfTracingTefUsdtBcc"
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
+    REPORT_SPEC = ReportSpecification(
+        TimeReportAggregate, TEFReport, CompiledBinaryReport
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -399,7 +408,9 @@ class FeaturePerfTracingTefRawUsdt(
     """
 
     NAME = "FeaturePerfTracingTefRawUsdt"
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate, TEFReport)
+    REPORT_SPEC = ReportSpecification(
+        TimeReportAggregate, TEFReport, CompiledBinaryReport
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
