@@ -4,7 +4,7 @@ InstrumentationPointPrinter utility pass."""
 import typing as tp
 
 from benchbuild import Project
-from benchbuild.extensions import compiler, run, time
+from benchbuild.extensions import compiler
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 from plumbum import local
@@ -16,7 +16,6 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     WithUnlimitedStackSize,
     exec_func_with_pe_error_handler,
-    get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
 )

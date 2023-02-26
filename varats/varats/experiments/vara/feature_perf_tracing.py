@@ -64,7 +64,7 @@ class TraceFeaturePerfAndTime(ProjectStep):  # type: ignore
     """
 
     NAME = "TraceFeaturePerfWithTime"
-    DESCRIPTION = ("Trace feature performance and collect total execution time")
+    DESCRIPTION = "Trace feature performance and collect total execution time"
 
     project: VProject
 
