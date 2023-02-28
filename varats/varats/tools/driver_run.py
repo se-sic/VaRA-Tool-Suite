@@ -170,7 +170,6 @@ def main(
             value = value[1:-1]
         env[key] = value
 
-
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
             with benchbuild[bb_args].bgrun(

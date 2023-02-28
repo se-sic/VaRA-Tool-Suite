@@ -58,6 +58,7 @@ class AnalysisType(Enum):
     def __str__(self) -> str:
         return f"{self.value}"
 
+
 class WorklistKind(Enum):
 
     value: str
@@ -91,6 +92,7 @@ def _get_enabled_analyses() -> tp.List[AnalysisType]:
         return AnalysisType.convert_from(env_analysis_selection)
 
     return [at for at in AnalysisType]
+
 
 def _get_enabled_worklist_kinds() -> tp.List[WorklistKind]:
     """Allows overriding of analyses run by an experiment, this should only be
@@ -178,9 +180,10 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
         mkdir("-p", tmp_dir)
 
         phasar_params = [
-            "-D", str(self.__analysis_type), 
-            "--worklist", str(self.__worklist_kind), 
-            "-m", get_cached_bc_file_path(
+            "-D",
+            str(self.__analysis_type), "--worklist",
+            str(self.__worklist_kind), "-m",
+            get_cached_bc_file_path(
                 self.project, self.__binary,
                 [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
             )
@@ -367,8 +370,9 @@ class IDELinearConstantAnalysisExperiment(
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
                     ], *[
-                        IterIDETimeNew(project, rep, binary, analysis_type, worklist_kind)
-                        for analysis_type in _get_enabled_analyses()
+                        IterIDETimeNew(
+                            project, rep, binary, analysis_type, worklist_kind
+                        ) for analysis_type in _get_enabled_analyses()
                         for worklist_kind in _get_enabled_worklist_kinds()
                         for rep in reps
                     ]
