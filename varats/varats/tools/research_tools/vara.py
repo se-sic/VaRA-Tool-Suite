@@ -441,16 +441,39 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ret, _, _ = ninja.run("check-vara")
         return bool(ret == 0)
 
+
+# ContainerInstallable protocol implementation ---------------------------------
+
+    def container_install_dependencies(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> None:
+        """
+        Add layers for installing this research tool's dependencies to the given
+        container.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        """
+        if self.get_dependencies().has_dependencies_for_distro(
+            stage_builder.base.distro
+        ):
+            stage_builder.layers.run(
+                *(
+                    self.get_dependencies().
+                    get_install_command(stage_builder.base.distro).split(" ")
+                )
+            )
+
     def container_install_tool(
-        self, image_context: 'containers.BaseImageCreationContext'
+        self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
         Add layers for installing this research tool to the given container.
 
         Args:
-            image_context: the base image creation context
+            stage_builder: the builder object for the current container stage
         """
-        img_name = image_context.base.name
+        img_name = stage_builder.base.name
         vara_install_dir = str(self.install_location()) + "_" + img_name
         if not self.install_exists(Path(vara_install_dir)):
             raise AssertionError(
@@ -459,8 +482,24 @@ class VaRA(ResearchTool[VaRACodeBase]):
                 f"to compile VaRA for this base image."
             )
 
-        container_vara_dir = image_context.varats_root / (
+        container_vara_dir = stage_builder.varats_root / (
             "tools/VaRA_" + img_name
         )
-        image_context.layers.copy_([vara_install_dir], str(container_vara_dir))
-        image_context.append_to_env("PATH", [str(container_vara_dir / 'bin')])
+        stage_builder.layers.copy_([vara_install_dir], str(container_vara_dir))
+
+    def container_tool_env(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> tp.Dict[str, tp.List[str]]:
+        """
+        Tool-specific container configuration in the form of environment
+        variables.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        Returns:
+            a dictionary of environment variables as keys and lists of their values as values
+        """
+        container_vara_dir = stage_builder.varats_root / (
+            "tools/VaRA_" + stage_builder.base.name
+        )
+        return {"PATH": [str(container_vara_dir / 'bin')]}

@@ -226,7 +226,7 @@ As an alternative, you can also mount the file system of a container image by fo
 
    .. code-block:: bash
 
-     newontainer=$(bbuildah from <image_id>)
+     newcontainer=$(bbuildah from <image_id>)
 
    This command will print a container id.
 4. Mount the working container (identified by the id you got from the step before) with
