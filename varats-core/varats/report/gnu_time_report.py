@@ -255,6 +255,7 @@ class TimeReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)
+                                
         self._measurements_wall_clock_time = [
             report.wall_clock_time.total_seconds() for report in self.reports()
         ]
@@ -274,20 +275,11 @@ class TimeReportAggregate(
         return self._measurements_ctx_switches
 
     @property
-    def max_resident_sizes(self) -> tp.List[int]:
-        return [report.max_res_size for report in self.reports()]
-
-    @property
     def summary(self) -> str:
-        return (
-            f"num_reports = {len(self.reports())}\n"
-            "mean (std) of wall clock time = "
-            f"{np.mean(self.measurements_wall_clock_time):.2f}"
-            f" ({np.std(self.measurements_wall_clock_time):.2f})\n"
-            "mean (std) of context switches = "
-            f"{np.mean(self.measurements_ctx_switches):.2f}"
-            f" ({np.std(self.measurements_ctx_switches):.2f})\n"
-        )
+        return f"num_reports = {len(self.reports())}\n" \
+            f"mean(wall_clock_time) = {np.mean(self.measurements_wall_clock_time)}\n" \
+            f"std(wall_clock_time) = {np.var(self.measurements_wall_clock_time)}\n" \
+            f"variance(wall_clock_time) = {np.std(self.measurements_wall_clock_time)} \n"
 
 
 class WLTimeReportAggregate(

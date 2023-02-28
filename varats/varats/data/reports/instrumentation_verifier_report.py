@@ -4,6 +4,7 @@ import typing as tp
 from pathlib import Path
 from zipfile import ZipFile
 
+
 from varats.report.report import BaseReport
 
 

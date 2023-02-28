@@ -91,7 +91,7 @@ def workload_commands(
             filter_workload_index(run_only, unwrap(project.workloads, project))
         )
     ]
-
+    
     return list(
         filter(lambda prj_cmd: prj_cmd.path.name == binary.name, project_cmds)
     )

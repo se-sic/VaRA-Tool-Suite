@@ -33,7 +33,6 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
-
         Args:
             project: to analyze
         """
@@ -45,6 +44,9 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
 
         # Ensure that we detect all regions, when verifying
         project.cflags += ["-fvara-instruction-threshold=0"]
+
+        print(project.cflags)
+        print("------------")
 
         # Add debug information, so traces can be better interpreted
         project.cflags += ["-g"]

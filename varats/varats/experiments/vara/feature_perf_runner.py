@@ -9,10 +9,19 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     WithUnlimitedStackSize,
 )
+#from varats.experiments.vara.feature_experiment import (
+#    FeatureExperiment,
+#    RunVaRATracedWorkloads,
+#)
+#from varats.experiments.vara.feature_experiment_all_features import (
+#    FeatureExperiment,
+#    RunVaRATracedWorkloads,
+#    RunVaRATracedXRayWorkloads,
+#)
 from varats.experiments.vara.feature_experiment import (
-    FeatureExperiment,
-    RunVaRATracedWorkloads,
-    RunVaRATracedXRayWorkloads,
+     FeatureExperiment,
+     RunVaRATracedWorkloads,
+     RunVaRATracedXRayWorkloads,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -38,15 +47,32 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         """
         instr_type = "trace_event"  # trace_event
 
+        print(project.cflags)
+        print("------------")
+        
         project.cflags += self.get_vara_feature_cflags(project)
-
-        project.cflags += self.get_vara_tracing_cflags(instr_type)
+        
+        print(project.cflags)
+        print("------------")
+        
+        project.cflags += self.get_vara_tracing_cflags(instr_type, True)
+        
+        print(project.cflags)
+        print("------------")
+        
+        # Ensure that we detect all regions
+        project.cflags += ["-fvara-instruction-threshold=0"]
+        
+        print(project.cflags)
+        print("------------")
+        #CFlags to deactivate optimizations
+        #project.cflags += ["-O0", "-fno-exceptions"]
 
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = run.RuntimeExtension(project, self) #\
+        #    << time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
@@ -72,7 +98,7 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
     """Test runner for feature performance with XRay."""
 
     NAME = "RunFeatureXRayPerf"
-
+    
     REPORT_SPEC = ReportSpecification(TEFReport)
 
     def actions_for_project(
@@ -104,3 +130,50 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
             RunVaRATracedXRayWorkloads(project, self.get_handle()),
             actions.Clean(project),
         ]
+
+
+"""class FeaturePerfWhiteboxRunner(FeatureExperiment, shorthand="xzW"):
+    Test runner for feature performance
+
+    NAME = "xzWhiteboxAnalysisReport"
+
+    REPORT_SPEC = ReportSpecification(TEFReport)
+
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
+        
+        ""
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        ""
+        
+        project.cflags += self.get_vara_feature_cflags(project)
+
+        project.cflags += self.get_vara_tracing_cflags("trace_event")
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+            << time.RunWithTime()
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << run.WithTimeout()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, TEFReport
+        )
+
+        analysis_actions = []
+
+        analysis_actions.append(actions.Compile(project))
+        analysis_actions.append(ExecAndTraceBinary(project, self.get_handle()))
+
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+"""
