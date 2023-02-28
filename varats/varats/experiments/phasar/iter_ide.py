@@ -69,6 +69,18 @@ class WorklistKind(Enum):
     SIZE_PRIORITY_QUEUE = "size-prio"
     SIZE_PRIORITY_QUEUE_REVERSED = "size-prio-rev"
 
+    @staticmethod
+    def convert_from(value: str) -> tp.List['WorklistKind']:
+        enabled_wl_kinds = []
+        for wl_kind in WorklistKind:
+            if wl_kind.value in value:
+                enabled_wl_kinds.append(wl_kind)
+
+        return enabled_wl_kinds
+
+    def __str__(self) -> str:
+        return f"{self.value}"
+
 
 def _get_enabled_analyses() -> tp.List[AnalysisType]:
     """Allows overriding of analyses run by an experiment, this should only be
