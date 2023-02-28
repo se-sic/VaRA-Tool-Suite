@@ -58,6 +58,17 @@ class AnalysisType(Enum):
     def __str__(self) -> str:
         return f"{self.value}"
 
+class WorklistKind(Enum):
+
+    value: str
+
+    STACK = "stack"
+    QUEUE = "queue"
+    DEPTH_PRIORITY_QUEUE = "depth-prio"
+    DEPTH_PRIORITY_QUEUE_REVERSED = "depth-prio-rev"
+    SIZE_PRIORITY_QUEUE = "size-prio"
+    SIZE_PRIORITY_QUEUE_REVERSED = "size-prio-rev"
+
 
 def _get_enabled_analyses() -> tp.List[AnalysisType]:
     """Allows overriding of analyses run by an experiment, this should only be
@@ -68,6 +79,16 @@ def _get_enabled_analyses() -> tp.List[AnalysisType]:
         return AnalysisType.convert_from(env_analysis_selection)
 
     return [at for at in AnalysisType]
+
+def _get_enabled_worklist_kinds() -> tp.List[WorklistKind]:
+    """Allows overriding of analyses run by an experiment, this should only be
+    used for testing purposes, as the experiment will not generate all the
+    required results."""
+    env_wl_selection = os.getenv("PHASAR_WORKLIST")
+    if env_wl_selection:
+        return WorklistKind.convert_from(env_wl_selection)
+
+    return [wl for wl in WorklistKind]
 
 
 class IterIDETimeOld(actions.ProjectStep):  # type: ignore
@@ -129,12 +150,13 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
 
     def __init__(
         self, project: Project, num: int, binary: ProjectBinaryWrapper,
-        analysis_type: AnalysisType
+        analysis_type: AnalysisType, worklist_kind: WorklistKind
     ):
         super().__init__(project=project)
         self.__num = num
         self.__binary = binary
         self.__analysis_type = analysis_type
+        self.__worklist_kind = worklist_kind
 
     def __call__(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
@@ -144,9 +166,9 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
         mkdir("-p", tmp_dir)
 
         phasar_params = [
-            "-D",
-            str(self.__analysis_type), "-m",
-            get_cached_bc_file_path(
+            "-D", str(self.__analysis_type), 
+            "--worklist", str(self.__worklist_kind), 
+            "-m", get_cached_bc_file_path(
                 self.project, self.__binary,
                 [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
             )
@@ -154,7 +176,7 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
 
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
-        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__worklist_kind}_{self.__num}.txt"
         run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
         ret_code = run_cmd & RETCODE
@@ -163,7 +185,7 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
             return actions.StepResult.OK
 
         if ret_code != 0:
-            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}"
+            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__worklist_kind}_{self.__num}_err_{ret_code}"
             touch(error_file)
             return actions.StepResult.ERROR
 
@@ -333,8 +355,9 @@ class IDELinearConstantAnalysisExperiment(
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
                     ], *[
-                        IterIDETimeNew(project, rep, binary, analysis_type)
+                        IterIDETimeNew(project, rep, binary, analysis_type, worklist_kind)
                         for analysis_type in _get_enabled_analyses()
+                        for worklist_kind in _get_enabled_worklist_kinds()
                         for rep in reps
                     ]
                 ]
