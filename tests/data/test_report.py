@@ -169,8 +169,8 @@ class TestConfigReportFilename(unittest.TestCase):
         """Setup file and CommitReport."""
         cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
         cls.raw_filepath = (
-            "CRE-CR-foo-bar-7bb9ef5f8c_"
-            f"{cls.correct_UUID}/config-42_"
+            "CRE-CR-foo-bar-7bb9ef5f8c/"
+            f"{cls.correct_UUID}_config-42_"
             "success.txt"
         )
         cls.report_filename = ReportFilename(cls.raw_filepath)
@@ -180,6 +180,22 @@ class TestConfigReportFilename(unittest.TestCase):
 
     def test_configuration_id(self):
         self.assertEqual(self.report_filename.config_id, 42)
+
+    def test_create_filename_with_id_zero(self) -> None:
+        """Checks that we correctly generate a report name for a config id 0,
+        which would convert to false if checked and converted to bool."""
+        report_name_with_zero = ReportFilename.get_file_name(
+            "Foo",
+            "Bar",
+            "Prj_name",
+            "Bin_name",
+            ShortCommitHash("7bb9ef5f8c"),
+            "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+            FileStatusExtension.SUCCESS,
+            config_id=0
+        )
+        self.assertTrue(report_name_with_zero.is_configuration_specific_file())
+        self.assertEqual(report_name_with_zero.config_id, 0)
 
 
 class TestBaseReport(unittest.TestCase):

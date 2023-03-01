@@ -4,8 +4,8 @@ import typing as tp
 import numpy as np
 import pandas as pd
 
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.report.gnu_time_report import (
     TimeReportAggregate,
     WLTimeReportAggregate,
@@ -36,8 +36,8 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                 )
 
             report_files = get_processed_revisions_files(
-                project_name,
-                self.table_kwargs["experiment_type"][0], TimeReportAggregate,
+                project_name, self.table_kwargs["experiment_type"][0],
+                WLTimeReportAggregate,
                 get_case_study_file_name_filter(case_study)
             )
 

@@ -10,7 +10,7 @@ from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiments.vara.commit_report_experiment import (
     CommitReportExperiment,
 )
-from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
+from varats.paper.paper_config import get_paper_config, load_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash

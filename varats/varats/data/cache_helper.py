@@ -1,6 +1,7 @@
 """Utility functions and class to allow easier caching of pandas dataframes and
 other data."""
 import logging
+import pickle
 import typing as tp
 from pathlib import Path
 
@@ -210,8 +211,10 @@ def build_cached_graph(
     path = Path(str(vara_cfg()["data_cache"])) / f"graph-{graph_id}.gz"
 
     if path.exists():
-        return tp.cast(GraphTy, nx.read_gpickle(path))
+        with open(path, "rb") as graph_file:
+            return tp.cast(GraphTy, pickle.load(graph_file))
 
     graph = create_graph()
-    nx.write_gpickle(graph, path)
+    with open(path, "wb") as graph_file:
+        pickle.dump(graph, graph_file, pickle.HIGHEST_PROTOCOL)
     return graph

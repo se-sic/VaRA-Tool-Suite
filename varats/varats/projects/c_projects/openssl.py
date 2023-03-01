@@ -7,7 +7,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -51,7 +51,8 @@ class OpenSSL(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(OpenSSL.NAME))
 
-        binary_map.specify_binary("libssl.so", BinaryType.SHARED_LIBRARY)
+        binary_map.specify_binary("apps/openssl", BinaryType.EXECUTABLE)
+        # binary_map.specify_binary("libssl.so", BinaryType.SHARED_LIBRARY)
 
         return binary_map[revision]
 
@@ -78,7 +79,7 @@ class OpenSSL(VProject):
                     '09803e9ce3a8a555e7014ebd11b4c80f9d300cf0'
                 )
             with local.env(CC=str(compiler)):
-                bb.watch(local['./config'])()
+                bb.watch(local['./config'])("-static")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)

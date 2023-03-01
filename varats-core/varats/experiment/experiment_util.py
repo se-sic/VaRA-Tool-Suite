@@ -9,6 +9,7 @@ import textwrap
 import traceback
 import typing as tp
 from abc import abstractmethod
+from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
 
@@ -19,13 +20,22 @@ else:
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
+from benchbuild.extensions import base
 from benchbuild.project import Project
+from benchbuild.source import enumerate_revisions
 from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
+from plumbum.commands.base import BoundCommand
 
 import varats.revision.revisions as revs
+from varats.base.configuration import (
+    PlainCommandlineConfiguration,
+    ConfigurationOption,
+)
+from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
@@ -34,6 +44,7 @@ from varats.report.report import (
     ReportSpecification,
     ReportFilename,
 )
+from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -272,6 +283,20 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
 
 
+class WithUnlimitedStackSize(base.Extension):  # type: ignore
+    """Sets the stack size of the wrapped command to unlimited (16GB)."""
+
+    def __init__(self, *extensions: tp.Any, **kwargs: tp.Any) -> None:
+        super().__init__(*extensions, **kwargs)
+
+    def __call__(
+        self, binary_command: BoundCommand, *args: tp.Any, **kwargs: tp.Any
+    ) -> tp.Any:
+        return self.call_next(
+            wrap_unlimit_stack_size(binary_command), *args, **kwargs
+        )
+
+
 VersionType = tp.TypeVar('VersionType')
 
 
@@ -390,8 +415,7 @@ class VersionExperiment(Experiment):  # type: ignore
         return versions
 
     @classmethod
-    def sample(cls,
-               prj_cls: tp.Type[Project]) -> tp.List[source.VariantContext]:
+    def sample(cls, prj_cls: tp.Type[Project]) -> tp.List[source.Revision]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
@@ -402,7 +426,7 @@ class VersionExperiment(Experiment):  # type: ignore
         Returns:
             list of sampled versions
         """
-        variants = list(source.product(*prj_cls.SOURCE))
+        variants = list(enumerate_revisions(prj_cls))
 
         if bool(vara_cfg()["experiment"]["random_order"]):
             random.shuffle(variants)
@@ -422,23 +446,33 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            report_specific_bad_revs = []
+            report_specific_bad_revs: tp.Dict[
+                str, tp.Set[tp.Optional[int]]] = defaultdict(set)
             for report_type in cls.report_spec():
-                report_specific_bad_revs.append({
-                    revision.hash
-                    for revision, file_status in
-                    # TODO (se-sic/VaRA#840): needs updated VariantContext handling
-                    revs.get_tagged_revisions(prj_cls, cls, report_type).items()
-                    if file_status[None] not in fs_good
-                })
+                for revision, file_states in revs.get_tagged_revisions(
+                    prj_cls, cls, report_type
+                ).items():
+                    bad_config_ids: tp.Set[tp.Optional[int]] = set()
+                    for config_id, file_status in file_states.items():
+                        if file_status not in fs_good:
+                            bad_config_ids.add(config_id)
 
-            bad_revisions = report_specific_bad_revs[0].intersection(
-                *report_specific_bad_revs[1:]
-            )
+                    if bad_config_ids:
+                        report_specific_bad_revs[revision.hash
+                                                ].update(bad_config_ids)
 
-            variants = list(
-                filter(lambda var: str(var[0]) not in bad_revisions, variants)
-            )
+            def keep_variant(variant: source.Revision) -> bool:
+                var_version = str(variant.primary.version)
+                var_config_id = int(
+                    variant.variant_by_name("config_info").version
+                ) if variant.has_variant("config_info") else None
+
+                if var_version in report_specific_bad_revs:
+                    if var_config_id in report_specific_bad_revs[var_version]:
+                        return False  # Exclude variant from processing
+                return True
+
+            variants = list(filter(keep_variant, variants))
 
         if not variants:
             print("Could not find any unprocessed variants.")
@@ -447,9 +481,9 @@ class VersionExperiment(Experiment):  # type: ignore
         variants = cls._sample_num_versions(variants)
 
         if bool(bb_cfg()["versions"]["full"]):
-            return [source.context(*var) for var in variants]
+            return variants
 
-        return [source.context(*variants[0])]
+        return [variants[0]]
 
 
 class ZippedReportFolder(TempDir):
@@ -494,7 +528,7 @@ def run_child_with_output_folder(
     return child(tmp_folder)
 
 
-class ZippedExperimentSteps(MultiStep):
+class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive.."""
 
@@ -581,7 +615,7 @@ def __create_new_result_filepath_impl(
         )
     )
 
-    if config_id:
+    if config_id is not None:
         # We need to ensure that the config folder is created in the
         # background, so configuration specific reports can be created.
         config_folder = result_filepath.full_path().parent
@@ -640,3 +674,62 @@ def create_new_failed_result_filepath(
         exp_handle, report_type, project, binary, FileStatusExtension.FAILED,
         config_id
     )
+
+
+def get_current_config_id(project: VProject) -> tp.Optional[int]:
+    """
+    Get, if available, the current config id of project. Should the project be
+    not configuration specific ``None`` is returned.
+
+    Args:
+        project: to extract the config id from
+
+    Returns:
+        config_id if available for the given project
+    """
+    if project.active_revision.has_variant(FeatureSource.LOCAL_KEY):
+        return int(
+            project.active_revision.variant_by_name(FeatureSource.LOCAL_KEY
+                                                   ).version
+        )
+
+    return None
+
+
+def get_extra_config_options(project: VProject) -> tp.List[str]:
+    """
+    Get extra program options that where specified in the particular
+    configuration of \a Project.
+
+    Args:
+        project: to get the extra options for
+
+    Returns:
+        list of command line options as string
+    """
+    config_id = get_current_config_id(project)
+    if config_id is None:
+        return []
+
+    paper_config = get_paper_config()
+    case_studies = paper_config.get_case_studies(cs_name=project.name)
+
+    if len(case_studies) > 1:
+        raise AssertionError(
+            "Cannot handle multiple case studies of the same project."
+        )
+
+    case_study = case_studies[0]
+
+    config_map = load_configuration_map_for_case_study(
+        paper_config, case_study, PlainCommandlineConfiguration
+    )
+
+    config = config_map.get_configuration(config_id)
+
+    if config is None:
+        raise AssertionError(
+            "Requested config id was not in the map, but should be"
+        )
+
+    return list(map(lambda option: option.value, config.options()))

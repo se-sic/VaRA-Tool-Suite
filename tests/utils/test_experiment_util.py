@@ -167,7 +167,7 @@ class TestVersionExperiment(unittest.TestCase):
         enabled."""
         bb_cfg()["versions"]["full"] = False
         sample_gen = self.vers_expr.sample(BBTestProject)
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
+        self.assertEqual(sample_gen[0].primary.version, "rev1000000")
         self.assertEqual(len(sample_gen), 1)
 
     @run_in_test_environment()
@@ -184,7 +184,7 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
+        self.assertEqual(sample_gen[0].primary.version, "rev1000000")
         self.assertEqual(len(sample_gen), 1)
         mock_get_tagged_revisions.assert_called()
 
@@ -204,9 +204,9 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
-        self.assertEqual(sample_gen[1]["test_source"].version, "rev4000000")
-        self.assertEqual(sample_gen[2]["test_source"].version, "rev5000000")
+        self.assertEqual(sample_gen[0].primary.version, "rev1000000")
+        self.assertEqual(sample_gen[1].primary.version, "rev4000000")
+        self.assertEqual(sample_gen[2].primary.version, "rev5000000")
         self.assertEqual(len(sample_gen), 3)
         mock_get_tagged_revisions.assert_called()
 
@@ -223,11 +223,10 @@ class TestVersionExperiment(unittest.TestCase):
         vara_cfg()["experiment"]["file_status_blacklist"] = ['success']
 
         sample_gen = self.vers_expr.sample(BBTestProject)
-
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev2000000")
-        self.assertEqual(sample_gen[1]["test_source"].version, "rev3000000")
-        self.assertEqual(sample_gen[2]["test_source"].version, "rev4000000")
-        self.assertEqual(sample_gen[3]["test_source"].version, "rev5000000")
+        self.assertEqual(sample_gen[0].primary.version, "rev2000000")
+        self.assertEqual(sample_gen[1].primary.version, "rev3000000")
+        self.assertEqual(sample_gen[2].primary.version, "rev4000000")
+        self.assertEqual(sample_gen[3].primary.version, "rev5000000")
         self.assertEqual(len(sample_gen), 4)
         mock_get_tagged_revisions.assert_called()
 
@@ -247,8 +246,8 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev3000000")
-        self.assertEqual(sample_gen[1]["test_source"].version, "rev5000000")
+        self.assertEqual(sample_gen[0].primary.version, "rev3000000")
+        self.assertEqual(sample_gen[1].primary.version, "rev5000000")
         self.assertEqual(len(sample_gen), 2)
         mock_get_tagged_revisions.assert_called()
 
@@ -267,7 +266,7 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev4000000")
+        self.assertEqual(sample_gen[0].primary.version, "rev4000000")
         self.assertEqual(len(sample_gen), 1)
         mock_get_tagged_revisions.assert_called()
 
@@ -321,16 +320,34 @@ class TestVersionExperiment(unittest.TestCase):
         )
         self.assertEqual(report_filename.config_id, 42)
         self.assertTrue((
-            new_res_file.base_path / Path(
-                "mock-CR-test_empty-foo-rev1000000_"
-                f"{report_filename.uuid}"
-            )
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
         ).exists())
         self.assertTrue((
-            new_res_file.base_path / Path(
-                "mock-CR-test_empty-foo-rev1000000_"
-                f"{report_filename.uuid}"
-            )
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
+        ).is_dir())
+
+    @run_in_test_environment()
+    def test_create_success_result_filepath_config_with_id_zero(self):
+        """Checks if we correctly create new success config-specific result
+        files for config id zero."""
+        new_res_file = EU.create_new_success_result_filepath(
+            self.vers_expr.get_handle(), CR, tp.cast(VProject, BBTestProject()),
+            ProjectBinaryWrapper("foo", Path("bar/foo"), BinaryType.EXECUTABLE),
+            0
+        )
+
+        self.assertTrue(new_res_file.base_path.exists())
+
+        report_filename = new_res_file.report_filename
+        self.assertEqual(
+            report_filename.file_status, FileStatusExtension.SUCCESS
+        )
+        self.assertEqual(report_filename.config_id, 0)
+        self.assertTrue((
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
+        ).exists())
+        self.assertTrue((
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
         ).is_dir())
 
 

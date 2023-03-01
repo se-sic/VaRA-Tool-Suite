@@ -146,8 +146,8 @@ class ReportFilename():
     __RESULT_FILE_REGEX = re.compile(
         r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)"
-        r"(\/config-(?P<config_id>\d+))?" + "_" +
+        r"(?P<file_commit_hash>.*)[_\/](?P<UUID>[0-9a-fA-F\-]*)"
+        r"(_config-(?P<config_id>\d+))?" + "_" +
         FileStatusExtension.get_regex_grp() + r"?" + r"(?P<file_ext>\..*)?" +
         "$"
     )
@@ -160,8 +160,8 @@ class ReportFilename():
 
     __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (
         "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
-        "{binary_name}-" + "{project_revision}_" + "{project_uuid}" +
-        "/config-{config_id}_" + "{status_ext}" + "{file_ext}"
+        "{binary_name}-" + "{project_revision}/" + "{project_uuid}" +
+        "_config-{config_id}_" + "{status_ext}" + "{file_ext}"
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
@@ -430,7 +430,7 @@ class ReportFilename():
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
 
-        if config_id:
+        if config_id is not None:
             return ReportFilename(
                 ReportFilename.__CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE.format(
                     experiment_shorthand=experiment_shorthand,

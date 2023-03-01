@@ -1,7 +1,7 @@
 """
 This module allows to attach :class:`artefact definitions<Artefact>` to a.
 
-:class:`paper config<varats.paper_mgmt.paper_config>`. This way, the artefacts,
+:class:`paper config<varats.paper.paper_config>`. This way, the artefacts,
 like :class:`plots<PlotArtefact>` or result tables, can be generated from
 result files automatically.
 
@@ -23,7 +23,7 @@ if tp.TYPE_CHECKING:
     from rich.progress import Progress  # pylint: disable=unused-import
 
     import varats.paper.case_study as cs  # pylint: disable=unused-import
-    import varats.paper_mgmt.paper_config as pc  # pylint: disable=unused-import
+    import varats.paper.paper_config as pc  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
 

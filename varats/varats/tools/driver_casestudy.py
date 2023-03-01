@@ -26,9 +26,11 @@ from varats.paper.case_study import (
     CaseStudy,
     CSStage,
 )
+from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
+    extend_with_latest_rev,
     extend_with_distrib_sampling,
     extend_with_revs_per_year,
     extend_with_smooth_revs,
@@ -36,7 +38,6 @@ from varats.paper_mgmt.case_study import (
     extend_with_bug_commits,
     extend_with_extra_revs,
 )
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
@@ -66,7 +67,6 @@ from varats.utils.git_util import (
     is_commit_hash,
     get_commits_before_timestamp,
     ShortCommitHash,
-    FullCommitHash,
 )
 from varats.utils.settings import vara_cfg
 
@@ -264,10 +264,13 @@ def __gen_latest(ctx: click.Context) -> None:
     cmap = get_commit_map(ctx.obj['project'])
     case_study: CaseStudy = ctx.obj['case_study']
 
-    repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
-    last_commit = FullCommitHash.from_pygit_commit(repo[repo.head.target])
-
-    case_study.include_revisions([(last_commit, cmap.time_id(last_commit))])
+    extend_with_latest_rev(
+        case_study,
+        cmap,
+        merge_stage=ctx.obj['merge_stage'],
+        ignore_blocked=ctx.obj['ignore_blocked'],
+        git_path=ctx.obj["git_path"]
+    )
     store_case_study(case_study, ctx.obj['path'])
 
 

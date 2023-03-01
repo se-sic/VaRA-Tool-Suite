@@ -23,7 +23,7 @@ from varats.experiment.workload_util import (
 )
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.report.gnu_time_report import TimeReportAggregate
+from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportSpecification
 
 
@@ -71,7 +71,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
 
     NAME = "TimeWorkloads"
 
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+    REPORT_SPEC = ReportSpecification(WLTimeReportAggregate)
 
     def actions_for_project(
         self, project: VProject
