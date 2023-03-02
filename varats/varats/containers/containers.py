@@ -214,7 +214,7 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .run('wget', 'https://www.python.org/ftp/python/3.10.9/Python-3.10.9.tgz')
             .run('tar', '-xf', 'Python-3.10.9.tgz')
             .workingdir('Python-3.10.9')
-            .run('./configure', '--enable-optimizations')
+            .run('./configure', '--enable-optimizations', env='CFLAGS=-fPIC')
             .run('make', '-j', str(get_number_of_jobs(bb_cfg())))
             # .run('make', 'test')
             .run('make', 'install')
