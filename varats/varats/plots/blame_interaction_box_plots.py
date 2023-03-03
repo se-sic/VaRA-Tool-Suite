@@ -251,6 +251,11 @@ class FileVsBlameGraphDiffPlot(
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__("file", "blame", plot_config, **kwargs)
 
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise NotImplementedError
+
 
 class CallgraphVsBlameGraphDiffPlot(
     AuthorGraphDiffPlot, plot_name='aig_callgraph_vs_blame_authors'
@@ -260,6 +265,11 @@ class CallgraphVsBlameGraphDiffPlot(
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__("callgraph", "blame", plot_config, **kwargs)
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise NotImplementedError
 
 
 class AuthorBlameVsFilePlotGenerator(
