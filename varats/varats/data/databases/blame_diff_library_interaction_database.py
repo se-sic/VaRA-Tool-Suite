@@ -1,6 +1,5 @@
 """Module for the BlameDiffLibraryInteractionDatabase class."""
 import typing as tp
-from pathlib import Path
 
 import pandas as pd
 
@@ -19,6 +18,7 @@ from varats.data.reports.blame_report import (
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
+from varats.report.report import ReportFilepath
 from varats.utils.git_util import FullCommitHash
 
 
@@ -47,11 +47,11 @@ class BlameDiffLibraryInteractionDatabase(
             return df_layout
 
         def create_data_frame_for_report(
-            report_paths: tp.Tuple[Path, Path]
+            report_paths: tp.Tuple[ReportFilepath, ReportFilepath]
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
-            head_report = load_blame_report(report_paths[0])
-            pred_report = load_blame_report(report_paths[1])
+            head_report = load_blame_report(report_paths[0].full_path())
+            pred_report = load_blame_report(report_paths[1].full_path())
 
             diff_report = BlameReportDiff(head_report, pred_report)
 

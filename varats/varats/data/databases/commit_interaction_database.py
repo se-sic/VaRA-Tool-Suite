@@ -1,6 +1,5 @@
 """Module for the base CommitInteractionDatabase class."""
 import typing as tp
-from pathlib import Path
 
 import pandas as pd
 
@@ -13,7 +12,7 @@ from varats.jupyterhelper.file import load_commit_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -44,9 +43,9 @@ class CommitInteractionDatabase(
             return df_layout
 
         def create_data_frame_for_report(
-            report_path: Path
+            report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
-            report = load_commit_report(report_path)
+            report = load_commit_report(report_path.full_path())
             cf_head_interactions_raw = report.number_of_head_cf_interactions()
             df_head_interactions_raw = report.number_of_head_df_interactions()
 

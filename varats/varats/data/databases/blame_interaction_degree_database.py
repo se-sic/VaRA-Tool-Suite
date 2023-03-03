@@ -1,7 +1,6 @@
 """Module for the base BlameInteractionDegreeDatabase class."""
 import typing as tp
 from enum import Enum
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -21,7 +20,7 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -97,9 +96,9 @@ class BlameInteractionDegreeDatabase(
             return df_layout
 
         def create_data_frame_for_report(
-            report_path: Path
+            report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
-            report = load_blame_report(report_path)
+            report = load_blame_report(report_path.full_path())
 
             categorised_degree_occurrences = generate_lib_dependent_degrees(
                 report

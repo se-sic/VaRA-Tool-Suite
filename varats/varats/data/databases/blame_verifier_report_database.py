@@ -2,7 +2,6 @@
 import re
 import typing as tp
 from enum import Enum
-from pathlib import Path
 
 import pandas as pd
 
@@ -23,7 +22,7 @@ from varats.jupyterhelper.file import (
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -67,7 +66,7 @@ class BlameVerifierReportDatabase(
             return df_layout
 
         def create_data_frame_for_report(
-            report_path: Path
+            report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
             report_file_name_match = re.search(
@@ -86,7 +85,9 @@ class BlameVerifierReportDatabase(
                              BlameVerifierReportNoOptTBAA]
 
             if BlameVerifierReportOpt.is_correct_report_type(report_file_name):
-                report_opt = load_blame_verifier_report_opt(report_path)
+                report_opt = load_blame_verifier_report_opt(
+                    report_path.full_path()
+                )
                 report = report_opt
                 opt_level = OptLevel.OPT.value
 
@@ -94,7 +95,7 @@ class BlameVerifierReportDatabase(
                 report_file_name
             ):
                 report_no_opt = load_blame_verifier_report_no_opt_tbaa(
-                    report_path
+                    report_path.full_path()
                 )
 
                 report = report_no_opt
@@ -123,7 +124,7 @@ class BlameVerifierReportDatabase(
                 index=[0]
                 # Add prefix of report name to head_commit to differentiate
                 # between reports with and without optimization
-            ), report.head_commit.hash + report_path.name.split("-", 1)[0], str(
+            ), report.head_commit.hash + report_path.report_filename.report_shorthand, str(
                 report_path.stat().st_mtime_ns
             )
 
