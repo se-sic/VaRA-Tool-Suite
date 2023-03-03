@@ -195,6 +195,7 @@ good-names=a,
            df,
            id,
            pc,
+           cs
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
