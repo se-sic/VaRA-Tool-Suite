@@ -6,7 +6,7 @@ from math import ceil, floor
 import networkx as nx
 import pandas as pd
 import seaborn as sns
-from matplotlib.ticker import MaxNLocator, FixedLocator, StrMethodFormatter
+from matplotlib.ticker import Locator, FixedLocator, StrMethodFormatter
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -134,8 +134,23 @@ def _get_graph(
     }[graph_type]
 
 
+def _create_tick_locator(
+    max_val: int, min_val: int, threshold: float = 0.15
+) -> Locator:
+    ticks = {min_val, max_val}
+    val_range = max_val - min_val
+    if val_range == 0:
+        return FixedLocator([0])
+    else:
+        max_frac = max_val / val_range
+        min_frac = abs(min_val) / val_range
+        if min_frac > threshold and max_frac > threshold:
+            ticks.add(0)
+        return FixedLocator(list(ticks))
+
+
 class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
-    """Box plot of commit-author interaction commit node degrees."""
+    """Plot showing the difference between two author interaction graphs."""
 
     def __init__(
         self, baseline_graph: str, compared_graph: str, plot_config: PlotConfig,
@@ -148,15 +163,18 @@ class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["case_study"]
 
-        project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReportExperiment
         )
         if not revision:
             raise PlotDataEmpty()
 
-        baseline_aig = _get_graph(self.__baseline_graph, project_name, revision)
-        compared_aig = _get_graph(self.__compared_graph, project_name, revision)
+        baseline_aig = _get_graph(
+            self.__baseline_graph, case_study.project_name, revision
+        )
+        compared_aig = _get_graph(
+            self.__compared_graph, case_study.project_name, revision
+        )
 
         node_data: tp.List[tp.Dict[str, tp.Any]] = []
         for node in baseline_aig.nodes:
@@ -173,7 +191,7 @@ class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
 
             node_data.append(({
                 "Project":
-                    project_name,
+                    case_study.project_name,
                 "author":
                     f"{node_attrs['author']}",
                 "additional_authors":
@@ -203,27 +221,19 @@ class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
         ax.set_xticks([])
         ax.tick_params(axis='y', labelsize=15)
         ax.yaxis.set_major_formatter(StrMethodFormatter("{x: >4}"))
-
-        max_val = floor(file_data["additional_authors"].max())
-        min_val = ceil(file_data["removed_authors"].min())
-        ticks = {min_val, max_val}
-        threshold = 0.15
-        val_range = max_val - min_val
-        if val_range == 0:
-            ax.yaxis.set_major_locator(FixedLocator([0]))
-        else:
-            max_frac = max_val / val_range
-            min_frac = abs(min_val) / val_range
-            if min_frac > threshold and max_frac > threshold:
-                ticks.add(0)
-            ax.yaxis.set_major_locator(FixedLocator(list(ticks)))
+        ax.yaxis.set_major_locator(
+            _create_tick_locator(
+                floor(file_data["additional_authors"].max()),
+                ceil(file_data["removed_authors"].min())
+            )
+        )
 
         for label in ax.get_yticklabels():
             label.set_fontproperties({"family": "monospace", "size": 15})
 
         ax.set_xlabel(None)
         ax.set_ylabel(None)
-        ax.set_title(project_name, fontsize=25)
+        ax.set_title(case_study.project_name, fontsize=25)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -234,6 +244,8 @@ class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
 class FileVsBlameGraphDiffPlot(
     AuthorGraphDiffPlot, plot_name='aig_file_vs_blame_authors'
 ):
+    """Plot showing the difference between file-based and ci-based author
+    interaction graphs."""
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__("file", "blame", plot_config, **kwargs)
@@ -242,6 +254,8 @@ class FileVsBlameGraphDiffPlot(
 class CallgraphVsBlameGraphDiffPlot(
     AuthorGraphDiffPlot, plot_name='aig_callgraph_vs_blame_authors'
 ):
+    """Plot showing the difference between callgraph-based and ci-based author
+    interaction graphs."""
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__("callgraph", "blame", plot_config, **kwargs)
