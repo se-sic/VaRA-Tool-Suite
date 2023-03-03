@@ -1,7 +1,6 @@
 """Implements experiment for VaRA's InstrumentationPointPrinter utility pass."""
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
@@ -16,7 +15,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
     get_varats_result_folder,
-    create_new_success_result_filename,
+    create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import (
     BCFileExtensions,
@@ -24,6 +23,7 @@ from varats.experiment.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
 )
+from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
     FeatureModelNotFound,
     FeatureModelProvider,
@@ -31,7 +31,7 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 
 
-class CollectInstrumentationPoints(actions.Step):  # type: ignore
+class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
     """Runs utility pass on LLVM-IR to extract instrumentation point
     information."""
 
@@ -39,29 +39,33 @@ class CollectInstrumentationPoints(actions.Step):  # type: ignore
     DESCRIPTION = "Runs utility pass on LLVM-IR to extract instrumentation " \
         "point information."
 
+    project: VProject
+
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.analyze)
+        super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
 
     def analyze(self) -> actions.StepResult:
         """Run VaRA-IPP utility pass and extract instrumentation point
         information."""
-        project = self.obj
+        vara_result_folder = get_varats_result_folder(self.project)
 
-        vara_result_folder = get_varats_result_folder(project)
-
-        for binary in project.binaries:
-            result_file = create_new_success_result_filename(
-                self.__experiment_handle, VaraIPPReport, project, binary
+        for binary in self.project.binaries:
+            result_file = create_new_success_result_filepath(
+                self.__experiment_handle, VaraIPPReport, self.project, binary
             )
 
             # Need the following passes:
             # - vara-PFTDD to generate feature regions
             # - vara-IPP (Instrumentation Point Printer)
             opt_params = [
-                "--vara-PTFDD", "-vara-IPP", "-o", "/dev/null",
+                "--enable-new-pm=0", "--vara-PTFDD", "-vara-IPP", "-o",
+                "/dev/null",
                 get_cached_bc_file_path(
-                    project, binary,
+                    self.project, binary,
                     [BCFileExtensions.DEBUG, BCFileExtensions.FEATURE]
                 )
             ]
@@ -74,8 +78,7 @@ class CollectInstrumentationPoints(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, VaraIPPReport,
-                    Path(vara_result_folder)
+                    self.__experiment_handle, self.project, VaraIPPReport
                 )
             )
 

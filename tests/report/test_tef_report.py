@@ -65,7 +65,7 @@ TRACE_EVENT_FORMAT_OUTPUT = """{
         "pid": 91098,
         "tid": 91098
     } ],
-    "displayTimeUnit": "ns",
+    "timestampUnit": "ns",
     "stackFrames": {}
 }
 """
@@ -154,7 +154,10 @@ class TestTraceEvent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Load trace event."""
-        cls.trace_event = TraceEvent(json.loads(SINGLE_TRACE_EVENT))
+        name_id_mapper = TEFReport.NameIDMapper(["Base", "Foo", "Bar"])
+        cls.trace_event = TraceEvent(
+            json.loads(SINGLE_TRACE_EVENT), 0, name_id_mapper
+        )
 
     def test_name_parsing(self):
         """Test if we can correctly parse event names."""
@@ -219,8 +222,8 @@ class TestTEFReportParser(unittest.TestCase):
 
     def test_parse_time_unit(self) -> None:
         """Test if the time unit field is correclty parsed."""
-        self.assertEqual(self.report.display_time_unit, "ns")
-        self.assertNotEqual(self.report.display_time_unit, "ms")
+        self.assertEqual(self.report.timestamp_unit, "ns")
+        self.assertNotEqual(self.report.timestamp_unit, "ms")
 
     def test_parse_trace_events(self) -> None:
         """Test if we correctly parse the listed trace events."""

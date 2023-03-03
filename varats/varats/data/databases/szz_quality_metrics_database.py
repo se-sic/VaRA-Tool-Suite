@@ -12,14 +12,20 @@ from varats.data.databases.blame_diff_metrics_database import (
     compare_timestamps,
 )
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.reports.blame_report import (
-    BlameReport,
-    get_interacting_commits_for_commit,
-)
+from varats.data.reports.blame_report import get_interacting_commits_for_commit
 from varats.data.reports.szz_report import (
     SZZReport,
     SZZUnleashedReport,
     PyDrillerSZZReport,
+)
+from varats.experiments.szz.pydriller_szz_experiment import (
+    PyDrillerSZZExperiment,
+)
+from varats.experiments.szz.szz_unleashed_experiment import (
+    SZZUnleashedExperiment,
+)
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap, get_commit_map
@@ -50,7 +56,9 @@ def _get_requested_report_paths(
         )
 
     report_map: tp.Dict[ShortCommitHash, Path] = {}
-    for report_path in get_processed_revisions_files(project_name, BlameReport):
+    for report_path in get_processed_revisions_files(
+        project_name, BlameReportExperiment
+    ):
         report_revision = ReportFilename(report_path).commit_hash
         if report_revision in requested_report_revisions:
             report_map[report_revision] = report_path
@@ -200,7 +208,7 @@ class SZZUnleashedQualityMetricsDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
         report_paths = get_processed_revisions_files(
-            project_name, SZZUnleashedReport
+            project_name, SZZUnleashedExperiment
         )
         return _load_dataframe_for_report(
             project_name, cls.CACHE_ID, cls.COLUMNS, commit_map,
@@ -224,7 +232,7 @@ class PyDrillerSZZQualityMetricsDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
         report_paths = get_processed_revisions_files(
-            project_name, PyDrillerSZZReport
+            project_name, PyDrillerSZZExperiment
         )
         return _load_dataframe_for_report(
             project_name, cls.CACHE_ID, cls.COLUMNS, commit_map,

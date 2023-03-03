@@ -5,7 +5,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from tests.test_utils import run_in_test_environment
-from varats.paper_mgmt.paper_config import load_paper_config
+from varats.paper.paper_config import load_paper_config
 from varats.tools import driver_paper_config
 from varats.utils.settings import vara_cfg
 

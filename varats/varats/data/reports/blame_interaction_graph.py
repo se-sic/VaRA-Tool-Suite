@@ -12,17 +12,16 @@ from benchbuild.utils.cmd import git
 
 from varats.data.cache_helper import build_cached_graph
 from varats.data.reports.blame_report import (
-    BlameReport,
     gen_base_to_inter_commit_repo_pair_mapping,
-    BlameReportDiff,
     BlameTaintData,
+    BlameResultFunctionEntry,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_gits,
 )
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -37,6 +36,12 @@ if sys.version_info <= (3, 8):
     from typing_extensions import TypedDict
 else:
     from typing import TypedDict
+
+if tp.TYPE_CHECKING:
+    # pylint: disable=W0611
+    from varats.experiments.vara.blame_report_experiment import (
+        BlameReportExperiment,
+    )
 
 BIGNodeTy = BlameTaintData
 
@@ -303,20 +308,17 @@ class InteractionGraph(abc.ABC):
 class BlameInteractionGraph(InteractionGraph):
     """Graph/Network built from blame interaction data."""
 
-    def __init__(
-        self, project_name: str, report: tp.Union[BlameReport, BlameReportDiff]
-    ):
+    def __init__(self, project_name: str, report_file: ReportFilepath):
         super().__init__(project_name)
-        self.__report = report
+        self.__report_file = report_file
         self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
 
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
+            report = load_blame_report(self.__report_file.full_path())
             interaction_graph = nx.DiGraph()
-            interactions = gen_base_to_inter_commit_repo_pair_mapping(
-                self.__report
-            )
+            interactions = gen_base_to_inter_commit_repo_pair_mapping(report)
             nodes: tp.Set[BIGNodeTy] = {
                 commit for base, inters in interactions.items()
                 for commit in [base, *inters.keys()]
@@ -346,10 +348,62 @@ class BlameInteractionGraph(InteractionGraph):
             return interaction_graph
 
         if not self.__cached_interaction_graph:
+            filename = self.__report_file.report_filename
             self.__cached_interaction_graph = build_cached_graph(
-                f"ig-blame-{self.project_name}", create_graph
+                f"ig-{filename.experiment_shorthand}-{self.project_name}-"
+                f"{filename.commit_hash.hash}", create_graph
             )
         return self.__cached_interaction_graph
+
+
+class CallgraphBasedInteractionGraph(InteractionGraph):
+    """Graph/Network built from callgraph-based interaction data."""
+
+    def __init__(self, project_name: str, report_file: ReportFilepath):
+        super().__init__(project_name)
+        self.__report_file = report_file
+        self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
+
+    def _interaction_graph(self) -> nx.DiGraph:
+
+        def create_graph() -> nx.DiGraph:
+            report = load_blame_report(self.__report_file.full_path())
+            interaction_graph = nx.DiGraph()
+
+            for function_entry in report.function_entries:
+                sources = _nodes_for_func_entry(function_entry)
+                sinks = [
+                    sink for callee in function_entry.callees
+                    for sink in _nodes_for_func_entry(
+                        report.get_blame_result_function_entry(callee)
+                    )
+                ]
+
+                for node in [*sources, *sinks]:
+                    interaction_graph.add_node(node, blame_taint_data=node)
+
+                for source, sink in itertools.product(sources, sinks):
+                    if source != sink:
+                        if not interaction_graph.has_edge(source, sink):
+                            interaction_graph.add_edge(source, sink, amount=0)
+                        interaction_graph[source][sink]["amount"] += 1
+
+            return interaction_graph
+
+        if not self.__cached_interaction_graph:
+            self.__cached_interaction_graph = build_cached_graph(
+                f"ig-callgraph-{self.project_name}", create_graph
+            )
+        return self.__cached_interaction_graph
+
+
+def _nodes_for_func_entry(
+    function_entry: BlameResultFunctionEntry
+) -> tp.Set[BIGNodeTy]:
+    return {
+        BlameTaintData(commit, function_name=function_entry.name)
+        for commit in function_entry.commits
+    }
 
 
 class FileBasedInteractionGraph(InteractionGraph):
@@ -436,7 +490,8 @@ class FileBasedInteractionGraph(InteractionGraph):
 
 
 def create_blame_interaction_graph(
-    project_name: str, revision: FullCommitHash
+    project_name: str, revision: FullCommitHash,
+    experiment_type: tp.Type['BlameReportExperiment']
 ) -> BlameInteractionGraph:
     """
     Create a blame interaction graph for a certain project revision.
@@ -444,6 +499,7 @@ def create_blame_interaction_graph(
     Args:
         project_name: name of the project
         revision: project revision
+        experiment_type: experiment that was used to create the blame data
 
     Returns:
         the blame interaction graph
@@ -460,12 +516,45 @@ def create_blame_interaction_graph(
         file_name_filter = match_revision
 
     report_files = get_processed_revisions_files(
-        project_name, BlameReport, file_name_filter
+        project_name, experiment_type, file_name_filter=file_name_filter
     )
     if len(report_files) == 0:
         raise LookupError(f"Found no BlameReport for project {project_name}")
-    report = load_blame_report(report_files[0])
-    return BlameInteractionGraph(project_name, report)
+    return BlameInteractionGraph(project_name, report_files[0])
+
+
+def create_callgraph_based_interaction_graph(
+    project_name: str, revision: FullCommitHash,
+    experiment_type: tp.Type['BlameReportExperiment']
+) -> CallgraphBasedInteractionGraph:
+    """
+    Create a callgraph-based interaction graph for a certain project revision.
+
+    Args:
+        project_name: name of the project
+        revision: project revision
+        experiment_type: experiment that was used to create the callgraph data
+
+    Returns:
+        the blame interaction graph
+    """
+    file_name_filter: tp.Callable[[str], bool] = lambda x: False
+
+    if revision:
+
+        def match_revision(file_name: str) -> bool:
+            return ReportFilename(
+                file_name
+            ).commit_hash != revision.to_short_commit_hash()
+
+        file_name_filter = match_revision
+
+    report_files = get_processed_revisions_files(
+        project_name, experiment_type, file_name_filter=file_name_filter
+    )
+    if len(report_files) == 0:
+        raise LookupError(f"Found no BlameReport for project {project_name}")
+    return CallgraphBasedInteractionGraph(project_name, report_files[0])
 
 
 def create_file_based_interaction_graph(

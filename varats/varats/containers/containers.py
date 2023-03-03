@@ -54,20 +54,24 @@ class ImageBase(Enum):
         return self.__distro
 
 
+# yapf: disable
 _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[], ContainerImage]] = {
     ImageBase.DEBIAN_10:
-        lambda: ContainerImage().from_("docker.io/library/debian:10").
-        run('apt', 'update').run(
-            'apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
-            'software-properties-common', 'python3', 'python3-dev',
-            'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
-            'libffi-dev', 'libyaml-dev', 'graphviz-dev'
-        ).run('wget', 'https://apt.llvm.org/llvm.sh').
-        run('chmod', '+x', './llvm.sh').run('./llvm.sh', '13', 'all').run(
-            'ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang'
-        ).run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++'
-             ).run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld')
+        lambda: ContainerImage()
+            .from_("docker.io/library/debian:10")
+            .run('apt', 'update')
+            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+                 'software-properties-common', 'python3', 'python3-dev',
+                 'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
+                 'libffi-dev', 'libyaml-dev', 'graphviz-dev')
+            .run('wget', 'https://apt.llvm.org/llvm.sh')
+            .run('chmod', '+x', './llvm.sh')
+            .run('./llvm.sh', '13', 'all')
+            .run('ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld')
 }
+# yapf: enable
 
 
 class BaseImageCreationContext():
