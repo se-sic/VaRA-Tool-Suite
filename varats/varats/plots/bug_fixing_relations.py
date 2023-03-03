@@ -497,8 +497,8 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
             project_name, SZZUnleashedExperiment
         )
         szzunleashed_bugs = frozenset([
-            as_pygit_bug(raw_bug, project_repo)
-            for raw_bug in SZZUnleashedReport(reports[0]).get_all_raw_bugs()
+            as_pygit_bug(raw_bug, project_repo) for raw_bug in
+            SZZUnleashedReport(reports[0].full_path()).get_all_raw_bugs()
         ])
 
         if self.__szz_tool == 'pydriller':

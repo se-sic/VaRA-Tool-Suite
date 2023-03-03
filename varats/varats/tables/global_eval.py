@@ -19,7 +19,7 @@ from varats.jupyterhelper.file import (
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import ProjectBinaryWrapper
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -87,11 +87,11 @@ def create_df_for_report(
 
 
 def filter_report_paths_binary(
-    report_files: tp.List[Path], binary: ProjectBinaryWrapper
-) -> tp.List[Path]:
+    report_files: tp.List[ReportFilepath], binary: ProjectBinaryWrapper
+) -> tp.List[ReportFilepath]:
     return list(
         filter(
-            lambda x: ReportFilename(x).binary_name == binary.name, report_files
+            lambda x: x.report_filename.binary_name == binary.name, report_files
         )
     )
 

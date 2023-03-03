@@ -22,7 +22,7 @@ from varats.jupyterhelper.file import (
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename, ReportFilepath
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -161,9 +161,9 @@ class BlameVerifierReportDatabase(
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
-            create_dataframe_layout, create_data_frame_for_report, lambda path:
-            ReportFilename(path).commit_hash.hash + path.name.split("-", 1)[0],
-            lambda path: str(path.stat().st_mtime_ns),
+            create_dataframe_layout, create_data_frame_for_report,
+            lambda path: path.report_filename.commit_hash.hash + path.full_path(
+            ).name.split("-", 1)[0], lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
         return data_frame

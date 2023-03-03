@@ -684,7 +684,7 @@ def extend_with_bug_commits(
                 "Falling back to bug provider."
             )
             return None
-        report = load_fun(reports[0])
+        report = load_fun(reports[0].full_path())
         return report.get_all_raw_bugs()
 
     bugs: tp.Optional[tp.FrozenSet[RawBug]] = None

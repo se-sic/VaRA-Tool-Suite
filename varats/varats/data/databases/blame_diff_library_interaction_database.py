@@ -50,8 +50,8 @@ class BlameDiffLibraryInteractionDatabase(
             report_paths: tp.Tuple[ReportFilepath, ReportFilepath]
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
-            head_report = load_blame_report(report_paths[0].full_path())
-            pred_report = load_blame_report(report_paths[1].full_path())
+            head_report = load_blame_report(report_paths[0])
+            pred_report = load_blame_report(report_paths[1])
 
             diff_report = BlameReportDiff(head_report, pred_report)
 
