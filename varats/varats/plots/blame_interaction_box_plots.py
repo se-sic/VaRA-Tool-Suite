@@ -139,14 +139,15 @@ def _create_tick_locator(
 ) -> Locator:
     ticks = {min_val, max_val}
     val_range = max_val - min_val
+
     if val_range == 0:
         return FixedLocator([0])
-    else:
-        max_frac = max_val / val_range
-        min_frac = abs(min_val) / val_range
-        if min_frac > threshold and max_frac > threshold:
-            ticks.add(0)
-        return FixedLocator(list(ticks))
+
+    max_frac = max_val / val_range
+    min_frac = abs(min_val) / val_range
+    if min_frac > threshold and max_frac > threshold:
+        ticks.add(0)
+    return FixedLocator(list(ticks))
 
 
 class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
