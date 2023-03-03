@@ -546,7 +546,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
         status_ok = True
         for path in self.INSTALL_BINARIES:
-            status_ok &= (path / install_location).exists()
+            status_ok &= (install_location / path).exists()
         return status_ok
 
     def verify_install(self, install_location: Path) -> bool:
@@ -556,7 +556,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         Returns:
             True, if the tool was correctly installed
         """
-        self.install_exists(install_location)
+        return self.install_exists(install_location)
 
     @abc.abstractmethod
     def verify_build(
