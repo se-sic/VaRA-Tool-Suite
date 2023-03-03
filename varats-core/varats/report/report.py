@@ -7,7 +7,7 @@ import typing as tp
 import weakref
 from collections import defaultdict
 from enum import Enum
-from pathlib import Path, PosixPath
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from plumbum import colors
@@ -507,6 +507,9 @@ class ReportFilepath():
         return ReportFilepath(
             self.base_path, self.report_filename.with_status(new_status)
         )
+
+    def stat(self):
+        return self.__base_path.stat()
 
     def __str__(self) -> str:
         return str(self.full_path())
