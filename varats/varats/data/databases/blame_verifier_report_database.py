@@ -122,7 +122,8 @@ class BlameVerifierReportDatabase(
                 index=[0]
                 # Add prefix of report name to head_commit to differentiate
                 # between reports with and without optimization
-            ), report.head_commit.hash + report_path.report_filename.report_shorthand, str(
+            ), report.head_commit.hash + \
+               report_path.report_filename.report_shorthand, str(
                 report_path.stat().st_mtime_ns
             )
 
