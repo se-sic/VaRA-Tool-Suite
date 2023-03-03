@@ -398,8 +398,11 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
 
 
 def _nodes_for_func_entry(
-    function_entry: BlameResultFunctionEntry
+    function_entry: tp.Optional[BlameResultFunctionEntry]
 ) -> tp.Set[BIGNodeTy]:
+    if function_entry is None:
+        return set()
+
     return {
         BlameTaintData(commit, function_name=function_entry.name)
         for commit in function_entry.commits
