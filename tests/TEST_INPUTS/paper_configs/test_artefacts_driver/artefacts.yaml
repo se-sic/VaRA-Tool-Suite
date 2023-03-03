@@ -1,5 +1,7 @@
+---
 DocType: Artefacts
 Version: 2
+...
 ---
 artefacts:
 - artefact_type: plot
@@ -22,3 +24,30 @@ artefacts:
   table_generator: diff-correlation-overview-table
   view: false
   wrap_table: false
+- artefact_type: plot
+  artefact_type_version: 2
+  case_study: xz_0
+  dry_run: false
+  experiment_type: JustCompile
+  file_type: svg
+  name: "CS Overview (xz)"
+  output_dir: .
+  plot_config: {}
+  plot_generator: cs-overview-plot
+  show_all_blocked: false
+  show_blocked: true
+  view: false
+- artefact_type: plot
+  artefact_type_version: 2
+  case_study: all
+  dry_run: false
+  experiment_type: JustCompile
+  file_type: svg
+  name: "CS Overview (all)"
+  output_dir: .
+  plot_config: {}
+  plot_generator: cs-overview-plot
+  show_all_blocked: false
+  show_blocked: true
+  view: false
+...

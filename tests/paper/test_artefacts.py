@@ -6,12 +6,18 @@ from tempfile import NamedTemporaryFile
 
 from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.experiments.base.just_compile import JustCompileReport
-from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
+from varats.paper.case_study import CaseStudy
+from varats.paper.paper_config import (
+    load_paper_config,
+    get_loaded_paper_config,
+    get_paper_config,
+)
 from varats.paper_mgmt.artefacts import (
     initialize_artefact_types,
     Artefacts,
     Artefact,
     load_artefacts_from_file,
+    load_artefacts,
 )
 from varats.plot.plots import PlotArtefact, PlotConfig, CommonPlotOptions
 from varats.plots.case_study_overview import CaseStudyOverviewGenerator
@@ -43,7 +49,7 @@ class TestArtefacts(unittest.TestCase):
     plot_artefact: PlotArtefact
 
     @classmethod
-    def setUp(cls):
+    def setUp(cls) -> None:
         """Setup artefacts file from yaml doc."""
         initialize_plots()
         initialize_tables()
@@ -60,22 +66,22 @@ class TestArtefacts(unittest.TestCase):
 
     # Artefact tests
 
-    def test_artefact_type(self):
+    def test_artefact_type(self) -> None:
         """Check if artefact type is loaded correctly."""
         self.assertTrue(isinstance(self.plot_artefact, PlotArtefact))
 
-    def test_artefact_name(self):
+    def test_artefact_name(self) -> None:
         """Check if artefact name is loaded correctly."""
         self.assertEqual(self.plot_artefact.name, 'overview')
 
-    def test_artefact_output_path(self):
+    def test_artefact_output_path(self) -> None:
         """Check if artefact output_path is loaded correctly."""
         self.assertEqual(
             self.plot_artefact.output_dir,
             Artefact.base_output_dir() / 'some/path'
         )
 
-    def test_artefact_to_dict(self):
+    def test_artefact_to_dict(self) -> None:
         """Check if artefact is serialized correctly."""
         artefact_dict = self.plot_artefact.get_dict()
         self.assertEqual(artefact_dict['artefact_type'], 'plot')
@@ -88,30 +94,30 @@ class TestArtefacts(unittest.TestCase):
 
     # PlotArtefact tests
 
-    def test_artefact_plot_type(self):
+    def test_artefact_plot_type(self) -> None:
         """Check if plot type is loaded correctly."""
         self.assertEqual(
             self.plot_artefact.plot_generator_type, "pc-overview-plot"
         )
 
-    def test_artefact_plot_type_class(self):
+    def test_artefact_plot_type_class(self) -> None:
         """Check if plot class is resolved correctly."""
         self.assertEqual(
             self.plot_artefact.plot_generator_class,
             PaperConfigOverviewGenerator
         )
 
-    def test_artefact_file_format(self):
+    def test_artefact_file_format(self) -> None:
         """Check if plot file format is loaded correctly."""
         self.assertEqual(self.plot_artefact.common_options.file_type, 'png')
 
-    def test_artefact_plot_kwargs(self):
+    def test_artefact_plot_kwargs(self) -> None:
         """Check if plot kwargs are loaded correctly."""
         self.assertEqual(
             self.plot_artefact.plot_kwargs['experiment_type'], JustCompileReport
         )
 
-    def test_artefact_file_info(self):
+    def test_artefact_file_info(self) -> None:
         """Check if file info is generated correctly."""
         file_infos = self.plot_artefact.get_artefact_file_infos()
         self.assertEqual(1, len(file_infos))
@@ -121,7 +127,7 @@ class TestArtefacts(unittest.TestCase):
         )
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
-    def test_cli_option_converter(self):
+    def test_cli_option_converter(self) -> None:
         """Test whether CLI option conversion works correctly."""
         # setup config
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
@@ -142,11 +148,11 @@ class TestArtefacts(unittest.TestCase):
 
     # Artefacts tests
 
-    def test_artefacts_iterator(self):
+    def test_artefacts_iterator(self) -> None:
         """Check if artefacts are loaded correctly."""
         self.assertEqual(len(list(self.artefacts)), 1)
 
-    def test_artefacts_add(self):
+    def test_artefacts_add(self) -> None:
         """Check if artefact is added."""
         self.artefacts.add_artefact(
             PlotArtefact.create_artefact(
@@ -159,9 +165,34 @@ class TestArtefacts(unittest.TestCase):
         )
         self.assertEqual(len(list(self.artefacts)), 2)
 
-    def test_artefacts_to_dict(self):
+    def test_artefacts_to_dict(self) -> None:
         """Check if artefacts object is serialized correctly."""
         artefacts_dict = self.artefacts.get_dict()
         self.assertEqual(len(artefacts_dict['artefacts']), 1)
         artefact_dict = artefacts_dict['artefacts'][0]
         self.assertEqual(artefact_dict['name'], 'overview')
+
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
+    def test_artefacts_loading(self) -> None:
+        """Check if artefacts file is loaded correctly and if special values are
+        converted properly."""
+        vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
+        load_paper_config()
+        artefacts = load_artefacts(get_paper_config())
+
+        self.assertEqual(4, len(artefacts))
+
+        cs_overview_xz = artefacts.get_artefact("CS Overview (xz)")
+        self.assertIsNotNone(cs_overview_xz)
+        self.assertIsInstance(cs_overview_xz, PlotArtefact)
+        cs_xz = cs_overview_xz.plot_kwargs["case_study"]
+        self.assertIsInstance(cs_xz, CaseStudy)
+        self.assertEqual("xz", cs_xz.project_name)
+        self.assertEqual(0, cs_xz.version)
+
+        cs_overview_all = artefacts.get_artefact("CS Overview (all)")
+        self.assertIsNotNone(cs_overview_all)
+        self.assertIsInstance(cs_overview_all, PlotArtefact)
+        cs_all = cs_overview_all.plot_kwargs["case_study"]
+        self.assertIsInstance(cs_all, tp.List)
+        self.assertEqual(2, len(cs_all))
