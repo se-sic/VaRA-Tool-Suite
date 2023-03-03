@@ -71,8 +71,8 @@ def timestamp_from_paths(
     Returns:
         the combined timestamp string of the result files
     """
-    return f"{paths[0].full_path().stat().st_mtime_ns}_" \
-        + f"{paths[1].full_path().stat().st_mtime_ns}"
+    return f"{paths[0].stat().st_mtime_ns}_" \
+        + f"{paths[1].stat().st_mtime_ns}"
 
 
 def compare_timestamps(ts1: str, ts2: str) -> bool:

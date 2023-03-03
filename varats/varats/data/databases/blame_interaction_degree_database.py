@@ -98,7 +98,7 @@ class BlameInteractionDegreeDatabase(
         def create_data_frame_for_report(
             report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
-            report = load_blame_report(report_path.full_path())
+            report = load_blame_report(report_path)
 
             categorised_degree_occurrences = generate_lib_dependent_degrees(
                 report

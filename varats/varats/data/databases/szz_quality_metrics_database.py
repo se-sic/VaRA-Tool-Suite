@@ -123,8 +123,8 @@ def _load_dataframe_for_report(
         report_paths: tp.Tuple[ReportFilepath, ReportFilepath]
     ) -> tp.Tuple[pd.DataFrame, str, str]:
         # Look-up commit and infos about the HEAD commit of the report
-        fix_report = load_blame_report(report_paths[0].full_path())
-        intro_report = load_blame_report(report_paths[1].full_path())
+        fix_report = load_blame_report(report_paths[0])
+        intro_report = load_blame_report(report_paths[1])
         fix_commit = commit_lookup(
             CommitRepoPair(
                 commit_map.convert_to_full_or_warn(fix_report.head_commit),

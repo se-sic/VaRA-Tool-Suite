@@ -85,9 +85,7 @@ class BlameVerifierReportDatabase(
                              BlameVerifierReportNoOptTBAA]
 
             if BlameVerifierReportOpt.is_correct_report_type(report_file_name):
-                report_opt = load_blame_verifier_report_opt(
-                    report_path.full_path()
-                )
+                report_opt = load_blame_verifier_report_opt(report_path)
                 report = report_opt
                 opt_level = OptLevel.OPT.value
 
@@ -95,7 +93,7 @@ class BlameVerifierReportDatabase(
                 report_file_name
             ):
                 report_no_opt = load_blame_verifier_report_no_opt_tbaa(
-                    report_path.full_path()
+                    report_path
                 )
 
                 report = report_no_opt

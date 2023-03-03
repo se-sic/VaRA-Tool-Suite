@@ -45,7 +45,7 @@ class CommitInteractionDatabase(
         def create_data_frame_for_report(
             report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
-            report = load_commit_report(report_path.full_path())
+            report = load_commit_report(report_path)
             cf_head_interactions_raw = report.number_of_head_cf_interactions()
             df_head_interactions_raw = report.number_of_head_df_interactions()
 
