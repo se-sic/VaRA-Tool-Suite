@@ -509,7 +509,7 @@ class ReportFilepath():
         )
 
     def stat(self):
-        return self.__base_path.stat()
+        return self.full_path().stat()
 
     def __str__(self) -> str:
         return str(self.full_path())
