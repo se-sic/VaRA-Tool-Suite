@@ -67,7 +67,9 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
-            RunVaRATracedWorkloads(project, self.get_handle())
+            RunVaRATracedWorkloads(
+                project, self.get_handle(), report_file_ending="ivr"
+            )
         )
         analysis_actions.append(actions.Clean(project))
 
