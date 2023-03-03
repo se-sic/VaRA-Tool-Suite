@@ -316,7 +316,7 @@ class BlameInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            report = load_blame_report(self.__report_file.full_path())
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
             interactions = gen_base_to_inter_commit_repo_pair_mapping(report)
             nodes: tp.Set[BIGNodeTy] = {
@@ -367,7 +367,7 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            report = load_blame_report(self.__report_file.full_path())
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
 
             for function_entry in report.function_entries:
