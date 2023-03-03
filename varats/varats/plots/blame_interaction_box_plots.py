@@ -123,7 +123,8 @@ def _get_graph(
     return {
         "blame":
             create_blame_interaction_graph(
-                project_name, revision, BlameReportExperiment
+                project_name, revision.to_short_commit_hash(),
+                BlameReportExperiment
             ).author_interaction_graph(),
         "callgraph":
             create_callgraph_based_interaction_graph(

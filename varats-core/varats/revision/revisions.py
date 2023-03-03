@@ -17,7 +17,12 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_primary_project_source,
 )
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilepath
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilepath,
+    ReportFilename,
+)
 from varats.utils.git_util import ShortCommitHash, CommitHashTy, CommitHash
 from varats.utils.settings import vara_cfg
 
