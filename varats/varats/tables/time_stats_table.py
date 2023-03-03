@@ -33,7 +33,7 @@ class TimeStatsTable(Table, table_name="time_stats"):
                 )
 
                 report_file = report_files[0]
-                time_aggregated = TimeReportAggregate(report_file)
+                time_aggregated = TimeReportAggregate(report_file.full_path())
                 report_name = time_aggregated.filename
 
                 mean_runtime = np.mean(
