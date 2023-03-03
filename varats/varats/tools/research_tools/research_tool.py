@@ -528,7 +528,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             install_location: the installation directory to check
         """
         for path in self.INSTALL_BINARIES:
-            (path / install_location).unlink(True)
+            (install_location / path).unlink(True)
 
     def install_exists(self, install_location: Path) -> bool:
         """
