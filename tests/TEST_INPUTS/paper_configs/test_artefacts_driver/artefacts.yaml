@@ -41,13 +41,10 @@ artefacts:
   artefact_type_version: 2
   case_study: all
   dry_run: false
-  experiment_type: JustCompile
   file_type: svg
-  name: "CS Overview (all)"
+  name: "Repo Churn (all)"
   output_dir: .
   plot_config: {}
-  plot_generator: cs-overview-plot
-  show_all_blocked: false
-  show_blocked: true
+  plot_generator: repo-churn-plot
   view: false
 ...

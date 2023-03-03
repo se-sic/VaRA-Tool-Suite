@@ -190,9 +190,9 @@ class TestArtefacts(unittest.TestCase):
         self.assertEqual("xz", cs_xz.project_name)
         self.assertEqual(0, cs_xz.version)
 
-        cs_overview_all = artefacts.get_artefact("CS Overview (all)")
-        self.assertIsNotNone(cs_overview_all)
-        self.assertIsInstance(cs_overview_all, PlotArtefact)
-        cs_all = cs_overview_all.plot_kwargs["case_study"]
+        churn_all = artefacts.get_artefact("Repo Churn (all)")
+        self.assertIsNotNone(churn_all)
+        self.assertIsInstance(churn_all, PlotArtefact)
+        cs_all = churn_all.plot_kwargs["case_study"]
         self.assertIsInstance(cs_all, tp.List)
         self.assertEqual(2, len(cs_all))

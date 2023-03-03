@@ -1,4 +1,5 @@
 """Test artefacts config tool."""
+import traceback
 import unittest
 
 from click.testing import CliRunner
@@ -64,8 +65,8 @@ class TestDriverArtefacts(unittest.TestCase):
         result = runner.invoke(driver_artefacts.main, ["list"])
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertEqual(
-            "Paper Config Overview [plot]\nCorrelation Table [table]\n",
-            result.stdout
+            "Paper Config Overview [plot]\nCorrelation Table [table]\n"
+            "CS Overview (xz) [plot]\nRepo Churn (all) [plot]\n", result.stdout
         )
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
