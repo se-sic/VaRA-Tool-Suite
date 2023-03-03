@@ -12,7 +12,6 @@ import numpy.typing as npt
 import pandas as pd
 import seaborn as sns
 from matplotlib import axes
-from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
@@ -24,7 +23,7 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plot_utils import align_yaxis, pad_axes
+from varats.plot.plot_utils import align_yaxis, pad_axes, annotate_correlation
 from varats.plot.plots import PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
@@ -49,33 +48,6 @@ REQUIRE_Y_METRIC: CLIOptionTy = make_cli_option(
     required=True,
     help="The metric shown on the y-axis of the distribution comparison plot."
 )
-
-
-def annotate_correlation(
-    x_values: tp.List[int],
-    y_values: tp.List[int],
-    ax: axes.SubplotBase = None,
-    # pylint: disable=unused-argument
-    **kwargs: tp.Any
-) -> None:
-    """Plot the correlation coefficient in the top right hand corner of a
-    plot."""
-    ax = ax or plt.gca()
-    pearson_rho, _ = pearsonr(x_values, y_values)
-    ax.annotate(
-        f'$\\mathit{{\\rho_p}}$ = {pearson_rho:.2f}',
-        xy=(.6, .9),
-        xycoords=ax.transAxes,
-        fontsize="small"
-    )
-
-    spearman_rho, _ = spearmanr(x_values, y_values)
-    ax.annotate(
-        f'$\\mathit{{\\rho_s}}$ = {spearman_rho:.2f}',
-        xy=(.6, .77),
-        xycoords=ax.transAxes,
-        fontsize="small"
-    )
 
 
 def logit_scatterplot(
