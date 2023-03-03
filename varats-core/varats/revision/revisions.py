@@ -17,12 +17,7 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_primary_project_source,
 )
-from varats.report.report import (
-    FileStatusExtension,
-    BaseReport,
-    ReportFilename,
-    ReportFilepath,
-)
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilepath
 from varats.utils.git_util import ShortCommitHash, CommitHashTy, CommitHash
 from varats.utils.settings import vara_cfg
 
@@ -141,7 +136,7 @@ def __get_files_with_status(
     )
     for value in result_files.values():
         sorted_res_files = sorted(
-            value, key=lambda x: x.full_path().stat().st_mtime, reverse=True
+            value, key=lambda x: x.stat().st_mtime, reverse=True
         )
         if only_newest:
             sorted_res_files = [sorted_res_files[0]]
@@ -307,9 +302,7 @@ def get_failed_revisions(
         project_name, experiment_type, report_type
     )
     for commit_hash, value in result_files.items():
-        newest_res_file = max(
-            value, key=lambda x: x.full_path().stat().st_mtime
-        )
+        newest_res_file = max(value, key=lambda x: x.stat().st_mtime)
         if newest_res_file.report_filename.has_status_failed():
             failed_revisions.append(commit_hash)
 
@@ -344,9 +337,7 @@ def __get_tag_for_revision(
     if report_type is None:
         report_type = experiment_type.report_spec().main_report
 
-    newest_res_file = max(
-        file_list, key=lambda x: x.full_path().stat().st_mtime
-    )
+    newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
     report_file = newest_res_file.report_filename
     if report_file.is_result_file(
     ) and report_file.report_shorthand == report_type.shorthand(

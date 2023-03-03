@@ -20,9 +20,6 @@ from varats.data.reports.blame_report import (
     BlameInstInteractions,
     BlameResultFunctionEntry,
 )
-from varats.experiments.vara.blame_report_experiment import (
-    BlameReportExperiment,
-)
 from varats.jupyterhelper.file import load_blame_report
 from varats.project.project_util import (
     get_local_project_git_path,
@@ -44,6 +41,12 @@ if sys.version_info <= (3, 8):
     from typing_extensions import TypedDict
 else:
     from typing import TypedDict
+
+if tp.TYPE_CHECKING:
+    # pylint: disable=W0611
+    from varats.experiments.vara.blame_report_experiment import (
+        BlameReportExperiment,
+    )
 
 BIGNodeTy = BlameTaintData
 
@@ -341,7 +344,7 @@ class BlameInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            report = load_blame_report(self.__report_file.full_path())
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
             interactions = gen_base_to_inter_commit_repo_pair_mapping(report)
             nodes: tp.Set[BIGNodeTy] = {
@@ -540,7 +543,7 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            report = load_blame_report(self.__report_file.full_path())
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
 
             for function_entry in report.function_entries:
@@ -571,12 +574,13 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
 def _nodes_for_func_entry(
     function_entry: tp.Optional[BlameResultFunctionEntry]
 ) -> tp.Set[BIGNodeTy]:
-    if function_entry:
-        return {
-            BlameTaintData(commit, function_name=function_entry.name)
-            for commit in function_entry.commits
-        }
-    return set()
+    if function_entry is None:
+        return set()
+
+    return {
+        BlameTaintData(commit, function_name=function_entry.name)
+        for commit in function_entry.commits
+    }
 
 
 class FileBasedInteractionGraph(InteractionGraph):
@@ -664,7 +668,7 @@ class FileBasedInteractionGraph(InteractionGraph):
 
 def create_blame_interaction_graph(
     project_name: str, revision: ShortCommitHash,
-    experiment_type: tp.Type[BlameReportExperiment]
+    experiment_type: tp.Type['BlameReportExperiment']
 ) -> BlameInteractionGraph:
     """
     Create a blame interaction graph for a certain project revision.
@@ -717,7 +721,7 @@ def create_blame_interaction_graph_diff(
 
 def create_callgraph_based_interaction_graph(
     project_name: str, revision: FullCommitHash,
-    experiment_type: tp.Type[BlameReportExperiment]
+    experiment_type: tp.Type['BlameReportExperiment']
 ) -> CallgraphBasedInteractionGraph:
     """
     Create a callgraph-based interaction graph for a certain project revision.

@@ -8,6 +8,7 @@ import typing as tp
 from functools import wraps
 from pathlib import Path
 from threading import Lock
+from types import TracebackType
 
 import benchbuild.source.base as base
 import benchbuild.utils.settings as bb_settings
@@ -18,8 +19,13 @@ from benchbuild.utils.cmd import git
 
 import varats.utils.settings as settings
 from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
-from varats.project.project_util import is_git_source
+from varats.project.project_util import (
+    is_git_source,
+    get_local_project_git_path,
+)
 from varats.tools.bb_config import create_new_bb_config
+from varats.utils.git_commands import checkout_branch_or_commit
+from varats.utils.git_util import ShortCommitHash, get_head_commit
 
 if sys.version_info <= (3, 8):
     from typing_extensions import Protocol
@@ -283,3 +289,23 @@ class ConfigurationHelper:
         )
         test_config.add_config_option(ConfigurationOptionImpl("buzz", "None"))
         return test_config
+
+
+class LoadRepositoryForTest():
+    """Context manager to work with a repository at a specific revision, without
+    duplicating the repository."""
+
+    def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
+        self.__repo_path = get_local_project_git_path(project_name)
+        self.__revision = revision
+        self.__initial_head = get_head_commit(self.__repo_path)
+
+    def __enter__(self) -> None:
+        checkout_branch_or_commit(self.__repo_path, self.__revision)
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        checkout_branch_or_commit(self.__repo_path, self.__initial_head)

@@ -320,16 +320,10 @@ class TestVersionExperiment(unittest.TestCase):
         )
         self.assertEqual(report_filename.config_id, 42)
         self.assertTrue((
-            new_res_file.base_path / Path(
-                "mock-CR-test_empty-foo-rev1000000_"
-                f"{report_filename.uuid}"
-            )
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
         ).exists())
         self.assertTrue((
-            new_res_file.base_path / Path(
-                "mock-CR-test_empty-foo-rev1000000_"
-                f"{report_filename.uuid}"
-            )
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
         ).is_dir())
 
     @run_in_test_environment()
@@ -350,16 +344,10 @@ class TestVersionExperiment(unittest.TestCase):
         )
         self.assertEqual(report_filename.config_id, 0)
         self.assertTrue((
-            new_res_file.base_path / Path(
-                "mock-CR-test_empty-foo-rev1000000_"
-                f"{report_filename.uuid}"
-            )
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
         ).exists())
         self.assertTrue((
-            new_res_file.base_path / Path(
-                "mock-CR-test_empty-foo-rev1000000_"
-                f"{report_filename.uuid}"
-            )
+            new_res_file.base_path / Path("mock-CR-test_empty-foo-rev1000000")
         ).is_dir())
 
 

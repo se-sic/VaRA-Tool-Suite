@@ -7,7 +7,6 @@ import typing as tp
 from pathlib import Path
 
 import click
-import pygit2
 from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
@@ -30,6 +29,7 @@ from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
+    extend_with_latest_rev,
     extend_with_distrib_sampling,
     extend_with_revs_per_year,
     extend_with_smooth_revs,
@@ -46,7 +46,12 @@ from varats.project.project_util import (
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilename,
+    ReportFilepath,
+)
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -66,7 +71,6 @@ from varats.utils.git_util import (
     is_commit_hash,
     get_commits_before_timestamp,
     ShortCommitHash,
-    FullCommitHash,
 )
 from varats.utils.settings import vara_cfg
 
@@ -264,10 +268,13 @@ def __gen_latest(ctx: click.Context) -> None:
     cmap = get_commit_map(ctx.obj['project'])
     case_study: CaseStudy = ctx.obj['case_study']
 
-    repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
-    last_commit = FullCommitHash.from_pygit_commit(repo[repo.head.target])
-
-    case_study.include_revisions([(last_commit, cmap.time_id(last_commit))])
+    extend_with_latest_rev(
+        case_study,
+        cmap,
+        merge_stage=ctx.obj['merge_stage'],
+        ignore_blocked=ctx.obj['ignore_blocked'],
+        git_path=ctx.obj["git_path"]
+    )
     store_case_study(case_study, ctx.obj['path'])
 
 
@@ -581,18 +588,18 @@ def __casestudy_view(
         len(status.name) for status in statuses
     ])
 
-    def result_file_to_list_entry(result_file: Path) -> str:
-        file_status = ReportFilename(result_file.name).file_status
+    def result_file_to_list_entry(result_file: ReportFilepath) -> str:
+        file_status = result_file.report_filename.file_status
         status = (
             file_status.get_colored_status().rjust(
                 longest_file_status_extension +
                 file_status.num_color_characters(), " "
             )
         )
-        return f"[{status}] {result_file.name}"
+        return f"[{status}] {result_file.full_path().name}"
 
-    def open_in_editor(result_file: Path) -> None:
-        _ = editor[str(result_file)] & FG
+    def open_in_editor(result_file: ReportFilepath) -> None:
+        _ = editor[str(result_file.full_path())] & FG
 
     editor_name = "vim"  # set's default editor
 

@@ -1,13 +1,13 @@
 """The Report module implements basic report functionalities and provides a
 minimal interface ``BaseReport`` to implement own reports."""
-
 import re
 import shutil
 import typing as tp
 import weakref
 from collections import defaultdict
 from enum import Enum
-from pathlib import Path, PosixPath
+from os import stat_result
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from plumbum import colors
@@ -146,8 +146,8 @@ class ReportFilename():
     __RESULT_FILE_REGEX = re.compile(
         r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)"
-        r"(\/config-(?P<config_id>\d+))?" + "_" +
+        r"(?P<file_commit_hash>.*)[_\/](?P<UUID>[0-9a-fA-F\-]*)"
+        r"(_config-(?P<config_id>\d+))?" + "_" +
         FileStatusExtension.get_regex_grp() + r"?" + r"(?P<file_ext>\..*)?" +
         "$"
     )
@@ -160,8 +160,8 @@ class ReportFilename():
 
     __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (
         "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
-        "{binary_name}-" + "{project_revision}_" + "{project_uuid}" +
-        "/config-{config_id}_" + "{status_ext}" + "{file_ext}"
+        "{binary_name}-" + "{project_revision}/" + "{project_uuid}" +
+        "_config-{config_id}_" + "{status_ext}" + "{file_ext}"
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
@@ -507,6 +507,9 @@ class ReportFilepath():
         return ReportFilepath(
             self.base_path, self.report_filename.with_status(new_status)
         )
+
+    def stat(self) -> stat_result:
+        return self.full_path().stat()
 
     def __str__(self) -> str:
         return str(self.full_path())
