@@ -1,6 +1,7 @@
 """The Report module implements basic report functionalities and provides a
 minimal interface ``BaseReport`` to implement own reports."""
-
+import os
+import posix
 import re
 import shutil
 import typing as tp
@@ -508,7 +509,7 @@ class ReportFilepath():
             self.base_path, self.report_filename.with_status(new_status)
         )
 
-    def stat(self):
+    def stat(self) -> os.stat_result:
         return self.full_path().stat()
 
     def __str__(self) -> str:

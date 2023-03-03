@@ -1,9 +1,7 @@
 """This module provides different jupyther helpers to allow easier interaction
 with varas file handling APIs."""
-import typing as tp
-from pathlib import Path
 
-from varats.data.data_manager import VDM
+from varats.data.data_manager import VDM, PathLikeTy
 from varats.data.reports.blame_report import BlameReport
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt,
@@ -21,9 +19,6 @@ from varats.data.reports.szz_report import (
     PyDrillerSZZReport,
 )
 from varats.mapping.commit_map import CommitMap
-from varats.report.report import ReportFilepath
-
-PathLikeTy = tp.TypeVar('PathLikeTy', Path, ReportFilepath)
 
 
 def load_commit_report(file_path: PathLikeTy) -> CommitReport:

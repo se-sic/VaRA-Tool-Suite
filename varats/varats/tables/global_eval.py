@@ -1,7 +1,6 @@
 """Module for phasar global analysis evaluation table."""
 import logging
 import typing as tp
-from pathlib import Path
 
 import pandas as pd
 from scipy.stats import pearsonr
@@ -19,7 +18,7 @@ from varats.jupyterhelper.file import (
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import ProjectBinaryWrapper
-from varats.report.report import ReportFilename, ReportFilepath
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
