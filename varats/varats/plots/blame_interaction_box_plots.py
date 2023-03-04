@@ -1,26 +1,31 @@
 """Module for BlameInteractionGraph plots."""
 
 import typing as tp
+from math import ceil, floor
 
+import networkx as nx
 import pandas as pd
 import seaborn as sns
+from matplotlib.ticker import Locator, FixedLocator, StrMethodFormatter
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CAIGNodeAttrs,
     create_file_based_interaction_graph,
     AIGNodeAttrs,
+    create_callgraph_based_interaction_graph,
 )
-from varats.data.reports.blame_report import BlameReport
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
+from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator
+from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import FullCommitHash
 
 
@@ -65,12 +70,11 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
                         "# Interacting Authors": caig.degree(node) / authors
                     }))
 
-        data = pd.DataFrame(nodes)
+        data = pd.DataFrame(nodes).sort_values(by=["Project"])
         ax = sns.violinplot(
             x="Project",
             y="# Interacting Authors",
             data=data,
-            order=sorted(project_names),
             inner=None,
             linewidth=1,
             color=".95"
@@ -78,8 +82,9 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
         sns.stripplot(
             x="Project",
             y="# Interacting Authors",
+            hue="Project",
             data=data,
-            order=sorted(project_names),
+            palette=sns.color_palette("husl", len(project_names)),
             alpha=.25,
             size=3
         )
@@ -89,6 +94,7 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
         ax.tick_params(axis='y', labelsize=8)
         ax.set_xlabel(None)
         ax.yaxis.label.set_size(9)
+        ax.get_legend().remove()
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -110,82 +116,125 @@ class CAIGViolinPlotGenerator(
         ]
 
 
-class AuthorBlameVsFileDegreesViolinPlot(
-    Plot, plot_name='aig_file_vs_blame_authors_box'
-):
-    """Box plot of commit-author interaction commit node degrees."""
+def _get_graph(
+    graph_type: str, project_name: str, revision: FullCommitHash
+) -> nx.DiGraph:
+    return {
+        "blame":
+            create_blame_interaction_graph(
+                project_name, revision, BlameReportExperiment
+            ).author_interaction_graph(),
+        "callgraph":
+            create_callgraph_based_interaction_graph(
+                project_name, revision, BlameReportExperiment
+            ).author_interaction_graph(),
+        "file":
+            create_file_based_interaction_graph(project_name, revision
+                                               ).author_interaction_graph()
+    }[graph_type]
+
+
+def _create_tick_locator(
+    max_val: int, min_val: int, threshold: float = 0.15
+) -> Locator:
+    ticks = {min_val, max_val}
+    val_range = max_val - min_val
+
+    if val_range == 0:
+        return FixedLocator([0])
+
+    max_frac = max_val / val_range
+    min_frac = abs(min_val) / val_range
+    if min_frac > threshold and max_frac > threshold:
+        ticks.add(0)
+    return FixedLocator(list(ticks))
+
+
+class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
+    """Plot showing the difference between two author interaction graphs."""
+
+    def __init__(
+        self, baseline_graph: str, compared_graph: str, plot_config: PlotConfig,
+        **kwargs: tp.Any
+    ):
+        super().__init__(plot_config, **kwargs)
+        self.__baseline_graph = baseline_graph
+        self.__compared_graph = compared_graph
 
     def plot(self, view_mode: bool) -> None:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
+        case_study = self.plot_kwargs["case_study"]
 
-        diff_data: tp.List[pd.DataFrame] = []
-        project_names: tp.List[str] = []
-        for case_study in case_studies:
-            project_name = case_study.project_name
-            revision = newest_processed_revision_for_case_study(
-                case_study, BlameReportExperiment
-            )
-            if not revision:
-                continue
-
-            project_names.append(project_name)
-
-            blame_aig = create_blame_interaction_graph(
-                project_name, revision, BlameReportExperiment
-            ).author_interaction_graph()
-            file_aig = create_file_based_interaction_graph(
-                project_name, revision
-            ).author_interaction_graph()
-
-            file_nodes: tp.List[tp.Dict[str, tp.Any]] = []
-            for node in file_aig.nodes:
-                node_attrs = tp.cast(AIGNodeAttrs, file_aig.nodes[node])
-
-                if blame_aig.has_node(node):
-                    blame_neighbors = set(blame_aig.successors(node)
-                                         ).union(blame_aig.predecessors(node))
-                else:
-                    blame_neighbors = set()
-
-                file_neighbors = set(file_aig.successors(node)
-                                    ).union(file_aig.predecessors(node))
-
-                file_nodes.append(({
-                    "Project":
-                        project_name,
-                    "author":
-                        f"{node_attrs['author']}",
-                    "# Additional Authors":
-                        len(blame_neighbors.difference(file_neighbors))
-                }))
-            file_data = pd.DataFrame(file_nodes)
-            file_data.set_index("author", inplace=True)
-            diff_data.append(file_data)
-
-        data = pd.concat(diff_data)
-        ax = sns.violinplot(
-            x="Project",
-            y="# Additional Authors",
-            data=data,
-            order=sorted(project_names),
-            inner=None,
-            linewidth=1,
-            color=".95"
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReportExperiment
         )
-        sns.stripplot(
-            x="Project",
-            y="# Additional Authors",
-            data=data,
-            order=sorted(project_names),
-            alpha=.25,
-            size=3
+        if not revision:
+            raise PlotDataEmpty()
+
+        baseline_aig = _get_graph(
+            self.__baseline_graph, case_study.project_name, revision
         )
-        ax.set_ylim(bottom=0, top=1.1 * data["# Additional Authors"].max())
+        compared_aig = _get_graph(
+            self.__compared_graph, case_study.project_name, revision
+        )
+
+        node_data: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in baseline_aig.nodes:
+            node_attrs = tp.cast(AIGNodeAttrs, baseline_aig.nodes[node])
+
+            if compared_aig.has_node(node):
+                blame_neighbors = set(compared_aig.successors(node)
+                                     ).union(compared_aig.predecessors(node))
+            else:
+                blame_neighbors = set()
+
+            file_neighbors = set(baseline_aig.successors(node)
+                                ).union(baseline_aig.predecessors(node))
+
+            node_data.append(({
+                "Project":
+                    case_study.project_name,
+                "author":
+                    f"{node_attrs['author']}",
+                "additional_authors":
+                    len(blame_neighbors.difference(file_neighbors)),
+                "removed_authors":
+                    -len(file_neighbors.difference(blame_neighbors)),
+            }))
+        file_data = pd.DataFrame(node_data)
+
+        colors = sns.color_palette(n_colors=2)
+
+        ax = sns.barplot(
+            data=file_data,
+            x="author",
+            y="additional_authors",
+            color=colors[0],
+        )
+        sns.barplot(
+            data=file_data,
+            x="author",
+            y="removed_authors",
+            color=colors[1],
+            ax=ax
+        )
+
         ax.set_aspect(0.3 / ax.get_data_ratio())
-        ax.tick_params(axis='x', labelrotation=45, labelsize=8)
-        ax.tick_params(axis='y', labelsize=8)
+        ax.set_xticks([])
+        ax.tick_params(axis='y', labelsize=15)
+        ax.yaxis.set_major_formatter(StrMethodFormatter("{x: >4}"))
+        ax.yaxis.set_major_locator(
+            _create_tick_locator(
+                floor(file_data["additional_authors"].max()),
+                ceil(file_data["removed_authors"].min())
+            )
+        )
+
+        for label in ax.get_yticklabels():
+            label.set_fontproperties({"family": "monospace", "size": 15})
+
         ax.set_xlabel(None)
-        ax.yaxis.label.set_size(9)
+        ax.set_ylabel(None)
+        ax.set_title(case_study.project_name, fontsize=25)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -193,19 +242,67 @@ class AuthorBlameVsFileDegreesViolinPlot(
         raise NotImplementedError
 
 
-class AuthorBlameVsFileDegreesViolinPlotGenerator(
-    PlotGenerator, generator_name="aig-file-vs-blame-authors-box", options=[]
+class FileVsBlameGraphDiffPlot(
+    AuthorGraphDiffPlot, plot_name='aig_file_vs_blame_authors'
 ):
-    """
-    Generates a violin plot showing how many additional author interactions can
-    be found using commit interactions vs.
+    """Plot showing the difference between file-based and ci-based author
+    interaction graphs."""
 
-    file-based interactions.
-    """
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__("file", "blame", plot_config, **kwargs)
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise NotImplementedError
+
+
+class CallgraphVsBlameGraphDiffPlot(
+    AuthorGraphDiffPlot, plot_name='aig_callgraph_vs_blame_authors'
+):
+    """Plot showing the difference between callgraph-based and ci-based author
+    interaction graphs."""
+
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__("callgraph", "blame", plot_config, **kwargs)
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise NotImplementedError
+
+
+class AuthorBlameVsFilePlotGenerator(
+    PlotGenerator,
+    generator_name="aig-file-vs-blame",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates a plot showing the difference between file-based and CI-based
+    author interactions."""
 
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
-            AuthorBlameVsFileDegreesViolinPlot(
-                self.plot_config, **self.plot_kwargs
-            )
+            FileVsBlameGraphDiffPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
+
+
+class AuthorBlameVsCallgraphPlotGenerator(
+    PlotGenerator,
+    generator_name="aig-callgraph-vs-blame",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates a plot showing the difference between callgraph-based and CI-
+    based author interactions."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            CallgraphVsBlameGraphDiffPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
         ]

@@ -346,12 +346,14 @@ class BlameReportMetaData():
     def __init__(
         self, num_functions: int, num_instructions: int,
         num_phasar_empty_tracked_vars: tp.Optional[int],
-        num_phasar_total_tracked_vars: tp.Optional[int]
+        num_phasar_total_tracked_vars: tp.Optional[int],
+        bta_wall_time: tp.Optional[float]
     ) -> None:
         self.__number_of_functions_in_module = num_functions
         self.__number_of_instructions_in_module = num_instructions
         self.__num_phasar_empty_tracked_vars = num_phasar_empty_tracked_vars
         self.__num_phasar_total_tracked_vars = num_phasar_total_tracked_vars
+        self.__bta_wall_time = bta_wall_time
 
     @property
     def num_functions(self) -> int:
@@ -373,6 +375,11 @@ class BlameReportMetaData():
         """Number of variables tracked by phasar."""
         return self.__num_phasar_total_tracked_vars
 
+    @property
+    def bta_wall_time(self) -> tp.Optional[float]:
+        """Wall time of the blame taint analysis."""
+        return self.__bta_wall_time
+
     @staticmethod
     def create_blame_report_meta_data(
         raw_document: tp.Dict[str, tp.Any]
@@ -389,9 +396,13 @@ class BlameReportMetaData():
             raw_document["phasar-total-tracked-vars"]
         ) if "phasar-total-tracked-vars" in raw_document else None
 
+        bta_wall_time = float(
+            raw_document["bta-walltime-seconds"]
+        ) if "bta-walltime-seconds" in raw_document else None
+
         return BlameReportMetaData(
             num_functions, num_instructions, num_phasar_empty_tracked_vars,
-            num_phasar_total_tracked_vars
+            num_phasar_total_tracked_vars, bta_wall_time
         )
 
 
@@ -448,14 +459,14 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
 
     def get_blame_result_function_entry(
         self, mangled_function_name: str
-    ) -> BlameResultFunctionEntry:
+    ) -> tp.Optional[BlameResultFunctionEntry]:
         """
         Get the result entry for a specific function.
 
         Args:
             mangled_function_name: mangled name of the function to look up
         """
-        return self.__function_entries[mangled_function_name]
+        return self.__function_entries.get(mangled_function_name, None)
 
     @property
     def blame_taint_scope(self) -> BlameTaintScope:
