@@ -72,9 +72,9 @@ class Bzip2(VProject):
                 "--best",
                 "-vvv",
                 "--keep",
-                "countries-land-1m.geo.json",
-                "countries-land-10m.geo.json",
-                "countries-land-100m.geo.json",
+                # bzip2 compresses very fast even on the best setting, so we
+                # need the three input files to get approximately 30 seconds
+                # total execution time
                 creates=[
                     "countries-land-1m.geo.json.bz2",
                     "countries-land-10m.geo.json.bz2",
