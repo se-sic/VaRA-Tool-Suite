@@ -45,14 +45,19 @@ class FeatureInstrType(Enum):
 
     NONE = ""
     """Don't add any instrumentation."""
+
     PRINT = "print"
     """Print tracing information to stdout."""
+
     TEF = "trace_event"
     """Produce a trace file."""
+
     USDT = "usdt"
     """Insert USDT probes."""
+
     USDT_RAW = "usdt_raw"
     """Insert raw USDT probes."""
+
     VERIFY = "instr_verify"
     """Verify markers."""
 
