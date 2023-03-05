@@ -1,9 +1,7 @@
 """This module provides different jupyther helpers to allow easier interaction
 with varas file handling APIs."""
 
-from pathlib import Path
-
-from varats.data.data_manager import VDM
+from varats.data.data_manager import VDM, PathLikeTy
 from varats.data.reports.blame_report import BlameReport
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt,
@@ -23,7 +21,7 @@ from varats.data.reports.szz_report import (
 from varats.mapping.commit_map import CommitMap
 
 
-def load_commit_report(file_path: Path) -> CommitReport:
+def load_commit_report(file_path: PathLikeTy) -> CommitReport:
     """
     Load a CommitReport from a file.
 
@@ -33,7 +31,7 @@ def load_commit_report(file_path: Path) -> CommitReport:
     return VDM.load_data_class_sync(file_path, CommitReport)
 
 
-def load_blame_report(file_path: Path) -> BlameReport:
+def load_blame_report(file_path: PathLikeTy) -> BlameReport:
     """
     Load a BlameReport from a file.
 
@@ -43,7 +41,7 @@ def load_blame_report(file_path: Path) -> BlameReport:
     return VDM.load_data_class_sync(file_path, BlameReport)
 
 
-def load_szzunleashed_report(file_path: Path) -> SZZReport:
+def load_szzunleashed_report(file_path: PathLikeTy) -> SZZReport:
     """
     Load a SZZUnleashedReport from a file.
 
@@ -53,7 +51,7 @@ def load_szzunleashed_report(file_path: Path) -> SZZReport:
     return VDM.load_data_class_sync(file_path, SZZUnleashedReport)
 
 
-def load_pydriller_szz_report(file_path: Path) -> SZZReport:
+def load_pydriller_szz_report(file_path: PathLikeTy) -> SZZReport:
     """
     Load a PyDrillerSZZReport from a file.
 
@@ -74,7 +72,7 @@ def load_commit_map(file_path: str) -> CommitMap:
         return CommitMap(c_map_file.readlines())
 
 
-def load_blame_verifier_report_no_opt_tbaa(file_path: Path) -> \
+def load_blame_verifier_report_no_opt_tbaa(file_path: PathLikeTy) -> \
         BlameVerifierReportNoOptTBAA:
     """
     Load a BlameVerifierReportNoOpt from a file.
@@ -85,7 +83,7 @@ def load_blame_verifier_report_no_opt_tbaa(file_path: Path) -> \
     return VDM.load_data_class_sync(file_path, BlameVerifierReportNoOptTBAA)
 
 
-def load_blame_verifier_report_opt(file_path: Path) -> \
+def load_blame_verifier_report_opt(file_path: PathLikeTy) -> \
         BlameVerifierReportOpt:
     """
     Load a BlameVerifierReportOpt from a file.
@@ -96,7 +94,7 @@ def load_blame_verifier_report_opt(file_path: Path) -> \
     return VDM.load_data_class_sync(file_path, BlameVerifierReportOpt)
 
 
-def load_globals_with_report(file_path: Path) -> \
+def load_globals_with_report(file_path: PathLikeTy) -> \
         GlobalsReportWith:
     """
     Load a GlobalsReportWith from a file.
@@ -107,7 +105,7 @@ def load_globals_with_report(file_path: Path) -> \
     return VDM.load_data_class_sync(file_path, GlobalsReportWith)
 
 
-def load_globals_without_report(file_path: Path) -> \
+def load_globals_without_report(file_path: PathLikeTy) -> \
         GlobalsReportWithout:
     """
     Load a GlobalsReportWithout from a file.
@@ -118,7 +116,7 @@ def load_globals_without_report(file_path: Path) -> \
     return VDM.load_data_class_sync(file_path, GlobalsReportWithout)
 
 
-def load_feature_analysis_report(file_path: Path) -> \
+def load_feature_analysis_report(file_path: PathLikeTy) -> \
         FeatureAnalysisReport:
     """
     Load a FeatureAnalysisReport from a file.

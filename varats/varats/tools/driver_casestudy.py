@@ -7,7 +7,6 @@ import typing as tp
 from pathlib import Path
 
 import click
-import pygit2
 from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
@@ -47,7 +46,12 @@ from varats.project.project_util import (
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilename,
+    ReportFilepath,
+)
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -584,18 +588,18 @@ def __casestudy_view(
         len(status.name) for status in statuses
     ])
 
-    def result_file_to_list_entry(result_file: Path) -> str:
-        file_status = ReportFilename(result_file.name).file_status
+    def result_file_to_list_entry(result_file: ReportFilepath) -> str:
+        file_status = result_file.report_filename.file_status
         status = (
             file_status.get_colored_status().rjust(
                 longest_file_status_extension +
                 file_status.num_color_characters(), " "
             )
         )
-        return f"[{status}] {result_file.name}"
+        return f"[{status}] {result_file.full_path().name}"
 
-    def open_in_editor(result_file: Path) -> None:
-        _ = editor[str(result_file)] & FG
+    def open_in_editor(result_file: ReportFilepath) -> None:
+        _ = editor[str(result_file.full_path())] & FG
 
     editor_name = "vim"  # set's default editor
 
