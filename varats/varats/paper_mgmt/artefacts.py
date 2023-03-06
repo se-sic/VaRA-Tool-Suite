@@ -206,6 +206,9 @@ class Artefacts:
     def __iter__(self) -> tp.Iterator[Artefact]:
         return self.__artefacts.values().__iter__()
 
+    def __len__(self) -> int:
+        return len(self.__artefacts)
+
     def get_dict(
         self
     ) -> tp.Dict[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]:
