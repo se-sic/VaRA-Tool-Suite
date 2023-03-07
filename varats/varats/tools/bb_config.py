@@ -73,6 +73,7 @@ def create_new_bb_config(
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.openvpn',
         'varats.projects.c_projects.opus',
+        'varats.projects.c_projects.picosat',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
         'varats.projects.c_projects.tmux',
@@ -126,6 +127,7 @@ def create_new_bb_config(
         'varats.experiments.vara.instrumentation_verifier',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
+        'varats.experiments.vara.feature_region_verifier_experiment',
     ]
     # yapf: enable
 

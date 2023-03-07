@@ -5,7 +5,10 @@ import typing as tp
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
-from varats.experiment.experiment_util import get_default_compile_error_wrapped
+from varats.experiment.experiment_util import (
+    get_default_compile_error_wrapped,
+    WithUnlimitedStackSize,
+)
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
@@ -49,7 +52,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << run.WithTimeout()
+            << WithUnlimitedStackSize()
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
@@ -92,7 +95,7 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
             << time.RunWithTime()
 
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << run.WithTimeout()
+            << WithUnlimitedStackSize()
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, TEFReport
