@@ -4,7 +4,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
-from benchbuild.source import HTTP
+from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import make, mkdir
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
@@ -70,22 +70,14 @@ class Gzip(VProject, ReleaseProviderHook):
             shallow=False,
             version_filter=project_filter_generator("gzip")
         ),
-        # TODO: auto unzipper for BB?
-        HTTP(
-            local="countries-land-1km.geo.json",
+        HTTPMultiple(
+            local="geo-maps",
             remote={
                 "1.0":
                     "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0/countries-land-1km.geo.json"
-            }
-        ),
-        HTTP(
-            local="countries-land-1m.geo.json",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0/countries-land-1m.geo.json"
-            }
+                    "download/v0.6.0"
+            },
+            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
         )
     ]
 
@@ -100,9 +92,9 @@ class Gzip(VProject, ReleaseProviderHook):
                 SourceRoot("gzip") / RSBinary("gzip"),
                 "-k",
                 "--force",  # needed because BB creates symlinks for the inputs
-                "countries-land-1km.geo.json",
+                "geo-maps/countries-land-1km.geo.json",
                 label="countries-land-1km",
-                creates=["countries-land-1km.geo.json.gz"]
+                creates=["geo-maps/countries-land-1km.geo.json.gz"]
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
@@ -113,9 +105,9 @@ class Gzip(VProject, ReleaseProviderHook):
                 "--verbose",
                 "--best",
                 "--force",  # needed because BB creates symlinks for the inputs
-                "countries-land-1m.geo.json",
-                label="countries-land-1m",
-                creates=["countries-land-1m.geo.json.gz"]
+                "geo-maps/countries-land-1m.geo.json",
+                label="geo-maps/countries-land-1m",
+                creates=["geo-maps/countries-land-1m.geo.json.gz"]
             )
         ],
     }
