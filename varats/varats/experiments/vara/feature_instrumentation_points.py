@@ -3,6 +3,7 @@ InstrumentationPointPrinter utility pass."""
 
 import typing as tp
 
+import benchbuild as bb
 from benchbuild import Project
 from benchbuild.extensions import compiler
 from benchbuild.utils import actions
@@ -15,8 +16,6 @@ from varats.data.reports.feature_instrumentation_points_report import (
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     WithUnlimitedStackSize,
-    exec_func_with_pe_error_handler,
-    create_default_analysis_failure_handler,
     create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import (
@@ -65,13 +64,7 @@ class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
             ]
 
             with local.env(IPP_OUTFILE=result_file.full_path()):
-                exec_func_with_pe_error_handler(
-                    opt[opt_params],
-                    create_default_analysis_failure_handler(
-                        self.__experiment_handle, self.project,
-                        FeatureInstrumentationPointsReport
-                    )
-                )
+                bb.watch(opt)(opt_params)
 
         return actions.StepResult.OK
 

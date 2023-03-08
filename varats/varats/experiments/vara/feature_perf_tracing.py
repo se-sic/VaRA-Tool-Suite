@@ -5,6 +5,7 @@ from enum import Enum
 from pathlib import Path
 from time import sleep
 
+import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.utils.actions import ProjectStep, Step, StepResult
 from benchbuild.utils.cmd import time, cp, numactl, sudo, bpftrace
@@ -178,7 +179,7 @@ class TraceFeaturePerfAndTime(ProjectStep):  # type: ignore
 
                         # run binary with workload in foreground
                         with cleanup(workload):
-                            run_cmd()
+                            bb.watch(run_cmd)()
 
                         # wait for bpf script to exit
                         if bpf_runner:

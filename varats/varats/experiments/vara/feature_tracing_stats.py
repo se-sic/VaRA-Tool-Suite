@@ -6,6 +6,7 @@ import typing as tp
 from pathlib import Path
 from time import sleep
 
+import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import bpftrace, sudo
@@ -17,8 +18,6 @@ from varats.data.reports.feature_tracing_stats_report import (
 )
 from varats.experiment.experiment_util import (
     ExperimentHandle,
-    create_default_analysis_failure_handler,
-    exec_func_with_pe_error_handler,
     create_new_success_result_filepath,
 )
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
@@ -98,13 +97,7 @@ class CaptureTracingStats(actions.ProjectStep):  # type: ignore
             # execute binary with workload
             run_cmd = workload.command.as_plumbum(project=self.project)
             with cleanup(workload):
-                exec_func_with_pe_error_handler(
-                    run_cmd,
-                    create_default_analysis_failure_handler(
-                        self.__experiment_handle, self.project,
-                        FeatureTracingStatsReport
-                    )
-                )
+                bb.watch(run_cmd)()
 
             # Wait for bpftrace running in background to exit.
             bpftrace_runner.wait()

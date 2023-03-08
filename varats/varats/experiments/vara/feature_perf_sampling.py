@@ -4,6 +4,7 @@ samples using location information of VaRA's instrumented raw USDT probes."""
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.utils.actions import ProjectStep, Step, StepResult
 from benchbuild.utils.cmd import time, cp, perf
@@ -127,7 +128,7 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
                                    run_cmd]
 
                     with cleanup(workload):
-                        run_cmd()
+                        bb.watch(run_cmd)()
         return StepResult.OK
 
 
