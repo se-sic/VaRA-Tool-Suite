@@ -153,7 +153,7 @@ class TranslateCallStackSamples(ProjectStep):  # type: ignore
         self.experiment_handle = experiment_handle
 
     def __call__(self) -> StepResult:
-        # TODO (Jonas Kaufmann) implement this
+        # TODO (se-sic/VaRA#995): implement this
         return StepResult.OK
 
 
