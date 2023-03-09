@@ -31,6 +31,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.trace_util import merge_trace
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
@@ -99,7 +100,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         """
         project.cflags += self.get_vara_feature_cflags(project)
         project.cflags += self.get_vara_tracing_cflags(
-            instr_type, save_temps, instruction_threshold
+            instr_type, save_temps, instruction_threshold=instruction_threshold
         )
         project.ldflags += self.get_vara_tracing_ldflags()
 
@@ -161,6 +162,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
     def get_vara_tracing_cflags(
         instr_type: FeatureInstrType,
         save_temps: bool = False,
+        project: tp.Optional[VProject] = None,
         instruction_threshold: tp.Optional[int] = None
     ) -> tp.List[str]:
         """
@@ -170,6 +172,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Args:
             instr_type: instrumentation type to use
             save_temps: saves temporary LLVM-IR files (good for debugging)
+            project: project for which the cflags are used
             instruction_threshold: minimum function size to instrument
 
         Returns: list of tracing specific cflags
@@ -182,6 +185,10 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
             "-fno-omit-frame-pointer"
         ]
         if instruction_threshold is not None:
+            # For test projects, do not exclude small regions
+            if project is not None and project.domain == ProjectDomains.TEST:
+                instruction_threshold = 1
+
             c_flags += [f"-fvara-instruction-threshold={instruction_threshold}"]
         if save_temps:
             c_flags += ["-Wl,-plugin-opt=save-temps"]
