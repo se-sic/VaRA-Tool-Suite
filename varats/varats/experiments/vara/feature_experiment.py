@@ -22,6 +22,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.trace_util import merge_trace
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.feature.feature_model_provider import (
@@ -77,8 +78,11 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
             return ["-fvara-feature", "-fvara-fm-path="]
 
     @staticmethod
-    def get_vara_tracing_cflags(instr_type: str,
-                                save_temps: bool = False) -> tp.List[str]:
+    def get_vara_tracing_cflags(
+        instr_type: str,
+        save_temps: bool = False,
+        project: Project = None
+    ) -> tp.List[str]:
         """
         Returns the cflags needed to trace projects with VaRA, using the
         specified tracer code.
@@ -86,6 +90,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Args:
             instr_type: instrumentation type to use
             save_temps: saves temporary LLVM-IR files (good for debugging)
+            project: project for which the cflags are used
 
         Returns: list of tracing specific cflags
         """
@@ -93,8 +98,13 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
             "-fsanitize=vara", f"-fvara-instr={instr_type}", "-flto",
             "-fuse-ld=lld", "-flegacy-pass-manager"
         ]
+
         if save_temps:
             c_flags += ["-Wl,-plugin-opt=save-temps"]
+
+        # For test projects, do not exclude small regions
+        if project is not None and project.domain == ProjectDomains.TEST:
+            c_flags += ["-fvara-instruction-threshold=1"]
 
         return c_flags
 
