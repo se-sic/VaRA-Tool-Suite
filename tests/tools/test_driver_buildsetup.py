@@ -6,7 +6,11 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from tests.test_utils import run_in_test_environment
-from varats.containers.containers import ImageBase
+from varats.containers.containers import (
+    ImageBase,
+    get_image_name,
+    _DEV_IMAGE_STAGES,
+)
 from varats.tools import driver_build_setup
 from varats.tools.driver_build_setup import _build_in_container
 from varats.tools.research_tools.vara_manager import BuildType
@@ -41,12 +45,15 @@ class TestDriverBuildsetup(unittest.TestCase):
         research_tool = get_research_tool("vara")
         image_base = ImageBase.DEBIAN_10
         build_type = BuildType.DEV
+        mock_create.return_value = \
+            f"{get_image_name(image_base, _DEV_IMAGE_STAGES[-1], True)}" \
+            f"_{build_type.name.lower()}"
 
         _build_in_container(research_tool, image_base, build_type)
 
-        mock_create.assert_called_with(image_base, research_tool)
+        mock_create.assert_called_with(image_base, build_type)
         mock_run.assert_called_with(
-            "localhost/debian:10_varats_vara_DEV", "build_VaRA", None, [
+            "debian_10:stage_31_config_dev_dev", "build_VaRA", None, [
                 "build",
                 "vara",
                 "--no-update-prompt",

@@ -124,10 +124,8 @@ class TestContainerSupport(unittest.TestCase):
 
         varats_core_install_layer = self.check_layer_type(layers[4], RunLayer)
         self.assertEqual("pip3", varats_core_install_layer.command)
-        self.assertTupleEqual(
-            ("install", "--ignore-installed", "/varats/varats-core"),
-            varats_core_install_layer.args
-        )
+        self.assertTupleEqual(("install", "/varats/varats-core"),
+                              varats_core_install_layer.args)
         mounting_parameters = "type=bind,src=varats_src,target=/varats"
         if buildah_version() >= (1, 24, 0):
             mounting_parameters += ",rw"

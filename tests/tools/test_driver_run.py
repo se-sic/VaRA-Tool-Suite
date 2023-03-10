@@ -71,10 +71,7 @@ class TestDriverRun(unittest.TestCase):
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     @mock.patch("varats.tools.driver_run.sbatch")
-    @mock.patch("varats.tools.driver_container.__build_images")
-    def test_bb_run_slurm_and_container(
-        self, mock_sbatch, mock_build_images
-    ) -> None:
+    def test_bb_run_slurm_and_container(self, mock_sbatch) -> None:
         runner = CliRunner()
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         # needed so we see the paper config
@@ -87,16 +84,11 @@ class TestDriverRun(unittest.TestCase):
         )
         save_bb_config()
 
-        # Easiest way to configure slurm + container is 'vara-container'
-        # As a side-effect, this command is now even more tested :)
-        prepare_result = runner.invoke(driver_container.main, ["prepare-slurm"])
-        self.assertEqual(0, prepare_result.exit_code, prepare_result.exception)
-        self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
-
         result = runner.invoke(
             driver_run.main, ["--slurm", "--container", "-E", "JustCompile"]
         )
         self.assertEqual(0, result.exit_code, result.exception)
+        self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
         self.assertTrue(
             (Path(str(vara_cfg()["benchbuild_root"])) /
              "JustCompile-slurm.sh").exists()
