@@ -4,6 +4,7 @@ import typing as tp
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from matplotlib import style
 from matplotlib.colors import LogNorm
@@ -19,7 +20,10 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import get_primary_project_source
-from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
+from varats.ts_utils.click_param_types import (
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REVISION,
+)
 from varats.utils.git_util import (
     ShortCommitHash,
     FullCommitHash,
@@ -35,6 +39,7 @@ def get_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
         project_name, ["revision", "commit_hash", "lines"],
         get_commit_map(project_name), case_study
     )
+    data.rename(columns={'commit_hash': 'base_hash'}, inplace=True)
 
     def cs_filter(data_frame: DataFrame) -> DataFrame:
         """Filter out all commits that are not in the case study if one was
@@ -45,25 +50,25 @@ def get_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
         revisions = CharTrie()
         for revision in case_study.revisions:
             revisions[revision.hash] = True
-        return data_frame[data_frame["commit_hash"].
-                          apply(lambda x: revisions.has_node(x) != 0)]
+        return data_frame[
+            data_frame["base_hash"].apply(lambda x: revisions.has_node(x) != 0)]
 
     return cs_filter(data)
 
 
 def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
     data = get_lines_per_commit_long(case_study)
-    max_lines = data.drop(columns=["revision"]).groupby("commit_hash").max()
+    max_lines = data.drop(columns=["revision"]).groupby("base_hash").max()
     print(data)
     data = data.apply(
         lambda x: [
-            x['revision'], x['commit_hash'],
-            (x['lines'] * 100 / max_lines['lines'][x['commit_hash']])
+            x['revision'], x['base_hash'],
+            (x['lines'] * 100 / max_lines['lines'][x['base_hash']])
         ],
         axis=1,
         result_type='broadcast'
     )
-    data.rename(columns={'commit_hash': 'base_hash'}, inplace=True)
+
     return data
 
 
@@ -95,6 +100,7 @@ def get_interactions_per_commit_long(case_study: CaseStudy):
     data.drop(columns=['base_lib'])
     data = data.groupby(["base_hash", "revision"],
                         sort=False).sum().reset_index()
+    data.rename(columns={'amount': 'interactions'}, inplace=True)
 
     def cs_filter(data_frame: DataFrame) -> DataFrame:
         """Filter out all commits that are not in the case study if one was
@@ -124,14 +130,16 @@ def get_normalized_interactions_per_commit_long(
     data = data.apply(
         lambda x: [
             x['base_hash'], x['revision'],
-            (x['amount'] * 100 / max_interactions['amount'][x['base_hash']])
-            if max_interactions['amount'][x['base_hash']] is not math.nan else
-            math.nan
+            (
+                x['interactions'] * 100 / max_interactions['interactions'][x[
+                    'base_hash']]
+            ) if max_interactions['interactions'][x['base_hash']] is not math.
+            nan else math.nan
         ],
         axis=1,
         result_type='broadcast'
     )
-    data.rename(columns={'amount': 'interactions'}, inplace=True)
+
     return data
 
 
@@ -197,6 +205,132 @@ def get_author_color_map(data, case_study) -> dict[tp.Any, tp.Any]:
     return dict(zip(author_list, colors))
 
 
+class SingleRevisionPlot(Plot, plot_name="single_commit_survival"):
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        pass
+
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(plot_config, **kwargs)
+
+    @property
+    def name(self) -> str:
+        return "single_commit_survival_" + ShortCommitHash(
+            self.plot_kwargs['revision']
+        ).hash
+
+    def plot(self, view_mode: bool) -> None:
+        _, axis = plt.subplots(1, 1)
+        case_study = self.plot_kwargs['case_study']
+        revision = self.plot_kwargs['revision']
+        lines: DataFrame = get_lines_per_commit_long(case_study)
+
+        interactions: DataFrame = get_interactions_per_commit_long(case_study)
+        data = lines.merge(
+            interactions, how='left', on=["base_hash", "revision"]
+        )
+        data.dropna(
+            axis=0, how='any', inplace=True, subset=["lines", "interactions"]
+        )
+
+        print(data)
+        print(data.dtypes)
+        print(type(revision))
+        data = data[data["base_hash"].apply(lambda x: x.startswith(revision))]
+        data.set_index("revision", inplace=True)
+        cmap = get_commit_map(case_study.project_name)
+        data.sort_index(
+            axis=0,
+            key=lambda x: x.map(lambda y: cmap.short_time_id(y)),
+            inplace=True
+        )
+        data.drop(columns="base_hash")
+        _, axis = plt.subplots(1, 1)
+        plt.setp(
+            axis.get_xticklabels(),
+            fontsize=self.plot_config.x_tick_size(),
+            family='monospace',
+        )
+        plt.setp(
+            axis.get_yticklabels(),
+            fontsize=self.plot_config.x_tick_size(),
+            family='monospace'
+        )
+        ax = axis.twinx()
+        x_axis = range(len(data))
+        ax.scatter(x_axis, data['lines'], color="green")
+        axis.scatter(x_axis, data['interactions'], color="orange")
+        ax.set_ylim(ymin=0)
+        axis.set_ylim(ymin=0)
+        lines_legend = mpatches.Patch(color='green', label="Lines")
+        interactions_legend = mpatches.Patch(
+            color="orange", label='Interactions'
+        )
+        plt.legend(handles=[lines_legend, interactions_legend])
+        plt.ticklabel_format(axis='x', useOffset=False)
+
+        plt.xticks(x_axis, data.index)
+        axis.tick_params(axis="x", labelrotation=90)
+
+
+class Trendlines(Plot, plot_name="survival_trendlines"):
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        pass
+
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(plot_config, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        case_study = self.plot_kwargs['case_study']
+        lines: DataFrame = get_normalized_lines_per_commit_long(case_study)
+
+        interactions: DataFrame = get_normalized_interactions_per_commit_long(
+            case_study
+        )
+        data = lines.merge(
+            interactions, how='left', on=["base_hash", "revision"]
+        )
+        data.dropna(
+            axis=0, how='any', inplace=True, subset=["lines", "interactions"]
+        )
+        cmap = get_commit_map(case_study.project_name)
+        data = data.apply(
+            lambda x: (
+                cmap.short_time_id(x["revision"]),
+                ShortCommitHash(x["base_hash"]), x["lines"] / x["interactions"],
+                x["interactions"] / x["lines"]
+            ),
+            axis=1,
+            result_type='broadcast'
+        )
+        xmin, xmax = data["revision"].min(), data["revision"].max()
+        data = data.pivot(
+            index="revision", columns="base_hash", values="interactions"
+        )
+        data.sort_index(axis=0, inplace=True)
+        _, axis = plt.subplots(1, 1)
+        plt.setp(
+            axis.get_xticklabels(),
+            fontsize=self.plot_config.x_tick_size(),
+            family='monospace',
+        )
+        plt.setp(
+            axis.get_yticklabels(),
+            fontsize=self.plot_config.x_tick_size(),
+            family='monospace'
+        )
+        print(data)
+        sns.lineplot(data=data, ax=axis)
+        axis.set_xlim(xmin, xmax)
+        plt.ticklabel_format(axis='x', useOffset=False)
+        axis.tick_params(axis="x", labelrotation=90)
+
+
 class HeatMapPlot(Plot, plot_name=None):
     colormap = 'RdYlGn'
     vmin = 0
@@ -228,8 +362,7 @@ class HeatMapPlot(Plot, plot_name=None):
             xticklabels=self.xticklabels,
             yticklabels=self.yticklabels,
             linewidth=0.1,
-            linecolor="grey",
-            norm=LogNorm()
+            linecolor="grey"
         )
         if self.XLABEL:
             axis.set_xlabel(self.XLABEL)
@@ -366,6 +499,24 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
         super().__init__(plot_config, lines_and_interactions, **kwargs)
         self.yticklabels = 3
         self.color_commits = True
+
+
+class SingleCommitSurvivalPlotGenerator(
+    PlotGenerator,
+    generator_name="single_survival",
+    options=[REQUIRE_REVISION, REQUIRE_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List['Plot']:
+        return [SingleRevisionPlot(self.plot_config, **self.plot_kwargs)]
+
+
+class TrendlinesPlotGenerator(
+    PlotGenerator, generator_name="trend_lines", options=[REQUIRE_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List['Plot']:
+        return [Trendlines(self.plot_config, **self.plot_kwargs)]
 
 
 class SurvivingCommitPlotGenerator(
