@@ -22,13 +22,13 @@ from varats.utils.git_util import (
 
 
 def _group_data_by_author(
-    project_name: str, data: DataFrame, sample_points_label, data_points_label,
-    value_label
+    project_name: str, data: DataFrame, sample_points_label: str,
+    data_points_label: str, value_label: str
 ) -> DataFrame:
     commit_lookup_helper = create_commit_lookup_helper(project_name)
     repo = get_primary_project_source(project_name).local
 
-    def author_data(commit_hash: str):
+    def author_data(commit_hash: str) -> tp.Tuple[str, str]:
         commit = commit_lookup_helper(
             CommitRepoPair(FullCommitHash(commit_hash), repo)
         )
@@ -267,10 +267,10 @@ class AuthorContributionPlotGenerator(
 
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         return [
-            #AuthorLineContribution(self.plot_config, **self.plot_kwargs),
-            #AuthorInteractionsContribution(self.plot_config, **self.plot_kwargs),
+            # AuthorLineContribution(self.plot_config, **self.plot_kwargs),
+            # AuthorInteractionsContribution(self.plot_config, **self.plot_kwargs),
             AuthorContributionPlotRevision(
                 self.plot_config, **self.plot_kwargs
             ),
-            #AuthorContributionPlotAuthor(self.plot_config, **self.plot_kwargs)
+            # AuthorContributionPlotAuthor(self.plot_config, **self.plot_kwargs)
         ]
