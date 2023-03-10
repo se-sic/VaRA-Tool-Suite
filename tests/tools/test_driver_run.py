@@ -1,5 +1,6 @@
 """Test varats container tool."""
 import re
+import traceback
 import unittest
 import unittest.mock as mock
 from pathlib import Path
@@ -83,6 +84,7 @@ class TestDriverRun(unittest.TestCase):
             driver_run.main, ["--slurm", "--container", "-E", "JustCompile"]
         )
         print(result.stdout)
+        print(traceback.format_tb(result.exception))
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
         self.assertTrue(
