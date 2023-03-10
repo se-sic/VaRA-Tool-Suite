@@ -276,6 +276,7 @@ def bb_cfg() -> s.Configuration:
             bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
             if bb_cfg_path.exists():
                 BB_CFG.load(local.path(bb_cfg_path))
+                BB_CFG.init_from_env()
         _BB_CFG = BB_CFG
     return _BB_CFG
 
