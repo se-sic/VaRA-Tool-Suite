@@ -203,7 +203,7 @@ def main(
 
 def __prepare_slurm_for_container() -> None:
     """Prepare the benchbuild slurm config for container use."""
-    node_dir = f"/tmp/{os.getlogin()}"
+    node_dir = f"/tmp/"
     template_path = Path(
         str(vara_cfg()["benchbuild_root"])
     ) / "slurm_container.sh.inc"
