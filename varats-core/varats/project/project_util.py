@@ -220,6 +220,10 @@ class BinaryType(Enum):
     SHARED_LIBRARY = 2
     STATIC_LIBRARY = 3
 
+    @property
+    def is_library(self) -> bool:
+        return self in (BinaryType.SHARED_LIBRARY, BinaryType.STATIC_LIBRARY)
+
     def __str__(self) -> str:
         return str(self.name.lower())
 

@@ -18,7 +18,12 @@ from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
     get_newest_result_files_for_case_study,
 )
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilename,
+    ReportFilepath,
+)
 from varats.revision.revisions import get_all_revisions_files
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
@@ -111,7 +116,7 @@ def get_result_files(
     project_name: str, experiment_type: tp.Type["VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]], commit_hash: ShortCommitHash,
     only_newest: bool
-) -> tp.List[Path]:
+) -> tp.List[ReportFilepath]:
     """
     Returns a list of result files that (partially) match the given commit hash.
 
