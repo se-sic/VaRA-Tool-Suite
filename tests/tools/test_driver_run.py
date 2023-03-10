@@ -83,7 +83,6 @@ class TestDriverRun(unittest.TestCase):
             driver_run.main, ["--slurm", "--container", "-E", "JustCompile"]
         )
         print(result.stdout)
-        print(result.stderr)
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
         self.assertTrue(
