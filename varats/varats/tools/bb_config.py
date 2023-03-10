@@ -112,7 +112,6 @@ def create_new_bb_config(
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
-        'varats.experiments.base.time_workload',
         'varats.experiments.base.time_workloads',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.phasar.ide_linear_constant_experiment',
@@ -122,8 +121,10 @@ def create_new_bb_config(
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
-        'varats.experiments.vara.instrumentation_point_printer',
-        'varats.experiments.vara.instrumentation_stats',
+        'varats.experiments.vara.feature_perf_sampling',
+        'varats.experiments.vara.feature_perf_tracing',
+        'varats.experiments.vara.feature_tracing_stats',
+        'varats.experiments.vara.feature_instrumentation_points',
         'varats.experiments.vara.instrumentation_verifier',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
