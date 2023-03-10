@@ -79,11 +79,6 @@ class TestDriverRun(unittest.TestCase):
         # needed so benchbuild sees the paper config
         save_config()
 
-        bb_cfg()["slurm"]["template"] = str(
-            Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.inc"
-        )
-        save_bb_config()
-
         result = runner.invoke(
             driver_run.main, ["--slurm", "--container", "-E", "JustCompile"]
         )
