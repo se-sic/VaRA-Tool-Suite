@@ -564,7 +564,6 @@ class ContainerInstallable(Protocol):
         Args:
             stage_builder: the builder object for the current container stage
         """
-        ...
 
     def container_install_tool(
         self, stage_builder: 'containers.StageBuilder'
@@ -575,7 +574,6 @@ class ContainerInstallable(Protocol):
         Args:
             stage_builder: the builder object for the current container stage
         """
-        ...
 
     def container_tool_env(
         self, stage_builder: 'containers.StageBuilder'
@@ -587,6 +585,5 @@ class ContainerInstallable(Protocol):
         Args:
             stage_builder: the builder object for the current container stage
         Returns:
-            a dictionary of environment variables as keys and lists of their values as values
+            a dictionary of environment variables and their values
         """
-        ...

@@ -78,6 +78,7 @@ class StageBuilder():
         self.__stage = stage
         self.__layers = ContainerImage()
         self.__image_name = image_name
+        # pylint: disable=consider-using-with
         self.__tmp_dir = TemporaryDirectory()
 
     def __enter__(self) -> 'StageBuilder':
@@ -208,10 +209,8 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
                  'libgdbm-compat-dev', 'liblzma-dev', 'libncurses5-dev',
                  'libreadline6-dev', 'libsqlite3-dev', 'libssl-dev',
                  'lzma', 'lzma-dev', 'tk-dev', 'uuid-dev', 'zlib1g-dev')
-            # .run('wget', 'https://www.python.org/ftp/python/3.11.1/Python-3.11.1.tgz')
-            # .run('tar', '-xf', 'Python-3.11.1.tgz')
-            # .workingdir('Python-3.11.1')
-            .run('wget', 'https://www.python.org/ftp/python/3.10.9/Python-3.10.9.tgz')
+            .run('wget',
+                 'https://www.python.org/ftp/python/3.10.9/Python-3.10.9.tgz')
             .run('tar', '-xf', 'Python-3.10.9.tgz')
             .workingdir('Python-3.10.9')
             .run('./configure', '--enable-optimizations', 'CFLAGS=-fPIC')
@@ -278,7 +277,8 @@ def _create_container_image(
         if current_stage.value >= stage.value:
             name = image_name(current_stage)
             LOG.debug(
-                f"Working on image {name} (base={base.name}, stage={current_stage})."
+                f"Working on image {name} "
+                f"(base={base.name}, stage={current_stage})."
             )
             with StageBuilder(base, current_stage, name) as stage_builder:
                 # build on previous stage if not the first
@@ -425,6 +425,14 @@ def create_dev_image(base: ImageBase, build_type: BuildType) -> str:
 def create_base_image(
     base: ImageBase, stage: ImageStage, force_rebuild: bool
 ) -> None:
+    """
+    Builds the given base image for the current research tool.
+
+    Args:
+        base: the base image to build
+        stage: the first image stage in the stack that shall be built
+        force_rebuild: whether to rebuild existing images
+    """
 
     def image_name(stage: ImageStage) -> str:
         return get_image_name(base, stage, True)
@@ -493,7 +501,8 @@ def delete_base_image(base: ImageBase, stage: ImageStage) -> None:
         if current_stage.value >= stage.value:
             image_name = get_image_name(base, current_stage, True)
             LOG.debug(
-                f"Deleting image {image_name} (base={base.name}, stage={current_stage})"
+                f"Deleting image {image_name} "
+                f"(base={base.name}, stage={current_stage})"
             )
             publish(DeleteImage(image_name))
 

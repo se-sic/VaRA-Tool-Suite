@@ -280,7 +280,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         Args:
             stage_builder: the builder object for the current container stage
         Returns:
-            a dictionary of environment variables as keys and lists of their values as values
+            a dictionary of environment variables and their values
         """
         container_phasar_dir = stage_builder.varats_root / "tools/phasar"
         return {"PATH": [str(container_phasar_dir / 'bin')]}

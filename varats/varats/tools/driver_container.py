@@ -49,8 +49,8 @@ def main() -> None:
 @click.option(
     "--update-tool-suite",
     is_flag=True,
-    help=
-    "Only update the tool suite. Implies --update-research-tool and --update-config."
+    help="Only update the tool suite. Implies --update-research-tool and "
+    "--update-config."
 )
 @click.option(
     "--update-research-tool",

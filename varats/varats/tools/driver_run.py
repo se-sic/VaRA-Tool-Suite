@@ -15,9 +15,7 @@ from subprocess import PIPE
 
 import click
 import jinja2
-import yaml
 from benchbuild.utils.cmd import benchbuild, sbatch
-from benchbuild.utils.settings import ConfigLoader
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
