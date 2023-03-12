@@ -448,16 +448,12 @@ SegmentBuffer = tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int], str]]]
 def cov_show(
     report: CoverageReport,
     base_dir: Path,
-    force_color: tp.Optional[bool] = None
 ) -> str:
     """
     Returns a the coverage in text form similar to llvm-cov show.
 
     NOTE: The colored representation differs a bit!
     """
-    # force color state
-    if force_color is not None:
-        colors.use_color = force_color
     result = []
     for file in sorted(list(report.filename_function_mapping)):
         function_region_mapping = report.filename_function_mapping[file]
@@ -680,7 +676,7 @@ def __get_next_line_and_column(lines: tp.Dict[int, str],
 
 def __get_previous_line_and_column(
     line: int, column: int, lines: tp.Dict[int, str]
-):
+) -> tp.Tuple[int, int]:
     assert line >= 2
     assert column >= 1
     if column - 1 == 0:
@@ -688,6 +684,6 @@ def __get_previous_line_and_column(
     return line, column - 1
 
 
-def _color_str(a: str, color: Color) -> str:
+def _color_str(a: str, color: Color) -> tp.Any:
     """Wraps the string inside the color characters."""
     return color | a

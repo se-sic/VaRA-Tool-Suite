@@ -5,6 +5,8 @@ from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from plumbum import colors
+
 from tests.test_utils import (
     run_in_test_environment,
     UnitTestFixtures,
@@ -333,11 +335,13 @@ class TestCodeRegion(unittest.TestCase):
             )
 
             base_dir = get_local_project_git_path("FeaturePerfCSCollection")
-            self.assertEqual(
-                cov_show_slow_txt,
-                cov_show(slow_report, base_dir, force_color=False)
-            )
-            output = cov_show(slow_report, base_dir, force_color=True)
+            self.assertEqual(cov_show_slow_txt, cov_show(slow_report, base_dir))
+            color_state = colors.use_color
+            try:
+                colors.use_color = True
+                output = cov_show(slow_report, base_dir)
+            finally:
+                colors.use_color = color_state
             # Replace different color codes.
             output = output.replace("\x1b[36m", "\x1b[0;36m").replace(
                 "\x1b[39m", "\x1b[0m"
