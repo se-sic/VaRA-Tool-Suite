@@ -301,10 +301,32 @@ class TestCodeRegion(unittest.TestCase):
         ) as tmp:
             cov_show_slow_txt = tmp.read()
 
+        with open(
+            Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+            "cov_show_slow_color.txt",
+        ) as tmp:
+            cov_show_slow_color_txt = tmp.read()
+
         with LoadRepositoryForTest("FeaturePerfCSCollection", "27f1708037"):
             self.assertEqual(
-                cov_show_slow_txt, cov_show(slow_report, color=False)
+                cov_show_slow_txt, cov_show(slow_report, force_color=False)
             )
+            output = cov_show(slow_report, force_color=True)
+            # Replace different color codes.
+            output = output.replace("\x1b[36m", "\x1b[0;36m").replace(
+                "\x1b[39m", "\x1b[0m"
+            ).replace("\x1b[0;41m",
+                      "\x1b[41m").replace("\x1b[49m", "\x1b[0m"
+                                         ).replace("\x1b[41m\x1b[0m", "")
+
+            # We don't have magenta colored counts for conditions
+            cov_show_slow_color_txt = cov_show_slow_color_txt.replace(
+                "\x1b[0;35m7\x1b[0m", "7"
+            ).replace("\x1b[0;35m4\x1b[0m",
+                      "4").replace("\x1b[0;35m1\x1b[0m",
+                                   "1").replace("\x1b[0;41m", "\x1b[41m"
+                                               ).replace("\x1b[41m\x1b[0m", "")
+            self.assertEqual(cov_show_slow_color_txt, output)
 
     def test_cov_fill_buffer(self):
         lines = {1: "Hello World!\n", 2: "Goodbye;\n"}

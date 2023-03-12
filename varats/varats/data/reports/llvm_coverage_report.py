@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import string
 import typing as tp
 from collections import deque, defaultdict
 from dataclasses import dataclass, field, asdict, is_dataclass
@@ -446,14 +447,21 @@ SegmentBuffer = tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int], str]]]
 def cov_show(
     report: CoverageReport,
     base_dir: tp.Optional[Path] = None,
-    color=True
+    force_color: tp.Optional[bool] = None
 ) -> str:
-    """Returns a the coverage in text form similar to llvm-cov show."""
+    """
+    Returns a the coverage in text form similar to llvm-cov show.
+
+    NOTE: The colored representation differs a bit!
+    """
+    # force color state
+    if force_color is not None:
+        colors.use_color = force_color
     result = []
     for file in sorted(list(report.filename_function_mapping)):
         function_region_mapping = report.filename_function_mapping[file]
         path = Path(file)
-        tmp_value = _cov_show_file(path, function_region_mapping, [], color)
+        tmp_value = _cov_show_file(path, function_region_mapping, [])
         if not tmp_value[-1].endswith("\n"):
             # Add newline if file does not end with one
             tmp_value.append("\n")
@@ -464,7 +472,7 @@ def cov_show(
 
 def _cov_show_file(
     path: Path, function_region_mapping: FunctionCodeRegionMapping,
-    buffer: tp.List[str], color: bool
+    buffer: tp.List[str]
 ) -> tp.List[str]:
 
     lines: tp.Dict[int, str] = {}
@@ -474,10 +482,7 @@ def _cov_show_file(
             lines[line_number] = line
             line_number += 1
 
-    if color:
-        buffer.append(_color_str(f"{path}:\n", colors.cyan))
-    else:
-        buffer.append(f"{path}:\n")
+    buffer.append(_color_str(f"{path}:\n", colors.cyan))
     # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
     segments_dict: SegmentBuffer = defaultdict(list)
     for function in function_region_mapping:
@@ -493,13 +498,12 @@ def _cov_show_file(
         buffer=segments_dict
     )
 
-    buffer.append(__segments_dict_to_str(segments_dict, color))
+    buffer.append(__segments_dict_to_str(segments_dict))
     return buffer
 
 
 def __segments_dict_to_str(
-    segments_dict: tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int],
-                                                        str]]], color: bool
+    segments_dict: tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int], str]]]
 ) -> str:
     """Constructs a str from the given segments dictionary."""
     buffer = []
@@ -526,19 +530,26 @@ def __segments_dict_to_str(
         buffer.append(f"{line_number:>5}|{count:>7}|")
 
         texts = [segment[1] for segment in segments]
-        if color is False:
-            buffer.append("".join(texts))
-        else:
-            colored_texts = []
-            for x, y in zip(counts, texts):
-                if x is None or x != 0:
-                    colored_texts.append(y)
-                elif x == 0:
-                    colored_texts.append(_color_str(y, colors.bg.red))
-                else:
-                    raise NotImplementedError
+        colored_texts = []
+        for x, y in zip(counts, texts):
+            if x is None or x != 0:
+                colored_texts.append(y)
+            elif x == 0:
+                y_stripped = y.lstrip(f"else){string.whitespace}")
+                if not y_stripped.startswith("{") and len(y_stripped) != 0:
+                    y_stripped = y
+                before = y[:len(y) - len(y_stripped)]
+                y_stripped = y_stripped.rstrip("\n")
+                after = ""
+                len_after = len(y) - len(before) - len(y_stripped)
+                if len_after > 0:
+                    after = y[-len_after:]
+                colored_text = f"{before}{_color_str(y_stripped, colors.bg.red)}{after}"
+                colored_texts.append(colored_text)
+            else:
+                raise NotImplementedError
 
-            buffer.append("".join(colored_texts))
+        buffer.append("".join(colored_texts))
     return "".join(buffer)
 
 

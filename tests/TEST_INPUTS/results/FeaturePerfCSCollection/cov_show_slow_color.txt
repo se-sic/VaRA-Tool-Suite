@@ -1,0 +1,157 @@
+[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/include/fpcsc/perf_util/feature_cmd.h:
+[0m    1|       |#ifndef FPCSC_PERFUTIL_FEATURECMD_H
+    2|       |#define FPCSC_PERFUTIL_FEATURECMD_H
+    3|       |
+    4|       |#include <exception>
+    5|       |#include <stdlib.h>
+    6|       |#include <string>
+    7|       |
+    8|       |namespace fpcsc {
+    9|      4|inline bool isFeatureEnabled(int argc, char *argv[], std::string FeatureName) {
+   10|      [0;35m7[0m|  for (int CurrentArg = 1; CurrentArg < argc; ++CurrentArg) {
+   11|      [0;35m4[0m|    if (argv[CurrentArg] == FeatureName) {
+   12|      1|      return true;
+   13|      1|    }
+   14|      4|  }
+   15|       |
+   16|      3|  return false;
+   17|      4|}
+   18|       |
+   19|      0|inline long getFeatureValue(int argc, char *argv[], std::string FeatureName) [0;41m{[0m
+   20|      0|[0;41m  int CurrentArg = 1;[0m
+   21|      0|[0;41m  for (; CurrentArg < argc; ++CurrentArg) {[0m
+   22|      0|[0;41m    if (argv[CurrentArg] == FeatureName) {[0m
+   23|      0|[0;41m      ++CurrentArg;[0m
+   24|      0|[0;41m      break;[0m
+   25|      0|[0;41m    }[0m
+   26|      0|[0;41m  }[0m
+   27|      0|[0;41m[0m
+   28|      0|[0;41m  if (CurrentArg >= argc) {[0m
+   29|      0|[0;41m    return 0;[0m
+   30|      0|[0;41m  }[0m
+   31|      0|[0;41m[0m
+   32|      0|[0;41m  return strtol(argv[CurrentArg], NULL, 0);[0m
+   33|      0|[0;41m}[0m
+   34|       |
+   35|       |} // namespace fpcsc
+   36|       |
+   37|       |#endif // FPCSC_PERFUTIL_FEATURECMD_H
+
+[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/include/fpcsc/perf_util/sleep.h:
+[0m    1|       |#ifndef FPCSC_PERFUTIL_SLEEP_H
+    2|       |#define FPCSC_PERFUTIL_SLEEP_H
+    3|       |
+    4|       |#include <chrono>
+    5|       |#include <iostream>
+    6|       |#include <thread>
+    7|       |
+    8|       |namespace fpcsc {
+    9|       |
+   10|      5|inline void sleep_for_secs(unsigned Secs) {
+   11|      5|  std::cout << "Sleeping for " << Secs << " seconds" << std::endl;
+   12|      5|  std::this_thread::sleep_for(std::chrono::seconds(Secs));
+   13|      5|}
+   14|       |
+   15|      0|inline void sleep_for_millisecs(unsigned Millisecs) [0;41m{[0m
+   16|      0|[0;41m  std::cout << "Sleeping for " << Millisecs << " milliseconds" << std::endl;[0m
+   17|      0|[0;41m  std::this_thread::sleep_for(std::chrono::milliseconds(Millisecs));[0m
+   18|      0|[0;41m}[0m
+   19|       |
+   20|      0|inline void sleep_for_nanosecs(unsigned millisecs) [0;41m{[0m
+   21|      0|[0;41m  std::this_thread::sleep_for(std::chrono::nanoseconds(millisecs));[0m
+   22|      0|[0;41m}[0m
+   23|       |
+   24|       |} // namespace fpcsc
+   25|       |
+   26|       |#endif // FPCSC_PERFUTIL_SLEEP_H
+
+[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/src/MultiSharedMultipleRegions/FeatureHeader.cpp:
+[0m    1|       |#include "FeatureHeader.h"
+    2|       |
+    3|       |bool ExternFeature = false;
+    4|       |
+    5|       |static bool CppFeature = false;
+    6|       |
+    7|      0|void enableCppFeature() [0;41m{[0m
+    8|      0|[0;41m  CppFeature = true;[0m
+    9|      0|[0;41m}[0m
+   10|       |
+   11|      1|bool isCppFeatureEnabled() {
+   12|      1|  return CppFeature;
+   13|      1|}
+
+[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/src/MultiSharedMultipleRegions/FeatureHeader.h:
+[0m    1|       |#ifndef FEATURE_HEADER_H
+    2|       |#define FEATURE_HEADER_H
+    3|       |
+    4|       |extern bool ExternFeature;
+    5|       |
+    6|       |static inline bool HeaderFeature = false;
+    7|       |
+    8|      0|inline void enableExternFeature() [0;41m{[0m
+    9|      0|[0;41m  ExternFeature = true;[0m
+   10|      0|[0;41m}[0m
+   11|       |
+   12|       |void enableCppFeature();
+   13|       |bool isCppFeatureEnabled();
+   14|       |
+   15|       |#endif // FEATURE_HEADER_H
+
+[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/src/MultiSharedMultipleRegions/MSMRmain.cpp:
+[0m    1|       |#include "FeatureHeader.h"
+    2|       |
+    3|       |#include "fpcsc/perf_util/sleep.h"
+    4|       |#include "fpcsc/perf_util/feature_cmd.h"
+    5|       |
+    6|       |#include <string>
+    7|       |
+    8|      1|int main(int argc, char *argv[] ) {
+    9|      1|  bool Slow = false;
+   10|       |
+   11|      [0;35m1[0m|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--slow"))) {
+   12|      1|    Slow = true;
+   13|      1|  }
+   14|       |
+   15|      [0;35m1[0m|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--header"))) [0;41m{[0m
+   16|      0|[0;41m    HeaderFeature = true;[0m
+   17|      0|[0;41m  }[0m
+   18|       |
+   19|      [0;35m1[0m|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--extern"))) [0;41m{[0m
+   20|      0|[0;41m    enableExternFeature();[0m
+   21|      0|[0;41m  }[0m
+   22|       |
+   23|      [0;35m1[0m|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--cpp"))) [0;41m{[0m
+   24|      0|[0;41m    enableCppFeature();[0m
+   25|      0|[0;41m  }[0m
+   26|       |
+   27|       |  // Multiple regions related to --slow that take different amounts of time.
+   28|       |
+   29|      [0;35m1[0m|  if (Slow) {
+   30|      1|    fpcsc::sleep_for_secs(5);
+   31|      1|  } else [0;41m{[0m
+   32|      0|[0;41m    fpcsc::sleep_for_secs(3);[0m
+   33|      0|[0;41m  }[0m
+   34|       |
+   35|      1|  fpcsc::sleep_for_secs(2); // General waiting time
+   36|       |
+   37|      [0;35m1[0m|  if (HeaderFeature) [0;41m{[0m
+   38|      0|[0;41m    fpcsc::sleep_for_secs(3);[0m
+   39|      1|[0;41m  }[0m else {
+   40|      1|    fpcsc::sleep_for_secs(1);
+   41|      1|  }
+   42|       |
+   43|      1|  fpcsc::sleep_for_secs(2); // General waiting time
+   44|       |
+   45|      [0;35m1[0m|  if (ExternFeature) [0;41m{[0m
+   46|      0|[0;41m    fpcsc::sleep_for_secs(6);[0m
+   47|      0|[0;41m  }[0m
+   48|       |
+   49|      1|  fpcsc::sleep_for_secs(2); // General waiting time
+   50|       |
+   51|      [0;35m1[0m|  if (isCppFeatureEnabled()) [0;41m{[0m
+   52|      0|[0;41m    fpcsc::sleep_for_secs(3);[0m
+   53|      0|[0;41m  }[0m
+   54|       |
+   55|      1|  return 0;
+   56|      1|}
+
