@@ -26,8 +26,11 @@ from varats.data.reports.llvm_coverage_report import (
     __get_next_line_and_column as get_next_line_and_column,
 )
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plots import PlotConfig
 from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
+from varats.project.project_util import get_local_project_git_path
+from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.settings import vara_cfg, save_config
 from varats.varats.experiments.vara.llvm_coverage_experiment import (
     GenerateCoverageExperiment,
@@ -224,7 +227,19 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(len(case_studies), 1)
         case_study = case_studies[0]
 
-        binary_config_map = coverage_plot._get_binary_config_map(case_study)
+        project_name = case_study.project_name
+
+        report_files = get_processed_revisions_files(
+            project_name,
+            GenerateCoverageExperiment,
+            CoverageReport,
+            get_case_study_file_name_filter(case_study),
+            only_newest=False,
+        )
+
+        binary_config_map = coverage_plot._get_binary_config_map(
+            case_study, report_files
+        )
         self.assertTrue(binary_config_map)
 
         config_map = binary_config_map[next(iter(binary_config_map))]
@@ -283,7 +298,7 @@ class TestCodeRegion(unittest.TestCase):
             shutil.unpack_archive(
                 Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
                 "GenCov-CovR-FeaturePerfCSCollection-MultiSharedMultipleRegions-27f1708037"
-                / "cca2928a-70d1-4c30-bd8e-6585f7edc9ce_config-0_success.zip",
+                / "9e03adf8-75f6-4524-912c-2f0e5873ae75_config-0_success.zip",
                 tmpdir
             )
 
@@ -308,10 +323,21 @@ class TestCodeRegion(unittest.TestCase):
             cov_show_slow_color_txt = tmp.read()
 
         with LoadRepositoryForTest("FeaturePerfCSCollection", "27f1708037"):
-            self.assertEqual(
-                cov_show_slow_txt, cov_show(slow_report, force_color=False)
+            cov_show_slow_txt = cov_show_slow_txt.replace(
+                "/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/",
+                ""
             )
-            output = cov_show(slow_report, force_color=True)
+            cov_show_slow_color_txt = cov_show_slow_color_txt.replace(
+                "/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/",
+                ""
+            )
+
+            base_dir = get_local_project_git_path("FeaturePerfCSCollection")
+            self.assertEqual(
+                cov_show_slow_txt,
+                cov_show(slow_report, base_dir, force_color=False)
+            )
+            output = cov_show(slow_report, base_dir, force_color=True)
             # Replace different color codes.
             output = output.replace("\x1b[36m", "\x1b[0;36m").replace(
                 "\x1b[39m", "\x1b[0m"

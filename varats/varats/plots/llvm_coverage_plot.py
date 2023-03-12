@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import sys
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from itertools import filterfalse
+from pathlib import Path
 
 from more_itertools import powerset
 
@@ -20,6 +22,8 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
+from varats.project.project_util import get_local_project_git_path
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.click_param_types import (
     REQUIRE_MULTI_EXPERIMENT_TYPE,
@@ -27,6 +31,9 @@ from varats.ts_utils.click_param_types import (
 )
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash
+
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from tests.test_utils import LoadRepositoryForTest
 
 ConfigsCoverageReportMapping = tp.NewType(
     "ConfigsCoverageReportMapping", tp.Dict[Configuration, CoverageReport]
@@ -227,17 +234,8 @@ class CoveragePlot(Plot, plot_name="coverage"):
     """Plot to visualize coverage diffs."""
 
     def _get_binary_config_map(
-        self, case_study: CaseStudy
+        self, case_study: CaseStudy, report_files: tp.List[ReportFilepath]
     ) -> BinaryConfigsMapping:
-        project_name = case_study.project_name
-
-        report_files = get_processed_revisions_files(
-            project_name,
-            self.plot_kwargs["experiment_type"][0],
-            CoverageReport,
-            get_case_study_file_name_filter(case_study),
-            only_newest=False,
-        )
 
         config_map = load_configuration_map_for_case_study(
             get_loaded_paper_config(), case_study, PlainCommandlineConfiguration
@@ -269,25 +267,45 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
         case_study = self.plot_kwargs["case_study"]
 
-        binary_config_map = self._get_binary_config_map(case_study)
+        project_name = case_study.project_name
 
-        if not binary_config_map:
-            raise ValueError(
-                "Cannot load configs for case study " +
-                case_study.project_name + " !"
+        report_files = get_processed_revisions_files(
+            project_name,
+            self.plot_kwargs["experiment_type"][0],
+            CoverageReport,
+            get_case_study_file_name_filter(case_study),
+            only_newest=False,
+        )
+
+        revisions = defaultdict(list)
+        for report_file in report_files:
+            revision = report_file.report_filename.commit_hash
+            revisions[revision].append(report_file)
+
+        for revision in list(revisions):
+            binary_config_map = self._get_binary_config_map(
+                case_study, revisions[revision]
             )
 
-        for binary in binary_config_map:
-            config_report_map = binary_config_map[binary]
+            if not binary_config_map:
+                raise ValueError(
+                    "Cannot load configs for case study " +
+                    case_study.project_name + " !"
+                )
 
-            coverage_feature_differ = CoverageFeatureDiffer.from_config_report_map(
-                config_report_map
-            )
-            for feature in coverage_feature_differ.available_features:
-                print(f"Diff for '{feature}':")
-                diff = coverage_feature_differ.diff({feature: True})
+            with LoadRepositoryForTest(project_name, revision):
+                base_dir = get_local_project_git_path(project_name)
+                for binary in binary_config_map:
+                    config_report_map = binary_config_map[binary]
 
-                print(cov_show(diff))
+                    coverage_feature_differ = CoverageFeatureDiffer.from_config_report_map(
+                        config_report_map
+                    )
+                    for feature in coverage_feature_differ.available_features:
+                        print(f"Diff for '{feature}':")
+                        diff = coverage_feature_differ.diff({feature: True})
+
+                        print(cov_show(diff, base_dir))
 
     def calc_missing_revisions(
         self, boundary_gradient: float

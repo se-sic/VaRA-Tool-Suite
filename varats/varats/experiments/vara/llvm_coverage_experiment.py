@@ -1,5 +1,6 @@
 """"Coverage experiment."""
 
+import json
 import typing as tp
 from pathlib import Path
 
@@ -78,9 +79,9 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 run_cmd = pb_cmd.with_env(LLVM_PROFILE_FILE=profile_raw_name)
                 llvm_profdata = local["llvm-profdata"]
                 llvm_cov = local["llvm-cov"]
-                llvm_cov = llvm_cov[
-                    "export", f"--instr-profile={profdata_name}",
-                    f"--compilation-dir={self.project.builddir}", run_cmd.cmd]
+                llvm_cov = llvm_cov["export",
+                                    f"--instr-profile={profdata_name}",
+                                    run_cmd.cmd]
 
                 with cleanup(prj_command):
                     run_cmd(*extra_args)
@@ -88,6 +89,16 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                         "merge", profile_raw_name, "-o", profdata_name
                     )
                     (llvm_cov > str(json_name))()
+
+                    # Add absolute path to json to compute
+                    # relative filenames later in the report
+                    with open(json_name) as file:
+                        coverage = json.load(file)
+                    coverage["absolute_path"] = str(
+                        Path(self.project.source_of_primary).resolve()
+                    )
+                    with open(json_name, "w") as file:
+                        json.dump(coverage, file)
 
         return actions.StepResult.OK
 
@@ -108,10 +119,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
 
         # Activate source-based code coverage:
         # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
-        project.cflags += [
-            "-fprofile-instr-generate", "-fcoverage-mapping",
-            f"-fcoverage-compilation-dir={project.builddir}"
-        ]
+        project.cflags += ["-fprofile-instr-generate", "-fcoverage-mapping"]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = (

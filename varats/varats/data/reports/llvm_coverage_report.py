@@ -331,6 +331,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 "Cannot import functions. Json format unknown"
             ) from err
 
+        absolute_path = j["absolute_path"]
         data: tp.Dict[str, tp.Any] = j["data"][0]
         # files: tp.List = data["files"]
         functions: tp.List[tp.Any] = data["functions"]
@@ -342,7 +343,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             # branches: list = function["branches"]
             filenames: tp.List[str] = function["filenames"]
             assert len(filenames) == 1
-            filename: str = filenames[0]
+            filename: str = str(Path(filenames[0]).relative_to(absolute_path))
             regions: tp.List[tp.List[int]] = function["regions"]
 
             filename_function_mapping[filename] = self._import_code_regions(
@@ -446,7 +447,7 @@ SegmentBuffer = tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int], str]]]
 
 def cov_show(
     report: CoverageReport,
-    base_dir: tp.Optional[Path] = None,
+    base_dir: Path,
     force_color: tp.Optional[bool] = None
 ) -> str:
     """
@@ -461,7 +462,7 @@ def cov_show(
     for file in sorted(list(report.filename_function_mapping)):
         function_region_mapping = report.filename_function_mapping[file]
         path = Path(file)
-        tmp_value = _cov_show_file(path, function_region_mapping, [])
+        tmp_value = _cov_show_file(path, base_dir, function_region_mapping, [])
         if not tmp_value[-1].endswith("\n"):
             # Add newline if file does not end with one
             tmp_value.append("\n")
@@ -471,18 +472,19 @@ def cov_show(
 
 
 def _cov_show_file(
-    path: Path, function_region_mapping: FunctionCodeRegionMapping,
-    buffer: tp.List[str]
+    rel_path: Path, base_dir: Path,
+    function_region_mapping: FunctionCodeRegionMapping, buffer: tp.List[str]
 ) -> tp.List[str]:
 
     lines: tp.Dict[int, str] = {}
+    path = base_dir / rel_path
     with open(path) as file:
         line_number = 1
         for line in file.readlines():
             lines[line_number] = line
             line_number += 1
 
-    buffer.append(_color_str(f"{path}:\n", colors.cyan))
+    buffer.append(_color_str(f"{rel_path}:\n", colors.cyan))
     # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
     segments_dict: SegmentBuffer = defaultdict(list)
     for function in function_region_mapping:

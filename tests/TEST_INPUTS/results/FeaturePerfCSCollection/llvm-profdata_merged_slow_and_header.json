@@ -1929,5 +1929,6 @@
         }
     ],
     "type": "llvm.coverage.json.export",
-    "version": "2.0.1"
+    "version": "2.0.1",
+    "absolute_path": "/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,2/FeaturePerfCSCollection-27f1708037"
 }
