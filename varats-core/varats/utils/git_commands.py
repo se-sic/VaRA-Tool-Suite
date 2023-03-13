@@ -1,10 +1,17 @@
 """This module contains wrapper for basic git commands."""
 import typing as tp
 from pathlib import Path
+from types import TracebackType
 
 from benchbuild.utils.cmd import git
 
-from varats.utils.git_util import get_current_branch, CommitHash
+from varats.project.project_util import get_local_project_git_path
+from varats.utils.git_util import (
+    get_current_branch,
+    CommitHash,
+    ShortCommitHash,
+    get_head_commit,
+)
 
 
 def add_remote(repo_folder: Path, remote: str, url: str) -> None:
@@ -147,3 +154,24 @@ def download_repo(
     output = git("-C", dl_folder, args)
     for line in output.split("\n"):
         post_out(line)
+
+
+class LoadRepository():
+    """Context manager to work with a repository at a specific revision, without
+    duplicating the repository."""
+
+    def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
+        self.__repo_path = get_local_project_git_path(project_name)
+        self.__revision = revision
+        self.__initial_head = get_head_commit(self.__repo_path)
+
+    def __enter__(self) -> Path:
+        checkout_branch_or_commit(self.__repo_path, self.__revision)
+        return self.__repo_path
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        checkout_branch_or_commit(self.__repo_path, self.__initial_head)
