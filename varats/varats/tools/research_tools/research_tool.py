@@ -428,8 +428,6 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
     are set up by VaRA-TS and usable through the tool suites experiments and
     tools."""
 
-    INSTALL_BINARIES: tp.List[str] = []
-
     def __init__(
         self, tool_name: str, supported_build_types: tp.List[BuildType],
         code_base: SpecificCodeBase
@@ -520,6 +518,11 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             build_folder_suffix: a suffix that is appended to the build folder
         """
 
+    @abc.abstractmethod
+    def install_binaries(self) -> tp.List[str]:
+        """Returns a list of binaries to check when validating the
+        installation."""
+
     def invalidate_install(self, install_location: Path) -> None:
         """
         Delete Binaries which are checked to validate the installation.
@@ -527,7 +530,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         Args:
             install_location: the installation directory to check
         """
-        for path in self.INSTALL_BINARIES:
+        for path in self.install_binaries():
             (install_location / path).unlink(True)
 
     def install_exists(self, install_location: Path) -> bool:
@@ -545,7 +548,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             True if the given directory contains a research tool installation
         """
         status_ok = True
-        for path in self.INSTALL_BINARIES:
+        for path in self.install_binaries():
             status_ok &= (install_location / path).exists()
         return status_ok
 

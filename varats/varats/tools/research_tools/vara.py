@@ -161,8 +161,6 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ]
     })
 
-    INSTALL_BINARIES = ["bin/clang++", "bin/opt", "bin/phasar-llvm"]
-
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
         vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
@@ -367,6 +365,9 @@ class VaRA(ResearchTool[VaRACodeBase]):
                 lambda:
                 run_process_with_output(proc, log_without_linesep(print))
             )
+
+    def install_binaries(self) -> tp.List[str]:
+        return ["bin/clang++", "bin/opt", "bin/phasar-llvm"]
 
     def verify_install(self, install_location: Path) -> bool:
         """

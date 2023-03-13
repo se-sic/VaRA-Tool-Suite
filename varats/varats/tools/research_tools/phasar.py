@@ -93,8 +93,6 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         ]
     })
 
-    INSTALL_BINARIES = ["bin/myphasartool", "bin/phasar-llvm"]
-
     def __init__(self, base_dir: Path) -> None:
         super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
         vara_cfg()["phasar"]["source_dir"] = str(base_dir)
@@ -211,6 +209,9 @@ class Phasar(ResearchTool[PhasarCodeBase]):
                 lambda:
                 run_process_with_output(proc, log_without_linesep(print))
             )
+
+    def install_binaries(self) -> tp.List[str]:
+        return ["bin/myphasartool", "bin/phasar-llvm"]
 
     def verify_build(
         self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
