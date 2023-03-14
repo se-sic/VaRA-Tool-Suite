@@ -22,7 +22,6 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.project.project_util import get_local_project_git_path
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.click_param_types import (
@@ -30,10 +29,7 @@ from varats.ts_utils.click_param_types import (
     REQUIRE_MULTI_CASE_STUDY,
 )
 from varats.utils.config import load_configuration_map_for_case_study
-from varats.utils.git_util import FullCommitHash
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-from tests.test_utils import LoadRepositoryForTest
+from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
 ConfigsCoverageReportMapping = tp.NewType(
     "ConfigsCoverageReportMapping", tp.Dict[Configuration, CoverageReport]
@@ -293,8 +289,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
                     case_study.project_name + " !"
                 )
 
-            with LoadRepositoryForTest(project_name, revision):
-                base_dir = get_local_project_git_path(project_name)
+            with RepositoryAtCommit(project_name, revision) as base_dir:
                 for binary in binary_config_map:
                     config_report_map = binary_config_map[binary]
 

@@ -11,7 +11,6 @@ from tests.test_utils import (
     run_in_test_environment,
     UnitTestFixtures,
     TEST_INPUTS_DIR,
-    LoadRepositoryForTest,
 )
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
@@ -31,8 +30,8 @@ from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plots import PlotConfig
 from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
-from varats.project.project_util import get_local_project_git_path
 from varats.revision.revisions import get_processed_revisions_files
+from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.utils.settings import vara_cfg, save_config
 from varats.varats.experiments.vara.llvm_coverage_experiment import (
     GenerateCoverageExperiment,
@@ -324,7 +323,11 @@ class TestCodeRegion(unittest.TestCase):
         ) as tmp:
             cov_show_slow_color_txt = tmp.read()
 
-        with LoadRepositoryForTest("FeaturePerfCSCollection", "27f1708037"):
+        commit_hash = FullCommitHash("27f17080376e409860405c40744887d81d6b3f34")
+        with RepositoryAtCommit(
+            "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
+        ) as base_dir:
+            base_dir = base_dir.parent
             cov_show_slow_txt = cov_show_slow_txt.replace(
                 "/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/",
                 ""
@@ -334,7 +337,6 @@ class TestCodeRegion(unittest.TestCase):
                 ""
             )
 
-            base_dir = get_local_project_git_path("FeaturePerfCSCollection")
             self.assertEqual(cov_show_slow_txt, cov_show(slow_report, base_dir))
             color_state = colors.use_color
             try:
