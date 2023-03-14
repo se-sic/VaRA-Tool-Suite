@@ -52,7 +52,7 @@ def filter_report_paths_binary(
 ) -> tp.List[Path]:
     return list(
         filter(
-            lambda x: ReportFilename(x).binary_name == binary.name, report_files
+            lambda x: x.report_filename.binary_name == binary.name, report_files
         )
     )
 
@@ -277,7 +277,7 @@ class PhasarFeatureAnalysisTotalEvalTable(
                     LOG.warning(f"No report file given for binary {name}!")
                     continue
                 report = load_feature_analysis_report(
-                    report_files_for_binary[0]
+                    report_files_for_binary[0].full_path()
                 )
 
                 # ground truth
