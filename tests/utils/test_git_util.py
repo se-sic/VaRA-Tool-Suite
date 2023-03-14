@@ -4,7 +4,6 @@ from pathlib import Path
 
 from benchbuild.utils.revision_ranges import RevisionRange
 
-from tests.test_utils import LoadRepositoryForTest
 from varats.project.project_util import (
     get_local_project_git,
     get_local_project_git_path,

@@ -30,6 +30,7 @@ from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plots import PlotConfig
 from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
+from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.utils.settings import vara_cfg, save_config
@@ -323,11 +324,11 @@ class TestCodeRegion(unittest.TestCase):
         ) as tmp:
             cov_show_slow_color_txt = tmp.read()
 
+        initialize_projects()
         commit_hash = FullCommitHash("27f17080376e409860405c40744887d81d6b3f34")
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-            base_dir = base_dir.parent
             cov_show_slow_txt = cov_show_slow_txt.replace(
                 "/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/",
                 ""

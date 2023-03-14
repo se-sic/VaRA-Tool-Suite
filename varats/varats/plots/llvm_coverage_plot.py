@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import sys
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from itertools import filterfalse
-from pathlib import Path
 
 from more_itertools import powerset
 
