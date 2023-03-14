@@ -96,7 +96,7 @@ def __get_result_files_dict(
         report_file = report_filepath.report_filename
         if report_file.is_result_file(
         ) and report_file.report_shorthand == report_type.shorthand(
-        ) and experiment_type.file_belongs_to_experiment(report_file.filename):
+        ) and experiment_type.file_belongs_to_experiment(report_file):
             commit_hash = report_file.commit_hash
             result_files[commit_hash].append(report_filepath)
 
