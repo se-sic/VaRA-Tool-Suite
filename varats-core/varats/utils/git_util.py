@@ -6,6 +6,7 @@ import typing as tp
 from enum import Enum
 from itertools import chain
 from pathlib import Path
+from types import TracebackType
 
 import pygit2
 from benchbuild.utils.cmd import git, grep
@@ -1105,3 +1106,26 @@ def branch_has_upstream(
             branch_name + "@{upstream}"] | grep[upstream]
     ) & RETCODE
     return tp.cast(bool, exit_code == 0)
+
+
+class RepositoryAtCommit():
+    """Context manager to work with a repository at a specific revision, without
+    duplicating the repository."""
+
+    def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
+        self.__repo = pygit2.Repository(
+            get_local_project_git_path(project_name)
+        )
+        self.__initial_head = self.__repo.head
+        self.__revision = self.__repo.get(revision.hash)
+
+    def __enter__(self) -> Path:
+        self.__repo.checkout_tree(self.__revision)
+        return Path(self.__repo.path)
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        self.__repo.checkout(self.__initial_head)
