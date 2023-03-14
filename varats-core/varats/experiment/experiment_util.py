@@ -12,8 +12,6 @@ from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
 
-from plumbum import local
-
 if sys.version_info <= (3, 8):
     from typing_extensions import Protocol, runtime_checkable
 else:
@@ -373,7 +371,7 @@ class VersionExperiment(Experiment):  # type: ignore
         return cls.REPORT_SPEC
 
     @classmethod
-    def file_belongs_to_experiment(cls, file_name: str) -> bool:
+    def file_belongs_to_experiment(cls, file_name: ReportFilename) -> bool:
         """
         Checks if the file belongs to this experiment.
 
@@ -384,7 +382,7 @@ class VersionExperiment(Experiment):  # type: ignore
             True, if the file belongs to this experiment type
         """
         try:
-            other_short_hand = ReportFilename(file_name).experiment_shorthand
+            other_short_hand = file_name.experiment_shorthand
             return cls.shorthand() == other_short_hand
         except ValueError:
             return False

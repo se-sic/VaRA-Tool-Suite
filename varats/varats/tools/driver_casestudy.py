@@ -738,10 +738,10 @@ def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
             if not report_file.is_result_file():
                 continue
             if ctx.obj["experiment"] and not ctx.obj[
-                "experiment"].file_belongs_to_experiment(res_file.name):
+                "experiment"].file_belongs_to_experiment(report_file):
                 continue
             if ctx.obj["report"] and not ctx.obj[
-                "report"].is_correct_report_type(res_file.name):
+                "report"].is_correct_report_type(report_file):
                 continue
 
             commit_hash = report_file.commit_hash
@@ -775,10 +775,10 @@ def _remove_old_result_files(ctx: click.Context) -> None:
             if not report_file.is_result_file():
                 continue
             if ctx.obj["experiment"] and not ctx.obj[
-                "experiment"].file_belongs_to_experiment(opt_res_file.name):
+                "experiment"].file_belongs_to_experiment(report_file):
                 continue
             if ctx.obj["report"] and not ctx.obj[
-                "report"].is_correct_report_type(opt_res_file.name):
+                "report"].is_correct_report_type(report_file):
                 continue
 
             commit_hash = report_file.commit_hash
