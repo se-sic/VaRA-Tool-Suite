@@ -2,7 +2,6 @@
 import re
 import typing as tp
 from enum import Enum
-from pathlib import Path
 
 import pandas as pd
 
@@ -23,7 +22,7 @@ from varats.jupyterhelper.file import (
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -67,7 +66,7 @@ class BlameVerifierReportDatabase(
             return df_layout
 
         def create_data_frame_for_report(
-            report_path: Path
+            report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
             report_file_name_match = re.search(
@@ -123,7 +122,8 @@ class BlameVerifierReportDatabase(
                 index=[0]
                 # Add prefix of report name to head_commit to differentiate
                 # between reports with and without optimization
-            ), report.head_commit.hash + report_path.name.split("-", 1)[0], str(
+            ), report.head_commit.hash + \
+               report_path.report_filename.report_shorthand, str(
                 report_path.stat().st_mtime_ns
             )
 
@@ -160,9 +160,9 @@ class BlameVerifierReportDatabase(
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
-            create_dataframe_layout, create_data_frame_for_report, lambda path:
-            ReportFilename(path).commit_hash.hash + path.name.split("-", 1)[0],
-            lambda path: str(path.stat().st_mtime_ns),
+            create_dataframe_layout, create_data_frame_for_report,
+            lambda path: path.report_filename.commit_hash.hash + path.full_path(
+            ).name.split("-", 1)[0], lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
         return data_frame

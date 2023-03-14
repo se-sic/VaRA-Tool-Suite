@@ -37,7 +37,12 @@ from varats.provider.release.release_provider import (
     ReleaseProvider,
     ReleaseType,
 )
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilename,
+    ReportFilepath,
+)
 from varats.revision.revisions import (
     get_failed_revisions,
     get_processed_revisions,
@@ -673,7 +678,7 @@ def extend_with_bug_commits(
     cmap = get_commit_map(case_study.project_name, refspec='HEAD')
 
     def load_bugs_from_szz_report(
-        load_fun: tp.Callable[[Path], SZZReport]
+        load_fun: tp.Callable[[ReportFilepath], SZZReport]
     ) -> tp.Optional[tp.FrozenSet[RawBug]]:
         reports = get_processed_revisions_files(
             case_study.project_name, experiment_type, None

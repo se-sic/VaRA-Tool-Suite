@@ -15,7 +15,7 @@ class TestCSMetricsTable(unittest.TestCase):
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_one_case_study_latex_booktabs(self) -> None:
-        """"Tests the latex booktabs format for the cs overview table."""
+        """Tests the latex booktabs format for the cs overview table."""
         vara_cfg()["paper_config"]["current_config"] = "test_revision_lookup"
         initialize_projects()
         load_paper_config()
@@ -26,11 +26,11 @@ class TestCSMetricsTable(unittest.TestCase):
         ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
-            r"""\begin{tabular}{llrrrl}
+            r"""\begin{tabular}{llrrrrl}
 \toprule
-{} & {Domain} & {LOC} & {Commits} & {Authors} & {Revision} \\
+{} & {Domain} & {LOC (repo)} & {LOC (project)} & {Commits} & {Authors} & {Revision} \\
 \midrule
-brotli & Compression & 34639 & 848 & 40 & aaa4424d9b \\
+brotli & Compression & 34\,639 & 34\,639 & 848 & 40 & aaa4424d9b \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -38,7 +38,7 @@ brotli & Compression & 34639 & 848 & 40 & aaa4424d9b \\
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_multiple_case_studies_latex_booktabs(self) -> None:
-        """"Tests the latex booktabs format for the cs overview table."""
+        """Tests the latex booktabs format for the cs overview table."""
         vara_cfg()["paper_config"]["current_config"] = "test_artefacts_driver"
         initialize_projects()
         load_paper_config()
@@ -49,12 +49,12 @@ brotli & Compression & 34639 & 848 & 40 & aaa4424d9b \\
         ).tabulate(TableFormat.LATEX_BOOKTABS, False)
 
         self.assertEqual(
-            r"""\begin{tabular}{llrrrl}
+            r"""\begin{tabular}{llrrrrl}
 \toprule
-{} & {Domain} & {LOC} & {Commits} & {Authors} & {Revision} \\
+{} & {Domain} & {LOC (repo)} & {LOC (project)} & {Commits} & {Authors} & {Revision} \\
 \midrule
-gravity & Programming language & 22923 & 663 & 39 & 2c71dec8ad \\
-xz & Compression & 37021 & 1143 & 16 & c5c7ceb08a \\
+gravity & Programming language & 22\,923 & 22\,923 & 663 & 39 & 2c71dec8ad \\
+xz & Compression & 37\,021 & 37\,021 & 1\,143 & 16 & c5c7ceb08a \\
 \bottomrule
 \end{tabular}
 """, table_str

@@ -27,7 +27,7 @@ class Libzmq(VProject):
 
     NAME = 'libzmq'
     GROUP = 'cpp_projects'
-    DOMAIN = ProjectDomains.C_LIBRARY
+    DOMAIN = ProjectDomains.CPP_LIBRARY
 
     SOURCE = [
         PaperConfigSpecificGit(

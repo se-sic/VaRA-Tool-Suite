@@ -164,14 +164,8 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
                 str(self.install_location())
             )
 
-    def verify_install(self, install_location: Path) -> bool:
-        """
-        Verify if SZZUnleashed was correctly installed.
-
-        Returns:
-            True, if the tool was correctly installed
-        """
-        return (install_location / self.get_jar_name()).exists()
+    def get_install_binaries(self) -> tp.List[str]:
+        return [self.get_jar_name()]
 
     def verify_build(
         self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
