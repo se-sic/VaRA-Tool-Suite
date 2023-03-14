@@ -15,7 +15,7 @@ class PhasarBCStats():
 
         with open(path, "r", encoding="utf-8") as stats_file:
             for line in stats_file.readlines():
-                if line.startswith("> Instructions"):
+                if line.startswith("> LLVM IR instructions"):
                     self._num_instructions = int(line.split(":")[1])
 
     @property
@@ -63,9 +63,27 @@ class PhasarIterIDEStatsReport(
     _old_typestate: tp.Optional[TimeReportAggregate]
     _old_taint: tp.Optional[TimeReportAggregate]
     _old_lca: tp.Optional[TimeReportAggregate]
-    _new_typestate: tp.Optional[TimeReportAggregate]
-    _new_taint: tp.Optional[TimeReportAggregate]
-    _new_lca: tp.Optional[TimeReportAggregate]
+    _new_typestate_stack: tp.Optional[TimeReportAggregate]
+    _new_taint_stack: tp.Optional[TimeReportAggregate]
+    _new_lca_stack: tp.Optional[TimeReportAggregate]
+    _new_typestate_queue: tp.Optional[TimeReportAggregate]
+    _new_taint_queue: tp.Optional[TimeReportAggregate]
+    _new_lca_queue: tp.Optional[TimeReportAggregate]
+    _new_typestate_depth_prio: tp.Optional[TimeReportAggregate]
+    _new_taint_depth_prio: tp.Optional[TimeReportAggregate]
+    _new_lca_depth_prio: tp.Optional[TimeReportAggregate]
+    _new_typestate_depth_prio_rev: tp.Optional[TimeReportAggregate]
+    _new_taint_depth_prio_rev: tp.Optional[TimeReportAggregate]
+    _new_lca_depth_prio_rev: tp.Optional[TimeReportAggregate]
+    _new_typestate_size_prio: tp.Optional[TimeReportAggregate]
+    _new_taint_size_prio: tp.Optional[TimeReportAggregate]
+    _new_lca_size_prio: tp.Optional[TimeReportAggregate]
+    _new_typestate_size_prio_rev: tp.Optional[TimeReportAggregate]
+    _new_taint_size_prio_rev: tp.Optional[TimeReportAggregate]
+    _new_lca_size_prio_rev: tp.Optional[TimeReportAggregate]
+    _new_typestate_jf1: tp.Optional[TimeReportAggregate]
+    _new_taint_jf1: tp.Optional[TimeReportAggregate]
+    _new_lca_jf1: tp.Optional[TimeReportAggregate]
 
     def __init__(self, path: Path) -> None:
         self._bc_stats = None
@@ -75,9 +93,30 @@ class PhasarIterIDEStatsReport(
         self._old_typestate = None
         self._old_taint = None
         self._old_lca = None
-        self._new_typestate = None
-        self._new_taint = None
-        self._new_lca = None
+        # self._new_typestate = None
+        # self._new_taint = None
+        # self._new_lca = None
+        self._new_typestate_stack = None
+        self._new_taint_stack = None
+        self._new_lca_stack = None
+        self._new_typestate_queue = None
+        self._new_taint_queue = None
+        self._new_lca_queue = None
+        self._new_typestate_depth_prio = None
+        self._new_taint_depth_prio = None
+        self._new_lca_depth_prio = None
+        self._new_typestate_depth_prio_rev = None
+        self._new_taint_depth_prio_rev = None
+        self._new_lca_depth_prio_rev = None
+        self._new_typestate_size_prio = None
+        self._new_taint_size_prio = None
+        self._new_lca_size_prio = None
+        self._new_typestate_size_prio_rev = None
+        self._new_taint_size_prio_rev = None
+        self._new_lca_size_prio_rev = None
+        self._new_typestate_jf1 = None
+        self._new_taint_jf1 = None
+        self._new_lca_jf1 = None
 
         with TemporaryDirectory() as tmpdir:
             shutil.unpack_archive(path, tmpdir)
@@ -97,12 +136,52 @@ class PhasarIterIDEStatsReport(
                     self._old_taint = TimeReportAggregate(file)
                 elif file.name.startswith("old_lca"):
                     self._old_lca = TimeReportAggregate(file)
-                elif file.name.startswith("new_typestate"):
-                    self._new_typestate = TimeReportAggregate(file)
-                elif file.name.startswith("new_taint"):
-                    self._new_taint = TimeReportAggregate(file)
-                elif file.name.startswith("new_lca"):
-                    self._new_lca = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_stack"):
+                    self._new_typestate_stack = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_stack"):
+                    self._new_taint_stack = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_stack"):
+                    self._new_lca_stack = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_queue"):
+                    self._new_typestate_queue = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_queue"):
+                    self._new_taint_queue = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_queue"):
+                    self._new_lca_queue = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_size-prio"):
+                    self._new_typestate_size_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_size-prio"):
+                    self._new_taint_size_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_size-prio"):
+                    self._new_lca_size_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_size-prio-rev"):
+                    self._new_typestate_size_prio_rev = TimeReportAggregate(
+                        file
+                    )
+                elif file.name.startswith("new_taint_size-prio-rev"):
+                    self._new_taint_size_prio_rev = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_size-prio-rev"):
+                    self._new_lca_size_prio_rev = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_depth-prio"):
+                    self._new_typestate_depth_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_depth-prio"):
+                    self._new_taint_depth_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_depth-prio"):
+                    self._new_lca_depth_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_depth-prio-rev"):
+                    self._new_typestate_depth_prio_rev = TimeReportAggregate(
+                        file
+                    )
+                elif file.name.startswith("new_taint_depth-prio-rev"):
+                    self._new_taint_depth_prio_rev = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_depth-prio-rev"):
+                    self._new_lca_depth_prio_rev = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_jf1"):
+                    self._new_typestate_jf1 = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_jf1"):
+                    self._new_taint_jf1 = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_jf1"):
+                    self._new_lca_jf1 = TimeReportAggregate(file)
                 else:
                     print(f"Unknown file {file}!")
 
@@ -134,14 +213,99 @@ class PhasarIterIDEStatsReport(
     def old_lca(self) -> tp.Optional[TimeReportAggregate]:
         return self._old_lca
 
+    # convenience methods
     @property
     def new_typestate(self) -> tp.Optional[TimeReportAggregate]:
-        return self._new_typestate
+        return self._new_typestate_stack
 
     @property
     def new_taint(self) -> tp.Optional[TimeReportAggregate]:
-        return self._new_taint
+        return self._new_taint_stack
 
     @property
     def new_lca(self) -> tp.Optional[TimeReportAggregate]:
-        return self._new_lca
+        return self._new_lca_stack
+
+    @property
+    def new_typestate_stack(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_stack
+
+    @property
+    def new_taint_stack(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_stack
+
+    @property
+    def new_lca_stack(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_stack
+
+    @property
+    def new_typestate_queue(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_queue
+
+    @property
+    def new_taint_queue(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_queue
+
+    @property
+    def new_lca_queue(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_queue
+
+    @property
+    def new_typestate_size_prio(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_size_prio
+
+    @property
+    def new_taint_size_prio(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_size_prio
+
+    @property
+    def new_lca_size_prio(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_size_prio
+
+    @property
+    def new_typestate_size_prio_rev(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_size_prio_rev
+
+    @property
+    def new_taint_size_prio_rev(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_size_prio_rev
+
+    @property
+    def new_lca_size_prio_rev(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_size_prio_rev
+
+    @property
+    def new_typestate_depth_prio(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_depth_prio
+
+    @property
+    def new_taint_depth_prio(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_depth_prio
+
+    @property
+    def new_lca_depth_prio(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_depth_prio
+
+    @property
+    def new_typestate_depth_prio_rev(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_depth_prio_rev
+
+    @property
+    def new_taint_depth_prio_rev(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_depth_prio_rev
+
+    @property
+    def new_lca_depth_prio_rev(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_depth_prio_rev
+
+    @property
+    def new_typestate_jf1(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_jf1
+
+    @property
+    def new_taint_jf1(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_jf1
+
+    @property
+    def new_lca_jf1(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_jf1

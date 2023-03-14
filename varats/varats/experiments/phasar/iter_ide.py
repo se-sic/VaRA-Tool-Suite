@@ -148,7 +148,7 @@ class IterIDETimeOld(actions.ProjectStep):  # type: ignore
             return actions.StepResult.OK
 
         if ret_code != 0:
-            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}"
+            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
             touch(error_file)
             return actions.StepResult.ERROR
 
@@ -176,7 +176,7 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
-        tmp_dir /= f"new_{self.__analysis_type}"
+        tmp_dir /= f"new_{self.__analysis_type}_{self.__worklist_kind}"
         mkdir("-p", tmp_dir)
 
         phasar_params = [
@@ -191,7 +191,7 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
 
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
-        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__worklist_kind}_{self.__num}.txt"
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
         run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
         ret_code = run_cmd & RETCODE
@@ -200,7 +200,57 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
             return actions.StepResult.OK
 
         if ret_code != 0:
-            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__worklist_kind}_{self.__num}_err_{ret_code}"
+            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+            touch(error_file)
+            return actions.StepResult.ERROR
+
+        return actions.StepResult.OK
+
+
+class IterIDETimeNewJF1(actions.ProjectStep):  # type: ignore
+
+    NAME = "NewIDESolverJF1"
+    DESCRIPTION = "Analyse new IDESolver with alternative jump functions representation"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        tmp_dir /= f"new_{self.__analysis_type}_jf1"
+        mkdir("-p", tmp_dir)
+
+        phasar_params = [
+            "-D",
+            str(self.__analysis_type), "--jf1", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
+
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
+        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+
+        ret_code = run_cmd & RETCODE
+        if ret_code == 137:
+            print("Found OOM (new)")
+            return actions.StepResult.OK
+
+        if ret_code != 0:
+            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
             touch(error_file)
             return actions.StepResult.ERROR
 
@@ -374,6 +424,10 @@ class IDELinearConstantAnalysisExperiment(
                             project, rep, binary, analysis_type, worklist_kind
                         ) for analysis_type in _get_enabled_analyses()
                         for worklist_kind in _get_enabled_worklist_kinds()
+                        for rep in reps
+                    ], *[
+                        IterIDETimeNewJF1(project, rep, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
                         for rep in reps
                     ]
                 ]
