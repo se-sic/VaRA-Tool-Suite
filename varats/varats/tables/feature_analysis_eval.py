@@ -335,6 +335,28 @@ class PhasarFeatureAnalysisTotalEvalTable(
                           columns=col_header)
         return df
 
+    def table_file_name(self, table_format: TableFormat) -> str:
+        """
+        Get the file name this table; will be stored to when calling save.
+        Automatically deduces this tables' filetype from its format.
+
+        Returns:
+            the file name the table will be stored to
+        """
+        table_ident = ''
+        case_studies = self.table_kwargs['case_study']
+        for case_study in case_studies:
+            table_ident += \
+                f"{case_study.project_name}_{case_study.version}_"
+
+        sep_stages = ''
+        if self.supports_stage_separation(
+        ) and self.table_kwargs.get('sep_stages', None):
+            sep_stages = 'S'
+
+        filetype = self.format_filetypes.get(table_format, "txt")
+        return f"{table_ident}{self.name}{sep_stages}.{filetype}"
+
 
 class PhasarFeatureAnalysisTotalEvalTableGenerator(
     TableGenerator,

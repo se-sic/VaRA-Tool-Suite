@@ -147,14 +147,8 @@ class Table:
         """
         table_ident = ''
         if 'case_study' in self.table_kwargs:
-            case_studies = self.table_kwargs['case_study']
-            if not isinstance(case_studies, list):
-                table_ident = \
-                    f"{case_studies.project_name}_{case_studies.version}_"
-            else:
-                for case_study in case_studies:
-                    table_ident += \
-                        f"{case_study.project_name}_{case_study.version}_"
+            case_study: 'CaseStudy' = self.table_kwargs['case_study']
+            table_ident = f"{case_study.project_name}_{case_study.version}_"
         elif 'project' in self.table_kwargs:
             table_ident = f"{self.table_kwargs['project']}_"
 
