@@ -27,7 +27,7 @@ from varats.experiment.experiment_util import (
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
-from varats.report.report import ReportSpecification
+from varats.report.report import ReportSpecification, ReportFilename
 
 
 class BlameReportGeneration(actions.ProjectStep):  # type: ignore
@@ -146,6 +146,10 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
+
+    @classmethod
+    def file_belongs_to_experiment(cls, file_name: ReportFilename) -> bool:
+        return file_name.experiment_shorthand in ["BRE", "BRER", "BRECIF"]
 
 
 class BlameReportExperimentRegion(BlameReportExperiment, shorthand="BRER"):
