@@ -4,9 +4,9 @@ Driver module for `vara-container`.
 This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
+import getpass
 import itertools
 import logging
-import os
 import re
 import sys
 import typing as tp
@@ -15,9 +15,7 @@ from subprocess import PIPE
 
 import click
 import jinja2
-import yaml
 from benchbuild.utils.cmd import benchbuild, sbatch
-from benchbuild.utils.settings import ConfigLoader
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
@@ -205,7 +203,7 @@ def main(
 
 def __prepare_slurm_for_container() -> None:
     """Prepare the benchbuild slurm config for container use."""
-    node_dir = f"/tmp/{os.environ.get('USERNAME')}"
+    node_dir = f"/tmp/{getpass.getuser()}"
     template_path = Path(
         str(vara_cfg()["benchbuild_root"])
     ) / "slurm_container.sh.inc"

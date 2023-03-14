@@ -497,7 +497,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         Args:
             stage_builder: the builder object for the current container stage
         Returns:
-            a dictionary of environment variables as keys and lists of their values as values
+            a dictionary of environment variables and their values
         """
         container_vara_dir = stage_builder.varats_root / (
             "tools/VaRA_" + stage_builder.base.name
