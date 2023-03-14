@@ -210,19 +210,8 @@ class Phasar(ResearchTool[PhasarCodeBase]):
                 run_process_with_output(proc, log_without_linesep(print))
             )
 
-    def verify_install(self, install_location: Path) -> bool:
-        # pylint: disable=no-self-use
-        """
-        Verify if phasar was correctly installed.
-
-        Returns:
-            True, if the tool was correctly installed
-        """
-        status_ok = True
-        status_ok &= (install_location / "bin/myphasartool").exists()
-        status_ok &= (install_location / "bin/phasar-llvm").exists()
-
-        return status_ok
+    def get_install_binaries(self) -> tp.List[str]:
+        return ["bin/myphasartool", "bin/phasar-llvm"]
 
     def verify_build(
         self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
