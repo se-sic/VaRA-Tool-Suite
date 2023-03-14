@@ -10,7 +10,6 @@ from varats.project.project_util import (
     BinaryType,
 )
 from varats.projects.discover_projects import initialize_projects
-from varats.utils.git_commands import LoadRepository
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -28,6 +27,7 @@ from varats.utils.git_util import (
     RevisionBinaryMap,
     get_submodule_head,
     calc_code_churn_range,
+    RepositoryAtCommit,
 )
 
 
@@ -124,7 +124,7 @@ class TestGitInteractionHelpers(unittest.TestCase):
         """Check if correct submodule commit is retrieved."""
         repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
 
-        with LoadRepository("grep", repo_head.to_short_commit_hash()):
+        with RepositoryAtCommit("grep", repo_head.to_short_commit_hash()):
             submodule_head = get_submodule_head("grep", "gnulib", repo_head)
             self.assertEqual(
                 submodule_head,
@@ -135,7 +135,7 @@ class TestGitInteractionHelpers(unittest.TestCase):
         """Check if correct main repo commit is retrieved."""
         repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
 
-        with LoadRepository("grep", repo_head.to_short_commit_hash()):
+        with RepositoryAtCommit("grep", repo_head.to_short_commit_hash()):
             submodule_head = get_submodule_head("grep", "grep", repo_head)
             self.assertEqual(submodule_head, repo_head)
 
