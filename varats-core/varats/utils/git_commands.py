@@ -1,7 +1,6 @@
 """This module contains wrapper for basic git commands."""
 import typing as tp
 from pathlib import Path
-from types import TracebackType
 
 from benchbuild.utils.cmd import git
 
