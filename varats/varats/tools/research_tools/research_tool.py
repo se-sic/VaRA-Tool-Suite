@@ -519,7 +519,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
-    def install_binaries(self) -> tp.List[str]:
+    def get_install_binaries(self) -> tp.List[str]:
         """Returns a list of binaries to check when validating the
         installation."""
 
@@ -530,7 +530,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         Args:
             install_location: the installation directory to check
         """
-        for path in self.install_binaries():
+        for path in self.get_install_binaries():
             (install_location / path).unlink(True)
 
     def install_exists(self, install_location: Path) -> bool:
@@ -548,7 +548,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             True if the given directory contains a research tool installation
         """
         status_ok = True
-        for path in self.install_binaries():
+        for path in self.get_install_binaries():
             status_ok &= (install_location / path).exists()
         return status_ok
 

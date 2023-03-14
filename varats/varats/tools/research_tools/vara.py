@@ -366,7 +366,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
                 run_process_with_output(proc, log_without_linesep(print))
             )
 
-    def install_binaries(self) -> tp.List[str]:
+    def get_install_binaries(self) -> tp.List[str]:
         return ["bin/clang++", "bin/opt", "bin/phasar-llvm"]
 
     def verify_install(self, install_location: Path) -> bool:

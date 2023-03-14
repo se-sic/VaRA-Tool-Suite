@@ -164,7 +164,7 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
                 str(self.install_location())
             )
 
-    def install_binaries(self) -> tp.List[str]:
+    def get_install_binaries(self) -> tp.List[str]:
         return [self.get_jar_name()]
 
     def verify_build(
