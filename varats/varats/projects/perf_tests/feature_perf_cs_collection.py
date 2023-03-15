@@ -53,6 +53,17 @@ class FeaturePerfCSCollection(VProject):
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("MultiSharedMultipleRegions"),
                 label="MSMR-no-input"
+            ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SimpleFeatureInteraction"), "--enc", "--compress"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SimpleBusyLoop"), "--iterations", str(10**7),
+                "--count_to", str(5 * 10**3)
             )
         ]
     }
@@ -74,18 +85,17 @@ class FeaturePerfCSCollection(VProject):
             only_valid_in=RevisionRange("162db88346", "master")
         )
         binary_map.specify_binary(
-            "build/bin/SimpleSleepLoop",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "c77bca4c6888970fb721069c82455137943ccf49",
-                "27f17080376e409860405c40744887d81d6b3f34"
-            )
-        )
-        binary_map.specify_binary(
             "build/bin/SimpleBusyLoop",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            )
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleFeatureInteraction",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c051e44a973ee31b3baa571407694467a513ba68", "master"
             )
         )
         binary_map.specify_binary(

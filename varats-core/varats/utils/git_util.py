@@ -6,6 +6,7 @@ import typing as tp
 from enum import Enum
 from itertools import chain
 from pathlib import Path
+from types import TracebackType
 
 import numpy
 import pygit2
@@ -1108,6 +1109,7 @@ def branch_has_upstream(
     return tp.cast(bool, exit_code == 0)
 
 
+
 def calc_surviving_lines(repo: pygit2.Repository, revision) -> tp.Dict[str, int]:
     """
 
@@ -1142,3 +1144,27 @@ def calc_surviving_lines(repo: pygit2.Repository, revision) -> tp.Dict[str, int]
                         else:
                             lines_per_revision[last_change] = 1
     return lines_per_revision
+
+
+class RepositoryAtCommit():
+    """Context manager to work with a repository at a specific revision, without
+    duplicating the repository."""
+
+    def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
+        self.__repo = pygit2.Repository(
+            get_local_project_git_path(project_name)
+        )
+        self.__initial_head = self.__repo.head
+        self.__revision = self.__repo.get(revision.hash)
+
+    def __enter__(self) -> Path:
+        self.__repo.checkout_tree(self.__revision)
+        return Path(self.__repo.path).parent
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        self.__repo.checkout(self.__initial_head)
+

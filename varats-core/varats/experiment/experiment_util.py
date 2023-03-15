@@ -694,7 +694,7 @@ def get_current_config_id(project: VProject) -> tp.Optional[int]:
 
 def get_extra_config_options(project: VProject) -> tp.List[str]:
     """
-    Get extra program options that where specified in the particular
+    Get extra program options that were specified in the particular
     configuration of \a Project.
 
     Args:
