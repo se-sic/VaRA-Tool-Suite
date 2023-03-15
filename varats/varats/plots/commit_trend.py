@@ -66,11 +66,11 @@ class Trendlines(Plot, plot_name="survival_trendlines"):
             fontsize=self.plot_config.x_tick_size(),
             family='monospace'
         )
-        print(data)
         sns.lineplot(data=data, ax=axis)
         axis.set_xlim(xmin, xmax)
         plt.ticklabel_format(axis='x', useOffset=False)
         axis.tick_params(axis="x", labelrotation=90)
+        sns.move_legend(axis, "upper left", bbox_to_anchor=(1, 1))
 
 
 class TrendlinesPlotGenerator(

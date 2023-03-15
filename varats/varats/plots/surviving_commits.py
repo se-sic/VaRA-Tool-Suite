@@ -55,7 +55,7 @@ def get_lines_per_commit_long(
         return data_frame[
             data_frame["base_hash"].apply(lambda x: revisions.has_node(x) != 0)]
 
-    return data if filter_cs is None else cs_filter(data)
+    return cs_filter(data) if filter_cs is None else data
 
 
 def get_normalized_lines_per_commit_long(
@@ -63,7 +63,6 @@ def get_normalized_lines_per_commit_long(
 ) -> DataFrame:
     data = get_lines_per_commit_long(case_study, filter_cs)
     max_lines = data.drop(columns=["revision"]).groupby("base_hash").max()
-    print(data)
     data = data.apply(
         lambda x: [
             x['revision'], x['base_hash'],
@@ -118,7 +117,7 @@ def get_interactions_per_commit_long(case_study: CaseStudy, filter_cs=True):
         return data_frame[
             data_frame["base_hash"].apply(lambda x: revisions.has_node(x) != 0)]
 
-    return data if filter_cs is None else cs_filter(data)
+    return cs_filter(data) if filter_cs else data
 
 
 def get_normalized_interactions_per_commit_long(
