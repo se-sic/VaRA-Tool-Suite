@@ -179,6 +179,27 @@ def get_head_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
     )
 
 
+def get_parent_commit(
+    commit: CommitHash,
+    repo_folder: tp.Optional[Path] = None
+) -> FullCommitHash:
+    """
+    Get the parent of a given commit.
+
+    Args:
+        commit:      commit to get the parent for
+        repo_folder: where the git repository is located
+
+    Returns: parent commit hash
+    """
+    return FullCommitHash(
+        git(
+            __get_git_path_arg(repo_folder), "log", "--pretty=%P", "-1",
+            commit.hash
+        ).strip().split(" ")[0]
+    )
+
+
 def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
     """
     Get the initial commit of a repository, i.e., the first commit made.
@@ -233,12 +254,13 @@ def get_all_revisions_between(
     Returns a list of all revisions between two commits c_start and c_end (both
     inclusive), where c_start comes before c_end.
 
-    It is assumed that the current working directory is the git repository.
+    If ``repo_folder`` is not given, it is assumed that the current working
+    directory is the git repository.
 
     Args:
         c_start: first commit of the range
         c_end: last commit of the range
-        short: shorten revision hashes
+        hash_type: the type of commit hash to return
         repo_folder: where the git repository is located
     """
     result = [c_start]
@@ -678,6 +700,56 @@ def get_submodule_head(
         return FullCommitHash(match.group(1))
 
     raise AssertionError(f"Unknown submodule {submodule_name}")
+
+
+def get_submodule_updates(project_name: str,
+                          submodule_name: str) -> tp.List[FullCommitHash]:
+    """
+    Get all commits that update the given submodule.
+
+    Args:
+        project_name: the project to look at
+        submodule_name: the submodule to find upgrades for
+
+    Returns:
+        a list of submodule upgrading commits
+    """
+    main_repo = get_local_project_git_path(project_name)
+    submodule_log = git(
+        __get_git_path_arg(main_repo), "log", "--pretty=%H", "--",
+        submodule_name
+    )
+    return [FullCommitHash(c) for c in submodule_log.strip().split()]
+
+
+def get_submodule_update_commits(
+    project_name: str, submodule_name: str, update_commit: FullCommitHash
+) -> tp.List[FullCommitHash]:
+    """
+    Get all new submodule commits that were introduced by the given submodule
+    update.
+
+    Args:
+        project_name: the project to look at
+        submodule_name: the submodule that got upgraded
+        update_commit: the commit that upgraded the submodule
+
+    Returns:
+        a list of submodule commits
+    """
+    main_repo = get_local_project_git_path(project_name)
+    submodule_repo = get_local_project_git_path(project_name, submodule_name)
+    new_submodule_head = get_submodule_head(
+        project_name, submodule_name, update_commit
+    )
+    old_submodule_head = get_submodule_head(
+        project_name, submodule_name,
+        get_parent_commit(update_commit, main_repo)
+    )
+    return get_all_revisions_between(
+        old_submodule_head.hash, new_submodule_head.hash, FullCommitHash,
+        submodule_repo
+    )
 
 
 MappedCommitResultType = tp.TypeVar("MappedCommitResultType")

@@ -43,6 +43,7 @@ from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import (
     get_local_project_git_path,
     get_primary_project_source,
+    get_local_project_git_paths,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
@@ -71,6 +72,8 @@ from varats.utils.git_util import (
     is_commit_hash,
     get_commits_before_timestamp,
     ShortCommitHash,
+    get_submodule_updates,
+    get_parent_commit,
 )
 from varats.utils.settings import vara_cfg
 
@@ -368,6 +371,59 @@ def __gen_per_year(
         ctx.obj['case_study'], cmap, ctx.obj['merge_stage'],
         ctx.obj['ignore_blocked'], ctx.obj['git_path'], revs_per_year, separate
     )
+    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
+
+
+@__casestudy_gen.command("select_submodule-upgrades")
+@click.argument("submodules", type=str, nargs=-1)
+@click.option(
+    "--include-parents",
+    is_flag=True,
+    help="Include parents of upgrade commits, e.g., "
+    "for diffing submodule changes"
+)
+@click.option(
+    "--separate",
+    is_flag=True,
+    help="Separate submodules into different stages"
+)
+@click.pass_context
+def __gen_submodule_upgrades(
+    ctx: click.Context, submodules: tp.List[str], include_parents: bool,
+    separate: bool
+) -> None:
+    """
+    Add revisions that upgrade submodules.
+
+    SUBMODULES: the submodules to consider; leave empty for all submodules
+    """
+    project_name = ctx.obj['project']
+    case_study = ctx.obj['case_study']
+    cmap = get_commit_map(project_name, refspec='HEAD')
+    git_paths = get_local_project_git_paths(project_name)
+    project_git_path = git_paths[project_name]
+
+    if not submodules:
+        submodules = list(git_paths.keys())
+
+    for submodule_name in submodules:
+        commits = get_submodule_updates(project_name, submodule_name)
+        if include_parents:
+            commits += [get_parent_commit(r, project_git_path) for r in commits]
+
+        stage = ctx.obj['merge_stage']
+        if separate:
+            submodule_stage = case_study.get_stage_index_by_name(submodule_name)
+            if not submodule_stage:
+                submodule_stage = case_study.num_stages
+                case_study.insert_empty_stage(submodule_stage)
+                case_study.name_stage(
+                    submodule_stage, f"{submodule_name}_upgrades"
+                )
+            stage = submodule_stage
+
+        revisions = [c.hash for c in commits]
+        extend_with_extra_revs(ctx.obj['case_study'], cmap, revisions, stage)
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
