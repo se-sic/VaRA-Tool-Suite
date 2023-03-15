@@ -194,6 +194,7 @@ def build(
     if container:
         _build_in_container(tool, container, build_type, install_prefix)
     else:
+        tool.invalidate_install(__get_install_prefix(tool, install_prefix))
         tool.build(
             build_type, __get_install_prefix(tool, install_prefix),
             build_folder_suffix

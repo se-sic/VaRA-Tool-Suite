@@ -179,11 +179,13 @@ def create_multi_experiment_type_choice(
     """
     initialize_experiments()
     value_dict = {
-        k: [v]
+        k: [v]  # make value a list to be consistent with entry for 'all'
         for k, v in ExperimentRegistry.experiments.items()
         if not __is_experiment_excluded(k)
     }
-    value_dict["all"] = list(value_dict.values())
+    value_dict["all"] = [
+        experiment for value in value_dict.values() for experiment in value
+    ]
     return TypedMultiChoice(value_dict)
 
 
