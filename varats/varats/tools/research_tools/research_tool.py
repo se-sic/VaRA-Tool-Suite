@@ -525,6 +525,39 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
+    def get_install_binaries(self) -> tp.List[str]:
+        """Returns a list of binaries to check when validating the
+        installation."""
+
+    def invalidate_install(self, install_location: Path) -> None:
+        """
+        Delete Binaries which are checked to validate the installation.
+
+        Args:
+            install_location: the installation directory to check
+        """
+        for path in self.get_install_binaries():
+            (install_location / path).unlink(True)
+
+    def install_exists(self, install_location: Path) -> bool:
+        """
+        Check whether a research tool installation exists at the given path.
+
+        In contrast to :func:`verify_install()`, this does not try to execute
+        any binaries. This is useful if the VaRA installation is intended for
+        a different environment, e.g., in a container.
+
+        Args:
+            install_location: the installation directory to check
+
+        Returns:
+            True if the given directory contains a research tool installation
+        """
+        status_ok = True
+        for path in self.get_install_binaries():
+            status_ok &= (install_location / path).exists()
+        return status_ok
+
     def verify_install(self, install_location: Path) -> bool:
         """
         Verify if the research tool was correctly installed.
@@ -532,6 +565,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         Returns:
             True, if the tool was correctly installed
         """
+        return self.install_exists(install_location)
 
     @abc.abstractmethod
     def verify_build(
