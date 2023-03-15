@@ -4,8 +4,9 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
-from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from varats.paper.paper_config import get_paper_config, load_paper_config
+from varats.paper_mgmt.artefacts import load_artefacts
 from varats.plot.plots import PlotArtefact
 from varats.tools import driver_plot
 from varats.utils.settings import vara_cfg, save_config
@@ -15,7 +16,7 @@ class TestDriverPlot(unittest.TestCase):
     """Tests for the driver_plot module."""
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_plot(self):
         """Test whether `vara-plot` generates a plot."""
@@ -28,8 +29,10 @@ class TestDriverPlot(unittest.TestCase):
         # vara-plot
         runner = CliRunner()
         result = runner.invoke(
-            driver_plot.main,
-            ["--plot-dir=foo", "pc-overview-plot", "--report-type=EmptyReport"]
+            driver_plot.main, [
+                "--plot-dir=foo", "pc-overview-plot",
+                "--experiment-type=JustCompile"
+            ]
         )
 
         self.assertEqual(0, result.exit_code, result.exception)
@@ -37,7 +40,7 @@ class TestDriverPlot(unittest.TestCase):
             (plot_base_dir / "foo" / "paper_config_overview_plot.svg").exists()
         )
 
-    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_store_artefact(self):
         """Test whether `vara-plot` can store artefacts."""
         # setup config
@@ -52,7 +55,7 @@ class TestDriverPlot(unittest.TestCase):
         result = runner.invoke(
             driver_plot.main, [
                 "--save-artefact=PC Overview", "--plot-dir=foo",
-                "pc-overview-plot", "--report-type=EmptyReport"
+                "pc-overview-plot", "--experiment-type=JustCompile"
             ]
         )
 
@@ -61,7 +64,7 @@ class TestDriverPlot(unittest.TestCase):
 
         # load new artefact file
         load_paper_config()
-        artefacts = list(get_paper_config().artefacts)
+        artefacts = list(load_artefacts(get_paper_config()).artefacts)
         self.assertEqual(1, len(artefacts))
 
         artefact = artefacts[0]

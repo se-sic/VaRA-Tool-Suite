@@ -43,10 +43,7 @@ The data for plots should be retrieved using our :ref:`data storage abstraction<
 If your plot uses a plotting framework that is not based on pyplot, you also need to override the functions :func:`~varats.plot.plot.Plot.save()` and :func:`~varats.plot.plot.Plot.show()` so that they work for the specific plotting framework.
 In some cases, it might be necessary to also override the function :func:`~varats.plot.plot.Plot.plot_file_name()` to alter how the plot's file name is generated.
 
-For the plot generator, two things need to be implemented: the constructor and the :func:`~varats.plot.plots.PlotGenerator.generate()` method.
-The constructor should extract and type-check all arguments from the **plot-specific** options that are required by the used plot classes.
-The :func:`~varats.plot.plot_utils.check_required_args` annotation can be used to easily check that all required arguments are available from ``kwargs``.
-Constructors of the plot classes should avoid ``kwargs`` and instead use normal parameters.
+For the plot generator, you need to implement the method :func:`~varats.plot.plots.PlotGenerator.generate()`.
 The generator's generate function must return one or more instances of plot classes that should be generated.
 There is no restriction to what plots can be instantiated, but each generator should typically restrict to generating instances of a single plot type.
 

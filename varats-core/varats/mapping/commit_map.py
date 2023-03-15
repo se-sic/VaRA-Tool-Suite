@@ -1,5 +1,4 @@
 """Commit map module."""
-
 import logging
 import typing as tp
 from collections.abc import ItemsView
@@ -29,11 +28,70 @@ class AmbiguousCommitHash(Exception):
 class CommitMap():
     """Provides a mapping from commit hash to additional information."""
 
-    def __init__(self, stream: tp.Iterable[str]) -> None:
-        self.__hash_to_id: CharTrie = CharTrie()
-        for line in stream:
-            slices = line.strip().split(', ')
-            self.__hash_to_id[slices[1]] = int(slices[0])
+    def __init__(
+        self,
+        git_path: Path,
+        end: str = "HEAD",
+        start: tp.Optional[str] = None,
+        refspec: str = "HEAD"
+    ) -> None:
+        self.git_path = git_path
+        self.end = end
+        self.start = start
+        self.refspec = refspec
+        self._hash_to_id = None
+        self._hash_to_id_master = None
+
+    @property
+    def __hash_to_id(self) -> CharTrie:
+        if not self._hash_to_id:
+            self._hash_to_id = self.generate_hash_to_id()
+        return self._hash_to_id
+
+    @property
+    def __hash_to_id_master(self) -> CharTrie:
+        if not self._hash_to_id_master:
+            self._hash_to_id_master = self.generate_hash_to_id(master=True)
+        return self._hash_to_id_master
+
+    def generate_hash_to_id(self, master: bool = False) -> CharTrie:
+        search_range = ""
+        if self.start is not None:
+            search_range += self.start + ".."
+        search_range += self.end
+
+        with local.cwd(self.git_path):
+            old_head = get_current_branch()
+            git("checkout", self.refspec)
+            full_out = git("--no-pager", "log", "--all", "--pretty=format:'%H'")
+            if master:
+                wanted_out = git(
+                    "--no-pager", "log", "--pretty=format:'%H'", search_range
+                )
+            else:
+                wanted_out = git(
+                    "--no-pager", "log", "--all", "--pretty=format:'%H'",
+                    search_range
+                )
+
+            def format_stream() -> tp.Generator[str, None, None]:
+                wanted_cm = set()
+                for line in wanted_out.split('\n'):
+                    wanted_cm.add(line[1:-1])
+
+                for number, line in enumerate(reversed(full_out.split('\n'))):
+                    line = line[1:-1]
+                    if line in wanted_cm:
+                        yield f"{number}, {line}\n"
+
+            hash_to_id: CharTrie = CharTrie()
+            for line in format_stream():
+                slices = line.strip().split(', ')
+                hash_to_id[slices[1]] = int(slices[0])
+
+            git("checkout", old_head)
+
+            return hash_to_id
 
     def convert_to_full_or_warn(
         self, short_commit: ShortCommitHash
@@ -137,85 +195,19 @@ class CommitMap():
         """Get an iterator over the mapping items."""
         return ItemsView(self.__hash_to_id)
 
-    def write_to_file(self, target_file: tp.TextIO) -> None:
-        """
-        Write commit map to a file.
-
-        Args:
-            target_file: needs to be a writable stream, i.e., support .write()
-        """
-        for item in self.__hash_to_id.items():
-            target_file.write("{}, {}\n".format(item[1], item[0]))
+    def mapping_items_master(self) -> tp.ItemsView[str, int]:
+        """Get an iterator over the mapping items."""
+        return ItemsView(self.__hash_to_id_master)
 
     def __str__(self) -> str:
         return str(self.__hash_to_id)
 
 
-def generate_commit_map(
-    path: Path,
-    end: str = "HEAD",
-    start: tp.Optional[str] = None,
-    refspec: str = "HEAD"
-) -> CommitMap:
-    """
-    Generate a commit map for a repository including the commits.
-
-    Range of commits that get included in the map: `]start..end]`
-
-    Args:
-        path: to the repository
-        end: last commit that should be included
-        start: parent of the first commit that should be included
-        refspec: that should be checked out
-
-    Returns: initalized ``CommitMap``
-    """
-    search_range = ""
-    if start is not None:
-        search_range += start + ".."
-    search_range += end
-
-    with local.cwd(path):
-        old_head = get_current_branch()
-        git("checkout", refspec)
-        full_out = git("--no-pager", "log", "--pretty=format:'%H'")
-        wanted_out = git(
-            "--no-pager", "log", "--pretty=format:'%H'", search_range
-        )
-
-        def format_stream() -> tp.Generator[str, None, None]:
-            wanted_cm = set()
-            for line in wanted_out.split('\n'):
-                wanted_cm.add(line[1:-1])
-
-            for number, line in enumerate(reversed(full_out.split('\n'))):
-                line = line[1:-1]
-                if line in wanted_cm:
-                    yield "{}, {}\n".format(number, line)
-
-        git("checkout", old_head)
-        return CommitMap(format_stream())
-
-
-def store_commit_map(cmap: CommitMap, output_file_path: str) -> None:
-    """Store commit map to file."""
-    mkdir("-p", Path(output_file_path).parent)
-
-    with open(output_file_path, "w") as c_map_file:
-        cmap.write_to_file(c_map_file)
-
-
-def load_commit_map_from_path(cmap_path: Path) -> CommitMap:
-    """Load a commit map from a given `.cmap` file path."""
-    with open(cmap_path, "r") as c_map_file:
-        return CommitMap(c_map_file.readlines())
-
-
 def get_commit_map(
     project_name: str,
-    cmap_path: tp.Optional[Path] = None,
     end: str = "HEAD",
-    start: tp.Optional[str] = None
+    start: tp.Optional[str] = None,
+    refspec: tp.Optional[str] = None,
 ) -> CommitMap:
     """
     Get a commit map for a project.
@@ -224,52 +216,17 @@ def get_commit_map(
 
     Args:
         project_name: name of the project
-        cmap_path: path to a existing commit map file
         end: last commit that should be included in the map
         start: commit before the first commit that should be included in the map
+        refspec: that should be checked out
 
     Returns: a bidirectional commit map from commits to time IDs
     """
-    if cmap_path is None:
-        project_git_path = get_local_project_git_path(project_name)
-        primary_source = get_primary_project_source(project_name)
+    project_git_path = get_local_project_git_path(project_name)
+    primary_source = get_primary_project_source(project_name)
+    if refspec is None and hasattr(primary_source, "refspec"):
+        refspec = primary_source.refspec
+    elif refspec is None:
         refspec = "HEAD"
-        if hasattr(primary_source, "refspec"):
-            refspec = primary_source.refspec
 
-        return generate_commit_map(project_git_path, end, start, refspec)
-
-    return load_commit_map_from_path(cmap_path)
-
-
-def create_lazy_commit_map_loader(
-    project_name: str,
-    cmap_path: tp.Optional[Path] = None,
-    end: str = "HEAD",
-    start: tp.Optional[str] = None
-) -> tp.Callable[[], CommitMap]:
-    """
-    Create a generator function that lazy loads a CommitMap.
-
-    Range of commits that get included in the map: `]start..end]`
-
-    Args:
-        project_name: name of the project
-        cmap_path: path to a existing commit map file
-        end: last commit that should be included in the map
-        start: commit before the first commit that should be included in the map
-
-    Returns: a callable that creates a commit map on demand when called
-    """
-    lazy_cached_cmap = None
-
-    def get_cmap_lazy() -> CommitMap:
-        nonlocal lazy_cached_cmap
-        if lazy_cached_cmap is None:
-            lazy_cached_cmap = get_commit_map(
-                project_name, cmap_path, end, start
-            )
-
-        return lazy_cached_cmap
-
-    return get_cmap_lazy
+    return CommitMap(project_git_path, end, start, refspec)

@@ -69,14 +69,10 @@ class CSEntry():
         )
 
     def __str__(self) -> str:
-        return "({commit_id}: #{commit_hash})"\
-            .format(commit_hash=self.commit_hash.hash,
-                    commit_id=self.commit_id)
+        return f"({self.commit_id}: #{self.commit_hash.hash})"
 
     def __repr__(self) -> str:
-        return "({commit_id}: #{commit_hash})"\
-            .format(commit_hash=self.commit_hash.hash,
-                    commit_id=self.commit_id)
+        return f"({self.commit_id}: #{self.commit_hash.hash})"
 
 
 class CSStage():
@@ -336,6 +332,17 @@ class CaseStudy():
             return False
         return self.__stages[num_stage].has_revision(revision)
 
+    def has_revision_configs_specified(self, revision: CommitHash) -> bool:
+        """
+        Checks whether a revision specifies different configurations.
+
+        Args:
+            revision: i.e., a commit hash registed in this case study
+
+        Returns: True, if configurations have been specified for this revision
+        """
+        return bool(self.get_config_ids_for_revision(revision))
+
     def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
@@ -349,9 +356,7 @@ class CaseStudy():
         for stage in self.__stages:
             config_ids += stage.get_config_ids_for_revision(revision)
 
-        if ConfigurationMap.DUMMY_CONFIG_ID in config_ids and len(
-            config_ids
-        ) > 1:
+        if ConfigurationMap.DUMMY_CONFIG_ID in config_ids:
             config_ids.remove(ConfigurationMap.DUMMY_CONFIG_ID)
 
         return config_ids
@@ -371,7 +376,14 @@ class CaseStudy():
         if self.num_stages <= num_stage:
             return []
 
-        return self.__stages[num_stage].get_config_ids_for_revision(revision)
+        config_ids = self.__stages[num_stage].get_config_ids_for_revision(
+            revision
+        )
+
+        while ConfigurationMap.DUMMY_CONFIG_ID in config_ids:
+            config_ids.remove(ConfigurationMap.DUMMY_CONFIG_ID)
+
+        return config_ids
 
     def shift_stage(self, from_index: int, offset: int) -> None:
         """
@@ -583,9 +595,7 @@ def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:
                              or a direct path to a `.case_study` file
     """
     if case_study_location.suffix != '.case_study':
-        file_name = "{project_name}_{version}.case_study".format(
-            project_name=case_study.project_name, version=case_study.version
-        )
+        file_name = f"{case_study.project_name}_{case_study.version}.case_study"
         case_study_location /= file_name
 
     __store_case_study_to_file(case_study, case_study_location)

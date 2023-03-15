@@ -8,7 +8,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.path.utils import delete
 
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -30,7 +30,7 @@ class Doxygen(VProject):
 
     SOURCE = [
         block_revisions([
-            # TODO: se-passau/VaRA#536
+            # TODO: se-sic/VaRA#536
             GoodBadSubgraph(["a6238a4898e20422fe6ef03fce4891c5749b1553"],
                             ["cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb"],
                             "Needs flex <= 2.5.4 and >= 2.5.33"),

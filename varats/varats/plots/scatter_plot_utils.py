@@ -8,12 +8,12 @@ from matplotlib import pyplot as plt
 
 
 def multivariate_grid(
-    x_col: str,
-    y_col: str,
-    hue: str,
     data: pd.DataFrame,
+    x: str,
+    y: str,
+    hue: str,
     global_kde: bool = True,
-    scatter_alpha: float = .5
+    **kwargs: tp.Any
 ) -> sns.JointGrid:
     """
     Make a seaborn JointPlot with additional global KDE plots.
@@ -21,65 +21,69 @@ def multivariate_grid(
     Code adapted from https://stackoverflow.com/a/55165689.
 
     Args:
-        x_col: x variable name
-        y_col: y variable name
-        hue: hue variable name
         data: dataframe with the plot data
+        x: x variable name
+        y: y variable name
+        hue: hue variable name
         global_kde: whether to include a kde for the sum of all data
-        scatter_alpha: alpha value for the scatter plot
     """
-
-    def colored_scatter(
-        x_data: pd.Series,
-        y_data: pd.Series,
-        color: tp.Optional[str] = None
-    ) -> tp.Callable[[tp.Any, tp.Any], None]:
-
-        def scatter(*args: tp.Any, **kwargs: tp.Any) -> None:
-            kwargs["x"] = x_data
-            kwargs["y"] = y_data
-            if color is not None:
-                kwargs["c"] = color
-            kwargs["alpha"] = scatter_alpha
-            kwargs["s"] = 75
-            ax = sns.scatterplot(*args, **kwargs)
-            ax.xaxis.label.set_size(20)
-            ax.yaxis.label.set_size(20)
-            ax.tick_params(labelsize=15)
-
-        return scatter
-
-    min_x = data[x_col].min()
-    max_x = data[x_col].max()
-    range_x = max_x - min_x
-    min_y = data[y_col].min()
-    max_y = data[y_col].max()
-    range_y = max_y - min_y
+    min_x = data[x].min()
+    max_x = data[x].max()
+    range_x = max(1, max_x - min_x)
+    mid_x = (min_x + max_x) / 2.0
+    min_y = data[y].min()
+    max_y = data[y].max()
+    range_y = max(1, max_y - min_y)
+    mid_y = (min_y + max_y) / 2.0
 
     grid = sns.JointGrid(
-        x=x_col,
-        y=y_col,
+        x=x,
+        y=y,
         data=data,
-        xlim=(min_x - 0.05 * range_x, max_x + 0.05 * range_x),
-        ylim=(min_y - 0.05 * range_y, max_y + 0.05 * range_y)
+        hue=hue,
+        xlim=(mid_x - 0.55 * range_x, mid_x + 0.55 * range_x),
+        ylim=(mid_y - 0.55 * range_y, mid_y + 0.55 * range_y)
     )
-    color = None
+
     legends = []
     grouped_data = data.groupby(hue)
     for name, df_group in grouped_data:
         legends.append(name)
-        grid.plot_joint(
-            colored_scatter(df_group[x_col], df_group[y_col], color)
+        ax = sns.scatterplot(
+            data=df_group, x=x, y=y, ax=grid.ax_joint, **kwargs
+        )
+        ax.xaxis.label.set_size(25)
+        ax.yaxis.label.set_size(25)
+        ax.tick_params(labelsize=15)
+        sns.kdeplot(
+            data=df_group,
+            x=x,
+            ax=grid.ax_marg_x,
+            fill=True,
+            warn_singular=False
         )
         sns.kdeplot(
-            x=df_group[x_col].values, ax=grid.ax_marg_x, color=color, fill=True
-        )
-        sns.kdeplot(
-            y=df_group[y_col].values, ax=grid.ax_marg_y, color=color, fill=True
+            data=df_group,
+            y=y,
+            ax=grid.ax_marg_y,
+            fill=True,
+            warn_singular=False
         )
     if global_kde:
-        sns.kdeplot(x=data[x_col].values, ax=grid.ax_marg_x, color='grey')
-        sns.kdeplot(y=data[y_col].values, ax=grid.ax_marg_y, color='grey')
+        sns.kdeplot(
+            data=data,
+            x=x,
+            ax=grid.ax_marg_x,
+            color='grey',
+            warn_singular=False
+        )
+        sns.kdeplot(
+            data=data,
+            y=y,
+            ax=grid.ax_marg_y,
+            color='grey',
+            warn_singular=False
+        )
     if len(grouped_data) > 1:
         plt.legend(legends)
 

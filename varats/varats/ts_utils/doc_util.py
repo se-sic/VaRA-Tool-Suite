@@ -7,6 +7,8 @@ import pandas
 import tabulate as tb
 
 from varats.project.project_util import get_loaded_vara_projects
+from varats.provider.feature.feature_model_provider import FeatureModelProvider
+from varats.tools.research_tools.vara import VaRA
 
 
 def _strip_python_class_decorations(raw_class_string: str) -> str:
@@ -45,6 +47,26 @@ def generate_project_overview_table_file(output_file: Path) -> None:
         inc_file.write(generate_project_overview_table())
 
 
+def construct_feature_model_link(project_type: tp.Type[bb.Project]) -> str:
+    """
+    Construct a link to the feature-model folder of our online feature model
+    collection.
+
+    Args:
+        project_type: type of the project to link the feature model for
+    """
+    fm_provider = FeatureModelProvider.get_provider_for_project(project_type)
+    feature_model = fm_provider.get_feature_model_path("currently_not_needed")
+    fm_doc_link = ""
+
+    if feature_model:
+        sanitized_repo = FeatureModelProvider.fm_repository.replace('.git', '')
+        fm_sub_path = feature_model.parent.name
+        fm_doc_link = f"`Model <{sanitized_repo}/tree/master/{fm_sub_path}>`_"
+
+    return fm_doc_link
+
+
 def generate_project_overview_table() -> str:
     """
     Generates an overview table that shows all project information for vara
@@ -53,15 +75,25 @@ def generate_project_overview_table() -> str:
     Returns: overview table
     """
 
-    df = pandas.DataFrame(columns=["Project", "Group", "Domain", "Main Source"])
+    df = pandas.DataFrame(
+        columns=["Project", "Group", "Domain", "FeatureModel", "Main Source"]
+    )
 
     for project_type in get_loaded_vara_projects():
+
         df = df.append(
             pandas.DataFrame({
-                "Project": _insert_class_reference_to_project(project_type),
-                "Group": project_type.GROUP,
-                "Domain": project_type.DOMAIN,
-                "Main Source": project_type.SOURCE[0].remote
+                "Project":
+                    _insert_class_reference_to_project(project_type),
+                "Group":
+                    project_type.GROUP,
+                "Domain":
+                    project_type.DOMAIN,
+                "FeatureModel":
+                    construct_feature_model_link(project_type),
+                "Main Source":
+                    project_type.SOURCE[0].remote
+                    if project_type.SOURCE else None
             },
                              index=[0]),
             ignore_index=True
@@ -104,3 +136,23 @@ def generate_project_groups_autoclass_directives(project_group: str) -> str:
             f"{_strip_python_class_decorations(str(project_type))}\n"
 
     return autoclass_refs_for_group
+
+
+def generate_vara_install_requirements(output_folder: Path) -> None:
+    """Generates dependency install commands for vara."""
+    with open(output_folder / "vara_install_requirements.inc", "w") as req_file:
+        vara_deps = VaRA.get_dependencies()
+        for distro in vara_deps.distros:
+            distro_name = str(distro)
+            if distro_name == "debian":
+                distro_name += "/ubuntu"
+
+            req_file.write(
+                f"""For {distro_name}:
+
+.. code-block:: console
+
+    sudo {vara_deps.get_install_command(distro)}
+
+"""
+            )

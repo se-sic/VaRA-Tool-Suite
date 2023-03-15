@@ -10,7 +10,7 @@ from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git, mkdir, cp
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_util import copy_renamed_git_to_dest
 
 
@@ -22,7 +22,8 @@ class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore
         remote="https://github.com/se-sic/vara-test-repos",
         local="vara_test_repos",
         refspec="origin/HEAD",
-        limit=1
+        shallow=False,
+        limit=None
     )
 
     def fetch(self) -> pb.LocalPath:
@@ -58,7 +59,8 @@ class VaraTestRepoSource(PaperConfigSpecificGit):
         remote="https://github.com/se-sic/vara-test-repos",
         local="vara_test_repos",
         refspec="origin/HEAD",
-        limit=1
+        shallow=False,
+        limit=None
     )
 
     def fetch(self) -> pb.LocalPath:

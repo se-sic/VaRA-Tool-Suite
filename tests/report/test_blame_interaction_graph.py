@@ -4,17 +4,20 @@ import unittest
 
 import pytest
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
+from tests.test_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     create_file_based_interaction_graph,
     get_author_data,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
+from varats.paper.paper_config import load_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.paper_mgmt.paper_config import load_paper_config, get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.settings import vara_cfg
 
@@ -27,7 +30,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         initialize_projects()
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_blame_interaction_graph(self) -> None:
         """Test whether blame interaction graphs are created correctly."""
@@ -35,9 +38,12 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         load_paper_config()
 
         revision = newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies("xz")[0], BlameReport
+            get_paper_config().get_case_studies("xz")[0], BlameReportExperiment
         )
-        blame_interaction_graph = create_blame_interaction_graph("xz", revision)
+        assert revision
+        blame_interaction_graph = create_blame_interaction_graph(
+            "xz", revision, BlameReportExperiment
+        )
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")
 
@@ -55,7 +61,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
 
     @pytest.mark.slow
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_file_based_interaction_graph(self) -> None:
         """Test whether file-based interaction graphs are created correctly."""
@@ -63,8 +69,9 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         load_paper_config()
 
         revision = newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies("xz")[0], BlameReport
+            get_paper_config().get_case_studies("xz")[0], BlameReportExperiment
         )
+        assert revision
         blame_interaction_graph = create_file_based_interaction_graph(
             "xz", revision
         )
@@ -84,7 +91,7 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         self.assertEqual(509, len(caig.edges))
 
     @run_in_test_environment(
-        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_author_data(self) -> None:
         """Check whether author data is retrieved correctly from the author
@@ -93,9 +100,12 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         load_paper_config()
 
         revision = newest_processed_revision_for_case_study(
-            get_paper_config().get_case_studies("xz")[0], BlameReport
+            get_paper_config().get_case_studies("xz")[0], BlameReportExperiment
         )
-        blame_interaction_graph = create_blame_interaction_graph("xz", revision)
+        assert revision
+        blame_interaction_graph = create_blame_interaction_graph(
+            "xz", revision, BlameReportExperiment
+        )
 
         self.assertEqual(blame_interaction_graph.project_name, "xz")
 

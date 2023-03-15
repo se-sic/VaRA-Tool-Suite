@@ -180,7 +180,11 @@ def prepare_slurm(
     click.echo("Preparing slurm script template.")
     __set_research_tool(tool)
     __render_slurm_script_template(
-        template_path, [repr(vara_cfg()["container"]["research_tool"])]
+        template_path, [
+            repr(vara_cfg()["paper_config"]["folder"]),
+            repr(vara_cfg()["paper_config"]["current_config"]),
+            repr(vara_cfg()["container"]["research_tool"])
+        ]
     )
 
     click.echo("Building base images. This could take a while...")
@@ -188,8 +192,7 @@ def prepare_slurm(
     click.echo("Done.")
 
     click.echo(
-        "Run `benchbuild slurm -E <report_type> <project> -- "
-        "container run --import` inside the `benchbuild` directory "
+        "Run `vara-run --container --slurm -E <experiment> <project> "
         "to generate a slurm script."
     )
 

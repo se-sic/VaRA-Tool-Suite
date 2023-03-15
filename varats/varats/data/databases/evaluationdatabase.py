@@ -26,16 +26,18 @@ class EvaluationDatabase(abc.ABC):
     """
 
     CACHE_ID: str
-    COLUMNS = ["revision", "time_id"]
+    COLUMN_TYPES = {"revision": 'str', "time_id": 'int32'}
+    COLUMNS: tp.List[str]
 
     @classmethod
     def __init_subclass__(
-        cls, *args: tp.Any, cache_id: str, columns: tp.List[str],
+        cls, *args: tp.Any, cache_id: str, column_types: tp.Dict[str, str],
         **kwargs: tp.Any
     ) -> None:
         super().__init_subclass__(*args, **kwargs)
         cls.CACHE_ID = cache_id
-        cls.COLUMNS = cls.COLUMNS + columns
+        cls.COLUMN_TYPES = {**cls.COLUMN_TYPES, **column_types}
+        cls.COLUMNS = list(cls.COLUMN_TYPES.keys())
 
     @classmethod
     @abc.abstractmethod

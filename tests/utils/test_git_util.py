@@ -10,7 +10,6 @@ from varats.project.project_util import (
     BinaryType,
 )
 from varats.projects.discover_projects import initialize_projects
-from varats.tools.research_tools.vara_manager import checkout_branch_or_commit
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -27,8 +26,8 @@ from varats.utils.git_util import (
     get_initial_commit,
     RevisionBinaryMap,
     get_submodule_head,
-    get_head_commit,
     calc_code_churn_range,
+    RepositoryAtCommit,
 )
 
 
@@ -123,32 +122,22 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
     def test_get_submodule_head(self):
         """Check if correct submodule commit is retrieved."""
-        repo_path = get_local_project_git_path("grep")
-        old_head = get_head_commit(repo_path)
         repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
-        checkout_branch_or_commit(repo_path, repo_head)
 
-        try:
+        with RepositoryAtCommit("grep", repo_head.to_short_commit_hash()):
             submodule_head = get_submodule_head("grep", "gnulib", repo_head)
             self.assertEqual(
                 submodule_head,
                 FullCommitHash("f44eb378f7239eadac38d02463019a8a6b935525")
             )
-        finally:
-            checkout_branch_or_commit(repo_path, old_head)
 
     def test_get_submodule_head_main_repo(self):
         """Check if correct main repo commit is retrieved."""
-        repo_path = get_local_project_git_path("grep")
-        old_head = get_head_commit(repo_path)
         repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
-        checkout_branch_or_commit(repo_path, repo_head)
 
-        try:
+        with RepositoryAtCommit("grep", repo_head.to_short_commit_hash()):
             submodule_head = get_submodule_head("grep", "grep", repo_head)
             self.assertEqual(submodule_head, repo_head)
-        finally:
-            checkout_branch_or_commit(repo_path, old_head)
 
     def test_get_commits_before_timestamp(self) -> None:
         """Check if we can correctly determine the commits before a specific

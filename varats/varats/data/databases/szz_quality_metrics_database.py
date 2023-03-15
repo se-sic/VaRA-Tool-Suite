@@ -1,7 +1,6 @@
 """Module for SZZ quality metrics data."""
 import logging
 import typing as tp
-from pathlib import Path
 
 import pandas as pd
 
@@ -12,20 +11,26 @@ from varats.data.databases.blame_diff_metrics_database import (
     compare_timestamps,
 )
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.reports.blame_report import (
-    BlameReport,
-    get_interacting_commits_for_commit,
-)
+from varats.data.reports.blame_report import get_interacting_commits_for_commit
 from varats.data.reports.szz_report import (
     SZZReport,
     SZZUnleashedReport,
     PyDrillerSZZReport,
 )
+from varats.experiments.szz.pydriller_szz_experiment import (
+    PyDrillerSZZExperiment,
+)
+from varats.experiments.szz.szz_unleashed_experiment import (
+    SZZUnleashedExperiment,
+)
+from varats.experiments.vara.blame_report_experiment import (
+    BlameReportExperiment,
+)
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.project.project_util import get_primary_project_source
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -39,7 +44,7 @@ LOG = logging.getLogger(__name__)
 
 def _get_requested_report_paths(
     project_name: str, szz_report: SZZReport
-) -> tp.Dict[ShortCommitHash, Path]:
+) -> tp.Dict[ShortCommitHash, ReportFilepath]:
     bugs = szz_report.get_all_raw_bugs()
     requested_report_revisions: tp.Set[ShortCommitHash] = set()
     for bug in bugs:
@@ -49,9 +54,11 @@ def _get_requested_report_paths(
             for introducer in bug.introducing_commits
         )
 
-    report_map: tp.Dict[ShortCommitHash, Path] = {}
-    for report_path in get_processed_revisions_files(project_name, BlameReport):
-        report_revision = ReportFilename(report_path).commit_hash
+    report_map: tp.Dict[ShortCommitHash, ReportFilepath] = {}
+    for report_path in get_processed_revisions_files(
+        project_name, BlameReportExperiment
+    ):
+        report_revision = report_path.report_filename.commit_hash
         if report_revision in requested_report_revisions:
             report_map[report_revision] = report_path
 
@@ -113,7 +120,7 @@ def _load_dataframe_for_report(
         return df_layout
 
     def create_data_frame_for_report(
-        report_paths: tp.Tuple[Path, Path]
+        report_paths: tp.Tuple[ReportFilepath, ReportFilepath]
     ) -> tp.Tuple[pd.DataFrame, str, str]:
         # Look-up commit and infos about the HEAD commit of the report
         fix_report = load_blame_report(report_paths[0])
@@ -162,8 +169,8 @@ def _load_dataframe_for_report(
     report_map = _get_requested_report_paths(project_name, szz_report)
     available_revisions = report_map.keys()
 
-    new_entries: tp.List[tp.Tuple[Path, Path]] = []
-    remove_entries: tp.List[tp.Tuple[Path, Path]] = []
+    new_entries: tp.List[tp.Tuple[ReportFilepath, ReportFilepath]] = []
+    remove_entries: tp.List[tp.Tuple[ReportFilepath, ReportFilepath]] = []
     bugs = szz_report.get_all_raw_bugs()
     for bug in bugs:
         fix = bug.fixing_commit.to_short_commit_hash()
@@ -187,7 +194,10 @@ def _load_dataframe_for_report(
 class SZZUnleashedQualityMetricsDatabase(
     EvaluationDatabase,
     cache_id="szz_unleashed_quality_metrics",
-    columns=["introducer", "score"]
+    column_types={
+        "introducer": 'str',
+        "score": 'int64'
+    }
 ):
     """SZZ quality metrics database for SZZUnleashed data."""
 
@@ -197,18 +207,21 @@ class SZZUnleashedQualityMetricsDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
         report_paths = get_processed_revisions_files(
-            project_name, SZZUnleashedReport
+            project_name, SZZUnleashedExperiment
         )
         return _load_dataframe_for_report(
             project_name, cls.CACHE_ID, cls.COLUMNS, commit_map,
-            SZZUnleashedReport(report_paths[0])
+            SZZUnleashedReport(report_paths[0].full_path())
         )
 
 
 class PyDrillerSZZQualityMetricsDatabase(
     EvaluationDatabase,
     cache_id="pydriller_szz_quality_metrics",
-    columns=["introducer", "score"]
+    column_types={
+        "introducer": 'str',
+        "score": 'int64'
+    }
 ):
     """SZZ quality metrics database for PyDriller based SZZ data."""
 
@@ -218,9 +231,9 @@ class PyDrillerSZZQualityMetricsDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
         report_paths = get_processed_revisions_files(
-            project_name, PyDrillerSZZReport
+            project_name, PyDrillerSZZExperiment
         )
         return _load_dataframe_for_report(
             project_name, cls.CACHE_ID, cls.COLUMNS, commit_map,
-            PyDrillerSZZReport(report_paths[0])
+            PyDrillerSZZReport(report_paths[0].full_path())
         )

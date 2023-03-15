@@ -1,14 +1,20 @@
 """Test revision helper functions."""
 
+import typing as tp
 import unittest
 import unittest.mock as mock
+from pathlib import Path
 
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 
 from tests.test_utils import DummyGit
 from varats.projects.c_projects.glibc import Glibc
 from varats.projects.c_projects.gravity import Gravity
-from varats.revision.revisions import filter_blocked_revisions
+from varats.report.report import ReportFilename, ReportFilepath
+from varats.revision.revisions import (
+    filter_blocked_revisions,
+    _split_into_config_file_lists,
+)
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -78,3 +84,60 @@ class TestFilterBlockedRevisions(unittest.TestCase):
         )
 
         self.assertLessEqual(unblocked_revisions, filtered_revisions)
+
+
+class TestRevisionHelpers(unittest.TestCase):
+    """Test if the revision helper function correctly work."""
+
+    file_paths: tp.List[ReportFilepath]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.file_paths = [
+            ReportFilepath(
+                Path(),
+                ReportFilename(
+                    "CRE-CR-foo-bar-7bb9ef5f8c/"
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_config-42_"
+                    "success.txt"
+                )
+            ),
+            ReportFilepath(
+                Path(),
+                ReportFilename(
+                    "CRE-CR-foo-bar-7bb9ef5f8c/"
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_config-21_"
+                    "success.txt"
+                )
+            ),
+            ReportFilepath(
+                Path(),
+                ReportFilename(
+                    "CRE-CR-foo-bar-7bb9ef5f8c/"
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864bb_config-42_"
+                    "success.txt"
+                )
+            ),
+            ReportFilepath(
+                Path(),
+                ReportFilename(
+                    "CRE-CR-foo-bar-7bb9ef5f8c_"
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864bc_"
+                    "success.txt"
+                )
+            )
+        ]
+
+    def test_filelist_config_splitting(self):
+        """Checks if report files are split correctly according their
+        configuartion."""
+        config_id_mapping = _split_into_config_file_lists(self.file_paths)
+
+        self.assertEqual(len(config_id_mapping[None]), 1)
+        self.assertTrue(self.file_paths[3] in config_id_mapping[None])
+        self.assertEqual(len(config_id_mapping[21]), 1)
+        self.assertTrue(self.file_paths[1] in config_id_mapping[21])
+
+        self.assertEqual(len(config_id_mapping[42]), 2)
+        self.assertTrue(self.file_paths[0] in config_id_mapping[42])
+        self.assertTrue(self.file_paths[2] in config_id_mapping[42])

@@ -8,18 +8,14 @@ from itertools import islice
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib import axes, style
+from matplotlib import axes
 
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plots import (
-    PlotGenerator,
-    PlotConfig,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator
 from varats.project.project_util import get_local_project_git_path
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
@@ -236,11 +232,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
 
     NAME = 'repo_churn'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)
@@ -265,7 +257,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
 class RepoChurnPlotGenerator(
     PlotGenerator,
     generator_name="repo-churn-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates repo-churn plot(s) for the selected case study(ies)."""
 

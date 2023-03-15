@@ -8,7 +8,6 @@ import matplotlib.ticker as mtick
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from matplotlib import style
 from sklearn import preprocessing
 
 from varats.data.databases.blame_verifier_report_database import (
@@ -18,13 +17,9 @@ from varats.data.databases.blame_verifier_report_database import (
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import (
-    PlotGenerator,
-    PlotConfig,
-    REQUIRE_REPORT_TYPE,
-    REQUIRE_MULTI_CASE_STUDY,
-)
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -60,7 +55,7 @@ def _get_named_df_for_case_study(
         )
         raise PlotDataEmpty
 
-    named_verifier_df = {
+    named_verifier_df: tp.Dict[str, tp.Union[str, pd.DataFrame]] = {
         "project_name": project_name,
         "dataframe": verifier_plot_df
     }
@@ -70,7 +65,7 @@ def _get_named_df_for_case_study(
 
 def _extract_data_from_named_dataframe(
     named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]]
-) -> tp.Tuple[str, tp.Dict[str, tp.Any]]:
+) -> tp.Tuple[tp.Union[str, pd.DataFrame], tp.Dict[str, tp.Any]]:
     current_verifier_plot_df = tp.cast(
         pd.DataFrame, named_verifier_plot_df['dataframe']
     )
@@ -283,7 +278,6 @@ class BlameVerifierReportPlot(Plot, plot_name=None):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        style.use(self.plot_config.style())
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -301,9 +295,6 @@ class BlameVerifierReportNoOptPlot(
     optimization."""
     NAME = 'b_verifier_report_no_opt_plot'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.NO_OPT, self.plot_config, self.plot_kwargs)
 
@@ -311,7 +302,7 @@ class BlameVerifierReportNoOptPlot(
 class BlameVerifierReportNoOptPlotGenerator(
     PlotGenerator,
     generator_name="verifier-no-opt-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a verifier-no-opt plot for the selected case study(ies)."""
 
@@ -328,9 +319,6 @@ class BlameVerifierReportOptPlot(
     optimization."""
     NAME = 'b_verifier_report_opt_plot'
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.OPT, self.plot_config, self.plot_kwargs)
 
@@ -338,7 +326,7 @@ class BlameVerifierReportOptPlot(
 class BlameVerifierReportOptPlotGenerator(
     PlotGenerator,
     generator_name="verifier-opt-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a verifier-opt plot for the selected case study(ies)."""
 

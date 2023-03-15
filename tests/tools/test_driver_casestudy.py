@@ -8,10 +8,10 @@ from click.testing import CliRunner
 from tests.test_utils import (
     run_in_test_environment,
     TEST_INPUTS_DIR,
-    UnitTestInputs,
+    UnitTestFixtures,
 )
 from varats.paper.case_study import load_case_study_from_file
-from varats.paper_mgmt.paper_config import load_paper_config
+from varats.paper.paper_config import load_paper_config
 from varats.tools import driver_casestudy
 from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import vara_cfg, save_config
@@ -113,9 +113,9 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
         result = runner.invoke(
             driver_casestudy.main, [
-                'gen', '-p', 'brotli', 'select_sample', '--num-rev', '6',
-                '--start', '1991-01-01', '--end', '2013-10-20',
-                'UniformSamplingMethod'
+                'gen', '-p', 'brotli', '--allow-blocked', 'select_sample',
+                '--num-rev', '6', '--start', '1991-01-01', '--end',
+                '2013-10-20', 'UniformSamplingMethod'
             ]
         )
 
@@ -185,8 +185,90 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
         self.assertEqual(len(case_study.revisions), 2)
 
+    @run_in_test_environment()
+    def test_vara_cs_gen_release(self):
+        """Test gen select_release."""
+        runner = CliRunner()
+        Path(vara_cfg()["paper_config"]["folder"].value + "/" +
+             "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        result = runner.invoke(
+            driver_casestudy.main,
+            ['gen', '-p', 'gravity', 'select_release', 'major']
+        )
+        self.assertEqual(0, result.exit_code, result.exception)
+
     @run_in_test_environment(
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
+            TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
+            Path("paper_configs/test_ext")
+        )
+    )
+    def test_vara_cs_gen_to_extend(self):
+        """Test the extend-functionality of vara-cs gen."""
+        runner = CliRunner()
+        vara_cfg()["paper_config"]["current_config"] = "test_ext"
+        save_config()
+        load_paper_config()
+        old_commit = 'ef364d3abc5647111c5424ea0d83a567e184a23b'
+        new_commit = '6c6da57ae2aa962aabde6892442227063d87e88c'
+        result = runner.invoke(
+            driver_casestudy.main,
+            ['gen', '-p', 'xz', 'select_specific', new_commit]
+        )
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_ext/xz_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertTrue(
+            case_study.revisions.__contains__(FullCommitHash(old_commit))
+        )
+        self.assertTrue(
+            case_study.revisions.__contains__(FullCommitHash(new_commit))
+        )
+        self.assertEqual(1, case_study.num_stages)
+
+    @run_in_test_environment(
+        UnitTestFixtures.create_file_fixture(
+            TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
+            Path("paper_configs/test_ext")
+        )
+    )
+    def test_vara_cs_gen_to_extend_new_stage(self):
+        """Test the extend-functionality of vara-cs gen."""
+        runner = CliRunner()
+        vara_cfg()["paper_config"]["current_config"] = "test_ext"
+        save_config()
+        load_paper_config()
+        old_commit = 'ef364d3abc5647111c5424ea0d83a567e184a23b'
+        new_commit = '6c6da57ae2aa962aabde6892442227063d87e88c'
+        result = runner.invoke(
+            driver_casestudy.main, [
+                'gen', '-p', 'xz', '--new-stage', '--merge-stage', 'test',
+                'select_specific', new_commit
+            ]
+        )
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_ext/xz_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertTrue(
+            case_study.revisions.__contains__(FullCommitHash(old_commit))
+        )
+        self.assertTrue(
+            case_study.revisions.__contains__(FullCommitHash(new_commit))
+        )
+        self.assertEqual(2, case_study.num_stages)
+        self.assertEqual('test', case_study.stages[1].name)
+
+    @run_in_test_environment(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
             Path("paper_configs/test_status")
         )
@@ -201,7 +283,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         result = runner.invoke(driver_casestudy.main, ['status', 'JustCompile'])
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertEqual(
-            "CS: xz_0: (  0/5) processed [0/0/0/0/3/2]\n"
+            "CS: xz_0: (  0/5) processed [0/0/0/0/0/3/2]\n"
             "    c5c7ceb08a [Missing]\n"
             "    ef364d3abc [Missing]\n"
             "    2f0bc9cd40 [Missing]\n"
@@ -209,14 +291,14 @@ class TestDriverCaseStudy(unittest.TestCase):
             "    10437b5b56 [Blocked]\n\n"
             "---------------------------------------------"
             "-----------------------------------\n"
-            "Total: (  0/5) processed [0/0/0/0/3/2]\n", result.stdout
+            "Total: (  0/5) processed [0/0/0/0/0/3/2]\n", result.stdout
         )
 
     @run_in_test_environment(
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "results/brotli", Path("results/brotli")
         ),
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "paper_configs/test_revision_lookup",
             Path("paper_configs/test_cleanup_error")
         )
@@ -255,13 +337,13 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "results/brotli", Path("results/brotli")
         ),
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "results/gravity", Path("results/gravity")
         ),
-        UnitTestInputs.create_test_input(
+        UnitTestFixtures.create_file_fixture(
             TEST_INPUTS_DIR / "paper_configs/test_revision_lookup",
             Path("paper_configs/test_cleanup_regex")
         )

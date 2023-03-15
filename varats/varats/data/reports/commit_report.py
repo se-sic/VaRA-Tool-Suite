@@ -8,7 +8,7 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.mapping.commit_map import CommitMap
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class FunctionInfo():
         return self.__region_id
 
     def __str__(self) -> str:
-        return "{} ({}): {}".format(self.name, self.id, self.region_id)
+        return f"{self.name} ({self.id}): {self.region_id}"
 
 
 class RegionMapping():
@@ -49,7 +49,7 @@ class RegionMapping():
         self.hash = FullCommitHash(str(raw_yaml['hash']))
 
     def __str__(self) -> str:
-        return "{} = {}".format(self.id, self.hash.hash)
+        return f"{self.id} = {self.hash.hash}"
 
 
 class RegionToFunctionEdge():
@@ -68,7 +68,7 @@ class RegionToFunctionEdge():
         return self._to
 
     def __str__(self) -> str:
-        return "{} -> {}".format(self._from, self._to)
+        return f"{self._from} -> {self._to}"
 
 
 class RegionToRegionEdge():
@@ -79,7 +79,7 @@ class RegionToRegionEdge():
         self._to = str(raw_yaml['to'])
 
     def __str__(self) -> str:
-        return "{} -> {}".format(self._from, self._to)
+        return f"{self._from} -> {self._to}"
 
     @property
     def edge_from(self) -> str:
@@ -197,8 +197,8 @@ class CommitReport(BaseReport, shorthand="CR", file_type="yaml"):
         return total
 
     def __str__(self) -> str:
-        return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
-            .format(self.finfos.keys(), self.region_mappings.keys())
+        return f"FInfo:\n\t{self.finfos.keys()}\n" \
+               f"RegionMappings:\n\t{self.region_mappings.keys()}\n"
 
     def __repr__(self) -> str:
         return "CR: " + self.path.name
@@ -329,8 +329,8 @@ class CommitReportMeta():
         return self.__df_ylimit
 
     def __str__(self) -> str:
-        return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
-            .format(self.finfos.keys(), self.region_mappings.keys())
+        return f"FInfo:\n\t{self.finfos.keys()}\n" \
+               f"RegionMappings:\n\t{self.region_mappings.keys()}\n"
 
 
 ###############################################################################

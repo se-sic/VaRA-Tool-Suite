@@ -13,14 +13,12 @@ import pygit2
 from benchbuild import Project
 
 from varats.base.sampling_method import NormalSamplingMethod
-from varats.data.reports.szz_report import (
-    SZZReport,
-    SZZUnleashedReport,
-    PyDrillerSZZReport,
+from varats.data.reports.szz_report import SZZReport
+from varats.experiments.szz.pydriller_szz_experiment import (
+    PyDrillerSZZExperiment,
 )
-from varats.experiment.experiment_util import (
-    VersionExperiment,
-    get_tagged_experiment_specific_revisions,
+from varats.experiments.szz.szz_unleashed_experiment import (
+    SZZUnleashedExperiment,
 )
 from varats.jupyterhelper.file import (
     load_szzunleashed_report,
@@ -29,7 +27,6 @@ from varats.jupyterhelper.file import (
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
@@ -40,7 +37,12 @@ from varats.provider.release.release_provider import (
     ReleaseProvider,
     ReleaseType,
 )
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilename,
+    ReportFilepath,
+)
 from varats.revision.revisions import (
     get_failed_revisions,
     get_processed_revisions,
@@ -56,6 +58,9 @@ from varats.utils.git_util import (
     contains_source_code,
     ChurnConfig,
 )
+
+if tp.TYPE_CHECKING:
+    from varats.experiment.experiment_util import VersionExperiment
 
 LOG = logging.Logger(__name__)
 
@@ -74,20 +79,24 @@ class ExtenderStrategy(Enum):
 
 
 def newest_processed_revision_for_case_study(
-    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+    case_study: CaseStudy,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Optional[FullCommitHash]:
     """
     Computes the newest revision of this case study that has been processed.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         the newest processed revision if available
     """
     processed_revisions = processed_revisions_for_case_study(
-        case_study, result_file_type
+        case_study, experiment_type, report_type
     )
     if not processed_revisions:
         return None
@@ -98,20 +107,24 @@ def newest_processed_revision_for_case_study(
 
 
 def processed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+    case_study: CaseStudy,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.List[FullCommitHash]:
     """
     Computes all revisions of this case study that have been processed.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         a list of processed revisions
     """
     total_processed_revisions = get_processed_revisions(
-        case_study.project_name, result_file_type
+        case_study.project_name, experiment_type, report_type
     )
 
     return [
@@ -121,20 +134,24 @@ def processed_revisions_for_case_study(
 
 
 def failed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+    case_study: CaseStudy,
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.List[FullCommitHash]:
     """
     Computes all revisions of this case study that have failed.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         a list of failed revisions
     """
     total_failed_revisions = get_failed_revisions(
-        case_study.project_name, result_file_type
+        case_study.project_name, experiment_type, report_type
     )
 
     return [
@@ -143,19 +160,49 @@ def failed_revisions_for_case_study(
     ]
 
 
+def __conf_specific_filestatus(
+    case_study: CaseStudy, revision: ShortCommitHash,
+    conf_tag_map: tp.Dict[tp.Optional[int], FileStatusExtension]
+) -> FileStatusExtension:
+    fs_count: tp.DefaultDict[FileStatusExtension, int] = defaultdict(int)
+
+    cs_config_ids = case_study.get_config_ids_for_revision(revision)
+    for config_id in cs_config_ids:
+        if config_id in conf_tag_map:
+            fs_count[conf_tag_map[config_id]] += 1
+        else:
+            fs_count[FileStatusExtension.MISSING] += 1
+
+    if fs_count[FileStatusExtension.COMPILE_ERROR] > 0:
+        return FileStatusExtension.COMPILE_ERROR
+
+    if fs_count[FileStatusExtension.FAILED] > 0:
+        return FileStatusExtension.FAILED
+
+    if fs_count[FileStatusExtension.SUCCESS] == len(cs_config_ids):
+        return FileStatusExtension.SUCCESS
+
+    if fs_count[FileStatusExtension.MISSING] == len(cs_config_ids):
+        return FileStatusExtension.MISSING
+
+    return FileStatusExtension.PARTIAL
+
+
 def get_revisions_status_for_case_study(
     case_study: CaseStudy,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
     stage_num: int = -1,
-    tag_blocked: bool = True,
-    experiment_type: tp.Optional[tp.Type[VersionExperiment]] = None
+    tag_blocked: bool = True
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Computes the file status for all revisions in this case study.
 
     Args:
         case_study: to work on
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         stage_num: only consider a specific stage of the case study
         tag_blocked: if true, also blocked commits are tagged
 
@@ -168,14 +215,9 @@ def get_revisions_status_for_case_study(
         # Return an empty list should a project name not exist.
         return []
 
-    if experiment_type:
-        tagged_revisions = get_tagged_experiment_specific_revisions(
-            project_cls, result_file_type, tag_blocked, experiment_type
-        )
-    else:
-        tagged_revisions = get_tagged_revisions(
-            project_cls, result_file_type, tag_blocked
-        )
+    tagged_revisions = get_tagged_revisions(
+        project_cls, experiment_type, report_type, tag_blocked
+    )
 
     def filtered_tagged_revs(
         rev_provider: tp.Iterable[FullCommitHash]
@@ -184,9 +226,15 @@ def get_revisions_status_for_case_study(
         for rev in rev_provider:
             short_rev = rev.to_short_commit_hash()
             found = False
-            for tagged_rev in tagged_revisions:
-                if short_rev == tagged_rev[0]:
-                    filtered_revisions.append(tagged_rev)
+            for tagged_rev, conf_tag_map in tagged_revisions.items():
+                if short_rev == tagged_rev:
+                    if case_study.has_revision_configs_specified(tagged_rev):
+                        tag = __conf_specific_filestatus(
+                            case_study, tagged_rev, conf_tag_map
+                        )
+                    else:
+                        tag = conf_tag_map[None]
+                    filtered_revisions.append((tagged_rev, tag))
                     found = True
                     break
             if not found:
@@ -213,7 +261,8 @@ def get_revisions_status_for_case_study(
 def get_revision_status_for_case_study(
     case_study: CaseStudy,
     revision: ShortCommitHash,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> FileStatusExtension:
     """
     Computes the file status for the given revision in this case study.
@@ -221,7 +270,9 @@ def get_revision_status_for_case_study(
     Args:
         case_study: to work on
         revision: to compute status for
-        result_file_type: report type of the result files
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
 
     Returns:
         a list of (revision, status) tuples
@@ -230,7 +281,7 @@ def get_revision_status_for_case_study(
         raise ValueError(f"Case study has no revision {revision}")
 
     return get_tagged_revision(
-        revision, case_study.project_name, result_file_type
+        revision, case_study.project_name, experiment_type, report_type
     )
 
 
@@ -343,6 +394,35 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 ###############################################################################
 # Case-study extender
 ###############################################################################
+def extend_with_latest_rev(
+    case_study: CaseStudy, cmap: CommitMap, merge_stage: int,
+    ignore_blocked: bool, git_path: str
+) -> None:
+    """
+    Extend a case_study with the latest revision.
+
+    Args:
+        case_study: to extend
+        cmap: commit map to map revisions to unique IDs
+        merge_stage: stage to add the new revisions to
+        ignore_blocked: ignore blocked revisions'
+        git_path: git path to the project
+    """
+    repo = pygit2.Repository(pygit2.discover_repository(git_path))
+
+    last_pygit_commit: pygit2.Commit = repo[repo.head.target]
+    last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
+
+    while ignore_blocked and is_revision_blocked(
+        last_commit, case_study.project_cls
+    ):
+        last_pygit_commit = last_pygit_commit.parents[0]
+        last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
+
+    case_study.include_revisions([(last_commit, cmap.time_id(last_commit))],
+                                 merge_stage)
+
+
 def extend_with_extra_revs(
     case_study: CaseStudy, cmap: CommitMap, extra_revs: tp.List[str],
     merge_stage: int
@@ -485,9 +565,8 @@ def extend_with_distrib_sampling(
     # of the list is the same as the distribution over the commits age history
     project_cls = get_project_cls_by_name(case_study.project_name)
     revision_list = [
-        (FullCommitHash(rev), idx)
-        for rev, idx in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
-        if
+        (FullCommitHash(rev), idx) for rev, idx in
+        sorted(list(cmap.mapping_items_master()), key=lambda x: x[1]) if
         not case_study.has_revision_in_stage(ShortCommitHash(rev), merge_stage)
         and not is_blocked(ShortCommitHash(rev), project_cls) and
         is_code_commit(ShortCommitHash(rev))
@@ -579,9 +658,8 @@ def extend_with_release_revs(
     ], merge_stage)
 
 
-@check_required_args('report_type', 'merge_stage')
 def extend_with_bug_commits(
-    case_study: CaseStudy, cmap: CommitMap, report_type: tp.Type['BaseReport'],
+    case_study: CaseStudy, experiment_type: tp.Type["VersionExperiment"],
     merge_stage: int, ignore_blocked: bool
 ) -> None:
     """
@@ -590,24 +668,24 @@ def extend_with_bug_commits(
 
     Args:
         case_study: to extend
-        cmap: commit map to map revisions to unique IDs
+        experiment_type: experiment to use for bug detection
         ignore_blocked: ignore_blocked revisions
         merge_stage: stage the revisions will be added to
-        report_type: report to use for bug detection
     """
     project_cls: tp.Type[Project] = get_project_cls_by_name(
         case_study.project_name
     )
+    cmap = get_commit_map(case_study.project_name, refspec='HEAD')
 
     def load_bugs_from_szz_report(
-        load_fun: tp.Callable[[Path], SZZReport]
+        load_fun: tp.Callable[[ReportFilepath], SZZReport]
     ) -> tp.Optional[tp.FrozenSet[RawBug]]:
         reports = get_processed_revisions_files(
-            case_study.project_name, report_type
+            case_study.project_name, experiment_type, None
         )
         if not reports:
             LOG.warning(
-                f"I could not find any {report_type} reports. "
+                f"I could not find any {experiment_type} results. "
                 "Falling back to bug provider."
             )
             return None
@@ -615,14 +693,14 @@ def extend_with_bug_commits(
         return report.get_all_raw_bugs()
 
     bugs: tp.Optional[tp.FrozenSet[RawBug]] = None
-    if report_type == SZZUnleashedReport:
+    if experiment_type == SZZUnleashedExperiment:
         bugs = load_bugs_from_szz_report(load_szzunleashed_report)
-    elif report_type == PyDrillerSZZReport:
+    elif experiment_type == PyDrillerSZZExperiment:
         bugs = load_bugs_from_szz_report(load_pydriller_szz_report)
     else:
         LOG.warning(
-            f"Report type {report_type} is not supported by this extender "
-            f"strategy. Falling back to bug provider."
+            f"Experiment type {experiment_type} is not supported by this "
+            f"extender strategy. Falling back to bug provider."
         )
 
     if bugs is None:

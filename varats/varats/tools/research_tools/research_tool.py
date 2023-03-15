@@ -9,26 +9,28 @@ from pathlib import Path
 import distro as distribution
 from benchbuild.utils.cmd import apt, pacman
 
-from varats.tools.research_tools.vara_manager import (
-    BuildType,
-    add_remote,
-    branch_has_upstream,
+from varats.tools.research_tools.vara_manager import BuildType
+from varats.utils.filesystem_util import FolderAlreadyPresentError
+from varats.utils.git_commands import (
+    get_branches,
+    fetch_remote,
+    get_tags,
+    init_all_submodules,
+    update_all_submodules,
+    pull_current_branch,
+    push_current_branch,
     checkout_branch_or_commit,
     checkout_new_branch,
     download_repo,
-    fetch_remote,
-    get_branches,
+    add_remote,
+    show_status,
+)
+from varats.utils.git_util import (
+    get_current_branch,
     has_branch,
     has_remote_branch,
-    init_all_submodules,
-    pull_current_branch,
-    push_current_branch,
-    show_status,
-    get_tags,
-    update_all_submodules,
+    branch_has_upstream,
 )
-from varats.utils.filesystem_util import FolderAlreadyPresentError
-from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
 
 if tp.TYPE_CHECKING:
@@ -37,8 +39,11 @@ if tp.TYPE_CHECKING:
 
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
+    value: str
+
     DEBIAN = "debian"
     ARCH = "arch"
+    FEDORA = "fedora"
 
     @staticmethod
     def get_current_distro() -> tp.Optional['Distro']:
@@ -47,12 +52,18 @@ class Distro(Enum):
             return Distro.DEBIAN
         if distribution.id() == "arch":
             return Distro.ARCH
+        if distribution.id() == "fedora":
+            return Distro.FEDORA
         return None
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 _install_commands = {
     Distro.DEBIAN: "apt install -y",
-    Distro.ARCH: "pacman -S --noconfirm"
+    Distro.ARCH: "pacman -S --noconfirm",
+    Distro.FEDORA: "dnf install"
 }
 
 _checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
@@ -65,6 +76,10 @@ class Dependencies:
 
     def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
         self.__dependencies = dependencies
+
+    @property
+    def distros(self) -> tp.List[Distro]:
+        return list(self.__dependencies.keys())
 
     def has_dependencies_for_distro(self, distro: Distro) -> bool:
         """
@@ -110,6 +125,14 @@ class Dependencies:
             a list containing all not installed dependencies
         """
         not_installed: tp.List[str] = []
+
+        if distro not in _checker_commands or \
+                distro not in _expected_check_output:
+            raise NotImplementedError(
+                "Check/Expected commands are currently " +
+                f"not implemented for {distro}"
+            )
+
         base_command = _checker_commands[distro]
         for package in self.__dependencies[distro]:
             output = base_command(package)
@@ -150,14 +173,14 @@ class SubProject():
         URL: str,
         remote: str,
         sub_path: str,
-        auto_clone: bool = True
+        is_submodule: bool = False
     ):
         self.__name = name
         self.__parent_code_base = parent_code_base
         self.__url = URL
         self.__remote = remote
         self.__sub_path = Path(sub_path)
-        self.__auto_clone = auto_clone
+        self.__is_submodule = is_submodule
 
     @property
     def name(self) -> str:
@@ -187,15 +210,15 @@ class SubProject():
         return self.__sub_path
 
     @property
-    def auto_clone(self) -> bool:
+    def is_submodule(self) -> bool:
         """
-        Determine if this project should be automatically cloned when a
-        `CodeBase` is initialized.
+        Determine if this project is a submodule and shouldn't be cloned and
+        pulled automatically when a `CodeBase` is initialized or updated.
 
         Returns:
             True, if it should be automatically cloned
         """
-        return self.__auto_clone
+        return self.__is_submodule
 
     def init_and_update_submodules(self) -> None:
         """
@@ -324,9 +347,7 @@ class SubProject():
         show_status(self.__parent_code_base.base_dir / self.path)
 
     def __str__(self) -> str:
-        return "{name} [{url}:{remote}] {folder}".format(
-            name=self.name, url=self.url, remote=self.remote, folder=self.path
-        )
+        return f"{self.name} [{self.url}:{self.remote}] {self.path}"
 
     def get_tags(self,
                  extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
@@ -376,17 +397,26 @@ class CodeBase():
         """
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
-            if sub_project.auto_clone:
+            if not sub_project.is_submodule:
                 sub_project.clone()
 
-    def map_sub_projects(self, func: tp.Callable[[SubProject], None]) -> None:
+    def map_sub_projects(
+        self,
+        func: tp.Callable[[SubProject], None],
+        exclude_submodules: bool = False
+    ) -> None:
         """
         Execute a callable ``func`` on all sub projects of the code base.
 
         Args:
             func: function to execute on the sub projects
+            exclude_submodules: if True sub projects that
+                                are managed using git submodules will be
+                                excluded
         """
         for sub_project in self.__sub_projects:
+            if exclude_submodules and sub_project.is_submodule:
+                continue
             func(sub_project)
 
 
@@ -443,7 +473,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """Checks if a install location of the research tool is configured."""
 
     @abc.abstractmethod
-    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
+    def setup(
+        self, source_folder: tp.Optional[Path], install_prefix: Path,
+        version: tp.Optional[int]
+    ) -> None:
         """
         Setup a research tool with it's code base. This method sets up all
         relevant config variables, downloads repositories via the ``CodeBase``,
@@ -452,6 +485,8 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
         Args:
             source_folder: location to store the code base in
+            install_prefix: Installation prefix path
+            version: Version to setup
         """
 
     @abc.abstractmethod
@@ -484,12 +519,62 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
+    def get_install_binaries(self) -> tp.List[str]:
+        """Returns a list of binaries to check when validating the
+        installation."""
+
+    def invalidate_install(self, install_location: Path) -> None:
+        """
+        Delete Binaries which are checked to validate the installation.
+
+        Args:
+            install_location: the installation directory to check
+        """
+        for path in self.get_install_binaries():
+            (install_location / path).unlink(True)
+
+    def install_exists(self, install_location: Path) -> bool:
+        """
+        Check whether a research tool installation exists at the given path.
+
+        In contrast to :func:`verify_install()`, this does not try to execute
+        any binaries. This is useful if the VaRA installation is intended for
+        a different environment, e.g., in a container.
+
+        Args:
+            install_location: the installation directory to check
+
+        Returns:
+            True if the given directory contains a research tool installation
+        """
+        status_ok = True
+        for path in self.get_install_binaries():
+            status_ok &= (install_location / path).exists()
+        return status_ok
+
     def verify_install(self, install_location: Path) -> bool:
         """
         Verify if the research tool was correctly installed.
 
         Returns:
             True, if the tool was correctly installed
+        """
+        return self.install_exists(install_location)
+
+    @abc.abstractmethod
+    def verify_build(
+        self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
+    ) -> bool:
+        """
+        Verify if the research tool was built correctly for a given build_type.
+
+        Args:
+            build_type: which type of build should be used, e.g., debug,
+                        development or release
+            build_folder_suffix: a suffix that is appended to the build folder
+
+        Returns:
+            True, if the build was correct.
         """
 
     def container_install_dependencies(

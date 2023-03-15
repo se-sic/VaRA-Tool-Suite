@@ -1,6 +1,7 @@
 """Utility functions and class to allow easier caching of pandas dataframes and
 other data."""
 import logging
+import pickle
 import typing as tp
 from pathlib import Path
 
@@ -29,14 +30,16 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     ) / f"{data_id}-{project_name}.csv.gz"
 
 
-def load_cached_df_or_none(data_id: str,
-                           project_name: str) -> tp.Optional[pd.DataFrame]:
+def load_cached_df_or_none(
+    data_id: str, project_name: str, data_types: tp.Dict[str, str]
+) -> tp.Optional[pd.DataFrame]:
     """
     Load cached dataframe from disk, otherwise return None.
 
     Args:
         data_id: identifier or identifier_name of the dataframe
         project_name: name of the project
+        data_types: dict of columns and types to pass to the dataframe loading
     """
 
     file_path = get_data_file_path(data_id, project_name)
@@ -48,7 +51,9 @@ def load_cached_df_or_none(data_id: str,
         else:
             return None
 
-    return pd.read_csv(str(file_path), index_col=0, compression='infer')
+    return pd.read_csv(
+        str(file_path), index_col=0, compression='infer', dtype=data_types
+    )
 
 
 def cache_dataframe(
@@ -108,9 +113,11 @@ def build_cached_report_table(
     """
 
     # mypy needs this
-    optional_cached_df = load_cached_df_or_none(data_id, project_name)
+    empty_df = create_empty_df()
+    df_types = empty_df.dtypes.to_dict()
+    optional_cached_df = load_cached_df_or_none(data_id, project_name, df_types)
     if optional_cached_df is None:
-        cached_df = create_empty_df()
+        cached_df = empty_df
         cached_df[CACHE_ID_COL] = ""
         cached_df[CACHE_TIMESTAMP_COL] = ""
     else:
@@ -177,10 +184,12 @@ def build_cached_report_table(
 
     cache_dataframe(data_id, project_name, new_df)
 
-    return new_df.loc[:, [
-        col for col in new_df.columns
-        if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
-    ]]
+    return tp.cast(
+        pd.DataFrame, new_df.loc[:, [
+            col for col in new_df.columns
+            if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
+        ]]
+    )
 
 
 GraphTy = tp.TypeVar("GraphTy", bound=nx.Graph)
@@ -202,8 +211,10 @@ def build_cached_graph(
     path = Path(str(vara_cfg()["data_cache"])) / f"graph-{graph_id}.gz"
 
     if path.exists():
-        return tp.cast(GraphTy, nx.read_gpickle(path))
+        with open(path, "rb") as graph_file:
+            return tp.cast(GraphTy, pickle.load(graph_file))
 
     graph = create_graph()
-    nx.write_gpickle(graph, path)
+    with open(path, "wb") as graph_file:
+        pickle.dump(graph, graph_file, pickle.HIGHEST_PROTOCOL)
     return graph

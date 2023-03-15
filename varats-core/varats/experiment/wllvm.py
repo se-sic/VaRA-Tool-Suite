@@ -8,6 +8,7 @@ add additional passes/flags, without modifying build files, and later use the
 generated bc files with LLVM.
 """
 
+import sys
 import typing as tp
 from enum import Enum
 from os import getenv, path
@@ -26,6 +27,7 @@ from varats.experiment.experiment_util import (
     PEErrorHandler,
 )
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.varats_project import VProject
 from varats.utils.settings import bb_cfg
 
 
@@ -60,7 +62,46 @@ class RunWLLVM(base.Extension):  # type: ignore
     This class is an extension that implements the WLLVM compiler with the
     required flags LLVM_COMPILER=clang and LLVM_OUTPUFILE=<path>. This compiler
     is used to transfer the complete project into LLVM-IR.
+
+    The distcc_hosts argument will instruct WLLVM to call distcc instead of
+    clang directly. For possible values of distcc_hosts have a look at the
+    "HOST SPECIFICATIONS" in the distcc man page.
+    It is the user's responsibility to ensure that all distcc hosts are
+    configured to use exactly the same compiler as localhost!
+
+    Examples:
+    - Usage without distcc:
+        RunWLLVM()
+    - Usage with distcc enabled:
+        RunWLLVM(distcc_hosts="localhost 192.168.1.1:3634/64")
     """
+
+    def __init__(
+        self,
+        *extensions: base.Extension,
+        config: tp.Optional[tp.Dict[str, str]] = None,
+        distcc_hosts: tp.Optional[str] = None,
+        **kwargs: tp.Any
+    ):
+        super().__init__(*extensions, config=config, **kwargs)
+        self._distcc_hosts = distcc_hosts
+
+    def __create_distcc_scripts(self) -> tp.Tuple[Path, Path]:
+        project_dir = Path(sys.argv[0]).parent
+        distcc_cc = project_dir / "distcc-clang"
+        distcc_cxx = project_dir / "distcc-clang++"
+
+        if not distcc_cc.exists():
+            distcc_cc.write_text("#!/usr/bin/env sh\ndistcc clang $@")
+            # chmod +x
+            distcc_cc.chmod(distcc_cc.stat().st_mode | 0o111)
+
+        if not distcc_cxx.exists():
+            distcc_cxx.write_text("#!/usr/bin/env sh\ndistcc clang++ $@")
+            # chmod +x
+            distcc_cxx.chmod(distcc_cc.stat().st_mode | 0o111)
+
+        return distcc_cc, distcc_cxx
 
     def __call__(self, compiler: cc, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         if str(compiler).endswith("clang++"):
@@ -81,28 +122,24 @@ class RunWLLVM(base.Extension):  # type: ignore
             LD_LIBRARY_PATH=list_to_path(libs_path)
         )
 
+        if self._distcc_hosts:
+            distcc_cc, distcc_cxx = self.__create_distcc_scripts()
+            wllvm.env["DISTCC_HOSTS"] = self._distcc_hosts
+            wllvm.env["LLVM_CC_NAME"] = distcc_cc
+            wllvm.env["LLVM_CXX_NAME"] = distcc_cxx
+
         return self.call_next(wllvm, *args, **kwargs)
 
 
-bb_cfg()["varats"] = {
-    "outfile": {
-        "default": "",
-        "desc": "Path to store results of VaRA CFR analysis."
-    },
-    "result": {
-        "default": "",
-        "desc": "Path to store already annotated projects."
-    },
-}
-
-
-class Extract(actions.Step):  # type: ignore
+class Extract(actions.ProjectStep):  # type: ignore
     """Extract step to extract a llvm bitcode file(.bc) from the project."""
 
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
+
+    project: VProject
 
     @staticmethod
     def get_bc_file_name(
@@ -136,40 +173,45 @@ class Extract(actions.Step):  # type: ignore
         bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
-        super().__init__(
-            obj=project,
-            action_fn=FunctionPEErrorWrapper(self.extract, handler)
+        super().__init__(project=project)
+        self.__action_fn = tp.cast(
+            tp.Callable[..., tp.Any],
+            FunctionPEErrorWrapper(self.extract, handler)
             if handler else self.extract
         )
+
         if bc_file_extensions is None:
             bc_file_extensions = []
 
         self.bc_file_extensions = bc_file_extensions
 
+    def __call__(self) -> actions.StepResult:
+        return tp.cast(actions.StepResult, self.__action_fn())
+
     def extract(self) -> actions.StepResult:
         """This step extracts the bitcode of the executable of the project into
         one file."""
-        if not self.obj:
-            return
-        project = self.obj
+        self.project: VProject
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(bb_cfg()["varats"]["result"]),
-            project_name=str(project.name)
+            project_name=str(self.project.name)
         )
         mkdir("-p", local.path() / bc_cache_folder)
 
-        for binary in project.binaries:
+        for binary in self.project.binaries:
             bc_cache_file = bc_cache_folder + self.get_bc_file_name(
-                project_name=str(project.name),
+                project_name=str(self.project.name),
                 binary_name=str(binary.name),
-                project_version=project.version_of_primary,
+                project_version=self.project.version_of_primary,
                 bc_file_extensions=self.bc_file_extensions
             )
 
-            target_binary = Path(project.source_of_primary) / binary.path
+            target_binary = Path(self.project.source_of_primary) / binary.path
             extract_bc(target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
+
+        return actions.StepResult.OK
 
 
 def project_bc_files_in_cache(

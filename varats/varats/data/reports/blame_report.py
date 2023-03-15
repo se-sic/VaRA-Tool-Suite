@@ -1,9 +1,10 @@
 """Module for BlameReport, a collection of blame interactions."""
-
+import logging
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
@@ -21,58 +22,157 @@ from varats.utils.git_util import (
     UNCOMMITTED_COMMIT_HASH,
 )
 
+LOG = logging.getLogger(__name__)
+
+
+class BlameTaintData():
+    """Data that is carried by a blame taint."""
+
+    def __init__(
+        self,
+        commit: CommitRepoPair,
+        region_id: tp.Optional[int] = None,
+        function_name: tp.Optional[str] = None
+    ) -> None:
+        # if region_id is present, so has to be function_name
+        assert (region_id is None) or function_name
+
+        self.__region_id: tp.Optional[int] = region_id
+        self.__function_name: tp.Optional[str] = function_name
+        self.__commit: CommitRepoPair = commit
+
+    @staticmethod
+    def create_taint_data(
+        raw_taint_data: tp.Dict[str, tp.Any]
+    ) -> 'BlameTaintData':
+        """Create a :class:`BlameTaintData` instance from from the corresponding
+        yaml document section."""
+        commit = CommitRepoPair(
+            FullCommitHash(raw_taint_data["commit"]),
+            raw_taint_data["repository"]
+        )
+        return BlameTaintData(
+            commit, raw_taint_data.get("region"),
+            raw_taint_data.get("function")
+        )
+
+    @property
+    def region_id(self) -> tp.Optional[int]:
+        return self.__region_id
+
+    @property
+    def function_name(self) -> tp.Optional[str]:
+        return self.__function_name
+
+    @property
+    def commit(self) -> CommitRepoPair:
+        return self.__commit
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BlameTaintData):
+            return NotImplemented
+
+        return not ((self.region_id != other.region_id) or
+                    (self.function_name != other.function_name) or
+                    (self.commit != other.commit))
+
+    def __lt_commit(self, other: 'BlameTaintData') -> bool:
+        if other.function_name:
+            return True
+        return self.commit < other.commit
+
+    def __lt_commit_in_function(self, other: 'BlameTaintData') -> bool:
+        if not self.function_name:
+            raise AssertionError()
+
+        if not other.function_name:
+            return False
+        if other.region_id:
+            return True
+        return (
+            self.function_name < other.function_name
+            if self.function_name != other.function_name else
+            self.commit < other.commit
+        )
+
+    def __lt_region(self, other: 'BlameTaintData') -> bool:
+        if not self.region_id:
+            raise AssertionError()
+        if not other.region_id:
+            return False
+        return self.region_id < other.region_id
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, BlameTaintData):
+            return NotImplemented
+
+        # BTS_COMMIT
+        if not self.function_name:
+            return self.__lt_commit(other)
+
+        # BTS_COMMIT_IN_FUNCTION
+        if self.region_id is None:
+            return self.__lt_commit_in_function(other)
+
+        # BTS_REGION
+        return self.__lt_region(other)
+
+    def __hash__(self) -> int:
+        return hash((self.commit, self.region_id, self.function_name))
+
 
 class BlameInstInteractions():
     """
-    An interaction between a base commit, attached to an instruction, and other
-    commits.
+    An interaction between a base region/taint, attached to an instruction, and
+    other regions/taints.
 
-    For the blame analysis, these commits stem from data flows into the
+    For the blame analysis, these taints stem from data flows into the
     instruction.
     """
 
     def __init__(
-        self, base_hash: CommitRepoPair,
-        interacting_hashes: tp.List[CommitRepoPair], amount: int
+        self, base_taint: BlameTaintData,
+        interacting_taints: tp.List[BlameTaintData], amount: int
     ) -> None:
-        self.__base_hash = base_hash
-        self.__interacting_hashes = sorted(interacting_hashes)
+        self.__base_taint = base_taint
+        self.__interacting_taints = sorted(interacting_taints)
         self.__amount = amount
 
     @staticmethod
     def create_blame_inst_interactions(
         raw_inst_entry: tp.Dict[str, tp.Any]
     ) -> 'BlameInstInteractions':
-        """Creates a `BlameInstInteractions` entry from the corresponding yaml
-        document section."""
-        base_commit, *base_repo = str(raw_inst_entry['base-hash']
-                                     ).split('-', maxsplit=1)
-        base_hash = CommitRepoPair(
-            FullCommitHash(base_commit),
-            base_repo[0] if base_repo else "Unknown"
-        )
-        interacting_hashes: tp.List[CommitRepoPair] = []
-        for raw_inst_hash in raw_inst_entry['interacting-hashes']:
-            inter_commit, *inter_repo = str(raw_inst_hash
-                                           ).split('-', maxsplit=1)
-            interacting_hashes.append(
-                CommitRepoPair(
-                    FullCommitHash(inter_commit),
-                    inter_repo[0] if inter_repo else "Unknown"
+        """Creates a :class:`BlameInstInteractions` entry from the corresponding
+        yaml document section."""
+
+        def create_taint_data(
+            raw_data: tp.Union[str, tp.Dict[str, tp.Any]]
+        ) -> BlameTaintData:
+            # be backwards compatible with blame report version 4
+            if isinstance(raw_data, str):
+                commit_hash, *repo = raw_data.split('-', maxsplit=1)
+                crp = CommitRepoPair(
+                    FullCommitHash(commit_hash), repo[0] if repo else "Unknown"
                 )
-            )
+                return BlameTaintData(crp)
+            return BlameTaintData.create_taint_data(raw_data)
+
+        base_taint = create_taint_data(raw_inst_entry['base-hash'])
+        interacting_taints: tp.List[BlameTaintData] = []
+        for raw_inst_taint in raw_inst_entry['interacting-hashes']:
+            interacting_taints.append(create_taint_data(raw_inst_taint))
         amount = int(raw_inst_entry['amount'])
-        return BlameInstInteractions(base_hash, interacting_hashes, amount)
+        return BlameInstInteractions(base_taint, interacting_taints, amount)
 
     @property
-    def base_commit(self) -> CommitRepoPair:
-        """Base hash of the analyzed instruction."""
-        return self.__base_hash
+    def base_taint(self) -> BlameTaintData:
+        """Base taint of the analyzed instruction."""
+        return self.__base_taint
 
     @property
-    def interacting_commits(self) -> tp.List[CommitRepoPair]:
-        """List of hashes that interact with the base."""
-        return self.__interacting_hashes
+    def interacting_taints(self) -> tp.List[BlameTaintData]:
+        """List of taints that interact with the base."""
+        return self.__interacting_taints
 
     @property
     def amount(self) -> int:
@@ -80,28 +180,26 @@ class BlameInstInteractions():
         return self.__amount
 
     def __str__(self) -> str:
-        str_representation = "{base_hash} <-(# {amount:4})- [".format(
-            base_hash=self.base_commit, amount=self.amount
-        )
+        str_representation = f"{self.base_taint} <-(# {self.amount:4})- ["
         sep = ""
-        for interacting_commit in self.interacting_commits:
-            str_representation += sep + str(interacting_commit)
+        for interacting_taint in self.interacting_taints:
+            str_representation += sep + str(interacting_taint)
             sep = ", "
         str_representation += "]\n"
         return str_representation
 
     def __eq__(self, other: tp.Any) -> bool:
         if isinstance(other, BlameInstInteractions):
-            if self.base_commit == other.base_commit:
-                return self.interacting_commits == other.interacting_commits
+            if self.base_taint == other.base_taint:
+                return self.interacting_taints == other.interacting_taints
 
         return False
 
     def __lt__(self, other: tp.Any) -> bool:
         if isinstance(other, BlameInstInteractions):
-            if self.base_commit < other.base_commit:
-                return True
-            return self.interacting_commits < other.interacting_commits
+            if self.base_taint != other.base_taint:
+                return self.base_taint < other.base_taint
+            return self.interacting_taints < other.interacting_taints
 
         return False
 
@@ -110,30 +208,44 @@ class BlameResultFunctionEntry():
     """Collection of all interactions for a specific function."""
 
     def __init__(
-        self, name: str, demangled_name: str,
-        blame_insts: tp.List[BlameInstInteractions], num_instructions: int
+        self, name: str, demangled_name: str, file_name: tp.Optional[str],
+        blame_insts: tp.List[BlameInstInteractions], num_instructions: int,
+        callees: tp.List[str], commits: tp.List[CommitRepoPair]
     ) -> None:
         self.__name = name
         self.__demangled_name = demangled_name
+        self.__file_name = file_name
         self.__inst_list = blame_insts
         self.__num_instructions = num_instructions
+        self.__callees = callees
+        self.__commits = commits
 
     @staticmethod
     def create_blame_result_function_entry(
         name: str, raw_function_entry: tp.Dict[str, tp.Any]
     ) -> 'BlameResultFunctionEntry':
-        """Creates a `BlameResultFunctionEntry` from the corresponding yaml
-        document section."""
+        """Creates a :class:`BlameResultFunctionEntry` from the corresponding
+        yaml document section."""
         demangled_name = str(raw_function_entry['demangled-name'])
         num_instructions = int(raw_function_entry['num-instructions'])
+        file_name = tp.cast(tp.Optional[str], raw_function_entry.get('file'))
         inst_list: tp.List[BlameInstInteractions] = []
         for raw_inst_entry in raw_function_entry['insts']:
             inst_list.append(
                 BlameInstInteractions.
                 create_blame_inst_interactions(raw_inst_entry)
             )
+        callees = [
+            str(callee) for callee in raw_function_entry.get("callees", [])
+        ]
+        commits = [
+            CommitRepoPair(
+                FullCommitHash(raw_commit["commit"]), raw_commit["repository"]
+            ) for raw_commit in raw_function_entry.get("commits", [])
+        ]
         return BlameResultFunctionEntry(
-            name, demangled_name, inst_list, num_instructions
+            name, demangled_name, file_name, inst_list, num_instructions,
+            callees, commits
         )
 
     @property
@@ -152,6 +264,11 @@ class BlameResultFunctionEntry():
         return self.__demangled_name
 
     @property
+    def file_name(self) -> tp.Optional[str]:
+        """Name of file containing the function if available."""
+        return self.__file_name
+
+    @property
     def num_instructions(self) -> int:
         """Number of instructions in this function."""
         return self.__num_instructions
@@ -161,12 +278,20 @@ class BlameResultFunctionEntry():
         """List of found instruction blame-interactions."""
         return self.__inst_list
 
+    @property
+    def callees(self) -> tp.List[str]:
+        """List of functions called by this function."""
+        return self.__callees
+
+    @property
+    def commits(self) -> tp.List[CommitRepoPair]:
+        """List of commits that modified this function."""
+        return self.__commits
+
     def __str__(self) -> str:
-        str_representation = "{name} ({demangled_name})\n".format(
-            name=self.name, demangled_name=self.demangled_name
-        )
+        str_representation = f"{self.name} ({self.demangled_name})\n"
         for inst in self.__inst_list:
-            str_representation += "  - {}".format(inst)
+            str_representation += f"  - {inst}"
         return str_representation
 
 
@@ -195,8 +320,8 @@ def _calc_diff_between_func_entries(
             if difference != 0:
                 diff_interactions.append(
                     BlameInstInteractions(
-                        base_inter.base_commit,
-                        deepcopy(base_inter.interacting_commits), difference
+                        base_inter.base_taint,
+                        deepcopy(base_inter.interacting_taints), difference
                     )
                 )
         else:
@@ -206,25 +331,29 @@ def _calc_diff_between_func_entries(
     # append left over interactions from previous blame report
     diff_interactions += prev_interactions
 
+    # TODO (se-sic/VaRA#959): consider callgraph info in blame report diff
     return BlameResultFunctionEntry(
-        base_func_entry.name, base_func_entry.demangled_name, diff_interactions,
-        diff_num_instructions
+        base_func_entry.name, base_func_entry.demangled_name,
+        base_func_entry.file_name, diff_interactions, diff_num_instructions, [],
+        []
     )
 
 
 class BlameReportMetaData():
-    """Provides extra meta data about llvm::Module, which was analyzed to
-    generate this ``BlameReport``."""
+    """Provides extra meta-data about ``llvm::Module``, which was analyzed to
+    generate this :class:`BlameReport`."""
 
     def __init__(
         self, num_functions: int, num_instructions: int,
         num_phasar_empty_tracked_vars: tp.Optional[int],
-        num_phasar_total_tracked_vars: tp.Optional[int]
+        num_phasar_total_tracked_vars: tp.Optional[int],
+        bta_wall_time: tp.Optional[float]
     ) -> None:
         self.__number_of_functions_in_module = num_functions
         self.__number_of_instructions_in_module = num_instructions
         self.__num_phasar_empty_tracked_vars = num_phasar_empty_tracked_vars
         self.__num_phasar_total_tracked_vars = num_phasar_total_tracked_vars
+        self.__bta_wall_time = bta_wall_time
 
     @property
     def num_functions(self) -> int:
@@ -246,11 +375,16 @@ class BlameReportMetaData():
         """Number of variables tracked by phasar."""
         return self.__num_phasar_total_tracked_vars
 
+    @property
+    def bta_wall_time(self) -> tp.Optional[float]:
+        """Wall time of the blame taint analysis."""
+        return self.__bta_wall_time
+
     @staticmethod
     def create_blame_report_meta_data(
         raw_document: tp.Dict[str, tp.Any]
     ) -> 'BlameReportMetaData':
-        """Creates `BlameReportMetaData` from the corresponding yaml
+        """Creates :class:`BlameReportMetaData` from the corresponding yaml
         document."""
         num_functions = int(raw_document['funcs-in-module'])
         num_instructions = int(raw_document['insts-in-module'])
@@ -262,10 +396,29 @@ class BlameReportMetaData():
             raw_document["phasar-total-tracked-vars"]
         ) if "phasar-total-tracked-vars" in raw_document else None
 
+        bta_wall_time = float(
+            raw_document["bta-walltime-seconds"]
+        ) if "bta-walltime-seconds" in raw_document else None
+
         return BlameReportMetaData(
             num_functions, num_instructions, num_phasar_empty_tracked_vars,
-            num_phasar_total_tracked_vars
+            num_phasar_total_tracked_vars, bta_wall_time
         )
+
+
+class BlameTaintScope(Enum):
+    """The scope that was used for computing commit interactions."""
+    REGION = 0
+    COMMIT_IN_FUNCTION = 1
+    COMMIT = 2
+
+    @staticmethod
+    def from_string(value: str) -> 'BlameTaintScope':
+        return {
+            "REGION": BlameTaintScope.REGION,
+            "COMMIT_IN_FUNCTION": BlameTaintScope.COMMIT_IN_FUNCTION,
+            "COMMIT": BlameTaintScope.COMMIT,
+        }[value]
 
 
 class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
@@ -279,12 +432,21 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("BlameReport")
             version_header.raise_if_version_is_less_than(4)
+            if version_header.version < 5:
+                LOG.warning(
+                    "You are using an outdated blame report format "
+                    "that might not be supported in the future."
+                )
 
             self.__meta_data = BlameReportMetaData \
                 .create_blame_report_meta_data(next(documents))
 
             self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = {}
             raw_blame_report = next(documents)
+            self.__blame_taint_scope = BlameTaintScope.from_string(
+                # be backwards compatible with blame report version 4
+                raw_blame_report.get('scope', "COMMIT")
+            )
             for raw_func_entry in raw_blame_report['result-map']:
                 new_function_entry = (
                     BlameResultFunctionEntry.create_blame_result_function_entry(
@@ -297,14 +459,18 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
 
     def get_blame_result_function_entry(
         self, mangled_function_name: str
-    ) -> BlameResultFunctionEntry:
+    ) -> tp.Optional[BlameResultFunctionEntry]:
         """
         Get the result entry for a specific function.
 
         Args:
             mangled_function_name: mangled name of the function to look up
         """
-        return self.__function_entries[mangled_function_name]
+        return self.__function_entries.get(mangled_function_name, None)
+
+    @property
+    def blame_taint_scope(self) -> BlameTaintScope:
+        return self.__blame_taint_scope
 
     @property
     def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
@@ -339,6 +505,15 @@ class BlameReportDiff():
         self.__base_head = base_report.head_commit
         self.__prev_head = prev_report.head_commit
         self.__calc_diff_br(base_report, prev_report)
+        if base_report.blame_taint_scope != prev_report.blame_taint_scope:
+            raise AssertionError(
+                "Cannot diff blame reports with different scopes."
+            )
+        self.__blame_taint_scope = base_report.blame_taint_scope
+
+    @property
+    def blame_taint_scope(self) -> BlameTaintScope:
+        return self.__blame_taint_scope
 
     @property
     def base_head_commit(self) -> ShortCommitHash:
@@ -429,15 +604,15 @@ class BlameReportDiff():
         return str_representation
 
 
-ElementType = tp.TypeVar('ElementType')
+ElementTy = tp.TypeVar('ElementTy')
 
 
 def __count_elements(
     report: tp.Union[BlameReport, BlameReportDiff],
     get_elements_from_interaction: tp.Callable[[BlameInstInteractions],
-                                               tp.Iterable[ElementType]]
+                                               tp.Iterable[ElementTy]]
 ) -> int:
-    elements: tp.Set[ElementType] = set()
+    elements: tp.Set[ElementTy] = set()
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
@@ -478,7 +653,7 @@ def count_interacting_commits(
         the number unique interacting commits in this report or diff
     """
     return __count_elements(
-        report, lambda interaction: interaction.interacting_commits
+        report, lambda interaction: interaction.interacting_taints
     )
 
 
@@ -501,9 +676,9 @@ def count_interacting_authors(
         interaction: BlameInstInteractions
     ) -> tp.Iterable[str]:
         return map_commits(
-            # Issue (se-passau/VaRA#647): improve author uniquifying
+            # Issue (se-sic/VaRA#647): improve author uniquifying
             lambda c: tp.cast(str, c.author.name),
-            interaction.interacting_commits,
+            [btd.commit for btd in interaction.interacting_taints],
             commit_lookup
         )
 
@@ -529,18 +704,15 @@ def generate_degree_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            degree = len(interaction.interacting_commits)
+            degree = len(interaction.interacting_taints)
             degree_dict[degree] += interaction.amount
 
     return list(degree_dict.items())
 
 
-InteractingCommitRepoPairToAmountMapping = tp.Dict[CommitRepoPair, int]
-
-
 def gen_base_to_inter_commit_repo_pair_mapping(
     report: tp.Union[BlameReport, BlameReportDiff]
-) -> tp.Dict[CommitRepoPair, InteractingCommitRepoPairToAmountMapping]:
+) -> tp.Dict[BlameTaintData, tp.Dict[BlameTaintData, int]]:
     """
     Maps the base CommitRepoPair of a blame interaction to each distinct
     interacting CommitRepoPair, which maps to the amount of the interaction.
@@ -552,28 +724,18 @@ def gen_base_to_inter_commit_repo_pair_mapping(
         A mapping from base CommitRepoPairs to a mapping of the corresponding
         interacting CommitRepoPairs to their amount.
     """
-
-    base_to_inter_mapping: tp.Dict[
-        CommitRepoPair,
-        InteractingCommitRepoPairToAmountMapping] = defaultdict(dict)
+    grouped_interactions: tp.Dict[BlameTaintData, tp.Dict[
+        BlameTaintData, int]] = defaultdict(lambda: defaultdict(lambda: 0))
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            amount = interaction.amount
-            base_commit_repo_pair = interaction.base_commit
+            base_taint = interaction.base_taint
 
-            for interacting_c_repo_pair in interaction.interacting_commits:
-                if (
-                    interacting_c_repo_pair
-                    not in base_to_inter_mapping[base_commit_repo_pair]
-                ):
-                    base_to_inter_mapping[base_commit_repo_pair][
-                        interacting_c_repo_pair] = 0
+            for interacting_taint in interaction.interacting_taints:
+                grouped_interactions[base_taint][interacting_taint
+                                                ] += interaction.amount
 
-                base_to_inter_mapping[base_commit_repo_pair][
-                    interacting_c_repo_pair] += amount
-
-    return base_to_inter_mapping
+    return grouped_interactions
 
 
 DegreeAmountMappingTy = tp.Dict[int, int]
@@ -596,13 +758,14 @@ def generate_lib_dependent_degrees(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            base_repo_name = interaction.base_commit.repository_name
+            base_repo_name = interaction.base_taint.commit.repository_name
             tmp_degree_of_libs: tp.Dict[str, int] = {}
 
             if base_repo_name not in base_inter_lib_degree_amount_mapping:
                 base_inter_lib_degree_amount_mapping[base_repo_name] = {}
 
-            for inter_hash in interaction.interacting_commits:
+            for inter_taint in interaction.interacting_taints:
+                inter_hash = inter_taint.commit
                 inter_hash_repo_name = inter_hash.repository_name
 
                 if (
@@ -665,9 +828,9 @@ def generate_author_degree_tuples(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             author_list = map_commits(
-                # Issue (se-passau/VaRA#647): improve author uniquifying
+                # Issue (se-sic/VaRA#647): improve author uniquifying
                 lambda c: tp.cast(str, c.author.name),
-                interaction.interacting_commits,
+                [btd.commit for btd in interaction.interacting_taints],
                 commit_lookup
             )
 
@@ -704,10 +867,11 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if interaction.base_commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
+            base_crp: CommitRepoPair = interaction.base_taint.commit
+            if base_crp.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 continue
 
-            base_commit = commit_lookup(interaction.base_commit)
+            base_commit = commit_lookup(interaction.base_taint.commit)
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
             def translate_to_time_deltas2(
@@ -718,7 +882,8 @@ def generate_time_delta_distribution_tuples(
                 return abs((base_time - other_c_time).days)
 
             author_list = map_commits(
-                translate_to_time_deltas2, interaction.interacting_commits,
+                translate_to_time_deltas2,
+                [btd.commit for btd in interaction.interacting_taints],
                 commit_lookup
             )
 
@@ -789,7 +954,7 @@ def generate_in_head_interactions(
     head_interactions = []
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if interaction.base_commit.commit_hash.startswith(
+            if interaction.base_taint.commit.commit_hash.startswith(
                 report.head_commit
             ):
                 head_interactions.append(interaction)
@@ -811,8 +976,8 @@ def generate_out_head_interactions(
     head_interactions = []
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            for interacting_commit in interaction.interacting_commits:
-                if interacting_commit.commit_hash.startswith(
+            for interacting_taint in interaction.interacting_taints:
+                if interacting_taint.commit.commit_hash.startswith(
                     report.head_commit
                 ):
                     head_interactions.append(interaction)
@@ -839,9 +1004,12 @@ def get_interacting_commits_for_commit(
     out_commits: tp.Set[CommitRepoPair] = set()
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if commit == interaction.base_commit:
-                out_commits.update(interaction.interacting_commits)
-            if commit in interaction.interacting_commits:
-                in_commits.add(interaction.base_commit)
+            interacting_commits = [
+                taint.commit for taint in interaction.interacting_taints
+            ]
+            if commit == interaction.base_taint.commit:
+                out_commits.update(interacting_commits)
+            if commit in interacting_commits:
+                in_commits.add(interaction.base_taint.commit)
 
     return in_commits, out_commits

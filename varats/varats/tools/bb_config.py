@@ -15,7 +15,10 @@ from varats.tools.tool_util import (
 from varats.utils.settings import add_vara_experiment_options
 
 
-def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
+def create_new_bb_config(
+    varats_cfg: s.Configuration,
+    include_test_projects: bool = False
+) -> s.Configuration:
     """
     Create a new default bb config.
 
@@ -24,6 +27,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
 
     Args:
         varats_cfg: the varats config this bb config is based on
+        include_test_projects: changes whether test projects are included
 
     Returns:
         a new default bb config object
@@ -38,10 +42,12 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
+        # yapf: disable
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.brotli',
+        'varats.projects.c_projects.bzip2',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.file',
@@ -53,6 +59,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.grep',
         'varats.projects.c_projects.gzip',
         'varats.projects.c_projects.htop',
+        'varats.projects.c_projects.hypre',
         'varats.projects.c_projects.irssi',
         'varats.projects.c_projects.libjpeg_turbo',
         'varats.projects.c_projects.libpng',
@@ -66,44 +73,64 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.openvpn',
         'varats.projects.c_projects.opus',
+        'varats.projects.c_projects.picosat',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
+        'varats.projects.cpp_projects.clasp',
+        'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
-        'varats.projects.test_projects.test_suite',
+        'varats.projects.cpp_projects.z3',
+        'varats.projects.cpp_projects.ect',
+        'varats.projects.cpp_projects.lepton'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
         '.two_libs_one_project_interaction_discrete_libs_single_project'
     ]
-    projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
-    projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
-    projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
-
-    projects_conf.value[:] += [
-        'varats.projects.perf_tests.feature_perf_cs_collection'
-    ]
+    if include_test_projects:
+        projects_conf.value[:] += [
+            'varats.projects.test_projects.basic_tests',
+            'varats.projects.test_projects.bug_provider_test_repos',
+            'varats.projects.test_projects.example_test_repo',
+            'varats.projects.test_projects.feature_test_repo',
+            'varats.projects.test_projects.linker_check',
+            'varats.projects.test_projects.taint_tests',
+            'varats.projects.test_projects.multi_author_coordination',
+            'varats.projects.test_projects.test_suite',
+            'varats.projects.perf_tests.feature_perf_cs_collection',
+            'varats.projects.perf_tests.feature_perf_regression',
+        ]
 
     # Experiments for VaRA
     projects_conf = new_bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
-        'varats.experiments.vara.blame_report_experiment',
-        'varats.experiments.vara.commit_report_experiment',
-        'varats.experiments.vara.marker_tester',
-        'varats.experiments.vara.blame_verifier_experiment',
-        'varats.experiments.vara.phasar_fta',
-        'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.base.time_workloads',
         'varats.experiments.phasar.global_analysis_compare',
-        'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
+        'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.vara.blame_report_experiment',
+        'varats.experiments.vara.blame_verifier_experiment',
+        'varats.experiments.vara.commit_report_experiment',
+        'varats.experiments.vara.feature_perf_runner',
+        'varats.experiments.vara.feature_perf_sampling',
+        'varats.experiments.vara.feature_perf_tracing',
+        'varats.experiments.vara.feature_tracing_stats',
+        'varats.experiments.vara.feature_instrumentation_points',
+        'varats.experiments.vara.instrumentation_verifier',
+        'varats.experiments.vara.marker_tester',
+        'varats.experiments.vara.phasar_fta',
+        'varats.experiments.vara.feature_region_verifier_experiment',
     ]
+    # yapf: enable
 
     # Enable version exploration by default
     new_bb_cfg["versions"]["full"] = True

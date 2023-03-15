@@ -9,8 +9,23 @@ from benchbuild.source.base import target_prefix
 from varats.provider.provider import Provider
 
 
+class FeatureModelNotFound(FileNotFoundError):
+    """Exception raised when the specified feature model could not be found."""
+
+    def __init__(self, project: Project, fm_path: tp.Optional[Path]) -> None:
+        err_msg = f"Could not find feature model for project {project.name}!\n"
+        if fm_path:
+            err_msg += f"No file at: {fm_path}."
+        else:
+            err_msg += "Got no feature-model path."
+
+        super().__init__(err_msg)
+
+
 class FeatureModelProvider(Provider):
     """Provider for accessing project related FeatureModels."""
+
+    fm_repository = "https://github.com/se-sic/ConfigurableSystems.git"
 
     @classmethod
     def create_provider_for_project(
@@ -57,10 +72,12 @@ class FeatureModelProvider(Provider):
         """
         project_name = self.project.NAME.lower()
 
+        fully_qualified_fm_name = "FeatureModel"
+
         for project_dir in self._get_feature_model_repository_path().iterdir():
             if project_dir.name.lower() == project_name:
                 for poss_fm_file in project_dir.iterdir():
-                    if poss_fm_file.stem == "FeatureModel":
+                    if poss_fm_file.stem == fully_qualified_fm_name:
                         return poss_fm_file
 
         return None
@@ -68,7 +85,7 @@ class FeatureModelProvider(Provider):
     @staticmethod
     def _get_feature_model_repository_path() -> Path:
         fm_source = bb.source.Git(
-            remote="https://github.com/se-sic/ConfigurableSystems.git",
+            remote=FeatureModelProvider.fm_repository,
             local="ConfigurableSystems",
             refspec="origin/HEAD",
             limit=1,

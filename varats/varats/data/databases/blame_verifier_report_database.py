@@ -2,7 +2,6 @@
 import re
 import typing as tp
 from enum import Enum
-from pathlib import Path
 
 import pandas as pd
 
@@ -12,6 +11,10 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOptTBAA,
     BlameVerifierReportOpt,
 )
+from varats.experiments.vara.blame_verifier_experiment import (
+    BlameVerifierReportExperimentOpt,
+    BlameVerifierReportExperimentNoOptTBAA,
+)
 from varats.jupyterhelper.file import (
     load_blame_verifier_report_no_opt_tbaa,
     load_blame_verifier_report_opt,
@@ -19,7 +22,7 @@ from varats.jupyterhelper.file import (
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -37,7 +40,13 @@ class OptLevel(Enum):
 
 class BlameVerifierReportDatabase(
     EvaluationDatabase,
-    columns=["opt_level", "total", "successful", "failed", "undetermined"],
+    column_types={
+        "opt_level": 'int64',
+        "total": 'int64',
+        "successful": 'int64',
+        "failed": 'int64',
+        "undetermined": 'int64'
+    },
     cache_id="blame_verifier_report_data"
 ):
     """Provides access to blame verifier report data."""
@@ -53,15 +62,11 @@ class BlameVerifierReportDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.opt_level = df_layout.opt_level.astype('int64')
-            df_layout.total = df_layout.total.astype('int64')
-            df_layout.successful = df_layout.successful.astype('int64')
-            df_layout.failed = df_layout.failed.astype('int64')
-            df_layout.undetermined = df_layout.undetermined.astype('int64')
+            df_layout = df_layout.astype(cls.COLUMN_TYPES)
             return df_layout
 
         def create_data_frame_for_report(
-            report_path: Path
+            report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
             report_file_name_match = re.search(
@@ -117,30 +122,35 @@ class BlameVerifierReportDatabase(
                 index=[0]
                 # Add prefix of report name to head_commit to differentiate
                 # between reports with and without optimization
-            ), report.head_commit.hash + report_path.name.split("-", 1)[0], str(
+            ), report.head_commit.hash + \
+               report_path.report_filename.report_shorthand, str(
                 report_path.stat().st_mtime_ns
             )
 
         report_files_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportOpt,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentOpt,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         report_files_no_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportNoOptTBAA,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentNoOptTBAA,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         report_files = report_files_opt + report_files_no_opt
 
         failed_report_files_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportOpt,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentOpt,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files_no_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportNoOptTBAA,
-            get_case_study_file_name_filter(case_study)
+            project_name,
+            BlameVerifierReportExperimentNoOptTBAA,
+            file_name_filter=get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = \
@@ -150,9 +160,9 @@ class BlameVerifierReportDatabase(
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
-            create_dataframe_layout, create_data_frame_for_report, lambda path:
-            ReportFilename(path).commit_hash.hash + path.name.split("-", 1)[0],
-            lambda path: str(path.stat().st_mtime_ns),
+            create_dataframe_layout, create_data_frame_for_report,
+            lambda path: path.report_filename.commit_hash.hash + path.full_path(
+            ).name.split("-", 1)[0], lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
         return data_frame

@@ -4,6 +4,7 @@ import itertools
 import re
 import sys
 import typing as tp
+from copy import deepcopy
 from pathlib import Path
 
 import networkx as nx
@@ -11,16 +12,16 @@ from benchbuild.utils.cmd import git
 
 from varats.data.cache_helper import build_cached_graph
 from varats.data.reports.blame_report import (
-    BlameReport,
     gen_base_to_inter_commit_repo_pair_mapping,
-    BlameReportDiff,
+    BlameTaintData,
+    BlameResultFunctionEntry,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_gits,
 )
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -36,13 +37,21 @@ if sys.version_info <= (3, 8):
 else:
     from typing import TypedDict
 
+if tp.TYPE_CHECKING:
+    # pylint: disable=W0611
+    from varats.experiments.vara.blame_report_experiment import (
+        BlameReportExperiment,
+    )
 
-class _BIGNodeAttrs(TypedDict):
+BIGNodeTy = BlameTaintData
+
+
+class BIGNodeAttrs(TypedDict):
     """Blame interaction graph node attributes."""
-    commit: CommitRepoPair
+    blame_taint_data: BlameTaintData
 
 
-class _BIGEdgeAttrs(TypedDict):
+class BIGEdgeAttrs(TypedDict):
     """Blame interaction graph edge attributes."""
     amount: int
 
@@ -95,11 +104,29 @@ class InteractionGraph(abc.ABC):
     def _interaction_graph(self) -> nx.DiGraph:
         pass
 
+    def blame_interaction_graph(self) -> nx.DiGraph:
+        """
+        Return a digraph with blame data as nodes and interactions as edges.
+
+        Nodes can be referenced via their
+        :class:`~varats.data.reports.blame_report.BlameTaintData`.
+        The graph has the following attributes:
+        Nodes:
+          - blame_taint_data: BlameTaintData for this node
+        Edges:
+          - amount: how often this interaction was found
+
+        Returns:
+            the blame interaction graph
+        """
+        return deepcopy(self._interaction_graph())
+
     def commit_interaction_graph(self) -> nx.DiGraph:
         """
         Return a digraph with commits as nodes and interactions as edges.
 
-        Nodes can be referenced via their ``CommitRepoPair``.
+        Nodes can be referenced via their
+        :class:`~varats.utils.git_util.CommitRepoPair`.
         The graph has the following attributes:
         Nodes:
           - commit: CommitRepoPair for this commit
@@ -112,7 +139,7 @@ class InteractionGraph(abc.ABC):
         interaction_graph = self._interaction_graph()
 
         def edge_data(
-            source: tp.Set[CommitRepoPair], sink: tp.Set[CommitRepoPair]
+            source: tp.Set[BIGNodeTy], sink: tp.Set[BIGNodeTy]
         ) -> CIGEdgeAttrs:
             assert len(source) == len(
                 sink
@@ -122,11 +149,12 @@ class InteractionGraph(abc.ABC):
                 interaction_graph[next(iter(source))][next(iter(sink))].copy()
             )
 
-        def node_data(node: tp.Set[CommitRepoPair]) -> CIGNodeAttrs:
+        def node_data(node: tp.Set[BIGNodeTy]) -> CIGNodeAttrs:
             assert len(node) == 1, "Some node has more than one commit."
-            return tp.cast(
-                CIGNodeAttrs, interaction_graph.nodes[next(iter(node))].copy()
+            node_attrs = tp.cast(
+                BIGNodeAttrs, interaction_graph.nodes[next(iter(node))]
             )
+            return {"commit": node_attrs["blame_taint_data"].commit}
 
         cig = nx.quotient_graph(
             interaction_graph,
@@ -135,7 +163,7 @@ class InteractionGraph(abc.ABC):
             node_data=node_data,
             create_using=nx.DiGraph
         )
-        relabel_dict: tp.Dict[tp.FrozenSet[CommitRepoPair], CommitRepoPair] = {}
+        relabel_dict: tp.Dict[tp.FrozenSet[BIGNodeTy], CommitRepoPair] = {}
         for node in cig.nodes:
             relabel_dict[node] = tp.cast(CIGNodeAttrs,
                                          cig.nodes[node])["commit"]
@@ -160,17 +188,16 @@ class InteractionGraph(abc.ABC):
         interaction_graph = self._interaction_graph()
         commit_lookup = create_commit_lookup_helper(self.project_name)
 
-        def partition(node_u: CommitRepoPair, node_v: CommitRepoPair) -> bool:
+        def partition(node_u: BIGNodeTy, node_v: BIGNodeTy) -> bool:
             if UNCOMMITTED_COMMIT_HASH in (
-                node_u.commit_hash, node_v.commit_hash
+                node_u.commit.commit_hash, node_v.commit.commit_hash
             ):
-                return node_u.commit_hash == node_v.commit_hash
-            return str(commit_lookup(node_u).author.name
-                      ) == str(commit_lookup(node_v).author.name)
+                return node_u.commit == node_v.commit
+            return str(commit_lookup(node_u.commit).author.name
+                      ) == str(commit_lookup(node_v.commit).author.name)
 
         def edge_data(
-            partition_a: tp.Set[CommitRepoPair],
-            partition_b: tp.Set[CommitRepoPair]
+            partition_a: tp.Set[BIGNodeTy], partition_b: tp.Set[BIGNodeTy]
         ) -> AIGEdgeAttrs:
             amount = 0
             interactions: tp.List[tp.Tuple[CommitRepoPair, CommitRepoPair]] = []
@@ -178,21 +205,21 @@ class InteractionGraph(abc.ABC):
                 for sink in partition_b:
                     if interaction_graph.has_edge(source, sink):
                         amount += int(interaction_graph[source][sink]["amount"])
-                        interactions.append((source, sink))
+                        interactions.append((source.commit, sink.commit))
 
             return {"amount": amount, "interactions": interactions}
 
-        def node_data(node: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
+        def node_data(nodes: tp.Set[BIGNodeTy]) -> AIGNodeAttrs:
             authors = {
-                str(commit_lookup(commit).author.name)
-                if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
-                for commit in node
+                str(commit_lookup(node.commit).author.name)
+                if node.commit.commit_hash != UNCOMMITTED_COMMIT_HASH else
+                "Unknown" for node in nodes
             }
             assert len(authors) == 1, "Some node has more then one author."
             return {
                 "author": next(iter(authors)),
-                "num_commits": len(node),
-                "commits": list(node)
+                "num_commits": len(nodes),
+                "commits": [node.commit for node in nodes]
             }
 
         aig = nx.quotient_graph(
@@ -202,7 +229,7 @@ class InteractionGraph(abc.ABC):
             node_data=node_data,
             create_using=nx.DiGraph
         )
-        relabel_dict: tp.Dict[tp.FrozenSet[CommitRepoPair], str] = {}
+        relabel_dict: tp.Dict[tp.FrozenSet[BIGNodeTy], str] = {}
         for node in aig.nodes:
             relabel_dict[node] = tp.cast(AIGNodeAttrs,
                                          aig.nodes[node])["author"]
@@ -233,22 +260,20 @@ class InteractionGraph(abc.ABC):
         Returns:
             the commit-author interaction graph
         """
-        interaction_graph = self._interaction_graph()
+        commit_interaction_graph = self.commit_interaction_graph()
         commit_lookup = create_commit_lookup_helper(self.project_name)
 
         commit_author_mapping = {
             commit: commit_lookup(commit).author.name
             if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
-            for commit in (list(interaction_graph.nodes))
+            for commit in (list(commit_interaction_graph.nodes))
         }
         caig = nx.DiGraph()
         # add commits as nodes
-        caig.add_nodes_from([(
-            commit, {
-                "commit": interaction_graph.nodes[commit]["commit"],
-                "author": None
-            }
-        ) for commit in list(interaction_graph.nodes)])
+        caig.add_nodes_from([(commit, {
+            "commit": commit,
+            "author": None
+        }) for commit in list(commit_interaction_graph.nodes)])
         # add authors as nodes
         caig.add_nodes_from([(author, {
             "commit": None,
@@ -256,9 +281,9 @@ class InteractionGraph(abc.ABC):
         }) for author in set(commit_author_mapping.values())])
 
         # add edges and aggregate edge attributes
-        for node in interaction_graph.nodes:
+        for node in commit_interaction_graph.nodes:
             if incoming_interactions:
-                for source, sink, data in interaction_graph.in_edges(
+                for source, sink, data in commit_interaction_graph.in_edges(
                     node, data=True
                 ):
                     if not caig.has_edge(source, commit_author_mapping[sink]):
@@ -268,7 +293,7 @@ class InteractionGraph(abc.ABC):
                     caig[source][commit_author_mapping[sink]
                                 ]["amount"] += data["amount"]
             if outgoing_interactions:
-                for source, sink, data in interaction_graph.out_edges(
+                for source, sink, data in commit_interaction_graph.out_edges(
                     node, data=True
                 ):
                     if not caig.has_edge(sink, commit_author_mapping[source]):
@@ -283,38 +308,37 @@ class InteractionGraph(abc.ABC):
 class BlameInteractionGraph(InteractionGraph):
     """Graph/Network built from blame interaction data."""
 
-    def __init__(
-        self, project_name: str, report: tp.Union[BlameReport, BlameReportDiff]
-    ):
+    def __init__(self, project_name: str, report_file: ReportFilepath):
         super().__init__(project_name)
-        self.__report = report
+        self.__report_file = report_file
         self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
 
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
-            interactions = gen_base_to_inter_commit_repo_pair_mapping(
-                self.__report
-            )
-            commits = {
+            interactions = gen_base_to_inter_commit_repo_pair_mapping(report)
+            nodes: tp.Set[BIGNodeTy] = {
                 commit for base, inters in interactions.items()
                 for commit in [base, *inters.keys()]
             }
 
-            def create_node_attrs(commit: CommitRepoPair) -> _BIGNodeAttrs:
+            def create_node_attrs(
+                blame_taint_data: BlameTaintData
+            ) -> BIGNodeAttrs:
                 return {
-                    "commit": commit,
+                    "blame_taint_data": blame_taint_data,
                 }
 
             # pylint: disable=unused-argument
             def create_edge_attrs(
-                base: CommitRepoPair, inter: CommitRepoPair, amount: int
-            ) -> _BIGEdgeAttrs:
+                base: BlameTaintData, inter: BlameTaintData, amount: int
+            ) -> BIGEdgeAttrs:
                 return {"amount": amount}
 
             interaction_graph.add_nodes_from([
-                (commit, create_node_attrs(commit)) for commit in commits
+                (node, create_node_attrs(node)) for node in nodes
             ])
             interaction_graph.add_edges_from([
                 (base, inter, create_edge_attrs(base, inter, amount))
@@ -324,10 +348,65 @@ class BlameInteractionGraph(InteractionGraph):
             return interaction_graph
 
         if not self.__cached_interaction_graph:
+            filename = self.__report_file.report_filename
             self.__cached_interaction_graph = build_cached_graph(
-                f"ig-blame-{self.project_name}", create_graph
+                f"ig-{filename.experiment_shorthand}-{self.project_name}-"
+                f"{filename.commit_hash.hash}", create_graph
             )
         return self.__cached_interaction_graph
+
+
+class CallgraphBasedInteractionGraph(InteractionGraph):
+    """Graph/Network built from callgraph-based interaction data."""
+
+    def __init__(self, project_name: str, report_file: ReportFilepath):
+        super().__init__(project_name)
+        self.__report_file = report_file
+        self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
+
+    def _interaction_graph(self) -> nx.DiGraph:
+
+        def create_graph() -> nx.DiGraph:
+            report = load_blame_report(self.__report_file)
+            interaction_graph = nx.DiGraph()
+
+            for function_entry in report.function_entries:
+                sources = _nodes_for_func_entry(function_entry)
+                sinks = [
+                    sink for callee in function_entry.callees
+                    for sink in _nodes_for_func_entry(
+                        report.get_blame_result_function_entry(callee)
+                    )
+                ]
+
+                for node in [*sources, *sinks]:
+                    interaction_graph.add_node(node, blame_taint_data=node)
+
+                for source, sink in itertools.product(sources, sinks):
+                    if source != sink:
+                        if not interaction_graph.has_edge(source, sink):
+                            interaction_graph.add_edge(source, sink, amount=0)
+                        interaction_graph[source][sink]["amount"] += 1
+
+            return interaction_graph
+
+        if not self.__cached_interaction_graph:
+            self.__cached_interaction_graph = build_cached_graph(
+                f"ig-callgraph-{self.project_name}", create_graph
+            )
+        return self.__cached_interaction_graph
+
+
+def _nodes_for_func_entry(
+    function_entry: tp.Optional[BlameResultFunctionEntry]
+) -> tp.Set[BIGNodeTy]:
+    if function_entry is None:
+        return set()
+
+    return {
+        BlameTaintData(commit, function_name=function_entry.name)
+        for commit in function_entry.commits
+    }
 
 
 class FileBasedInteractionGraph(InteractionGraph):
@@ -370,7 +449,7 @@ class FileBasedInteractionGraph(InteractionGraph):
                     if file_pattern.search(path)
                 ]
                 for file in files:
-                    commits: tp.Set[CommitRepoPair] = set()
+                    nodes: tp.Set[BIGNodeTy] = set()
                     blame_lines: str = project_git(
                         "blame", "-w", "-s", "-l", "--root", head_commit, "--",
                         str(file.relative_to(repo_path))
@@ -382,16 +461,19 @@ class FileBasedInteractionGraph(InteractionGraph):
                             raise AssertionError
 
                         if match.group(2):
-                            commits.add(
-                                CommitRepoPair(
-                                    FullCommitHash(match.group(1)), repo_name
+                            nodes.add(
+                                BlameTaintData(
+                                    CommitRepoPair(
+                                        FullCommitHash(match.group(1)),
+                                        repo_name
+                                    )
                                 )
                             )
 
-                    for commit in commits:
-                        interaction_graph.add_node(commit, commit=commit)
+                    for node in nodes:
+                        interaction_graph.add_node(node, blame_taint_data=node)
                     for commit_a, commit_b in itertools.product(
-                        commits, repeat=2
+                        nodes, repeat=2
                     ):
                         if commit_a != commit_b:
                             if not interaction_graph.has_edge(
@@ -411,7 +493,8 @@ class FileBasedInteractionGraph(InteractionGraph):
 
 
 def create_blame_interaction_graph(
-    project_name: str, revision: FullCommitHash
+    project_name: str, revision: FullCommitHash,
+    experiment_type: tp.Type['BlameReportExperiment']
 ) -> BlameInteractionGraph:
     """
     Create a blame interaction graph for a certain project revision.
@@ -419,6 +502,7 @@ def create_blame_interaction_graph(
     Args:
         project_name: name of the project
         revision: project revision
+        experiment_type: experiment that was used to create the blame data
 
     Returns:
         the blame interaction graph
@@ -435,12 +519,45 @@ def create_blame_interaction_graph(
         file_name_filter = match_revision
 
     report_files = get_processed_revisions_files(
-        project_name, BlameReport, file_name_filter
+        project_name, experiment_type, file_name_filter=file_name_filter
     )
     if len(report_files) == 0:
         raise LookupError(f"Found no BlameReport for project {project_name}")
-    report = load_blame_report(report_files[0])
-    return BlameInteractionGraph(project_name, report)
+    return BlameInteractionGraph(project_name, report_files[0])
+
+
+def create_callgraph_based_interaction_graph(
+    project_name: str, revision: FullCommitHash,
+    experiment_type: tp.Type['BlameReportExperiment']
+) -> CallgraphBasedInteractionGraph:
+    """
+    Create a callgraph-based interaction graph for a certain project revision.
+
+    Args:
+        project_name: name of the project
+        revision: project revision
+        experiment_type: experiment that was used to create the callgraph data
+
+    Returns:
+        the blame interaction graph
+    """
+    file_name_filter: tp.Callable[[str], bool] = lambda x: False
+
+    if revision:
+
+        def match_revision(file_name: str) -> bool:
+            return ReportFilename(
+                file_name
+            ).commit_hash != revision.to_short_commit_hash()
+
+        file_name_filter = match_revision
+
+    report_files = get_processed_revisions_files(
+        project_name, experiment_type, file_name_filter=file_name_filter
+    )
+    if len(report_files) == 0:
+        raise LookupError(f"Found no BlameReport for project {project_name}")
+    return CallgraphBasedInteractionGraph(project_name, report_files[0])
 
 
 def create_file_based_interaction_graph(

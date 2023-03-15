@@ -3,13 +3,16 @@ import re
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import make
+from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.source import HTTPMultiple
+from benchbuild.utils.cmd import make, mkdir
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import (
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.paper.paper_config import (
     PaperConfigSpecificGit,
     project_filter_generator,
 )
@@ -43,7 +46,7 @@ class Gzip(VProject, ReleaseProviderHook):
 
     SOURCE = [
         block_revisions([
-            # TODO (se-passau/VaRA#537): glibc < 2.28
+            # TODO (se-sic/VaRA#537): glibc < 2.28
             # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
             RevisionRange(
                 "6ef28aeb035af20818578b1a1bc537f797c27029",
@@ -66,6 +69,15 @@ class Gzip(VProject, ReleaseProviderHook):
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("gzip")
+        ),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
         )
     ]
 
@@ -74,13 +86,39 @@ class Gzip(VProject, ReleaseProviderHook):
         'gettext', 'texinfo', 'rsync'
     )
 
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            Command(
+                SourceRoot("gzip") / RSBinary("gzip"),
+                "-k",
+                "--force",  # needed because BB creates symlinks for the inputs
+                "geo-maps/countries-land-1km.geo.json",
+                label="countries-land-1km",
+                creates=["geo-maps/countries-land-1km.geo.json.gz"]
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("gzip") / RSBinary("gzip"),
+                "--keep",
+                "--name",
+                "--verbose",
+                "--best",
+                "--force",  # needed because BB creates symlinks for the inputs
+                "geo-maps/countries-land-1m.geo.json",
+                label="geo-maps/countries-land-1m",
+                creates=["geo-maps/countries-land-1m.geo.json.gz"]
+            )
+        ],
+    }
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Gzip.NAME))
 
-        binary_map.specify_binary("gzip", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("build/gzip", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -91,18 +129,26 @@ class Gzip(VProject, ReleaseProviderHook):
         """Compile the project."""
         gzip_version_source = local.path(self.source_of_primary)
 
+        # Build binaries in separate dir because executing the binary with path
+        # 'gzip' will execute '/usr/bin/gzip' independent of the current working
+        # directory.
+        mkdir("-p", gzip_version_source / "build")
+
         self.cflags += [
             "-Wno-error=string-plus-int", "-Wno-error=shift-negative-value",
             "-Wno-string-plus-int", "-Wno-shift-negative-value"
         ]
 
-        clang = bb.compiler.cc(self)
         with local.cwd(gzip_version_source):
-            with local.env(CC=str(clang)):
-                bb.watch(local["./bootstrap"])()
-                bb.watch(local["./configure"])()
+            bb.watch(local["./bootstrap"])()
+
+        c_compiler = bb.compiler.cc(self)
+        with local.cwd(gzip_version_source / "build"
+                      ), local.env(CC=str(c_compiler)):
+            bb.watch(local["../configure"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
+        with local.cwd(gzip_version_source):
             verify_binaries(self)
 
     @classmethod

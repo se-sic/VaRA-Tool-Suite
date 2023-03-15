@@ -8,17 +8,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import seaborn as sb
-from matplotlib import style
 from matplotlib.patches import Patch
 
-import varats.paper_mgmt.paper_config as PC
-from varats.data.reports.empty_report import EmptyReport
+import varats.paper.paper_config as PC
+from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_REPORT_TYPE
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import get_local_project_git
-from varats.report.report import FileStatusExtension, BaseReport
+from varats.report.report import FileStatusExtension
 # colors taken from seaborn's default palette
+from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR: npt.NDArray[np.float64] = np.asarray(
@@ -33,7 +33,7 @@ FAILED_COLOR: npt.NDArray[np.float64] = np.asarray(
 
 
 def _load_projects_ordered_by_year(
-    current_config: PC.PaperConfig, result_file_type: tp.Type[BaseReport]
+    current_config: PC.PaperConfig, experiment_type: tp.Type[VersionExperiment]
 ) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[ShortCommitHash,
                                                 FileStatusExtension]]]]:
     projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
@@ -44,7 +44,7 @@ def _load_projects_ordered_by_year(
         key=lambda cs: (cs.project_name, cs.version)
     ):
         processed_revisions = get_revisions_status_for_case_study(
-            case_study, result_file_type
+            case_study, experiment_type
         )
 
         repo = get_local_project_git(case_study.project_name)
@@ -66,12 +66,8 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     """Generate the data for the PaperConfigOverviewPlot."""
     current_config = PC.get_paper_config()
 
-    if 'report_type' in kwargs:
-        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
-    else:
-        result_file_type = EmptyReport
-
-    projects = _load_projects_ordered_by_year(current_config, result_file_type)
+    experiment_type: tp.Type[VersionExperiment] = kwargs['experiment_type']
+    projects = _load_projects_ordered_by_year(current_config, experiment_type)
 
     min_years = []
     max_years = []
@@ -245,11 +241,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     (blocked).
     """
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
         _plot_overview_graph(
             _gen_overview_plot(**self.plot_kwargs), self.plot_config
         )
@@ -266,7 +258,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
 class PaperConfigOverviewGenerator(
     PlotGenerator,
     generator_name="pc-overview-plot",
-    options=[REQUIRE_REPORT_TYPE]
+    options=[REQUIRE_EXPERIMENT_TYPE]
 ):
     """Generates a single pc-overview plot for the current paper config."""
 

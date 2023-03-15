@@ -10,15 +10,20 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from plumbum import colors
 
-import varats.paper_mgmt.paper_config as PC
+import varats.paper.paper_config as PC
 from varats.experiment.experiment_util import VersionExperiment
-from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
     get_newest_result_files_for_case_study,
 )
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilename,
+    ReportFilepath,
+)
 from varats.revision.revisions import get_all_revisions_files
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
@@ -51,9 +56,7 @@ def show_status_of_case_studies(
         key=lambda cs: (cs.project_name, cs.version)
     ):
         match = re.match(
-            filter_regex, "{name}_{version}".format(
-                name=case_study.project_name, version=case_study.version
-            )
+            filter_regex, f"{case_study.project_name}_{case_study.version}"
         )
         if match is not None:
             output_case_studies.append(case_study)
@@ -99,28 +102,29 @@ def get_revision_list(case_study: CaseStudy) -> str:
     Returns:
         formated string that lists all revisions
     """
-    res_str = "CS: {project}_{version}:\n".format(
-        project=case_study.project_name, version=case_study.version
-    )
+    res_str = f"CS: {case_study.project_name}_{case_study.version}:\n"
 
     for idx, stage in enumerate(case_study.stages):
-        res_str += "  Stage {idx}\n".format(idx=idx)
+        res_str += f"  Stage {idx}\n"
         for rev in stage.revisions:
-            res_str += "    {rev}\n".format(rev=rev)
+            res_str += f"    {rev}\n"
 
     return res_str
 
 
 def get_result_files(
-    result_file_type: tp.Type[BaseReport], project_name: str,
-    commit_hash: ShortCommitHash, only_newest: bool
-) -> tp.List[Path]:
+    project_name: str, experiment_type: tp.Type["VersionExperiment"],
+    report_type: tp.Optional[tp.Type[BaseReport]], commit_hash: ShortCommitHash,
+    only_newest: bool
+) -> tp.List[ReportFilepath]:
     """
     Returns a list of result files that (partially) match the given commit hash.
 
     Args:
-        result_file_type: the type of the result file
         project_name: target project
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
         commit_hash: the commit hash to search result files for
         only_newest: whether to include all result files, or only the newest;
                      if ``False``, result files for the same revision are sorted
@@ -136,7 +140,8 @@ def get_result_files(
         return not file_commit_hash == commit_hash
 
     return get_all_revisions_files(
-        project_name, result_file_type, file_name_filter, only_newest
+        project_name, experiment_type, report_type, file_name_filter,
+        only_newest
     )
 
 
@@ -171,13 +176,9 @@ def get_occurrences(
             color = colors.orange3
 
     if color is not None:
-        status += "(" + color["{processed:3}/{total}".format(
-            processed=num_succ_rev, total=num_rev
-        )] + ") processed "
+        status += "(" + color[f"{num_succ_rev:3}/{num_rev}"] + ") processed "
     else:
-        status += "(" + "{processed:3}/{total}".format(
-            processed=num_succ_rev, total=num_rev
-        ) + ") processed "
+        status += "(" + f"{num_succ_rev:3}/{num_rev}" + ") processed "
 
     status += "["
     for file_status in FileStatusExtension:
@@ -242,9 +243,7 @@ def get_short_status(
     Returns:
         a short string representation of a case study
     """
-    status = "CS: {project}_{version}: ".format(
-        project=case_study.project_name, version=case_study.version
-    ) + "".ljust(
+    status = f"CS: {case_study.project_name}_{case_study.version}: " + "".ljust(
         longest_cs_name -
         (len(case_study.project_name) + len(str(case_study.version))), ' '
     )
@@ -298,7 +297,7 @@ def get_status(
     ) + "\n"
 
     if sort:
-        cmap = create_lazy_commit_map_loader(case_study.project_name)()
+        cmap = get_commit_map(case_study.project_name)
 
     def rev_time(rev: tp.Tuple[ShortCommitHash, FileStatusExtension]) -> int:
         return cmap.short_time_id(rev[0])
@@ -306,10 +305,10 @@ def get_status(
     if sep_stages:
         stages = case_study.stages
         for stage_num in range(0, case_study.num_stages):
-            status += "  Stage {idx}".format(idx=stage_num)
+            status += f"  Stage {stage_num}"
             stage_name = stages[stage_num].name
             if stage_name:
-                status += " ({})".format(stage_name)
+                status += f" ({stage_name})"
             status += "\n"
             tagged_revs = _combine_tagged_revs_for_experiment(
                 case_study, experiment_type, stage_num
@@ -317,10 +316,8 @@ def get_status(
             if sort:
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
             for tagged_rev_state in tagged_revs:
-                status += "    {rev} [{status}]\n".format(
-                    rev=tagged_rev_state[0].hash,
-                    status=tagged_rev_state[1].get_colored_status()
-                )
+                status += f"    {tagged_rev_state[0].hash} " \
+                          f"[{tagged_rev_state[1].get_colored_status()}]\n"
     else:
         tagged_revs = list(
             dict.fromkeys(
@@ -332,10 +329,8 @@ def get_status(
         if sort:
             tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
         for tagged_rev_state in tagged_revs:
-            status += "    {rev} [{status}]\n".format(
-                rev=tagged_rev_state[0].hash,
-                status=tagged_rev_state[1].get_colored_status()
-            )
+            status += f"    {tagged_rev_state[0].hash} " \
+                      f"[{tagged_rev_state[1].get_colored_status()}]\n"
 
     return status
 
@@ -386,9 +381,7 @@ def package_paper_config(
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
         match = re.match(
-            cs_filter_regex, "{name}_{version}".format(
-                name=case_study.project_name, version=case_study.version
-            )
+            cs_filter_regex, f"{case_study.project_name}_{case_study.version}"
         )
         if match is not None:
             for report_type in report_types:
@@ -433,14 +426,14 @@ def _combine_tagged_revs_for_experiment(
     """
     combined_tagged_revisions: tp.Dict[ShortCommitHash,
                                        FileStatusExtension] = {}
-    for report in experiment_type.report_spec():
+    for report_type in experiment_type.report_spec():
         if stage_num:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, report, stage_num, experiment_type=experiment_type
+                case_study, experiment_type, report_type, stage_num
             )
         else:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, report, experiment_type=experiment_type
+                case_study, experiment_type, report_type
             )
 
         for tagged_rev in tagged_revs:
