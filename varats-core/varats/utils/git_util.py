@@ -1121,7 +1121,7 @@ class RepositoryAtCommit():
 
     def __enter__(self) -> Path:
         self.__repo.checkout_tree(self.__revision)
-        return Path(self.__repo.path)
+        return Path(self.__repo.path).parent
 
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],
