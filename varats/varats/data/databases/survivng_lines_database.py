@@ -41,7 +41,9 @@ class SurvivingLinesDatabase(
         ) - cached_revisions
 
         for revision in revisions_to_compute:
-            lines_per_commit = calc_surviving_lines(project_repo, revision)
+            lines_per_commit = calc_surviving_lines(
+                case_study.project_name, revision
+            )
 
             def build_dataframe_row(chash: FullCommitHash,
                                     lines: int) -> tp.Dict[str, tp.Any]:
