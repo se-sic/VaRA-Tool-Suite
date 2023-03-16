@@ -8,7 +8,11 @@ from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.project.project_util import get_local_project_git
-from varats.utils.git_util import calc_surviving_lines, FullCommitHash
+from varats.utils.git_util import (
+    calc_surviving_lines,
+    FullCommitHash,
+    ShortCommitHash,
+)
 
 
 class SurvivingLinesDatabase(
@@ -42,7 +46,7 @@ class SurvivingLinesDatabase(
 
         for revision in revisions_to_compute:
             lines_per_commit = calc_surviving_lines(
-                case_study.project_name, revision
+                case_study.project_name, ShortCommitHash(revision)
             )
 
             def build_dataframe_row(chash: FullCommitHash,

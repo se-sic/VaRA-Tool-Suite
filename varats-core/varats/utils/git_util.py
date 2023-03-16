@@ -1132,7 +1132,7 @@ class RepositoryAtCommit:
         self.__repo.checkout(self.__initial_head)
 
 
-def calc_surviving_lines(project_name: str, revision: ShortCommitHash) -> \
+def calc_surviving_lines(project_name: str, revision: CommitHash) -> \
 tp.Dict[str, int]:
     """
 
@@ -1146,7 +1146,7 @@ tp.Dict[str, int]:
     file_pattern = re.compile(
         "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
     )
-
+    revision = revision.to_short_commit_hash()
     lines_per_revision: dict = {}
     with RepositoryAtCommit(project_name, revision) as project_path:
         with local.cwd(project_path):
