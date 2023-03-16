@@ -1109,44 +1109,7 @@ def branch_has_upstream(
     return tp.cast(bool, exit_code == 0)
 
 
-
-def calc_surviving_lines(repo: pygit2.Repository, revision) -> tp.Dict[str, int]:
-    """
-
-    Args:
-        repo: repository to analyze
-        revision: revision to analyze at
-        
-    returns: number of lines per prior commit
-    """
-    project_path = repo.path[:-5]
-    churn_config = ChurnConfig.create_c_style_languages_config()
-    file_pattern = re.compile(
-        "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
-    )
-
-    lines_per_revision: dict = {}
-    with local.cwd(project_path):
-        git("checkout", revision)
-        files = git("ls-tree", "-r", "--name-only", revision).splitlines()
-
-        for file in files:
-            if file_pattern.match(file):
-                lines = git("blame", "--root", "-l", f"{file}").splitlines()
-                for line in lines:
-                    if line:
-                        last_change = line[:FullCommitHash.hash_length()]
-                        last_change = FullCommitHash(last_change)
-                        if lines_per_revision.keys().__contains__(last_change):
-                            lines_per_revision[
-                                last_change
-                            ] = lines_per_revision[last_change] + 1
-                        else:
-                            lines_per_revision[last_change] = 1
-    return lines_per_revision
-
-
-class RepositoryAtCommit():
+class RepositoryAtCommit:
     """Context manager to work with a repository at a specific revision, without
     duplicating the repository."""
 
@@ -1168,3 +1131,40 @@ class RepositoryAtCommit():
     ) -> None:
         self.__repo.checkout(self.__initial_head)
 
+
+def calc_surviving_lines(project_name: str, revision: ShortCommitHash) -> \
+tp.Dict[str, int]:
+    """
+
+    Args:
+        project_name: project to analyze
+        revision: revision to analyze at
+
+    returns: number of lines per prior commit
+    """
+    churn_config = ChurnConfig.create_c_style_languages_config()
+    file_pattern = re.compile(
+        "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
+    )
+
+    lines_per_revision: dict = {}
+    with RepositoryAtCommit(project_name, revision) as project_path:
+        with local.cwd(project_path):
+            files = git("ls-tree", "-r", "--name-only",
+                        revision.hash).splitlines()
+
+            for file in files:
+                if file_pattern.match(file):
+                    lines = git("blame", "--root", "-l", f"{file}").splitlines()
+                    for line in lines:
+                        if line:
+                            last_change = line[:FullCommitHash.hash_length()]
+                            last_change = FullCommitHash(last_change)
+                            if lines_per_revision.keys(
+                            ).__contains__(last_change):
+                                lines_per_revision[
+                                    last_change
+                                ] = lines_per_revision[last_change] + 1
+                            else:
+                                lines_per_revision[last_change] = 1
+    return lines_per_revision
