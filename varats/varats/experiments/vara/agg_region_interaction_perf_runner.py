@@ -5,14 +5,17 @@ import typing as tp
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
+from varats.data.report.performance_influence_trace_report import (
+    PerfInfluenceTraceReport,
+)
 from varats.experiment.experiment_util import get_default_compile_error_wrapped
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
+    FeatureInstrType,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
-from varats.report.rit_report import RITReport
 
 
 class AggregatedRegionInteractionPerfRunner(
@@ -22,7 +25,7 @@ class AggregatedRegionInteractionPerfRunner(
 
     NAME = "RunAggRegionPerf"
 
-    REPORT_SPEC = ReportSpecification(RITReport)
+    REPORT_SPEC = ReportSpecification(PerfInfluenceTraceReport)
 
     def actions_for_project(
         self, project: VProject
@@ -34,11 +37,13 @@ class AggregatedRegionInteractionPerfRunner(
         Args:
             project: to analyze
         """
-        instr_type = "rit_trace_event"  # trace_event
+        instr_type = FeatureInstrType.PERF_INFLUENCE_TRACE
 
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags(instr_type)
+        project.cflags += self.get_vara_tracing_cflags(
+            instr_type, project=project
+        )
 
         project.ldflags += self.get_vara_tracing_ldflags()
 
@@ -52,7 +57,7 @@ class AggregatedRegionInteractionPerfRunner(
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, RITReport
+            self.get_handle(), project, PerfInfluenceTraceReport
         )
 
         analysis_actions = []
