@@ -211,7 +211,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             )
 
     def get_install_binaries(self) -> tp.List[str]:
-        return ["bin/myphasartool", "bin/phasar-llvm"]
+        return ["bin/myphasartool", "bin/phasar-cli"]
 
     def verify_build(
         self, build_type: BuildType, build_folder_suffix: tp.Optional[str]
