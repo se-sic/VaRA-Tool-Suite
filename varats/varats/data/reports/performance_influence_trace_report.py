@@ -37,7 +37,7 @@ class RegionInteractionEntry:
         return str(self)
 
 
-class RITReport(BaseReport, shorthand="RIT", file_type="json"):
+class PerfInfluenceTraceReport(BaseReport, shorthand="PIT", file_type="json"):
     """Report class to access region interaction report format files."""
 
     def __init__(self, path: Path) -> None:
@@ -49,6 +49,9 @@ class RITReport(BaseReport, shorthand="RIT", file_type="json"):
             self.__region_interaction_entries = self._parse_region_interaction_entries(
                 data["regionTimes"]
             )
+            self.__region_name_map = self._parse_region_name_map(
+                data["regionNames"]
+            )
 
     @property
     def timestamp_unit(self) -> str:
@@ -57,6 +60,24 @@ class RITReport(BaseReport, shorthand="RIT", file_type="json"):
     @property
     def region_interaction_entries(self) -> tp.List[RegionInteractionEntry]:
         return self.__region_interaction_entries
+
+    def __str__(self) -> str:
+        stringify = f"Term = Value ({self.timestamp_unit})\n"
+        stringify += "-" * len(stringify) + "\n"
+
+        for entry in self.region_interaction_entries:
+            stringify += f"{self._translate_interaction(entry.interaction)} = {entry.time}\n"
+
+        return stringify
+
+    def _translate_interaction(self, interaction: str) -> str:
+        sub_terms = interaction.split('*')
+        return "*".join(
+            map(
+                lambda region_id: self.__region_name_map[int(region_id)],
+                sub_terms
+            )
+        )
 
     @staticmethod
     def _parse_region_interaction_entries(
@@ -69,17 +90,28 @@ class RITReport(BaseReport, shorthand="RIT", file_type="json"):
             )
         return region_interaction_entries
 
+    @staticmethod
+    def _parse_region_name_map(
+        entry_dict: tp.Dict[str, str]
+    ) -> tp.Dict[int, str]:
+        mapped_region_names: tp.Dict[int, str] = {}
 
-class RITReportAggregate(
-    ReportAggregate[RITReport],
-    shorthand=RITReport.SHORTHAND + ReportAggregate.SHORTHAND,
+        for region_id, region_name in entry_dict.items():
+            mapped_region_names[int(region_id)] = region_name
+
+        return mapped_region_names
+
+
+class PerfInfluenceTraceReportAggregate(
+    ReportAggregate[PerfInfluenceTraceReport],
+    shorthand=PerfInfluenceTraceReport.SHORTHAND + ReportAggregate.SHORTHAND,
     file_type=ReportAggregate.FILE_TYPE
 ):
     """Context Manager for parsing multiple RIT reports stored inside a zip
     file."""
 
     def __init__(self, path: Path) -> None:
-        super().__init__(path, RITReport)
+        super().__init__(path, PerfInfluenceTraceReport)
 
 
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
@@ -93,13 +125,15 @@ def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
     return None
 
 
-class WorkloadSpecificRITReportAggregate(
-    WorkloadSpecificReportAggregate[RITReport], shorthand="", file_type=""
+class WorkloadSpecificPITReportAggregate(
+    WorkloadSpecificReportAggregate[PerfInfluenceTraceReport],
+    shorthand="",
+    file_type=""
 ):
 
     def __init__(self, path: Path) -> None:
         super().__init__(
             path,
-            RITReport,
+            PerfInfluenceTraceReport,
             get_workload_label,
         )
