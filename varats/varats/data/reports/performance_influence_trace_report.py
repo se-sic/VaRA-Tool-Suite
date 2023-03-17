@@ -3,7 +3,6 @@
 import json
 import re
 import typing as tp
-from enum import Enum
 from pathlib import Path
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
