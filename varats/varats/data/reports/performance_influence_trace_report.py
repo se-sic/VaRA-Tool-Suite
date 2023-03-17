@@ -45,9 +45,8 @@ class PerfInfluenceTraceReport(BaseReport, shorthand="PIT", file_type="json"):
         with open(self.path, "r", encoding="utf-8") as json_rit_report:
             data = json.load(json_rit_report)
             self.__timestamp_unit = str(data["timestampUnit"])
-            self.__region_interaction_entries = self._parse_region_interaction_entries(
-                data["regionTimes"]
-            )
+            self.__region_interaction_entries = \
+                self._parse_region_interaction_entries(data["regionTimes"])
             self.__region_name_map = self._parse_region_name_map(
                 data["regionNames"]
             )
@@ -65,7 +64,8 @@ class PerfInfluenceTraceReport(BaseReport, shorthand="PIT", file_type="json"):
         stringify += "-" * len(stringify) + "\n"
 
         for entry in self.region_interaction_entries:
-            stringify += f"{self._translate_interaction(entry.interaction)} = {entry.time}\n"
+            interaction_name = self._translate_interaction(entry.interaction)
+            stringify += f"{interaction_name} = {entry.time}\n"
 
         return stringify
 
@@ -117,6 +117,8 @@ __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 
 
 def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
+    """Helper function to access workload labels for workload specific
+    PITReports."""
     match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
     if match:
         return str(match.group("label"))
@@ -129,6 +131,7 @@ class WorkloadSpecificPITReportAggregate(
     shorthand="",
     file_type=""
 ):
+    """Workload specific adapter class to access region interaction reports."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(
