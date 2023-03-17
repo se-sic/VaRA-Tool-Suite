@@ -117,6 +117,7 @@ def create_new_bb_config(
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.vara.agg_region_interaction_perf_runner',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
