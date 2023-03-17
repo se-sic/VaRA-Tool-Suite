@@ -5,7 +5,6 @@ import typing as tp
 from collections import defaultdict
 from copy import deepcopy
 from enum import Enum
-from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -216,16 +215,15 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .workingdir('Python-3.10.9')
             .run('./configure', '--enable-optimizations', 'CFLAGS=-fPIC')
             .run('make', '-j', str(get_number_of_jobs(bb_cfg())))
-            # .run('make', 'test')
             .run('make', 'install')
             .workingdir('/')
             # install llvm 13
             .run('wget', 'https://apt.llvm.org/llvm.sh')
             .run('chmod', '+x', './llvm.sh')
-            .run('./llvm.sh', '13', 'all')
-            .run('ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang')
-            .run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld'))
+            .run('./llvm.sh', '14', 'all')
+            .run('ln', '-s', '/usr/bin/clang-14', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-14', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-14', '/usr/bin/lld'))
 }
 
 _STAGE_LAYERS: tp.Dict[ImageStage,
