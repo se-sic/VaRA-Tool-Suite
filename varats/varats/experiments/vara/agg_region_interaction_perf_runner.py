@@ -5,7 +5,7 @@ import typing as tp
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
-from varats.data.report.performance_influence_trace_report import (
+from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReport,
 )
 from varats.experiment.experiment_util import get_default_compile_error_wrapped
