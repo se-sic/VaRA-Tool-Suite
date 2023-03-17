@@ -366,26 +366,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
                 run_process_with_output(proc, log_without_linesep(print))
             )
 
-    def install_exists(self, install_location: Path) -> bool:
-        # pylint: disable=no-self-use
-        """
-        Check whether a VaRA installation exists at the given path.
-
-        In contrast to :func:`verify_install()`, this does not try to execute
-        any binaries. This is useful if the VaRA installation is intended for
-        a different environment, e.g., in a container.
-
-        Args:
-            install_location: the installation directory to check
-
-        Returns:
-            True if the given directory contains a VaRA installation
-        """
-        status_ok = True
-        status_ok &= (install_location / "bin/clang++").exists()
-        status_ok &= (install_location / "bin/opt").exists()
-        status_ok &= (install_location / "bin/phasar-llvm").exists()
-        return status_ok
+    def get_install_binaries(self) -> tp.List[str]:
+        return ["bin/clang++", "bin/opt", "bin/phasar-cli"]
 
     def verify_install(self, install_location: Path) -> bool:
         """

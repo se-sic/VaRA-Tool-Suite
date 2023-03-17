@@ -52,8 +52,8 @@ def multivariate_grid(
         ax = sns.scatterplot(
             data=df_group, x=x, y=y, ax=grid.ax_joint, **kwargs
         )
-        ax.xaxis.label.set_size(20)
-        ax.yaxis.label.set_size(20)
+        ax.xaxis.label.set_size(25)
+        ax.yaxis.label.set_size(25)
         ax.tick_params(labelsize=15)
         sns.kdeplot(
             data=df_group,
