@@ -52,6 +52,10 @@ from varats.report.report import (
     ReportFilename,
     ReportFilepath,
 )
+from varats.revision.revisions import (
+    get_all_revisions_files,
+    get_failed_revisions_files,
+)
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
     cli_list_choice,
@@ -724,6 +728,14 @@ def cleanup(
     ctx.obj["report"] = report
 
 
+def __delete_report_file_paths(report_files: tp.List[ReportFilepath]) -> None:
+    for file in report_files:
+        file.full_path().unlink(missing_ok=True)
+        parent_dir = file.full_path().parent
+        if parent_dir != file.base_path and next(parent_dir.iterdir()) is None:
+            parent_dir.rmdir()
+
+
 @cleanup.command("all")
 @click.option(
     "--error", is_flag=True, help="remove only reports from failed experiments"
@@ -731,73 +743,46 @@ def cleanup(
 @click.pass_context
 def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
     """Remove all report files of the current paper_config."""
-    result_folders = _find_result_dir_paths_of_projects(ctx.obj["case_studies"])
-    for folder in result_folders:
-        for res_file in folder.iterdir():
-            report_file = ReportFilename(res_file.name)
-            if not report_file.is_result_file():
-                continue
-            if ctx.obj["experiment"] and not ctx.obj[
-                "experiment"].file_belongs_to_experiment(res_file.name):
-                continue
-            if ctx.obj["report"] and not ctx.obj[
-                "report"].is_correct_report_type(res_file.name):
-                continue
-
-            commit_hash = report_file.commit_hash
-            if any(
-                list(
-                    case_study.has_revision(commit_hash)
-                    for case_study in ctx.obj["case_studies"]
-                )
-            ):
-                if error and not (
-                    report_file.has_status_compileerror() or
-                    report_file.has_status_failed()
-                ):
-                    continue
-                res_file.unlink()
+    for case_study in ctx.obj["case_studies"]:
+        if error:
+            revision_files = get_failed_revisions_files(
+                case_study.project_name,
+                ctx.obj["experiment"],
+                ctx.obj["report"],
+                only_newest=False
+            )
+        else:
+            revision_files = get_all_revisions_files(
+                case_study.project_name,
+                ctx.obj["experiment"],
+                ctx.obj["report"],
+                only_newest=False
+            )
+        __delete_report_file_paths(revision_files)
 
 
 @cleanup.command("old")
 @click.pass_context
 def _remove_old_result_files(ctx: click.Context) -> None:
     """Remove result files of wich a newer version exists."""
-    result_dir = Path(str(vara_cfg()['result_dir']))
-    for case_study in ctx.obj['case_studies']:
-        old_files: tp.List[Path] = []
-        newer_files: tp.Dict[ShortCommitHash, Path] = {}
-        result_dir_cs = result_dir / case_study.project_name
-        if not result_dir_cs.exists():
-            continue
-        for opt_res_file in result_dir_cs.iterdir():
-            report_file = ReportFilename(opt_res_file.name)
-            if not report_file.is_result_file():
-                continue
-            if ctx.obj["experiment"] and not ctx.obj[
-                "experiment"].file_belongs_to_experiment(opt_res_file.name):
-                continue
-            if ctx.obj["report"] and not ctx.obj[
-                "report"].is_correct_report_type(opt_res_file.name):
-                continue
-
-            commit_hash = report_file.commit_hash
-            if case_study.has_revision(commit_hash):
-                current_file = newer_files.get(commit_hash)
-                if current_file is None:
-                    newer_files[commit_hash] = opt_res_file
-                else:
-                    if (
-                        current_file.stat().st_mtime_ns <
-                        opt_res_file.stat().st_mtime_ns
-                    ):
-                        newer_files[commit_hash] = opt_res_file
-                        old_files.append(current_file)
-                    else:
-                        old_files.append(opt_res_file)
-        for file in old_files:
-            if file.exists():
-                file.unlink()
+    for case_study in ctx.obj["case_studies"]:
+        all_revision_files = get_all_revisions_files(
+            case_study.project_name,
+            ctx.obj["experiment"],
+            ctx.obj["report"],
+            only_newest=False
+        )
+        new_revision_files = get_all_revisions_files(
+            case_study.project_name,
+            ctx.obj["experiment"],
+            ctx.obj["report"],
+            only_newest=True
+        )
+        old_revision_files = [
+            file for file in all_revision_files
+            if file not in new_revision_files
+        ]
+        __delete_report_file_paths(old_revision_files)
 
 
 @cleanup.command("regex")
@@ -820,48 +805,33 @@ def _remove_result_files_by_regex(
 
     Ignores experiment and report filter given to the main command
     """
-    result_dir_paths = _find_result_dir_paths_of_projects(
-        ctx.obj["case_studies"]
-    )
-    for result_dir_path in result_dir_paths:
-        result_file_names = os.listdir(result_dir_path)
-        files_to_delete: tp.List[str] = []
-        for result_file_name in result_file_names:
-            match = re.match(regex_filter, result_file_name)
-            if match is not None:
-                files_to_delete.append(result_file_name)
-        if not files_to_delete:
-            print(f"No matching result files in {result_dir_path} found.")
+    for case_study in ctx.obj["case_studies"]:
+        all_revision_files = get_all_revisions_files(
+            case_study.project_name,
+            ctx.obj["experiment"],
+            ctx.obj["report"],
+            lambda x: re.match(regex_filter, x) is None,
+            only_newest=False
+        )
+
+        if not all_revision_files:
+            print(
+                f"No matching result files for {case_study.project_name} found."
+            )
             continue
         if not silent:
-            for file_name in files_to_delete:
-                print(f"{file_name}")
+            for file in all_revision_files:
+                print(f"{file.report_filename.filename}")
         print(
-            f"Found {len(files_to_delete)} matching"
-            "result files in {result_dir_path}:"
+            f"Found {len(all_revision_files)} matching"
+            f"result files for {case_study.project_name}:"
         )
 
         try:
             if cli_yn_choice("Do you want to delete these files", "n"):
-                for file_name in files_to_delete:
-                    file = Path(result_dir_path / file_name)
-                    if file.exists():
-                        file.unlink()
+                __delete_report_file_paths(all_revision_files)
         except EOFError:
             continue
-
-
-def _find_result_dir_paths_of_projects(case_studies: tp.List[CaseStudy]) -> \
-        tp.List[Path]:
-    result_dir_path = Path(vara_cfg()["result_dir"].value)
-    existing_paper_config_result_dir_paths = []
-    project_names = [cs.project_name for cs in case_studies]
-    for project_name in project_names:
-        path = Path(result_dir_path / project_name)
-        if Path.exists(path):
-            existing_paper_config_result_dir_paths.append(path)
-
-    return existing_paper_config_result_dir_paths
 
 
 if __name__ == '__main__':
