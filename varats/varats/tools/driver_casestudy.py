@@ -728,12 +728,11 @@ def cleanup(
     ctx.obj["report"] = report
 
 
-def __delete_report_file_paths(report_files: tp.List[ReportFilepath]):
+def __delete_report_file_paths(report_files: tp.List[ReportFilepath]) -> None:
     for file in report_files:
         file.full_path().unlink(missing_ok=True)
         parent_dir = file.full_path().parent
-        if parent_dir != file.base_path and parent_dir.iterdir().__next__(
-        ) is None:
+        if parent_dir != file.base_path and next(parent_dir.iterdir()) is None:
             parent_dir.rmdir()
 
 

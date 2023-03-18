@@ -70,7 +70,7 @@ def filter_blocked_revisions(
 def __get_result_files_dict(
     project_name: str,
     experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
-    report_type: tp.Optional[tp.Type[BaseReport]] = None
+    opt_report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Dict[ShortCommitHash, tp.List[ReportFilepath]]:
     """
     Returns a dict that maps the commit_hash to a list of all result files of
@@ -90,17 +90,13 @@ def __get_result_files_dict(
     if not res_dir.exists():
         return result_files
     if experiment_type is None:
-        condition = lambda x: True
+        condition: tp.Callable[[ReportFilename], bool] = lambda x: True
     else:
-        if report_type is None:
+        if opt_report_type is None:
             report_type = experiment_type.report_spec().main_report
 
-        def experiment_condition(file: ReportFilename) -> bool:
-
-            return file.report_shorthand == report_type.shorthand(
-            ) and file.experiment_shorthand == experiment_type.shorthand()
-
-        condition = experiment_condition
+        condition: tp.Callable[[ReportFilename], bool] = lambda file: file.report_shorthand == report_type.shorthand() \
+                                                                      and file.experiment_shorthand == experiment_type.shorthand()
 
     for res_file in res_dir.rglob("*"):
         if res_file.is_dir():
