@@ -93,7 +93,9 @@ def __get_result_files_dict(
         condition: tp.Callable[[ReportFilename], bool] = lambda x: True
     else:
         experiment_type = opt_experiment_type
-        if opt_report_type is None:
+        if opt_report_type:
+            report_type = opt_report_type
+        else:
             report_type = experiment_type.report_spec().main_report
 
         condition = lambda file: file.report_shorthand == report_type.shorthand() \
