@@ -467,7 +467,7 @@ class ReportFilename():
             self.file_suffix, self.config_id
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, ReportFilename):
             return self.filename == other.filename
         else:
