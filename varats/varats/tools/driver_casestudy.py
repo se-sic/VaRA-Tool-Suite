@@ -811,7 +811,7 @@ def _remove_result_files_by_regex(
             case_study.project_name,
             ctx.obj["experiment"],
             ctx.obj["report"],
-            lambda x: re.match(regex_filter, x) is not None,
+            lambda x: re.match(regex_filter, x) is None,
             only_newest=False
         )
 
