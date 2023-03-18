@@ -95,7 +95,7 @@ def __get_result_files_dict(
         if opt_report_type is None:
             report_type = experiment_type.report_spec().main_report
 
-        condition: tp.Callable[[ReportFilename], bool] = lambda file: file.report_shorthand == report_type.shorthand() \
+        condition = lambda file: file.report_shorthand == report_type.shorthand() \
                                                                       and file.experiment_shorthand == experiment_type.shorthand()
 
     for res_file in res_dir.rglob("*"):
