@@ -22,6 +22,7 @@ jobs:
       run: |
         sudo apt install pandoc libgraphviz-dev
         python -m pip install --upgrade pip
+        pip install wheel
         pip install -r requirements.txt
 
     - name: Build docs
