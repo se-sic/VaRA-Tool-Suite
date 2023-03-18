@@ -1,6 +1,6 @@
 """Module for the :class:`CVEProvider`."""
-import sys
 import typing as tp
+from typing import Protocol, runtime_checkable
 
 from benchbuild.project import Project
 
@@ -9,11 +9,6 @@ from varats.provider.cve.cve import CVE
 from varats.provider.cve.cve_map import generate_cve_map, CVEDict
 from varats.provider.provider import Provider
 from varats.utils.git_util import FullCommitHash
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol, runtime_checkable
-else:
-    from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
