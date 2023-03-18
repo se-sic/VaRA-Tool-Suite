@@ -2,13 +2,10 @@
 layout and implements automatic configuration and setup."""
 import os
 import shutil
-import tempfile
 import typing as tp
 from pathlib import Path
 
-from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
-from PyQt5 import QtCore
 from PyQt5.QtCore import QProcess
 
 from varats.tools.research_tools.cmake_util import set_cmake_var
@@ -26,7 +23,7 @@ from varats.tools.research_tools.vara_manager import (
 )
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
-from varats.utils.settings import save_config, vara_cfg, bb_cfg
+from varats.utils.settings import save_config, vara_cfg
 
 if tp.TYPE_CHECKING:
     from varats.containers import containers  # pylint: disable=W0611
@@ -179,37 +176,15 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         ).path / "build"
 
         build_path /= build_type.build_folder(build_folder_suffix)
-        llvm_install_dir = build_path / "deps/llvm-14"
 
         # Setup configured build folder
         print(" - Setting up build folder.")
         if not os.path.exists(build_path):
             try:
                 os.makedirs(build_path, exist_ok=True)
-
-                with tempfile.TemporaryDirectory() as tmp_dir:
-                    with ProcessManager.create_process(
-                        "./utils/install-llvm.sh", [
-                            str(get_number_of_jobs(bb_cfg())),
-                            str(tmp_dir),
-                            str(llvm_install_dir), "llvmorg-14.0.6"
-                        ],
-                        workdir=self.source_location() / "phasar"
-                    ) as proc:
-                        proc.setProcessChannelMode(QProcess.MergedChannels)
-                        proc.readyReadStandardOutput.connect(
-                            lambda: run_process_with_output(
-                                proc, log_without_linesep(print)
-                            )
-                        )
-
                 with ProcessManager.create_process(
                     "cmake", ["-G", "Ninja", "../.."], workdir=build_path
                 ) as proc:
-                    env = QtCore.QProcessEnvironment.systemEnvironment()
-                    env.insert("CC", str(llvm_install_dir / "bin/clang"))
-                    env.insert("CXX", str(llvm_install_dir / "bin/clang++"))
-                    proc.setProcessEnvironment(env)
                     proc.setProcessChannelMode(QProcess.MergedChannels)
                     proc.readyReadStandardOutput.connect(
                         lambda: run_process_with_output(
