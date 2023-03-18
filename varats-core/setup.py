@@ -21,5 +21,5 @@ setup(
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",
-    python_requires='>=3.7'
+    python_requires='>=3.9'
 )
