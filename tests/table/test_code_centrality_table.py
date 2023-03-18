@@ -35,8 +35,8 @@ class TestCSMetricsTable(unittest.TestCase):
 \caption{Top 10 Central Code Commits}
 \begin{tabular}{lr}
 \toprule
-{} & {centrality} \\
-{commit} & {} \\
+ & centrality \\
+commit &  \\
 \midrule
 ef68dd4a92976276304de2aedfbe34ae91a86abb & 28 \\
 57597d42ca1740ad506437be168d800a50f1a0ad & 16 \\
