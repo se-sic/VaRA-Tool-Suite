@@ -66,7 +66,7 @@ def _make_bezier_curve(control_points: FloatArray,
     # For each parameter t[i] evaluate a point on the Bezier curve with the
     # de Casteljau algorithm.
     for i in range(num_points):
-        control_points_copy = np.copy(control_points)  # type: ignore
+        control_points_copy = np.copy(control_points)
         for ctrl_idx in range(1, num_control_points):
             control_points_copy[:num_control_points - ctrl_idx, :] = (
                 (1 - distances[i]) *

@@ -282,7 +282,7 @@ class BlameVerifierReportPlot(Plot, plot_name=None):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        pass
+        raise NotImplementedError
 
     def plot_file_name(self, filetype: str) -> str:
         return f"{self.name}.{filetype}"

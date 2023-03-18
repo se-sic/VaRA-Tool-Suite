@@ -24,8 +24,9 @@ def find_missing_revisions(
     between certain points are to steep."""
     new_revs: tp.Set[FullCommitHash] = set()
 
-    _, last_row = next(data)
-    for _, row in data:
+    data_iterator = iter(data)
+    _, last_row = data_iterator
+    for _, row in data_iterator:
         should_insert, gradient = should_insert_revision(last_row, row)
         if should_insert:
             lhs_cm = to_commit_hash(last_row)

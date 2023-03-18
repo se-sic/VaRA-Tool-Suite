@@ -1300,9 +1300,7 @@ class BlameDegree(Plot, plot_name=None):
                        axis=1)
         df["revision"] = unique_revisions
         df = df.set_index("revision")
-        df_iter = tp.cast(
-            tp.Iterable[tp.Tuple[ShortCommitHash, pd.Series]], df.iterrows()
-        )
+        df_iter = iter(df.iterrows())
         last_revision, last_row = next(df_iter)
         for revision, row in df_iter:
             # compute gradient for each degree value and see if any gradient
