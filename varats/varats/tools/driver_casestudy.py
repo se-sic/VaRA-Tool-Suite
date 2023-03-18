@@ -137,11 +137,13 @@ def __casestudy_status(
     if force_color:
         colors.use_color = True
     if short and list_revs:
-        click.UsageError(
+        raise click.UsageError(
             "At most one argument of: --short, --list-revs can be used."
         )
     if short and with_stage:
-        click.UsageError("At most one argument of: --short, --ws can be used.")
+        raise click.UsageError(
+            "At most one argument of: --short, --ws can be used."
+        )
     PCM.show_status_of_case_studies(
         experiment_type, filter_regex, short, sort_revs, list_revs, with_stage,
         legend
@@ -584,9 +586,7 @@ def __casestudy_view(
         FileStatusExtension.get_virtual_file_statuses()
     )
 
-    longest_file_status_extension = max([
-        len(status.name) for status in statuses
-    ])
+    longest_file_status_extension = max(len(status.name) for status in statuses)
 
     def result_file_to_list_entry(result_file: ReportFilepath) -> str:
         file_status = result_file.report_filename.file_status
@@ -653,9 +653,9 @@ def __init_commit_hash(
             FileStatusExtension.get_virtual_file_statuses()
         )
 
-        longest_file_status_extension = max([
+        longest_file_status_extension = max(
             len(status.name) for status in statuses
-        ])
+        )
 
         def result_file_to_list_entry(
             commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]

@@ -101,8 +101,10 @@ def _load_all_named_dataframes(
                                                         pd.DataFrame]]] = []
 
     # https://github.com/python/mypy/issues/9590
-    k = lambda cs: cs.project_name
-    for case_study in sorted(plot_kwargs["case_study"], key=k):
+    def key(cs: CaseStudy) -> str:
+        return cs.project_name
+
+    for case_study in sorted(plot_kwargs["case_study"], key=key):
         named_df = _get_named_df_for_case_study(
             case_study, opt_level, plot_kwargs
         )

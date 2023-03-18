@@ -213,9 +213,9 @@ class Artefacts:
         self
     ) -> tp.Dict[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]:
         """Construct a dict from these artefacts for easy export to yaml."""
-        return dict(
-            artefacts=[artefact.get_dict() for artefact in self.artefacts]
-        )
+        return {
+            'artefacts': [artefact.get_dict() for artefact in self.artefacts]
+        }
 
 
 @lru_cache(maxsize=1)

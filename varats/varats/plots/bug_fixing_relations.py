@@ -280,7 +280,10 @@ def _create_line(
         x=curve_points[:, 0],
         y=curve_points[:, 1],
         mode='lines',
-        line=dict(color=color, shape='spline'),
+        line={
+            'color': color,
+            'shape': 'spline'
+        },
         hoverinfo='none'
     )
 
@@ -293,20 +296,24 @@ def _create_node(
         y=[coordinates[1]],
         mode='markers',
         name='',
-        marker=dict(symbol='circle', size=size, color=color),
+        marker={
+            'symbol': 'circle',
+            'size': size,
+            'color': color
+        },
         text=text,
         hoverinfo='text'
     )
 
 
 def _create_layout(title: str) -> gob.Layout:
-    axis = dict(
-        showline=False,
-        zeroline=False,
-        showgrid=False,
-        showticklabels=False,
-        title=''
-    )  # hide the axis
+    axis = {
+        'showline': False,
+        'zeroline': False,
+        'showgrid': False,
+        'showticklabels': False,
+        'title': ''
+    }  # hide the axis
 
     width = 900
     height = 900
@@ -320,7 +327,12 @@ def _create_layout(title: str) -> gob.Layout:
         yaxis=dict(axis),
         hovermode='closest',
         clickmode='event',
-        margin=dict(l=0, r=0, b=0, t=50),
+        margin={
+            'l': 0,
+            'r': 0,
+            'b': 0,
+            't': 50
+        },
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
@@ -533,8 +545,8 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         filetypes.
 
         Args:
-            plot_dir: The path where the file is stored (excluding the file name).
-            filetype: The file type of the plot.
+            plot_dir: path where the file is stored (excluding the file name)
+            filetype: file type of the plot
         """
         try:
             self.plot(False)
