@@ -19,6 +19,7 @@ from varats.tools.research_tools.research_tool import (
     SubProject,
     Dependencies,
     Distro,
+    SubModule,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -59,13 +60,10 @@ class VaRACodeBase(CodeBase):
                 self, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
                 "vara-llvm-project/vara"
             ),
-            SubProject(
-                self,
-                "phasar",
+            SubModule(
+                self, "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
-                "origin",
-                "vara-llvm-project/phasar",
-                is_submodule=True
+                "origin", "vara-llvm-project/phasar", "vara-llvm-project"
             )
         ]
         super().__init__(base_dir, sub_projects)
