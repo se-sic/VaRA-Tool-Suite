@@ -193,7 +193,7 @@ def get_all_revisions_files(
 
 def get_processed_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"] = None,
+    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
