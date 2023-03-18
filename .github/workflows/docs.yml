@@ -20,7 +20,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt install pandoc
+        sudo apt install pandoc libgraphviz-dev
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
