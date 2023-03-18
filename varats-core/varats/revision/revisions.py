@@ -17,7 +17,12 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_primary_project_source,
 )
-from varats.report.report import FileStatusExtension, BaseReport, ReportFilepath
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilepath,
+    ReportFilename,
+)
 from varats.utils.git_util import ShortCommitHash, CommitHashTy, CommitHash
 from varats.utils.settings import vara_cfg
 
@@ -64,7 +69,7 @@ def filter_blocked_revisions(
 
 def __get_result_files_dict(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Dict[ShortCommitHash, tp.List[ReportFilepath]]:
     """
@@ -84,9 +89,18 @@ def __get_result_files_dict(
                                  tp.List[ReportFilepath]] = defaultdict(list)
     if not res_dir.exists():
         return result_files
+    if experiment_type is None:
+        condition = lambda x: True
+    else:
+        if report_type is None:
+            report_type = experiment_type.report_spec().main_report
 
-    if report_type is None:
-        report_type = experiment_type.report_spec().main_report
+        def experiment_condition(file: ReportFilename) -> bool:
+
+            return file.report_shorthand == report_type.shorthand(
+            ) and file.experiment_shorthand == experiment_type.shorthand()
+
+        condition = experiment_condition
 
     for res_file in res_dir.rglob("*"):
         if res_file.is_dir():
@@ -94,9 +108,7 @@ def __get_result_files_dict(
 
         report_filepath = ReportFilepath.construct(res_file, res_dir)
         report_file = report_filepath.report_filename
-        if report_file.is_result_file(
-        ) and report_file.report_shorthand == report_type.shorthand(
-        ) and report_file.experiment_shorthand == experiment_type.shorthand():
+        if report_file.is_result_file() and condition(report_file):
             commit_hash = report_file.commit_hash
             result_files[commit_hash].append(report_filepath)
 
@@ -106,7 +118,7 @@ def __get_result_files_dict(
 def __get_files_with_status(
     project_name: str,
     file_statuses: tp.List[FileStatusExtension],
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -151,7 +163,7 @@ def __get_files_with_status(
 
 def get_all_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -181,7 +193,7 @@ def get_all_revisions_files(
 
 def get_processed_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Type["exp_u.VersionExperiment"] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -211,7 +223,7 @@ def get_processed_revisions_files(
 
 def get_failed_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
