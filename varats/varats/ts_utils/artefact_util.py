@@ -5,7 +5,7 @@ from benchbuild.experiment import ExperimentRegistry
 
 from varats.experiment.experiment_util import VersionExperiment
 from varats.paper.case_study import CaseStudy
-from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper.paper_config import get_loaded_paper_config, PaperConfig
 from varats.report.report import BaseReport
 from varats.ts_utils.cli_util import (
     CLIOptionConverter,
@@ -34,13 +34,18 @@ class CaseStudyConverter(CLIOptionConverter[CaseStudy]):
     ) -> tp.Union[CaseStudy, tp.List[CaseStudy]]:
         pc = get_loaded_paper_config()
         if isinstance(str_value, tp.List):
-            return [
-                cs for cs_name in str_value
-                for cs in pc.get_case_studies(cs_name)
-            ]
+            return [_str_to_cs(cs_str, pc) for cs_str in str_value]
         if str_value == "all":
             return pc.get_all_case_studies()
-        return pc.get_case_studies(str_value)[0]
+        return _str_to_cs(str_value, pc)
+
+
+def _str_to_cs(str_value: str, pc: PaperConfig) -> CaseStudy:
+    cs_name, cs_version = str_value.rsplit("_", 1)
+    for cs in pc.get_case_studies(cs_name):
+        if cs.version == int(cs_version):
+            return cs
+    raise AssertionError("Case study not found.")
 
 
 class ReportTypeConverter(CLIOptionConverter[tp.Type[BaseReport]]):

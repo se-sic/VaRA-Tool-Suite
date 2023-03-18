@@ -108,52 +108,42 @@ If you understand how BenchBuild uses containers to run experiments you can prep
 
 1. Set up VaRA-TS as described in the normal :ref:`slurm guide <Running with Slurm>` (steps 1 and 2).
 
-2. Set up the BenchBuild container support as described in the :ref:`BenchBuild container documentation <Running BenchBuild in a Container>`.
+2. Make sure that the host systems (from where slurm jobs are submitted), as well as the slurm cluster has rootless buildah and podman installed and configured (don't forget the subuid and subgid mappings for the users submitting the slurm jobs).
+   See :ref:`Running BenchBuild in a Container` for further instructions.
 
-3. Make sure that also the slurm cluster has rootless buildah and podman installed and configured (don't forget the subuid and subgid mappings for the users submitting the slurm jobs).
+3. Prepare the research tool(s) and base images (see the :ref:`container guide<Container Guide>`).
+   Use the ``--export`` flag when generating the base images to make them available to the containers running via slurm.
 
-4. Preparing the research tool(s) for each base container required by your experiments, e.g.:
-
-  .. code-block:: console
-
-       vara-buildsetup build vara --container=DEBIAN_10
-
-5. Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
-   These steps can be executed easily using the following command (:ref:`documentation <vara-container>`):
-
-   .. code-block:: bash
-
-     vara-container prepare-slurm
-
-   This step also builds the base images.
-
-   If you want to know in detail what happens in this command, take a look at the section :ref:`Prepare-Slurm in Detail`.
-
-6. After the preparation is complete, you can generate the slurm script as follows:
+4. After the preparation is complete, you can generate the slurm script as follows:
 
    .. code-block:: bash
 
      vara-run --slurm --container -E <report_type> <projects>
 
-7. That's it! the script obtained from the previous step can be used like any other slurm script.
+5. That's it! the script obtained from the previous step can be used like any other slurm script.
    You can now make any adjustments to the script if needed or just submit it to slurm as described in the slurm guide (step 5).
    You can also add the flag ``--submit`` to the ``vara-run`` command to directly submit the script to slurm.
 
 
-Prepare-Slurm in Detail
-...........................
+How vara-run handles rootless containers
+........................................
 
-As explained above, rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
-The recommended way to do this is using the ``vara-container prepare-slurm`` command, but in some situations it might be handy to know what happens under the hood:
+.. note::
 
-    - You need to set the container root and runroot paths to some location that is not on a NFS, e.g., to a directory in ``tmp``:
+    This section is mainly for documentation purposes and intended for advanced users and developers of VaRA-TS.
+
+Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
+These steps are handled automatically by ``vara-run`` but in some situations it might be handy to know what happens under the hood:
+
+    - You need to set the container root and runroot paths to some location that is not on a NFS, e.g., to a directory in ``tmp``.
+      Since this may differ from your local setup, BenchBuild offers its own set of configuration options to set the buildah/podman root and runroot directories on slurm:
 
       .. code-block:: yaml
 
-        container:
-          root:
+        slurm:
+          container_root:
             value: /tmp/<username>/containers/lib
-          runroot:
+          container_runroot:
             value: /tmp/<username>/containers/run
 
     - BenchBuild allows to export and import container images.
@@ -192,8 +182,8 @@ The recommended way to do this is using the ``vara-container prepare-slurm`` com
 
     - Now it is time to generate the slurm script (cf. step 5 of the slurm guide).
       Because of our NFS workarounds, we cannot use the default script provided by BenchBuild, but we need to provide our own script template.
-      You can find our default template in the ``varats.tools`` module.
-      This template is very similar to the original template provided by BenchBuild, but it takes care of pointing all relevant environment variables to the slurm node directory as described in the points above.
+      You can find our default template in the ``varats.tools.templates`` module.
+      This template is very similar to the original template provided by BenchBuild, but it takes care of pointing all relevant environment variables to the slurm node directory as described in the points above and implements a different cleanup strategy for the node directory.
       To activate the template, simply save it to the ``/scratch/<username>/varats/benchbuild`` directory and set the appropriate value in the BenchBuild config:
 
       .. code-block:: yaml
@@ -201,5 +191,3 @@ The recommended way to do this is using the ``vara-container prepare-slurm`` com
         slurm:
           template:
             value: /scratch/<username>/varats/benchbuild/slurm_container.sh.inc
-
-      You can now continue with generating the slurm script as described above.
