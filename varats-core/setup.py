@@ -12,7 +12,7 @@ setup(
     install_requires=[
         "benchbuild>=6.6.4",
         "ijson>=3.1.4",
-        "plumbum>=1.11.1",
+        "plumbum>=1.8.1",
         "PyGithub>=1.58",
         "PyDriller>=2.4.1",
         "requests>=2.28.2",
