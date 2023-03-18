@@ -4,20 +4,15 @@ Utility module for creating chord plots with plotly.
 Much of the code is adapted from here: https://plotly.com/python/v3/filled-
 chord-diagram/
 """
-import sys
 import typing as tp
 from collections import defaultdict
 from itertools import accumulate
+from typing import TypedDict
 
 import numpy as np
 import numpy.typing as npt
 import plotly.graph_objs as go
 from plotly import colors
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import TypedDict
-else:
-    from typing import TypedDict
 
 FloatArray = npt.NDArray[np.float64]
 PointTy = FloatArray

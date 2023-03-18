@@ -5,16 +5,12 @@ import os
 import sys
 import typing as tp
 from select import select
+from typing import Protocol, runtime_checkable
 
 import click
 from plumbum.lib import read_fd_decode_safely
 from plumbum.machines.local import PlumbumLocalPopen
 from rich.traceback import install
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol, runtime_checkable
-else:
-    from typing import Protocol, runtime_checkable
 
 
 def cli_yn_choice(question: str, default: str = 'y') -> bool:
