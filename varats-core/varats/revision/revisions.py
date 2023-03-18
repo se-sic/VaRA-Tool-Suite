@@ -69,7 +69,7 @@ def filter_blocked_revisions(
 
 def __get_result_files_dict(
     project_name: str,
-    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
+    opt_experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
     opt_report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Dict[ShortCommitHash, tp.List[ReportFilepath]]:
     """
@@ -78,8 +78,8 @@ def __get_result_files_dict(
 
     Args:
         project_name: target project
-        experiment_type: the experiment type that created the result files
-        report_type: the report type of the result files;
+        opt_experiment_type: the experiment type that created the result files
+        opt_report_type: the report type of the result files;
                      defaults to experiment's main report
     """
     res_dir = Path(f"{vara_cfg()['result_dir']}/{project_name}/")
@@ -89,9 +89,10 @@ def __get_result_files_dict(
                                  tp.List[ReportFilepath]] = defaultdict(list)
     if not res_dir.exists():
         return result_files
-    if experiment_type is None:
+    if opt_experiment_type is None:
         condition: tp.Callable[[ReportFilename], bool] = lambda x: True
     else:
+        experiment_type = opt_experiment_type
         if opt_report_type is None:
             report_type = experiment_type.report_spec().main_report
 
