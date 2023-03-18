@@ -1,11 +1,11 @@
 """General tables module."""
 import abc
 import logging
-import sys
 import typing as tp
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
+from typing import final
 
 import click
 
@@ -23,11 +23,6 @@ from varats.ts_utils.cli_util import (
 )
 from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import vara_cfg
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import final
-else:
-    from typing import final
 
 if tp.TYPE_CHECKING:
     from rich.progress import Progress, TaskID  # pylint: disable=unused-import

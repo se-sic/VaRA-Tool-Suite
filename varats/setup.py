@@ -77,5 +77,5 @@ setup(
             'vara-cve = varats.tools.driver_cve:main',
         ]
     },
-    python_requires='>=3.7'
+    python_requires='>=3.9'
 )
