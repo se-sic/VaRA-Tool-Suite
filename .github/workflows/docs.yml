@@ -19,6 +19,7 @@ jobs:
         python-version: 3.9
 
     - name: Install dependencies
+      working-directory: ./docs
       run: |
         sudo apt install pandoc libgraphviz-dev
         python -m pip install --upgrade pip
@@ -26,5 +27,6 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build docs
+      working-directory: ./docs
       run: |
         make html
