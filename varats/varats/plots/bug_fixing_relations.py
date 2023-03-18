@@ -269,8 +269,7 @@ def _create_line(
     dist = _get_distance(start, end)
     interval = _get_interval(dist)
 
-    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
-    control_points: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array([
+    control_points: np.ndarray[tp.Literal[2], np.dtype[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
@@ -379,7 +378,6 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
 
 
 def _get_bezier_curve(
-    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
     ctrl_points: npt.NDArray[np.float64],
     num_points: int = 5
 ) -> npt.NDArray[np.float64]:
@@ -526,14 +524,16 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         self.__figure.show()
 
     def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'html'
+        self,
+        plot_dir: tp.Optional[Path] = None,
+        filetype: str = 'html'
     ) -> None:
         """
         Save the current plot to a file. Supports html, json and image
         filetypes.
 
         Args:
-            path: The path where the file is stored (excluding the file name).
+            plot_dir: The path where the file is stored (excluding the file name).
             filetype: The file type of the plot.
         """
         try:
@@ -542,10 +542,8 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
 
-        if path is None:
+        if plot_dir is None:
             plot_dir = Path(self.plot_kwargs["plot_dir"])
-        else:
-            plot_dir = path
 
         output_path_prefix = f"{plot_dir}/" if plot_dir else ""
 

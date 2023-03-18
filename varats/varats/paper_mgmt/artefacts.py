@@ -70,7 +70,7 @@ class Artefact(ABC):
 
     @classmethod
     def __init_subclass__(
-        cls, artefact_type: str, artefact_type_version: int, **kwargs: tp.Any
+        cls, *, artefact_type: str, artefact_type_version: int, **kwargs: tp.Any
     ) -> None:
         """Register Artefact implementations."""
         super().__init_subclass__(**kwargs)

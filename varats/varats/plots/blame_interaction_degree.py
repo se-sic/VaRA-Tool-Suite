@@ -15,7 +15,7 @@ import pandas as pd
 import plumbum as pb
 from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
-from matplotlib import style, cm
+from matplotlib import cm
 from plotly import graph_objs as go
 from plotly import io as pio
 

@@ -24,14 +24,14 @@ def cli_yn_choice(question: str, default: str = 'y') -> bool:
     return choice.strip().lower() in values
 
 
-ListType = tp.TypeVar("ListType")
+ListTy = tp.TypeVar("ListTy")
 
 
 def cli_list_choice(
     question: str,
-    choices: tp.List[ListType],
-    choice_to_str: tp.Callable[[ListType], str],
-    on_choice_callback: tp.Callable[[ListType], None],
+    choices: tp.List[ListTy],
+    choice_to_str: tp.Callable[[ListTy], str],
+    on_choice_callback: tp.Callable[[ListTy], None],
     start_label: int = 0,
     default: int = 0,
     repeat: bool = False
@@ -125,10 +125,10 @@ def add_cli_options(command: CommandTy, *options: CLIOptionTy) -> CommandTy:
 # ------------------------------------------------------------------------------
 # CLIOptionConverter
 # ------------------------------------------------------------------------------
-ConversionTy = tp.TypeVar("ConversionTy", bound=tp.Any, covariant=True)
+ConversionTy_co = tp.TypeVar("ConversionTy_co", bound=tp.Any, covariant=True)
 
 
-class CLIOptionConverter(abc.ABC, tp.Generic[ConversionTy]):
+class CLIOptionConverter(abc.ABC, tp.Generic[ConversionTy_co]):
     """
     Converter for CLI option declarations.
 
@@ -144,26 +144,25 @@ class CLIOptionConverter(abc.ABC, tp.Generic[ConversionTy]):
     @staticmethod
     @abc.abstractmethod
     def value_to_string(
-        value: tp.Union[ConversionTy, tp.List[ConversionTy]]
+        value: tp.Union[ConversionTy_co, tp.List[ConversionTy_co]]
     ) -> tp.Union[str, tp.List[str]]:
         """Convert a value to its string representation."""
-        ...
 
     @staticmethod
     @abc.abstractmethod
     def string_to_value(
         str_value: tp.Union[str, tp.List[str]]
-    ) -> tp.Union[ConversionTy, tp.List[ConversionTy]]:
+    ) -> tp.Union[ConversionTy_co, tp.List[ConversionTy_co]]:
         """Construct a value from its string representation."""
-        ...
 
 
-class CLIOptionWithConverter(tp.Generic[ConversionTy]):
+class CLIOptionWithConverter(tp.Generic[ConversionTy_co]):
     """Wrapper class that associates a converter with a CLI option
     declaration."""
 
     def __init__(
-        self, name: str, converter: tp.Type[CLIOptionConverter[ConversionTy]],
+        self, name: str,
+        converter: tp.Type[CLIOptionConverter[ConversionTy_co]],
         cli_decl: tp.Callable[..., CLIOptionTy]
     ):
         self.__name = name
@@ -175,7 +174,7 @@ class CLIOptionWithConverter(tp.Generic[ConversionTy]):
         return self.__name
 
     @property
-    def converter(self) -> tp.Type[CLIOptionConverter[ConversionTy]]:
+    def converter(self) -> tp.Type[CLIOptionConverter[ConversionTy_co]]:
         return self.__converter
 
     def __call__(self, *param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
@@ -183,7 +182,7 @@ class CLIOptionWithConverter(tp.Generic[ConversionTy]):
 
 
 def convert_value(
-    name: str, converter: tp.Type[CLIOptionConverter[ConversionTy]]
+    name: str, converter: tp.Type[CLIOptionConverter[ConversionTy_co]]
 ) -> tp.Callable[..., CLIOptionTy]:
     """
     Decorator for calls to :func:`make_cli_option()` that attaches a converter.

@@ -469,6 +469,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         )
         stage_builder.layers.copy_([vara_install_dir], str(container_vara_dir))
 
+    # pylint: disable=no-self-use
     def container_tool_env(
         self, stage_builder: 'containers.StageBuilder'
     ) -> tp.Dict[str, tp.List[str]]:
