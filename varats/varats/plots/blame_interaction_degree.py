@@ -15,7 +15,7 @@ import pandas as pd
 import plumbum as pb
 from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
-from matplotlib import style, cm
+from matplotlib import cm
 from plotly import graph_objs as go
 from plotly import io as pio
 
@@ -801,25 +801,30 @@ def _build_sankey_figure(
         data=[
             go.Sankey(
                 arrangement="perpendicular",
-                node=dict(
-                    pad=15,
-                    thickness=20,
-                    line=dict(color="black", width=0.5),
-                    label=library_names_dict["all_lib_names"],
-                    color=data_dict["node_colors"],
-                    hovertemplate='Fraction ratio = %{'
-                    'value}%<extra></extra> '
-                ),
-                link=dict(
-                    source=data_dict["sources"],
-                    target=data_dict["targets"],
-                    value=data_dict["fractions"],
-                    color=data_dict["edge_colors"],
-                    customdata=data_dict["degrees"],
-                    hovertemplate='Interaction has a fraction ratio '
-                    'of %{value}%<br /> and a degree of '
-                    '%{customdata}<extra></extra>',
-                )
+                node={
+                    'pad': 15,
+                    'thickness': 20,
+                    'line': {
+                        'color': "black",
+                        'width': 0.5
+                    },
+                    'label': library_names_dict["all_lib_names"],
+                    'color': data_dict["node_colors"],
+                    'hovertemplate':
+                        'Fraction ratio = %{'
+                        'value}%<extra></extra> '
+                },
+                link={
+                    'source': data_dict["sources"],
+                    'target': data_dict["targets"],
+                    'value': data_dict["fractions"],
+                    'color': data_dict["edge_colors"],
+                    'customdata': data_dict["degrees"],
+                    'hovertemplate':
+                        'Interaction has a fraction ratio '
+                        'of %{value}%<br /> and a degree of '
+                        '%{customdata}<extra></extra>'
+                }
             )
         ]
     )
@@ -1300,9 +1305,7 @@ class BlameDegree(Plot, plot_name=None):
                        axis=1)
         df["revision"] = unique_revisions
         df = df.set_index("revision")
-        df_iter = tp.cast(
-            tp.Iterable[tp.Tuple[ShortCommitHash, pd.Series]], df.iterrows()
-        )
+        df_iter = iter(df.iterrows())
         last_revision, last_row = next(df_iter)
         for revision, row in df_iter:
             # compute gradient for each degree value and see if any gradient

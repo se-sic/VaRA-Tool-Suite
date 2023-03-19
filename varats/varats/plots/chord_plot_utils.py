@@ -66,7 +66,7 @@ def _make_bezier_curve(control_points: FloatArray,
     # For each parameter t[i] evaluate a point on the Bezier curve with the
     # de Casteljau algorithm.
     for i in range(num_points):
-        control_points_copy = np.copy(control_points)  # type: ignore
+        control_points_copy = np.copy(control_points)
         for ctrl_idx in range(1, num_control_points):
             control_points_copy[:num_control_points - ctrl_idx, :] = (
                 (1 - distances[i]) *
@@ -256,7 +256,12 @@ def _make_layout(title: str, plot_size: int) -> go.Layout:
         showlegend=False,
         width=plot_size * 2,
         height=plot_size,
-        margin=dict(t=25, b=25, l=25, r=25),
+        margin={
+            "t": 25,
+            "b": 25,
+            "l": 25,
+            "r": 25
+        },
         hovermode='closest'
     )
 
@@ -367,7 +372,10 @@ def _create_ideograms(
                 x=x,
                 y=y,
                 mode='lines',
-                line=dict(color='rgb(50,50,50)', width=1),
+                line={
+                    "color": "rgb(50,50,50)",
+                    "width": 1
+                },
                 fill="toself",
                 fillcolor=ideogram_colors[idx],
                 text=nodes[idx][1].get("info", ""),
@@ -449,7 +457,10 @@ def _create_ribbons(
                 x=x,
                 y=y,
                 mode='lines',
-                line=dict(width=0, color=ribbon_colors[idx]),
+                line={
+                    "width": 0,
+                    "color": ribbon_colors[idx]
+                },
                 fill="toself",
                 text=edges[idx][2].get("info", ""),
                 hoverinfo='text'

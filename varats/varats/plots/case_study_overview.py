@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from pandas import DataFrame
 
 from varats.data.databases.file_status_database import FileStatusDatabase
-from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
@@ -18,10 +17,9 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
 )
-from varats.report.report import FileStatusExtension, BaseReport
+from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import (
-    REQUIRE_REPORT_TYPE,
     REQUIRE_CASE_STUDY,
     REQUIRE_EXPERIMENT_TYPE,
 )
