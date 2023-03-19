@@ -414,7 +414,7 @@ def _combine_tagged_revs_for_experiment(
     stage_num: tp.Optional[int] = None
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
-    Combines the tagged revision results from all report that are specified in
+    Combines the tagged revision results from all reports that are specified in
     the experiment.
 
     Args:
