@@ -10,8 +10,8 @@ def lorenz_curve(data: pd.Series) -> pd.Series:
     """
     Calculates the values for the lorenz curve of the data.
 
-    For more information see online `lorenz curve
-    <https://en.wikipedia.org/wiki/Lorenz_curve>`_.
+    For more information see online
+    `lorenz curve <https://en.wikipedia.org/wiki/Lorenz_curve>`_.
 
     Args:
         data: sorted series to calculate the lorenz curve for
@@ -25,16 +25,16 @@ def lorenz_curve(data: pd.Series) -> pd.Series:
 
 def gini_coefficient(distribution: pd.Series) -> float:
     """
-    Calculates the gini coefficient of the data.
+    Calculates the Gini coefficient of the data.
 
-    For more information see online `gini coefficient
-    <https://en.wikipedia.org/wiki/Gini_coefficient>`_.
+    For more information see online
+    `gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_.
 
     Args:
-        distribution: sorted series to calculate the gini coefficient for
+        distribution: sorted series to calculate the Gini coefficient for
 
     Returns:
-        the gini coefficient for the data
+        the Gini coefficient for the data
     """
     dist_array: npt.NDArray[np.float64] = np.array(distribution)
     return 0.5 * float(
@@ -45,16 +45,16 @@ def gini_coefficient(distribution: pd.Series) -> float:
 
 def normalized_gini_coefficient(distribution: pd.Series) -> float:
     """
-    Calculates the normalized gini coefficient of the given data, , i.e.,
+    Calculates the normalized Gini coefficient of the given data, , i.e.,
 
     ``gini(data) * (n / n - 1)`` where ``n`` is the length of the data.
 
     Args:
-        distribution: sorted series to calculate the normalized gini coefficient
+        distribution: sorted series to calculate the normalized Gini coefficient
                       for
 
     Returns:
-        the normalized gini coefficient for the data
+        the normalized Gini coefficient for the data
     """
     n = float(len(distribution))
     if n <= 1:
@@ -71,15 +71,20 @@ def apply_tukeys_fence(
 
     Tukey's fence defines all values to be outliers that are outside the range
     `[q1 - k * (q3 - q1), q3 + k * (q3 - q1)]`, i.e., values that are further
-    than `k` times the inter-quartile range away from the first or third
+    than `k` times the interquartile range away from the first or third
     quartile.
 
     Common values for ``k``:
-      - 2.2 (“Fine-Tuning Some Resistant Rules for Outlier Labeling”,
-             Hoaglin and Iglewicz (1987))
-      - 1.5 (outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
-      - 3.0 (far out outliers, “Exploratory Data Analysis”,
-             John W. Tukey (1977))
+
+    +-----+---------------------------------------------------------------+
+    | 2.2 | (“Fine-Tuning Some Resistant Rules for Outlier Labeling”,     |
+    |     |   Hoaglin and Iglewicz (1987))                                |
+    +-----+---------------------------------------------------------------+
+    | 1.5 | (outliers, “Exploratory Data Analysis”, John W. Tukey (1977)) |
+    +-----+---------------------------------------------------------------+
+    | 3.0 | (far out outliers, “Exploratory Data Analysis”,               |
+    |     |  John W. Tukey (1977))                                        |
+    +-----+---------------------------------------------------------------+
 
     Args:
         data: data to remove outliers from
@@ -90,12 +95,13 @@ def apply_tukeys_fence(
         the data without outliers
 
     Test:
-    >>> apply_tukeys_fence(pd.DataFrame({'foo': [1,1,2,2,10]}), 'foo', 3)
-       foo
-    0    1
-    1    1
-    2    2
-    3    2
+    >>> apply_tukeys_fence(pd.DataFrame({'foo': [1,1,2,2,10]})
+    ...                    .rename_axis('cols', axis=1), 'foo', 3)
+    cols  foo
+    0       1
+    1       1
+    2       2
+    3       2
     """
     quartile_1 = data[column].quantile(0.25)
     quartile_3 = data[column].quantile(0.75)

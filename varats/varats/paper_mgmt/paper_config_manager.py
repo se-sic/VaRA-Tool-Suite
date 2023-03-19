@@ -1,6 +1,6 @@
 """Module for interacting and managing paper configs and case studies, e.g.,
-this modules provides functionality to visualize the status of case studies or
-to package a whole paper config into a zip folder."""
+this module provides functionality to visualize the status of case studies or to
+package a whole paper config into a zip folder."""
 
 import re
 import typing as tp
@@ -44,7 +44,7 @@ def show_status_of_case_studies(
         short_status: print only a short version of the status information
         sort: sort the output order of the case studies
         print_rev_list: print a list of revisions for every case study
-        sep_stages: print each stage separeted
+        sep_stages: print each stage separated
         print_legend: print a legend for the different types
     """
     current_config = PC.get_paper_config()
@@ -89,7 +89,8 @@ def show_status_of_case_studies(
                 )
             )
 
-    print(get_total_status(total_status_occurrences, longest_cs_name, True))
+    if not print_rev_list:
+        print(get_total_status(total_status_occurrences, longest_cs_name, True))
 
 
 def get_revision_list(case_study: CaseStudy) -> str:
@@ -282,10 +283,10 @@ def get_status(
         case_study: to print the status for
         experiment_type: experiment type to print files for
         longest_cs_name: amount of chars that should be considered for
-        sep_stages: print each stage separeted
+        sep_stages: print each stage separated
         sort: sort the output order of the case studies
         use_color: add color escape sequences for highlighting
-        total_status_occurrences: mapping from all occured status to a set of
+        total_status_occurrences: mapping from all occurred status to a set of
                                   all revisions (total amount of revisions)
 
     Returns:
@@ -361,7 +362,7 @@ def get_legend(use_color: bool = False) -> str:
 
 def package_paper_config(
     output_file: Path, cs_filter_regex: tp.Pattern[str],
-    report_names: tp.List[tp.Type[BaseReport]]
+    experiment_types: tp.List[tp.Type[VersionExperiment]]
 ) -> None:
     """
     Package all files from a paper config into a zip folder.
@@ -370,13 +371,16 @@ def package_paper_config(
         output_file: file to write to
         cs_filter_regex: applied to a ``name_version`` string for filtering the
                          case studies to be included in the zip archive
-        report_names: list of report names that should be added
+        experiment_types: list of report names that should be added
     """
     current_config = PC.get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
-    report_types = report_names if report_names else list(
-        BaseReport.REPORT_TYPES.values()
-    )
+    report_types: tp.List[tp.Type[BaseReport]] = []
+    if experiment_types:
+        report_types = list(BaseReport.REPORT_TYPES.values())
+    else:
+        for experiment_type in experiment_types:
+            report_types.extend(experiment_type.report_spec().report_types)
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
@@ -414,7 +418,7 @@ def _combine_tagged_revs_for_experiment(
     stage_num: tp.Optional[int] = None
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
-    Combines the tagged revision results from all report that are specified in
+    Combines the tagged revision results from all reports that are specified in
     the experiment.
 
     Args:
@@ -427,13 +431,13 @@ def _combine_tagged_revs_for_experiment(
     combined_tagged_revisions: tp.Dict[ShortCommitHash,
                                        FileStatusExtension] = {}
     for report_type in experiment_type.report_spec():
-        if stage_num:
+        if stage_num is None:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, experiment_type, report_type, stage_num
+                case_study, experiment_type, report_type
             )
         else:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, experiment_type, report_type
+                case_study, experiment_type, report_type, stage_num
             )
 
         for tagged_rev in tagged_revs:

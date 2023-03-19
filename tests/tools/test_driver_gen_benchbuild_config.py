@@ -4,7 +4,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.tools import driver_gen_benchbuild_config
 from varats.utils.settings import vara_cfg
 

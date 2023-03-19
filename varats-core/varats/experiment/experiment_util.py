@@ -2,7 +2,6 @@
 import os
 import random
 import shutil
-import sys
 import tempfile
 import textwrap
 import traceback
@@ -11,13 +10,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
-
-from plumbum import local
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol, runtime_checkable
-else:
-    from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from benchbuild import source
 from benchbuild.experiment import Experiment

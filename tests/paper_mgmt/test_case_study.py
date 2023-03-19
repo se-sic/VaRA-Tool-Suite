@@ -1,16 +1,23 @@
 """Test case study."""
 import os
+import random
 import unittest
 from datetime import datetime
 from pathlib import Path
 
 import varats.paper_mgmt.case_study as MCS
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.commit_report import CommitReport as CR
+from varats.experiments.base.just_compile import JustCompileReport
 from varats.experiments.vara.commit_report_experiment import (
     CommitReportExperiment,
 )
+from varats.mapping.commit_map import get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config, load_paper_config
+from varats.plot.plots import PlotConfig
+from varats.plots.case_study_overview import CaseStudyOverviewPlot
+from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
@@ -21,7 +28,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
     """Test if revision look up functions find the correct revisions."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         initialize_projects()
 
     @run_in_test_environment(
@@ -235,3 +242,60 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         cs_filter = MCS.get_case_study_file_name_filter(None)
 
         self.assertFalse(cs_filter('foo/bar'))
+
+
+class TestCaseStudyExtenders(unittest.TestCase):
+
+    def test_extend_with_revs_per_year(self) -> None:
+        initialize_projects()
+        random.seed(42)
+
+        cs = CaseStudy("xz", 0)
+        git_path = get_local_project_git_path("xz")
+        cmap = get_commit_map(
+            "xz", end="c5c7ceb08a011b97d261798033e2c39613a69eb7"
+        )
+
+        MCS.extend_with_revs_per_year(cs, cmap, 0, True, str(git_path), 2, True)
+        self.assertEqual(cs.num_stages, 17)
+        self.assertEqual(len(cs.revisions), 31)
+        self.assertEqual(
+            cs.revisions[0],
+            FullCommitHash("c563a4bc554a96bd0b6aab3c139715b7ec8f6ca3")
+        )
+        self.assertEqual(
+            cs.revisions[-1],
+            FullCommitHash("ec490da5228263b25bf786bb23d1008468f55b30")
+        )
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_extend_with_smooth_revs(self) -> None:
+        initialize_projects()
+        vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
+        load_paper_config()
+
+        cs = get_paper_config().get_case_studies("brotli")[0]
+        cmap = get_commit_map(
+            "brotli", end="aaa4424d9bdeb10f8af5cb4599a0fc2bbaac5553"
+        )
+
+        MCS.extend_with_smooth_revs(
+            cs, cmap, 0, True,
+            CaseStudyOverviewPlot(
+                PlotConfig.from_kwargs(False),
+                case_study=cs,
+                experiment_type=JustCompileReport
+            ), 1
+        )
+        self.assertEqual(cs.num_stages, 2)
+        self.assertEqual(len(cs.revisions), 7)
+        self.assertIn(
+            FullCommitHash("5814438791fb2d4394b46e5682a96b68cd092803"),
+            cs.stages[1].revisions
+        )
+        self.assertIn(
+            FullCommitHash("510131d1db47f91602f45b9a8d7b1ee54d12a629"),
+            cs.stages[1].revisions
+        )

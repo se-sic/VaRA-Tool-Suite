@@ -36,7 +36,7 @@ To see what plot-specific options a plot has, you need to look at the help outpu
     :nostderr:
 
 The plot files are stored in ``$VARATS_ROOT/plots``.
-You can group plot files into subdirectories using the option ``--plot-dir``, e.g. ``vara-plot --plot-dir=foo pc-overview-plot --report-type=EmptyReport`` will create a file in the directory ``$VARATS_ROOT/plots/foo``.
+You can group plot files into subdirectories using the option ``--plot-dir``, e.g. ``vara-plot --plot-dir=foo pc-overview-plot --experiment-type=JustCompile`` will create a file in the directory ``$VARATS_ROOT/plots/foo``.
 Note that one call to ``vara-plot`` can generate multiple files depending on the plot.
 
 
@@ -51,7 +51,7 @@ The ``vara-plot`` and ``vara-table`` tools will then store the configuration in 
 For example, an artefact that will generate a ``pc-overview-plot`` for the current paper config can be added
 via::
 
-    vara-plot --save-artefact="PC Overview" pc-overview-plot --report-type=EmptyReport
+    vara-plot --save-artefact="PC Overview" pc-overview-plot --experiment-type=JustCompile
 
 .. note::
 

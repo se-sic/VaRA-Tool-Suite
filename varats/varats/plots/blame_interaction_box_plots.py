@@ -26,6 +26,7 @@ from varats.paper_mgmt.case_study import (
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 
@@ -99,7 +100,7 @@ class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CAIGViolinPlotGenerator(
@@ -239,7 +240,7 @@ class AuthorGraphDiffPlot(Plot, plot_name='aig_diff_authors_box'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class FileVsBlameGraphDiffPlot(
@@ -251,11 +252,6 @@ class FileVsBlameGraphDiffPlot(
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__("file", "blame", plot_config, **kwargs)
 
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
-
 
 class CallgraphVsBlameGraphDiffPlot(
     AuthorGraphDiffPlot, plot_name='aig_callgraph_vs_blame_authors'
@@ -265,11 +261,6 @@ class CallgraphVsBlameGraphDiffPlot(
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__("callgraph", "blame", plot_config, **kwargs)
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
 
 
 class AuthorBlameVsFilePlotGenerator(
