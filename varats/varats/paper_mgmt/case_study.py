@@ -505,7 +505,7 @@ def extend_with_revs_per_year(
             FullCommitHash.from_pygit_commit(commit)
         )
 
-    new_rev_items = []  # new revisions that get added to to case_study
+    new_rev_items = []  # new revisions that get added to case_study
     for year, commits_in_year in commits.items():
         samples = min(len(commits_in_year), revs_per_year)
         sample_commit_indices = sorted(
