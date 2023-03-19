@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import varats.ts_utils.doc_util as du
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.projects.c_projects.opus import Opus
 
 

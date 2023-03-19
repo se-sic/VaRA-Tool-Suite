@@ -12,8 +12,7 @@ import benchbuild.utils.settings as s
 from benchbuild.project import Project
 
 import varats.experiment.experiment_util as EU
-from tests.test_helper import BBTestSource
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment, BBTestSource
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
