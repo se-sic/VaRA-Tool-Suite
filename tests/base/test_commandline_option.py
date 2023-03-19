@@ -3,7 +3,7 @@
 import unittest
 
 import varats.base.commandline_option as CO
-from tests.test_utils import ConfigurationHelper
+from tests.helper_utils import ConfigurationHelper
 from varats.base.configuration import Configuration, ConfigurationImpl
 
 
