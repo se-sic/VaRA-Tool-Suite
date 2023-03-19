@@ -356,4 +356,6 @@ def get_cached_bc_file_path(
 
 
 def is_gllvm_available() -> bool:
-    return None not in { shutil.which(binary) for binary in ["gclang", "gclang++", "get-bc"] }
+    return None not in {
+        shutil.which(binary) for binary in ["gclang", "gclang++", "get-bc"]
+    }
