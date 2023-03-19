@@ -19,6 +19,7 @@ from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension
 # colors taken from seaborn's default palette
 from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR: npt.NDArray[np.float64] = np.asarray(
@@ -255,7 +256,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class PaperConfigOverviewGenerator(

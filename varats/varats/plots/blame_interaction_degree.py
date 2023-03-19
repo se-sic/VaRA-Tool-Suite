@@ -45,6 +45,7 @@ from varats.ts_utils.click_param_types import (
     REQUIRE_CASE_STUDY,
     REQUIRE_REVISION,
 )
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -1595,7 +1596,7 @@ class BlameCommitInteractionsGraphviz(
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class GraphvizLibraryInteractionsGeneratorRev(
