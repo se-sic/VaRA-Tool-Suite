@@ -69,7 +69,7 @@ def filter_blocked_revisions(
 
 def __get_result_files_dict(
     project_name: str,
-    opt_experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
+    opt_experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     opt_report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Dict[ShortCommitHash, tp.List[ReportFilepath]]:
     """
@@ -98,8 +98,11 @@ def __get_result_files_dict(
         else:
             report_type = experiment_type.report_spec().main_report
 
-        condition = lambda file: file.report_shorthand == report_type.shorthand() \
-                                                                      and file.experiment_shorthand == experiment_type.shorthand()
+        def matches_report_type(file: ReportFilename) -> bool:
+            return file.report_shorthand == report_type.shorthand(
+            ) and file.experiment_shorthand == experiment_type.shorthand()
+
+        condition = matches_report_type
 
     for res_file in res_dir.rglob("*"):
         if res_file.is_dir():
@@ -117,7 +120,7 @@ def __get_result_files_dict(
 def __get_files_with_status(
     project_name: str,
     file_statuses: tp.List[FileStatusExtension],
-    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -162,7 +165,7 @@ def __get_files_with_status(
 
 def get_all_revisions_files(
     project_name: str,
-    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -192,7 +195,7 @@ def get_all_revisions_files(
 
 def get_processed_revisions_files(
     project_name: str,
-    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -222,7 +225,7 @@ def get_processed_revisions_files(
 
 def get_failed_revisions_files(
     project_name: str,
-    experiment_type: tp.Optional["exp_u.VersionExperiment"] = None,
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
