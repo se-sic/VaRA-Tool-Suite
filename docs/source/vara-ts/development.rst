@@ -58,7 +58,7 @@ Keep the data put in this directory as small as possible to avoid bloating the r
 -----
 
 Module: helper_utils
-..................
+....................
 
 .. automodule:: tests.helper_utils
     :members:
