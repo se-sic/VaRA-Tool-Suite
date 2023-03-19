@@ -44,10 +44,12 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
     def __init__(
         self,
         project: Project,
+        binary: Path,
         workload_cmds: tp.List[ProjectCommand],
         _experiment_handle: ExperimentHandle,
     ):
         super().__init__(project=project)
+        self.binary = binary
         self.__workload_cmds = workload_cmds
 
     def __call__(self, tmp_dir: Path) -> actions.StepResult:
@@ -81,7 +83,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 llvm_cov = local["llvm-cov"]
                 llvm_cov = llvm_cov["export",
                                     f"--instr-profile={profdata_name}",
-                                    run_cmd.cmd]
+                                    self.binary]
 
                 with cleanup(prj_command):
                     run_cmd(*extra_args)
@@ -160,7 +162,8 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
                     result_filepath,
                     [
                         GenerateCoverage(
-                            project, workload_cmds, self.get_handle()
+                            project, binary.path, workload_cmds,
+                            self.get_handle()
                         )
                     ],
                 )

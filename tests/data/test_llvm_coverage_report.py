@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 
 from plumbum import colors
 
-from tests.test_utils import (
+from tests.helper_utils import (
     run_in_test_environment,
     UnitTestFixtures,
     TEST_INPUTS_DIR,
