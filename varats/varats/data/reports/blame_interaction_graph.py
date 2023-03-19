@@ -2,10 +2,10 @@
 import abc
 import itertools
 import re
-import sys
 import typing as tp
 from copy import deepcopy
 from pathlib import Path
+from typing import TypedDict
 
 import networkx as nx
 from benchbuild.utils.cmd import git
@@ -31,11 +31,6 @@ from varats.utils.git_util import (
     FullCommitHash,
     get_submodule_head,
 )
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import TypedDict
-else:
-    from typing import TypedDict
 
 if tp.TYPE_CHECKING:
     # pylint: disable=W0611
@@ -316,7 +311,7 @@ class BlameInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            report = load_blame_report(self.__report_file.full_path())
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
             interactions = gen_base_to_inter_commit_repo_pair_mapping(report)
             nodes: tp.Set[BIGNodeTy] = {
@@ -367,7 +362,7 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            report = load_blame_report(self.__report_file.full_path())
+            report = load_blame_report(self.__report_file)
             interaction_graph = nx.DiGraph()
 
             for function_entry in report.function_entries:
@@ -398,8 +393,11 @@ class CallgraphBasedInteractionGraph(InteractionGraph):
 
 
 def _nodes_for_func_entry(
-    function_entry: BlameResultFunctionEntry
+    function_entry: tp.Optional[BlameResultFunctionEntry]
 ) -> tp.Set[BIGNodeTy]:
+    if function_entry is None:
+        return set()
+
     return {
         BlameTaintData(commit, function_name=function_entry.name)
         for commit in function_entry.commits

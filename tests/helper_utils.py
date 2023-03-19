@@ -8,24 +8,18 @@ import typing as tp
 from functools import wraps
 from pathlib import Path
 from threading import Lock
-from types import TracebackType
 
 import benchbuild.source.base as base
 import benchbuild.utils.settings as bb_settings
 import plumbum as pb
 from benchbuild import Project
-from benchbuild.source import Git
+from benchbuild.source import Git, FetchableSource, Variant
 from benchbuild.utils.cmd import git
 
 import varats.utils.settings as settings
 from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
-from varats.project.project_util import (
-    is_git_source,
-    get_local_project_git_path,
-)
+from varats.project.project_util import is_git_source
 from varats.tools.bb_config import create_new_bb_config
-from varats.utils.git_commands import checkout_branch_or_commit
-from varats.utils.git_util import ShortCommitHash, get_head_commit
 
 if sys.version_info <= (3, 8):
     from typing_extensions import Protocol
@@ -291,21 +285,33 @@ class ConfigurationHelper:
         return test_config
 
 
-class LoadRepositoryForTest():
-    """Context manager to work with a repository at a specific revision, without
-    duplicating the repository."""
+class BBTestSource(FetchableSource):
+    """Source test fixture class."""
 
-    def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
-        self.__repo_path = get_local_project_git_path(project_name)
-        self.__revision = revision
-        self.__initial_head = get_head_commit(self.__repo_path)
+    test_versions: tp.List[str]
 
-    def __enter__(self) -> None:
-        checkout_branch_or_commit(self.__repo_path, self.__revision)
+    def __init__(
+        self, test_versions: tp.List[str], local: str,
+        remote: tp.Union[str, tp.Dict[str, str]]
+    ):
+        super().__init__(local, remote)
+        self.test_versions = test_versions
 
-    def __exit__(
-        self, exc_type: tp.Optional[tp.Type[BaseException]],
-        exc_value: tp.Optional[BaseException],
-        exc_traceback: tp.Optional[TracebackType]
-    ) -> None:
-        checkout_branch_or_commit(self.__repo_path, self.__initial_head)
+    @property
+    def local(self) -> str:
+        return "test_source"
+
+    @property
+    def remote(self) -> tp.Union[str, tp.Dict[str, str]]:
+        return "test_remote"
+
+    @property
+    def default(self) -> Variant:
+        return Variant(owner=self, version=self.test_versions[0])
+
+    # pylint: disable=unused-argument,no-self-use
+    def version(self, target_dir: str, version: str) -> pb.LocalPath:
+        return pb.local.path('.') / f'varats-test-{version}'
+
+    def versions(self) -> tp.Iterable[Variant]:
+        return [Variant(self, v) for v in self.test_versions]

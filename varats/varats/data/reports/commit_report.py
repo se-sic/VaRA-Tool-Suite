@@ -180,7 +180,7 @@ class CommitReport(BaseReport, shorthand="CR", file_type="yaml"):
 
         total = 0
         for from_to_pair in cf_map.values():
-            total = max(max(from_to_pair[0], from_to_pair[1]), total)
+            total = max(from_to_pair[0], from_to_pair[1], total)
 
         return total
 
@@ -192,7 +192,7 @@ class CommitReport(BaseReport, shorthand="CR", file_type="yaml"):
 
         total = 0
         for from_to_pair in df_map.values():
-            total = max(max(from_to_pair[0], from_to_pair[1]), total)
+            total = max(from_to_pair[0], from_to_pair[1], total)
 
         return total
 

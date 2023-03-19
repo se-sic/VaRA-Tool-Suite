@@ -3,7 +3,6 @@
 import os
 import typing as tp
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import click
 from plumbum import colors
@@ -11,7 +10,7 @@ from plumbum import colors
 from varats.containers.containers import (
     ImageBase,
     run_container,
-    BaseImageCreationContext,
+    StageBuilder,
     create_dev_image,
 )
 from varats.tools.research_tools.research_tool import (
@@ -194,6 +193,7 @@ def build(
     if container:
         _build_in_container(tool, container, build_type, install_prefix)
     else:
+        tool.invalidate_install(__get_install_prefix(tool, install_prefix))
         tool.build(
             build_type, __get_install_prefix(tool, install_prefix),
             build_folder_suffix
@@ -258,7 +258,6 @@ def _build_in_container(
     install_prefix: tp.Optional[Path] = None
 ) -> None:
     vara_cfg()["container"]["research_tool"] = tool.name
-    image_name = f"{image_base.image_name}_{build_type.name}"
 
     if not install_prefix:
         install_prefix = Path(
@@ -272,18 +271,16 @@ def _build_in_container(
     install_mount = 'tools/'
 
     click.echo("Preparing container image.")
-    create_dev_image(image_base, tool)
+    image_name = create_dev_image(image_base, build_type)
 
-    with TemporaryDirectory() as tmpdir:
-        image_context = BaseImageCreationContext(image_base, Path(tmpdir))
-        source_mount = str(image_context.varats_root / source_mount)
-        install_mount = str(image_context.varats_root / install_mount)
-        bb_cfg()["container"]["mounts"].value[:] += [
-            # mount tool src dir
-            [str(tool.source_location()), source_mount],
-            # mount install dir
-            [str(install_prefix), install_mount]
-        ]
+    source_mount = str(StageBuilder.varats_root / source_mount)
+    install_mount = str(StageBuilder.varats_root / install_mount)
+    bb_cfg()["container"]["mounts"].value[:] += [
+        # mount tool src dir
+        [str(tool.source_location()), source_mount],
+        # mount install dir
+        [str(install_prefix), install_mount]
+    ]
 
     click.echo(
         f"Building {tool.name} ({build_type.name}) "

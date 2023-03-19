@@ -191,6 +191,9 @@ class Plot:
         Calculate a list of revisions that could improve precisions of this
         plot.
 
+        Raises an :class:`~varats.utils.exceptions.UnsupportedOperation` if not
+        supported by a plot.
+
         Args:
             boundary_gradient: The maximal expected gradient in percent between
                                two revisions, every thing that exceeds the

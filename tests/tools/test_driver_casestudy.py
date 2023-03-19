@@ -5,7 +5,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import (
+from tests.helper_utils import (
     run_in_test_environment,
     TEST_INPUTS_DIR,
     UnitTestFixtures,
@@ -199,15 +199,12 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual(0, result.exit_code, result.exception)
 
     @run_in_test_environment(
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
-            Path("paper_configs/test_ext")
-        )
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_vara_cs_gen_to_extend(self):
         """Test the extend-functionality of vara-cs gen."""
         runner = CliRunner()
-        vara_cfg()["paper_config"]["current_config"] = "test_ext"
+        vara_cfg()["paper_config"]["current_config"] = "test_casestudy_status"
         save_config()
         load_paper_config()
         old_commit = 'ef364d3abc5647111c5424ea0d83a567e184a23b'
@@ -219,7 +216,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual(0, result.exit_code, result.exception)
         case_study_path = Path(
             vara_cfg()["paper_config"]["folder"].value +
-            "/test_ext/xz_0.case_study"
+            "/test_casestudy_status/xz_0.case_study"
         )
         self.assertTrue(case_study_path.exists())
         case_study = load_case_study_from_file(case_study_path)
@@ -232,15 +229,12 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual(1, case_study.num_stages)
 
     @run_in_test_environment(
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
-            Path("paper_configs/test_ext")
-        )
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_vara_cs_gen_to_extend_new_stage(self):
         """Test the extend-functionality of vara-cs gen."""
         runner = CliRunner()
-        vara_cfg()["paper_config"]["current_config"] = "test_ext"
+        vara_cfg()["paper_config"]["current_config"] = "test_casestudy_status"
         save_config()
         load_paper_config()
         old_commit = 'ef364d3abc5647111c5424ea0d83a567e184a23b'
@@ -254,7 +248,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual(0, result.exit_code, result.exception)
         case_study_path = Path(
             vara_cfg()["paper_config"]["folder"].value +
-            "/test_ext/xz_0.case_study"
+            "/test_casestudy_status/xz_0.case_study"
         )
         self.assertTrue(case_study_path.exists())
         case_study = load_case_study_from_file(case_study_path)
@@ -268,15 +262,12 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual('test', case_study.stages[1].name)
 
     @run_in_test_environment(
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
-            Path("paper_configs/test_status")
-        )
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_vara_cs_status(self):
         """Test for vara-cs status."""
         runner = CliRunner()
-        vara_cfg()["paper_config"]["current_config"] = "test_status"
+        vara_cfg()["paper_config"]["current_config"] = "test_casestudy_status"
         save_config()
         load_paper_config()
 
@@ -295,18 +286,36 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "results/brotli", Path("results/brotli")
-        ),
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "paper_configs/test_revision_lookup",
-            Path("paper_configs/test_cleanup_error")
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_vara_cs_status_with_options(self):
+        """Test for vara-cs status."""
+        runner = CliRunner()
+        vara_cfg()["paper_config"]["current_config"] = "test_casestudy_status"
+        load_paper_config()
+
+        result = runner.invoke(
+            driver_casestudy.main,
+            ['status', '--list-revs', '--ws', 'JustCompile']
         )
+        self.assertEqual(0, result.exit_code, result.exception)
+        self.assertEqual(
+            "CS: xz_0:\n"
+            "  Stage 0\n"
+            "    c5c7ceb08a011b97d261798033e2c39613a69eb7\n"
+            "    ef364d3abc5647111c5424ea0d83a567e184a23b\n"
+            "    2f0bc9cd40f709152a0177c8e585c0757e9af9c9\n"
+            "    7521bbdc83acab834594a22bec50c8e1bd836298\n"
+            "    10437b5b567f6a025ff16c45a572e417a0a9cc26\n\n", result.stdout
+        )
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_vara_cs_cleanup_error(self):
         """Test vara-cs cleanup error."""
         runner = CliRunner()
-        vara_cfg()["paper_config"]["current_config"] = "test_cleanup_error"
+        vara_cfg()["paper_config"]["current_config"] = "test_revision_lookup"
         save_config()
         load_paper_config()
         importlib.reload(driver_casestudy)
@@ -337,21 +346,12 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
 
     @run_in_test_environment(
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "results/brotli", Path("results/brotli")
-        ),
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "results/gravity", Path("results/gravity")
-        ),
-        UnitTestFixtures.create_file_fixture(
-            TEST_INPUTS_DIR / "paper_configs/test_revision_lookup",
-            Path("paper_configs/test_cleanup_regex")
-        )
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_vara_cs_cleanup_regex(self):
         """Test vara-cs cleanup regex."""
         runner = CliRunner()
-        vara_cfg()["paper_config"]["current_config"] = "test_cleanup_regex"
+        vara_cfg()["paper_config"]["current_config"] = "test_revision_lookup"
         save_config()
         load_paper_config()
         importlib.reload(driver_casestudy)

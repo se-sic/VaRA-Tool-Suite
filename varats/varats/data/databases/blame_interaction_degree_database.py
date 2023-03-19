@@ -1,7 +1,6 @@
 """Module for the base BlameInteractionDegreeDatabase class."""
 import typing as tp
 from enum import Enum
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -21,7 +20,7 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename
+from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -97,7 +96,7 @@ class BlameInteractionDegreeDatabase(
             return df_layout
 
         def create_data_frame_for_report(
-            report_path: Path
+            report_path: ReportFilepath
         ) -> tp.Tuple[pd.DataFrame, str, str]:
             report = load_blame_report(report_path)
 
@@ -173,13 +172,12 @@ class BlameInteractionDegreeDatabase(
                          list_of_lib_degree_amount_tuples
                      )
 
-                    for i, _ in enumerate(inter_degrees):
-                        degree = inter_degrees[i]
+                    for i, inter_deg in enumerate(inter_degrees):
                         lib_amount = inter_amounts[i]
 
                         interaction_data_dict = build_dataframe_row(
                             degree_type=DegreeType.INTERACTION,
-                            degree=degree,
+                            degree=inter_deg,
                             amount=lib_amount,
                             total_amount=total_amounts_of_all_libs,
                             base_library=base_lib_name,
@@ -193,10 +191,10 @@ class BlameInteractionDegreeDatabase(
                 amounts: tp.List[int],
                 sum_amounts: int,
             ) -> None:
-                for k, _ in enumerate(degrees):
+                for k, deg in enumerate(degrees):
                     data_dict = build_dataframe_row(
                         degree_type=degree_type,
-                        degree=degrees[k],
+                        degree=deg,
                         amount=amounts[k],
                         total_amount=sum_amounts
                     )
@@ -248,7 +246,7 @@ class BlameInteractionDegreeDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: ReportFilename(path).commit_hash.hash,
+            lambda path: path.report_filename.commit_hash.hash,
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

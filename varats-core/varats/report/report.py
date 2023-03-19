@@ -1,13 +1,13 @@
 """The Report module implements basic report functionalities and provides a
 minimal interface ``BaseReport`` to implement own reports."""
-
 import re
 import shutil
 import typing as tp
 import weakref
 from collections import defaultdict
 from enum import Enum
-from pathlib import Path, PosixPath
+from os import stat_result
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from plumbum import colors
@@ -467,6 +467,11 @@ class ReportFilename():
             self.file_suffix, self.config_id
         )
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ReportFilename):
+            return self.filename == other.filename
+        return NotImplemented
+
     def __str__(self) -> str:
         return self.filename
 
@@ -507,6 +512,14 @@ class ReportFilepath():
         return ReportFilepath(
             self.base_path, self.report_filename.with_status(new_status)
         )
+
+    def stat(self) -> stat_result:
+        return self.full_path().stat()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ReportFilepath):
+            return self.base_path == other.base_path and self.report_filename == other.report_filename
+        return NotImplemented
 
     def __str__(self) -> str:
         return str(self.full_path())

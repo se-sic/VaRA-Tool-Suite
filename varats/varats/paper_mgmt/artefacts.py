@@ -70,7 +70,7 @@ class Artefact(ABC):
 
     @classmethod
     def __init_subclass__(
-        cls, artefact_type: str, artefact_type_version: int, **kwargs: tp.Any
+        cls, *, artefact_type: str, artefact_type_version: int, **kwargs: tp.Any
     ) -> None:
         """Register Artefact implementations."""
         super().__init_subclass__(**kwargs)
@@ -206,13 +206,16 @@ class Artefacts:
     def __iter__(self) -> tp.Iterator[Artefact]:
         return self.__artefacts.values().__iter__()
 
+    def __len__(self) -> int:
+        return len(self.__artefacts)
+
     def get_dict(
         self
     ) -> tp.Dict[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]:
         """Construct a dict from these artefacts for easy export to yaml."""
-        return dict(
-            artefacts=[artefact.get_dict() for artefact in self.artefacts]
-        )
+        return {
+            'artefacts': [artefact.get_dict() for artefact in self.artefacts]
+        }
 
 
 @lru_cache(maxsize=1)

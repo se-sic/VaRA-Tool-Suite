@@ -19,6 +19,7 @@ from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension
 # colors taken from seaborn's default palette
 from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR: npt.NDArray[np.float64] = np.asarray(
@@ -196,7 +197,10 @@ def _plot_overview_graph(
     # build the figure instance with the desired height
     plt.subplots(
         figsize=(18, figure_height),
-        gridspec_kw=dict(top=(1 - top_margin), bottom=bottom_margin)
+        gridspec_kw={
+            "top": (1 - top_margin),
+            "bottom": bottom_margin
+        }
     )
 
     ax = sb.heatmap(
@@ -252,7 +256,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class PaperConfigOverviewGenerator(

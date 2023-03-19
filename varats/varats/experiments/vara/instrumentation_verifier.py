@@ -15,6 +15,7 @@ from varats.experiment.experiment_util import (
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
+    FeatureInstrType,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -37,11 +38,11 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         Args:
             project: to analyze
         """
-        instr_type = "instr_verify"
-
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags(instr_type, True)
+        project.cflags += self.get_vara_tracing_cflags(
+            FeatureInstrType.VERIFY, True
+        )
 
         # Ensure that we detect all regions, when verifying
         project.cflags += ["-fvara-instruction-threshold=0"]

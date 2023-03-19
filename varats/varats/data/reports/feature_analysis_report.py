@@ -223,7 +223,7 @@ class FeatureAnalysisGroundTruth():
         self.__path = gt_path
         with open(gt_path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
-            self.__locations: tp.Dict[str, tp.List[str]] = (next(documents))
+            self.__locations: tp.Dict[str, tp.List[str]] = next(documents)
 
     @property
     def path(self) -> Path:

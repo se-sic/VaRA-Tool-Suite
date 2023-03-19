@@ -3,7 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
-from benchbuild.source import HTTP
+from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
     block_revisions,
@@ -64,14 +64,16 @@ class Xz(VProject):
             )
         ),
         FeatureSource(),
-        # TODO: auto unzipper for BB?
-        HTTP(
-            local="countries-land-1km.geo.json",
+        HTTPMultiple(
+            local="geo-maps",
             remote={
                 "1.0":
                     "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0/countries-land-1km.geo.json"
-            }
+                    "download/v0.6.0"
+            },
+            files=[
+                "countries-land-1km.geo.json", "countries-land-250m.geo.json"
+            ]
         )
     ]
 
@@ -85,9 +87,23 @@ class Xz(VProject):
             Command(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
-                "countries-land-1km.geo.json",
+                "geo-maps/countries-land-1km.geo.json",
                 label="countries-land-1km",
-                creates=["countries-land-1km.geo.json.xz"]
+                creates=["geo-maps/countries-land-1km.geo.json.xz"]
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
+                "-9e",
+                "--compress",
+                "--threads=1",
+                "--format=xz",
+                "-vv",
+                "geo-maps/countries-land-250m.geo.json",
+                label="countries-land-250m",
+                creates=["geo-maps/countries-land-250m.geo.json.xz"]
             )
         ],
     }

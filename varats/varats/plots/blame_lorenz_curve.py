@@ -21,6 +21,7 @@ from varats.plots.repository_churn import (
 )
 from varats.project.project_util import get_local_project_git
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
@@ -209,7 +210,7 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class BlameLorenzCurveGenerator(
@@ -429,7 +430,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class BlameGiniOverTimeGenerator(

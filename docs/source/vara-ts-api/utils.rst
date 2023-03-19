@@ -5,7 +5,6 @@ Utilities overview
 ------------------
 * :ref:`Module: cli_util`
 * :ref:`Module: html_util`
-* :ref:`Module: util`
 * :ref:`Module: exceptions`
 * :ref:`Module: git_util`
 * :ref:`Module: github_util`
@@ -31,18 +30,6 @@ Module: html_util
 .................
 
 .. automodule:: varats.ts_utils.html_util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-.. raw:: html
-
-    <hr>
-
-Module: util
-............
-
-.. automodule:: varats.utils.util
     :members:
     :undoc-members:
     :show-inheritance:
