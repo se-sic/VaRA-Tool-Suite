@@ -31,6 +31,7 @@ from varats.ts_utils.click_param_types import (
     EnumChoice,
     REQUIRE_MULTI_CASE_STUDY,
 )
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -221,7 +222,7 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class BlameDiffCorrelationMatrixGenerator(
@@ -302,7 +303,7 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class BlameDiffDistributionGenerator(

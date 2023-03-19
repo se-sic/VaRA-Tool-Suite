@@ -13,6 +13,7 @@ from varats.plot.plots import PlotGenerator
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 
@@ -78,7 +79,7 @@ class TimedWorkloadPlot(Plot, plot_name="timed_workload"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class TimedWorkloadPlotGenerator(
