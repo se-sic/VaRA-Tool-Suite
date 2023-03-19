@@ -83,6 +83,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 llvm_cov = local["llvm-cov"]
                 llvm_cov = llvm_cov["export",
                                     f"--instr-profile={profdata_name}",
+                                    Path(self.project.source_of_primary) /
                                     self.binary]
 
                 with cleanup(prj_command):
