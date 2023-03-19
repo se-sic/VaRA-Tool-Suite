@@ -4,7 +4,6 @@ from pathlib import Path
 
 import benchbuild as bb
 import pandas
-import pandas as pd
 import tabulate as tb
 
 from varats.project.project_util import get_loaded_vara_projects
@@ -102,7 +101,7 @@ def generate_project_overview_table() -> str:
                              index=[0]),
         )
 
-    df = pd.concat(dfs, ignore_index=True)
+    df = pandas.concat(dfs, ignore_index=True)
     df.sort_values(by=['Group', 'Domain', 'Project'], inplace=True)
 
     return str(
