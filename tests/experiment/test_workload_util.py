@@ -1,13 +1,46 @@
 """Test VaRA workload utilities."""
-import typing as tp
 import unittest
 from pathlib import Path
 
 from benchbuild.command import Command, PathToken, RootRenderer
+from benchbuild.source.base import Revision, Variant
 
 import varats.experiment.workload_util as wu
+from varats.projects.c_projects.xz import Xz
+from varats.utils.git_util import ShortCommitHash
 
 TT = PathToken.make_token(RootRenderer())
+
+
+class TestWorkloadCategory(unittest.TestCase):
+
+    def test_str(self) -> None:
+        self.assertEqual(str(wu.WorkloadCategory.SMALL), "small")
+
+
+class TestRevisionBinaryRenderer(unittest.TestCase):
+
+    def test_unrendered(self) -> None:
+        self.assertEqual(
+            wu.RevisionBinaryRenderer("foo").unrendered(), "<binaryLocFor(foo)>"
+        )
+
+    def test_rendered(self) -> None:
+        revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))
+        project = Xz(revision=revision)
+        binary_renderer = wu.RevisionBinaryRenderer("xz")
+        self.assertEqual(binary_renderer.rendered(project), Path("src/xz/xz"))
+
+
+class TestWorkloadCommands(unittest.TestCase):
+
+    def test_workload_commands_tags(self) -> None:
+        revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))
+        project = Xz(revision=revision)
+        binary = Xz.binaries_for_revision(ShortCommitHash("c5c7ceb08a"))[0]
+
+        commands = wu.workload_commands(project, binary, [])
+        self.assertEqual(len(commands), 1)
 
 
 class TestWorkloadFilenames(unittest.TestCase):
