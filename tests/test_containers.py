@@ -14,7 +14,7 @@ from benchbuild.environments.domain.model import (
     EntryPoint,
 )
 
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.containers.containers import (
     ImageBase,
     StageBuilder,

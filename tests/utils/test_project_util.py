@@ -7,7 +7,7 @@ from pathlib import Path
 from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_loaded_vara_projects,

@@ -11,6 +11,7 @@ repos:
     -   id: requirements-txt-fixer
     -   id: name-tests-test
         args: ['--django']
+        exclude: 'tests/helper_utils.py'
 -   repo: https://github.com/timothycrosley/isort.git
     rev: 5.11.5
     hooks:

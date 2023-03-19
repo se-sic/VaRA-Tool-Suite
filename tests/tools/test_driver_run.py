@@ -7,7 +7,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.paper_config import load_paper_config
 from varats.tools import driver_run, driver_container
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
