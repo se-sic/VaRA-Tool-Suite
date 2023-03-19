@@ -70,10 +70,11 @@ class RunWLLVM(base.Extension):  # type: ignore
     configured to use exactly the same compiler as localhost!
 
     Examples:
-    - Usage without distcc:
-        RunWLLVM()
-    - Usage with distcc enabled:
-        RunWLLVM(distcc_hosts="localhost 192.168.1.1:3634/64")
+
+    * Usage without distcc:
+      ``RunWLLVM()``
+    * Usage with distcc enabled:
+      ``RunWLLVM(distcc_hosts="localhost 192.168.1.1:3634/64")``
     """
 
     def __init__(

@@ -48,7 +48,7 @@ class TestProjectOverviewGeneration(unittest.TestCase):
         opus_fm_link = du.construct_feature_model_link(Opus)
         self.assertEqual(
             opus_fm_link,
-            "`Model <https://github.com/se-sic/ConfigurableSystems/tree/master/Opus>`_"
+            "`Model <https://github.com/se-sic/ConfigurableSystems/tree/master/Opus>`__"
         )
 
 

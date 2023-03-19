@@ -9,6 +9,25 @@ The :ref:`VaRA-TS API Reference` contains information about how to :ref:`work wi
 
 For further information about `benchbuild <https://github.com/PolyJIT/benchbuild>`_ related concepts, like `Experiments` or `Projects`, take a look at the  `benchbuild documentation <https://pprof-study.readthedocs.io/en/master/>`_.
 
+Pre-Commit
+----------
+
+We use `pre-commit <https://pre-commit.com/>`__ to automatically enforce our code-style guidelines.
+To activate these checks, you first have to install pre-commit and its hooks:
+
+.. code-block:: console
+
+    pip install pre-commit
+    pre-commit install
+
+Afterwards, the checks will run every time you make a ``git commit``.
+The same checks also run in our CI and pull requests are required to pass them before merging.
+It is also possible to run the checks manually:
+
+.. code-block:: console
+
+    pre-commit run --all-files
+
 Testing
 -------
 
@@ -39,7 +58,7 @@ Keep the data put in this directory as small as possible to avoid bloating the r
 -----
 
 Module: helper_utils
-..................
+....................
 
 .. automodule:: tests.helper_utils
     :members:
