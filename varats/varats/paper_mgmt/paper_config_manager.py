@@ -89,7 +89,8 @@ def show_status_of_case_studies(
                 )
             )
 
-    print(get_total_status(total_status_occurrences, longest_cs_name, True))
+    if not print_rev_list:
+        print(get_total_status(total_status_occurrences, longest_cs_name, True))
 
 
 def get_revision_list(case_study: CaseStudy) -> str:
