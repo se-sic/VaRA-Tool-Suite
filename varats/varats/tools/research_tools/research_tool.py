@@ -171,14 +171,14 @@ class SubProject():
         self,
         parent_code_base: 'CodeBase',
         name: str,
-        URL: str,
+        url: str,
         remote: str,
         sub_path: str,
         is_submodule: bool = False
     ):
         self.__name = name
         self.__parent_code_base = parent_code_base
-        self.__url = URL
+        self.__url = url
         self.__remote = remote
         self.__sub_path = Path(sub_path)
         self.__is_submodule = is_submodule

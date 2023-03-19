@@ -54,7 +54,7 @@ class GlobalsReport():
     def __update_run_values(self) -> None:
         self.__runs = len(self._timings)
         self.__runtime = TimeMeasure(
-            np.mean(self._timings), np.std(self._timings)
+            float(np.mean(self._timings)), float(np.std(self._timings))
         )
 
     @property

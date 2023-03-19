@@ -28,7 +28,6 @@ import numpy as np
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
-from varats.utils.util import static_vars
 
 
 class WrongTimeReportFormat(Exception):
@@ -129,16 +128,19 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
             f"Involuntary context switches: {self.involuntary_ctx_switches}"
         return str_repr
 
-    @staticmethod
-    @static_vars(
-        COMMAND_REGEX=re.compile(r'Command being timed: "(?P<command>.*)"')
+    __COMMAND_REGEX = re.compile(r'Command being timed: "(?P<command>.*)"')
+    __WALL_CLOCK_REGEX = re.compile(r".*\):(?P<time>.*)")
+    __MAXRES_REGEX = re.compile(
+        r"Maximum resident set size \((?P<size_type>.*)\): (?P<amount>\d*)"
     )
+
+    @staticmethod
     def _parse_command(line: str) -> str:
         """
         >>> TimeReport._parse_command('Command being timed: "echo"')
         'echo'
         """
-        match = TimeReport._parse_command.COMMAND_REGEX.search(line)
+        match = TimeReport.__COMMAND_REGEX.search(line)
         if match:
             return str(match.group("command"))
 
@@ -169,7 +171,6 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         raise WrongTimeReportFormat("Could not parse system time: ", line)
 
     @staticmethod
-    @static_vars(WALL_CLOCK_REGEX=re.compile(r".*\):(?P<time>.*)"))
     def _parse_wall_clock_time(line: str) -> timedelta:
         """
         >>> import datetime
@@ -182,7 +183,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                 "Elapsed (wall clock) time (h:mm:ss or m:ss): 42:1.12")
         datetime.timedelta(seconds=2521, microseconds=120000)
         """
-        match = TimeReport._parse_wall_clock_time.WALL_CLOCK_REGEX.search(line)
+        match = TimeReport.__WALL_CLOCK_REGEX.search(line)
         if match:
             time_str = str(match.group("time"))
             if time_str.count(":") > 1:
@@ -201,18 +202,13 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         raise WrongTimeReportFormat("Could not prase wall clock time: ", line)
 
     @staticmethod
-    @static_vars(
-        MAXRES_REGEX=re.compile(
-            r"Maximum resident set size \((?P<size_type>.*)\): (?P<amount>\d*)"
-        )
-    )
     def _parse_max_resident_size(line: str) -> int:
         """
         >>> TimeReport._parse_max_resident_size(\
                 "Maximum resident set size (kbytes): 1804")
         1804
         """
-        match = TimeReport._parse_max_resident_size.MAXRES_REGEX.search(line)
+        match = TimeReport.__MAXRES_REGEX.search(line)
 
         if match:
             if match.group("size_type") != "kbytes":

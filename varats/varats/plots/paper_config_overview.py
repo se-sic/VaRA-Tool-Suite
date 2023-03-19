@@ -196,7 +196,10 @@ def _plot_overview_graph(
     # build the figure instance with the desired height
     plt.subplots(
         figsize=(18, figure_height),
-        gridspec_kw=dict(top=(1 - top_margin), bottom=bottom_margin)
+        gridspec_kw={
+            "top": (1 - top_margin),
+            "bottom": bottom_margin
+        }
     )
 
     ax = sb.heatmap(

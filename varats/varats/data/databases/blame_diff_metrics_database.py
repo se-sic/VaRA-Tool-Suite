@@ -339,7 +339,7 @@ class BlameDiffMetricsDatabase(
 
             def combine_max(tuples: tp.List[tp.Tuple[int, int]]) -> float:
                 if tuples:
-                    return max([x for x, y in tuples])
+                    return max(x for x, y in tuples)
                 return 0
 
             return (

@@ -58,7 +58,10 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
 
     def save(self, plot_dir: Path, filetype: str = 'svg') -> None:
         project_name = self.plot_kwargs["case_study"].project_name
-        revision = ShortCommitHash(self.plot_kwargs["revision"])
+        commit_map = get_commit_map(project_name)
+        short_revision = ShortCommitHash(self.plot_kwargs["revision"])
+        revision = commit_map.convert_to_full_or_warn(short_revision)
+
         cig = create_blame_interaction_graph(
             project_name, revision, BlameReportExperiment
         ).commit_interaction_graph()
