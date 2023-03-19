@@ -495,7 +495,9 @@ def __gen_bug_commits(
 
 
 @main.command("package")
-@click.argument("report_names", type=create_report_type_choice(), nargs=-1)
+@click.argument(
+    "experiment_names", type=create_experiment_type_choice(), nargs=-1
+)
 @click.option("-o", "--output", help="Output file")
 @click.option(
     "--filter-regex",
@@ -505,13 +507,14 @@ def __gen_bug_commits(
     default=".*"
 )
 def __casestudy_package(
-    output: str, filter_regex: str, report_names: tp.List[tp.Type[BaseReport]]
+    output: str, filter_regex: str,
+    experiment_names: tp.List[tp.Type[VersionExperiment]]
 ) -> None:
     """
     Case study packaging util.
 
-    REPORT_NAMES: Provide report names to select which files are considered
-    for packaging
+    EXPERIMENT_NAMES: Provide experiment names to select which files are
+    considered for packaging.
     """
     output_path = Path(output)
     if output_path.suffix == '':
@@ -526,7 +529,7 @@ def __casestudy_package(
             os.chdir(vara_root)
 
         PCM.package_paper_config(
-            output_path, re.compile(filter_regex), report_names
+            output_path, re.compile(filter_regex), experiment_names
         )
     else:
         click.echo(

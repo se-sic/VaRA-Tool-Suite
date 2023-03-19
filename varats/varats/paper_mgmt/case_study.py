@@ -52,6 +52,7 @@ from varats.revision.revisions import (
     is_revision_blocked,
     get_processed_revisions_files,
 )
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     ShortCommitHash,
     FullCommitHash,
@@ -598,7 +599,12 @@ def extend_with_smooth_revs(
     # convert input to float %
     gradient = boundary_gradient / float(100)
     print("Using boundary gradient: ", gradient)
-    new_revisions = plot.calc_missing_revisions(gradient)
+
+    new_revisions: tp.Set[FullCommitHash] = set()
+    try:
+        new_revisions = plot.calc_missing_revisions(gradient)
+    except UnsupportedOperation:
+        LOG.warning("Plot {} does not support revision sampling", plot.name)
 
     if ignore_blocked:
         new_revisions = set(
