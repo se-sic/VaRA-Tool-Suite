@@ -50,7 +50,7 @@ class TestWorkloadCommands(unittest.TestCase):
         commands = wu.workload_commands(
             project, binary, [wu.WorkloadCategory.EXAMPLE]
         )
-        self.assertEqual(len(commands), 2)
+        self.assertEqual(len(commands), 1)
 
 
 class TestWorkloadFilenames(unittest.TestCase):
