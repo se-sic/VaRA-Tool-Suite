@@ -25,7 +25,7 @@ def find_missing_revisions(
     new_revs: tp.Set[FullCommitHash] = set()
 
     data_iterator = iter(data)
-    _, last_row = data_iterator
+    _, last_row = next(data_iterator)
     for _, row in data_iterator:
         should_insert, gradient = should_insert_revision(last_row, row)
         if should_insert:
