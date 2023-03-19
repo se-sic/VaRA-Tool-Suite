@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import varats.paper_mgmt.case_study as MCS
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiments.vara.commit_report_experiment import (
     CommitReportExperiment,

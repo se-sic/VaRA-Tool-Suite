@@ -4,7 +4,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.paper_config import get_paper_config, load_paper_config
 from varats.paper_mgmt.artefacts import load_artefacts
 from varats.plot.plots import PlotArtefact

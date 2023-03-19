@@ -3,7 +3,7 @@ import unittest
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.tools import driver_container
 from varats.utils.settings import vara_cfg
 

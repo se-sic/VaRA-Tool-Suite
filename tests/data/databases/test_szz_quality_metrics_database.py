@@ -5,7 +5,7 @@ import unittest.mock as mock
 from collections import defaultdict
 from pathlib import Path
 
-from tests.test_utils import TEST_INPUTS_DIR
+from tests.helper_utils import TEST_INPUTS_DIR
 from varats.data.databases.blame_diff_metrics_database import (
     id_from_paths,
     compare_timestamps,

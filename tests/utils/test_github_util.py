@@ -6,7 +6,7 @@ from github import Github, PaginatedList
 from github.GithubObject import GithubObject, NonCompletableGithubObject
 from github.PaginatedList import PaginatedListBase
 
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.utils.github_util import (
     get_cached_github_object,
     _get_cached_pygithub_object,

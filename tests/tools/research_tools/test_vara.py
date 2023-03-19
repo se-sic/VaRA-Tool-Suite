@@ -3,7 +3,7 @@
 import unittest
 import unittest.mock as mock
 
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.tools.tool_util import get_research_tool
 
 

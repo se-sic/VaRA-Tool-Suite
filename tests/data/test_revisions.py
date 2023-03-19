@@ -7,7 +7,7 @@ from pathlib import Path
 
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 
-from tests.test_utils import DummyGit
+from tests.helper_utils import DummyGit
 from varats.projects.c_projects.glibc import Glibc
 from varats.projects.c_projects.gravity import Gravity
 from varats.report.report import ReportFilename, ReportFilepath
