@@ -43,7 +43,7 @@ def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
     return sha256.hexdigest()
 
 
-class FileBlob():
+class FileBlob(tp.Generic[LoadableTy]):
     """
     A FileBlob is a keyed data blob for everything that is loadable from a file
     and can be converted to a VaRA DataClass.
@@ -111,7 +111,7 @@ class DataManager():
     """
 
     def __init__(self) -> None:
-        self.file_map: tp.Dict[str, FileBlob] = {}
+        self.file_map: tp.Dict[str, FileBlob[tp.Any]] = {}
         self.thread_pool = QThreadPool()
         self.loader_lock = Lock()
 
@@ -137,7 +137,7 @@ class DataManager():
         # unlocking in the happy path is performed by the loading function
         self.file_map[key] = new_blob
 
-        return tp.cast(LoadableTy, new_blob.data)
+        return new_blob.data
 
     def load_data_class(
         self, file_path: PathLikeTy, DataClassTy: tp.Type[LoadableTy],

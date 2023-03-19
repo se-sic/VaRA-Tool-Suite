@@ -18,7 +18,6 @@ from varats.data.reports.szz_report import (
     SZZReport,
     PyDrillerSZZReport,
 )
-from varats.mapping.commit_map import CommitMap
 
 
 def load_commit_report(file_path: PathLikeTy) -> CommitReport:
@@ -59,17 +58,6 @@ def load_pydriller_szz_report(file_path: PathLikeTy) -> SZZReport:
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, PyDrillerSZZReport)
-
-
-def load_commit_map(file_path: str) -> CommitMap:
-    """
-    Load a CommitMap from a file.
-
-    Attributes:
-        file_path (str): Full path to the file
-    """
-    with open(file_path, "r") as c_map_file:
-        return CommitMap(c_map_file.readlines())
 
 
 def load_blame_verifier_report_no_opt_tbaa(file_path: PathLikeTy) -> \

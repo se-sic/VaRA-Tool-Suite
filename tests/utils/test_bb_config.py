@@ -5,7 +5,7 @@ import sys
 import typing as tp
 import unittest
 
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.utils.settings import bb_cfg
 
 

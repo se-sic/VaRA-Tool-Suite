@@ -1,12 +1,13 @@
 """Test varats container tool."""
 import re
+import traceback
 import unittest
 import unittest.mock as mock
 from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.paper_config import load_paper_config
 from varats.tools import driver_run, driver_container
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
@@ -71,10 +72,7 @@ class TestDriverRun(unittest.TestCase):
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     @mock.patch("varats.tools.driver_run.sbatch")
-    @mock.patch("varats.tools.driver_container.__build_images")
-    def test_bb_run_slurm_and_container(
-        self, mock_sbatch, mock_build_images
-    ) -> None:
+    def test_bb_run_slurm_and_container(self, mock_sbatch) -> None:
         runner = CliRunner()
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         # needed so we see the paper config
@@ -82,21 +80,11 @@ class TestDriverRun(unittest.TestCase):
         # needed so benchbuild sees the paper config
         save_config()
 
-        bb_cfg()["slurm"]["template"] = str(
-            Path(str(vara_cfg()["benchbuild_root"])) / "slurm_container.sh.inc"
-        )
-        save_bb_config()
-
-        # Easiest way to configure slurm + container is 'vara-container'
-        # As a side-effect, this command is now even more tested :)
-        prepare_result = runner.invoke(driver_container.main, ["prepare-slurm"])
-        self.assertEqual(0, prepare_result.exit_code, prepare_result.exception)
-        self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
-
         result = runner.invoke(
             driver_run.main, ["--slurm", "--container", "-E", "JustCompile"]
         )
         self.assertEqual(0, result.exit_code, result.exception)
+        self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
         self.assertTrue(
             (Path(str(vara_cfg()["benchbuild_root"])) /
              "JustCompile-slurm.sh").exists()

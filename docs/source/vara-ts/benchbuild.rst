@@ -189,10 +189,10 @@ Using buildah and podman on the Commandline
 ...........................................
 
 For more advanced users, it might be useful to work with buildah and podman directly from the commandline, e.g., when debugging container images.
-In these situations, it can come in handy to create some shell aliases that set the correct `root` and `runroot` to for the buildah and podman commands::
+In these situations, it can come in handy to create some shell aliases that set the correct `root` and `runroot` to for the buildah and podman commands, as well as the `storage_driver` that is set in BenchBuild's config file::
 
-    alias bbuildah='buildah --root $VARATS_ROOT/containers/lib --runroot $VARATS_ROOT/containers/run'
-    alias bpodman='podman --root $VARATS_ROOT/containers/lib --runroot $VARATS_ROOT/containers/run'
+    alias bbuildah='buildah --root $VARATS_ROOT/containers/lib --runroot $VARATS_ROOT/containers/run --storage-driver=vfs'
+    alias bpodman='podman --root $VARATS_ROOT/containers/lib --runroot $VARATS_ROOT/containers/run --storage-driver=vfs'
 
 
 Debugging Container Images
@@ -226,7 +226,7 @@ As an alternative, you can also mount the file system of a container image by fo
 
    .. code-block:: bash
 
-     newontainer=$(bbuildah from <image_id>)
+     newcontainer=$(bbuildah from <image_id>)
 
    This command will print a container id.
 4. Mount the working container (identified by the id you got from the step before) with

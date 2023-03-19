@@ -5,6 +5,10 @@ import typing as tp
 from functools import wraps
 
 
+class UnsupportedOperation(Exception):
+    """Raised if a function is not supported by a type."""
+
+
 class ProcessTerminatedError(Exception):
     """Raised if a process was terminated."""
 

@@ -1,7 +1,7 @@
 """Test bug overview table."""
 import unittest
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import TableConfig, TableFormat
@@ -35,8 +35,8 @@ class TestCSMetricsTable(unittest.TestCase):
 \caption{Top 10 Central Code Commits}
 \begin{tabular}{lr}
 \toprule
-{} & {centrality} \\
-{commit} & {} \\
+ & centrality \\
+commit &  \\
 \midrule
 ef68dd4a92976276304de2aedfbe34ae91a86abb & 28 \\
 57597d42ca1740ad506437be168d800a50f1a0ad & 16 \\
