@@ -10,5 +10,5 @@ stages:
     config_ids: [1]
 version: 0
 ---
-0:  '["--foo", "--bar"]'
+0: '["--foo", "--bar"]'
 1: '["--foo"]'
