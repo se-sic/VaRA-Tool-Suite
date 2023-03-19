@@ -173,10 +173,12 @@ class CSStage():
 
         Returns: list of config IDs
         """
+
         return list({
             config_id for entry in self.__revisions
             if entry.commit_hash.startswith(revision)
             for config_id in entry.config_ids
+            if config_id != ConfigurationMap.DUMMY_CONFIG_ID
         })
 
     def sort(self, reverse: bool = True) -> None:
