@@ -1,0 +1,14 @@
+DocType: CaseStudy
+Version: 1
+---
+project_name: xz
+stages:
+- extender_strategy: distrib_add
+  revisions:
+  - commit_hash: c5c7ceb08a011b97d261798033e2c39613a69eb7
+    commit_id: 1142
+    config_ids: [1]
+version: 0
+---
+0:  '["--foo", "--bar"]'
+1: '["--foo"]'

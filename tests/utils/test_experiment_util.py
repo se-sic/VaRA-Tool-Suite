@@ -10,12 +10,20 @@ from pathlib import Path
 import benchbuild.utils.actions as actions
 import benchbuild.utils.settings as s
 from benchbuild.project import Project
+from benchbuild.source.base import Revision, Variant
 
 import varats.experiment.experiment_util as EU
-from tests.helper_utils import run_in_test_environment, BBTestSource
+from tests.helper_utils import (
+    run_in_test_environment,
+    BBTestSource,
+    UnitTestFixtures,
+)
 from varats.data.reports.commit_report import CommitReport as CR
+from varats.experiments.base.just_compile import JustCompileReport
+from varats.paper.paper_config import load_paper_config
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
+from varats.projects.c_projects.xz import Xz
 from varats.report.gnu_time_report import TimeReport
 from varats.report.report import FileStatusExtension, ReportSpecification
 from varats.utils.git_util import ShortCommitHash
@@ -123,8 +131,8 @@ class TestVersionExperiment(unittest.TestCase):
         vara_cfg["experiment"]["file_status_blacklist"] = []
 
     @staticmethod
-    def generate_get_tagged_revisions_output(
-    ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
+    def generate_get_tagged_revisions_output() -> tp.Dict[
+        ShortCommitHash, tp.Dict[tp.Optional[int], FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""
         return {
             ShortCommitHash('rev1000000'): {
@@ -269,6 +277,17 @@ class TestVersionExperiment(unittest.TestCase):
         self.assertEqual(len(sample_gen), 1)
         mock_get_tagged_revisions.assert_called()
 
+    def test_file_belongs_to_experiment(self) -> None:
+        self.assertTrue(
+            JustCompileReport.
+            file_belongs_to_experiment("JC-EMPTY-xz-xz-__success.txt")
+        )
+        self.assertFalse(
+            JustCompileReport.
+            file_belongs_to_experiment("BR-EMPTY-xz-xz-__success.txt")
+        )
+        self.assertFalse(JustCompileReport.file_belongs_to_experiment("foo"))
+
     @run_in_test_environment()
     def test_create_success_result_filepath(self):
         """Checks if we correctly create new success result files."""
@@ -373,3 +392,30 @@ class TestZippedReportFolder(unittest.TestCase):
             self.assertTrue(should_be_generated_file.exists())
             with open(should_be_generated_file, 'r') as foo_file:
                 self.assertEqual(foo_file.readline(), 'content')
+
+
+class TestConfigID(unittest.TestCase):
+
+    def test_get_current_config_id_no_config(self) -> None:
+        revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))
+        project = Xz(revision=revision)
+        self.assertEqual(EU.get_current_config_id(project), None)
+
+    def test_get_current_config_id(self) -> None:
+        revision = Revision(
+            Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"),
+            Variant(Xz.SOURCE[1], "42")
+        )
+        project = Xz(revision=revision)
+        self.assertEqual(EU.get_current_config_id(project), 42)
+
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
+    def test_get_extra_config_options(self) -> None:
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        revision = Revision(
+            Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"), Variant(Xz.SOURCE[1], "1")
+        )
+        project = Xz(revision=revision)
+        self.assertEqual(EU.get_extra_config_options(project), ["--foo"])
