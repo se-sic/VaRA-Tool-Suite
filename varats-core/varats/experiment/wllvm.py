@@ -108,16 +108,14 @@ class RunWLLVM(base.Extension):  # type: ignore
 
     def __call__(self, compiler: cc, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         if is_gllvm_available():
-            if str(compiler).endswith("clang++"):
-                wllvm = local["gclang++"]
-            else:
-                wllvm = local["gclang"]
-
+            compiler_wrapper = "gclang"
         else:
-            if str(compiler).endswith("clang++"):
-                wllvm = local["wllvm++"]
-            else:
-                wllvm = local["wllvm"]
+            compiler_wrapper = "wllvm"
+
+        if str(compiler).endswith("clang++"):
+            compiler_wrapper += "++"
+
+        wllvm = local[compiler_wrapper]
 
         env = bb_cfg()["env"].value
         env_path_list = path_to_list(getenv("PATH", ""))
@@ -358,6 +356,6 @@ def get_cached_bc_file_path(
 
 
 def is_gllvm_available() -> bool:
-    return shutil.which("gclang") is not None and shutil.which(
-        "gclang++"
-    ) is not None and shutil.which("get-bc") is not None
+    return None not in {
+        shutil.which(binary) for binary in ["gclang", "gclang++", "get-bc"]
+    }
