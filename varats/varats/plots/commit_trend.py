@@ -1,6 +1,7 @@
 import typing as tp
 
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 from pandas import DataFrame
 
@@ -15,12 +16,14 @@ from varats.plots.author_contribution_survival import (
 from varats.plots.surviving_commits import (
     get_normalized_lines_per_commit_long,
     get_normalized_interactions_per_commit_long,
+    get_lines_per_commit_long,
+    get_interactions_per_commit_long,
 )
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 
-def lines_per_interactions(case_study: CaseStudy) -> DataFrame:
+def lines_per_interactions_normalized(case_study: CaseStudy) -> DataFrame:
     print("Getting Lines per commit")
     lines: DataFrame = get_normalized_lines_per_commit_long(case_study, False)
     print("Getting Interactions")
@@ -38,6 +41,72 @@ def lines_per_interactions(case_study: CaseStudy) -> DataFrame:
         lambda x: (
             cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
             x["lines"] / x["interactions"], x["interactions"] / x["lines"]
+        ),
+        axis=1,
+        result_type='broadcast'
+    )
+    return data
+
+
+def lines_per_interactions(case_study: CaseStudy) -> DataFrame:
+    print("Getting Lines per commit")
+    lines: DataFrame = get_lines_per_commit_long(case_study, False)
+    print("Getting Interactions")
+    interactions: DataFrame = get_interactions_per_commit_long(
+        case_study, False
+    )
+    print("Merging")
+    data = lines.merge(interactions, how='left', on=["base_hash", "revision"])
+    data.dropna(
+        axis=0, how='any', inplace=True, subset=["lines", "interactions"]
+    )
+    print("calculating lines/interaction")
+    cmap = get_commit_map(case_study.project_name)
+    data = data.apply(
+        lambda x: (
+            cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
+            x["lines"] / x["interactions"], x["interactions"] / x["lines"]
+        ),
+        axis=1,
+        result_type='broadcast'
+    )
+    return data
+
+
+def lines_per_interactions_squashed(case_study: CaseStudy) -> DataFrame:
+    print("Getting Lines per commit")
+    lines: DataFrame = get_lines_per_commit_long(case_study, True)
+    print("Getting Interactions")
+    interactions: DataFrame = get_interactions_per_commit_long(case_study, True)
+    print("Merging")
+    data = lines.merge(interactions, how='left', on=["base_hash", "revision"])
+    data.dropna(
+        axis=0, how='any', inplace=True, subset=["lines", "interactions"]
+    )
+    starting_ratio = data.apply(
+        lambda x: (
+            cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
+            x["lines"] / x["interactions"], x["interactions"] / x["lines"]
+        ) if x["revision"] == ShortCommitHash(x["base_hash"]) else (
+            cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
+            np.nan, np.nan
+        ),
+        axis=1,
+        result_type='broadcast'
+    )
+    starting_ratio.dropna(
+        axis=0, how='any', inplace=True, subset=["lines", "interactions"]
+    )
+    starting_ratio.set_index("revision")
+    print("calculating lines/interaction")
+    cmap = get_commit_map(case_study.project_name)
+    data = data.apply(
+        lambda x: (
+            cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
+            x["lines"] / x["interactions"] - starting_ratio[cmap.short_time_id(
+                x["revision"]
+            )]["lines"], x["interactions"] / x["lines"] - -starting_ratio[
+                cmap.short_time_id(x["revision"])]["interactions"]
         ),
         axis=1,
         result_type='broadcast'
@@ -112,6 +181,17 @@ class Trendlines(Plot, plot_name=None):
         sns.move_legend(axis, "upper left", bbox_to_anchor=(1, 1))
 
 
+class CommitTrendLinesNormalized(
+    Trendlines, plot_name="commit-trend-lines-normalized"
+):
+
+    def __init__(self, plot_config: PlotConfig, **kwargs):
+        super().__init__(
+            plot_config, lines_per_interactions_normalized, "base_hash",
+            **kwargs
+        )
+
+
 class CommitTrendLines(Trendlines, plot_name="commit-trend-lines"):
 
     def __init__(self, plot_config: PlotConfig, **kwargs):
@@ -120,7 +200,7 @@ class CommitTrendLines(Trendlines, plot_name="commit-trend-lines"):
         )
 
 
-class AuthorTrendLines(Trendlines, plot_name="author-trend-lines"):
+class AuthorTrendLines(Trendlines, plot_name="author-trend-lines-normalized"):
 
     def __init__(self, plot_config: PlotConfig, **kwargs):
         super().__init__(
