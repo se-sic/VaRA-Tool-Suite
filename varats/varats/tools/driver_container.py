@@ -15,7 +15,9 @@ from varats.containers.containers import (
     delete_base_images,
     export_base_images,
     ImageStage,
+    delete_dev_images,
 )
+from varats.tools.research_tools.vara_manager import BuildType
 from varats.tools.tool_util import get_supported_research_tool_names
 from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.ts_utils.click_param_types import EnumChoice
@@ -101,6 +103,12 @@ def build(
 
 @main.command(help="Delete base containers for the current research tool.")
 @click.option(
+    "--build-type",
+    type=EnumChoice(BuildType, case_sensitive=False),
+    help="If present, delete the dev images for the current research tool "
+    "and the given build type."
+)
+@click.option(
     "-i",
     "--image",
     "images",
@@ -108,17 +116,27 @@ def build(
     multiple=True,
     help="Only delete the given image. Can be given multiple times."
 )
-def delete(images: tp.List[ImageBase]) -> None:
+def delete(
+    images: tp.List[ImageBase], build_type: tp.Optional[BuildType]
+) -> None:
     """
     Delete base containers for the current research tool.
 
     Args:
         images: the images to delete; delete all if empty
+        build_type: if present delete dev images for the current research tool
+                    and the given build type
     """
-    if images:
-        delete_base_images(images)
+    if build_type:
+        if images:
+            delete_dev_images(build_type, images)
+        else:
+            delete_dev_images(build_type)
     else:
-        delete_base_images()
+        if images:
+            delete_base_images(images)
+        else:
+            delete_base_images()
 
 
 @main.command(help="Select the research tool to be used in base containers.")

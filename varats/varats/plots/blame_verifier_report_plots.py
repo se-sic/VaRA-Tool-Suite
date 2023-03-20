@@ -20,6 +20,7 @@ from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -101,8 +102,10 @@ def _load_all_named_dataframes(
                                                         pd.DataFrame]]] = []
 
     # https://github.com/python/mypy/issues/9590
-    k = lambda cs: cs.project_name
-    for case_study in sorted(plot_kwargs["case_study"], key=k):
+    def key(cs: CaseStudy) -> str:
+        return cs.project_name
+
+    for case_study in sorted(plot_kwargs["case_study"], key=key):
         named_df = _get_named_df_for_case_study(
             case_study, opt_level, plot_kwargs
         )
@@ -282,7 +285,7 @@ class BlameVerifierReportPlot(Plot, plot_name=None):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        pass
+        raise UnsupportedOperation
 
     def plot_file_name(self, filetype: str) -> str:
         return f"{self.name}.{filetype}"

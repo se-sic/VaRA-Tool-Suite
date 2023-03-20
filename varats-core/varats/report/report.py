@@ -467,6 +467,11 @@ class ReportFilename():
             self.file_suffix, self.config_id
         )
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ReportFilename):
+            return self.filename == other.filename
+        return NotImplemented
+
     def __str__(self) -> str:
         return self.filename
 
@@ -510,6 +515,11 @@ class ReportFilepath():
 
     def stat(self) -> stat_result:
         return self.full_path().stat()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ReportFilepath):
+            return self.base_path == other.base_path and self.report_filename == other.report_filename
+        return NotImplemented
 
     def __str__(self) -> str:
         return str(self.full_path())

@@ -215,16 +215,15 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .workingdir('Python-3.10.9')
             .run('./configure', '--enable-optimizations', 'CFLAGS=-fPIC')
             .run('make', '-j', str(get_number_of_jobs(bb_cfg())))
-            # .run('make', 'test')
             .run('make', 'install')
             .workingdir('/')
             # install llvm 13
             .run('wget', 'https://apt.llvm.org/llvm.sh')
             .run('chmod', '+x', './llvm.sh')
-            .run('./llvm.sh', '13', 'all')
-            .run('ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang')
-            .run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld'))
+            .run('./llvm.sh', '14', 'all')
+            .run('ln', '-s', '/usr/bin/clang-14', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-14', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-14', '/usr/bin/lld'))
 }
 
 _STAGE_LAYERS: tp.Dict[ImageStage,
@@ -270,7 +269,7 @@ def _create_container_image(
     """
     # delete stages that will be (re-)created
     if force_rebuild or stage != stages[0]:
-        delete_base_image(base, stage)
+        _delete_container_image(base, stage, stages, image_name)
 
     name = ""
     for current_stage in stages:
@@ -411,11 +410,11 @@ def create_dev_image(base: ImageBase, build_type: BuildType) -> str:
 
     Args:
         base: the image base
-        build_type: the build type for the reserach tool
+        build_type: the build type for the research tool
     """
 
     def image_name(stage: ImageStage) -> str:
-        return f"{get_image_name(base, stage, True)}_{build_type.name.lower()}"
+        return get_dev_image_name(base, stage, build_type)
 
     return _create_container_image(
         base, _DEV_IMAGE_STAGES[0], _DEV_IMAGE_STAGES, image_name, False
@@ -423,14 +422,14 @@ def create_dev_image(base: ImageBase, build_type: BuildType) -> str:
 
 
 def create_base_image(
-    base: ImageBase, stage: ImageStage, force_rebuild: bool
+    base: ImageBase, first_stage: ImageStage, force_rebuild: bool
 ) -> None:
     """
     Builds the given base image for the current research tool.
 
     Args:
         base: the base image to build
-        stage: the first image stage in the stack that shall be built
+        first_stage: the first image stage in the stack that shall be built
         force_rebuild: whether to rebuild existing images
     """
 
@@ -438,8 +437,11 @@ def create_base_image(
         return get_image_name(base, stage, True)
 
     _create_container_image(
-        base, stage, _BASE_IMAGE_STAGES, image_name, force_rebuild
+        base, first_stage, _BASE_IMAGE_STAGES, image_name, force_rebuild
     )
+
+    def image_name(stage: ImageStage) -> str:
+        return get_image_name(base, stage, True)
 
 
 def create_base_images(
@@ -488,33 +490,114 @@ def get_image_name(
     return name
 
 
-def delete_base_image(base: ImageBase, stage: ImageStage) -> None:
+def get_dev_image_name(
+    base: ImageBase, stage: ImageStage, build_type: BuildType
+) -> str:
+    """
+    Get the name for a dev-container image.
+
+    Args:
+        base: the container's image base
+        stage: the container's stage
+        build_type: the build type for the research tool
+
+    Returns:
+        the dev-container's name
+    """
+    return f"{get_image_name(base, stage, True)}_{build_type.name.lower()}"
+
+
+def _delete_container_image(
+    base: ImageBase, stage: ImageStage, stages: tp.List[ImageStage],
+    image_name: tp.Callable[[ImageStage], str]
+) -> None:
     """
     Delete a base image.
 
     Args:
         base: the image base
         stage: delete this stage and all subsequent stages
+        stages: a list of stages the complete image stack consists of
+        image_name: a function that returns the image's name for a given stage
     """
     publish = bootstrap.bus()
-    for current_stage in _BASE_IMAGE_STAGES:
+    for current_stage in stages:
         if current_stage.value >= stage.value:
-            image_name = get_image_name(base, current_stage, True)
+            name = image_name(current_stage)
             LOG.debug(
-                f"Deleting image {image_name} "
+                f"Deleting image {name} "
                 f"(base={base.name}, stage={current_stage})"
             )
-            publish(DeleteImage(image_name))
+            publish(DeleteImage(name))
 
 
 def delete_base_images(
     images: tp.Iterable[ImageBase] = ImageBase,
-    stage: ImageStage = _BASE_IMAGE_STAGES[-1]
+    first_stage: ImageStage = _BASE_IMAGE_STAGES[0]
 ) -> None:
-    """Deletes the selected base images."""
+    """
+    Deletes the selected base images.
+
+    Args:
+        images: the base images to delete
+        first_stage: the first stage in the stack that should be deleted
+    """
     for base in images:
+
+        def image_name(stage: ImageStage) -> str:
+            return get_image_name(base, stage, True)  # pylint: disable=W0640
+
         LOG.info(f"Deleting base image {base}.")
-        delete_base_image(base, stage)
+        _delete_container_image(
+            base, first_stage, _BASE_IMAGE_STAGES, image_name
+        )
+
+
+def delete_base_images(
+    images: tp.Iterable[ImageBase] = ImageBase,
+    first_stage: ImageStage = _BASE_IMAGE_STAGES[0]
+) -> None:
+    """
+    Deletes the selected base images.
+
+    Args:
+        images: the base images to delete
+        first_stage: the first stage in the stack that should be deleted
+    """
+    for base in images:
+
+        def image_name(stage: ImageStage) -> str:
+            return get_image_name(base, stage, True)  # pylint: disable=W0640
+
+        LOG.info(f"Deleting base image {base}.")
+        _delete_container_image(
+            base, first_stage, _BASE_IMAGE_STAGES, image_name
+        )
+
+
+def delete_dev_images(
+    build_type: BuildType,
+    images: tp.Iterable[ImageBase] = ImageBase,
+    first_stage: ImageStage = _DEV_IMAGE_STAGES[0]
+) -> None:
+    """
+    Deletes the selected dev images.
+
+    Args:
+        build_type: the build type for the research tool
+        images: the dev images to delete
+        first_stage: the first stage in the stack that should be deleted
+    """
+    for base in images:
+
+        def image_name(stage: ImageStage) -> str:
+            # pylint: disable=W0640
+            return get_dev_image_name(base, stage, build_type)
+
+        LOG.info(f"Deleting dev image {base}.")
+        _delete_container_image(
+            base, first_stage, _DEV_IMAGE_STAGES, image_name
+        )
 
 
 def export_base_image(base: ImageBase) -> None:
