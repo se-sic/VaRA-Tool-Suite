@@ -223,11 +223,15 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
     def _get_binary_config_map(
         self, case_study: CaseStudy, report_files: tp.List[ReportFilepath]
-    ) -> BinaryConfigsMapping:
+    ) -> tp.Optional(BinaryConfigsMapping):
 
-        config_map = load_configuration_map_for_case_study(
-            get_loaded_paper_config(), case_study, PlainCommandlineConfiguration
-        )
+        try:
+            config_map = load_configuration_map_for_case_study(
+                get_loaded_paper_config(), case_study,
+                PlainCommandlineConfiguration
+            )
+        except StopIteration:
+            return None
 
         binary_config_map: tp.DefaultDict[str, tp.Dict[
             Configuration, CoverageReport]] = defaultdict(dict)
@@ -282,8 +286,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
             if not binary_config_map:
                 raise ValueError(
-                    "Cannot load configs for case study " +
-                    case_study.project_name + " !"
+                    "Cannot load configs for case study '" +
+                    case_study.project_name + "'! " +
+                    "Have you set configs in your case study file?"
                 )
 
             with RepositoryAtCommit(project_name, revision) as base_dir:
