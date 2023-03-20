@@ -5,7 +5,7 @@ import unittest.mock as mock
 from enum import Enum
 from pathlib import Path
 
-from tests.test_utils import run_in_test_environment, test_environment
+from tests.helper_utils import run_in_test_environment, test_environment
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.vara import VaRA
 from varats.tools.tool_util import get_research_tool_type, get_research_tool

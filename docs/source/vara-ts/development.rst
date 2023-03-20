@@ -9,6 +9,25 @@ The :ref:`VaRA-TS API Reference` contains information about how to :ref:`work wi
 
 For further information about `benchbuild <https://github.com/PolyJIT/benchbuild>`_ related concepts, like `Experiments` or `Projects`, take a look at the  `benchbuild documentation <https://pprof-study.readthedocs.io/en/master/>`_.
 
+Pre-Commit
+----------
+
+We use `pre-commit <https://pre-commit.com/>`__ to automatically enforce our code-style guidelines.
+To activate these checks, you first have to install pre-commit and its hooks:
+
+.. code-block:: console
+
+    pip install pre-commit
+    pre-commit install
+
+Afterwards, the checks will run every time you make a ``git commit``.
+The same checks also run in our CI and pull requests are required to pass them before merging.
+It is also possible to run the checks manually:
+
+.. code-block:: console
+
+    pre-commit run --all-files
+
 Testing
 -------
 
@@ -20,7 +39,7 @@ Mocking the vara configuration
 
 To ensure a flawless test execution, it is important that the order of test execution does not matter, i.e. each single test is idempotent and does not modify the environment.
 One common problem with this are the vara and benchbuild configurations, as they are stored in a single global object.
-We therefore provide a helper function :func:`~tests.test_utils.replace_config()` to set a test-specific vara (and if needed benchbuild) configuration that can be safely modified without affecting other tests.
+We therefore provide a helper function :func:`~tests.helper_utils.replace_config()` to set a test-specific vara (and if needed benchbuild) configuration that can be safely modified without affecting other tests.
 This function can be either used as a decorator similar to ``unittest.mock`` or as a context manager.
 
 Test resources
@@ -28,8 +47,8 @@ Test resources
 
 Test resources, like report files or case studies, can be stored in the ``tests/TEST_INPUTS`` directory.
 This directory follows the same structure one would also use for the tool-suites installation environment.
-The path to this directory can be accessed via the :attr:`~tests.test_utils.TEST_INPUTS_DIR` attribute.
-If using the :func:`~tests.test_utils.replace_config()` wrapper or context manager without providing an own configuration, the relevant paths in the replaced configuration object are already pointed to this environment.
+The path to this directory can be accessed via the :attr:`~tests.helper_utils.TEST_INPUTS_DIR` attribute.
+If using the :func:`~tests.helper_utils.replace_config()` wrapper or context manager without providing an own configuration, the relevant paths in the replaced configuration object are already pointed to this environment.
 Keep the data put in this directory as small as possible to avoid bloating the repository.
 
 .. warning::
@@ -38,10 +57,10 @@ Keep the data put in this directory as small as possible to avoid bloating the r
 
 -----
 
-Module: test_utils
-..................
+Module: helper_utils
+....................
 
-.. automodule:: tests.test_utils
+.. automodule:: tests.helper_utils
     :members:
     :undoc-members:
     :show-inheritance:

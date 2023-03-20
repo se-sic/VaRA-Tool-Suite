@@ -20,6 +20,7 @@ from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator
 from varats.project.project_util import get_local_project_gits
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
@@ -95,7 +96,7 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CodeCentralityPlotGenerator(

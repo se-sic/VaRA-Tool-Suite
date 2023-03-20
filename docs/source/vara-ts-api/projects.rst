@@ -197,7 +197,7 @@ environment).
 Using Containers
 ................
 
-To use :ref:`BenchBuild's container support <Running BenchBuild in a container>`, a project has to declare what container image to use.
+To use a project with our :ref:`container support <Container Guide>` it has to declare which container image to use.
 This can be done by assigning a container image to the `CONTAINER` class variable::
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)

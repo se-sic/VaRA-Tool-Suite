@@ -27,10 +27,10 @@ Example Output::
 """
 import logging
 import re
-import sys
 import typing as tp
 from collections import defaultdict
 from pathlib import Path
+from typing import TypedDict
 
 from benchbuild.utils.cmd import git
 from packaging.version import Version
@@ -46,11 +46,6 @@ from varats.provider.cve.cve import (
     find_cwe,
 )
 from varats.utils.git_util import FullCommitHash
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import TypedDict
-else:
-    from typing import TypedDict
 
 LOG = logging.getLogger(__name__)
 

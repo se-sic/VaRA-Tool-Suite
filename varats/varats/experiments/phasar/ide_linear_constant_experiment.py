@@ -59,7 +59,7 @@ class IDELinearConstantAnalysis(actions.ProjectStep):  # type: ignore
 
             run_cmd = wrap_unlimit_stack_size(phasar[phasar_params])
 
-            run_cmd = (run_cmd > f'{result_file}')
+            run_cmd = run_cmd > f'{result_file}'
 
             exec_func_with_pe_error_handler(
                 run_cmd,

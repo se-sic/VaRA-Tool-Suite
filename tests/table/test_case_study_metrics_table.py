@@ -1,7 +1,7 @@
 """Test bug overview table."""
 import unittest
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.paper_config import load_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import TableFormat, TableConfig
@@ -28,7 +28,7 @@ class TestCSMetricsTable(unittest.TestCase):
         self.assertEqual(
             r"""\begin{tabular}{llrrrrl}
 \toprule
-{} & {Domain} & {LOC (repo)} & {LOC (project)} & {Commits} & {Authors} & {Revision} \\
+ & Domain & LOC (repo) & LOC (project) & Commits & Authors & Revision \\
 \midrule
 brotli & Compression & 34\,639 & 34\,639 & 848 & 40 & aaa4424d9b \\
 \bottomrule
@@ -51,7 +51,7 @@ brotli & Compression & 34\,639 & 34\,639 & 848 & 40 & aaa4424d9b \\
         self.assertEqual(
             r"""\begin{tabular}{llrrrrl}
 \toprule
-{} & {Domain} & {LOC (repo)} & {LOC (project)} & {Commits} & {Authors} & {Revision} \\
+ & Domain & LOC (repo) & LOC (project) & Commits & Authors & Revision \\
 \midrule
 gravity & Programming language & 22\,923 & 22\,923 & 663 & 39 & 2c71dec8ad \\
 xz & Compression & 37\,021 & 37\,021 & 1\,143 & 16 & c5c7ceb08a \\

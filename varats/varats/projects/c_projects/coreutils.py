@@ -38,6 +38,7 @@ class Coreutils(VProject):
     ]
 
     @staticmethod
+    # pylint: disable=too-many-statements
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:

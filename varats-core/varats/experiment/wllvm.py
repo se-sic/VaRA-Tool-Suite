@@ -1,13 +1,14 @@
 """
-Module to provide WLLVM support for project compilation and extracting bc files
-from generated binaries.
+Module to provide WLLVM/GLLVM support for project compilation and extracting bc
+files from generated binaries.
 
-WLLVM is a compiler replacement/hook to compile projects with clang, producing
-LLVM-IR files on the side. This allows us to hook into the build process and to
-add additional passes/flags, without modifying build files, and later use the
-generated bc files with LLVM.
+WLLVM/GLLVM is a compiler replacement/hook to compile projects with clang,
+producing LLVM-IR files on the side. This allows us to hook into the build
+process and to add additional passes/flags, without modifying build files, and
+later use the generated bc files with LLVM.
 """
 
+import shutil
 import sys
 import typing as tp
 from enum import Enum
@@ -57,23 +58,25 @@ class BCFileExtensions(Enum):
 
 class RunWLLVM(base.Extension):  # type: ignore
     """
-    This extension implements the WLLVM compiler.
+    This extension implements the WLLVM/GLLVM compiler. GLLVM is used
+    automatically if it is found in the PATH. Otherwise WLLVM is used.
 
-    This class is an extension that implements the WLLVM compiler with the
+    This class is an extension that implements the WLLVM/GLLVM compiler with the
     required flags LLVM_COMPILER=clang and LLVM_OUTPUFILE=<path>. This compiler
     is used to transfer the complete project into LLVM-IR.
 
-    The distcc_hosts argument will instruct WLLVM to call distcc instead of
+    The distcc_hosts argument will instruct WLLVM/GLLVM to call distcc instead of
     clang directly. For possible values of distcc_hosts have a look at the
     "HOST SPECIFICATIONS" in the distcc man page.
     It is the user's responsibility to ensure that all distcc hosts are
     configured to use exactly the same compiler as localhost!
 
     Examples:
-    - Usage without distcc:
-        RunWLLVM()
-    - Usage with distcc enabled:
-        RunWLLVM(distcc_hosts="localhost 192.168.1.1:3634/64")
+
+    * Usage without distcc:
+      ``RunWLLVM()``
+    * Usage with distcc enabled:
+      ``RunWLLVM(distcc_hosts="localhost 192.168.1.1:3634/64")``
     """
 
     def __init__(
@@ -104,10 +107,15 @@ class RunWLLVM(base.Extension):  # type: ignore
         return distcc_cc, distcc_cxx
 
     def __call__(self, compiler: cc, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-        if str(compiler).endswith("clang++"):
-            wllvm = local["wllvm++"]
+        if is_gllvm_available():
+            compiler_wrapper = "gclang"
         else:
-            wllvm = local["wllvm"]
+            compiler_wrapper = "wllvm"
+
+        if str(compiler).endswith("clang++"):
+            compiler_wrapper += "++"
+
+        wllvm = local[compiler_wrapper]
 
         env = bb_cfg()["env"].value
         env_path_list = path_to_list(getenv("PATH", ""))
@@ -208,7 +216,11 @@ class Extract(actions.ProjectStep):  # type: ignore
             )
 
             target_binary = Path(self.project.source_of_primary) / binary.path
-            extract_bc(target_binary)
+            if is_gllvm_available():
+                from benchbuild.utils.cmd import get_bc
+                get_bc(target_binary)
+            else:
+                extract_bc(target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
 
         return actions.StepResult.OK
@@ -341,3 +353,9 @@ def get_cached_bc_file_path(
             " compiled with the correct compile/extract action."
         )
     return Path(bc_file_path)
+
+
+def is_gllvm_available() -> bool:
+    return None not in {
+        shutil.which(binary) for binary in ["gclang", "gclang++", "get-bc"]
+    }

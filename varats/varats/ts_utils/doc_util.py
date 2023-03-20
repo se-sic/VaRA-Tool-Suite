@@ -62,7 +62,7 @@ def construct_feature_model_link(project_type: tp.Type[bb.Project]) -> str:
     if feature_model:
         sanitized_repo = FeatureModelProvider.fm_repository.replace('.git', '')
         fm_sub_path = feature_model.parent.name
-        fm_doc_link = f"`Model <{sanitized_repo}/tree/master/{fm_sub_path}>`_"
+        fm_doc_link = f"`Model <{sanitized_repo}/tree/master/{fm_sub_path}>`__"
 
     return fm_doc_link
 
@@ -75,13 +75,16 @@ def generate_project_overview_table() -> str:
     Returns: overview table
     """
 
-    df = pandas.DataFrame(
-        columns=["Project", "Group", "Domain", "FeatureModel", "Main Source"]
-    )
+    dfs = [
+        pandas.DataFrame(
+            columns=[
+                "Project", "Group", "Domain", "FeatureModel", "Main Source"
+            ]
+        )
+    ]
 
     for project_type in get_loaded_vara_projects():
-
-        df = df.append(
+        dfs.append(
             pandas.DataFrame({
                 "Project":
                     _insert_class_reference_to_project(project_type),
@@ -96,9 +99,9 @@ def generate_project_overview_table() -> str:
                     if project_type.SOURCE else None
             },
                              index=[0]),
-            ignore_index=True
         )
 
+    df = pandas.concat(dfs, ignore_index=True)
     df.sort_values(by=['Group', 'Domain', 'Project'], inplace=True)
 
     return str(

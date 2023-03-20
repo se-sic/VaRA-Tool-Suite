@@ -23,6 +23,7 @@ from varats.project.project_util import (
 from varats.provider.bug.bug import PygitBug, as_pygit_bug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.revision.revisions import get_processed_revisions_files
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -269,8 +270,7 @@ def _create_line(
     dist = _get_distance(start, end)
     interval = _get_interval(dist)
 
-    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
-    control_points: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array([
+    control_points: np.ndarray[tp.Literal[2], np.dtype[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
@@ -281,7 +281,10 @@ def _create_line(
         x=curve_points[:, 0],
         y=curve_points[:, 1],
         mode='lines',
-        line=dict(color=color, shape='spline'),
+        line={
+            'color': color,
+            'shape': 'spline'
+        },
         hoverinfo='none'
     )
 
@@ -294,20 +297,24 @@ def _create_node(
         y=[coordinates[1]],
         mode='markers',
         name='',
-        marker=dict(symbol='circle', size=size, color=color),
+        marker={
+            'symbol': 'circle',
+            'size': size,
+            'color': color
+        },
         text=text,
         hoverinfo='text'
     )
 
 
 def _create_layout(title: str) -> gob.Layout:
-    axis = dict(
-        showline=False,
-        zeroline=False,
-        showgrid=False,
-        showticklabels=False,
-        title=''
-    )  # hide the axis
+    axis = {
+        'showline': False,
+        'zeroline': False,
+        'showgrid': False,
+        'showticklabels': False,
+        'title': ''
+    }  # hide the axis
 
     width = 900
     height = 900
@@ -321,7 +328,12 @@ def _create_layout(title: str) -> gob.Layout:
         yaxis=dict(axis),
         hovermode='closest',
         clickmode='event',
-        margin=dict(l=0, r=0, b=0, t=50),
+        margin={
+            'l': 0,
+            'r': 0,
+            'b': 0,
+            't': 50
+        },
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
@@ -379,7 +391,6 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
 
 
 def _get_bezier_curve(
-    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
     ctrl_points: npt.NDArray[np.float64],
     num_points: int = 5
 ) -> npt.NDArray[np.float64]:
@@ -526,15 +537,17 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         self.__figure.show()
 
     def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'html'
+        self,
+        plot_dir: tp.Optional[Path] = None,
+        filetype: str = 'html'
     ) -> None:
         """
         Save the current plot to a file. Supports html, json and image
         filetypes.
 
         Args:
-            path: The path where the file is stored (excluding the file name).
-            filetype: The file type of the plot.
+            plot_dir: path where the file is stored (excluding the file name)
+            filetype: file type of the plot
         """
         try:
             self.plot(False)
@@ -542,10 +555,8 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
 
-        if path is None:
+        if plot_dir is None:
             plot_dir = Path(self.plot_kwargs["plot_dir"])
-        else:
-            plot_dir = path
 
         output_path_prefix = f"{plot_dir}/" if plot_dir else ""
 
@@ -582,4 +593,4 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         """Plot always includes all revisions."""
-        return set()
+        raise UnsupportedOperation

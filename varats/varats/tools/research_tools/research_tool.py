@@ -5,6 +5,7 @@ import abc
 import typing as tp
 from enum import Enum
 from pathlib import Path
+from typing import Protocol, runtime_checkable
 
 import distro as distribution
 from benchbuild.utils.cmd import apt, pacman
@@ -170,14 +171,14 @@ class SubProject():
         self,
         parent_code_base: 'CodeBase',
         name: str,
-        URL: str,
+        url: str,
         remote: str,
         sub_path: str,
         is_submodule: bool = False
     ):
         self.__name = name
         self.__parent_code_base = parent_code_base
-        self.__url = URL
+        self.__url = url
         self.__remote = remote
         self.__sub_path = Path(sub_path)
         self.__is_submodule = is_submodule
@@ -577,33 +578,41 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             True, if the build was correct.
         """
 
+
+@runtime_checkable
+class ContainerInstallable(Protocol):
+    """Protocol for installing a research tool inside a container."""
+
     def container_install_dependencies(
-        self, image_context: 'containers.BaseImageCreationContext'
+        self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
         Add layers for installing this research tool's dependencies to the given
         container.
 
         Args:
-            image_context: the base image creation context
+            stage_builder: the builder object for the current container stage
         """
-        if self.get_dependencies().has_dependencies_for_distro(
-            image_context.base.distro
-        ):
-            image_context.layers.run(
-                *(
-                    self.get_dependencies().
-                    get_install_command(image_context.base.distro).split(" ")
-                )
-            )
 
-    @abc.abstractmethod
     def container_install_tool(
-        self, image_context: 'containers.BaseImageCreationContext'
+        self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
         Add layers for installing this research tool to the given container.
 
         Args:
-            image_context: the base image creation context
+            stage_builder: the builder object for the current container stage
+        """
+
+    def container_tool_env(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> tp.Dict[str, tp.List[str]]:
+        """
+        Tool-specific container configuration in the form of environment
+        variables.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        Returns:
+            a dictionary of environment variables and their values
         """

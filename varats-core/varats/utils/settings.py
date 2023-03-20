@@ -5,6 +5,7 @@ All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
 import os
+import sys
 import typing as tp
 from os import makedirs, path
 from pathlib import Path
@@ -265,6 +266,12 @@ def add_vara_experiment_options(
     }
 
 
+def __is_benchbuild_process() -> bool:
+    """Check whether we are running in a benchbuild process."""
+    script_name = sys.argv[0]
+    return script_name.endswith("benchbuild")
+
+
 def bb_cfg() -> s.Configuration:
     """Get the current benchbuild config."""
     global _BB_CFG  # pylint: disable=global-statement
@@ -272,10 +279,14 @@ def bb_cfg() -> s.Configuration:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
         add_vara_experiment_options(BB_CFG, vara_cfg())
         bb_root = str(vara_cfg()["benchbuild_root"])
-        if bb_root:
+
+        # load benchbuild config specified by varats config
+        # if available and not running in a benchbuild process
+        if not __is_benchbuild_process() and bb_root:
             bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
             if bb_cfg_path.exists():
                 BB_CFG.load(local.path(bb_cfg_path))
+                BB_CFG.init_from_env()
         _BB_CFG = BB_CFG
     return _BB_CFG
 

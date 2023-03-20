@@ -71,13 +71,13 @@ def cache_dataframe(
     dataframe.to_csv(str(file_path), compression='infer')
 
 
-InDataType = tp.TypeVar("InDataType")
+InDataTy = tp.TypeVar("InDataTy")
 
 
 def __create_cache_entry(
-    create_df_from_report: tp.Callable[[InDataType], tp.Tuple[pd.DataFrame, str,
-                                                              str]],
-    data: InDataType
+    create_df_from_report: tp.Callable[[InDataTy], tp.Tuple[pd.DataFrame, str,
+                                                            str]],
+    data: InDataTy
 ) -> pd.DataFrame:
     new_df, entry_id, entry_timestamp = create_df_from_report(data)
     new_df[CACHE_ID_COL] = entry_id
@@ -86,17 +86,18 @@ def __create_cache_entry(
 
 
 def build_cached_report_table(
-    data_id: str, project_name: str, data_to_load: tp.List[InDataType],
-    data_to_drop: tp.List[InDataType],
-    create_empty_df: tp.Callable[[], pd.DataFrame],
-    create_cache_entry_data: tp.Callable[[InDataType], tp.Tuple[pd.DataFrame,
-                                                                str, str]],
-    get_entry_id: tp.Callable[[InDataType], str],
-    get_entry_timestamp: tp.Callable[[InDataType], str],
+    data_id: str, project_name: str, data_to_load: tp.List[InDataTy],
+    data_to_drop: tp.List[InDataTy], create_empty_df: tp.Callable[[],
+                                                                  pd.DataFrame],
+    create_cache_entry_data: tp.Callable[[InDataTy], tp.Tuple[pd.DataFrame, str,
+                                                              str]],
+    get_entry_id: tp.Callable[[InDataTy],
+                              str], get_entry_timestamp: tp.Callable[[InDataTy],
+                                                                     str],
     is_newer_timestamp: tp.Callable[[str, str], bool]
 ) -> pd.DataFrame:
     """
-    Build up an automatically cache dataframe.
+    Build up an automatically cached dataframe.
 
     Args:
         data_id: graph cache identifier
@@ -123,10 +124,10 @@ def build_cached_report_table(
     else:
         cached_df = optional_cached_df
 
-    def is_missing_file(report_file: InDataType) -> bool:
+    def is_missing_file(report_file: InDataTy) -> bool:
         return not (cached_df[CACHE_ID_COL] == get_entry_id(report_file)).any()
 
-    def is_newer_file(report_file: InDataType) -> bool:
+    def is_newer_file(report_file: InDataTy) -> bool:
         cached_entry = cached_df[cached_df[CACHE_ID_COL] ==
                                  get_entry_id(report_file)][CACHE_TIMESTAMP_COL]
 
