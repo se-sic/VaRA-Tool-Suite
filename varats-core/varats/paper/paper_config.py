@@ -260,8 +260,7 @@ class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
 
     def versions(self) -> tp.List[bb.source.base.Variant]:
         cache_path = self.fetch()
-        git_rev_list = git['rev-list', '--abbrev-commit', '--abbrev=10',
-                           '--all']
+        git_rev_list = git['rev-list', '--all']
         rev_list: tp.List[str] = []
         with pb.local.cwd(cache_path):
             rev_list = list(git_rev_list(self.refspec).strip().split('\n'))
