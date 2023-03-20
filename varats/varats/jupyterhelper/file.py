@@ -128,7 +128,7 @@ def load_feature_analysis_report(file_path: PathLikeTy) -> \
     return VDM.load_data_class_sync(file_path, FeatureAnalysisReport)
 
 
-def load_phasar_iter_ide_stats_report(file_path: Path) -> \
+def load_phasar_iter_ide_stats_report(file_path: PathLikeTy) -> \
         PhasarIterIDEStatsReport:
     """
     Load a PhasarIterIDEStatsReport from a file.
