@@ -1152,7 +1152,7 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
 
 
 class PhasarIterIDEJF1vsJF2Generator(
-    TableGenerator, generator_name="phasar-iter-ide-old-new", options=[]
+    TableGenerator, generator_name="phasar-iter-ide-jf1-jf2", options=[]
 ):
     """TODO: """
 
