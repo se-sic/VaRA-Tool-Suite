@@ -38,21 +38,20 @@ class S9LaTimm(VProject):
     # $ vara-cs gen --project s9latimm select_latest
 
     # $ git -C ../vara-tool-suite pull --recurse-submodules
-
     # $ LOG_LEVEL=debug vara-container build --update-tool-suite --export
-    # $ LOG_LEVEL=debug vara-run -vv --container --experiment RunFeatureXRayPerf s9latimm
 
-    # $ vara-run -vv --container --slurm --experiment RunFeatureXRayPerf s9latimm
-    # $ cat benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ LOG_LEVEL=debug vara-run -vv --container --slurm --experiment RunFeatureXRayPerf s9latimm
+    # $ nano benchbuild/RunFeatureXRayPerf-slurm.sh
 
     # $ sbatch --constraint=maxl --array=0-2  --cpus-per-task 8 --mem=128GB  --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
-    # $ sbatch --constraint=eku --array=0-0 --cpus-per-task 4 --mem=12GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ sbatch --constraint=eku --array=0-0 --cpus-per-task 4 --mem=8GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
     # $ watch -n 1 -d squeue --me
+    # $ tail -f $(ls -1ptA benchbuild/slurm_logs | egrep -v /$ | head -1)
 
     # $ vara-cs status RunFeatureXRayPerf
     # $ unzip -l  results/s9latimm/*.zip
     # $ vara-cs cleanup --experiment RunFeatureXRayPerf all
-    # $ rm benchbuild/slurm_logs/*
+    # $ rm -rf benchbuild/slurm_logs/*
 
     NAME = "s9latimm"
     GROUP = "cpp_projects"
@@ -97,10 +96,10 @@ class S9LaTimm(VProject):
         """Compile the project."""
         source = local.path(self.source_of_primary)
 
-        # with local.cwd(source):
-        #     # always get newest version
-        #     git("fetch")
-        #     git("checkout", "origin/HEAD")
+        with local.cwd(source):
+            # always get newest version
+            git("fetch")
+            git("checkout", "origin/HEAD")
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
