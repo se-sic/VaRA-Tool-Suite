@@ -46,15 +46,17 @@ class S9LaTimm(VProject):
     # $ cat benchbuild/RunFeatureXRayPerf-slurm.sh
 
     # $ sbatch --constraint=maxl --array=0-2  --cpus-per-task 8 --mem=128GB  --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ sbatch --constraint=eku --array=0-0 --cpus-per-task 4 --mem=12GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
     # $ watch -n 1 -d squeue --me
 
     # $ vara-cs status RunFeatureXRayPerf
     # $ unzip -l  results/s9latimm/*.zip
     # $ vara-cs cleanup --experiment RunFeatureXRayPerf all
+    # $ rm benchbuild/slurm_logs/*
 
     NAME = "s9latimm"
     GROUP = "cpp_projects"
-    DOMAIN = ProjectDomains.TEST
+    DOMAIN = ProjectDomains.WEB_TOOLS
 
     SOURCE = [
         PaperConfigSpecificGit(
