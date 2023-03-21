@@ -25,28 +25,32 @@ from varats.utils.settings import bb_cfg
 
 
 class S9LaTimm(VProject):
-
     # benchbuild/.benchbuild.yml
     #   plugins:
     #       projects:
     #           - varats.projects.cpp_projects.s9latimm
 
-    # source .venv/bin/activate
-    # cd vara-root
+    # $ source .venv/bin/activate
+    # $ cd vara-root
 
-    # vara-pc create s9latimm
-    # vara-pc select
-    # vara-cs gen --project s9latimm select_latest
+    # $ vara-pc create s9latimm
+    # $ vara-pc select
+    # $ vara-cs gen --project s9latimm select_latest
 
-    # LOG_LEVEL=debug vara-container build --update-tool-suite --export
-    # LOG_LEVEL=debug vara-run -vv --experiment RunFeatureXRayPerf s9latimm
-    # vara-cs status RunFeatureXRayPerf
-    # unzip -l  results/s9latimm/*.zip
-    # vara-cs cleanup --experiment RunFeatureXRayPerf all
+    # $ git -C ../vara-tool-suite pull --recurse-submodules
 
-    # LOG_LEVEL=debug vara-run -vv --experiment RunFeatureXRayPerf --container --slurm s9latimm
-    # sbatch --constraint=maxl --mem=128GB -- benchbuild/RunFeatureXRayPerf-slurm.sh
-    # watch -n 1 -d squeue --me
+    # $ LOG_LEVEL=debug vara-container build --update-tool-suite --export
+    # $ LOG_LEVEL=debug vara-run -vv --container --experiment RunFeatureXRayPerf s9latimm
+
+    # $ vara-run -vv --container --slurm --experiment RunFeatureXRayPerf s9latimm
+    # $ cat benchbuild/RunFeatureXRayPerf-slurm.sh
+
+    # $ sbatch --constraint=maxl --array=0-2  --cpus-per-task 8 --mem=128GB  --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ watch -n 1 -d squeue --me
+
+    # $ vara-cs status RunFeatureXRayPerf
+    # $ unzip -l  results/s9latimm/*.zip
+    # $ vara-cs cleanup --experiment RunFeatureXRayPerf all
 
     NAME = "s9latimm"
     GROUP = "cpp_projects"
@@ -59,8 +63,7 @@ class S9LaTimm(VProject):
             local="s9latimm",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
-        )
+            shallow=False)
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)
@@ -79,9 +82,9 @@ class S9LaTimm(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(S9LaTimm.NAME))
+            revision: ShortCommitHash) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(get_local_project_git_path(
+            S9LaTimm.NAME))
         binary_map.specify_binary("build/main", BinaryType.EXECUTABLE)
         return binary_map[revision]
 
@@ -104,9 +107,10 @@ class S9LaTimm(VProject):
 
         with local.cwd(source / "build"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("../", f"-DCMAKE_CXX_COMPILER={str(cxx_compiler)}")
-                bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(cmake)("../",
+                                f"-DCMAKE_CXX_COMPILER={str(cxx_compiler)}")
+                bb.watch(cmake)("--build", ".", "-j",
+                                get_number_of_jobs(bb_cfg()))
 
         with local.cwd(source):
             verify_binaries(self)
-
