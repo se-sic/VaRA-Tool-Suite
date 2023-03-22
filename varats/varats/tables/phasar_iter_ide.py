@@ -16,7 +16,7 @@ from varats.jupyterhelper.file import load_phasar_iter_ide_stats_report
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import (
-    get_local_project_git,
+    get_local_project_git_path,
     get_project_cls_by_name,
 )
 from varats.report.gnu_time_report import TimeReportAggregate
@@ -74,7 +74,7 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             for report_file in report_files:
                 report = load_phasar_iter_ide_stats_report(report_file)
                 project_cls = get_project_cls_by_name(project_name)
-                project_repo = get_local_project_git(project_name)
+                project_repo = get_local_project_git_path(project_name)
                 if not report.basic_bc_stats:
                     raise TableDataEmpty(
                         "Stats file was not present in the report."
@@ -236,7 +236,7 @@ class PhasarIterIDEStatsWL(Table, table_name="phasar-iter-ide-stats-wl"):
             for report_file in report_files:
                 report = load_phasar_iter_ide_stats_report(report_file)
                 project_cls = get_project_cls_by_name(project_name)
-                project_repo = get_local_project_git(project_name)
+                project_repo = get_local_project_git_path(project_name)
                 if not report.basic_bc_stats:
                     raise TableDataEmpty(
                         "Stats file was not present in the report."
@@ -518,7 +518,7 @@ class PhasarIterIDEStatsWL_LCA(
             for report_file in report_files:
                 report = load_phasar_iter_ide_stats_report(report_file)
                 project_cls = get_project_cls_by_name(project_name)
-                project_repo = get_local_project_git(project_name)
+                project_repo = get_local_project_git_path(project_name)
                 if not report.basic_bc_stats:
                     raise TableDataEmpty(
                         "Stats file was not present in the report."
@@ -689,7 +689,7 @@ class PhasarIterIDEStatsWL_Taint(
             for report_file in report_files:
                 report = load_phasar_iter_ide_stats_report(report_file)
                 project_cls = get_project_cls_by_name(project_name)
-                project_repo = get_local_project_git(project_name)
+                project_repo = get_local_project_git_path(project_name)
                 if not report.basic_bc_stats:
                     raise TableDataEmpty(
                         "Stats file was not present in the report."
