@@ -1117,7 +1117,9 @@ class RepositoryAtCommit:
         self.__repo = pygit2.Repository(
             get_local_project_git_path(project_name)
         )
-        self.__initial_head = self.__repo.head
+
+        self.__initial_head: pygit2.Reference = self.__repo.head
+        print(self.__initial_head.name)
         self.__revision = self.__repo.get(revision.hash)
 
     def __enter__(self) -> Path:
@@ -1129,7 +1131,9 @@ class RepositoryAtCommit:
         exc_value: tp.Optional[BaseException],
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
-        self.__repo.checkout(self.__initial_head)
+        self.__repo.checkout(
+            self.__initial_head, strategy=pygit2.GIT_CHECKOUT_FORCE
+        )
 
 
 def calc_surviving_lines(project_name: str, revision: CommitHash) -> \
@@ -1148,7 +1152,9 @@ tp.Dict[str, int]:
     )
     revision = revision.to_short_commit_hash()
     lines_per_revision: dict = {}
+    print(revision)
     with RepositoryAtCommit(project_name, revision) as project_path:
+        print(project_path)
         with local.cwd(project_path):
             files = git("ls-tree", "-r", "--name-only",
                         revision.hash).splitlines()

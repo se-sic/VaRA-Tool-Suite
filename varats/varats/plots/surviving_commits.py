@@ -55,7 +55,7 @@ def get_lines_per_commit_long(
         return data_frame[
             data_frame["base_hash"].apply(lambda x: revisions.has_node(x) != 0)]
 
-    return cs_filter(data) if filter_cs is None else data
+    return cs_filter(data) if filter_cs else data
 
 
 def get_normalized_lines_per_commit_long(
@@ -95,12 +95,15 @@ def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
 def get_interactions_per_commit_long(case_study: CaseStudy, filter_cs=True):
     project_name = case_study.project_name
     data: DataFrame = BlameLibraryInteractionsDatabase().get_data_for_project(
-        project_name, ["base_hash", "amount", "revision", "base_lib"],
+        project_name,
+        ["base_hash", "amount", "revision", "base_lib", "inter_lib"],
         get_commit_map(project_name), case_study
     )
     data = data[
         data["base_lib"].apply(lambda x: x.startswith(case_study.project_name))]
-    data.drop(columns=['base_lib'])
+    data = data[data["inter_lib"].
+                apply(lambda x: x.startswith(case_study.project_name))]
+    data.drop(columns=['base_lib', "inter_lib"])
     data = data.groupby(["base_hash", "revision"],
                         sort=False).sum().reset_index()
     data.rename(columns={'amount': 'interactions'}, inplace=True)

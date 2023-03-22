@@ -3,6 +3,7 @@ import typing as tp
 import pandas as pd
 
 from varats.paper.case_study import CaseStudy
+from varats.plots.commit_trend import lines_per_interactions_squashed
 from varats.plots.surviving_commits import lines_and_interactions
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -20,6 +21,20 @@ class CommitSurvivalTable(Table, table_name="commit_survival"):
         )
 
 
+class CommitSurvivalChangesTable(Table, table_name="interactions_loc_change"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_study: CaseStudy = self.table_kwargs["case_study"]
+        data_frame: pd.DataFrame = lines_per_interactions_squashed(case_study)
+        data_frame = data_frame.pivot(
+            index="revision", columns="base_hash", values="interactions"
+        )
+        data_frame.sort_index(axis=0, inplace=True)
+        return dataframe_to_table(
+            data_frame, table_format, wrap_table=wrap_table
+        )
+
+
 class CommtiSurvivalGenerator(
     TableGenerator,
     generator_name="commit_survival",
@@ -29,6 +44,9 @@ class CommtiSurvivalGenerator(
     def generate(self) -> tp.List['varats.table.table.Table']:
         case_study: CaseStudy = self.table_kwargs.pop("case_study")
         return [
+            CommitSurvivalChangesTable(
+                self.table_config, case_study=case_study, **self.table_kwargs
+            ),
             CommitSurvivalTable(
                 self.table_config, case_study=case_study, **self.table_kwargs
             )

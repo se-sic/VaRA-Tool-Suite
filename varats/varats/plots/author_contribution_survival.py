@@ -32,7 +32,7 @@ def _group_data_by_author(
         commit = commit_lookup_helper(
             CommitRepoPair(FullCommitHash(commit_hash), repo)
         )
-        return commit.author.name, commit.author.email
+        return commit.author.name + " " + commit.author.email
 
     data = data.apply(
         lambda x: [
