@@ -313,7 +313,7 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
                     for prj_command in workload_commands(
-                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                        self.project, binary, []
                     ):
                         trace_result_path = Path(
                             tmp_dir

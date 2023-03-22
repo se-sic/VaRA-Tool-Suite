@@ -40,17 +40,17 @@ class S9LaTimm(VProject):
     # $ git -C ../vara-tool-suite pull --recurse-submodules
     # $ LOG_LEVEL=debug vara-container build --update-tool-suite --export
 
-    # $ LOG_LEVEL=debug vara-run -vv --container --slurm --experiment RunFeatureXRayPerf s9latimm
+    # $ vara-run -vv --container --slurm --experiment RunFeatureXRayPerf s9latimm
     # $ nano benchbuild/RunFeatureXRayPerf-slurm.sh
 
-    # $ sbatch --constraint=maxl --array=0-2  --cpus-per-task 8 --mem=128GB  --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
-    # $ sbatch --constraint=eku --array=0-0 --cpus-per-task 4 --mem=8GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ sbatch --constraint=maxl --mem=128GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ sbatch --constraint=eku --cpus-per-task 4 --mem=8GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
     # $ watch -n 1 -d squeue --me
-    # $ tail -f $(ls -1ptA benchbuild/slurm_logs | egrep -v /$ | head -1)
+    # $ tail -f $(ls -1dptA benchbuild/slurm_logs/* | egrep -v /$ | head -1)
 
     # $ vara-cs status RunFeatureXRayPerf
     # $ unzip -l  results/s9latimm/*.zip
-    # $ vara-cs cleanup --experiment RunFeatureXRayPerf all
+    # $ vara-cs cleanup --experiment RunFeatureXRayPerf --case-studies s9latimm_0 all
     # $ rm -rf benchbuild/slurm_logs/*
 
     NAME = "s9latimm"
