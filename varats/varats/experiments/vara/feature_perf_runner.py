@@ -71,26 +71,46 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         return analysis_actions
 
 
-class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
+class FeaturePerfVaRAXRayRunner(FeatureExperiment, shorthand="FPVXR"):
     """Test runner for feature performance with XRay."""
 
-    NAME = "RunFeatureXRayPerf"
+    NAME = "RunFeatureVaRAXRayPerf"
 
     REPORT_SPEC = ReportSpecification(TEFReport)
 
     def actions_for_project(
-        self, project: VProject
+        self,
+        project: VProject,
+        enable_vara: bool = True,
+        enable_xray: bool = True
     ) -> tp.MutableSequence[actions.Step]:
-        project.cflags += self.get_vara_feature_cflags(project)
+        if enable_vara:
+            print("VaRA enabled")
+            project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags(FeatureInstrType.TEF)
+            project.cflags += self.get_vara_tracing_cflags(
+                FeatureInstrType.TEF, project=project, instruction_threshold=0
+            )
+
+            project.ldflags += self.get_vara_tracing_ldflags()
+
+        if enable_xray:
+            print("XRay enabled")
+            project.cflags += [
+                "-fxray-instrument",
+                "-fxray-instruction-threshold=0",
+            ]
+
+        print(project.cflags)
 
         project.cflags += [
-            "-fxray-instrument",
-            "-fxray-instruction-threshold=1",
+            "-flto",
+            "-fuse-ld=lld",
         ]
 
-        project.ldflags += self.get_vara_tracing_ldflags()
+        project.ldflags += [
+            "-flto",
+        ]
 
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -104,6 +124,45 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
 
         return [
             actions.Compile(project),
-            RunVaRATracedXRayWorkloads(project, self.get_handle()),
+            RunVaRATracedXRayWorkloads(
+                project,
+                self.get_handle(),
+                enable_vara,
+                enable_xray,
+                num_iterations=5
+            ),
             actions.Clean(project),
         ]
+
+
+class FeaturePerfXRayRunner(FeaturePerfVaRAXRayRunner, shorthand="FRXR"):
+
+    NAME = "RunFeatureXRayPerf"
+
+    def actions_for_project(self, project: VProject,
+                            **kwargs) -> tp.MutableSequence[actions.Step]:
+        return super().actions_for_project(
+            project, enable_vara=False, enable_xray=True
+        )
+
+
+class FeaturePerfVaRARunner(FeaturePerfVaRAXRayRunner, shorthand="FPVR"):
+
+    NAME = "RunFeatureVaRAPerf"
+
+    def actions_for_project(self, project: VProject,
+                            **kwargs) -> tp.MutableSequence[actions.Step]:
+        return super().actions_for_project(
+            project, enable_vara=True, enable_xray=False
+        )
+
+
+class FeaturePerfBaseRunner(FeaturePerfVaRAXRayRunner, shorthand="FPBR"):
+
+    NAME = "RunFeatureBasePerf"
+
+    def actions_for_project(self, project: VProject,
+                            **kwargs) -> tp.MutableSequence[actions.Step]:
+        return super().actions_for_project(
+            project, enable_vara=False, enable_xray=False
+        )

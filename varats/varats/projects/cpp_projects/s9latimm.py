@@ -64,7 +64,8 @@ class S9LaTimm(VProject):
             local="s9latimm",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False)
+            shallow=False
+        )
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)
@@ -83,9 +84,11 @@ class S9LaTimm(VProject):
 
     @staticmethod
     def binaries_for_revision(
-            revision: ShortCommitHash) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(
-            S9LaTimm.NAME))
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(S9LaTimm.NAME)
+        )
         binary_map.specify_binary("build/main", BinaryType.EXECUTABLE)
         return binary_map[revision]
 
@@ -101,17 +104,15 @@ class S9LaTimm(VProject):
             git("fetch")
             git("checkout", "origin/HEAD")
 
-        c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
         mkdir("-p", source / "build")
 
         with local.cwd(source / "build"):
-            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("../",
-                                f"-DCMAKE_CXX_COMPILER={str(cxx_compiler)}")
-                bb.watch(cmake)("--build", ".", "-j",
-                                get_number_of_jobs(bb_cfg()))
+            with local.env(CXX=str(cxx_compiler)):
+                bb.watch(cmake)("..")
+                bb.watch(cmake
+                        )("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(source):
             verify_binaries(self)

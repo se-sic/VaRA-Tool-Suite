@@ -10,6 +10,7 @@ from pathlib import Path
 
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import cmd
 from benchbuild.utils.actions import (
     ProjectStep,
     Step,
@@ -31,6 +32,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.trace_util import merge_trace
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
+from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
@@ -109,9 +111,9 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
 
         # runtime and compiler extensions
         project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+                                    << time.RunWithTime()
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << WithUnlimitedStackSize()
+                                     << WithUnlimitedStackSize()
 
         # project actions
         project_actions = []
@@ -284,9 +286,19 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
+    def __init__(
+        self,
+        project: VProject,
+        experiment_handle: ExperimentHandle,
+        enable_vara: bool = True,
+        enable_xray: bool = True,
+        num_iterations: int = 1
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.__enable_vara = enable_vara
+        self.__enable_xray = enable_xray
+        self.__num_iterations = num_iterations
 
     def __call__(self) -> StepResult:
         return self.run_traced_code()
@@ -304,81 +316,99 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                 # Skip libraries as we cannot run them
                 continue
 
-            result_filepath = create_new_success_result_filepath(
+            report_path = create_new_success_result_filepath(
                 self.__experiment_handle,
                 self.__experiment_handle.report_spec().main_report,
                 self.project, binary
             )
 
             with local.cwd(local.path(self.project.builddir)):
-                with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
-                    for prj_command in workload_commands(
-                        self.project, binary, []
-                    ):
-                        trace_result_path = Path(
-                            tmp_dir
-                        ) / f"trace_{prj_command.command.label}.json"
-                        with local.env(
-                            VARA_TRACE_FILE=trace_result_path,
-                            XRAY_OPTIONS=" ".join([
-                                "patch_premain=true",
-                                "xray_mode=xray-basic",
-                                "verbosity=1",
-                            ]),
+                with ZippedReportFolder(
+                    report_path.full_path()
+                ) as report_folder:
+                    for iteration in range(self.__num_iterations):
+                        suffix = str(iteration +
+                                     1).zfill(len(str(self.__num_iterations)))
+                        print(f"Iteration {suffix}")
+                        for workload in workload_commands(
+                            self.project, binary, []
                         ):
-                            pb_cmd = prj_command.command.as_plumbum(
-                                project=self.project
-                            )
-                            print(
-                                "Running example"
-                                f" '{prj_command.command.label}'",
-                                flush=True
-                            )
-                            with cleanup(prj_command):
-                                _, _, err = pb_cmd.run()
-                            xray = re.findall(
-                                r"XRay: Log file in '(.+?)'",
-                                err,
-                                flags=re.DOTALL
-                            )
+                            trace_result_path = Path(
+                                report_folder
+                            ) / f"trace_{workload.command.label}_{suffix}.json"
 
-                        if xray:
-                            xray_log_path = local.cwd / xray[0]
-                            xray_map_path = local.path(
-                                self.project.primary_source
-                            ) / binary.path
-                            print(
-                                f"XRay: Log file in '{xray_log_path}' /"
-                                f" {xray_map_path}",
-                                flush=True
-                            )
-                            xray_result_path = Path(
-                                tmp_dir
-                            ) / f"xray_{prj_command.command.label}.json"
-                            local["llvm-xray"]([
-                                "convert",
-                                f"--instr_map={xray_map_path}",
-                                f"--output={xray_result_path}",
-                                "--output-format=trace_event",
-                                "--symbolize",
-                                xray_log_path,
-                            ])
-
-                            merge_result_path = Path(
-                                tmp_dir
-                            ) / f"merge_{prj_command.command.label}.json"
-
-                            with open(
-                                merge_result_path, mode="x", encoding="UTF-8"
-                            ) as file:
-                                file.write(
-                                    json.dumps(
-                                        merge_trace(
-                                            (trace_result_path, "Trace"),
-                                            (xray_result_path, "XRay")
-                                        ),
-                                        indent=2
-                                    )
+                            with local.env(
+                                VARA_TRACE_FILE=trace_result_path,
+                                XRAY_OPTIONS=" ".join([
+                                    "patch_premain=true",
+                                    "xray_mode=xray-basic",
+                                    "verbosity=1",
+                                ]),
+                            ):
+                                pb_cmd = workload.command.as_plumbum(
+                                    project=self.project
                                 )
+
+                                time_report_path = Path(
+                                    report_folder,
+                                    f"time_{workload.command.label}_{suffix}.{TimeReport.FILE_TYPE}"
+                                )
+
+                                pb_cmd = cmd.time["-v", "-o", time_report_path,
+                                                  pb_cmd]
+
+                                print(
+                                    "Running example"
+                                    f" '{workload.command.label}'",
+                                    flush=True
+                                )
+                                with cleanup(workload):
+                                    _, _, err = pb_cmd.run()
+                                xray = re.findall(
+                                    r"XRay: Log file in '(.+?)'",
+                                    err,
+                                    flags=re.DOTALL
+                                )
+
+                            if self.__enable_xray and xray:
+                                xray_log_path = local.cwd / xray[0]
+                                xray_map_path = local.path(
+                                    self.project.primary_source
+                                ) / binary.path
+                                print(
+                                    f"XRay: Log file in '{xray_log_path}' /"
+                                    f" {xray_map_path}",
+                                    flush=True
+                                )
+                                xray_result_path = Path(
+                                    report_folder
+                                ) / f"xray_{workload.command.label}_{suffix}.json"
+                                local["llvm-xray"]([
+                                    "convert",
+                                    f"--instr_map={xray_map_path}",
+                                    f"--output={xray_result_path}",
+                                    "--output-format=trace_event",
+                                    "--symbolize",
+                                    xray_log_path,
+                                ])
+
+                                if self.__enable_vara:
+                                    merge_result_path = Path(
+                                        report_folder
+                                    ) / f"merge_{workload.command.label}_{suffix}.json"
+
+                                    with open(
+                                        merge_result_path,
+                                        mode="x",
+                                        encoding="UTF-8"
+                                    ) as file:
+                                        file.write(
+                                            json.dumps(
+                                                merge_trace((
+                                                    trace_result_path, "Trace"
+                                                ), (xray_result_path, "XRay")),
+                                                indent=2
+                                            )
+                                        )
 
         return StepResult.OK
