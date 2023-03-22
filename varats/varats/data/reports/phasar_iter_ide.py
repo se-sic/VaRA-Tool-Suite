@@ -148,26 +148,20 @@ class PhasarIterIDEStatsReport(
                     self._new_taint_queue = TimeReportAggregate(file)
                 elif file.name.startswith("new_lca_queue"):
                     self._new_lca_queue = TimeReportAggregate(file)
-                elif file.name.startswith("new_typestate_size-prio"):
-                    self._new_typestate_size_prio = TimeReportAggregate(file)
-                elif file.name.startswith("new_taint_size-prio"):
-                    self._new_taint_size_prio = TimeReportAggregate(file)
-                elif file.name.startswith("new_lca_size-prio"):
-                    self._new_lca_size_prio = TimeReportAggregate(file)
                 elif file.name.startswith("new_typestate_size-prio-rev"):
                     self._new_typestate_size_prio_rev = TimeReportAggregate(
                         file
                     )
+                elif file.name.startswith("new_typestate_size-prio"):
+                    self._new_typestate_size_prio = TimeReportAggregate(file)
                 elif file.name.startswith("new_taint_size-prio-rev"):
                     self._new_taint_size_prio_rev = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_size-prio"):
+                    self._new_taint_size_prio = TimeReportAggregate(file)
                 elif file.name.startswith("new_lca_size-prio-rev"):
                     self._new_lca_size_prio_rev = TimeReportAggregate(file)
-                elif file.name.startswith("new_typestate_depth-prio"):
-                    self._new_typestate_depth_prio = TimeReportAggregate(file)
-                elif file.name.startswith("new_taint_depth-prio"):
-                    self._new_taint_depth_prio = TimeReportAggregate(file)
-                elif file.name.startswith("new_lca_depth-prio"):
-                    self._new_lca_depth_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_size-prio"):
+                    self._new_lca_size_prio = TimeReportAggregate(file)
                 elif file.name.startswith("new_typestate_depth-prio-rev"):
                     self._new_typestate_depth_prio_rev = TimeReportAggregate(
                         file
@@ -176,6 +170,12 @@ class PhasarIterIDEStatsReport(
                     self._new_taint_depth_prio_rev = TimeReportAggregate(file)
                 elif file.name.startswith("new_lca_depth-prio-rev"):
                     self._new_lca_depth_prio_rev = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_depth-prio"):
+                    self._new_typestate_depth_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_depth-prio"):
+                    self._new_taint_depth_prio = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_depth-prio"):
+                    self._new_lca_depth_prio = TimeReportAggregate(file)
                 elif file.name.startswith("new_typestate_jf1"):
                     self._new_typestate_jf1 = TimeReportAggregate(file)
                 elif file.name.startswith("new_taint_jf1"):
