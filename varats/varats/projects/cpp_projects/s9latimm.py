@@ -31,27 +31,48 @@ class S9LaTimm(VProject):
     #           - varats.projects.cpp_projects.s9latimm
 
     # $ source .venv/bin/activate
+
     # $ cd vara-root
+    # $ pip install -e ../vara-tool-suite/varats-core
+    # $ pip install -e ../vara-tool-suite/varats
 
     # $ vara-pc create s9latimm
     # $ vara-pc select
     # $ vara-cs gen --project s9latimm select_latest
 
+    # $ LOG_LEVEL=debug vara-buildsetup build vara --container=DEBIAN_10
+    # $ LOG_LEVEL=debug vara-container build --force-rebuild --export
+
+    # $ git -C ../vara-tool-suite fetch --recurse-submodules
     # $ git -C ../vara-tool-suite pull --recurse-submodules
     # $ LOG_LEVEL=debug vara-container build --update-tool-suite --export
 
-    # $ vara-run -vv --container --slurm --experiment RunFeatureXRayPerf s9latimm
-    # $ nano benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ vara-run -vv --container --slurm --experiment RunFeatureVaRAXRayPerf s9latimm
+    # $ nano benchbuild/RunFeatureVaRAXRayPerf-slurm.sh
 
-    # $ sbatch --constraint=maxl --mem=128GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
-    # $ sbatch --constraint=eku --cpus-per-task 4 --mem=8GB --time=30 benchbuild/RunFeatureXRayPerf-slurm.sh
+    # $ sbatch --constraint=maxl --mem=128GB --time=30 benchbuild/RunFeatureVaRAXRayPerf-slurm.sh
     # $ watch -n 1 -d squeue --me
     # $ tail -f $(ls -1dptA benchbuild/slurm_logs/* | egrep -v /$ | head -1)
 
-    # $ vara-cs status RunFeatureXRayPerf
-    # $ unzip -l  results/s9latimm/*.zip
-    # $ vara-cs cleanup --experiment RunFeatureXRayPerf --case-studies s9latimm_0 all
+    # $ vara-cs status RunFeatureVaRAXRayPerf
+    # $ unzip -l results/s9latimm/*.zip
+    # $ vara-cs cleanup --experiment RunFeatureVaRAXRayPerf all
+    # $ vara-cs cleanup --experiment RunFeatureVaRAXRayPerf --case-studies s9latimm_0 all
     # $ rm -rf benchbuild/slurm_logs/*
+
+    # $ alias bbuildah='buildah --root /local/storage/s9latimm/benchbuild/containers/lib --runroot /local/storage/s9latimm/benchbuild/containers/run --storage-driver=vfs'
+    # $ bbuildah images
+    # $ bbuildah rmi --all
+
+    # REPOSITORY                 TAG                            SIZE
+    # localhost/debian_10        stage_30_config_vara           7.56 GB
+    # localhost/debian_10        stage_20_tool_vara             7.56 GB
+    # localhost/debian_10        stage_10_varats_vara           4.48 GB
+    # localhost/debian_10        stage_00_base_vara             3.15 GB
+    # localhost/debian_10        stage_31_config_dev_vara_dev   4.48 GB
+    # localhost/debian_10        stage_10_varats_vara_dev       4.48 GB
+    # localhost/debian_10        stage_00_base_vara_dev         3.15 GB
+    # docker.io/library/debian   10                             119 MB
 
     NAME = "s9latimm"
     GROUP = "cpp_projects"

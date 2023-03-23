@@ -9,8 +9,10 @@ from enum import Enum
 from pathlib import Path
 
 from benchbuild.command import cleanup
-from benchbuild.extensions import compiler, run, time
-from benchbuild.utils import cmd
+from benchbuild.extensions.run import RuntimeExtension
+from benchbuild.extensions.compiler import RunCompiler
+from benchbuild.extensions.time import RunWithTime
+from benchbuild.utils.cmd import time
 from benchbuild.utils.actions import (
     ProjectStep,
     Step,
@@ -110,9 +112,9 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # runtime and compiler extensions
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-                                    << time.RunWithTime()
-        project.compiler_extension = compiler.RunCompiler(project, self) \
+        project.runtime_extension = RuntimeExtension(project, self) \
+                                    << RunWithTime()
+        project.compiler_extension = RunCompiler(project, self) \
                                      << WithUnlimitedStackSize()
 
         # project actions
@@ -354,8 +356,8 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                     f"time_{workload.command.label}_{suffix}.{TimeReport.FILE_TYPE}"
                                 )
 
-                                pb_cmd = cmd.time["-v", "-o", time_report_path,
-                                                  pb_cmd]
+                                pb_cmd = time["-v", "-o", time_report_path,
+                                              pb_cmd]
 
                                 print(
                                     "Running example"
