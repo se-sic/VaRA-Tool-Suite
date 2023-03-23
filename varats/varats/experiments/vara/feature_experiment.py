@@ -353,14 +353,9 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                     f"time_{workload.command.label}_{suffix}.{TimeReport.FILE_TYPE}"
                                 )
 
-                                # TODO
-                                # command = time["-v", "-o", time_report_path,
-                                #                workload.command.
-                                #                as_plumbum(project=self.project)]
-
-                                command = workload.command.as_plumbum(
-                                    project=self.project
-                                )
+                                command = time["-v", "-o", time_report_path,
+                                               workload.command.
+                                               as_plumbum(project=self.project)]
 
                                 print(
                                     "Running example"

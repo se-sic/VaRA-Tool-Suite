@@ -4,6 +4,7 @@ import typing as tp
 
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
+from benchbuild.environments.domain.declarative import ContainerImage
 
 from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
@@ -77,6 +78,8 @@ class FeaturePerfVaRAXRayRunner(FeatureExperiment, shorthand="FPVXR"):
     NAME = "RunFeatureVaRAXRayPerf"
 
     REPORT_SPEC = ReportSpecification(TEFReport)
+
+    CONTAINER = ContainerImage().run("apt", "install", "-y", "time")
 
     def actions_for_project(
         self,
