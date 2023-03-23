@@ -8,6 +8,7 @@ from abc import abstractmethod
 from enum import Enum
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.extensions.run import RuntimeExtension
 from benchbuild.extensions.compiler import RunCompiler
@@ -362,7 +363,8 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                     flush=True
                                 )
                                 with cleanup(workload):
-                                    _, _, err = command.run()
+                                    _, _, err = bb.watch(command)()
+                                print(err)
                                 xray = re.findall(
                                     r"XRay: Log file in '(.+?)'",
                                     err,
