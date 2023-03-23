@@ -12,7 +12,6 @@ from benchbuild.command import cleanup
 from benchbuild.extensions.run import RuntimeExtension
 from benchbuild.extensions.compiler import RunCompiler
 from benchbuild.extensions.time import RunWithTime
-from benchbuild.utils.cmd import time
 from benchbuild.utils.actions import (
     ProjectStep,
     Step,
@@ -347,17 +346,15 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                     "verbosity=1",
                                 ]),
                             ):
-                                pb_cmd = workload.command.as_plumbum(
-                                    project=self.project
-                                )
-
                                 time_report_path = Path(
                                     report_folder,
                                     f"time_{workload.command.label}_{suffix}.{TimeReport.FILE_TYPE}"
                                 )
 
-                                pb_cmd = time["-v", "-o", time_report_path,
-                                              pb_cmd]
+                                command = local["time"][
+                                    "-v", "-o", time_report_path,
+                                    workload.command.
+                                    as_plumbum(project=self.project)]
 
                                 print(
                                     "Running example"
@@ -365,7 +362,7 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                     flush=True
                                 )
                                 with cleanup(workload):
-                                    _, _, err = pb_cmd.run()
+                                    _, _, err = command.run()
                                 xray = re.findall(
                                     r"XRay: Log file in '(.+?)'",
                                     err,
