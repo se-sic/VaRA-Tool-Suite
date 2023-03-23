@@ -132,7 +132,7 @@ class FeaturePerfVaRAXRayRunner(FeatureExperiment, shorthand="FPVXR"):
                 self.get_handle(),
                 enable_vara,
                 enable_xray,
-                num_iterations=5
+                num_iterations=10
             ),
             actions.Clean(project),
         ]

@@ -62,7 +62,7 @@ class S9LaTimm(VProject):
 
     # $ alias bbuildah='buildah --root /local/storage/s9latimm/benchbuild/containers/lib --runroot /local/storage/s9latimm/benchbuild/containers/run --storage-driver=vfs'
     # $ bbuildah images
-    # $ bbuildah rmi --all
+    # $ bbuildah rmi --force --all
 
     # REPOSITORY                 TAG                            SIZE
     # localhost/debian_10        stage_30_config_vara           7.56 GB
