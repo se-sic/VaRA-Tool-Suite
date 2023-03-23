@@ -101,7 +101,7 @@ class FeaturePerfVaRAXRayRunner(FeatureExperiment, shorthand="FPVXR"):
             print("XRay enabled")
             project.cflags += [
                 "-fxray-instrument",
-                "-fxray-instruction-threshold=0",
+                "-fxray-instruction-threshold=200",
             ]
 
         print(project.cflags)
