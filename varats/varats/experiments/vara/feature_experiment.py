@@ -353,9 +353,14 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                     f"time_{workload.command.label}_{suffix}.{TimeReport.FILE_TYPE}"
                                 )
 
-                                command = time["-v", "-o", time_report_path,
-                                               workload.command.
-                                               as_plumbum(project=self.project)]
+                                # TODO
+                                # command = time["-v", "-o", time_report_path,
+                                #                workload.command.
+                                #                as_plumbum(project=self.project)]
+
+                                command = workload.command.as_plumbum(
+                                    project=self.project
+                                )
 
                                 print(
                                     "Running example"
@@ -364,7 +369,6 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                 )
                                 with cleanup(workload):
                                     _, _, err = bb.watch(command)()
-                                print(err)
                                 xray = re.findall(
                                     r"XRay: Log file in '(.+?)'",
                                     err,
