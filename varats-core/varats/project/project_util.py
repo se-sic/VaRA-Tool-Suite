@@ -2,7 +2,6 @@
 import logging
 import os
 import typing as tp
-from distutils.dir_util import copy_tree
 from enum import Enum
 from pathlib import Path
 
@@ -393,6 +392,7 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         src_dir: path to the source directory
         dest_dir: path to the destination directory
     """
+    from distutils.dir_util import copy_tree
     if os.path.isdir(dest_dir):
         LOG.error(
             "The passed destination directory already exists. "
