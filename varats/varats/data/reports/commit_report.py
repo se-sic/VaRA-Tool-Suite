@@ -98,8 +98,7 @@ class FunctionGraphEdges():
         self.fid = raw_yaml['function-id']
         self.cg_edges: tp.List[RegionToFunctionEdge] = []
 
-        cg_edges = raw_yaml['call-graph-edges']
-        if cg_edges is not None:
+        if (cg_edges := raw_yaml['call-graph-edges']) is not None:
             for edge in cg_edges:
                 for callee in edge['to-functions']:
                     self.cg_edges.append(
@@ -107,14 +106,12 @@ class FunctionGraphEdges():
                     )
 
         self.cf_edges: tp.List[RegionToRegionEdge] = []
-        cf_edges = raw_yaml['control-flow-edges']
-        if cf_edges is not None:
+        if (cf_edges := raw_yaml['control-flow-edges']) is not None:
             for edge in cf_edges:
                 self.cf_edges.append(RegionToRegionEdge(edge))
 
         self.df_relations: tp.List[RegionToRegionEdge] = []
-        df_edges = raw_yaml['data-flow-relations']
-        if df_edges is not None:
+        if (df_edges := raw_yaml['data-flow-relations']) is not None:
             for edge in df_edges:
                 self.df_relations.append(RegionToRegionEdge(edge))
 

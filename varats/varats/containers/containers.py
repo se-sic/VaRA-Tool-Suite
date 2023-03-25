@@ -149,8 +149,7 @@ class StageBuilder():
 
 def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
     _BASE_IMAGES[stage_builder.base](stage_builder)
-    research_tool = _get_installable_research_tool()
-    if research_tool:
+    if (research_tool := _get_installable_research_tool()):
         research_tool.container_install_dependencies(stage_builder)
 
 
@@ -162,15 +161,13 @@ def _create_stage_10_varats_layers(stage_builder: StageBuilder) -> None:
 
 
 def _create_stage_20_tool_layers(stage_builder: StageBuilder) -> None:
-    research_tool = _get_installable_research_tool()
-    if research_tool:
+    if (research_tool := _get_installable_research_tool()):
         research_tool.container_install_tool(stage_builder)
 
 
 def _create_stage_30_config_layers(stage_builder: StageBuilder) -> None:
     env: tp.Dict[str, tp.List[str]] = {}
-    research_tool = _get_installable_research_tool()
-    if research_tool:
+    if (research_tool := _get_installable_research_tool()):
         env = research_tool.container_tool_env(stage_builder)
 
     _add_vara_config(stage_builder)
@@ -290,8 +287,7 @@ def _create_container_image(
 
 
 def _get_installable_research_tool() -> tp.Optional[ContainerInstallable]:
-    configured_research_tool = vara_cfg()["container"]["research_tool"]
-    if configured_research_tool:
+    if (configured_research_tool := vara_cfg()["container"]["research_tool"]):
         research_tool = get_research_tool(str(configured_research_tool))
         if isinstance(research_tool, ContainerInstallable):
             return research_tool

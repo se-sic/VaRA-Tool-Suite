@@ -75,8 +75,7 @@ class Provider(ABC):
         Returns:
             an instance of this provider
         """
-        provider = cls.create_provider_for_project(project)
-        if provider is not None:
+        if (provider := cls.create_provider_for_project(project)) is not None:
             return provider
 
         LOG.warning(

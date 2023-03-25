@@ -140,8 +140,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         >>> TimeReport._parse_command('Command being timed: "echo"')
         'echo'
         """
-        match = TimeReport.__COMMAND_REGEX.search(line)
-        if match:
+        if (match := TimeReport.__COMMAND_REGEX.search(line)):
             return str(match.group("command"))
 
         raise WrongTimeReportFormat("Could not parse command: ", line)
@@ -183,8 +182,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                 "Elapsed (wall clock) time (h:mm:ss or m:ss): 42:1.12")
         datetime.timedelta(seconds=2521, microseconds=120000)
         """
-        match = TimeReport.__WALL_CLOCK_REGEX.search(line)
-        if match:
+        if (match := TimeReport.__WALL_CLOCK_REGEX.search(line)):
             time_str = str(match.group("time"))
             if time_str.count(":") > 1:
                 time_split = time_str.split(":")
@@ -208,9 +206,8 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                 "Maximum resident set size (kbytes): 1804")
         1804
         """
-        match = TimeReport.__MAXRES_REGEX.search(line)
 
-        if match:
+        if (match := TimeReport.__MAXRES_REGEX.search(line)):
             if match.group("size_type") != "kbytes":
                 raise AssertionError(
                     "Type confusion when parsing GNU time file"
