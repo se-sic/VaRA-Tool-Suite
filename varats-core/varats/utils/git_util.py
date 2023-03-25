@@ -673,8 +673,7 @@ def get_submodule_head(
     commit_pattern = re.compile(
         r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
     )
-    match = commit_pattern.search(submodule_status)
-    if match:
+    if (match := commit_pattern.search(submodule_status)):
         return FullCommitHash(match.group(1))
 
     raise AssertionError(f"Unknown submodule {submodule_name}")
@@ -861,8 +860,7 @@ def calc_code_churn(
     stdout = git(__get_git_path_arg(repo_path), diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
-    match = GIT_DIFF_MATCHER.match(stdout)
-    if match:
+    if (match := GIT_DIFF_MATCHER.match(stdout)):
 
         def value_or_zero(match_result: tp.Any) -> int:
             if match_result is not None:

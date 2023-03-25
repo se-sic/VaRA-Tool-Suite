@@ -190,8 +190,7 @@ class ReportFilename():
     @property
     def project_name(self) -> str:
         """Name of the analyzed project."""
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return str(match.group("project_name"))
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -199,8 +198,7 @@ class ReportFilename():
     @property
     def binary_name(self) -> str:
         """Name of the analyzed binary."""
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return str(match.group("binary_name"))
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -275,8 +273,7 @@ class ReportFilename():
             True, if the file name is for a file with the the specified
             ``extension_type``
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(file_name)):
             return match.group("status_ext") == (
                 FileStatusExtension.get_status_extension(extension_type)
             )
@@ -300,8 +297,7 @@ class ReportFilename():
         Returns:
             the commit hash from a result file name
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return ShortCommitHash(match.group("file_commit_hash"))
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -314,8 +310,7 @@ class ReportFilename():
         Returns:
             the experiment shorthand from a result file
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return match.group("experiment_shorthand")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -328,8 +323,7 @@ class ReportFilename():
         Returns:
             the report shorthand from a result file
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return match.group("report_shorthand")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -342,8 +336,7 @@ class ReportFilename():
         Returns:
             the FileStatusExtension of the result file
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return FileStatusExtension.get_file_status_from_str(
                 match.group("status_ext")
             )
@@ -359,8 +352,7 @@ class ReportFilename():
         Returns:
             the configuration ID from a result file
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             config_id_group = match.group("config_id")
             if config_id_group:
                 return int(config_id_group)
@@ -380,8 +372,7 @@ class ReportFilename():
     def uuid(self) -> str:
         """Report UUID of the result file, genereated by BenchBuild during the
         experiment."""
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return match.group("UUID")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
@@ -390,8 +381,7 @@ class ReportFilename():
     def file_suffix(self) -> str:
         """File suffix, commonly known as file ending/type (in the codebase
         referred to as file_ext)."""
-        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
-        if match:
+        if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
             return match.group("file_ext")
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')

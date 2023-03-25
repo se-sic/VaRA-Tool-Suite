@@ -56,10 +56,12 @@ def construct_feature_model_link(project_type: tp.Type[bb.Project]) -> str:
         project_type: type of the project to link the feature model for
     """
     fm_provider = FeatureModelProvider.get_provider_for_project(project_type)
-    feature_model = fm_provider.get_feature_model_path("currently_not_needed")
     fm_doc_link = ""
 
-    if feature_model:
+    if (
+        feature_model :=
+        fm_provider.get_feature_model_path("currently_not_needed")
+    ):
         sanitized_repo = FeatureModelProvider.fm_repository.replace('.git', '')
         fm_sub_path = feature_model.parent.name
         fm_doc_link = f"`Model <{sanitized_repo}/tree/master/{fm_sub_path}>`__"

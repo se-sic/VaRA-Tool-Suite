@@ -76,8 +76,7 @@ def show(name: str) -> None:
         name: the name of the artefact
     """
     paper_config = get_paper_config()
-    artefact = load_artefacts(paper_config).get_artefact(name)
-    if artefact:
+    if (artefact := load_artefacts(paper_config).get_artefact(name)):
         print(f"Artefact '{name}':")
         print(textwrap.indent(yaml.dump(artefact.get_dict()), '  '))
     else:
