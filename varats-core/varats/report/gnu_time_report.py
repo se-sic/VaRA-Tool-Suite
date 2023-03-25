@@ -270,7 +270,7 @@ class TimeReportAggregate(
 
     @property
     def summary(self) -> str:
-        import numpy as np
+        import numpy as np  # pylint: disable=import-outside-toplevel
         return (
             f"num_reports = {len(self.reports())}\n"
             "mean (std) of wall clock time = "

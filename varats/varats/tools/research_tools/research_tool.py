@@ -208,6 +208,7 @@ class SubProject():
         Args:
             cb_base_dir: base directory for the ``CodeBase``
         """
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import (
             init_all_submodules,
             update_all_submodules,
@@ -218,6 +219,7 @@ class SubProject():
     def clone(self) -> None:
         """Clone the sub project into the specified folder relative to the base
         dir of the ``CodeBase``."""
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import download_repo
         print(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
         if (self.__parent_code_base.base_dir / self.path).exists():
@@ -246,6 +248,7 @@ class SubProject():
         Returns:
             True, if the branch exists
         """
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_util import has_branch, has_remote_branch
 
         absl_repo_path = self.__parent_code_base.base_dir / self.path
@@ -266,6 +269,7 @@ class SubProject():
         Returns:
             list of branch names
         """
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import get_branches
         return get_branches(
             self.__parent_code_base.base_dir / self.path, extra_args
@@ -279,6 +283,7 @@ class SubProject():
             remote: name of the new remote
             url: to the remote
         """
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import add_remote, fetch_remote
         add_remote(self.__parent_code_base.base_dir / self.path, remote, url)
         fetch_remote(remote, self.__parent_code_base.base_dir / self.path)
@@ -290,6 +295,7 @@ class SubProject():
         Args:
             branch_name: name of the branch, should exists in the repo
         """
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import checkout_branch_or_commit
         checkout_branch_or_commit(
             self.__parent_code_base.base_dir / self.path, branch_name
@@ -304,6 +310,7 @@ class SubProject():
         Args:
             branch_name: name of the new branch, should not exists in the repo
         """
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import checkout_new_branch
         checkout_new_branch(
             self.__parent_code_base.base_dir / self.path, branch_name,
@@ -316,6 +323,7 @@ class SubProject():
         extra_args: tp.Optional[tp.List[str]] = None
     ) -> None:
         """Fetch updates from the remote."""
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import fetch_remote
         fetch_remote(
             remote, self.__parent_code_base.base_dir / self.path, extra_args
@@ -324,11 +332,13 @@ class SubProject():
     def pull(self) -> None:
         """Pull updates from the remote of the current branch into the sub
         project."""
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import pull_current_branch
         pull_current_branch(self.__parent_code_base.base_dir / self.path)
 
     def push(self) -> None:
         """Push updates from the current branch to the remote branch."""
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import push_current_branch
         from varats.utils.git_util import (
             get_current_branch,
@@ -343,6 +353,7 @@ class SubProject():
 
     def show_status(self) -> None:
         """Show the current status of the sub project."""
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import show_status
         show_status(self.__parent_code_base.base_dir / self.path)
 
@@ -352,6 +363,7 @@ class SubProject():
     def get_tags(self,
                  extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
         """Get the list of available git tags."""
+        # pylint: disable=import-outside-toplevel
         from varats.utils.git_commands import get_tags
         tag_list = get_tags(
             self.__parent_code_base.base_dir / self.path, extra_args

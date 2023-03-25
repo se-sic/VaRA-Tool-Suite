@@ -205,7 +205,7 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 
         Returns: list of sampled items
         """
-        import numpy as np
+        import numpy as np  # pylint: disable=import-outside-toplevel
 
         if num_samples >= len(data):
             return data
@@ -235,7 +235,7 @@ class UniformSamplingMethod(NormalSamplingMethod):
         """
 
         def uniform(num_samples: int) -> 'npt.NDArray[np.float64]':
-            import numpy as np
+            import numpy as np  # pylint: disable=import-outside-toplevel
             return np.random.uniform(0, 1.0, num_samples)
 
         return uniform
@@ -256,6 +256,7 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
         """
 
         def halfnormal(num_samples: int) -> 'npt.NDArray[np.float64]':
+            # pylint: disable=import-outside-toplevel
             from scipy.stats import halfnorm
             return tp.cast(
                 'npt.NDArray[np.float64]',

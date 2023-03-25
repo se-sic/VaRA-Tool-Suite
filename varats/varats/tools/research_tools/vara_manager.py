@@ -117,6 +117,7 @@ def get_llvm_project_status(
     llvm_folder: Path, project_folder: str = ""
 ) -> GitStatus:
     """Retrieve the git status of a llvm project."""
+    # pylint: disable=import-outside-toplevel
     from varats.utils.git_commands import fetch_remote
     try:
         with local.cwd(llvm_folder / project_folder):
