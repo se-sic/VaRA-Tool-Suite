@@ -8,7 +8,6 @@ from itertools import chain
 from pathlib import Path
 from types import TracebackType
 
-import pygit2
 from benchbuild.utils.cmd import git, grep
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local, TF, RETCODE
@@ -23,6 +22,8 @@ from varats.project.project_util import (
 )
 
 if tp.TYPE_CHECKING:
+    import pygit2
+
     import varats.mapping.commit_map as cm  # pylint: disable=W0611
 
 LOG = logging.Logger(__name__)
@@ -49,7 +50,7 @@ class CommitHash(abc.ABC):
         """Required length of the CommitHash."""
 
     @staticmethod
-    def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
+    def from_pygit_commit(commit: 'pygit2.Commit') -> 'FullCommitHash':
         return FullCommitHash(str(commit.id))
 
     @abc.abstractmethod
@@ -612,7 +613,7 @@ class CommitRepoPair():
         return str(self)
 
 
-CommitLookupTy = tp.Callable[[CommitRepoPair], pygit2.Commit]
+CommitLookupTy = tp.Callable[[CommitRepoPair], 'pygit2.Commit']
 
 
 def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
@@ -629,7 +630,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
 
     repos = get_local_project_gits(project_name)
 
-    def get_commit(crp: CommitRepoPair) -> pygit2.Commit:
+    def get_commit(crp: CommitRepoPair) -> 'pygit2.Commit':
         """
         Gets the commit from a given ``CommitRepoPair``.
 
@@ -683,7 +684,7 @@ MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 
 
 def map_commits(
-    func: tp.Callable[[pygit2.Commit], MappedCommitResultType],
+    func: tp.Callable[['pygit2.Commit'], MappedCommitResultType],
     cr_pair_list: tp.Iterable[CommitRepoPair],
     commit_lookup: CommitLookupTy,
 ) -> tp.Sequence[MappedCommitResultType]:
@@ -895,10 +896,11 @@ def calc_repo_code_churn(
 
 
 def __print_calc_repo_code_churn(
-    repo: pygit2.Repository,
+    repo: 'pygit2.Repository',
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> None:
     """Prints calc repo code churn data like git log would do."""
+    import pygit2
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     churn_map = calc_repo_code_churn(Path(repo.path), churn_config)
 
@@ -1111,6 +1113,7 @@ class RepositoryAtCommit():
     duplicating the repository."""
 
     def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
+        import pygit2
         self.__repo = pygit2.Repository(
             get_local_project_git_path(project_name)
         )
