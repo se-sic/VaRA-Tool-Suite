@@ -679,13 +679,13 @@ class ReportSpecification():
 
     def get_report_type(self, shorthand: str) -> tp.Type[BaseReport]:
         """
-        Look up a report type by it's shorthand.
+        Look up a report type by its shorthand.
 
         Args:
             shorthand: notation for the report
 
         Returns:
-            the report if, should it be part of this spec
+            the report if it is part of this spec
         """
         report_type = BaseReport.lookup_report_type_by_shorthand(shorthand)
 
