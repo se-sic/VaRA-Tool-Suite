@@ -537,7 +537,7 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for this plot.")
+            LOG.warning("No data for this plot.")
             return
         self.__figure.show()
 
@@ -553,7 +553,7 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         try:
             self.plot(False)
         except PlotDataEmpty:
-            LOG.warning(f"No data for this plot.")
+            LOG.warning("No data for this plot.")
             return
 
         output_path_prefix = f"{plot_dir}/" if plot_dir else ""
