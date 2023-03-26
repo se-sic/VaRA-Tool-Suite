@@ -103,6 +103,10 @@ def get_interactions_per_commit_long(case_study: CaseStudy, filter_cs=True):
         data["base_lib"].apply(lambda x: x.startswith(case_study.project_name))]
     data = data[data["inter_lib"].
                 apply(lambda x: x.startswith(case_study.project_name))]
+    data.drop(
+        data[data.base_hash == UNCOMMITTED_COMMIT_HASH.hash].index,
+        inplace=True
+    )
     data.drop(columns=['base_lib', "inter_lib"])
     data = data.groupby(["base_hash", "revision"],
                         sort=False).sum().reset_index()
@@ -127,10 +131,6 @@ def get_normalized_interactions_per_commit_long(
     case_study: CaseStudy, filter_cs=True
 ) -> DataFrame:
     data = get_interactions_per_commit_long(case_study, filter_cs)
-    data.drop(
-        data[data.base_hash == UNCOMMITTED_COMMIT_HASH.hash].index,
-        inplace=True
-    )
     max_interactions = data.drop(columns=["revision"]
                                 ).groupby("base_hash").max()
     data = data.apply(
@@ -231,9 +231,11 @@ class SingleRevisionPlot(Plot, plot_name="single_commit_survival"):
         _, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
         revision = self.plot_kwargs['revision']
-        lines: DataFrame = get_lines_per_commit_long(case_study)
+        lines: DataFrame = get_lines_per_commit_long(case_study, False)
 
-        interactions: DataFrame = get_interactions_per_commit_long(case_study)
+        interactions: DataFrame = get_interactions_per_commit_long(
+            case_study, False
+        )
         data = lines.merge(
             interactions, how='left', on=["base_hash", "revision"]
         )
@@ -259,25 +261,21 @@ class SingleRevisionPlot(Plot, plot_name="single_commit_survival"):
             fontsize=self.plot_config.x_tick_size(),
             family='monospace',
         )
-        plt.setp(
-            axis.get_yticklabels(),
-            fontsize=self.plot_config.x_tick_size(),
-            family='monospace'
-        )
         ax = axis.twinx()
         x_axis = range(len(data))
         ax.scatter(x_axis, data['lines'], color="green")
+        #ax.set_ylabel("Lines",color="g")
         axis.scatter(x_axis, data['interactions'], color="orange")
+        #axis.set_ylabel("Interactions",color="orange")
         ax.set_ylim(ymin=0)
         axis.set_ylim(ymin=0)
         lines_legend = mpatches.Patch(color='green', label="Lines")
         interactions_legend = mpatches.Patch(
             color="orange", label='Interactions'
         )
-        plt.legend(handles=[lines_legend, interactions_legend])
+        #plt.legend(handles=[lines_legend, interactions_legend])
         plt.ticklabel_format(axis='x', useOffset=False)
-
-        plt.xticks(x_axis, data.index)
+        axis.set_xticklabels([])
         axis.tick_params(axis="x", labelrotation=90)
 
 
@@ -453,7 +451,7 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
 
 class SingleCommitSurvivalPlotGenerator(
     PlotGenerator,
-    generator_name="single_survival",
+    generator_name="single-survival",
     options=[REQUIRE_REVISION, REQUIRE_CASE_STUDY]
 ):
 

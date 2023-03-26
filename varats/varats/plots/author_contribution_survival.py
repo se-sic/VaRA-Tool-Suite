@@ -58,7 +58,7 @@ def get_interactions_per_author(case_study: CaseStudy) -> DataFrame:
     data.drop(columns="base_lib", inplace=True)
     return _group_data_by_author(
         project_name, data, 'revision', 'base_hash', 'amount'
-    )
+    ).rename(columns={'amount': 'interactions'})
 
 
 def get_lines_per_author(case_study: CaseStudy):
@@ -78,13 +78,13 @@ def get_interactions_per_author_normalized_per_revision(case_study: CaseStudy):
     data = data.apply(
         lambda x: [
             x['revision'], x['author'],
-            (x['amount'] * 100 / ref_data[x['revision']])
+            (x['interactions'] * 100 / ref_data[x['revision']])
             if not math.isnan(x['amount']) else math.nan
         ],
         axis=1,
         result_type='broadcast'
     )
-    return data.rename(columns={'amount': 'interactions'})
+    return data
 
 
 def get_interactions_per_author_normalized_per_author(case_study: CaseStudy):
