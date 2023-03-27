@@ -175,8 +175,6 @@ class CodeRegion:
             elif not x.is_covered() and y.is_covered():
                 # Coverage increased
                 x.count = 1
-            else:
-                raise NotImplemented("Should not be possible!")
 
     def is_identical(self, other: object) -> bool:
         """Is the code region equal and has the same coverage?"""
@@ -553,7 +551,8 @@ def __segments_dict_to_str(
                 len_after = len(y) - len(before) - len(y_stripped)
                 if len_after > 0:
                     after = y[-len_after:]
-                colored_text = f"{before}{_color_str(y_stripped, colors.bg.red)}{after}"
+                middle = _color_str(y_stripped, colors.bg.red)
+                colored_text = f"{before}{middle}{after}"
                 colored_texts.append(colored_text)
             else:
                 raise NotImplementedError

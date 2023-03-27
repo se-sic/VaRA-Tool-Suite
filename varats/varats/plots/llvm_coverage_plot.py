@@ -200,12 +200,15 @@ class CoverageFeatureDiffer:
             feature_filter, list(self.config_combinations)
         )
 
-        print(
-            f"Configs with features:\n[{','.join(chr(10)+str(set(x)) for x in deepcopy(configs_with_features))}\n]"
+        _ = ','.join(
+            "\n" + str(set(x)) for x in deepcopy(configs_with_features)
         )
-        print(
-            f"Configs without features:\n[{','.join(chr(10)+str(set(x)) for x in deepcopy(configs_without_features))}\n]"
+        print(f"Configs with features:\n[{_}\n]")
+
+        _ = ','.join(
+            "\n" + str(set(x)) for x in deepcopy(configs_without_features)
         )
+        print(f"Configs without features:\n[{_}\n]")
 
         report_with_features = _merge_reports(
             list(
@@ -291,12 +294,12 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 for binary in binary_config_map:
                     config_report_map = binary_config_map[binary]
 
-                    coverage_feature_differ = CoverageFeatureDiffer.from_config_report_map(
+                    cfd = CoverageFeatureDiffer.from_config_report_map(
                         config_report_map
                     )
-                    for feature in coverage_feature_differ.available_features:
+                    for feature in cfd.available_features:
                         print(f"Diff for '{feature}':")
-                        diff = coverage_feature_differ.diff({feature: True})
+                        diff = cfd.diff({feature: True})
 
                         print(cov_show(diff, base_dir))
 
