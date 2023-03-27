@@ -2,18 +2,19 @@
 import logging
 import os
 import typing as tp
-from distutils.dir_util import copy_tree
 from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-import pygit2
 from benchbuild.source import Git
 from benchbuild.utils.cmd import git
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
 from varats.utils.settings import bb_cfg
+
+if tp.TYPE_CHECKING:
+    import pygit2
 
 LOG = logging.getLogger(__name__)
 
@@ -113,8 +114,9 @@ def get_extended_commit_lookup_source(
 
 
 def get_local_project_git(
-    project_name: str, git_name: tp.Optional[str] = None
-) -> pygit2.Repository:
+    project_name: str,
+    git_name: tp.Optional[str] = None
+) -> 'pygit2.Repository':
     """
     Get the git repository for a given benchbuild project.
 
@@ -125,6 +127,7 @@ def get_local_project_git(
     Returns:
         git repository that matches the given git_name.
     """
+    import pygit2  # pylint: disable=import-outside-toplevel
     git_path = get_local_project_git_path(project_name, git_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
@@ -132,7 +135,7 @@ def get_local_project_git(
 
 def get_local_project_gits(
     project_name: str
-) -> tp.Dict[str, pygit2.Repository]:
+) -> tp.Dict[str, 'pygit2.Repository']:
     """
     Get the all git repositories for a given benchbuild project.
 
@@ -142,7 +145,7 @@ def get_local_project_gits(
     Returns:
         dict with the git repositories for the project's sources
     """
-    repos: tp.Dict[str, pygit2.Repository] = {}
+    repos: tp.Dict[str, 'pygit2.Repository'] = {}
     project_cls = get_project_cls_by_name(project_name)
 
     for source in project_cls.SOURCE:
@@ -393,6 +396,8 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         src_dir: path to the source directory
         dest_dir: path to the destination directory
     """
+    # pylint: disable=import-outside-toplevel
+    from distutils.dir_util import copy_tree
     if os.path.isdir(dest_dir):
         LOG.error(
             "The passed destination directory already exists. "

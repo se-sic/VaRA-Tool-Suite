@@ -24,8 +24,6 @@ import typing as tp
 from datetime import timedelta
 from pathlib import Path
 
-import numpy as np
-
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 
@@ -272,6 +270,7 @@ class TimeReportAggregate(
 
     @property
     def summary(self) -> str:
+        import numpy as np  # pylint: disable=import-outside-toplevel
         return (
             f"num_reports = {len(self.reports())}\n"
             "mean (std) of wall clock time = "
