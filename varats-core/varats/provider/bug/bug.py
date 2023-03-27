@@ -105,7 +105,7 @@ def as_pygit_bug(raw_bug: RawBug, repo: pygit2.Repository) -> PygitBug:
     """Converts a ``RawBug`` to a ``PygitBug``."""
     introducing_commits: tp.Set[pygit2.Commit] = set()
     for intro_commit in raw_bug.introducing_commits:
-        introducing_commits.add(repo.get(intro_commit))
+        introducing_commits.add(repo.get(intro_commit.hash))
     return PygitBug(
         repo.get(raw_bug.fixing_commit.hash), introducing_commits,
         raw_bug.issue_id, raw_bug.creation_date, raw_bug.resolution_date
