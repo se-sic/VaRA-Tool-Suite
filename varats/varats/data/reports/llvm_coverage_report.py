@@ -634,9 +634,9 @@ def __cov_fill_buffer(
 
     start_line, start_column = __get_next_line_and_column(lines, buffer)
 
-    assert start_line >= 1 and start_line <= len(lines)
+    assert 1 <= start_line <= len(lines)
     assert start_column >= 1 and start_column - 1 <= len(lines[start_line])
-    assert end_line >= 1 and end_line <= len(lines) and end_line >= start_line
+    assert 1 <= end_line <= len(lines) and end_line >= start_line
     assert end_column >= 1 and end_column - 1 <= len(lines[end_line])
     assert (end_column >= start_column if start_line == end_line else True)
 
