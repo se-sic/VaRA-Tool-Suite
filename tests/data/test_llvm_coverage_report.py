@@ -192,16 +192,17 @@ class TestCodeRegion(unittest.TestCase):
         for x in root_2.iter_breadth_first():
             self.assertEqual(x.count, 0)
 
-        self.left_left.count = 5
-        self.left_left_2.count = 1
-        self.right_right.count = 3
+        root_3.count = 0
+        self.left_left.count = -1
+        self.left_left_2.count = 0
+        self.right_right.count = 0
 
         self.root.diff(root_3)
-        self.assertEqual(self.root.count, 0)
+        self.assertEqual(self.root.count, -1)
         self.assertEqual(self.right.count, 0)
         self.assertEqual(self.left.count, 0)
-        self.assertEqual(self.left_left.count, 2)
-        self.assertEqual(self.left_left_2.count, -2)
+        self.assertEqual(self.left_left.count, 1)
+        self.assertEqual(self.left_left_2.count, 1)
         self.assertEqual(self.right_right.count, 1)
 
         self.assertFalse(self.root.is_identical(root_3))

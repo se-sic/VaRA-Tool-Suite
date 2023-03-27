@@ -97,7 +97,7 @@ class CodeRegion:
         return True
 
     def is_covered(self) -> bool:
-        return self.count != 0
+        return self.count > 0
 
     def is_subregion(self, other: CodeRegion) -> bool:
         """Tests if the 'other' region fits fully into self."""
@@ -161,11 +161,22 @@ class CodeRegion:
             x.count += y.count
 
     def diff(self, region: CodeRegion) -> None:
-        """Builds the difference between self and region by subtracting all
-        counts in region from self."""
+        """Builds the difference between self (base code) and region (new code)
+        by comparing them."""
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
             assert x == y, "CodeRegions are not identical"
-            x.count -= y.count
+            if x.is_covered() and y.is_covered(
+            ) or not x.is_covered() and not y.is_covered():
+                # No difference in coverage
+                x.count = 0
+            elif x.is_covered() and not y.is_covered():
+                # Coverage decreased
+                x.count = -1
+            elif not x.is_covered() and y.is_covered():
+                # Coverage increased
+                x.count = 1
+            else:
+                raise NotImplemented("Should not be possible!")
 
     def is_identical(self, other: object) -> bool:
         """Is the code region equal and has the same coverage?"""

@@ -220,8 +220,8 @@ class CoverageFeatureDiffer:
             )
         )
 
-        report_with_features.diff(report_without_features)
-        return report_with_features
+        report_without_features.diff(report_with_features)
+        return report_without_features
 
 
 class CoveragePlot(Plot, plot_name="coverage"):
