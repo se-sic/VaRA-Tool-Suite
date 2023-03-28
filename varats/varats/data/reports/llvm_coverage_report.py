@@ -242,9 +242,11 @@ class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
         return True
 
 
-FilenameFunctionMapping = tp.NewType(
-    "FilenameFunctionMapping", tp.DefaultDict[str, FunctionCodeRegionMapping]
-)
+class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
+    """Mapping from filenames to FunctionCodeRegions."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
@@ -281,7 +283,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         super().__init__(path)
 
         self.filename_function_mapping = FilenameFunctionMapping(
-            defaultdict(lambda: FunctionCodeRegionMapping({}))
+            FunctionCodeRegionMapping
         )
 
     def merge(self, report: CoverageReport) -> None:
@@ -355,9 +357,19 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             filename: str = str(Path(filenames[0]).relative_to(absolute_path))
             regions: tp.List[tp.List[int]] = function["regions"]
 
-            filename_function_mapping[filename] = self._import_code_regions(
-                name, regions, filename_function_mapping[filename]
+            filename_function_mapping[filename] = FunctionCodeRegionMapping(
+                # Fix function order. Otherwise static functions come last.
+                sorted(
+                    self._import_code_regions(
+                        name, regions, filename_function_mapping[filename]
+                    ).items(),
+                    key=lambda item: item[1]
+                )
             )
+        filename_function_mapping = FilenameFunctionMapping(
+            FunctionCodeRegionMapping,
+            sorted(filename_function_mapping.items())
+        )
 
         # sanity checking
         self.__region_import_sanity_check(totals, filename_function_mapping)
@@ -464,7 +476,7 @@ def cov_show(
     NOTE: The colored representation differs a bit!
     """
     result = []
-    for file in sorted(list(report.filename_function_mapping)):
+    for file in list(report.filename_function_mapping):
         function_region_mapping = report.filename_function_mapping[file]
         path = Path(file)
         tmp_value = _cov_show_file(path, base_dir, function_region_mapping, [])
