@@ -257,6 +257,106 @@ class IterIDETimeNewJF1(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
+class IterIDETimeNewGC(actions.ProjectStep):  # type: ignore
+
+    NAME = "NewIDESolverGC"
+    DESCRIPTION = "Analyse new IDESolver with enabled jump-functions garbage collection"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        tmp_dir /= f"new_{self.__analysis_type}_gc"
+        mkdir("-p", tmp_dir)
+
+        phasar_params = [
+            "-D",
+            str(self.__analysis_type), "--GC=enable", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
+
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
+        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+
+        ret_code = run_cmd & RETCODE
+        if ret_code == 137:
+            print("Found OOM (new)")
+            return actions.StepResult.OK
+
+        if ret_code != 0:
+            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+            touch(error_file)
+            return actions.StepResult.ERROR
+
+        return actions.StepResult.OK
+
+
+class IterIDETimeNewGCJF1(actions.ProjectStep):  # type: ignore
+
+    NAME = "NewIDESolverGCJF1"
+    DESCRIPTION = "Analyse new IDESolver with enabled jump-functions garbage collection and JF1 table"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        tmp_dir /= f"new_{self.__analysis_type}_gc_jf1"
+        mkdir("-p", tmp_dir)
+
+        phasar_params = [
+            "-D",
+            str(self.__analysis_type), "--GC=enable", "--jf1", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
+
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
+        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+
+        ret_code = run_cmd & RETCODE
+        if ret_code == 137:
+            print("Found OOM (new)")
+            return actions.StepResult.OK
+
+        if ret_code != 0:
+            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+            touch(error_file)
+            return actions.StepResult.ERROR
+
+        return actions.StepResult.OK
+
+
 class IterIDECompareAnalysisResults(actions.ProjectStep):  # type: ignore
 
     NAME = "CmpIDESolverResults"
@@ -303,6 +403,82 @@ class IterIDECompareAnalysisResults(actions.ProjectStep):  # type: ignore
         if ret_code == 137:
             print("Found OOM (cmp)")
             return actions.StepResult.OK
+
+        return actions.StepResult.OK
+
+
+class IterIDESolverStats(actions.ProjectStep):  # type: ignore
+
+    NAME = "IterIDESolverStats"
+    DESCRIPTION = "Statistics of the IterIDE Solver for the analysis run"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        mkdir("-p", tmp_dir)
+
+        phasar_params_jf2 = [
+            "-D",
+            str(self.__analysis_type), "-S", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_params_jf1 = [
+            "-D",
+            str(self.__analysis_type), "-S", "--jf1", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd_jf2 = wrap_unlimit_stack_size(
+            iteridebenchmark[phasar_params_jf2]
+        )
+        phasar_cmd_jf1 = wrap_unlimit_stack_size(
+            iteridebenchmark[phasar_params_jf1]
+        )
+
+        result_file_jf2 = tmp_dir / f"stats_{self.__analysis_type}_jf2.txt"
+        result_file_jf1 = tmp_dir / f"stats_{self.__analysis_type}_jf1.txt"
+
+        (ret_code, stdout, stderr) = phasar_cmd_jf2.run(retcode=None)
+
+        with open(result_file_jf2, "w") as output_file:
+            output_file.write(f"Error Code: {ret_code}\n")
+            output_file.write("\nStdout:\n")
+            output_file.write(stdout)
+            output_file.write("\nStderr:\n")
+            output_file.write(stderr)
+
+        if ret_code == 137:
+            print("Found OOM (stats JF2)")
+
+        (ret_code, stdout, stderr) = phasar_cmd_jf1.run(retcode=None)
+
+        with open(result_file_jf1, "w") as output_file:
+            output_file.write(f"Error Code: {ret_code}\n")
+            output_file.write("\nStdout:\n")
+            output_file.write(stdout)
+            output_file.write("\nStderr:\n")
+            output_file.write(stderr)
+
+        if ret_code == 137:
+            print("Found OOM (stats JF1)")
 
         return actions.StepResult.OK
 
@@ -416,6 +592,9 @@ class IDELinearConstantAnalysisExperiment(
                             project, binary, analysis_type
                         ) for analysis_type in _get_enabled_analyses()
                     ], *[
+                        IterIDESolverStats(project, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
+                    ], *[
                         IterIDETimeOld(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
@@ -427,6 +606,16 @@ class IDELinearConstantAnalysisExperiment(
                         for rep in reps
                     ], *[
                         IterIDETimeNewJF1(project, rep, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
+                        for rep in reps
+                    ], *[
+                        IterIDETimeNewGC(project, rep, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
+                        for rep in reps
+                    ], *[
+                        IterIDETimeNewGCJF1(
+                            project, rep, binary, analysis_type
+                        )
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
                     ]

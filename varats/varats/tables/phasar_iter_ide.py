@@ -1158,3 +1158,512 @@ class PhasarIterIDEJF1vsJF2Generator(
 
     def generate(self) -> tp.List[Table]:
         return [PhasarIterIDEJF1vsJF2(self.table_config, **self.table_kwargs)]
+
+
+class PhasarIterIDEGC(Table, table_name="phasar-iter-ide-gc"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        cs_data: tp.List[pd.DataFrame] = []
+
+        for case_study in get_loaded_paper_config().get_all_case_studies():
+            print(f"Working on {case_study.project_name}")
+            project_name = latex_sanitize_project_name(case_study.project_name)
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IDELinearConstantAnalysisExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+
+            for report_file in report_files:
+                report = load_phasar_iter_ide_stats_report(report_file)
+
+                cs_dict = {project_name: {}}
+                cs_dict[project_name].update(
+                    self.compute_typestate_stats(report)
+                )
+                cs_dict[project_name].update(self.compute_taint(report))
+                cs_dict[project_name].update(self.compute_lca_stats(report))
+                cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
+
+        df = pd.concat(cs_data).sort_index()
+
+        print(df)
+
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["column_format"] = "l|rrrr|rrrr|rrrr|rrrr|rrrr|rrrr|"
+            kwargs["multicol_align"] = "c|"
+            # kwargs["multicolumn"] = True
+            kwargs['position'] = 't'
+            kwargs[
+                "caption"
+            ] = """Results of our overall comparision of our new IDESolver with jump-functions garbage collection enabled vs disabled. We report the mean runtime of both versions, as well as, the mean speedup $\mathcal{S}$ and it's standard deviation $s$.
+$\mathcal{S}$ was computed as the mean over all speedups in the cartesian product of all measurements.
+"""
+            style.format(precision=2)
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amssymb"))
+            doc.append(NoEscape("\setlength{\\tabcolsep}{4pt}"))
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            margin=0.0,
+            document_decorator=add_extras,
+            **kwargs
+        )
+
+    def compute_typestate_stats(self, report: PhasarIterIDEStatsReport):
+        stats = dict()
+        stats.update(
+            self.__compute_delta_comp(
+                "Typestate", report.new_typestate, report.new_typestate_gc
+            )
+        )
+
+        return stats
+
+    def compute_taint(self, report: PhasarIterIDEStatsReport):
+        stats = dict()
+        stats.update(
+            self.__compute_delta_comp(
+                "Taint", report.new_taint, report.new_taint_gc
+            )
+        )
+
+        return stats
+
+    def compute_lca_stats(self, report: PhasarIterIDEStatsReport):
+        stats = dict()
+        stats.update(
+            self.__compute_delta_comp("LCA", report.new_lca, report.new_lca_gc)
+        )
+
+        return stats
+
+    @staticmethod
+    def __compute_speedups(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return list(
+            map(
+                lambda x: round(x[0] / x[1], 3),
+                itertools.product(old_measurements, new_measurements)
+            )
+        )
+
+    def __compute_delta_comp(
+        self, name: str, old_time_report: tp.Optional[TimeReportAggregate],
+        new_time_report: tp.Optional[TimeReportAggregate]
+    ):
+        time_old = np.nan
+        time_new = np.nan
+        time_speedup = np.nan
+        time_stddev = np.nan
+
+        memory_old = np.nan
+        memory_new = np.nan
+        memory_speedup = np.nan
+        memory_stddev = np.nan
+
+        if old_time_report:
+            time_old = np.mean(old_time_report.measurements_wall_clock_time)
+            memory_old = from_kbytes_to_mbytes(
+                np.mean(old_time_report.max_resident_sizes)
+            )
+
+        if new_time_report:
+            time_new = np.mean(new_time_report.measurements_wall_clock_time)
+            memory_new = from_kbytes_to_mbytes(
+                np.mean(new_time_report.max_resident_sizes)
+            )
+
+        if old_time_report and new_time_report:
+            time_speedups = PhasarIterIDEGC.__compute_speedups(
+                old_time_report.measurements_wall_clock_time,
+                new_time_report.measurements_wall_clock_time
+            )
+            memory_speedups = PhasarIterIDEGC.__compute_speedups(
+                all_from_kbytes_to_mbytes(old_time_report.max_resident_sizes),
+                all_from_kbytes_to_mbytes(new_time_report.max_resident_sizes)
+            )
+
+            time_speedup = np.mean(time_speedups)
+            memory_speedup = np.mean(memory_speedups)
+
+            time_stddev = np.std(time_speedups)
+            memory_stddev = np.std(memory_speedups)
+
+        return {(name, 'Time', 'No GC'): time_old,
+                (name, 'Time', 'GC'): time_new,
+                (name, 'Time', '$\mathcal{S}$'): time_speedup,
+                (name, 'Time', '$s$'): time_stddev,
+                (name, 'Memory', 'No GC'): memory_old,
+                (name, 'Memory', 'GC'): memory_new,
+                (name, 'Memory', '$\mathcal{S}$'): memory_speedup,
+                (name, 'Memory', '$s$'): memory_stddev}
+
+
+class PhasarIterIDEGCJF1(Table, table_name="phasar-iter-ide-gc-jf1"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        cs_data: tp.List[pd.DataFrame] = []
+
+        for case_study in get_loaded_paper_config().get_all_case_studies():
+            print(f"Working on {case_study.project_name}")
+            project_name = latex_sanitize_project_name(case_study.project_name)
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IDELinearConstantAnalysisExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+
+            for report_file in report_files:
+                report = load_phasar_iter_ide_stats_report(report_file)
+
+                cs_dict = {project_name: {}}
+                cs_dict[project_name].update(
+                    self.compute_typestate_stats(report)
+                )
+                cs_dict[project_name].update(self.compute_taint(report))
+                cs_dict[project_name].update(self.compute_lca_stats(report))
+                cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
+
+        df = pd.concat(cs_data).sort_index()
+
+        print(df)
+
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["column_format"] = "l|rrrr|rrrr|rrrr|rrrr|rrrr|rrrr|"
+            kwargs["multicol_align"] = "c|"
+            # kwargs["multicolumn"] = True
+            kwargs['position'] = 't'
+            kwargs[
+                "caption"
+            ] = """Results of our overall comparision of our new IDESolver with jump-functions garbage collection enabled vs disabled. We report the mean runtime of both versions, as well as, the mean speedup $\mathcal{S}$ and it's standard deviation $s$.
+$\mathcal{S}$ was computed as the mean over all speedups in the cartesian product of all measurements.
+"""
+            style.format(precision=2)
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amssymb"))
+            doc.append(NoEscape("\setlength{\\tabcolsep}{4pt}"))
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            margin=0.0,
+            document_decorator=add_extras,
+            **kwargs
+        )
+
+    def compute_typestate_stats(self, report: PhasarIterIDEStatsReport):
+        stats = dict()
+        stats.update(
+            self.__compute_delta_comp(
+                "Typestate", report.new_typestate_jf1,
+                report.new_typestate_gc_jf1
+            )
+        )
+
+        return stats
+
+    def compute_taint(self, report: PhasarIterIDEStatsReport):
+        stats = dict()
+        stats.update(
+            self.__compute_delta_comp(
+                "Taint", report.new_taint_jf1, report.new_taint_gc_jf1
+            )
+        )
+
+        return stats
+
+    def compute_lca_stats(self, report: PhasarIterIDEStatsReport):
+        stats = dict()
+        stats.update(
+            self.__compute_delta_comp(
+                "LCA", report.new_lca_jf1, report.new_lca_gc_jf1
+            )
+        )
+
+        return stats
+
+    @staticmethod
+    def __compute_speedups(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return list(
+            map(
+                lambda x: round(x[0] / x[1], 3),
+                itertools.product(old_measurements, new_measurements)
+            )
+        )
+
+    def __compute_delta_comp(
+        self, name: str, old_time_report: tp.Optional[TimeReportAggregate],
+        new_time_report: tp.Optional[TimeReportAggregate]
+    ):
+        time_old = np.nan
+        time_new = np.nan
+        time_speedup = np.nan
+        time_stddev = np.nan
+
+        memory_old = np.nan
+        memory_new = np.nan
+        memory_speedup = np.nan
+        memory_stddev = np.nan
+
+        if old_time_report:
+            time_old = np.mean(old_time_report.measurements_wall_clock_time)
+            memory_old = from_kbytes_to_mbytes(
+                np.mean(old_time_report.max_resident_sizes)
+            )
+
+        if new_time_report:
+            time_new = np.mean(new_time_report.measurements_wall_clock_time)
+            memory_new = from_kbytes_to_mbytes(
+                np.mean(new_time_report.max_resident_sizes)
+            )
+
+        if old_time_report and new_time_report:
+            time_speedups = PhasarIterIDEGCJF1.__compute_speedups(
+                old_time_report.measurements_wall_clock_time,
+                new_time_report.measurements_wall_clock_time
+            )
+            memory_speedups = PhasarIterIDEGCJF1.__compute_speedups(
+                all_from_kbytes_to_mbytes(old_time_report.max_resident_sizes),
+                all_from_kbytes_to_mbytes(new_time_report.max_resident_sizes)
+            )
+
+            time_speedup = np.mean(time_speedups)
+            memory_speedup = np.mean(memory_speedups)
+
+            time_stddev = np.std(time_speedups)
+            memory_stddev = np.std(memory_speedups)
+
+        return {(name, 'Time', 'No GC'): time_old,
+                (name, 'Time', 'GC'): time_new,
+                (name, 'Time', '$\mathcal{S}$'): time_speedup,
+                (name, 'Time', '$s$'): time_stddev,
+                (name, 'Memory', 'No GC'): memory_old,
+                (name, 'Memory', 'GC'): memory_new,
+                (name, 'Memory', '$\mathcal{S}$'): memory_speedup,
+                (name, 'Memory', '$s$'): memory_stddev}
+
+
+class PhasarIterIDEGCGenerator(
+    TableGenerator, generator_name="phasar-iter-ide-gc", options=[]
+):
+    """TODO: """
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarIterIDEGC(self.table_config, **self.table_kwargs),
+            PhasarIterIDEGCJF1(self.table_config, **self.table_kwargs)
+        ]
+
+
+class PhasarIterIDESolverStats(
+    Table, table_name="phasar-iter-ide-solver-stats"
+):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        cs_data: tp.List[pd.DataFrame] = []
+
+        for case_study in get_loaded_paper_config().get_all_case_studies():
+            print(f"Working on {case_study.project_name}")
+            project_name = case_study.project_name
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IDELinearConstantAnalysisExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+            # print(f"{report_files=}")
+
+            revision = None
+            revisions = case_study.revisions
+            if len(revisions) == 1:
+                revision = revisions[0]
+
+            rev_range = revision.hash if revision else "HEAD"
+
+            for report_file in report_files:
+                report = load_phasar_iter_ide_stats_report(report_file)
+
+                if report._solver_stats_taint_jf1 is None or report._solver_stats_taint_jf2 is None:
+                    continue
+
+                # all_inter_propagations_jf1 = report._solver_stats_taint_jf1._all_inter_propagations
+                all_inter_propagations_jf2 = report._solver_stats_taint_jf2._all_inter_propagations
+                val_tab_mbytes = float(
+                    report._solver_stats_taint_jf2._val_tab_bytes
+                ) / 2**20
+                num_flow_facts = report._solver_stats_taint_jf2._num_unique_flow_facts
+                max_inner_size_jf1 = report._solver_stats_taint_jf1._max_inner_map_size
+                max_inner_size_jf2 = report._solver_stats_taint_jf2._max_inner_map_size
+                avg_inner_size_jf1 = report._solver_stats_taint_jf1._avg_inner_map_size
+                avg_inner_size_jf2 = report._solver_stats_taint_jf2._avg_inner_map_size
+                jf_tab_mbytes_jf1 = float(
+                    report._solver_stats_taint_jf1._jump_functions_map_bytes
+                ) / 2**20
+                jf_tab_mbytes_jf2 = float(
+                    report._solver_stats_taint_jf2._jump_functions_map_bytes
+                ) / 2**20
+                num_summary_propagations_jf1 = report._solver_stats_taint_jf1._total_calls_propagate_procedure_summaries
+                num_summary_propagations_jf2 = report._solver_stats_taint_jf2._total_calls_propagate_procedure_summaries
+                num_linear_search_jf1 = report._solver_stats_taint_jf1._total_num_linear_search_for_summaries
+                num_linear_search_jf2 = report._solver_stats_taint_jf2._total_num_linear_search_for_summaries
+                max_lin_search_len_lf1 = report._solver_stats_taint_jf1._max_linear_search_len_for_summaries
+                max_lin_search_len_lf2 = report._solver_stats_taint_jf2._max_linear_search_len_for_summaries
+                avg_lin_search_len_lf1 = report._solver_stats_taint_jf1._avg_linear_search_len_for_summaries
+                avg_lin_search_len_lf2 = report._solver_stats_taint_jf2._avg_linear_search_len_for_summaries
+                # max_lin_search_diff = report._solver_stats_taint_jf2._max_diff_summaries_vs_search_len
+                avg_lin_search_diff = report._solver_stats_taint_jf2._avg_diff_summaries_vs_search_len
+                rel_lin_search_diff = report._solver_stats_taint_jf2._rel_diff_summaries_vs_search_len
+
+                cs_dict = {
+                    latex_sanitize_project_name(project_name): {
+                        # "Revision":
+                        #     str(revision.short_hash),
+                        # "Domain":
+                        #     str(project_cls.DOMAIN)[0].upper() +
+                        #     str(project_cls.DOMAIN)[1:],
+                        # "LOC":
+                        #     calc_repo_loc(project_repo, rev_range),
+                        # "IR-LOC":
+                        #     report.basic_bc_stats.num_instructions,
+                        "ValTab (mbytes)": val_tab_mbytes,
+                        "NumFlowFacts": num_flow_facts,
+                        # "Total InterProps-JF1":
+                        #     all_inter_propagations_jf1,
+                        "Total InterProps-JF2": all_inter_propagations_jf2,
+                        "MaxInnerMapSize-JF1": max_inner_size_jf1,
+                        "MaxInnerMapSize-JF2": max_inner_size_jf2,
+                        "AvgInnerMapSize-JF1": avg_inner_size_jf1,
+                        "AvgInnerMapSize-JF2": avg_inner_size_jf2,
+                        "JFTabBytes-JF1": jf_tab_mbytes_jf1,
+                        "JFTabBytes-JF2": jf_tab_mbytes_jf2,
+                        "#Summary Props-JF1": num_summary_propagations_jf1,
+                        "#Summary Props-JF2": num_summary_propagations_jf2,
+                        # "Max #InterJobs/Call-JF1":
+                        #     max_inter_jobs_per_call_jf1,
+                        # "Max #InterJobs/Call-JF2":
+                        #     max_inter_jobs_per_call_jf2,
+                        # "Avg #InterJobs/Call-JF1":
+                        #     avg_inter_jobs_per_call_jf1,
+                        # "Avg #InterJobs/Call-JF2":
+                        #     avg_inter_jobs_per_call_jf2,
+                        "#Lin Searches-JF1": num_linear_search_jf1,
+                        "#Lin Searches-JF2": num_linear_search_jf2,
+                        "Max Search Len-JF1": max_lin_search_len_lf1,
+                        "Max Search Len-JF2": max_lin_search_len_lf2,
+                        "Avg Search Len-JF1": avg_lin_search_len_lf1,
+                        "Avg Search Len-JF2": avg_lin_search_len_lf2,
+                        # "Max Search Diff-JF2":
+                        #     max_lin_search_diff,
+                        "Avg Search Diff-JF2": avg_lin_search_diff,
+                        "Rel Search Diff-JF2[%]": rel_lin_search_diff * 100,
+                    }
+                }
+
+                cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
+
+        if len(cs_data) == 0:
+            raise TableDataEmpty()
+
+        df = pd.concat(cs_data).sort_index()
+        print(df)
+        print(df.columns)
+
+        df.columns = pd.MultiIndex.from_tuples([
+            #('', 'Revision'),
+            #('', 'Domain'),
+            #('', 'LOC'),
+            #('', 'IR-LOC'),
+            ('', 'Val(MB)'),
+            ('', 'Facts'),
+            # ('Inter Props', 'JF1'),
+            # ('Inter Props', 'JF2'),
+            ('', 'InterProps'),
+            ('Max Inner Size', 'JF1'),
+            ('Max Inner Size', 'JF2'),
+            ('Avg Inner Size', 'JF1'),
+            ('Avg Inner Size', 'JF2'),
+            ('JF Table (MB)', 'JF1'),
+            ('JF Table (MB)', 'JF2'),
+            ('Summary Props', 'JF1'),
+            ('Summary Props', 'JF2'),
+            # ('Max IJobs/CS', 'JF1'),
+            # ('Max IJobs/CS', 'JF2'),
+            # ('Avg IJobs/CS', 'JF1'),
+            # ('Avg IJobs/CS', 'JF2'),
+            ('Linear Searches', 'JF1'),
+            ('Linear Searches', 'JF2'),
+            ('Max Search Len', 'JF1'),
+            ('Max Search Len', 'JF2'),
+            ('Avg Search Len', 'JF1'),
+            ('Avg Search Len', 'JF2'),
+            # ('Max SDiff ', 'JF2'),
+            ('Avg SDiff', 'JF2'),
+            ('Rel SDiff [\%]', 'JF2'),
+        ])
+
+        print(df)
+
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            # style.highlight_between(
+            #     left=cluster_memory_limit,
+            #     props='cellcolor:{red};',
+            #     subset=[('Typestate', 'Mem (mbytes)'),
+            #             ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
+            # )
+            # style.highlight_between(
+            #     left=dev_memory_limit,
+            #     right=cluster_memory_limit,
+            #     props='cellcolor:{orange};',
+            #     subset=[('Typestate', 'Mem (mbytes)'),
+            #             ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
+            # )
+            # df.style.format('j')
+            kwargs["column_format"] = "l|rrr|rr|rr|rr|rr|rr|rr|rr|r|r"
+            kwargs["multicol_align"] = "c|"
+            # kwargs["multicolumn"] = True
+            kwargs['position'] = 't'
+            kwargs[
+                "caption"
+            ] = f"""On the left, we see all evaluted projectes with additional information, such as, revision we analyzed, the amount of C/C++ code.
+TODO description.
+"""
+            style.format(precision=2)
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
+
+
+class PhasarIterIDESolverStatsGenerator(
+    TableGenerator, generator_name="phasar-iter-ide-solver-stats", options=[]
+):
+    """TODO: """
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarIterIDESolverStats(self.table_config, **self.table_kwargs)
+        ]

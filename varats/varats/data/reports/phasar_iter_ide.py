@@ -23,6 +23,145 @@ class PhasarBCStats():
         return self._num_instructions
 
 
+class PhasarIterIDESolverStats():
+
+    def __init__(self, path: Path) -> None:
+        self._all_inter_propagations = -1
+        self._source_facts_and_cs_to_inter_job = -1
+        self._source_facts_and_func_to_inter_job = -1
+        self._max_inner_map_size = -1
+        self._avg_inner_map_size = -1.0
+        self._jump_functions_map_bytes = -1
+        self._val_tab_bytes = -1
+        self._num_unique_flow_facts = -1
+        self._node_compressor_size = -1
+        self._fact_compressor_size = -1
+        self._fun_compressor_size = -1
+        self._jump_functions_high_watermark = -1
+        self._worklist_high_watermark = -1
+        self._call_wl_high_watermark = -1
+        self._wl_prop_high_watermark = -1
+        self._wl_comp_high_watermark = -1
+        self._total_calls_propagate_procedure_summaries = -1
+        self._max_inter_jobs_per_relevant_call = -1
+        self._avg_inter_jobs_per_relevant_call = -1.0
+        self._total_num_linear_search_for_summaries = -1
+        self._max_linear_search_len_for_summaries = -1
+        self._avg_linear_search_len_for_summaries = -1.0
+        self._max_diff_summaries_vs_search_len = -1
+        self._avg_diff_summaries_vs_search_len = -1.0
+        self._rel_diff_summaries_vs_search_len = -1.0
+
+        with open(path, "r", encoding="utf-8") as stats_file:
+            for line in stats_file.readlines():
+                if line.startswith("> AllInterPropagations:"):
+                    self._all_inter_propagations = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> SourceFactAndCSToInterJob:"):
+                    self._source_facts_and_cs_to_inter_job = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> SourceFactAndFuncToInterJob:"):
+                    self._source_facts_and_func_to_inter_job = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> MaxInnerMapSize:"):
+                    self._max_inner_map_size = int(line.split(":")[1].strip())
+                elif line.startswith("> AvgInnerMapSize:"):
+                    self._avg_inner_map_size = float(line.split(":")[1].strip())
+                elif line.startswith("> JumpFunctions Map Size(Bytes):"):
+                    ApproxSize = line.split(":")[1].strip()
+                    if ApproxSize.startswith('~'):
+                        ApproxSize = ApproxSize[1:]
+                    self._jump_functions_map_bytes = int(ApproxSize)
+                elif line.startswith("> ValTab Size(Bytes):"):
+                    ApproxSize = line.split(":")[1].strip()
+                    if ApproxSize.startswith('~'):
+                        ApproxSize = ApproxSize[1:]
+                    self._val_tab_bytes = int(ApproxSize)
+                elif line.startswith("> NumFlowFacts:"):
+                    self._num_unique_flow_facts = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> NodeCompressor:"):
+                    self._node_compressor_size = int(line.split(":")[1].strip())
+                elif line.startswith("> FactCompressor:"):
+                    self._fact_compressor_size = int(line.split(":")[1].strip())
+                elif line.startswith("> FunCompressor:"):
+                    self._fun_compressor_size = int(line.split(":")[1].strip())
+                elif line.startswith("> JumpFunctions:"):
+                    self._jump_functions_high_watermark = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> WorkList:"):
+                    self._worklist_high_watermark = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> CallWL:"):
+                    self._call_wl_high_watermark = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> WLProp:"):
+                    self._wl_prop_high_watermark = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> WLComp:"):
+                    self._wl_comp_high_watermark = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith(
+                    "> Total calls to propagateProcedureSummaries:"
+                ):
+                    self._total_calls_propagate_procedure_summaries = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> Max InterJobs per relevant call:"):
+                    self._max_inter_jobs_per_relevant_call = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith("> Avg InterJobs per relevant call:"):
+                    self._avg_inter_jobs_per_relevant_call = float(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith(
+                    "> Total num of linear searches for summaries:"
+                ):
+                    self._total_num_linear_search_for_summaries = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith(
+                    "> Max Length of linear search for summaries:"
+                ):
+                    self._max_linear_search_len_for_summaries = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith(
+                    "> Avg Length of linear search for summaries:"
+                ):
+                    self._avg_linear_search_len_for_summaries = float(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith(
+                    "> Max Diff of summaries found vs search length:"
+                ):
+                    self._max_diff_summaries_vs_search_len = int(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith(
+                    "> Avg Diff of summaries found vs search length:"
+                ):
+                    self._avg_diff_summaries_vs_search_len = float(
+                        line.split(":")[1].strip()
+                    )
+                elif line.startswith(
+                    "> Rel Diff of summaries found vs search length:"
+                ):
+                    self._rel_diff_summaries_vs_search_len = float(
+                        line.split(":")[1].strip()
+                    )
+
+
 class ResultCompare():
 
     def __init__(self, path: Path) -> None:
@@ -84,6 +223,19 @@ class PhasarIterIDEStatsReport(
     _new_typestate_jf1: tp.Optional[TimeReportAggregate]
     _new_taint_jf1: tp.Optional[TimeReportAggregate]
     _new_lca_jf1: tp.Optional[TimeReportAggregate]
+    _new_typestate_gc: tp.Optional[TimeReportAggregate]
+    _new_taint_gc: tp.Optional[TimeReportAggregate]
+    _new_lca_gc: tp.Optional[TimeReportAggregate]
+    _new_typestate_gc_jf1: tp.Optional[TimeReportAggregate]
+    _new_taint_gc_jf1: tp.Optional[TimeReportAggregate]
+    _new_lca_gc_jf1: tp.Optional[TimeReportAggregate]
+
+    _solver_stats_taint_jf1: tp.Optional[PhasarIterIDESolverStats]
+    _solver_stats_taint_jf2: tp.Optional[PhasarIterIDESolverStats]
+    _solver_stats_typestate_jf1: tp.Optional[PhasarIterIDESolverStats]
+    _solver_stats_typestate_jf2: tp.Optional[PhasarIterIDESolverStats]
+    _solver_stats_lca_jf1: tp.Optional[PhasarIterIDESolverStats]
+    _solver_stats_lca_jf2: tp.Optional[PhasarIterIDESolverStats]
 
     def __init__(self, path: Path) -> None:
         self._bc_stats = None
@@ -117,6 +269,18 @@ class PhasarIterIDEStatsReport(
         self._new_typestate_jf1 = None
         self._new_taint_jf1 = None
         self._new_lca_jf1 = None
+        self._new_typestate_gc = None
+        self._new_taint_gc = None
+        self._new_lca_gc = None
+        self._new_typestate_gc_jf1 = None
+        self._new_taint_gc_jf1 = None
+        self._new_lca_gc_jf1 = None
+        self._solver_stats_taint_jf1 = None
+        self._solver_stats_taint_jf2 = None
+        self._solver_stats_typestate_jf1 = None
+        self._solver_stats_typestate_jf2 = None
+        self._solver_stats_lca_jf1 = None
+        self._solver_stats_lca_jf2 = None
 
         with TemporaryDirectory() as tmpdir:
             shutil.unpack_archive(path, tmpdir)
@@ -182,6 +346,38 @@ class PhasarIterIDEStatsReport(
                     self._new_taint_jf1 = TimeReportAggregate(file)
                 elif file.name.startswith("new_lca_jf1"):
                     self._new_lca_jf1 = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_gc_jf1"):
+                    self._new_typestate_gc_jf1 = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_gc_jf1"):
+                    self._new_taint_gc_jf1 = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_gc_jf1"):
+                    self._new_lca_gc_jf1 = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_gc"):
+                    self._new_typestate_gc = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_gc"):
+                    self._new_taint_gc = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_gc"):
+                    self._new_lca_gc = TimeReportAggregate(file)
+                elif file.name.startswith("stats_taint_jf1"):
+                    self._solver_stats_taint_jf1 = PhasarIterIDESolverStats(
+                        file
+                    )
+                elif file.name.startswith("stats_taint_jf2"):
+                    self._solver_stats_taint_jf2 = PhasarIterIDESolverStats(
+                        file
+                    )
+                elif file.name.startswith("stats_typestate_jf1"):
+                    self._solver_stats_typestate_jf1 = PhasarIterIDESolverStats(
+                        file
+                    )
+                elif file.name.startswith("stats_typestate_jf2"):
+                    self._solver_stats_typestate_jf2 = PhasarIterIDESolverStats(
+                        file
+                    )
+                elif file.name.startswith("stats_lca_jf1"):
+                    self._solver_stats_lca_jf1 = PhasarIterIDESolverStats(file)
+                elif file.name.startswith("stats_lca_jf2"):
+                    self._solver_stats_lca_jf2 = PhasarIterIDESolverStats(file)
                 else:
                     print(f"Unknown file {file}!")
 
@@ -309,3 +505,55 @@ class PhasarIterIDEStatsReport(
     @property
     def new_lca_jf1(self) -> tp.Optional[TimeReportAggregate]:
         return self._new_lca_jf1
+
+    @property
+    def new_typestate_gc(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_gc
+
+    @property
+    def new_taint_gc(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_gc
+
+    @property
+    def new_lca_gc(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_gc
+
+    @property
+    def new_typestate_gc_jf1(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_gc_jf1
+
+    @property
+    def new_taint_gc_jf1(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_gc_jf1
+
+    @property
+    def new_lca_gc_jf1(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_gc_jf1
+
+    @property
+    def solver_stats_taint_jf1(self) -> tp.Optional[PhasarIterIDESolverStats]:
+        return self._solver_stats_taint_jf1
+
+    @property
+    def solver_stats_taint_jf2(self) -> tp.Optional[PhasarIterIDESolverStats]:
+        return self._solver_stats_taint_jf2
+
+    @property
+    def solver_stats_typestate_jf1(
+        self
+    ) -> tp.Optional[PhasarIterIDESolverStats]:
+        return self._solver_stats_typestate_jf1
+
+    @property
+    def solver_stats_typestate_jf2(
+        self
+    ) -> tp.Optional[PhasarIterIDESolverStats]:
+        return self._solver_stats_typestate_jf2
+
+    @property
+    def solver_stats_lca_jf1(self) -> tp.Optional[PhasarIterIDESolverStats]:
+        return self._solver_stats_lca_jf1
+
+    @property
+    def solver_stats_lca_jf2(self) -> tp.Optional[PhasarIterIDESolverStats]:
+        return self._solver_stats_lca_jf2

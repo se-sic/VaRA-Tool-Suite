@@ -387,7 +387,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         status_ok &= vara_name in stdout
 
         # Check that phasar-cli can display its version
-        phasar_cli = local[str(install_location / "bin/phasar-cli")]
+        phasar_cli = local[str(install_location / "bin/phasar-llvm")]
         ret, stdout, _ = phasar_cli.run("--version")
         status_ok &= ret == 0
 
