@@ -94,7 +94,9 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     })
 
     def __init__(self, base_dir: Path) -> None:
-        super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
+        super().__init__(
+            "phasar", [BuildType.DEV, BuildType.OPT], PhasarCodeBase(base_dir)
+        )
         vara_cfg()["phasar"]["source_dir"] = str(base_dir)
         save_config()
 

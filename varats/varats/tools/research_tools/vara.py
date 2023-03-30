@@ -162,7 +162,9 @@ class VaRA(ResearchTool[VaRACodeBase]):
     })
 
     def __init__(self, base_dir: Path) -> None:
-        super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
+        super().__init__(
+            "VaRA", [BuildType.DEV, BuildType.OPT], VaRACodeBase(base_dir)
+        )
         vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
         save_config()
 
@@ -411,9 +413,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """
         full_path = self.code_base.base_dir / "vara-llvm-project" / "build/"
         if not self.is_build_type_supported(build_type):
-            LOG.critical(
-                f"BuildType {build_type.name} is not supported by VaRA"
-            )
+            LOG.critical(f"BuildType {build_type} is not supported by VaRA")
             return False
 
         build_folder_path = build_type.build_folder(build_folder_suffix)
