@@ -29,33 +29,6 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
-ConfigsCoverageReportMapping = tp.NewType(
-    "ConfigsCoverageReportMapping", tp.Dict[Configuration, CoverageReport]
-)
-
-BinaryConfigsMapping = tp.NewType(
-    "BinaryConfigsMapping", tp.DefaultDict[str, ConfigsCoverageReportMapping]
-)
-
-
-def get_options(configuration: Configuration) -> tp.List[str]:
-    return [x.value for x in configuration.options()]
-
-
-def non_empty_powerset(iterable: tp.Iterable[tp.Any]) -> tp.Iterable[tp.Any]:
-    """Powerset without empty set."""
-    iterator = powerset(iterable)
-    next(iterator)
-    return iterator
-
-
-def _merge_reports(reports: tp.Iterable[CoverageReport]) -> CoverageReport:
-    reports = iter(reports)
-    report = next(reports)
-    for coverage_report in reports:
-        report.merge(coverage_report)
-    return report
-
 
 @dataclass(frozen=True)
 class ConfigValue:
@@ -74,27 +47,29 @@ class ConfigValue:
         return repr(self.x)
 
 
-class RuntimeConfig:
+class RunConfig(tp.FrozenSet[tp.Tuple[str, ConfigValue]]):
     """All features that were enabled/disabled during one run."""
 
-    def __init__(self, features: tp.List[tp.Tuple[str, ConfigValue]]) -> None:
-        super().__init__()
-        self.features: tp.FrozenSet[tp.Tuple[str, ConfigValue]
-                                   ] = frozenset(features)
-
     @classmethod
-    def from_iterable(
-        cls, enabled_features: tp.Iterable[str],
-        disabled_features: tp.Iterable[str]
-    ) -> RuntimeConfig:
-        """RuntimeConfig from iterables."""
-        runtime_config = []
-        for feature in enabled_features:
-            runtime_config.append((feature, ConfigValue(True)))
-        for feature in disabled_features:
-            runtime_config.append((feature, ConfigValue(False)))
+    def from_configuration(
+        cls, configuration: Configuration, available_features: tp.Set[str]
+    ) -> RunConfig:
+        """Create RunConfig from Configuration."""
+        result = get_features(configuration)
+        # Set all not given features to false
+        for feature in available_features.difference(set(result)):
+            result[feature] = False
 
-        return cls(runtime_config)
+        return cls(result)
+
+    def __new__(cls, features: tp.Dict[str, tp.Union[bool, str]]) -> RunConfig:
+        return super().__new__(
+            cls,
+            (
+                (feature, ConfigValue(value))  # type: ignore
+                for feature, value in features.items()
+            )
+        )
 
     def keys(self) -> tp.Iterator[str]:
         for item in self:
@@ -118,113 +93,123 @@ class RuntimeConfig:
     def contains(self, feature: str, value: ConfigValue) -> bool:
         return (feature, value) in self
 
-    def __iter__(self) -> tp.Iterator[tp.Tuple[str, ConfigValue]]:
-        return iter(self.features)
-
     def __repr__(self) -> str:
-        tmp = list(str(x) for x in self.features)
+        tmp = list(str(x) for x in self)
         return f"|{', '.join(tmp)}|"
 
 
-class CoverageFeatureDiffer:
-    """Creates coverage diffs dependend on the given features."""
+class ConfigCoverageReportMapping(tp.Dict[RunConfig, CoverageReport]):
+    """Maps RunConfigs to CoverageReports."""
 
-    def __init__(self, available_features: tp.Iterable[str]) -> None:
-        super().__init__()
-        self.available_features = frozenset(available_features)
-        self.config_combinations: tp.Dict[tp.FrozenSet[RuntimeConfig],
-                                          CoverageReport] = {}
-
-    def _add(
-        self, config_combinations: tp.List[tp.List[str]],
-        coverage_report: CoverageReport
+    def __init__(
+        self, dictionary: tp.Dict[Configuration, CoverageReport]
     ) -> None:
-        runtime_configs = []
-        for combination in config_combinations:
-            for feature in combination:
-                assert feature in self.available_features
-            enabled_features = frozenset(combination)
-            disabled_features = self.available_features.difference(
-                enabled_features
-            )
-            runtime_config = RuntimeConfig.from_iterable(
-                enabled_features=enabled_features,
-                disabled_features=disabled_features
-            )
-            runtime_configs.append(runtime_config)
-        self.config_combinations[frozenset(runtime_configs)] = coverage_report
-
-    @classmethod
-    def from_config_report_map(
-        cls, config_report_map: ConfigsCoverageReportMapping
-    ) -> CoverageFeatureDiffer:
-        """Creates a CoverageFeatureDiffer instance from the given config report
-        map."""
         available_features = set()
-        for config in list(config_report_map):
-            for feature in get_options(config):
+        for config in dictionary:
+            for feature in get_features(config):
                 available_features.add(feature)
+        self.available_features = frozenset(available_features)
 
-        print(available_features)
-        coverage_feature_differ = cls(available_features)
-        for config_set in non_empty_powerset(config_report_map.items()):
-            configs = []
-            reports = []
-            for configuration, coverage_report in deepcopy(config_set):
-                config_features = get_options(configuration)
-                configs.append(config_features)
-                reports.append(coverage_report)
-            report = _merge_reports(reports)
-            coverage_feature_differ._add(configs, report)
+        tmp = {}
+        for configuration, report in dictionary.items():
+            tmp[RunConfig.from_configuration(configuration,
+                                             available_features)] = report
 
-        return coverage_feature_differ
+        super().__init__(tmp)
+
+    def create_feature_filter(self, features: tp.Dict[str, bool]):
+        """Create filter for the given features."""
+
+        def feature_filter(config: RunConfig) -> bool:
+            """filter all configs that contain the given features."""
+            for feature, value in features.items():
+                if not config.contains(feature, ConfigValue(value)):
+                    return False
+            return True
+
+        return feature_filter
+
+    def _get_configs_with_features(self, features: tp.Dict[str, bool]):
+        feature_filter = self.create_feature_filter(features)
+        return set(filter(feature_filter, list(self)))
+
+    def _get_configs_without_features(self, features: tp.Dict[str, bool]):
+        feature_filter = self.create_feature_filter(features)
+        return set(filterfalse(feature_filter, list(self)))
 
     def diff(self, features: tp.Dict[str, bool]) -> CoverageReport:
         """Creates a coverage report by diffing all coverage reports that
         contain the given features with all that do not share them."""
 
-        def feature_filter(configs: tp.FrozenSet[RuntimeConfig]) -> bool:
-            """filter all configs that contain the given features."""
-            for config in configs:
-                for feature, value in features.items():
-                    if not config.contains(feature, ConfigValue(value)):
-                        return False
+        for feature in features:
+            if feature not in self.available_features:
+                raise ValueError(
+                    f"No reports with feature '{feature}' available!"
+                )
 
-            return True
+        configs_with_features = self._get_configs_with_features(features)
+        configs_without_features = self._get_configs_without_features(features)
 
-        configs_with_features = filter(
-            feature_filter, list(self.config_combinations)
-        )
-
-        configs_without_features = filterfalse(
-            feature_filter, list(self.config_combinations)
-        )
-
-        _ = ','.join(
-            "\n" + str(set(x)) for x in deepcopy(configs_with_features)
-        )
+        _ = ','.join("\n" + str(set(x)) for x in configs_with_features)
         print(f"Configs with features:\n[{_}\n]")
 
-        _ = ','.join(
-            "\n" + str(set(x)) for x in deepcopy(configs_without_features)
-        )
+        _ = ','.join("\n" + str(set(x)) for x in configs_without_features)
         print(f"Configs without features:\n[{_}\n]")
 
+        if len(configs_with_features
+              ) == 0 or len(configs_without_features) == 0:
+            raise ValueError(
+                "Diff impossible! No reports with given features available!"
+            )
+
         report_with_features = _merge_reports(
-            list(
-                deepcopy(self.config_combinations[x])
-                for x in configs_with_features
-            )
-        )
-        report_without_features = _merge_reports(
-            list(
-                deepcopy(self.config_combinations[x])
-                for x in configs_without_features
-            )
+            list(deepcopy(self[x]) for x in configs_with_features)
         )
 
-        report_without_features.diff(report_with_features)
-        return report_without_features
+        result = _merge_reports(
+            list(deepcopy(self[x]) for x in configs_without_features)
+        )
+
+        result.diff(report_with_features)
+        return result
+
+    def merge_all(self) -> CoverageReport:
+        """Merge all available Reports into one."""
+        return _merge_reports(deepcopy(list(self.values())))
+
+
+BinaryConfigsMapping = tp.NewType(
+    "BinaryConfigsMapping", tp.Dict[str, ConfigCoverageReportMapping]
+)
+
+
+def get_features(
+    configuration: Configuration
+) -> tp.Dict[str, tp.Union[str, bool]]:
+    """Convert all options in configuration to dict."""
+    result: tp.Dict[str, tp.Union[str, bool]] = {}
+    for option in configuration.options():
+        if option.name != "UNKNOWN":
+            result[option.name] = option.value
+        else:
+            splitted = option.value.split(maxsplit=1)
+            result[splitted[0]] = splitted[1] if len(splitted) > 1 else True
+    return result
+
+
+def non_empty_powerset(iterable: tp.Iterable[tp.Any]) -> tp.Iterable[tp.Any]:
+    """Powerset without empty set."""
+    iterator = powerset(iterable)
+    next(iterator)
+    return iterator
+
+
+def _merge_reports(reports: tp.Iterable[CoverageReport]) -> CoverageReport:
+    reports = iter(reports)
+    report = next(reports)
+    for coverage_report in reports:
+        report.merge(coverage_report)
+    return report
 
 
 class CoveragePlot(Plot, plot_name="coverage"):
@@ -238,9 +223,8 @@ class CoveragePlot(Plot, plot_name="coverage"):
             get_loaded_paper_config(), case_study, PlainCommandlineConfiguration
         )
 
-        binary_config_map: BinaryConfigsMapping = BinaryConfigsMapping(
-            defaultdict(lambda: ConfigsCoverageReportMapping({}))
-        )
+        binary_config_map: tp.DefaultDict[str, tp.Dict[
+            Configuration, CoverageReport]] = defaultdict(dict)
 
         for report_filepath in report_files:
             binary = report_filepath.report_filename.binary_name
@@ -253,7 +237,13 @@ class CoveragePlot(Plot, plot_name="coverage"):
             config = config_map.get_configuration(config_id)
             assert config is not None
             binary_config_map[binary][config] = coverage_report
-        return binary_config_map
+
+        result = {}
+        for binary in list(binary_config_map):
+            result[binary] = ConfigCoverageReportMapping(
+                binary_config_map[binary]
+            )
+        return BinaryConfigsMapping(result)
 
     def plot(self, view_mode: bool) -> None:
         if len(self.plot_kwargs["experiment_type"]) > 1:
@@ -294,13 +284,15 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 for binary in binary_config_map:
                     config_report_map = binary_config_map[binary]
 
-                    cfd = CoverageFeatureDiffer.from_config_report_map(
-                        config_report_map
-                    )
-                    for feature in cfd.available_features:
-                        print(f"Diff for '{feature}':")
-                        diff = cfd.diff({feature: True})
-
+                    print("Code executed by all feature combinations")
+                    print(cov_show(config_report_map.merge_all(), base_dir))
+                    for features in non_empty_powerset(
+                        config_report_map.available_features
+                    ):
+                        print(f"Diff for '{features}':")
+                        diff = config_report_map.diff({
+                            feature: True for feature in features
+                        })
                         print(cov_show(diff, base_dir))
 
     def calc_missing_revisions(

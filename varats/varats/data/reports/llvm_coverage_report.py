@@ -245,7 +245,7 @@ class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
 class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
     """Mapping from filenames to FunctionCodeRegions."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
 
