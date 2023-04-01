@@ -29,7 +29,7 @@ from varats.data.reports.llvm_coverage_report import (
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plots import PlotConfig
-from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
+from varats.plots.llvm_coverage_plot import CoveragePlotGenerator, ConfigValue
 from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
@@ -248,14 +248,17 @@ class TestCodeRegion(unittest.TestCase):
         config_map = binary_config_map[next(iter(binary_config_map))]
         self.assertEqual(len(config_map), 3)
 
-        for config in config_map:
-            options = [x.value for x in config.options()]
-            if options == ["--slow", "--header"]:
-                header_slow = config
-            elif options == ["--header"]:
-                header = config
-            elif options == ["--slow"]:
-                slow = config
+        for run_config in config_map:
+            options = {
+                feature for feature, value in run_config.items()
+                if value == ConfigValue(True)
+            }
+            if options == {"--slow", "--header"}:
+                header_slow = run_config
+            elif options == {"--header"}:
+                header = run_config
+            elif options == {"--slow"}:
+                slow = run_config
 
         header_slow_report = config_map[header_slow]
         header_report = config_map[header]

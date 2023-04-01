@@ -117,7 +117,9 @@ class ConfigCoverageReportMapping(tp.Dict[RunConfig, CoverageReport]):
 
         super().__init__(tmp)
 
-    def create_feature_filter(self, features: tp.Dict[str, bool]):
+    def create_feature_filter(
+        self, features: tp.Dict[str, bool]
+    ) -> tp.Callable[[RunConfig], bool]:
         """Create filter for the given features."""
 
         def feature_filter(config: RunConfig) -> bool:
@@ -129,11 +131,15 @@ class ConfigCoverageReportMapping(tp.Dict[RunConfig, CoverageReport]):
 
         return feature_filter
 
-    def _get_configs_with_features(self, features: tp.Dict[str, bool]):
+    def _get_configs_with_features(
+        self, features: tp.Dict[str, bool]
+    ) -> tp.Set[RunConfig]:
         feature_filter = self.create_feature_filter(features)
         return set(filter(feature_filter, list(self)))
 
-    def _get_configs_without_features(self, features: tp.Dict[str, bool]):
+    def _get_configs_without_features(
+        self, features: tp.Dict[str, bool]
+    ) -> tp.Set[RunConfig]:
         feature_filter = self.create_feature_filter(features)
         return set(filterfalse(feature_filter, list(self)))
 
