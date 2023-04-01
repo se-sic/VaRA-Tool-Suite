@@ -245,8 +245,6 @@ class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
 class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
     """Mapping from filenames to FunctionCodeRegions."""
 
-    pass
-
 
 class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     """Parses llvm-cov export json files and displays them."""
