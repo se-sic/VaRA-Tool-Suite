@@ -74,8 +74,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.progressBar.setValue(val)
 
     def _update_build_text(self, text):
-        match = re.match(r"\[([0-9]+)/([0-9]+)\].*", text)
-        if match is not None:
+        if (match := re.match(r"\[([0-9]+)/([0-9]+)\].*", text)) is not None:
             processed_files = int(match.group(1))
             max_files = int(match.group(2))
             self.progressBar.setMaximum(max_files)

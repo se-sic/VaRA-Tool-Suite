@@ -30,8 +30,7 @@ def get_github_instance() -> Github:
     Returns:
         a Github instance
     """
-    access_token = str(vara_cfg()["provider"]["github_access_token"])
-    if access_token:
+    if (access_token := str(vara_cfg()["provider"]["github_access_token"])):
         return Github(access_token)
     return Github()
 
@@ -201,8 +200,7 @@ def get_cached_github_object(
     Returns:
          the fetched or cached GithubObj
     """
-    cached_object = _get_cached_pygithub_object(cached_object_key)
-    if cached_object:
+    if (cached_object := _get_cached_pygithub_object(cached_object_key)):
         return tp.cast(PyGithubObj, cached_object)
 
     obj_to_cache = load_function(get_github_instance())
@@ -225,8 +223,7 @@ def get_cached_github_object_list(
     Returns:
          the fetched or cached list of GithubObjs
     """
-    cached_list = _get_cached_pygithub_object_list(cached_object_key)
-    if cached_list:
+    if (cached_list := _get_cached_pygithub_object_list(cached_object_key)):
         return [tp.cast(PyGithubObj, obj) for obj in cached_list]
 
     obj_list_to_cache = list(load_function(get_github_instance()))
@@ -248,7 +245,6 @@ def get_github_repo_name_for_project(
         the github repo name for the project or ``None`` if the given project
         is not a github project
     """
-    match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
-    if match:
+    if (match := GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)):
         return f"{match.group(1)}/{match.group(2)}"
     return None
