@@ -10,7 +10,7 @@ setup(
     setup_requires=["pytest-runner", "setuptools_scm"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
-        "benchbuild>=6.6.4",
+        "benchbuild>=6.6.7",
         "ijson>=3.1.4",
         "plumbum>=1.6",
         "PyGithub>=1.58",

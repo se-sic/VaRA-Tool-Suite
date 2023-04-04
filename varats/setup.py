@@ -17,7 +17,7 @@ setup(
     setup_requires=["pytest-runner", "setuptools_scm"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
-        "benchbuild>=6.6.4",
+        "benchbuild>=6.6.7",
         "click>=8.1.3",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
