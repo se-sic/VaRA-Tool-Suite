@@ -735,7 +735,9 @@ def __delete_report_file_paths(report_files: tp.List[ReportFilepath]) -> None:
     for file in report_files:
         file.full_path().unlink(missing_ok=True)
         parent_dir = file.full_path().parent
-        if parent_dir != file.base_path and next(parent_dir.iterdir()) is None:
+        if parent_dir != file.base_path and next(
+            parent_dir.iterdir(), None
+        ) is None:
             parent_dir.rmdir()
 
 
