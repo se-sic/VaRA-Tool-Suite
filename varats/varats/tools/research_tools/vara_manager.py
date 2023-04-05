@@ -19,6 +19,7 @@ from plumbum import local
 from PyQt5.QtCore import QProcess
 
 from varats.utils.exceptions import ProcessTerminatedError
+from varats.utils.git_commands import fetch_remote
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -117,8 +118,6 @@ def get_llvm_project_status(
     llvm_folder: Path, project_folder: str = ""
 ) -> GitStatus:
     """Retrieve the git status of a llvm project."""
-    # pylint: disable=import-outside-toplevel
-    from varats.utils.git_commands import fetch_remote
     try:
         with local.cwd(llvm_folder / project_folder):
             fetch_remote('origin')
