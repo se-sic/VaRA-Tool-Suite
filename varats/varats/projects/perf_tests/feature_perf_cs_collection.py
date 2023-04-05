@@ -70,7 +70,7 @@ class FeaturePerfCSCollection(VProject):
                 str(10**7),
                 "--count_to",
                 str(5 * 10**3),
-                label="SBL-iterations-count-to"
+                label="SBL-iterations-10M-count-to-5K"
             )
         ]
     }
