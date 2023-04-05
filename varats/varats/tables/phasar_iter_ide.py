@@ -829,13 +829,14 @@ class PhasarIterIDEStatsGenerator(
     """TODO: """
 
     def generate(self) -> tp.List[Table]:
-        lca = PhasarIterIDEStatsWL_LCA(self.table_config, **self.table_kwargs)
-        taint = PhasarIterIDEStatsWL_Taint(
-            self.table_config, **self.table_kwargs
-        )
+        # lca = PhasarIterIDEStatsWL_LCA(self.table_config, **self.table_kwargs)
+        # taint = PhasarIterIDEStatsWL_Taint(
+        #     self.table_config, **self.table_kwargs
+        # )
         return [
-            PhasarIterIDEStats(self.table_config, **self.table_kwargs), lca,
-            taint
+            PhasarIterIDEStats(self.table_config, **self.table_kwargs),
+            # lca,
+            # taint
         ]
 
 
@@ -1018,9 +1019,9 @@ class PhasarIterIDEJF1vsJF2(Table, table_name="phasar-iter-ide-jf1-jf2"):
                 report = load_phasar_iter_ide_stats_report(report_file)
 
                 cs_dict = {project_name: {}}
-                cs_dict[project_name].update(
-                    self.compute_typestate_stats(report)
-                )
+                # cs_dict[project_name].update(
+                #     self.compute_typestate_stats(report)
+                # )
                 cs_dict[project_name].update(self.compute_taint(report))
                 cs_dict[project_name].update(self.compute_lca_stats(report))
                 cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
@@ -1032,7 +1033,8 @@ class PhasarIterIDEJF1vsJF2(Table, table_name="phasar-iter-ide-jf1-jf2"):
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["column_format"] = "l|rrrr|rrrr|rrrr|rrrr|rrrr|rrrr|"
+            # kwargs["column_format"] = "l|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|"
+            kwargs["column_format"] = "l|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|"
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
@@ -1062,7 +1064,8 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
         stats = dict()
         stats.update(
             self.__compute_delta_comp(
-                "Typestate", report.new_typestate_jf1, report.new_typestate
+                "Typestate", report.new_typestate_jf1, report.new_typestate,
+                report.new_typestate_jf3
             )
         )
 
@@ -1072,7 +1075,8 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
         stats = dict()
         stats.update(
             self.__compute_delta_comp(
-                "Taint", report.new_taint_jf1, report.new_taint
+                "Taint", report.new_taint_jf1, report.new_taint,
+                report.new_taint_jf3
             )
         )
 
@@ -1082,7 +1086,7 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
         stats = dict()
         stats.update(
             self.__compute_delta_comp(
-                "LCA", report.new_lca_jf1, report.new_lca
+                "LCA", report.new_lca_jf1, report.new_lca, report.new_lca_jf3
             )
         )
 
@@ -1101,17 +1105,24 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
 
     def __compute_delta_comp(
         self, name: str, old_time_report: tp.Optional[TimeReportAggregate],
-        new_time_report: tp.Optional[TimeReportAggregate]
+        new_time_report: tp.Optional[TimeReportAggregate],
+        compromise_time_report: tp.Optional[TimeReportAggregate]
     ):
         time_old = np.nan
         time_new = np.nan
+        time_cmr = np.nan
         time_speedup = np.nan
+        time_speedup_cmr = np.nan
         time_stddev = np.nan
+        time_stddev_cmr = np.nan
 
         memory_old = np.nan
         memory_new = np.nan
+        memory_cmr = np.nan
         memory_speedup = np.nan
+        memory_speedup_cmr = np.nan
         memory_stddev = np.nan
+        memory_stddev_cmr = np.nan
 
         if old_time_report:
             time_old = np.mean(old_time_report.measurements_wall_clock_time)
@@ -1125,30 +1136,60 @@ $\mathcal{S}$ was computed as the mean over all speedups in the cartesian produc
                 np.mean(new_time_report.max_resident_sizes)
             )
 
-        if old_time_report and new_time_report:
+        if compromise_time_report:
+            time_cmr = np.mean(
+                compromise_time_report.measurements_wall_clock_time
+            )
+            memory_cmr = from_kbytes_to_mbytes(
+                np.mean(compromise_time_report.max_resident_sizes)
+            )
+
+        if old_time_report and new_time_report and compromise_time_report:
             time_speedups = PhasarIterIDEJF1vsJF2.__compute_speedups(
                 old_time_report.measurements_wall_clock_time,
                 new_time_report.measurements_wall_clock_time
+            )
+            time_speedups_cmr = PhasarIterIDEJF1vsJF2.__compute_speedups(
+                old_time_report.measurements_wall_clock_time,
+                compromise_time_report.measurements_wall_clock_time
             )
             memory_speedups = PhasarIterIDEJF1vsJF2.__compute_speedups(
                 all_from_kbytes_to_mbytes(old_time_report.max_resident_sizes),
                 all_from_kbytes_to_mbytes(new_time_report.max_resident_sizes)
             )
+            memory_speedups_cmr = PhasarIterIDEJF1vsJF2.__compute_speedups(
+                all_from_kbytes_to_mbytes(old_time_report.max_resident_sizes),
+                all_from_kbytes_to_mbytes(
+                    compromise_time_report.max_resident_sizes
+                )
+            )
 
             time_speedup = np.mean(time_speedups)
+            time_speedup_cmr = np.mean(time_speedups_cmr)
             memory_speedup = np.mean(memory_speedups)
+            memory_speedup_cmr = np.mean(memory_speedups_cmr)
 
             time_stddev = np.std(time_speedups)
+            time_stddev_cmr = np.std(time_speedups_cmr)
             memory_stddev = np.std(memory_speedups)
+            memory_stddev_cmr = np.std(memory_speedups_cmr)
 
-        return {(name, 'Time', 'JF1'): time_old,
-                (name, 'Time', 'JF2'): time_new,
-                (name, 'Time', '$\mathcal{S}$'): time_speedup,
-                (name, 'Time', '$s$'): time_stddev,
-                (name, 'Memory', 'JF1'): memory_old,
-                (name, 'Memory', 'JF2'): memory_new,
-                (name, 'Memory', '$\mathcal{S}$'): memory_speedup,
-                (name, 'Memory', '$s$'): memory_stddev}
+        return {
+            (name, 'Time', 'JF1'): time_old,
+            (name, 'Time', 'JF2'): time_new,
+            (name, 'Time', 'JF3'): time_cmr,
+            (name, 'Time', '$\mathcal{S}_{1,2}$'): time_speedup,
+            (name, 'Time', '$\mathcal{S}_{1,3}$'): time_speedup_cmr,
+            (name, 'Time', '$s_{1,2}$'): time_stddev,
+            (name, 'Time', '$s_{1,3}$'): time_stddev_cmr,
+            (name, 'Memory', 'JF1'): memory_old,
+            (name, 'Memory', 'JF2'): memory_new,
+            (name, 'Memory', 'JF3'): memory_cmr,
+            (name, 'Memory', '$\mathcal{S}_{1,2}$'): memory_speedup,
+            (name, 'Memory', '$\mathcal{S}_{1,3}$'): memory_speedup_cmr,
+            (name, 'Memory', '$s_{1,2}$'): memory_stddev,
+            (name, 'Memory', '$s_{1,3}$'): memory_stddev_cmr,
+        }
 
 
 class PhasarIterIDEJF1vsJF2Generator(

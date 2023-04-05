@@ -223,6 +223,9 @@ class PhasarIterIDEStatsReport(
     _new_typestate_jf1: tp.Optional[TimeReportAggregate]
     _new_taint_jf1: tp.Optional[TimeReportAggregate]
     _new_lca_jf1: tp.Optional[TimeReportAggregate]
+    _new_typestate_jf3: tp.Optional[TimeReportAggregate]
+    _new_taint_jf3: tp.Optional[TimeReportAggregate]
+    _new_lca_jf3: tp.Optional[TimeReportAggregate]
     _new_typestate_gc: tp.Optional[TimeReportAggregate]
     _new_taint_gc: tp.Optional[TimeReportAggregate]
     _new_lca_gc: tp.Optional[TimeReportAggregate]
@@ -269,6 +272,9 @@ class PhasarIterIDEStatsReport(
         self._new_typestate_jf1 = None
         self._new_taint_jf1 = None
         self._new_lca_jf1 = None
+        self._new_typestate_jf3 = None
+        self._new_taint_jf3 = None
+        self._new_lca_jf3 = None
         self._new_typestate_gc = None
         self._new_taint_gc = None
         self._new_lca_gc = None
@@ -346,6 +352,12 @@ class PhasarIterIDEStatsReport(
                     self._new_taint_jf1 = TimeReportAggregate(file)
                 elif file.name.startswith("new_lca_jf1"):
                     self._new_lca_jf1 = TimeReportAggregate(file)
+                elif file.name.startswith("new_typestate_jf3"):
+                    self._new_typestate_jf3 = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_jf3"):
+                    self._new_taint_jf3 = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_jf3"):
+                    self._new_lca_jf3 = TimeReportAggregate(file)
                 elif file.name.startswith("new_typestate_gc_jf1"):
                     self._new_typestate_gc_jf1 = TimeReportAggregate(file)
                 elif file.name.startswith("new_taint_gc_jf1"):
@@ -505,6 +517,18 @@ class PhasarIterIDEStatsReport(
     @property
     def new_lca_jf1(self) -> tp.Optional[TimeReportAggregate]:
         return self._new_lca_jf1
+
+    @property
+    def new_typestate_jf3(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_jf3
+
+    @property
+    def new_taint_jf3(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_jf3
+
+    @property
+    def new_lca_jf3(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_jf3
 
     @property
     def new_typestate_gc(self) -> tp.Optional[TimeReportAggregate]:

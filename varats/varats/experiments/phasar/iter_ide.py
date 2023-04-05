@@ -257,6 +257,56 @@ class IterIDETimeNewJF1(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
+class IterIDETimeNewJF3(actions.ProjectStep):  # type: ignore
+
+    NAME = "NewIDESolverJF3"
+    DESCRIPTION = "Analyse new IDESolver with JF2 jump functions representation + EndSummaryTab"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        tmp_dir /= f"new_{self.__analysis_type}_jf3"
+        mkdir("-p", tmp_dir)
+
+        phasar_params = [
+            "-D",
+            str(self.__analysis_type), "--enable-endsummary-tab", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
+
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
+        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+
+        ret_code = run_cmd & RETCODE
+        if ret_code == 137:
+            print("Found OOM (new)")
+            return actions.StepResult.OK
+
+        if ret_code != 0:
+            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+            touch(error_file)
+            return actions.StepResult.ERROR
+
+        return actions.StepResult.OK
+
+
 class IterIDETimeNewGC(actions.ProjectStep):  # type: ignore
 
     NAME = "NewIDESolverGC"
@@ -606,6 +656,10 @@ class IDELinearConstantAnalysisExperiment(
                         for rep in reps
                     ], *[
                         IterIDETimeNewJF1(project, rep, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
+                        for rep in reps
+                    ], *[
+                        IterIDETimeNewJF3(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
                     ], *[
