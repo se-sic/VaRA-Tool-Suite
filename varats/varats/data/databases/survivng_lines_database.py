@@ -40,7 +40,7 @@ class SurvivingLinesDatabase(
         data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
         cached_revisions = data_frame.groupby("revision").groups.keys(
         ) if data_frame is not None else set()
-        revisions_to_compute = set(
+        revisions_to_compute: tp.Set[str] = set(
             map(lambda r: r.hash, revisions)
         ) - cached_revisions
 

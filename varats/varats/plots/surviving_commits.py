@@ -11,8 +11,8 @@ from matplotlib.colors import LogNorm
 from pandas import DataFrame
 from pygtrie import CharTrie
 
-from varats.data.databases.blame_library_interactions_database import (
-    BlameLibraryInteractionsDatabase,
+from varats.data.databases.commit_interaction_aggregate_database import (
+    SurvivingInteractionsDatabase,
 )
 from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
 from varats.mapping.commit_map import get_commit_map, CommitMap
@@ -94,23 +94,10 @@ def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
 
 def get_interactions_per_commit_long(case_study: CaseStudy, filter_cs=True):
     project_name = case_study.project_name
-    data: DataFrame = BlameLibraryInteractionsDatabase().get_data_for_project(
-        project_name,
-        ["base_hash", "amount", "revision", "base_lib", "inter_lib"],
+    data = SurvivingInteractionsDatabase.get_data_for_project(
+        project_name, ["revision", "base_hash", "interactions"],
         get_commit_map(project_name), case_study
     )
-    data = data[
-        data["base_lib"].apply(lambda x: x.startswith(case_study.project_name))]
-    data = data[data["inter_lib"].
-                apply(lambda x: x.startswith(case_study.project_name))]
-    data.drop(
-        data[data.base_hash == UNCOMMITTED_COMMIT_HASH.hash].index,
-        inplace=True
-    )
-    data.drop(columns=['base_lib', "inter_lib"])
-    data = data.groupby(["base_hash", "revision"],
-                        sort=False).sum().reset_index()
-    data.rename(columns={'amount': 'interactions'}, inplace=True)
 
     def cs_filter(data_frame: DataFrame) -> DataFrame:
         """Filter out all commits that are not in the case study if one was
