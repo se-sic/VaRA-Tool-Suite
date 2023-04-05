@@ -8,6 +8,7 @@ import yaml
 from varats.base.version_header import VersionHeader
 from varats.provider.bug.bug import RawBug
 from varats.report.report import BaseReport
+from varats.utils.git_util import FullCommitHash
 
 
 class SZZTool(Enum):
@@ -48,9 +49,13 @@ class SZZReport(BaseReport, shorthand="SZZ", file_type="yaml"):
                 raise AssertionError(
                     "Report was not created with the correct tool."
                 )
-            self.__bugs: tp.Dict[str, RawBug] = {}
+            self.__bugs: tp.Dict[FullCommitHash, RawBug] = {}
             for fix, introducers in raw_report["bugs"].items():
-                self.__bugs[fix] = RawBug(fix, set(introducers), None)
+                fix_hash = FullCommitHash(fix)
+                introducer_hashes = {FullCommitHash(c) for c in introducers}
+                self.__bugs[fix_hash] = RawBug(
+                    fix_hash, introducer_hashes, None
+                )
 
     @classmethod
     def shorthand(cls) -> str:
@@ -66,7 +71,9 @@ class SZZReport(BaseReport, shorthand="SZZ", file_type="yaml"):
         """
         return frozenset(self.__bugs.values())
 
-    def get_raw_bug_by_fix(self, fixing_commit: str) -> tp.Optional[RawBug]:
+    def get_raw_bug_by_fix(
+        self, fixing_commit: FullCommitHash
+    ) -> tp.Optional[RawBug]:
         """
         Get a bug by the id of the fixing commit.
 

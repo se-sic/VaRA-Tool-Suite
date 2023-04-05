@@ -9,11 +9,7 @@ from benchbuild.utils import actions
 from pygit2 import Commit
 
 from varats.base.version_header import VersionHeader
-from varats.data.reports.szz_report import (
-    SZZReport,
-    PyDrillerSZZReport,
-    SZZTool,
-)
+from varats.data.reports.szz_report import PyDrillerSZZReport, SZZTool
 from varats.experiment.experiment_util import (
     get_varats_result_folder,
     VersionExperiment,
@@ -95,7 +91,7 @@ class PyDrillerSZZExperiment(VersionExperiment, shorthand="PyDrillerSZZ"):
 
     NAME = "PyDrillerSZZ"
 
-    REPORT_SPEC = ReportSpecification(SZZReport)
+    REPORT_SPEC = ReportSpecification(PyDrillerSZZReport)
 
     @classmethod
     def sample(cls, prj_cls: ProjectT) -> tp.List[source.Revision]:
