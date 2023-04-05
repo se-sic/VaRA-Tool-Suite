@@ -1,10 +1,8 @@
 import typing as tp
 
 import matplotlib.pyplot as plt
-import mplcursors as mplcursors
-import numpy as np
 import seaborn as sns
-from matplotlib.colors import LogNorm, SymLogNorm
+from matplotlib.colors import SymLogNorm
 from pandas import DataFrame
 
 from varats.mapping.commit_map import get_commit_map
@@ -12,8 +10,6 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotConfig, PlotGenerator
 from varats.plots.author_contribution_survival import (
-    get_lines_per_author_normalized_per_revision,
-    get_interactions_per_author_normalized_per_revision,
     get_lines_per_author,
     get_interactions_per_author,
 )
