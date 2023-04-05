@@ -109,11 +109,14 @@ def _cache_pygithub_object(key: str, obj: GithubObject) -> None:
         obj: the object to store
     """
     cache_df = _load_cache_file()
-    cache_df = cache_df.append({
-        __PYGITHUB_KEY_COLUMN: key,
-        __PYGITHUB_OBJECT_COLUMN: _dump_pygithub_object(obj)
-    },
-                               ignore_index=True)
+    cache_df = pd.concat((
+        cache_df,
+        pd.DataFrame({
+            __PYGITHUB_KEY_COLUMN: [key],
+            __PYGITHUB_OBJECT_COLUMN: [_dump_pygithub_object(obj)]
+        })
+    ),
+                         ignore_index=True)
     _store_cache_file(cache_df)
 
 
