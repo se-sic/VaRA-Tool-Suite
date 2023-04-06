@@ -10,7 +10,6 @@ from types import TracebackType
 
 import pygit2
 from benchbuild.utils.cmd import git, grep
-from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local, TF, RETCODE
 
 from varats.project.project_util import (
@@ -23,6 +22,8 @@ from varats.project.project_util import (
 )
 
 if tp.TYPE_CHECKING:
+    from benchbuild.utils.revision_ranges import AbstractRevisionRange
+
     import varats.mapping.commit_map as cm  # pylint: disable=W0611
 
 LOG = logging.Logger(__name__)
@@ -251,6 +252,15 @@ def get_all_revisions_between(
         )
     )
     return list(map(hash_type, result))
+
+
+def get_revisions_in_range(
+    rev_range: 'AbstractRevisionRange', repo_path: Path,
+    hash_type: tp.Type[CommitHashTy]
+) -> tp.Iterator[CommitHashTy]:
+    rev_range.init_cache(str(repo_path))
+    for revision in rev_range:
+        yield hash_type(revision)
 
 
 def get_commits_before_timestamp(
@@ -1007,7 +1017,7 @@ class RevisionBinaryMap(tp.Container[str]):
 
     def __init__(self, repo_location: Path) -> None:
         self.__repo_location = repo_location
-        self.__revision_specific_mappings: tp.Dict[RevisionRange,
+        self.__revision_specific_mappings: tp.Dict['AbstractRevisionRange',
                                                    ProjectBinaryWrapper] = {}
         self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
 
