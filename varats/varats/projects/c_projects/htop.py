@@ -77,7 +77,7 @@ class Htop(VProject):
         if htop_version in typed_revision_range(
             old_revs, htop_version_source, ShortCommitHash
         ):
-            configure_flags += "CFLAGS=-fcommon"
+            configure_flags += ["CFLAGS=-fcommon"]
 
         clang = bb.compiler.cc(self)
         with local.cwd(htop_source):
