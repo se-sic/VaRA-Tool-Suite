@@ -636,37 +636,48 @@ class IDELinearConstantAnalysisExperiment(
 
         analysis_actions.append(
             ZippedExperimentSteps(
-                result_file, [
-                    PhasarIDEStats(project, binary), *[
+                result_file,
+                [
+                    PhasarIDEStats(project, binary),
+                    *[
                         IterIDECompareAnalysisResults(
                             project, binary, analysis_type
                         ) for analysis_type in _get_enabled_analyses()
-                    ], *[
+                    ],
+                    *[
                         IterIDESolverStats(project, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
-                    ], *[
+                    ],
+                    *[
                         IterIDETimeOld(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
-                    ], *[
+                    ],
+                    *[
                         IterIDETimeNew(
-                            project, rep, binary, analysis_type, worklist_kind
-                        ) for analysis_type in _get_enabled_analyses()
-                        for worklist_kind in _get_enabled_worklist_kinds()
+                            project, rep, binary, analysis_type,
+                            WorklistKind.STACK
+                        )
+                        for analysis_type in _get_enabled_analyses()
+                        # for worklist_kind in _get_enabled_worklist_kinds()
                         for rep in reps
-                    ], *[
+                    ],
+                    *[
                         IterIDETimeNewJF1(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
-                    ], *[
+                    ],
+                    *[
                         IterIDETimeNewJF3(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
-                    ], *[
+                    ],
+                    *[
                         IterIDETimeNewGC(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
-                    ], *[
+                    ],
+                    *[
                         IterIDETimeNewGCJF1(
                             project, rep, binary, analysis_type
                         )
