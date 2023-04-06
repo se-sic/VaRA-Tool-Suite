@@ -258,6 +258,17 @@ def get_revisions_in_range(
     rev_range: 'AbstractRevisionRange', repo_path: Path,
     hash_type: tp.Type[CommitHashTy]
 ) -> tp.Iterator[CommitHashTy]:
+    """
+    Typed iterator for revision ranges.
+
+    Args:
+        rev_range: the revision range to iterate
+        repo_path: the path to the git repo
+        hash_type: the commit type to use for iteration
+
+    Returns:
+        an iterator over the typed commits in the range
+    """
     rev_range.init_cache(str(repo_path))
     for revision in rev_range:
         yield hash_type(revision)
