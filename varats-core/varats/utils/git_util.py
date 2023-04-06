@@ -254,7 +254,7 @@ def get_all_revisions_between(
     return list(map(hash_type, result))
 
 
-def get_revisions_in_range(
+def typed_revision_range(
     rev_range: 'AbstractRevisionRange', repo_path: Path,
     hash_type: tp.Type[CommitHashTy]
 ) -> tp.Iterator[CommitHashTy]:

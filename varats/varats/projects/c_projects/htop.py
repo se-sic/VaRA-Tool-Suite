@@ -22,7 +22,7 @@ from varats.utils.git_util import (
     ShortCommitHash,
     RevisionBinaryMap,
     get_all_revisions_between,
-    get_revisions_in_range,
+    typed_revision_range,
 )
 from varats.utils.settings import bb_cfg
 
@@ -75,7 +75,7 @@ class Htop(VProject):
         old_revs = GoodBadSubgraph(["d6231bab89d634da5564491196b7c478db038505"],
                                    ["dfd9279f87791e36a5212726781c31fbe7110361"],
                                    "Needs CFLAGS=-fcommon")
-        if htop_version in get_revisions_in_range(
+        if htop_version in typed_revision_range(
             old_revs, htop_version_source, ShortCommitHash
         ):
             configure_flags += "CFLAGS=-fcommon"
