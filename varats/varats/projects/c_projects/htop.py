@@ -21,7 +21,6 @@ from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
     RevisionBinaryMap,
-    get_all_revisions_between,
     typed_revision_range,
 )
 from varats.utils.settings import bb_cfg
@@ -69,7 +68,7 @@ class Htop(VProject):
         htop_version_source = Path(self.source_of_primary)
         htop_version = ShortCommitHash(self.version_of_primary)
 
-        configure_flags = []
+        configure_flags: tp.List[str] = []
 
         # older htop versions do not declare some globals as extern properly
         old_revs = GoodBadSubgraph(["d6231bab89d634da5564491196b7c478db038505"],
