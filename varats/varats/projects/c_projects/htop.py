@@ -83,7 +83,6 @@ class Htop(VProject):
         with local.cwd(htop_source):
             with local.env(CC=str(clang)):
                 bb.watch(local["./autogen.sh"])()
-                print(f"configure_flags={configure_flags}")
                 bb.watch(local["./configure"])(*configure_flags)
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
