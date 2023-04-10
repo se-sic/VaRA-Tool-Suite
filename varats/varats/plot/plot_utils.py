@@ -4,7 +4,10 @@ import typing as tp
 from pathlib import Path
 
 import pandas as pd
+from matplotlib import axes
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
+from scipy.stats import pearsonr, spearmanr
 
 from varats.mapping.commit_map import CommitMap
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
@@ -21,8 +24,9 @@ def find_missing_revisions(
     between certain points are to steep."""
     new_revs: tp.Set[FullCommitHash] = set()
 
-    _, last_row = next(data)
-    for _, row in data:
+    data_iterator = iter(data)
+    _, last_row = next(data_iterator)
+    for _, row in data_iterator:
         should_insert, gradient = should_insert_revision(last_row, row)
         if should_insert:
             lhs_cm = to_commit_hash(last_row)
@@ -96,3 +100,30 @@ def adjust_yaxis(ax: Axes, ydif: float, value: float) -> None:
         nmaxy = maxy
         nminy = maxy * (miny + delta_y) / (maxy + delta_y)
     ax.set_ylim(nminy + value, nmaxy + value)
+
+
+def annotate_correlation(
+    x_values: tp.List[int],
+    y_values: tp.List[int],
+    ax: axes.SubplotBase = None,
+    # pylint: disable=unused-argument
+    **kwargs: tp.Any
+) -> None:
+    """Plot the correlation coefficient in the top right hand corner of a
+    plot."""
+    ax = ax or plt.gca()
+    pearson_rho, _ = pearsonr(x_values, y_values)
+    ax.annotate(
+        f'$\\mathit{{\\rho_{{\\mathsf{{pearson}}}}}}$ = {pearson_rho:.2f}',
+        xy=(.1, .9),
+        xycoords=ax.transAxes,
+        fontsize=20
+    )
+
+    spearman_rho, _ = spearmanr(x_values, y_values)
+    ax.annotate(
+        f'$\\mathit{{\\rho_{{\\mathsf{{spearman}}}}}}$ = {spearman_rho:.2f}',
+        xy=(.1, .8),
+        xycoords=ax.transAxes,
+        fontsize=20
+    )

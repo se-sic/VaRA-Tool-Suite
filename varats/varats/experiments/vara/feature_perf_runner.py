@@ -5,11 +5,15 @@ import typing as tp
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
-from varats.experiment.experiment_util import get_default_compile_error_wrapped
+from varats.experiment.experiment_util import (
+    get_default_compile_error_wrapped,
+    WithUnlimitedStackSize,
+)
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
     RunVaRATracedXRayWorkloads,
+    FeatureInstrType,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -32,11 +36,13 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         Args:
             project: to analyze
         """
-        instr_type = "trace_event"  # trace_event
+        instr_type = FeatureInstrType.TEF
 
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags(instr_type)
+        project.cflags += self.get_vara_tracing_cflags(
+            instr_type, project=project
+        )
 
         project.ldflags += self.get_vara_tracing_ldflags()
 
@@ -46,9 +52,8 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         )
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = (
-            compiler.RunCompiler(project, self) << run.WithTimeout()
-        )
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << WithUnlimitedStackSize()
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
@@ -78,7 +83,7 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
     ) -> tp.MutableSequence[actions.Step]:
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags("trace_event")
+        project.cflags += self.get_vara_tracing_cflags(FeatureInstrType.TEF)
 
         project.cflags += [
             "-fxray-instrument",
@@ -91,7 +96,7 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
             << time.RunWithTime()
 
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << run.WithTimeout()
+            << WithUnlimitedStackSize()
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, TEFReport

@@ -11,8 +11,9 @@ repos:
     -   id: requirements-txt-fixer
     -   id: name-tests-test
         args: ['--django']
+        exclude: 'tests/helper_utils.py'
 -   repo: https://github.com/timothycrosley/isort.git
-    rev: 5.10.1
+    rev: 5.11.5
     hooks:
     - id: isort
       args: ['-nis']
@@ -21,8 +22,13 @@ repos:
     hooks:
     - id: docformatter
       args: ['--in-place', '--wrap-summaries=80', '--wrap-descriptions=80', '--pre-summary-newline']
+-   repo: https://github.com/MarcoGorelli/auto-walrus
+    rev: v0.2.2
+    hooks:
+    -   id: auto-walrus
 -   repo: https://github.com/pre-commit/mirrors-yapf
     rev: 'v0.32.0'  # Use the sha / tag you want to point at
     hooks:
     -   id: yapf
+
 exclude: ^tests/TEST_INPUTS/.*$

@@ -1,9 +1,7 @@
 """Utility module for BenchBuild experiments."""
-
 import os
 import random
 import shutil
-import sys
 import tempfile
 import textwrap
 import traceback
@@ -12,25 +10,20 @@ from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol, runtime_checkable
-else:
-    from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
+from benchbuild.extensions import base
 from benchbuild.project import Project
 from benchbuild.source import enumerate_revisions
-from benchbuild.utils.actions import Step, MultiStep, StepResult, run_any_child
+from benchbuild.utils.actions import Step, MultiStep, StepResult
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
+from plumbum.commands.base import BoundCommand
 
 import varats.revision.revisions as revs
-from varats.base.configuration import (
-    PlainCommandlineConfiguration,
-    ConfigurationOption,
-)
+from varats.base.configuration import PlainCommandlineConfiguration
 from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.sources import FeatureSource
@@ -281,6 +274,20 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
 
 
+class WithUnlimitedStackSize(base.Extension):  # type: ignore
+    """Sets the stack size of the wrapped command to unlimited (16GB)."""
+
+    def __init__(self, *extensions: tp.Any, **kwargs: tp.Any) -> None:
+        super().__init__(*extensions, **kwargs)
+
+    def __call__(
+        self, binary_command: BoundCommand, *args: tp.Any, **kwargs: tp.Any
+    ) -> tp.Any:
+        return self.call_next(
+            wrap_unlimit_stack_size(binary_command), *args, **kwargs
+        )
+
+
 VersionType = tp.TypeVar('VersionType')
 
 
@@ -512,9 +519,9 @@ def run_child_with_output_folder(
     return child(tmp_folder)
 
 
-class ZippedExperimentSteps(MultiStep):
+class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
-    is zipped into an archive.."""
+    is zipped into an archive."""
 
     NAME = "ZippedSteps"
     DESCRIPTION = "Run multiple actions with a shared tmp folder"
@@ -682,7 +689,7 @@ def get_current_config_id(project: VProject) -> tp.Optional[int]:
 
 def get_extra_config_options(project: VProject) -> tp.List[str]:
     """
-    Get extra program options that where specified in the particular
+    Get extra program options that were specified in the particular
     configuration of \a Project.
 
     Args:

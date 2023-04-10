@@ -19,7 +19,6 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     ExperimentHandle,
-    get_varats_result_folder,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -110,7 +109,7 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT
 
     def actions_for_project(
-        self, project: Project
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -139,7 +138,6 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
-
         analysis_actions.append(
             BlameReportGeneration(
                 project, self.get_handle(), self.BLAME_TAINT_SCOPE

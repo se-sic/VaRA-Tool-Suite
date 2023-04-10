@@ -3,8 +3,16 @@ Container Guide
 
 VaRA-TS supports running experiments inside containers to make them more portable and reproducible.
 This guide walks you through the steps how to prepare and execute experiments in containers and assumes that your system has already been set up for executing containers.
-You can find the instructions for setting up containers on your system :ref:`here <Running BenchBuild in a Container>`.
-More details about the inner workings of the container support in VaRA-TS can be found :ref:`here <Container support>`.
+For additional resources, see the following pages:
+
+- :ref:`Running BenchBuild in a Container` explains how to initially set up containers on your system and how they work with BenchBuild under the hood.
+- :ref:`Container support` explains how VaRA-TS creates and manages reusable base images that can be used by projects.
+- :ref:`vara-container` is the tool that is used for managing these base images.
+- :ref:`Using Containers` explains how container support can be implemented for a project.
+- :ref:`Slurm and Container` demonstrates the container support integration with slurm.
+
+
+
 Note that, by default, the most recent version of VaRA-TS available from PyPI will be used inside the container.
 If you want to use your local development version of VaRA-TS instead, you have to specify this in the ``.varats.yml`` configuration file by setting the value of ``from_source`` to true and the value of ``varats_source`` to the directory containing the source code of the VaRA-TS.
 
@@ -18,11 +26,12 @@ If you want to use your local development version of VaRA-TS instead, you have t
        vara-buildsetup build vara --container=DEBIAN_10
 
    Note that the underlying tools may not support network file systems (i.e., if you are using podman in `rootless mode <https://github.com/containers/podman/blob/master/rootless.md>`_).
-   In the ``.benchbuild.yml`` configuration, you need to set the values of ``root`` and ``runroot`` to a directory that is locally available on the current machine.
+   In the ``.benchbuild.yml`` configuration, you need to set the values of ``container/root`` and ``container/runroot`` to a directory that is locally available on the current machine.
    For example, you can use the following values:
 
    .. code-block:: yaml
 
+        container:
             root:
                 default: !create-if-needed '/scratch/<username>/vara-root/benchbuild/containers/lib'
                 desc: Permanent storage for container images
@@ -50,6 +59,8 @@ If you want to use your local development version of VaRA-TS instead, you have t
        vara-container build
 
    You can use the flag ``-i <base_image>`` to only build a specific base image and should add ``--export`` if you want to use the image with slurm.
+   There are also flags for re-building only parts of an image, e.g., to just update the tool suite.
+   These flags can drastically remove the time it takes to build an image.
 
 3. Running the experiments
 
@@ -58,11 +69,3 @@ If you want to use your local development version of VaRA-TS instead, you have t
    .. code-block:: console
 
        vara-run -E JustCompile --container
-
-   Do not forget to run
-
-   .. code-block:: console
-
-       vara-gen-bbconfig
-
-   and to adapt the values as described in step 1 before running your experiments.

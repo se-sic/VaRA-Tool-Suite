@@ -2,11 +2,14 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import mkdir, cmake
 from benchbuild.source import HTTP
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -39,29 +42,41 @@ class Bzip2(VProject):
             limit=None,
             shallow=False
         ),
-        HTTP(
-            local="countries-land-1km.geo.json",
+        HTTPMultiple(
+            local="geo-maps",
             remote={
                 "1.0":
                     "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0/countries-land-1km.geo.json"
-            }
+                    "download/v0.6.0"
+            },
+            files=[
+                "countries-land-1m.geo.json", "countries-land-10m.geo.json",
+                "countries-land-100m.geo.json"
+            ]
         )
     ]
 
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             Command(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
                 "--compress",
                 "--best",
-                "--verbose",
+                "-vvv",
                 "--keep",
-                "--force",
-                "countries-land-1km.geo.json",
-                label="BZ2-Countries"
-            ),
-        ]
+                # bzip2 compresses very fast even on the best setting, so we
+                # need the three input files to get approximately 30 seconds
+                # total execution time
+                "geo-maps/countries-land-1m.geo.json",
+                "geo-maps/countries-land-10m.geo.json",
+                "geo-maps/countries-land-100m.geo.json",
+                creates=[
+                    "geo-maps/countries-land-1m.geo.json.bz2",
+                    "geo-maps/countries-land-10m.geo.json.bz2",
+                    "geo-maps/countries-land-100m.geo.json.bz2"
+                ]
+            )
+        ],
     }
 
     @staticmethod

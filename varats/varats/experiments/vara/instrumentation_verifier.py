@@ -8,10 +8,14 @@ from benchbuild.utils import actions
 from varats.data.reports.instrumentation_verifier_report import (
     InstrVerifierReport,
 )
-from varats.experiment.experiment_util import get_default_compile_error_wrapped
+from varats.experiment.experiment_util import (
+    get_default_compile_error_wrapped,
+    WithUnlimitedStackSize,
+)
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     RunVaRATracedWorkloads,
+    FeatureInstrType,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -34,11 +38,11 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         Args:
             project: to analyze
         """
-        instr_type = "instr_verify"
-
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags(instr_type, True)
+        project.cflags += self.get_vara_tracing_cflags(
+            FeatureInstrType.VERIFY, True
+        )
 
         # Ensure that we detect all regions, when verifying
         project.cflags += ["-fvara-instruction-threshold=0"]
@@ -52,7 +56,8 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         project.runtime_extension = run.RuntimeExtension(project, self)
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self)
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << WithUnlimitedStackSize()
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
@@ -63,7 +68,9 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
-            RunVaRATracedWorkloads(project, self.get_handle())
+            RunVaRATracedWorkloads(
+                project, self.get_handle(), report_file_ending="ivr"
+            )
         )
         analysis_actions.append(actions.Clean(project))
 

@@ -44,7 +44,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
     SOURCE = [
         PaperConfigSpecificGit(
             project_name="picosat",
-            remote="https://github.com/bnico99/picoSAT-mirror",
+            remote="https://github.com/se-sic/picoSAT-mirror",
             local="picosat",
             refspec="origin/HEAD",
             limit=None,
@@ -55,7 +55,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
             local="example.cnf",
             remote={
                 "1.0":
-                    "https://github.com/bnico99/picoSAT-mirror/releases/"
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
                     "download/picoSAT-965/example.cnf"
             }
         )

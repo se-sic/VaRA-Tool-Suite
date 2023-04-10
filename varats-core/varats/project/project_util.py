@@ -2,7 +2,6 @@
 import logging
 import os
 import typing as tp
-from distutils.dir_util import copy_tree
 from enum import Enum
 from pathlib import Path
 
@@ -220,6 +219,10 @@ class BinaryType(Enum):
     SHARED_LIBRARY = 2
     STATIC_LIBRARY = 3
 
+    @property
+    def is_library(self) -> bool:
+        return self in (BinaryType.SHARED_LIBRARY, BinaryType.STATIC_LIBRARY)
+
     def __str__(self) -> str:
         return str(self.name.lower())
 
@@ -389,6 +392,8 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         src_dir: path to the source directory
         dest_dir: path to the destination directory
     """
+    # pylint: disable=import-outside-toplevel
+    from distutils.dir_util import copy_tree
     if os.path.isdir(dest_dir):
         LOG.error(
             "The passed destination directory already exists. "

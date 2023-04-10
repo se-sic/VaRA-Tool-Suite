@@ -6,10 +6,7 @@ import pandas as pd
 
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.gnu_time_report import (
-    TimeReportAggregate,
-    WLTimeReportAggregate,
-)
+from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -30,7 +27,7 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
             project_name = case_study.project_name
 
             if len(self.table_kwargs["experiment_type"]) > 1:
-                print(
+                raise RuntimeError(
                     "Table can currently handle only a single experiment, "
                     "ignoring everything else."
                 )

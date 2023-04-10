@@ -16,6 +16,7 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.project.project_util import get_local_project_git_path
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
@@ -54,7 +55,7 @@ def build_repo_churn_table(
         return df_layout
 
     repo_path = get_local_project_git_path(project_name)
-    # By default we only look at c-style code files
+    # By default, we only look at c-style code files
     code_churn = calc_repo_code_churn(
         repo_path, ChurnConfig.create_c_style_languages_config()
     )
@@ -251,7 +252,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class RepoChurnPlotGenerator(

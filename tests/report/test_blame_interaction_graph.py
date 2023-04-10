@@ -4,7 +4,7 @@ import unittest
 
 import pytest
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     create_file_based_interaction_graph,

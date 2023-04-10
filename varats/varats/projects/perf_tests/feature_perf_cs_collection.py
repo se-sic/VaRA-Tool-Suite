@@ -65,17 +65,21 @@ class FeaturePerfCSCollection(VProject):
             # ),
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SimpleBusyLoop"),
-                "--iterations",
-                "100",
-                "--count_to",
-                "1000",
-                label="SBL-100-1000"
-            ),
+                RSBinary("SimpleFeatureInteraction"),
+                "--enc",
+                "--compress",
+                label="SFI-enc-compress"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SingleLocalMultipleRegions"),
-                label="SLMR-not-slow"
+                RSBinary("SimpleBusyLoop"),
+                "--iterations",
+                str(10**7),
+                "--count_to",
+                str(5 * 10**3),
+                label="SBL-iterations-10M-count-to-5K"
             )
         ]
     }
@@ -108,6 +112,13 @@ class FeaturePerfCSCollection(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "c77bca4c6888970fb721069c82455137943ccf49", "master"
+            )
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleFeatureInteraction",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "c051e44a973ee31b3baa571407694467a513ba68", "master"
             )
         )
         binary_map.specify_binary(

@@ -2,7 +2,7 @@
 
 import unittest
 
-from tests.test_utils import ConfigurationHelper
+from tests.helper_utils import ConfigurationHelper
 from varats.base.configuration import (
     DummyConfiguration,
     ConfigurationImpl,

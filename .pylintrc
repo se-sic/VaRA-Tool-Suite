@@ -195,6 +195,7 @@ good-names=a,
            df,
            id,
            pc,
+           cs
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
@@ -517,5 +518,5 @@ valid-metaclass-classmethod-first-arg=cls
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception
