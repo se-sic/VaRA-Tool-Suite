@@ -12,6 +12,8 @@ from benchbuild.utils.cmd import bpftrace
 from plumbum import BG, FG, local
 from plumbum.commands.modifiers import Future
 
+from varats.experiment.workload_util import WorkloadCategory, workload_commands
+
 from varats.data.reports.usdt_stats_report import VaraInstrumentationStatsReport
 from varats.experiment.experiment_util import (
     ExperimentHandle,
@@ -58,59 +60,46 @@ class CaptureInstrumentationStats(actions.ProjectStep):  # type: ignore
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
-            # Get workload to use.
-            # TODO (se-sic/VaRA#841): refactor to bb workloads if possible
-            workload_provider = WorkloadProvider.create_provider_for_project(
-                self.project
-            )
-            if not workload_provider:
-                print(
-                    f"No workload provider for project={self.project.name}. " \
-                    "Skipping."
-                )
-                return actions.StepResult.CAN_CONTINUE
-            workload = workload_provider.get_workload_for_binary(binary.name)
-            if workload is None:
-                print(
-                    f"No workload for project={self.project.name} " \
-                        f"binary={binary.name}. Skipping."
-                )
-                continue
-
-            # Assemble Path for report.
-            report_file_name = create_new_success_result_filepath(
-                self.__experiment_handle, VaraInstrumentationStatsReport,
-                self.project, binary
-            )
-
-            report_file = Path(vara_result_folder, str(report_file_name))
-
-            # Execute binary.
-            with local.cwd(self.project.source_of_primary):
-                run_cmd = binary[workload]
-
-                # attach bpftrace to binary to allow tracing it via USDT
-                bpftrace_script = Path(
-                    VaRA.install_location(),
-                    "share/vara/perf_bpf_tracing/UsdtExecutionStats.bt"
+            for workload in workload_commands(
+                self.project, binary,
+                [WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL]
+            ):
+                # Assemble Path for report.
+                report_file_name = create_new_success_result_filepath(
+                    self.__experiment_handle, VaraInstrumentationStatsReport,
+                    self.project, binary
                 )
 
-                # Assertion: Can be run without sudo password prompt. To
-                # guarentee this, add an entry to /etc/sudoers.
-                bpftrace_cmd = bpftrace["-o", report_file, bpftrace_script,
-                                        binary.path]
+                report_file = Path(vara_result_folder, str(report_file_name))
 
-                bpftrace_runner: Future
-                with local.as_root():
-                    bpftrace_runner = bpftrace_cmd & BG
+                # Execute binary.
+                with local.cwd(self.project.builddir):
+                    run_cmd = workload.command.as_plumbum(project=self.project)
 
-                sleep(3)  # give bpftrace time to start up
+                    # attach bpftrace to binary to allow tracing it via USDT
+                    bpftrace_script = Path(
+                        VaRA.install_location(),
+                        "share/vara/perf_bpf_tracing/UsdtExecutionStats.bt"
+                    )
 
-                # Run.
-                run_cmd & FG  # pylint: disable=W0104
+                    # Assertion: Can be run without sudo password prompt. To
+                    # guarentee this, add an entry to /etc/sudoers.
+                    # bpftrace_cmd = bpftrace["-o", report_file, bpftrace_script,
+                    #                         binary.path]
+                    bpftrace_cmd = bpftrace["-o", report_file, bpftrace_script,
+                                            workload.path]
 
-                # Wait for bpftrace running in background to exit.
-                bpftrace_runner.wait()
+                    bpftrace_runner: Future
+                    with local.as_root():
+                        bpftrace_runner = bpftrace_cmd & BG
+
+                    sleep(3)  # give bpftrace time to start up
+
+                    # Run.
+                    run_cmd & FG  # pylint: disable=W0104
+
+                    # Wait for bpftrace running in background to exit.
+                    bpftrace_runner.wait()
 
         return actions.StepResult.OK
 

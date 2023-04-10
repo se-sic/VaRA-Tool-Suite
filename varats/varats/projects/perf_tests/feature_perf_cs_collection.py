@@ -54,15 +54,23 @@ class FeaturePerfCSCollection(VProject):
                 RSBinary("MultiSharedMultipleRegions"),
                 label="MSMR-no-input"
             ),
+            # Command(
+            #     SourceRoot("FeaturePerfCSCollection") /
+            #     RSBinary("SimpleSleepLoop"),
+            #     "--iterations",
+            #     "10000",
+            #     "--sleepns",
+            #     "10000",
+            #     label="SSL-10K-10K"
+            # ),
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SimpleSleepLoop"), "--iterations", "10000", "--sleepns", "10000",
-                label="SSL-10K-10K"
-            ),
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SimpleBusyLoop"), "--iterations", "10000", "--count_to", "1000000",
-                label="SBL-10K-1M"
+                RSBinary("SimpleBusyLoop"),
+                "--iterations",
+                "100",
+                "--count_to",
+                "1000",
+                label="SBL-100-1000"
             ),
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
@@ -88,13 +96,13 @@ class FeaturePerfCSCollection(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("162db88346", "master")
         )
-        binary_map.specify_binary(
-            "build/bin/SimpleSleepLoop",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange(
-                "c77bca4c6888970fb721069c82455137943ccf49", "master"
-            )
-        )
+        # binary_map.specify_binary(
+        #     "build/bin/SimpleSleepLoop",
+        #     BinaryType.EXECUTABLE,
+        #     only_valid_in=RevisionRange(
+        #         "c77bca4c6888970fb721069c82455137943ccf49", "master"
+        #     )
+        # )
         binary_map.specify_binary(
             "build/bin/SimpleBusyLoop",
             BinaryType.EXECUTABLE,

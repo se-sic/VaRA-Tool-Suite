@@ -3,6 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import mkdir, cmake
+from benchbuild.source import HTTP
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -17,6 +18,9 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
+
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from benchbuild.command import Command, SourceRoot, WorkloadSet
 
 
 class Bzip2(VProject):
@@ -34,8 +38,31 @@ class Bzip2(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
+        ),
+        HTTP(
+            local="countries-land-1km.geo.json",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0/countries-land-1km.geo.json"
+            }
         )
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                "--compress",
+                "--best",
+                "--verbose",
+                "--keep",
+                "--force",
+                "countries-land-1km.geo.json",
+                label="BZ2-Countries"
+            ),
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
