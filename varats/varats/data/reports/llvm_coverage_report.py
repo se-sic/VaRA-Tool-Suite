@@ -153,7 +153,8 @@ class CodeRegion:
         """Merges region into self by adding all counts of region to the counts
         of self."""
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
-            assert x == y, "CodeRegions are not identical"
+            if x != y:
+                raise AssertionError("CodeRegions are not identical")
             x.count += y.count
 
     def diff(self, region: CodeRegion) -> None:
