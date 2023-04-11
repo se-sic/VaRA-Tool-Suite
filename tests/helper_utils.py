@@ -8,7 +8,6 @@ import typing as tp
 from functools import wraps
 from pathlib import Path
 from threading import Lock
-from types import TracebackType
 
 import benchbuild.source.base as base
 import benchbuild.utils.settings as bb_settings
@@ -19,13 +18,8 @@ from benchbuild.utils.cmd import git
 
 import varats.utils.settings as settings
 from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
-from varats.project.project_util import (
-    is_git_source,
-    get_local_project_git_path,
-)
+from varats.project.project_util import is_git_source
 from varats.tools.bb_config import create_new_bb_config
-from varats.utils.git_commands import checkout_branch_or_commit
-from varats.utils.git_util import ShortCommitHash, get_head_commit
 
 if sys.version_info <= (3, 8):
     from typing_extensions import Protocol
