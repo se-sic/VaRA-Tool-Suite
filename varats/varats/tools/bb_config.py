@@ -71,7 +71,8 @@ def update_projects(
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
         'varats.projects.cpp_projects.ect',
-        'varats.projects.cpp_projects.lepton'
+        'varats.projects.cpp_projects.lepton',
+        'varats.projects.cpp_projects.commit_feature_interactions_test_repo'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -104,6 +105,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.szz.pydriller_szz_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.vara.agg_region_interaction_perf_runner',
+        'varats.experiments.vara.feature_blame_report_experiment',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
