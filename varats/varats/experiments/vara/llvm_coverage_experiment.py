@@ -106,7 +106,6 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-# Please take care when changing this file, see docs experiments/just_compile
 class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
     """Generates empty report file."""
 
