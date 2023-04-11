@@ -147,10 +147,6 @@ class CodeRegion:
                 node.childs.append(region)
                 node.childs.sort()
                 region.parent = node
-                # Actually this is possible,
-                # e.g. a for loop can be executed
-                # more often than its function.
-                #assert region.count <= node.count
                 break
 
     def merge(self, region: CodeRegion) -> None:
