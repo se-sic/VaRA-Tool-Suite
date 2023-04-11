@@ -132,18 +132,21 @@ class CodeRegion:
         # when traversing the tree in postorder
         for node in self.iter_postorder():
             if node.is_subregion(region):
-                if len(node.childs) > 0:
+                if node.childs:
                     # node is not a leaf node
                     # check which childs should become childs of regions
                     childs_to_move = []
                     for child in node.childs:
                         if region.is_subregion(child):
                             childs_to_move.append(child)
+
                     region.childs.extend(childs_to_move)
                     region.childs.sort()
+
                     for child in childs_to_move:
                         child.parent = region
                         node.childs.remove(child)
+
                 node.childs.append(region)
                 node.childs.sort()
                 region.parent = node
@@ -177,8 +180,10 @@ class CodeRegion:
         """Is the code region equal and has the same coverage?"""
         if not isinstance(other, CodeRegion):
             return False
+
         if not (self == other and self.count == other.count):
             return False
+
         for code_region_a, code_region_b in zip(
             self.iter_breadth_first(), other.iter_breadth_first()
         ):
@@ -187,6 +192,7 @@ class CodeRegion:
                 code_region_a.count == code_region_b.count
             ):
                 return False
+
         return True
 
     # Compare regions only depending on their
@@ -195,6 +201,7 @@ class CodeRegion:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CodeRegion):
             return False
+
         return (
             self.start.line == other.start.line and
             self.start.column == other.start.column and
@@ -209,6 +216,7 @@ class CodeRegion:
             self.start.column < other.start.column
         ):
             return True
+
         return False
 
     def __gt__(self, other: CodeRegion) -> bool:
@@ -233,9 +241,11 @@ class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FunctionCodeRegionMapping):
             return False
+
         for self_value, other_value in zip(self.values(), other.values()):
             if not self_value.is_identical(other_value):
                 return False
+
         return True
 
 
@@ -410,6 +420,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                             covered_regions += 1
                         else:
                             notcovered_regions += 1
+
         assert counted_functions == total_functions_count
         assert counted_code_regions == total_regions_count
         assert counted_code_regions != 0
@@ -474,9 +485,11 @@ def cov_show(
         function_region_mapping = report.filename_function_mapping[file]
         path = Path(file)
         tmp_value = _cov_show_file(path, base_dir, function_region_mapping, [])
+
         if not tmp_value[-1].endswith("\n"):
             # Add newline if file does not end with one
             tmp_value.append("\n")
+
         result.append("".join(tmp_value))
 
     return "\n".join(result) + "\n"

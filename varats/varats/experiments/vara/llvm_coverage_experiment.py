@@ -97,9 +97,11 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                     # relative filenames later in the report
                     with open(json_name) as file:
                         coverage = json.load(file)
+
                     coverage["absolute_path"] = str(
                         Path(self.project.source_of_primary).resolve()
                     )
+
                     with open(json_name, "w") as file:
                         json.dump(coverage, file)
 
