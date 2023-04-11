@@ -335,19 +335,27 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         filename_function_mapping: FilenameFunctionMapping
     ) -> FilenameFunctionMapping:
         with json_file.open() as file:
-            j = json.load(file)
+            try:
+                coverage_json = json.load(file)
+            except json.JSONDecodeError as err:
+                raise NotImplementedError(
+                    "Cannot import functions. No valid JSON file provided."
+                ) from err
         # Compatibility check
         try:
-            j_type = j["type"]
-            j_version = j["version"].split(".")
-            assert j_type == "llvm.coverage.json.export" and j_version[0] == "2"
-        except Exception as err:
+            coverage_type = coverage_json["type"]
+            coverage_version = coverage_json["version"].split(".")
+            if coverage_type != "llvm.coverage.json.export":
+                raise AssertionError("Unknown JSON type.")
+            if coverage_version[0] != "2":
+                raise AssertionError("Unknown llvm-cov JSON version.")
+        except (KeyError, AssertionError) as err:
             raise NotImplementedError(
-                "Cannot import functions. Json format unknown"
+                "Cannot import functions. JSON format unknown"
             ) from err
 
-        absolute_path = j["absolute_path"]
-        data: tp.Dict[str, tp.Any] = j["data"][0]
+        absolute_path = coverage_json["absolute_path"]
+        data: tp.Dict[str, tp.Any] = coverage_json["data"][0]
         # files: tp.List = data["files"]
         functions: tp.List[tp.Any] = data["functions"]
         totals: tp.Dict[str, tp.Any] = data["totals"]
