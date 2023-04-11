@@ -223,7 +223,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
     def _get_binary_config_map(
         self, case_study: CaseStudy, report_files: tp.List[ReportFilepath]
-    ) -> tp.Optional(BinaryConfigsMapping):
+    ) -> tp.Optional[BinaryConfigsMapping]:
 
         try:
             config_map = load_configuration_map_for_case_study(
