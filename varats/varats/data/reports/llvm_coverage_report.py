@@ -527,7 +527,6 @@ def __segments_dict_to_str(
                            ) if segments[-1][1].endswith("\n") and (
                                str.isspace(segments[-1][1].replace(";", "", 1))
                            ) else segments[-1]
-        #buffer.append(str(segments) + "\n")
         counts = [segment[0] for segment in segments]
 
         def filter_nones(a: tp.List[tp.Optional[int]]) -> tp.Iterator[int]:
