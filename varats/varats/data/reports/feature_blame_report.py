@@ -27,13 +27,25 @@ class FeatureCommitRegion():
         commit_hash = raw_region_data["commit-hash"]
         repo = raw_region_data["repo"]
         return FeatureCommitRegion(feature, commit_hash, repo)
+    
+    @property
+    def feature(self) -> str:
+        return self.__feature
+    
+    @property
+    def commit_hash(self) -> str:
+        return self.__commit_hash
+    
+    @property
+    def repo(self) -> str:
+        return self.__repo
 
 class FeatureCommitRegionInstruction():
     """An instruction that has one or more feature-commit interaction and its location
     in the project."""
 
     def __init__(
-        self, instruction: str, location: str, feature_commit_regions: tp.List[str]
+        self, instruction: str, location: str, feature_commit_regions: tp.List[FeatureCommitRegion]
     ) -> None:
         self.__instruction = instruction
         self.__location = location
@@ -48,9 +60,9 @@ class FeatureCommitRegionInstruction():
         yaml document section."""
         instruction = str(raw_inst_entry['inst'])
         location = str(raw_inst_entry['location'])
-        feature_commit_regions: tp.List[str] = []
+        feature_commit_regions: tp.List[FeatureCommitRegion] = []
         for fcr in raw_inst_entry['regions']:
-            feature_commit_regions.append(str(fcr))
+            feature_commit_regions.append(FeatureCommitRegion.create_feature_commit_region(fcr))
         return FeatureCommitRegionInstruction(instruction, location, feature_commit_regions)
 
 
@@ -65,7 +77,7 @@ class FeatureCommitRegionInstruction():
         return self.__location
 
     @property
-    def feature_taints(self) -> tp.List[str]:
+    def feature_commit_regions(self) -> tp.List[str]:
         """List of commit and feature regions of this instruction."""
         return self.__feature_commit_regions
 
@@ -88,7 +100,7 @@ class FeatureBlameResultFunctionEntry():
 
 
     @staticmethod
-    def create_feature_analysis_result_function_entry(
+    def create_feature_blame_result_function_entry(
         name: str, raw_function_entry: tp.Dict[str, tp.Any]
     ) -> 'FeatureBlameResultFunctionEntry':
         """Creates a `FeatureBlameResultFunctionEntry` from the corresponding
@@ -185,13 +197,13 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
             
             self.__function_entries: tp.Dict[
                 str, FeatureBlameResultFunctionEntry] = {}
-            raw_feature_analysis_report = next(documents)
-            for raw_func_entry in raw_feature_analysis_report['result-map']:
+            raw_feature_blame_report = next(documents)
+            for raw_func_entry in raw_feature_blame_report['result-map']:
                 new_function_entry = (
                     FeatureBlameResultFunctionEntry.
-                    create_feature_analysis_result_function_entry(
+                    create_feature_blame_result_function_entry(
                         raw_func_entry,
-                        raw_feature_analysis_report['result-map']
+                        raw_feature_blame_report['result-map']
                         [raw_func_entry]
                     )
                 )
@@ -225,4 +237,4 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
     def get_feature_locations_dict(self) -> tp.Dict[str, tp.Set[str]]:
         """Returns a dictionary that maps a feature name to a list of all
         locations of tainted br and switch instructions."""
-        
+

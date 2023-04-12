@@ -55,7 +55,7 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
             * -vara-FBR: to run a commit feature interaction report
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
-
+        print("ANALYZE\n")
         for binary in self.project.binaries:
             # Add to the user-defined path for saving the results of the
             # analysis also the name and the unique id of the project of every
@@ -63,7 +63,7 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, FBR, self.project, binary
             )
-
+            print("RESULT FILE: " + result_file + "\n")
             opt_params = [
                 "--enable-new-pm=0", "-vara-PTFDD", "-vara-BD", "-vara-FBR",
                 "-vara-init-commits",  "-vara-use-phasar",
@@ -75,7 +75,7 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
                     ]
                 )
             ]
-
+            print("OPT PARAMS: " + opt_params.__str__() + "\n")
             run_cmd = opt[opt_params]
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
@@ -117,6 +117,7 @@ class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
             BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,
             BCFileExtensions.BLAME,
+            BCFileExtensions.FEATURE
         ]
 
         FBE.setup_basic_feature_blame_experiment(self, project, FBR)
@@ -136,3 +137,4 @@ class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions 
+    
