@@ -1708,3 +1708,19 @@ class PhasarIterIDESolverStatsGenerator(
         return [
             PhasarIterIDESolverStats(self.table_config, **self.table_kwargs)
         ]
+
+
+class PhasarIterIDEALLTablesGeneratoe(
+    TableGenerator, generator_name="phasar-iter-ide-all", options=[]
+):
+    """TODO: """
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarIterIDESolverStats(self.table_config, **self.table_kwargs),
+            PhasarIterIDEGC(self.table_config, **self.table_kwargs),
+            PhasarIterIDEGCJF1(self.table_config, **self.table_kwargs),
+            PhasarIterIDEStats(self.table_config, **self.table_kwargs),
+            PhasarIterIDEOldVSNew(self.table_config, **self.table_kwargs),
+            PhasarIterIDEJF1vsJF2(self.table_config, **self.table_kwargs)
+        ]
