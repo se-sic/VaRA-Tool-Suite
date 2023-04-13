@@ -5,11 +5,17 @@ import typing as tp
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils.cmd import clang
+import os
 from benchbuild.utils import actions
 
+from varats.data.reports.feature_blame_report import FeatureBlameReport as FBR
 from varats.experiment.experiment_util import (
+    exec_func_with_pe_error_handler,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    wrap_unlimit_stack_size,
+    create_default_analysis_failure_handler,
     PEErrorHandler,
 )
 from varats.experiment.wllvm import (
@@ -49,6 +55,29 @@ def setup_basic_feature_blame_experiment(
     # This c-flag is provided by VaRA and it suggests to use the git-blame
     # annotation.
     project.cflags += ["-fvara-GB", "-fvara-feature"]
+
+    for binary in project.binaries:
+            # Add to the user-defined path for saving the results of the
+            # analysis also the name and the unique id of the project of every
+            # run.
+
+            current_dir = os.getcwd()
+            file = current_dir + "/tmp/" + project.name + "/" + "main"
+
+            clang_params = [
+                "-fvara-GB", "-fvara-feature", "-S", "-emit-llvm", file + ".cpp" ,"-c", "-o", file + ".bc"
+            ]
+
+            clang_cmd = clang[clang_params]
+
+            clang_cmd = wrap_unlimit_stack_size(clang_cmd)
+
+            exec_func_with_pe_error_handler(
+                clang_cmd,
+                create_default_analysis_failure_handler(
+                    experiment.get_handle(), project, FBR
+                )
+            )
 
 
 def generate_basic_feature_blame_experiment_actions(
