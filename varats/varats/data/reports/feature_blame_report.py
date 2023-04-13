@@ -28,6 +28,12 @@ class FeatureCommitRegion():
         repo = raw_region_data["repo"]
         return FeatureCommitRegion(feature, commit_hash, repo)
     
+    def print(self) -> None:
+        print("      -FEATURE COMMIT REGION")
+        print("        -FEATURE: " + self.__feature)
+        print("        -COMMIT HASH: " + self.__commit_hash)
+        print("        -REPO: " + self.__repo)
+
     @property
     def feature(self) -> str:
         return self.__feature
@@ -49,7 +55,7 @@ class FeatureCommitRegionInstruction():
     ) -> None:
         self.__instruction = instruction
         self.__location = location
-        self.__feature_commit_regions = sorted(feature_commit_regions)
+        self.__feature_commit_regions = feature_commit_regions
          
 
     @staticmethod
@@ -65,6 +71,13 @@ class FeatureCommitRegionInstruction():
             feature_commit_regions.append(FeatureCommitRegion.create_feature_commit_region(fcr))
         return FeatureCommitRegionInstruction(instruction, location, feature_commit_regions)
 
+
+    def print(self) -> None:
+        print("    -FEATURE COMMIT REGION INSTRUCTION")
+        print("      -INSTRUCTION: " + self.__instruction)
+        print("      -LOCATION: " + self.__location)
+        for FCR in self.__feature_commit_regions:
+            FCR.print()
 
     @property
     def instruction(self) -> str:
@@ -116,6 +129,11 @@ class FeatureBlameResultFunctionEntry():
             name, demangled_name, inst_list
         )
     
+    def print(self) -> None:
+        print("  -FEATURE BLAME RESULT FUNCTION ENTRY")
+        print("    -FUNCTION: " + self.demangled_name)
+        for FCRI in self.__feature_commit_region_insts:
+            FCRI.print()
 
     @property
     def name(self) -> str:
@@ -210,6 +228,12 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
                 self.__function_entries[new_function_entry.name
                                        ] = new_function_entry
                 
+
+    def print(self) -> None:
+        print("FEATURE BLAME REPORT")
+        for FE in self.__function_entries.values():
+            FE.print()
+
     @property
     def meta_data(self) -> FeatureBlameReportMetaData:
         """Access the meta data that was gathered with the
