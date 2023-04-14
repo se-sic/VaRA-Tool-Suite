@@ -1,12 +1,10 @@
 """
 Implements the basic feature blame report experiment.
-
 The experiment analyses a project with VaRA's blame and feature analysis and generates a
 FeatureBlameReport.
 """
 
 import typing as tp
-from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -51,7 +49,6 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
         """
         This step performs the actual analysis with the correct command line
         flags.
-
         Flags used:
             * -vara-FBR: to run a commit feature interaction report
             * -yaml-report-outfile=<path>: specify the path to store the results
@@ -87,7 +84,7 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
                 )
             )
 
-            test_fbr = FBR(path=Path(result_file.__str__()))
+            test_fbr = FBR(path=result_file.full_path())
 
             test_fbr.print()
 
@@ -108,7 +105,6 @@ class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
-
         Args:
             project: to analyze
         """
@@ -141,4 +137,3 @@ class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions 
-    
