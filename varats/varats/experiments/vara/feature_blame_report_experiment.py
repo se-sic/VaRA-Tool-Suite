@@ -1,7 +1,8 @@
 """
 Implements the basic feature blame report experiment.
-The experiment analyses a project with VaRA's blame and feature analysis and generates a
-FeatureBlameReport.
+
+The experiment analyses a project with VaRA's blame and feature analysis and
+generates a FeatureBlameReport.
 """
 
 import typing as tp
@@ -23,7 +24,6 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
-from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
@@ -37,21 +37,23 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
     project: VProject
 
     def __init__(
-        self, project: Project, experiment_handle: ExperimentHandle,
+        self,
+        project: Project,
+        experiment_handle: ExperimentHandle,
     ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
-    
+
     def analyze(self) -> actions.StepResult:
         """
         This step performs the actual analysis with the correct command line
-        flags.
-        Flags used:
-            * -vara-FBR: to run a commit feature interaction report
-            * -yaml-report-outfile=<path>: specify the path to store the results
+        flags. Flags used:
+
+        * -vara-FBR: to run a commit feature interaction report
+        * -yaml-report-outfile=<path>: specify the path to store the results
         """
         for binary in self.project.binaries:
             # Add to the user-defined path for saving the results of the
@@ -63,7 +65,7 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
 
             opt_params = [
                 "--enable-new-pm=0", "-vara-PTFDD", "-vara-BD", "-vara-FBR",
-                "-vara-init-commits",  "-vara-use-phasar",
+                "-vara-init-commits", "-vara-use-phasar",
                 f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
                     self.project, binary, [
@@ -72,7 +74,7 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
                     ]
                 )
             ]
-            
+
             run_cmd = opt[opt_params]
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
@@ -89,10 +91,11 @@ class FeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
             test_fbr.print()
 
         return actions.StepResult.OK
-    
+
 
 class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
-    """Generates a feature blame report of the project(s) specified in the call."""
+    """Generates a feature blame report of the project(s) specified in the
+    call."""
 
     NAME = "GenerateFeatureBlameReport"
 
@@ -105,6 +108,7 @@ class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
+
         Args:
             project: to analyze
         """
@@ -114,10 +118,8 @@ class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
         bc_file_extensions = [
-            BCFileExtensions.NO_OPT,
-            BCFileExtensions.TBAA,
-            BCFileExtensions.BLAME,
-            BCFileExtensions.FEATURE
+            BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+            BCFileExtensions.BLAME, BCFileExtensions.FEATURE
         ]
 
         FBE.setup_basic_feature_blame_experiment(self, project, FBR)
@@ -130,10 +132,8 @@ class FeatureBlameReportExperiment(VersionExperiment, shorthand="FBRE"):
             )
         )
         analysis_actions.append(
-            FeatureBlameReportGeneration(
-                project, self.get_handle()
-            )
+            FeatureBlameReportGeneration(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 
-        return analysis_actions 
+        return analysis_actions

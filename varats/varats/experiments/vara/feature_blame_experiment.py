@@ -1,5 +1,5 @@
-"""Implements the base feature blame experiment, making it easier to create different
-feature-blame experiments that have a similar experiment setup."""
+"""Implements the base feature blame experiment, making it easier to create
+different feature-blame experiments that have a similar experiment setup."""
 
 import typing as tp
 
