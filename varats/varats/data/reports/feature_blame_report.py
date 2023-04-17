@@ -3,50 +3,11 @@
 import re
 import typing as tp
 from pathlib import Path
-
+from varats.utils.git_util import CommitRepoPair
 import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.report.report import BaseReport
-
-
-class FeatureCommitRegion():
-    """Data containing feature and commit regions."""
-
-    def __init__(self, feature: str, commit_hash: str, repo: str) -> None:
-        self.__feature = feature
-        self.__commit_hash = commit_hash
-        self.__repo = repo
-
-    @staticmethod
-    def create_feature_commit_region(
-        raw_region_data: tp.Dict[str, tp.Any]
-    ) -> 'FeatureCommitRegion':
-        """Creates a 'FeatureCommitRegion' from the corresponding yaml document
-        section."""
-        feature = raw_region_data["feature"]
-        commit_hash = raw_region_data["commit-hash"]
-        repo = raw_region_data["repo"]
-        return FeatureCommitRegion(feature, commit_hash, repo)
-
-    def print(self) -> None:
-        """'FeatureCommitRegion' prints itself."""
-        print("      -FEATURE COMMIT REGION")
-        print("        -FEATURE: " + self.__feature)
-        print("        -COMMIT HASH: " + self.__commit_hash)
-        print("        -REPO: " + self.__repo)
-
-    @property
-    def feature(self) -> str:
-        return self.__feature
-
-    @property
-    def commit_hash(self) -> str:
-        return self.__commit_hash
-
-    @property
-    def repo(self) -> str:
-        return self.__repo
 
 
 class FeatureCommitRegionInstruction():
@@ -55,11 +16,12 @@ class FeatureCommitRegionInstruction():
 
     def __init__(
         self, instruction: str, location: str,
-        feature_commit_regions: tp.List[FeatureCommitRegion]
+        features: tp.List[str], commit: CommitRepoPair
     ) -> None:
         self.__instruction = instruction
         self.__location = location
-        self.__feature_commit_regions = feature_commit_regions
+        self.__features = features
+        self.__commit = commit
 
     @staticmethod
     def create_feature_tainted_instruction(
@@ -69,13 +31,13 @@ class FeatureCommitRegionInstruction():
         corresponding yaml document section."""
         instruction = str(raw_inst_entry['inst'])
         location = str(raw_inst_entry['location'])
-        feature_commit_regions: tp.List[FeatureCommitRegion] = []
-        for fcr in raw_inst_entry['regions']:
-            feature_commit_regions.append(
-                FeatureCommitRegion.create_feature_commit_region(fcr)
-            )
+        features: tp.List[str] = raw_inst_entry['feature-regions']
+        crp: tp.Dict[str] = raw_inst_entry['commit-region']
+        commit: CommitRepoPair = CommitRepoPair(
+            crp['commit'], 
+            crp['repository'])
         return FeatureCommitRegionInstruction(
-            instruction, location, feature_commit_regions
+            instruction, location, features, commit
         )
 
     def print(self) -> None:
@@ -83,8 +45,12 @@ class FeatureCommitRegionInstruction():
         print("    -FEATURE COMMIT REGION INSTRUCTION")
         print("      -INSTRUCTION: " + self.__instruction)
         print("      -LOCATION: " + self.__location)
-        for FeatureCommitRegion in self.__feature_commit_regions:
-            FeatureCommitRegion.print()
+        print("      -FEATURE REGIONS: ")
+        for feature_region in self.__features:
+            print("        -" + feature_region)
+        print("      -COMMIT: ")
+        print("        -HASH: " + self.__commit.commit_hash)
+        print("        -REPO: " + self.__commit.repository_name)
 
     @property
     def instruction(self) -> str:
@@ -97,9 +63,14 @@ class FeatureCommitRegionInstruction():
         return self.__location
 
     @property
-    def feature_commit_regions(self) -> tp.List[FeatureCommitRegion]:
-        """List of commit and feature regions of this instruction."""
-        return self.__feature_commit_regions
+    def features(self) -> tp.List[str]:
+        """List of feature regions of this instruction."""
+        return self.__features
+
+    @property
+    def commit_region(self) -> CommitRepoPair:
+        """commit region of this instruction."""
+        return self.__commit
 
     def is_terminator(self) -> bool:
         br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
@@ -138,8 +109,8 @@ class FeatureBlameResultFunctionEntry():
         """'FeatureBlameResultFunctionEntry' prints itself."""
         print("  -FEATURE BLAME RESULT FUNCTION ENTRY")
         print("    -FUNCTION: " + self.demangled_name)
-        for FeatureCommitRegionInstruction in self.__feature_commit_region_insts:
-            FeatureCommitRegionInstruction.print()
+        for feature_commit_region_instruction in self.__feature_commit_region_insts:
+            feature_commit_region_instruction.print()
 
     @property
     def name(self) -> str:
@@ -239,8 +210,8 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
     def print(self) -> None:
         """'FeatureBlameReport' prints itself."""
         print("FEATURE BLAME REPORT")
-        for FeatureBlameResultFunctionEntry in self.__function_entries.values():
-            FeatureBlameResultFunctionEntry.print()
+        for feature_blame_result_function_entry in self.__function_entries.values():
+            feature_blame_result_function_entry.print()
 
     @property
     def meta_data(self) -> FeatureBlameReportMetaData:
@@ -266,6 +237,6 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
         """
         return self.__function_entries[mangled_function_name]
 
-        # def get_feature_locations_dict(self) -> tp.Dict[str, tp.Set[str]]:
-        """Returns a dictionary that maps a feature name to a list of all
-        locations of tainted br and switch instructions."""
+    # def get_feature_locations_dict(self) -> tp.Dict[str, tp.Set[str]]:
+        # """Returns a dictionary that maps a feature name to a list of all
+        # locations of tainted br and switch instructions."""
