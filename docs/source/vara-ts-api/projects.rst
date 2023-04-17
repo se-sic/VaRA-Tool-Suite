@@ -118,8 +118,9 @@ Binary wrappers can be specified using the
 :class:`~varats.utils.git_util.RevisionBinaryMap` and its function
 :func:`~varats.utils.git_util.RevisionBinaryMap.specify_binary`.
 Since for some projects binary locations change during project life time,
-the revision-binary-map allows to specify binary locations for specific ranges
-of project revisions using ``benchbuild.utils.revision_ranges``.
+the :class:`~varats.utils.git_util.RevisionBinaryMap` allows to specify binary
+locations for specific ranges of project revisions using
+``benchbuild.utils.revision_ranges``.
 
 Blocking revisions
 ..................
