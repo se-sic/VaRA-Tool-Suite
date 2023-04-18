@@ -56,14 +56,21 @@ class FeaturePerfCSCollection(VProject):
             ),
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SimpleFeatureInteraction"), "--enc", "--compress"
+                RSBinary("SimpleFeatureInteraction"),
+                "--enc",
+                "--compress",
+                label="SFI-enc-compress"
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SimpleBusyLoop"), "--iterations", str(10**7),
-                "--count_to", str(5 * 10**3)
+                RSBinary("SimpleBusyLoop"),
+                "--iterations",
+                str(10**7),
+                "--count_to",
+                str(5 * 10**3),
+                label="SBL-iterations-10M-count-to-5K"
             )
         ]
     }

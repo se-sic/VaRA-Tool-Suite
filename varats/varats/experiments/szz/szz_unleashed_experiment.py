@@ -13,11 +13,7 @@ from benchbuild.utils.cmd import java
 from plumbum import local
 
 from varats.base.version_header import VersionHeader
-from varats.data.reports.szz_report import (
-    SZZReport,
-    SZZUnleashedReport,
-    SZZTool,
-)
+from varats.data.reports.szz_report import SZZUnleashedReport, SZZTool
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -30,6 +26,7 @@ from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 from varats.tools.research_tools.szz_unleashed import SZZUnleashed
+from varats.utils.git_util import ShortCommitHash
 
 
 class PrepareSZZUnleashedData(actions.ProjectStep):  # type: ignore
@@ -157,7 +154,7 @@ class CreateSZZUnleashedReport(actions.ProjectStep):  # type: ignore
             "SZZUnleashed",
             project_name=str(self.project.name),
             binary_name="none",  # we don't rely on binaries in this experiment
-            project_revision=self.project.version_of_primary,
+            project_revision=ShortCommitHash(self.project.version_of_primary),
             project_uuid=str(self.project.run_uuid),
             extension_type=FSE.SUCCESS
         )
@@ -186,7 +183,7 @@ class SZZUnleashedExperiment(VersionExperiment, shorthand="SZZUnleashed"):
 
     NAME = "SZZUnleashed"
 
-    REPORT_SPEC = ReportSpecification(SZZReport)
+    REPORT_SPEC = ReportSpecification(SZZUnleashedReport)
 
     @classmethod
     def sample(cls, prj_cls: ProjectT) -> tp.List[source.Revision]:

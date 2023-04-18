@@ -217,8 +217,7 @@ def __build_setup_init(
     if source_location and not source_location.exists():
         source_location.mkdir(parents=True)
 
-    distro = Distro.get_current_distro()
-    if distro:
+    if (distro := Distro.get_current_distro()):
         if not tool.get_dependencies().has_dependencies_for_distro(distro):
             missing_deps = tool.get_dependencies(
             ).get_missing_dependencies_for_distro(distro)
