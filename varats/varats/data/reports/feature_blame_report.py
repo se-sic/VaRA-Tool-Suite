@@ -33,7 +33,7 @@ class FeatureCommitRegionInstruction():
         instruction = str(raw_inst_entry['inst'])
         location = str(raw_inst_entry['location'])
         features: tp.List[str] = raw_inst_entry['features']
-        crp: tp.Dict[str] = raw_inst_entry['commit']
+        crp: tp.Dict[str, any] = raw_inst_entry['commit']
         commit: CommitRepoPair = CommitRepoPair(
             crp['commit'], crp['repository']
         )
@@ -46,11 +46,11 @@ class FeatureCommitRegionInstruction():
         print("    -FEATURE COMMIT REGION INSTRUCTION")
         print("      -INSTRUCTION: " + self.__instruction)
         print("      -LOCATION: " + self.__location)
-        print("      -FEATURE REGIONS: ")
+        print("      -FEATURES: ")
         for feature_region in self.__features:
             print("        -" + feature_region)
         print("      -COMMIT: ")
-        print("        -HASH: " + self.__commit.commit_hash)
+        print("        -HASH: " + self.__commit.commit_hash.__str__())
         print("        -REPO: " + self.__commit.repository_name)
 
     @property
