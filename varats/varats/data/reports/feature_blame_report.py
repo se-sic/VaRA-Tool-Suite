@@ -3,11 +3,12 @@
 import re
 import typing as tp
 from pathlib import Path
-from varats.utils.git_util import CommitRepoPair
+
 import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.report.report import BaseReport
+from varats.utils.git_util import CommitRepoPair
 
 
 class FeatureCommitRegionInstruction():
@@ -15,8 +16,8 @@ class FeatureCommitRegionInstruction():
     location in the project."""
 
     def __init__(
-        self, instruction: str, location: str,
-        features: tp.List[str], commit: CommitRepoPair
+        self, instruction: str, location: str, features: tp.List[str],
+        commit: CommitRepoPair
     ) -> None:
         self.__instruction = instruction
         self.__location = location
@@ -31,11 +32,11 @@ class FeatureCommitRegionInstruction():
         corresponding yaml document section."""
         instruction = str(raw_inst_entry['inst'])
         location = str(raw_inst_entry['location'])
-        features: tp.List[str] = raw_inst_entry['feature-regions']
-        crp: tp.Dict[str] = raw_inst_entry['commit-region']
+        features: tp.List[str] = raw_inst_entry['features']
+        crp: tp.Dict[str] = raw_inst_entry['commit']
         commit: CommitRepoPair = CommitRepoPair(
-            crp['commit'], 
-            crp['repository'])
+            crp['commit'], crp['repository']
+        )
         return FeatureCommitRegionInstruction(
             instruction, location, features, commit
         )
@@ -109,8 +110,8 @@ class FeatureBlameResultFunctionEntry():
         """'FeatureBlameResultFunctionEntry' prints itself."""
         print("  -FEATURE BLAME RESULT FUNCTION ENTRY")
         print("    -FUNCTION: " + self.demangled_name)
-        for feature_commit_region_instruction in self.__feature_commit_region_insts:
-            feature_commit_region_instruction.print()
+        for feature_commit_region_inst in self.__feature_commit_region_insts:
+            feature_commit_region_inst.print()
 
     @property
     def name(self) -> str:
@@ -210,8 +211,8 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
     def print(self) -> None:
         """'FeatureBlameReport' prints itself."""
         print("FEATURE BLAME REPORT")
-        for feature_blame_result_function_entry in self.__function_entries.values():
-            feature_blame_result_function_entry.print()
+        for feature_blame_result_func_entr in self.__function_entries.values():
+            feature_blame_result_func_entr.print()
 
     @property
     def meta_data(self) -> FeatureBlameReportMetaData:
@@ -238,5 +239,5 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
         return self.__function_entries[mangled_function_name]
 
     # def get_feature_locations_dict(self) -> tp.Dict[str, tp.Set[str]]:
-        # """Returns a dictionary that maps a feature name to a list of all
-        # locations of tainted br and switch instructions."""
+    # """Returns a dictionary that maps a feature name to a list of all
+    # locations of tainted br and switch instructions."""

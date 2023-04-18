@@ -7,7 +7,6 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
-from varats.data.reports.feature_blame_report import FeatureBlameReport as FBR
 from varats.experiment.experiment_util import (
     VersionExperiment,
     get_default_compile_error_wrapped,
