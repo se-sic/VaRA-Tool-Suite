@@ -1,4 +1,4 @@
-[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/include/fpcsc/perf_util/feature_cmd.h:
+[0;36minclude/fpcsc/perf_util/feature_cmd.h:
 [0m    1|       |#ifndef FPCSC_PERFUTIL_FEATURECMD_H
     2|       |#define FPCSC_PERFUTIL_FEATURECMD_H
     3|       |
@@ -37,7 +37,7 @@
    36|       |
    37|       |#endif // FPCSC_PERFUTIL_FEATURECMD_H
 
-[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/include/fpcsc/perf_util/sleep.h:
+[0;36minclude/fpcsc/perf_util/sleep.h:
 [0m    1|       |#ifndef FPCSC_PERFUTIL_SLEEP_H
     2|       |#define FPCSC_PERFUTIL_SLEEP_H
     3|       |
@@ -65,7 +65,7 @@
    25|       |
    26|       |#endif // FPCSC_PERFUTIL_SLEEP_H
 
-[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/src/MultiSharedMultipleRegions/FeatureHeader.cpp:
+[0;36msrc/MultiSharedMultipleRegions/FeatureHeader.cpp:
 [0m    1|       |#include "FeatureHeader.h"
     2|       |
     3|       |bool ExternFeature = false;
@@ -80,7 +80,7 @@
    12|      1|  return CppFeature;
    13|      1|}
 
-[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/src/MultiSharedMultipleRegions/FeatureHeader.h:
+[0;36msrc/MultiSharedMultipleRegions/FeatureHeader.h:
 [0m    1|       |#ifndef FEATURE_HEADER_H
     2|       |#define FEATURE_HEADER_H
     3|       |
@@ -97,7 +97,7 @@
    14|       |
    15|       |#endif // FEATURE_HEADER_H
 
-[0;36m/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/src/MultiSharedMultipleRegions/MSMRmain.cpp:
+[0;36msrc/MultiSharedMultipleRegions/MSMRmain.cpp:
 [0m    1|       |#include "FeatureHeader.h"
     2|       |
     3|       |#include "fpcsc/perf_util/sleep.h"

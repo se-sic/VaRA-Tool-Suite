@@ -304,7 +304,7 @@ class TestCodeRegion(unittest.TestCase):
             shutil.unpack_archive(
                 Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
                 "GenCov-CovR-FeaturePerfCSCollection-MultiSharedMultipleRegions-27f1708037"
-                / "9e03adf8-75f6-4524-912c-2f0e5873ae75_config-0_success.zip",
+                / "2123fe9e-f47c-498e-9953-44b0fa9ad954_config-0_success.zip",
                 tmpdir
             )
 
