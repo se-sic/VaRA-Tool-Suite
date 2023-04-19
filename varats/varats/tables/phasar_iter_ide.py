@@ -1571,6 +1571,7 @@ class PhasarIterIDESolverStats(
                 # max_lin_search_diff = report._solver_stats_taint_jf2._max_diff_summaries_vs_search_len
                 avg_lin_search_diff = report._solver_stats_taint_jf2._avg_diff_summaries_vs_search_len
                 rel_lin_search_diff = report._solver_stats_taint_jf2._rel_diff_summaries_vs_search_len
+                num_jump_functions = report._solver_stats_taint_jf2._jump_functions_high_watermark
 
                 cs_dict = {
                     latex_sanitize_project_name(project_name): {
@@ -1594,8 +1595,9 @@ class PhasarIterIDESolverStats(
                         "AvgInnerMapSize-JF2": avg_inner_size_jf2,
                         "JFTabBytes-JF1": jf_tab_mbytes_jf1,
                         "JFTabBytes-JF2": jf_tab_mbytes_jf2,
-                        "#Summary Props-JF1": num_summary_propagations_jf1,
-                        "#Summary Props-JF2": num_summary_propagations_jf2,
+                        "NumPathEdges": num_jump_functions,
+                        # "#Summary Props-JF1": num_summary_propagations_jf1,
+                        "#Summary Props": num_summary_propagations_jf2,
                         # "Max #InterJobs/Call-JF1":
                         #     max_inter_jobs_per_call_jf1,
                         # "Max #InterJobs/Call-JF2":
@@ -1604,8 +1606,8 @@ class PhasarIterIDESolverStats(
                         #     avg_inter_jobs_per_call_jf1,
                         # "Avg #InterJobs/Call-JF2":
                         #     avg_inter_jobs_per_call_jf2,
-                        "#Lin Searches-JF1": num_linear_search_jf1,
-                        "#Lin Searches-JF2": num_linear_search_jf2,
+                        # "#Lin Searches-JF1": num_linear_search_jf1,
+                        "#Lin Searches": num_linear_search_jf2,
                         "Max Search Len-JF1": max_lin_search_len_lf1,
                         "Max Search Len-JF2": max_lin_search_len_lf2,
                         "Avg Search Len-JF1": avg_lin_search_len_lf1,
@@ -1642,13 +1644,14 @@ class PhasarIterIDESolverStats(
             ('Avg Inner Size', 'JF2'),
             ('JF Table (MB)', 'JF1'),
             ('JF Table (MB)', 'JF2'),
-            ('Summary Props', 'JF1'),
+            ('Path Edges', 'JF2'),
+            # ('Summary Props', 'JF1'),
             ('Summary Props', 'JF2'),
             # ('Max IJobs/CS', 'JF1'),
             # ('Max IJobs/CS', 'JF2'),
             # ('Avg IJobs/CS', 'JF1'),
             # ('Avg IJobs/CS', 'JF2'),
-            ('Linear Searches', 'JF1'),
+            # ('Linear Searches', 'JF1'),
             ('Linear Searches', 'JF2'),
             ('Max Search Len', 'JF1'),
             ('Max Search Len', 'JF2'),
@@ -1678,7 +1681,7 @@ class PhasarIterIDESolverStats(
             #             ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
             # )
             # df.style.format('j')
-            kwargs["column_format"] = "l|rrr|rr|rr|rr|rr|rr|rr|rr|r|r"
+            kwargs["column_format"] = "l|rrr|rr|rr|rr|r|r|r|rr|rr|r|r"
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
@@ -1710,7 +1713,7 @@ class PhasarIterIDESolverStatsGenerator(
         ]
 
 
-class PhasarIterIDEALLTablesGeneratoe(
+class PhasarIterIDEALLTablesGenerator(
     TableGenerator, generator_name="phasar-iter-ide-all", options=[]
 ):
     """TODO: """

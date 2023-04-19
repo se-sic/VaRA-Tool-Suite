@@ -533,6 +533,82 @@ class IterIDESolverStats(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
+class IterIDESolverStatsDbg(actions.ProjectStep):  # type: ignore
+
+    NAME = "IterIDESolverStatsDbg"
+    DESCRIPTION = "Statistics of the IterIDE Solver for the analysis run"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        mkdir("-p", tmp_dir)
+
+        phasar_params_jf2 = [
+            "-D",
+            str(self.__analysis_type), "-S", "--log", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_params_jf1 = [
+            "-D",
+            str(self.__analysis_type), "-S", "--log", "--jf1", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd_jf2 = wrap_unlimit_stack_size(
+            iteridebenchmark[phasar_params_jf2]
+        )
+        phasar_cmd_jf1 = wrap_unlimit_stack_size(
+            iteridebenchmark[phasar_params_jf1]
+        )
+
+        result_file_jf2 = tmp_dir / f"stats_{self.__analysis_type}_jf2.txt"
+        result_file_jf1 = tmp_dir / f"stats_{self.__analysis_type}_jf1.txt"
+
+        (ret_code, stdout, stderr) = phasar_cmd_jf2.run(retcode=None)
+
+        with open(result_file_jf2, "w") as output_file:
+            output_file.write(f"Error Code: {ret_code}\n")
+            output_file.write("\nStdout:\n")
+            output_file.write(stdout)
+            output_file.write("\nStderr:\n")
+            output_file.write(stderr)
+
+        if ret_code == 137:
+            print("Found OOM (stats JF2)")
+
+        (ret_code, stdout, stderr) = phasar_cmd_jf1.run(retcode=None)
+
+        with open(result_file_jf1, "w") as output_file:
+            output_file.write(f"Error Code: {ret_code}\n")
+            output_file.write("\nStdout:\n")
+            output_file.write(stdout)
+            output_file.write("\nStderr:\n")
+            output_file.write(stderr)
+
+        if ret_code == 137:
+            print("Found OOM (stats JF1)")
+
+        return actions.StepResult.OK
+
+
 class PhasarIDEStats(actions.ProjectStep):  # type: ignore
 
     NAME = "EmptyAnalysis"
@@ -683,6 +759,83 @@ class IDELinearConstantAnalysisExperiment(
                         )
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
+                    ]
+                ]
+            )
+        )
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+
+
+class IDELinearConstantAnalysisExperimentDebug(
+    VersionExperiment, shorthand="IterIDEDebug"
+):
+    """Experiment class to build and analyse a project with an
+    IterIDEBasicStats."""
+
+    NAME = "PhasarIterIDEDebug"
+
+    REPORT_SPEC = ReportSpecification(PhasarIterIDEStatsReport)
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
+    CONTAINER = ContainerImage().run("apt", "install", "-y", "time")
+
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self)
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << RunWLLVM()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+        ]
+
+        # Only consider the main/first binary
+        print(f"{project.name}")
+        if len(project.binaries) < 1:
+            return []
+        binary = project.binaries[0]
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), self.REPORT_SPEC.main_report, project, binary
+        )
+
+        analysis_actions = []
+
+        analysis_actions += get_bc_cache_actions(
+            project,
+            bc_file_extensions=bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
+            )
+        )
+
+        reps = range(0, 1)
+
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_file, [
+                    *[
+                        IterIDESolverStatsDbg(project, binary, analysis_type)
+                        for analysis_type in _get_enabled_analyses()
                     ]
                 ]
             )

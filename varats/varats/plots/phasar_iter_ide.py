@@ -102,7 +102,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         elif jf == self.JF2:
             return "JF2"
         elif jf == self.JF3:
-            return "JF3"
+            return "JF2S"
         elif jf == self.OLD:
             return "Old"
         else:
@@ -282,15 +282,16 @@ class PhasarIterIDESpeedupVsJF1Plot(
     ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
+        #TODO: cross product (see __compute_speedups)
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
-            for jf in [self.JF2, self.JF3]:
+            for jf in [self.JF1, self.JF2, self.JF3]:
                 for time, old_time in zip(
                     aggregates[jf].measurements_wall_clock_time,
-                    aggregates[self.JF1].measurements_wall_clock_time
+                    aggregates[self.OLD].measurements_wall_clock_time
                 ):
                     nodes.append({
-                        self.YNAME: time - old_time,
+                        self.YNAME: old_time / time,
                         "JF": self._get_jf_name(jf),
                         "Analysis": ana,
                     })
@@ -299,12 +300,51 @@ class PhasarIterIDESpeedupVsJF1Plot(
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe()
-        return sns.boxplot(
+        ax = sns.violinplot(
             x="Analysis",
             y=self.YNAME,
             data=data,
             hue="JF",
         )
+        #ax.set_ylim(top=200)
+        return ax
+
+
+class PhasarIterIDENewTime(
+    PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-new-time',
+    yname="Runtime [s]"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            for jf in [self.JF1, self.JF2, self.JF3]:
+                for time in aggregates[jf].measurements_wall_clock_time:
+                    nodes.append({
+                        self.YNAME: time,
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                    })
+
+        return nodes
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe()
+        ax = sns.boxplot(
+            x="Analysis",
+            y=self.YNAME,
+            data=data,
+            hue="JF",
+            showfliers=False,
+        )
+        ax.set_ylim(top=600)
+        return ax
 
 
 class PhasarIterIDEMemSpeedupVsJF1Plot(
@@ -334,11 +374,59 @@ class PhasarIterIDEMemSpeedupVsJF1Plot(
 
         return nodes
 
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe()
+        ax = sns.boxplot(
+            x="Analysis",
+            y=self.YNAME,
+            data=data,
+            hue="JF",
+        )
+        ax.set_ylim(bottom=-7500)
+        return ax
 
-class PhasarIterIDEJF1JF2MemViolinPlot(
+
+class PhasarIterIDENewMem(
     PhasarIterIDEPlotBase,
-    plot_name='phasar-iter-ide-jf1-jf2-mem',
-    yname="Max Resident Size (MB)"
+    plot_name='phasar-iter-ide-new-mem',
+    yname="Memory [MB]"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            for jf in [self.JF1, self.JF2, self.JF3]:
+                for mem in aggregates[jf].max_resident_sizes:
+                    nodes.append({
+                        self.YNAME: mem / 1000,
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                    })
+
+        return nodes
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe()
+        ax = sns.boxplot(
+            x="Analysis",
+            y=self.YNAME,
+            data=data,
+            hue="JF",
+            showfliers=False,
+        )
+        ax.set_ylim(top=15000)
+        return ax
+
+
+class PhasarIterIDEOldNewMemViolinPlot(
+    PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-old-new-mem',
+    yname="Max Resident Size [MB]"
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
@@ -370,7 +458,9 @@ class PhasarIterIDEJF1JF2MemViolinPlot(
 
 
 class PhasarIterIDEOldNewTimeViolinPlot(
-    PhasarIterIDEPlotBase, plot_name='phasar-iter-ide-old-new-time'
+    PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-old-new-time',
+    yname="Runtime [s]"
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
@@ -384,7 +474,7 @@ class PhasarIterIDEOldNewTimeViolinPlot(
             for jf in [0, 1, 2, 3]:
                 for time in aggregates[jf].measurements_wall_clock_time:
                     nodes.append({
-                        "Time": time,
+                        self.YNAME: time,
                         "JF": self._get_jf_name(jf),
                         "Analysis": ana,
                     })
@@ -417,11 +507,13 @@ class CAIGViolinPlotGenerator(
             PhasarIterIDEOldNewTimeViolinPlot(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDEJF1JF2MemViolinPlot(
+            PhasarIterIDEOldNewMemViolinPlot(
                 self.plot_config, **self.plot_kwargs
             ),
             PhasarIterIDESpeedupVsJF1Plot(self.plot_config, **self.plot_kwargs),
             PhasarIterIDEMemSpeedupVsJF1Plot(
                 self.plot_config, **self.plot_kwargs
             ),
+            PhasarIterIDENewTime(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDENewMem(self.plot_config, **self.plot_kwargs),
         ]
