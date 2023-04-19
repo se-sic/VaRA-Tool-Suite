@@ -333,14 +333,6 @@ class TestCodeRegion(unittest.TestCase):
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-            cov_show_slow_txt = cov_show_slow_txt.replace(
-                "/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/",
-                ""
-            )
-            cov_show_slow_color_txt = cov_show_slow_color_txt.replace(
-                "/home/mmustermann/Dokumente/VARA-root2/benchbuild/results/GenerateCoverage/FeaturePerfCSCollection-perf_tests@27f1708037,0/FeaturePerfCSCollection-27f1708037/",
-                ""
-            )
 
             self.assertEqual(cov_show_slow_txt, cov_show(slow_report, base_dir))
             color_state = colors.use_color
