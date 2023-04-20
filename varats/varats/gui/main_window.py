@@ -99,8 +99,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
         save_bb_config(bb_cfg)
 
     def __remove_tab(self, index: int) -> None:
-        tab = self.tabWidget.widget(index)
-        if tab is not None:
+        if (tab := self.tabWidget.widget(index)) is not None:
             self.views.remove(tab)
 
             self.tabWidget.removeTab(index)
