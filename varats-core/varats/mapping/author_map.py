@@ -64,43 +64,58 @@ class AuthorMap():
     mail address."""
 
     def __init__(self):
+        self.look_up_invalid = True
         self.current_id = 0
         self.mail_dict: tp.Dict[str, Author] = {}
         self.name_dict: tp.Dict[str, Author] = {}
-        self.authors: tp.List[Author] = []
+        self.__authors: tp.List[Author] = []
 
     def get_author_by_name(self, name: str):
+        if self.look_up_invalid:
+            self.gen_lookup_dicts()
         return self.name_dict[name]
 
     def get_author_by_email(self, email: str):
+        if self.look_up_invalid:
+            self.gen_lookup_dicts()
         return self.mail_dict[email]
 
-    def get_authors(self):
-        return self.authors
+    @property
+    def authors(self):
+        return self.__authors
 
     def get_author(self, name: str, mail: str):
+        """Get an author by name and mail Throws AmbiguousAuthor exception if no
+        author matches the combination."""
+        if self.look_up_invalid:
+            self.gen_lookup_dicts()
         if self.mail_dict[mail] == self.name_dict[name]:
             return self.name_dict[name]
         else:
             raise AmbiguousAuthor
 
     def new_author_id(self):
+        """Get a unique id for an author."""
         new_id = self.current_id
         self.current_id += 1
         return new_id
 
     def add_entry(self, name: str, mail: str):
+        """Add authors to the map and invalidate look up dicts."""
         ambiguos_authors = [
-            author for author in self.authors
+            author for author in self.__authors
             if name in author.names or mail in author.mail_addresses
         ]
         if not ambiguos_authors:
-            self.authors.append(Author(self.new_author_id(), name, mail))
+            self.__authors.append(Author(self.new_author_id(), name, mail))
+            self.look_up_invalid = True
         if len(ambiguos_authors) > 1:
             reduce(lambda accu, author: accu.merge(author), ambiguos_authors)
+            self.look_up_invalid = True
 
     def gen_lookup_dicts(self):
-        for author in self.authors:
+        """Generate the dicts for name and mail lookups."""
+        for author in self.__authors:
             for mail in author.mail_addresses:
                 self.mail_dict[mail] = author
             for name in author.names:
@@ -123,7 +138,6 @@ def generate_author_map(path: Path) -> AuthorMap:
             name = match.group(1)
             email = match.group(2)
             author_map.add_entry(name, email)
-        author_map.gen_lookup_dicts()
         return author_map
 
 
