@@ -114,8 +114,10 @@ __WORKLOAD_FILE_REGEX = re.compile(r".*\_(?P<label>.+)\_\d+$")
 
 
 def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
-    match = __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
-    if match:
+    if (
+        match :=
+        __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
+    ):
         return str(match.group("label"))
 
     return None
