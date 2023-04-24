@@ -3,6 +3,7 @@
 import logging
 import re
 import typing as tp
+from functools import reduce
 from pathlib import Path
 
 from benchbuild.utils.cmd import git, mkdir
@@ -24,7 +25,9 @@ class Author():
     def __init__(self, id: int, name: str, email: str):
         self.id = id
         self.name = name
+        self.__names = [name]
         self.mail = email
+        self.__mail_addresses = [email]
 
     def __eq__(self, other):
         if isinstance(other, Author):
@@ -37,10 +40,23 @@ class Author():
     def __repr__(self):
         return f"{self.id} {self.name} <{self.mail}>"
 
-    def merge_if_equal(self, other):
-        if isinstance(other, Author):
-            if self.__eq__(self, other):
-                print("hi")
+    @property
+    def names(self):
+        return self.__names
+
+    @property
+    def mail_addresses(self):
+        return self.__mail_addresses
+
+    def merge(self, other: ['Author']) -> ['Author']:
+        if other.id < self.id:
+            other.names.append(other.names)
+            other.mail_addresses.append(other.mail_addresses)
+            return other
+        else:
+            self.names.append(other.names)
+            self.mail_addresses.append(other.mail_addresses)
+            return self
 
 
 class AuthorMap():
@@ -68,26 +84,27 @@ class AuthorMap():
         else:
             raise AmbiguousAuthor
 
+    def new_author_id(self):
+        new_id = self.current_id
+        self.current_id += 1
+        return new_id
+
     def add_entry(self, name: str, mail: str):
-        author_by_name = self.name_dict.get(name, None)
-        author_by_mail = self.mail_dict.get(mail, None)
-        if author_by_name:
-            if author_by_mail:
-                if author_by_name != author_by_mail:
-                    self.name_dict[name] = author_by_mail
-                    self.mail_dict[author_by_name.mail] = author_by_mail
-                else:
-                    return
-            else:
-                self.mail_dict[mail] = author_by_name
-        elif author_by_mail:
-            self.name_dict[name] = author_by_mail
-        else:
-            new_author = Author(self.current_id, name, mail)
-            self.authors.append(new_author)
-            self.current_id += 1
-            self.name_dict[name] = new_author
-            self.mail_dict[mail] = new_author
+        ambiguos_authors = [
+            author for author in self.authors
+            if name in author.names or mail in author.mail_addresses
+        ]
+        if not ambiguos_authors:
+            self.authors.append(Author(self.new_author_id(), name, mail))
+        if len(ambiguos_authors) > 1:
+            reduce(lambda accu, author: accu.merge(author), ambiguos_authors)
+
+    def gen_lookup_dicts(self):
+        for author in self.authors:
+            for mail in author.mail_addresses:
+                self.mail_dict[mail] = author
+            for name in author.names:
+                self.name_dict[name] = author
 
     def __repr__(self):
         return f"{self.name_dict} \n {self.mail_dict}"
@@ -106,7 +123,7 @@ def generate_author_map(path: Path) -> AuthorMap:
             name = match.group(1)
             email = match.group(2)
             author_map.add_entry(name, email)
-
+        author_map.gen_lookup_dicts()
         return author_map
 
 
