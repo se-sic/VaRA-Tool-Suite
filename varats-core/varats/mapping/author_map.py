@@ -3,22 +3,10 @@
 import logging
 import re
 import typing as tp
-from collections.abc import ItemsView
 from pathlib import Path
 
 from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
-from pygtrie import CharTrie
-
-from varats.project.project_util import (
-    get_local_project_git_path,
-    get_primary_project_source,
-)
-from varats.utils.git_util import (
-    get_current_branch,
-    FullCommitHash,
-    ShortCommitHash,
-)
 
 LOG = logging.getLogger(__name__)
 
@@ -63,12 +51,16 @@ class AuthorMap():
         self.current_id = 0
         self.mail_dict: tp.Dict[str, Author] = {}
         self.name_dict: tp.Dict[str, Author] = {}
+        self.authors: tp.List[Author] = []
 
     def get_author_by_name(self, name: str):
         return self.name_dict[name]
 
-    def get_auhtor_by_email(self, email: str):
+    def get_author_by_email(self, email: str):
         return self.mail_dict[email]
+
+    def get_authors(self):
+        return self.authors
 
     def get_author(self, name: str, mail: str):
         if self.mail_dict[mail] == self.name_dict[name]:
@@ -92,6 +84,7 @@ class AuthorMap():
             self.name_dict[name] = author_by_mail
         else:
             new_author = Author(self.current_id, name, mail)
+            self.authors.append(new_author)
             self.current_id += 1
             self.name_dict[name] = new_author
             self.mail_dict[mail] = new_author
