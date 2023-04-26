@@ -103,7 +103,7 @@ class FeatureBlameTestRepo(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(FeatureTestRepo.NAME)
+            get_local_project_git_path(FeatureBlameTestRepo.NAME)
         ).specify_binary("main", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
