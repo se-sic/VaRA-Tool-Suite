@@ -70,3 +70,55 @@ class FeatureTestRepo(VProject):
             bb.watch(cxx_compiler)("main.cpp", "-o", "main")
 
             verify_binaries(self)
+
+class FeatureBlameTestRepo(VProject):
+    """Example project for feature blame analyses."""
+
+    NAME = 'CommitFeatureInteractionRepo'
+    GROUP = 'test_projects'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        VaraTestRepoSource(
+            project_name="CommitFeatureInteractionRepo",
+            remote="FeatureAnalysisRepos/CommitFeatureInteractionExample",
+            local="CommitFeatureInteractionRepo",
+            refspec="HEAD",
+            limit=None
+        ),
+        FeatureSource(),
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("CommitFeatureInteractionRepo") / RSBinary("main"),
+                label="main-no-input"
+            ),
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(FeatureTestRepo.NAME)
+        ).specify_binary("main", BinaryType.EXECUTABLE)
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the example project."""
+        source = local.path(self.source_of_primary)
+
+        self.cflags += ["-fno-exceptions"]
+
+        cxx_compiler = bb.compiler.cxx(self)
+        with local.cwd(source):
+            bb.watch(cxx_compiler)("main.cpp", "-o", "main")
+
+            verify_binaries(self)
