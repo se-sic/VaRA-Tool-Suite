@@ -75,6 +75,7 @@ class Doxygen(VProject):
         """Compile the project."""
         doxygen_source = local.path(self.source_of_primary)
 
+        self.cflags += ["-Wno-error=reserved-user-defined-literal"]
         clangxx = bb.compiler.cxx(self)
         with local.cwd(doxygen_source):
             with local.env(CXX=str(clangxx)):
