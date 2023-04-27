@@ -15,6 +15,7 @@ requests_cache.sqlite
 env
 venv
 build/
+tmp/
 .tox/
 docs/source/.varats.yaml
 docs/**/*.inc
