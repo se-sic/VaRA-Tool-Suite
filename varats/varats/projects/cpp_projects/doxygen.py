@@ -39,25 +39,25 @@ class Doxygen(VProject):
             shallow=False
         )
     )]
+    # yapf: disable
+    CONTAINER = [
+        (RevisionRange("cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb", "HEAD"),
+         get_base_image(
+             ImageBase.DEBIAN_10
+         ).run('apt', 'install', '-y', 'cmake', 'flex', 'bison', 'qt5-default')
+         ),
+        (GoodBadSubgraph([
+            "a6238a4898e20422fe6ef03fce4891c5749b1553",
+            "093381b3fc6cc1e97f0e737feca04ebd0cfe538d"
+        ], ["cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb"],
+            "Needs flex <= 2.5.4 and >= 2.5.33"),
+         get_base_image(ImageBase.DEBIAN_10).run(
+             'apt', 'install', '-y', 'cmake', 'flex-old', 'bison',
+             'qt5-default'
+         )
+        )]
 
-    CONTAINER = [(
-        RevisionRange("cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb", "HEAD"),
-        get_base_image(
-            ImageBase.DEBIAN_10
-        ).run('apt', 'install', '-y', 'cmake', 'flex', 'bison', 'qt5-default')
-    ),
-                 (
-                     GoodBadSubgraph([
-                         "a6238a4898e20422fe6ef03fce4891c5749b1553",
-                         "093381b3fc6cc1e97f0e737feca04ebd0cfe538d"
-                     ], ["cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb"],
-                                     "Needs flex <= 2.5.4 and >= 2.5.33"),
-                     get_base_image(ImageBase.DEBIAN_10).run(
-                         'apt', 'install', '-y', 'cmake', 'flex-old', 'bison',
-                         'qt5-default'
-                     )
-                 )]
-
+    # yapf: enable
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
