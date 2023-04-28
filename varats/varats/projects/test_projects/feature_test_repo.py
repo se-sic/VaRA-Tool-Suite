@@ -71,39 +71,30 @@ class FeatureTestRepo(VProject):
 
             verify_binaries(self)
 
-class FeatureBlameTestRepo(VProject):
-    """Example project for feature blame analyses."""
+class CommitFeatureInteractionExample(VProject):
+    """Example project for commit feature interactions."""
 
-    NAME = 'CommitFeatureInteractionRepo'
+    NAME = 'CommitFeatureInteractionExample'
     GROUP = 'test_projects'
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
         VaraTestRepoSource(
-            project_name="CommitFeatureInteractionRepo",
+            project_name="CommitFeatureInteractionExample",
             remote="FeatureAnalysisRepos/CommitFeatureInteractionExample",
-            local="CommitFeatureInteractionRepo",
+            local="CommitFeatureInteractionExample",
             refspec="HEAD",
             limit=None
         ),
         FeatureSource(),
     ]
 
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
-                SourceRoot("CommitFeatureInteractionRepo") / RSBinary("main"),
-                label="main-no-input"
-            ),
-        ]
-    }
-
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(FeatureBlameTestRepo.NAME)
+            get_local_project_git_path(CommitFeatureInteractionExample.NAME)
         ).specify_binary("main", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
