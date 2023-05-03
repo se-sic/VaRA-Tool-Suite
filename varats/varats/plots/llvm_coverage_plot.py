@@ -10,8 +10,10 @@ from itertools import filterfalse
 from more_itertools import powerset
 
 from varats.base.configuration import (
-    PlainCommandlineConfiguration,
     Configuration,
+    ConfigurationOption,
+    PlainCommandlineConfiguration,
+    FrozenConfiguration,
 )
 from varats.data.reports.llvm_coverage_report import CoverageReport, cov_show
 from varats.paper.case_study import CaseStudy
@@ -97,24 +99,35 @@ class RunConfig(tp.FrozenSet[tp.Tuple[str, ConfigValue]]):
 """
 
 
-class ConfigCoverageReportMapping(tp.Dict[Configuration, CoverageReport]):
+def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
+    return map(lambda option: option.name, configuration.options())
+
+
+def contains(configuration: Configuration, name: str, value: tp.Any) -> bool:
+    for option in configuration.options():
+        if option.name == name and option.value == value:
+            return True
+    return False
+
+
+class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
     """Maps RunConfigs to CoverageReports."""
 
     def __init__(
-        self, dictionary: tp.Dict[Configuration, CoverageReport]
+        self, dictionary: tp.Dict[FrozenConfiguration, CoverageReport]
     ) -> None:
         available_features = set()
         for config in dictionary:
-            for feature in config.option_names():
+            for feature in get_option_names(config):
                 available_features.add(feature)
         self.available_features = frozenset(available_features)
 
         tmp = {}
         for configuration, report in dictionary.items():
             # Recreate configuration with missing features
-            new_configuration = deepcopy(configuration)
+            new_configuration = configuration.unfreeze()
             for option_name in available_features.difference(
-                set(configuration.option_names())
+                set(get_option_names(configuration))
             ):
                 # Option was not given. Assume this corresponds to value False.
                 new_configuration.set_config_option(option_name, False)
@@ -129,9 +142,9 @@ class ConfigCoverageReportMapping(tp.Dict[Configuration, CoverageReport]):
         """Create filter for the given features."""
 
         def feature_filter(config: Configuration) -> bool:
-            """filter all configs that contain the given features."""
+            """Filter all configs that contain the given features."""
             for feature, value in features.items():
-                if not config.contains(feature, value):
+                if not contains(config, feature, value):
                     return False
             return True
 
@@ -139,15 +152,15 @@ class ConfigCoverageReportMapping(tp.Dict[Configuration, CoverageReport]):
 
     def _get_configs_with_features(
         self, features: tp.Dict[str, bool]
-    ) -> tp.List[Configuration]:
+    ) -> tp.Set[FrozenConfiguration]:
         feature_filter = self.create_feature_filter(features)
-        return list(filter(feature_filter, list(self)))
+        return set(filter(feature_filter, list(self)))
 
     def _get_configs_without_features(
         self, features: tp.Dict[str, bool]
-    ) -> tp.List[Configuration]:
+    ) -> tp.Set[FrozenConfiguration]:
         feature_filter = self.create_feature_filter(features)
-        return list(filterfalse(feature_filter, list(self)))
+        return set(filterfalse(feature_filter, list(self)))
 
     def diff(self, features: tp.Dict[str, bool]) -> CoverageReport:
         """Creates a coverage report by diffing all coverage reports that
@@ -162,10 +175,10 @@ class ConfigCoverageReportMapping(tp.Dict[Configuration, CoverageReport]):
         configs_with_features = self._get_configs_with_features(features)
         configs_without_features = self._get_configs_without_features(features)
 
-        _ = ','.join("\n" + str(set(x)) for x in configs_with_features)
+        _ = ",".join("\n" + str(set(x)) for x in configs_with_features)
         print(f"Configs with features:\n[{_}\n]")
 
-        _ = ','.join("\n" + str(set(x)) for x in configs_without_features)
+        _ = ",".join("\n" + str(set(x)) for x in configs_without_features)
         print(f"Configs without features:\n[{_}\n]")
 
         if len(configs_with_features
@@ -230,7 +243,6 @@ class CoveragePlot(Plot, plot_name="coverage"):
     def _get_binary_config_map(
         self, case_study: CaseStudy, report_files: tp.List[ReportFilepath]
     ) -> tp.Optional[BinaryConfigsMapping]:
-
         try:
             config_map = load_configuration_map_for_case_study(
                 get_loaded_paper_config(), case_study,
@@ -240,7 +252,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
             return None
 
         binary_config_map: tp.DefaultDict[str, tp.Dict[
-            Configuration, CoverageReport]] = defaultdict(dict)
+            FrozenConfiguration, CoverageReport]] = defaultdict(dict)
 
         for report_filepath in report_files:
             binary = report_filepath.report_filename.binary_name
@@ -250,9 +262,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
             coverage_report = CoverageReport.from_report(
                 report_filepath.full_path()
             )
-            config = config_map.get_configuration(config_id).freeze()
+            config = config_map.get_configuration(config_id)
             assert config is not None
-            binary_config_map[binary][config] = coverage_report
+            binary_config_map[binary][config.freeze()] = coverage_report
 
         result = {}
         for binary in list(binary_config_map):
@@ -321,7 +333,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
 class CoveragePlotGenerator(
     PlotGenerator,
     generator_name="coverage",
-    options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY],
 ):
     """Generates repo-churn plot(s) for the selected case study(ies)."""
 
