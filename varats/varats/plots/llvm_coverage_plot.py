@@ -29,74 +29,6 @@ from varats.ts_utils.click_param_types import (
 )
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
-"""
-@dataclass(frozen=True)
-class ConfigValue:
-    \"""Wrapper for config flag values.\"""
-
-    x: tp.Union[bool, str]
-
-    def __bool__(self) -> bool:
-        if isinstance(self.x, bool):
-            return self.x
-        if isinstance(self.x, str):
-            return True
-        raise NotImplementedError()
-
-    def __repr__(self) -> str:
-        return repr(self.x)
-"""
-"""
-class RunConfig(tp.FrozenSet[tp.Tuple[str, ConfigValue]]):
-    \"""All features that were enabled/disabled during one run.\"""
-
-    @classmethod
-    def from_configuration(
-        cls, configuration: Configuration, available_features: tp.Set[str]
-    ) -> RunConfig:
-        \"""Create RunConfig from Configuration.\"""
-        result = get_features(configuration)
-        # Set all not given features to false
-        for feature in available_features.difference(set(result)):
-            result[feature] = False
-
-        return cls(result)
-
-    def __new__(cls, features: tp.Dict[str, tp.Union[bool, str]]) -> RunConfig:
-        return super().__new__(
-            cls,
-            (
-                (feature, ConfigValue(value))  # type: ignore
-                for feature, value in features.items()
-            )
-        )
-
-    def keys(self) -> tp.Iterator[str]:
-        for item in self:
-            yield item[0]
-
-    def values(self) -> tp.Iterator[ConfigValue]:
-        for item in self:
-            yield item[1]
-
-    def items(self) -> tp.Iterator[tp.Tuple[str, ConfigValue]]:
-        return iter(self)
-
-    def get(self, feature: str) -> tp.Optional[ConfigValue]:
-        \"""Returns either value of feature or None.\"""
-        for item in self:
-            if item[0] == feature:
-                return item[1]
-
-        return None
-
-    def contains(self, feature: str, value: ConfigValue) -> bool:
-        return (feature, value) in self
-
-    def __repr__(self) -> str:
-        tmp = list(str(x) for x in self)
-        return f"|{', '.join(tmp)}|"
-"""
 
 
 def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
@@ -208,20 +140,6 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
 BinaryConfigsMapping = tp.NewType(
     "BinaryConfigsMapping", tp.Dict[str, ConfigCoverageReportMapping]
 )
-"""
-def get_features(
-    configuration: Configuration
-) -> tp.Dict[str, tp.Union[str, bool]]:
-    \"""Convert all options in configuration to dict.\"""
-    result: tp.Dict[str, tp.Union[str, bool]] = {}
-    for option in configuration.options():
-        if option.name != "UNKNOWN":
-            result[option.name] = option.value
-        else:
-            splitted = option.value.split(maxsplit=1)
-            result[splitted[0]] = splitted[1] if len(splitted) > 1 else True
-    return result
-"""
 
 
 def non_empty_powerset(iterable: tp.Iterable[tp.Any]) -> tp.Iterable[tp.Any]:
