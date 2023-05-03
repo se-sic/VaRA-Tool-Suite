@@ -87,8 +87,7 @@ def _get_enabled_analyses() -> tp.List[AnalysisType]:
     """Allows overriding of analyses run by an experiment, this should only be
     used for testing purposes, as the experiment will not generate all the
     required results."""
-    env_analysis_selection = os.getenv("PHASAR_ANALYSIS")
-    if env_analysis_selection:
+    if (env_analysis_selection := os.getenv("PHASAR_ANALYSIS")):
         return AnalysisType.convert_from(env_analysis_selection)
 
     return [at for at in AnalysisType]
@@ -98,8 +97,7 @@ def _get_enabled_worklist_kinds() -> tp.List[WorklistKind]:
     """Allows overriding of analyses run by an experiment, this should only be
     used for testing purposes, as the experiment will not generate all the
     required results."""
-    env_wl_selection = os.getenv("PHASAR_WORKLIST")
-    if env_wl_selection:
+    if (env_wl_selection := os.getenv("PHASAR_WORKLIST")):
         return WorklistKind.convert_from(env_wl_selection)
 
     return [wl for wl in WorklistKind]

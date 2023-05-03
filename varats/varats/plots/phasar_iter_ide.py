@@ -57,8 +57,8 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
     TYPESTATE = "Typestate"
     LCA = "LCA"
 
-    JF2 = 0
-    JF1 = 1
+    JF1 = 0
+    JF2 = 1
     JF3 = 2
     OLD = 3
 
@@ -77,17 +77,17 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                         ana: str) -> tp.List[TimeReportAggregate]:
         if ana == self.TAINT:
             return [
-                report.new_taint, report.new_taint_jf1, report.new_taint_jf3,
+                report.new_taint_jf1, report.new_taint, report.new_taint_jf3,
                 report.old_taint
             ]
         elif ana == self.TYPESTATE:
             return [
-                report.new_typestate, report.new_typestate_jf1,
+                report.new_typestate_jf1, report.new_typestate,
                 report.new_typestate_jf3, report.old_typestate
             ]
         elif ana == self.LCA:
             return [
-                report.new_lca, report.new_lca_jf1, report.new_lca_jf3,
+                report.new_lca_jf1, report.new_lca, report.new_lca_jf3,
                 report.old_lca
             ]
         else:
@@ -244,7 +244,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         ax: matplotlib.axes.Axes = sns.heatmap(
             data,
             annot=annot,
-            #fmt='',
+            # fmt='',
             cmap=cmap,
             vmax=3,
         )
@@ -274,7 +274,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             hue="JF",
             dodge=True,
             legend=False,
-            #color="black"
+            # color="black"
             # palette='dark:black',
             ax=ax,
         )
@@ -343,7 +343,7 @@ class PhasarIterIDESpeedupVsJF1Plot(
                           cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        #TODO: cross product (see __compute_speedups)
+        # TODO: cross product (see __compute_speedups)
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
             for jf in [self.JF1, self.JF2, self.JF3]:
@@ -382,9 +382,9 @@ class PhasarIterIDESpeedupVsJF1Plot(
             hue="JF",
             dodge=True,
             legend=False,
-            #color="black"
+            # color="black"
             # palette='dark:black',
-            #ax=ax
+            # ax=ax
         )
         # fgrid = sns.catplot(
         #     x="JF",
@@ -405,13 +405,6 @@ class PhasarIterIDESpeedupHeatmap(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def __get_argmax2(self, Args: tp.List[float]) -> tp.Tuple[int, int]:
-        JF1Val = Args[self.JF1]
-        JF2Idx = self.JF2 if Args[self.JF2] > Args[self.JF3] else self.JF3
-        JF2Val = Args[JF2Idx]
-
-        return (self.JF1, JF2Idx) if JF1Val > JF2Val else (JF2Idx, self.JF1)
-
     def _get_data_entries(self, report: PhasarIterIDEStatsReport,
                           cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
@@ -428,7 +421,6 @@ class PhasarIterIDESpeedupHeatmap(
                 ) for jf in range(0, 3)
             ]
 
-            #MaxSpeedupJF, OtherJF = self.__get_argmax2(JFMeanSpeedups)
             MaxSpeedupJF, OtherJF = self.get_argmaxmin(JFMeanSpeedups)
 
             Weight = 1 - JFMeanSpeedups[OtherJF] / JFMeanSpeedups[MaxSpeedupJF]
@@ -454,7 +446,7 @@ class PhasarIterIDESpeedupHeatmap(
         def last(series):
             return reduce(lambda x, y: y, series)
 
-        #data = pd.pivot_table(data=data,index="Target",columns="Analysis",values="JF", aggfunc=last)
+        # data = pd.pivot_table(data=data,index="Target",columns="Analysis",values="JF", aggfunc=last)
         data = pd.pivot_table(
             data=data,
             index="Target",
