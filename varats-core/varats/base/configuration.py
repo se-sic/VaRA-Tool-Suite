@@ -3,13 +3,6 @@ varats-* libraries."""
 import abc
 import json
 import typing as tp
-from copy import deepcopy
-from dataclasses import dataclass
-from typing import Any
-
-# Can be removed once https://peps.python.org/pep-0603/ is resolved.
-from immutables import Map as FrozenMap
-from immutables import MapMutation
 
 
 class ConfigurationOption():
@@ -103,15 +96,6 @@ class Configuration():
         raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
-    def option_names(self) -> tp.List[str]:
-        """
-        Get all names of the configuration options.
-
-        Returns: a list of all configuration option names
-        """
-        raise NotImplementedError  # pragma: no cover
-
-    @abc.abstractmethod
     def dump_to_string(self) -> str:
         """
         Dumps the `Configuration` to a string.
@@ -122,12 +106,6 @@ class Configuration():
         Returns: Configuration as a string
         """
         raise NotImplementedError  # pragma: no cover
-
-    X = tp.TypeVar('X')
-
-    def __iter__(self) -> tp.Iterator[ConfigurationOption]:
-        for option in self.options():
-            yield option
 
     def __str__(self) -> str:
         return self.dump_to_string()
@@ -147,7 +125,7 @@ functionality. If a DummyConfiguration shows up in you configuration related
 part which accesses Configurations something is wrong with your setup."""
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> Configuration:
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
         """
         Creates a `Configuration` from its string representation.
 
@@ -179,14 +157,6 @@ part which accesses Configurations something is wrong with your setup."""
         """
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
-    def option_names(self) -> tp.List[str]:
-        """
-        Get all names of the configuration options.
-
-        Returns: a list of all configuration option names
-        """
-        raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
-
     def dump_to_string(self) -> str:
         """
         Dumps the `Configuration` to a string.
@@ -199,39 +169,27 @@ part which accesses Configurations something is wrong with your setup."""
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
 
-@dataclass(frozen=True)
 class ConfigurationOptionImpl(ConfigurationOption):
     """A configuration option of a software project."""
 
-    _name: str
-    _value: tp.Any
+    def __init__(self, name: str, value: tp.Any) -> None:
+        self.__name = name
+        self.__value = value
 
     @property
     def name(self) -> str:
-        return self._name
+        return self.__name
 
     @property
     def value(self) -> tp.Any:
-        return self._value
-
-
-def make_possible_type_conversion(option_value: str) -> tp.Any:
-    """Converts string to correct type for special cases like bool or None."""
-    if option_value.lower() == "true":
-        return True
-    if option_value.lower() == "false":
-        return False
-    if option_value.lower() == "none":
-        return None
-
-    return option_value
+        return self.__value
 
 
 class ConfigurationImpl(Configuration):
     """A configuration of a software project."""
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> Configuration:
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
         """
         Creates a `Configuration` from its string representation.
 
@@ -243,6 +201,18 @@ class ConfigurationImpl(Configuration):
         loaded_dict = json.loads(config_str)
         config = ConfigurationImpl()
         for option_name, option_value in loaded_dict.items():
+
+            def make_possible_type_conversion(option_value: str) -> tp.Any:
+                """Converts string to correct type for special cases like bool
+                or None."""
+                if option_value.lower() == "true":
+                    return True
+                if option_value.lower() == "false":
+                    return False
+                if option_value.lower() == "none":
+                    return None
+
+                return option_value
 
             if option_value is not False and option_value is not True and \
                     not isinstance(option_value, int):
@@ -256,8 +226,7 @@ class ConfigurationImpl(Configuration):
         return config
 
     def __init__(self) -> None:
-        self.__config_values: tp.Union[MapMutation,
-                                       FrozenMap] = FrozenMap().mutate()
+        self.__config_values: tp.Dict[str, ConfigurationOption] = {}
 
     def add_config_option(self, option: ConfigurationOption) -> None:
         """
@@ -293,82 +262,21 @@ class ConfigurationImpl(Configuration):
         return None
 
     def options(self) -> tp.List[ConfigurationOption]:
-        if hasattr(self.__config_values, "values"):
-            return list(self.__config_values.values())
-        # Workaround mutable maps cannot be iterated yet
-        # https://github.com/MagicStack/immutables/issues/55
-        return list(self.__config_values.finish().values())
-
-    def option_names(self) -> tp.List[str]:
-        return [option.name for option in self.options()]
+        return list(self.__config_values.values())
 
     def dump_to_string(self) -> str:
-        if hasattr(self.__config_values, "values"):
-            return json.dumps({
-                idx[1].name: idx[1].value
-                for idx in self.__config_values.items()
-            })
-        # Workaround mutable maps cannot be iterated yet
-        # https://github.com/MagicStack/immutables/issues/55
         return json.dumps({
-            idx[1].name: idx[1].value
-            for idx in self.__config_values.finish().items()
+            idx[1].name: idx[1].value for idx in self.__config_values.items()
         })
-
-    def freeze(self) -> 'FrozenConfigurationImpl':
-        self.__config_values = self.__config_values.finish()
-        return FrozenConfigurationImpl(self)
-
-    def unfreeze(self) -> None:
-        self.__config_values = self.__config_values.mutate()
-
-
-class FrozenConfigurationImpl:
-    """Same as ConfigurationImpl but hashable."""
-
-    def __init__(self, configuration_impl: ConfigurationImpl) -> None:
-        self.configuration_impl = configuration_impl
-
-    def __getattr__(self, __name: str) -> Any:
-        return getattr(
-            self.configuration_impl,
-            __name.replace(self.__class__.__name__, ConfigurationImpl.__name__)
-        )
-
-    def __hash__(self) -> tp.Any:
-        return self.__config_values.__hash__()
-
-    def __deepcopy__(self, memo) -> ConfigurationImpl:
-        result = deepcopy(self.configuration_impl, memo)
-        result.unfreeze()
-        return result
-
-    def add_config_option(self, option: ConfigurationOption) -> None:
-        raise NotImplementedError
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, tp.Mapping):
-            if len(self.__config_values) != len(other):
-                return False
-            for item in self.__config_values:
-                if item not in other:
-                    return False
-            return True
-        return False
-
-    def __iter__(self) -> tp.Iterator[ConfigurationOption]:
-        for option in self.options():
-            yield option
 
 
 class PlainConfigurationOption(ConfigurationOptionImpl):
-    """A configuration option from plain text."""
 
     def __init__(self, value: str) -> None:
-        super().__init__(value.lstrip("-"), value)
+        super().__init__(name="UNKNOWN", value=value)
 
 
-class PlainCommandlineConfiguration(ConfigurationImpl):
+class PlainCommandlineConfiguration(Configuration):
     """
     Simple configuration format where command line args are directly written
     into the file.
@@ -377,14 +285,28 @@ class PlainCommandlineConfiguration(ConfigurationImpl):
     """
 
     def __init__(self, config_str_list: tp.List[str]) -> None:
-        super().__init__()
-        for config_str in config_str_list:
-            self.add_config_option(PlainConfigurationOption(config_str))
+        self.__config_str_list: tp.List[ConfigurationOption] = list(
+            map(PlainConfigurationOption, config_str_list)
+        )
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> Configuration:
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
         config_str_list = json.loads(config_str)
         return PlainCommandlineConfiguration(config_str_list)
 
     def dump_to_string(self) -> str:
-        return " ".join(map(lambda option: option.value, self.options()))
+        return " ".join(
+            map(lambda option: option.value, self.__config_str_list)
+        )
+
+    def options(self) -> tp.List[ConfigurationOption]:
+        return self.__config_str_list
+
+    def add_config_option(self, option: ConfigurationOption) -> None:
+        raise NotImplementedError
+
+    def set_config_option(self, option_name: str, value: str) -> None:
+        raise NotImplementedError
+
+    def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+        raise NotImplementedError
