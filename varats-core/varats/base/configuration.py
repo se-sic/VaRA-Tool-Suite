@@ -140,7 +140,7 @@ class Configuration:
                 for option in self.options():
                     if option.name not in other:
                         return False
-                    if not bool(option.value) == other[option.name]:
+                    if bool(option.value) != other[option.name]:
                         return False
                 return True
         return False
