@@ -11,7 +11,6 @@ from more_itertools import powerset
 
 from varats.base.configuration import (
     Configuration,
-    ConfigurationOption,
     PlainCommandlineConfiguration,
     FrozenConfiguration,
 )
@@ -36,6 +35,8 @@ def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
 
 
 def contains(configuration: Configuration, name: str, value: tp.Any) -> bool:
+    """Test if a the specified configuration options bool(value) matches
+    value."""
     for option in configuration.options():
         if option.name == name and bool(option.value) == value:
             return True
