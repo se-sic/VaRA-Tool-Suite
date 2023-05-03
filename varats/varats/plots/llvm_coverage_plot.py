@@ -5,7 +5,6 @@ from __future__ import annotations
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
-from dataclasses import dataclass
 from itertools import filterfalse
 
 from more_itertools import powerset
@@ -28,11 +27,10 @@ from varats.ts_utils.click_param_types import (
 )
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
-
-
+"""
 @dataclass(frozen=True)
 class ConfigValue:
-    """Wrapper for config flag values."""
+    \"""Wrapper for config flag values.\"""
 
     x: tp.Union[bool, str]
 
@@ -45,16 +43,16 @@ class ConfigValue:
 
     def __repr__(self) -> str:
         return repr(self.x)
-
-
+"""
+"""
 class RunConfig(tp.FrozenSet[tp.Tuple[str, ConfigValue]]):
-    """All features that were enabled/disabled during one run."""
+    \"""All features that were enabled/disabled during one run.\"""
 
     @classmethod
     def from_configuration(
         cls, configuration: Configuration, available_features: tp.Set[str]
     ) -> RunConfig:
-        """Create RunConfig from Configuration."""
+        \"""Create RunConfig from Configuration.\"""
         result = get_features(configuration)
         # Set all not given features to false
         for feature in available_features.difference(set(result)):
@@ -83,7 +81,7 @@ class RunConfig(tp.FrozenSet[tp.Tuple[str, ConfigValue]]):
         return iter(self)
 
     def get(self, feature: str) -> tp.Optional[ConfigValue]:
-        """Returns either value of feature or None."""
+        \"""Returns either value of feature or None.\"""
         for item in self:
             if item[0] == feature:
                 return item[1]
@@ -96,9 +94,10 @@ class RunConfig(tp.FrozenSet[tp.Tuple[str, ConfigValue]]):
     def __repr__(self) -> str:
         tmp = list(str(x) for x in self)
         return f"|{', '.join(tmp)}|"
+"""
 
 
-class ConfigCoverageReportMapping(tp.Dict[RunConfig, CoverageReport]):
+class ConfigCoverageReportMapping(tp.Dict[Configuration, CoverageReport]):
     """Maps RunConfigs to CoverageReports."""
 
     def __init__(
@@ -106,26 +105,33 @@ class ConfigCoverageReportMapping(tp.Dict[RunConfig, CoverageReport]):
     ) -> None:
         available_features = set()
         for config in dictionary:
-            for feature in get_features(config):
+            for feature in config.option_names():
                 available_features.add(feature)
         self.available_features = frozenset(available_features)
 
         tmp = {}
         for configuration, report in dictionary.items():
-            tmp[RunConfig.from_configuration(configuration,
-                                             available_features)] = report
+            # Recreate configuration with missing features
+            new_configuration = deepcopy(configuration)
+            for option_name in available_features.difference(
+                set(configuration.option_names())
+            ):
+                # Option was not given. Assume this corresponds to value False.
+                new_configuration.set_config_option(option_name, False)
+            new_configuration = new_configuration.freeze()
+            tmp[new_configuration] = report
 
         super().__init__(tmp)
 
     def create_feature_filter(
         self, features: tp.Dict[str, bool]
-    ) -> tp.Callable[[RunConfig], bool]:
+    ) -> tp.Callable[[Configuration], bool]:
         """Create filter for the given features."""
 
-        def feature_filter(config: RunConfig) -> bool:
+        def feature_filter(config: Configuration) -> bool:
             """filter all configs that contain the given features."""
             for feature, value in features.items():
-                if not config.contains(feature, ConfigValue(value)):
+                if not config.contains(feature, value):
                     return False
             return True
 
@@ -133,15 +139,15 @@ class ConfigCoverageReportMapping(tp.Dict[RunConfig, CoverageReport]):
 
     def _get_configs_with_features(
         self, features: tp.Dict[str, bool]
-    ) -> tp.Set[RunConfig]:
+    ) -> tp.List[Configuration]:
         feature_filter = self.create_feature_filter(features)
-        return set(filter(feature_filter, list(self)))
+        return list(filter(feature_filter, list(self)))
 
     def _get_configs_without_features(
         self, features: tp.Dict[str, bool]
-    ) -> tp.Set[RunConfig]:
+    ) -> tp.List[Configuration]:
         feature_filter = self.create_feature_filter(features)
-        return set(filterfalse(feature_filter, list(self)))
+        return list(filterfalse(feature_filter, list(self)))
 
     def diff(self, features: tp.Dict[str, bool]) -> CoverageReport:
         """Creates a coverage report by diffing all coverage reports that
@@ -187,12 +193,11 @@ class ConfigCoverageReportMapping(tp.Dict[RunConfig, CoverageReport]):
 BinaryConfigsMapping = tp.NewType(
     "BinaryConfigsMapping", tp.Dict[str, ConfigCoverageReportMapping]
 )
-
-
+"""
 def get_features(
     configuration: Configuration
 ) -> tp.Dict[str, tp.Union[str, bool]]:
-    """Convert all options in configuration to dict."""
+    \"""Convert all options in configuration to dict.\"""
     result: tp.Dict[str, tp.Union[str, bool]] = {}
     for option in configuration.options():
         if option.name != "UNKNOWN":
@@ -201,6 +206,7 @@ def get_features(
             splitted = option.value.split(maxsplit=1)
             result[splitted[0]] = splitted[1] if len(splitted) > 1 else True
     return result
+"""
 
 
 def non_empty_powerset(iterable: tp.Iterable[tp.Any]) -> tp.Iterable[tp.Any]:
@@ -244,7 +250,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
             coverage_report = CoverageReport.from_report(
                 report_filepath.full_path()
             )
-            config = config_map.get_configuration(config_id)
+            config = config_map.get_configuration(config_id).freeze()
             assert config is not None
             binary_config_map[binary][config] = coverage_report
 
