@@ -105,7 +105,7 @@ def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
 
 def contains(configuration: Configuration, name: str, value: tp.Any) -> bool:
     for option in configuration.options():
-        if option.name == name and option.value == value:
+        if option.name == name and bool(option.value) == value:
             return True
     return False
 
@@ -152,15 +152,15 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
 
     def _get_configs_with_features(
         self, features: tp.Dict[str, bool]
-    ) -> tp.Set[FrozenConfiguration]:
+    ) -> tp.List[FrozenConfiguration]:
         feature_filter = self.create_feature_filter(features)
-        return set(filter(feature_filter, list(self)))
+        return list(filter(feature_filter, list(self)))
 
     def _get_configs_without_features(
         self, features: tp.Dict[str, bool]
-    ) -> tp.Set[FrozenConfiguration]:
+    ) -> tp.List[FrozenConfiguration]:
         feature_filter = self.create_feature_filter(features)
-        return set(filterfalse(feature_filter, list(self)))
+        return list(filterfalse(feature_filter, list(self)))
 
     def diff(self, features: tp.Dict[str, bool]) -> CoverageReport:
         """Creates a coverage report by diffing all coverage reports that
@@ -175,10 +175,12 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
         configs_with_features = self._get_configs_with_features(features)
         configs_without_features = self._get_configs_without_features(features)
 
-        _ = ",".join("\n" + str(set(x)) for x in configs_with_features)
+        _ = ",".join("\n" + str(x.options()) for x in configs_with_features)
         print(f"Configs with features:\n[{_}\n]")
 
-        _ = ",".join("\n" + str(set(x)) for x in configs_without_features)
+        _ = ",".join(
+            "\n" + str(set(x.options())) for x in configs_without_features
+        )
         print(f"Configs without features:\n[{_}\n]")
 
         if len(configs_with_features

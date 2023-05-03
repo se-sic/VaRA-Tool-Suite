@@ -250,9 +250,7 @@ class TestCodeRegion(unittest.TestCase):
 
         for config in config_map:
             options = {
-                option.name
-                for option in config.options()
-                if option.value == True
+                option.name for option in config.options() if option.value
             }
             if options == {"slow", "header"}:
                 header_slow = config
