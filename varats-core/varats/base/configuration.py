@@ -3,9 +3,10 @@ varats-* libraries."""
 import abc
 import json
 import typing as tp
+from copy import deepcopy
 
 
-class ConfigurationOption():
+class ConfigurationOption:
     """A configuration option for a software project."""
 
     @property
@@ -36,13 +37,13 @@ class ConfigurationOption():
         return not self == other
 
 
-class Configuration():
+class Configuration:
     """Represents a specific configuration of a project, e.g., encapsulating
     static and run-time options on how the project should be build."""
 
     @staticmethod
     @abc.abstractmethod
-    def create_configuration_from_str(config_str: str) -> 'Configuration':
+    def create_configuration_from_str(config_str: str) -> "Configuration":
         """
         Creates a `Configuration` from its string representation.
 
@@ -107,8 +108,64 @@ class Configuration():
         """
         raise NotImplementedError  # pragma: no cover
 
+    @abc.abstractmethod
+    def freeze(self) -> "FrozenConfiguration":
+        """
+        Returns an unmodifiable (hashable) version of the configuration. Useful
+        when you want to add a 'Configuration' as key to a 'dict' or as element
+        to a 'set'.
+
+        Returns: 'FrozenConfiguration'
+        """
+        raise NotImplementedError  # pragma: no cover
+
+    @abc.abstractmethod
+    def unfreeze(self) -> "Configuration":
+        """
+        Returns an unmodifiable (hashable) version of the configuration.
+
+        Returns: 'Configuration'
+        """
+        raise NotImplementedError  # pragma: no cover
+
     def __str__(self) -> str:
         return self.dump_to_string()
+
+
+class FrozenConfiguration(Configuration):
+    """
+    An immutable hashable version of the configuration.
+
+    Can be added as key to a 'dict' or as element to a 'set'.
+    """
+
+    def __init__(self, configuration: Configuration) -> None:
+        self.__configuration = configuration
+
+    @staticmethod
+    def create_configuration_from_str(config_str: str) -> "Configuration":
+        raise NotImplementedError
+
+    def options(self) -> tp.List[ConfigurationOption]:
+        return self.__configuration.options()
+
+    def add_config_option(self, option: ConfigurationOption) -> None:
+        raise NotImplementedError
+
+    def set_config_option(self, option_name: str, value: str) -> None:
+        raise NotImplementedError
+
+    def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+        return self.__configuration.get_config_value(option_name)
+
+    def dump_to_string(self) -> str:
+        return self.__configuration.dump_to_string()
+
+    def freeze(self) -> "FrozenConfiguration":
+        raise NotImplementedError
+
+    def unfreeze(self) -> "Configuration":
+        return self.__configuration
 
 
 class DummyConfiguration(Configuration):
@@ -125,7 +182,7 @@ functionality. If a DummyConfiguration shows up in you configuration related
 part which accesses Configurations something is wrong with your setup."""
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> 'Configuration':
+    def create_configuration_from_str(config_str: str) -> "Configuration":
         """
         Creates a `Configuration` from its string representation.
 
@@ -168,6 +225,12 @@ part which accesses Configurations something is wrong with your setup."""
         """
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
+    def freeze(self) -> "FrozenConfiguration":
+        raise NotImplementedError
+
+    def unfreeze(self) -> "Configuration":
+        raise NotImplementedError
+
 
 class ConfigurationOptionImpl(ConfigurationOption):
     """A configuration option of a software project."""
@@ -189,7 +252,7 @@ class ConfigurationImpl(Configuration):
     """A configuration of a software project."""
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> 'Configuration':
+    def create_configuration_from_str(config_str: str) -> "Configuration":
         """
         Creates a `Configuration` from its string representation.
 
@@ -214,8 +277,10 @@ class ConfigurationImpl(Configuration):
 
                 return option_value
 
-            if option_value is not False and option_value is not True and \
-                    not isinstance(option_value, int):
+            if (
+                option_value is not False and option_value is not True and
+                not isinstance(option_value, int)
+            ):
                 option_value = make_possible_type_conversion(
                     option_value.strip()
                 )
@@ -269,6 +334,12 @@ class ConfigurationImpl(Configuration):
             idx[1].name: idx[1].value for idx in self.__config_values.items()
         })
 
+    def freeze(self) -> "FrozenConfiguration":
+        return FrozenConfiguration(deepcopy(self))
+
+    def unfreeze(self) -> "Configuration":
+        raise NotImplementedError
+
 
 class PlainConfigurationOption(ConfigurationOptionImpl):
 
@@ -290,7 +361,7 @@ class PlainCommandlineConfiguration(Configuration):
         )
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> 'Configuration':
+    def create_configuration_from_str(config_str: str) -> "Configuration":
         config_str_list = json.loads(config_str)
         return PlainCommandlineConfiguration(config_str_list)
 
@@ -302,6 +373,9 @@ class PlainCommandlineConfiguration(Configuration):
     def options(self) -> tp.List[ConfigurationOption]:
         return self.__config_str_list
 
+    def freeze(self) -> "FrozenConfiguration":
+        return FrozenConfiguration(deepcopy(self))
+
     def add_config_option(self, option: ConfigurationOption) -> None:
         raise NotImplementedError
 
@@ -309,4 +383,7 @@ class PlainCommandlineConfiguration(Configuration):
         raise NotImplementedError
 
     def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+        raise NotImplementedError
+
+    def unfreeze(self) -> "Configuration":
         raise NotImplementedError
