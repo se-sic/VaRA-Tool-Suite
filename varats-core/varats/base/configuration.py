@@ -103,6 +103,15 @@ class Configuration():
         raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
+    def option_names(self) -> tp.List[str]:
+        """
+        Get all names of the configuration options.
+
+        Returns: a list of all configuration option names
+        """
+        raise NotImplementedError  # pragma: no cover
+
+    @abc.abstractmethod
     def dump_to_string(self) -> str:
         """
         Dumps the `Configuration` to a string.
@@ -113,6 +122,8 @@ class Configuration():
         Returns: Configuration as a string
         """
         raise NotImplementedError  # pragma: no cover
+
+    X = tp.TypeVar('X')
 
     def __iter__(self) -> tp.Iterator[ConfigurationOption]:
         for option in self.options():
@@ -165,6 +176,14 @@ part which accesses Configurations something is wrong with your setup."""
         Get all configuration options.
 
         Returns: a list of all configuration options
+        """
+        raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
+
+    def option_names(self) -> tp.List[str]:
+        """
+        Get all names of the configuration options.
+
+        Returns: a list of all configuration option names
         """
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
@@ -279,6 +298,9 @@ class ConfigurationImpl(Configuration):
         # Workaround mutable maps cannot be iterated yet
         # https://github.com/MagicStack/immutables/issues/55
         return list(self.__config_values.finish().values())
+
+    def option_names(self) -> tp.List[str]:
+        return [option.name for option in self.options()]
 
     def dump_to_string(self) -> str:
         if hasattr(self.__config_values, "values"):
