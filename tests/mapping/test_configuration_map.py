@@ -92,8 +92,8 @@ class TestConfigurationMap(unittest.TestCase):
         config_map.add_configuration(test_config_3)
 
         self.assertEqual(3, len(config_map.configurations()))
-        self.assertSetEqual({test_config_1, test_config_2, test_config_3},
-                            set(config_map.configurations()))
+        self.assertEqual([test_config_1, test_config_2, test_config_3],
+                         list(config_map.configurations()))
 
     def test_inter_id_config_tuples(self) -> None:
         """Test if we can iterate over all id configuration pairs."""
@@ -107,9 +107,9 @@ class TestConfigurationMap(unittest.TestCase):
         config_map.add_configuration(test_config_3)
 
         self.assertEqual(3, len(config_map.id_config_tuples()))
-        self.assertSetEqual({(0, test_config_1), (1, test_config_2),
-                             (2, test_config_3)},
-                            set(config_map.id_config_tuples()))
+        self.assertEqual([(0, test_config_1), (1, test_config_2),
+                          (2, test_config_3)],
+                         list(config_map.id_config_tuples()))
 
 
 class TestConfigurationMapStoreAndLoad(unittest.TestCase):
