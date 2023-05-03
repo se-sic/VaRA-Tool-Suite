@@ -4,6 +4,7 @@ import abc
 import json
 import typing as tp
 from copy import deepcopy
+from dataclasses import dataclass
 
 
 class ConfigurationOption:
@@ -131,6 +132,21 @@ class Configuration:
     def __str__(self) -> str:
         return self.dump_to_string()
 
+    def __eq__(self, other: tp.Any) -> bool:
+        if isinstance(other, Configuration):
+            return set(self.options()) == set(other.options())
+        if isinstance(other, tp.Mapping):
+            if len(self.options()) == len(other):
+                for option in self.options():
+                    if option.name not in other:
+                        if not bool(option.value) == other:
+                            return False
+                return True
+        return False
+
+    def __ne__(self, other: tp.Any) -> bool:
+        return not self == other
+
 
 class FrozenConfiguration(Configuration):
     """
@@ -166,6 +182,9 @@ class FrozenConfiguration(Configuration):
 
     def unfreeze(self) -> "Configuration":
         return deepcopy(self.__configuration)
+
+    def __hash__(self):
+        return hash(frozenset(self.options()))
 
 
 class DummyConfiguration(Configuration):
@@ -232,20 +251,20 @@ part which accesses Configurations something is wrong with your setup."""
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
 
+@dataclass(frozen=True)
 class ConfigurationOptionImpl(ConfigurationOption):
     """A configuration option of a software project."""
 
-    def __init__(self, name: str, value: tp.Any) -> None:
-        self.__name = name
-        self.__value = value
+    _name: str
+    _value: tp.Any
 
     @property
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     @property
     def value(self) -> tp.Any:
-        return self.__value
+        return self._value
 
 
 class ConfigurationImpl(Configuration):
@@ -344,7 +363,7 @@ class ConfigurationImpl(Configuration):
 class PlainConfigurationOption(ConfigurationOptionImpl):
 
     def __init__(self, value: str) -> None:
-        super().__init__(name=value.lstrip("-"), value=value)
+        super().__init__(value.lstrip("-"), value)
 
 
 class PlainCommandlineConfiguration(Configuration):
@@ -380,7 +399,7 @@ class PlainCommandlineConfiguration(Configuration):
         self.__config_str_list.append(option)
 
     def set_config_option(self, option_name: str, value: str) -> None:
-        self.add_config_option(PlainConfigurationOption(value))
+        self.add_config_option(ConfigurationOptionImpl(option_name, value))
 
     def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
         for option in self.options():
