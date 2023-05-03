@@ -165,7 +165,7 @@ class FrozenConfiguration(Configuration):
         raise NotImplementedError
 
     def unfreeze(self) -> "Configuration":
-        return self.__configuration
+        return deepcopy(self.__configuration)
 
 
 class DummyConfiguration(Configuration):
@@ -226,10 +226,10 @@ part which accesses Configurations something is wrong with your setup."""
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
     def freeze(self) -> "FrozenConfiguration":
-        raise NotImplementedError
+        raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
     def unfreeze(self) -> "Configuration":
-        raise NotImplementedError
+        raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
 
 class ConfigurationOptionImpl(ConfigurationOption):
@@ -344,7 +344,7 @@ class ConfigurationImpl(Configuration):
 class PlainConfigurationOption(ConfigurationOptionImpl):
 
     def __init__(self, value: str) -> None:
-        super().__init__(name="UNKNOWN", value=value)
+        super().__init__(name=value.lstrip("-"), value=value)
 
 
 class PlainCommandlineConfiguration(Configuration):
@@ -377,13 +377,16 @@ class PlainCommandlineConfiguration(Configuration):
         return FrozenConfiguration(deepcopy(self))
 
     def add_config_option(self, option: ConfigurationOption) -> None:
-        raise NotImplementedError
+        self.__config_str_list.append(option)
 
     def set_config_option(self, option_name: str, value: str) -> None:
-        raise NotImplementedError
+        self.add_config_option(PlainConfigurationOption(value))
 
     def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
-        raise NotImplementedError
+        for option in self.options():
+            if option.name == option_name:
+                return option.value
+        return None
 
     def unfreeze(self) -> "Configuration":
         raise NotImplementedError
