@@ -139,8 +139,9 @@ class Configuration:
             if len(self.options()) == len(other):
                 for option in self.options():
                     if option.name not in other:
-                        if not bool(option.value) == other:
-                            return False
+                        return False
+                    if not bool(option.value) == other[option.name]:
+                        return False
                 return True
         return False
 
@@ -183,7 +184,7 @@ class FrozenConfiguration(Configuration):
     def unfreeze(self) -> "Configuration":
         return deepcopy(self.__configuration)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(frozenset(self.options()))
 
 
