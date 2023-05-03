@@ -37,11 +37,11 @@ class TestCodeRegion(unittest.TestCase):
         expected = [
             {
                 "slow": True,
-                "header": True
+                "header": False
             },
             {
                 "slow": True,
-                "header": False
+                "header": True
             },
         ]
         actual = config_report_map._get_configs_with_features({"slow": True})
@@ -97,11 +97,11 @@ class TestCodeRegion(unittest.TestCase):
         expected = [
             {
                 "slow": True,
-                "header": True
+                "header": False
             },
             {
                 "slow": True,
-                "header": False
+                "header": True
             },
             {
                 "slow": False,
