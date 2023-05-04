@@ -8,26 +8,77 @@ from benchbuild.utils import actions
 from varats.experiment.experiment_util import (
     create_new_success_result_filepath, ZippedExperimentSteps
 )
+from varats.experiment.workload_util import WorkloadCategory
 from varats.report.report import ReportSpecification
 from varats.experiments.base.time_workloads import TimeProjectWorkloads
 from varats.report.gnu_time_report import WLTimeReportAggregate
 
 from varats.project.varats_project import VProject
 
-from varats.experiments.vara.dynamic_overhead_analysis import Runner
+from varats.experiments.vara.dynamic_overhead_analysis import OptimizerPolicyType
+from varats.experiments.vara.feature_experiment import FeatureExperiment, FeatureInstrType
+from varats.experiments.vara.multi_compile_experiment import VaryingStartingBudgetExperiment
 
-MEASUREMENT_REPS = 5
+MEASUREMENT_REPS = 1
 
 
-class RunUntraced(Runner, shorthand="RU"):
+class RunUntraced(FeatureExperiment, shorthand="RU"):
     """Build and run the untraced version of the binary"""
 
     NAME = "RunUntraced"
+
     REPORT_SPEC = ReportSpecification(WLTimeReportAggregate)
 
-    def get_analysis_actions(
+    def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
+        actions = []
+
+        for binary in project.binaries:
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary
+            )
+            actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        TimeProjectWorkloads(
+                            project,
+                            num,
+                            binary,
+                            categories=[
+                                WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
+                            ]
+                        ) for num in range(MEASUREMENT_REPS)
+                    ]
+                )
+            )
+
+        return self.get_common_tracing_actions(
+            project, FeatureInstrType.NONE, actions, save_temps=True
+        )
+
+
+class RunTraced(VaryingStartingBudgetExperiment, shorthand="RT"):
+    """Build and run the traced version of the binary"""
+
+    NAME = "RunTraced"
+    REPORT_SPEC = ReportSpecification(WLTimeReportAggregate)
+
+    @property
+    @abstractmethod
+    def optimizer_policy(self) -> OptimizerPolicyType:
+        return OptimizerPolicyType.NONE
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+
+        project.cflags += [
+            "-mllvm",
+            f"-vara-optimizer-policy={self.optimizer_policy.value}",
+        ]
+
         actions = []
         for binary in project.binaries:
             result_filepath = create_new_success_result_filepath(
@@ -37,38 +88,21 @@ class RunUntraced(Runner, shorthand="RU"):
             actions.append(
                 ZippedExperimentSteps(
                     result_filepath, [
-                        TimeProjectWorkloads(project, num, binary)
-                        for num in range(MEASUREMENT_REPS)
+                        TimeProjectWorkloads(
+                            project,
+                            num,
+                            binary,
+                            categories=[
+                                WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
+                            ]
+                        ) for num in range(MEASUREMENT_REPS)
                     ]
                 )
             )
-        return actions
 
-
-class RunTraced(RunUntraced, shorthand="RT"):
-    """Build and run the traced version of the binary"""
-
-    NAME = "RunTraced"
-
-    @property
-    @abstractmethod
-    def optimizer_policy(self):
-        return "none"
-
-    def set_vara_flags(self, project: VProject) -> VProject:
-        instr_type = "trace_event"  # trace_event
-
-        project.cflags += self.get_vara_feature_cflags(project)
-
-        project.cflags += self.get_vara_tracing_cflags(instr_type)
-
-        project.cflags += [
-            "-mllvm", f"-vara-optimizer-policy={self.optimizer_policy}"
-        ]
-
-        project.ldflags += self.get_vara_tracing_ldflags()
-
-        return project
+        return self.get_common_tracing_actions(
+            project, FeatureInstrType.TEF, actions, save_temps=True
+        )
 
 
 class RunTracedNaive(RunTraced, shorthand=RunTraced.SHORTHAND + "N"):
@@ -78,8 +112,8 @@ class RunTracedNaive(RunTraced, shorthand=RunTraced.SHORTHAND + "N"):
 
     @property
     @abstractmethod
-    def optimizer_policy(self):
-        return "naive"
+    def optimizer_policy(self) -> OptimizerPolicyType:
+        return OptimizerPolicyType.NAIVE
 
 
 class RunTracedAlternating(RunTraced, shorthand=RunTraced.SHORTHAND + "A"):
@@ -89,5 +123,5 @@ class RunTracedAlternating(RunTraced, shorthand=RunTraced.SHORTHAND + "A"):
 
     @property
     @abstractmethod
-    def optimizer_policy(self):
-        return "alternating"
+    def optimizer_policy(self) -> OptimizerPolicyType:
+        return OptimizerPolicyType.ALTERNATING

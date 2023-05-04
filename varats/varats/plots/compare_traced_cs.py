@@ -13,7 +13,7 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
-from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY, REQUIRE_MULTI_EXPERIMENT_TYPE
 from varats.utils.git_util import FullCommitHash
 
 # TODO: Is there a better way to include revisions of all workloads than to use
@@ -22,19 +22,16 @@ from varats.utils.git_util import FullCommitHash
 # the revision files for all workloads with only_newest=True...
 
 
-class CompareRuntimesPlot(Plot, plot_name="compare_runtimes"):
+class CompareRuntimesCSPlot(Plot, plot_name="compare_runtimes_cs"):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-
         df = pd.DataFrame()
 
-        for case_study in case_studies:
+        print(self.plot_kwargs["case_study"])
+        for case_study in self.plot_kwargs["case_study"]:
             project_name = case_study.project_name
-            print(project_name)
 
             for experiment in self.plot_kwargs["experiment_type"]:
-                print(experiment.NAME)
                 report_files = get_processed_revisions_files(
                     project_name,
                     experiment,
@@ -50,14 +47,13 @@ class CompareRuntimesPlot(Plot, plot_name="compare_runtimes"):
                     report_file = agg_time_report.filename
 
                     for workload_name in agg_time_report.workload_names():
-                        print(workload_name)
                         for wall_clock_time in \
                                 agg_time_report.measurements_wall_clock_time(
                             workload_name
                         ):
                             new_row = {
-                                "Binary":
-                                    report_file.binary_name,
+                                "Workload":
+                                    workload_name,
                                 "Experiment":
                                     experiment.NAME,
                                 "Mean wall time (msecs)":
@@ -66,12 +62,12 @@ class CompareRuntimesPlot(Plot, plot_name="compare_runtimes"):
 
                             df = pd.concat([df, pd.DataFrame([new_row])],
                                            ignore_index=True)
-                            # df = df.append(new_row, ignore_index=True)
 
+        print(df)
         fig, ax = plt.subplots()
         fig.set_size_inches(11.7, 8.27)
         sns.barplot(
-            x="Binary",
+            x="Workload",
             y="Mean wall time (msecs)",
             hue="Experiment",
             estimator=np.mean,
@@ -86,11 +82,11 @@ class CompareRuntimesPlot(Plot, plot_name="compare_runtimes"):
         raise NotImplementedError
 
 
-class CompareRuntimesPlotGenerator(
+class CompareRuntimesPlotCSGenerator(
     PlotGenerator,
-    generator_name="compare-runtimes",
-    options=[REQUIRE_MULTI_EXPERIMENT_TYPE]
+    generator_name="compare-runtimes-cs",
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        return [CompareRuntimesPlot(self.plot_config, **self.plot_kwargs)]
+        return [CompareRuntimesCSPlot(self.plot_config, **self.plot_kwargs)]

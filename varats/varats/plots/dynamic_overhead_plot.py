@@ -25,6 +25,7 @@ class DynamicOverheadPlot(Plot, plot_name="dynamic_overhead"):
             project_name = case_study.project_name
 
             for experiment in self.plot_kwargs["experiment_type"]:
+
                 report_files = get_processed_revisions_files(
                     project_name,
                     experiment,
@@ -32,6 +33,7 @@ class DynamicOverheadPlot(Plot, plot_name="dynamic_overhead"):
                     get_case_study_file_name_filter(case_study),
                     only_newest=False
                 )
+
 
                 for report_filepath in report_files:
                     report = DynamicOverheadReport(report_filepath.full_path())
@@ -41,7 +43,8 @@ class DynamicOverheadPlot(Plot, plot_name="dynamic_overhead"):
                         "Visited regions": report.regions_visited(),
                     }
 
-                    df = df.append(new_row, ignore_index=True)
+                    df = pd.concat([df, pd.DataFrame([new_row])],
+                                   ignore_index=True)
 
         fig, ax = plt.subplots()
         fig.set_size_inches(11.7, 8.27)

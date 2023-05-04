@@ -4,6 +4,7 @@ import typing as tp
 
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
+from varats.experiment.workload_util import WorkloadCategory
 
 from varats.data.reports.instrumentation_verifier_report import (
     InstrVerifierReport,
@@ -69,7 +70,7 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             RunVaRATracedWorkloads(
-                project, self.get_handle(), report_file_ending="ivr"
+                project, self.get_handle(), report_file_ending="ivr", workload_categories=[WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL]
             )
         )
         analysis_actions.append(actions.Clean(project))
