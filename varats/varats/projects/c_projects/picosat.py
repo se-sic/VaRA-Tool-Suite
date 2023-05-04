@@ -5,6 +5,7 @@ import typing as tp
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, Command, SourceRoot
 from benchbuild.source import HTTP
+from benchbuild.source.http import HTTPUntar
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -58,15 +59,79 @@ class PicoSAT(VProject, ReleaseProviderHook):
                     "https://github.com/se-sic/picoSAT-mirror/releases/"
                     "download/picoSAT-965/example.cnf"
             }
-        )
+        ),
+        HTTPUntar(
+            local="abw-N-bcsstk07.mtx-w44.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/abw-N-bcsstk07.mtx-w44.cnf.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="traffic_kkb_unknown.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/UNSAT_H_instances_childsnack_p12.hddl_1.cnf.tar.gz"
+            }
+        ),
     ]
 
+    # TODO: Not sure about the categories here
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "example.cnf",
                 label="example.cnf",
+            )
+        ],
+        WorkloadSet(WorkloadCategory.SMALL): [
+            Command(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                "aim-100-1_6-no-1.cnf",
+                label="aim-100-1-6-no-1.cnf",
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
+                label="traffic-kkb-unknow.cnf",
+            ),
+            Command(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                "abw-N-bcsstk07.mtx-w44.cnf/abw-N-bcsstk07.mtx-w44.cnf",
+                label="abw-N-bcsstk07.mtx-w44.cnf",
+            ),
+        ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            Command(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf/UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
+                label="UNSAT-H-instances-childsnack-p11.hddl-1.cnf",
+            ),
+            Command(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                "UNSAT_H_instances_childsnack_p12.hddl_1.cnf/UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
+                label="UNSAT-H-instances-childsnack-p12.hddl-1.cnf",
             )
         ],
     }
