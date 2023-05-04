@@ -1034,8 +1034,9 @@ class RevisionBinaryMap(tp.Container[str]):
 
     def specify_binary(
         self, location: str, binary_type: BinaryType, **kwargs: tp.Any
-    ) -> None:
+    ) -> 'RevisionBinaryMap':
         """
+        Add a binary to the map.
 
         Args:
             location: where the binary can be found, relative to the
@@ -1046,6 +1047,9 @@ class RevisionBinaryMap(tp.Container[str]):
             only_valid_in: additionally specifies a validity range that
                            specifies in which revision range this binary is
                            produced
+
+        Returns:
+            self for builder-style usage
         """
         binary_location_path = Path(location)
         binary_name: str = kwargs.get(
@@ -1066,6 +1070,8 @@ class RevisionBinaryMap(tp.Container[str]):
             self.__revision_specific_mappings[validity_range] = wrapped_binary
         else:
             self.__always_valid_mappings.append(wrapped_binary)
+
+        return self
 
     def __getitem__(self,
                     revision: CommitHash) -> tp.List[ProjectBinaryWrapper]:
