@@ -478,7 +478,8 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         )
 
 
-Segments = tp.List[tp.Tuple[tp.Union[tp.Optional[int], frozenset[str]], str]]
+Count = tp.Union[tp.Optional[int], frozenset[str]]
+Segments = tp.List[tp.Tuple[Count, str]]
 SegmentBuffer = tp.DefaultDict[int, Segments]
 FileSegmentBufferMapping = tp.Mapping[str, SegmentBuffer]
 
@@ -605,22 +606,34 @@ def __segments_dict_to_str(segments_dict: SegmentBuffer) -> str:
             else:
                 raise NotImplementedError
 
-        feature_txt = None
-        if all(map(lambda count: isinstance(count, frozenset), counts)):
-            # Features belong to this line. Append them
-            unique_features = sorted(set(y for y in x for x in counts))
-            feature_buffer = []
-            for feature in unique_features:
-                if feature.startswith("-"):
-                    feature_buffer.append(_color_str(feature, colors.red))
-                elif feature.startswith("+"):
-                    feature_buffer.append(_color_str(feature, colors.green))
-                else:
-                    raise NotImplementedError
-            feature_txt = ', '.join(feature_buffer)
+        buffer.append((
+            line_number, count, "".join(colored_texts), __feature_text(counts)
+        ))
 
-        buffer.append((line_number, count, "".join(colored_texts), feature_txt))
+    return __text_table(buffer)
 
+
+def __feature_text(counts: tp.List[Count]) -> tp.Optional[str]:
+    if all(map(lambda count: isinstance(count, frozenset), counts)):
+        unique_features: tp.Set[str] = set()
+        for count in counts:
+            unique_features.update(count)  # type: ignore [arg-type]
+        sorted_features = sorted(unique_features)
+        feature_buffer = []
+        for feature in sorted_features:
+            if feature.startswith("-"):
+                feature_buffer.append(_color_str(feature, colors.red))
+            elif feature.startswith("+"):
+                feature_buffer.append(_color_str(feature, colors.green))
+            else:
+                raise NotImplementedError
+        return ', '.join(feature_buffer)
+    return None
+
+
+def __text_table(
+    buffer: tp.List[tp.Tuple[int, tp.Union[int, str], str, tp.Optional[str]]]
+) -> str:
     output = []
     if not any(map(lambda item: item[1] != "" and item[1] is not None, buffer)):
         # All counts are empty. Skip count column
