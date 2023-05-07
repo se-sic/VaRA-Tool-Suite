@@ -188,7 +188,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
 def _affected_features(segments: Segments) -> tp.Set[str]:
     affected_by_features = set()
     for count, features in segments:
-        features = "^".join(features)
+        features = "^".join(sorted(features))
         if count is None or count == 0:
             # Not affected by features
             continue

@@ -619,6 +619,8 @@ def __feature_text(counts: tp.List[Count]) -> tp.Optional[str]:
         for count in counts:
             unique_features.update(count)  # type: ignore [arg-type]
         sorted_features = sorted(unique_features)
+        if sorted_features:
+            print(sorted_features)
         feature_buffer = []
         for feature in sorted_features:
             if feature.startswith("-"):

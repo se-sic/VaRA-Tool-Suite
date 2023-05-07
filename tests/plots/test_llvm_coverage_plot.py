@@ -1,8 +1,16 @@
 import unittest
 from unittest.mock import create_autospec
 
+from tests.data.test_llvm_coverage_report import setup_config_map
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.base.configuration import PlainCommandlineConfiguration
-from varats.data.reports.llvm_coverage_report import CodeRegion, CoverageReport
+from varats.data.reports.llvm_coverage_report import (
+    CodeRegion,
+    CoverageReport,
+    cov_show_segment_buffer,
+)
+from varats.projects.discover_projects import initialize_projects
+from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.varats.plots.llvm_coverage_plot import ConfigCoverageReportMapping
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
@@ -122,3 +130,175 @@ class TestCodeRegion(unittest.TestCase):
         self.assertRaises(
             ValueError, lambda: config_report_map.diff({"foobar": True})
         )
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_line_feature_plot(self):
+        self.maxDiff = None
+        config_map = setup_config_map()
+        initialize_projects()
+        commit_hash = FullCommitHash("27f17080376e409860405c40744887d81d6b3f34")
+        with RepositoryAtCommit(
+            "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
+        ) as base_dir:
+            self.assertEqual(
+                """include/fpcsc/perf_util/feature_cmd.h:
+    1|#ifndef FPCSC_PERFUTIL_FEATURECMD_H                                             |
+    2|#define FPCSC_PERFUTIL_FEATURECMD_H                                             |
+    3|                                                                                |
+    4|#include <exception>                                                            |
+    5|#include <stdlib.h>                                                             |
+    6|#include <string>                                                               |
+    7|                                                                                |
+    8|namespace fpcsc {                                                               |
+    9|inline bool isFeatureEnabled(int argc, char *argv[], std::string FeatureName) { |
+   10|  for (int CurrentArg = 1; CurrentArg < argc; ++CurrentArg) {                   |
+   11|    if (argv[CurrentArg] == FeatureName) {                                      |
+   12|      return true;                                                              |
+   13|    }                                                                           |
+   14|  }                                                                             |
+   15|                                                                                |
+   16|  return false;                                                                 |
+   17|}                                                                               |
+   18|                                                                                |
+   19|inline long getFeatureValue(int argc, char *argv[], std::string FeatureName) {  |
+   20|  int CurrentArg = 1;                                                           |
+   21|  for (; CurrentArg < argc; ++CurrentArg) {                                     |
+   22|    if (argv[CurrentArg] == FeatureName) {                                      |
+   23|      ++CurrentArg;                                                             |
+   24|      break;                                                                    |
+   25|    }                                                                           |
+   26|  }                                                                             |
+   27|                                                                                |
+   28|  if (CurrentArg >= argc) {                                                     |
+   29|    return 0;                                                                   |
+   30|  }                                                                             |
+   31|                                                                                |
+   32|  return strtol(argv[CurrentArg], NULL, 0);                                     |
+   33|}                                                                               |
+   34|                                                                                |
+   35|} // namespace fpcsc                                                            |
+   36|                                                                                |
+   37|#endif // FPCSC_PERFUTIL_FEATURECMD_H                                           |
+
+include/fpcsc/perf_util/sleep.h:
+    1|#ifndef FPCSC_PERFUTIL_SLEEP_H                                                  |
+    2|#define FPCSC_PERFUTIL_SLEEP_H                                                  |
+    3|                                                                                |
+    4|#include <chrono>                                                               |
+    5|#include <iostream>                                                             |
+    6|#include <thread>                                                               |
+    7|                                                                                |
+    8|namespace fpcsc {                                                               |
+    9|                                                                                |
+   10|inline void sleep_for_secs(unsigned Secs) {                                     |
+   11|  std::cout << "Sleeping for " << Secs << " seconds" << std::endl;              |
+   12|  std::this_thread::sleep_for(std::chrono::seconds(Secs));                      |
+   13|}                                                                               |
+   14|                                                                                |
+   15|inline void sleep_for_millisecs(unsigned Millisecs) {                           |
+   16|  std::cout << "Sleeping for " << Millisecs << " milliseconds" << std::endl;    |
+   17|  std::this_thread::sleep_for(std::chrono::milliseconds(Millisecs));            |
+   18|}                                                                               |
+   19|                                                                                |
+   20|inline void sleep_for_nanosecs(unsigned millisecs) {                            |
+   21|  std::this_thread::sleep_for(std::chrono::nanoseconds(millisecs));             |
+   22|}                                                                               |
+   23|                                                                                |
+   24|} // namespace fpcsc                                                            |
+   25|                                                                                |
+   26|#endif // FPCSC_PERFUTIL_SLEEP_H                                                |
+
+src/MultiSharedMultipleRegions/FeatureHeader.cpp:
+    1|#include "FeatureHeader.h"                                                      |
+    2|                                                                                |
+    3|bool ExternFeature = false;                                                     |
+    4|                                                                                |
+    5|static bool CppFeature = false;                                                 |
+    6|                                                                                |
+    7|void enableCppFeature() {                                                       |
+    8|  CppFeature = true;                                                            |
+    9|}                                                                               |
+   10|                                                                                |
+   11|bool isCppFeatureEnabled() {                                                    |
+   12|  return CppFeature;                                                            |
+   13|}                                                                               |
+
+src/MultiSharedMultipleRegions/FeatureHeader.h:
+    1|#ifndef FEATURE_HEADER_H                                                        |
+    2|#define FEATURE_HEADER_H                                                        |
+    3|                                                                                |
+    4|extern bool ExternFeature;                                                      |
+    5|                                                                                |
+    6|static inline bool HeaderFeature = false;                                       |
+    7|                                                                                |
+    8|inline void enableExternFeature() {                                             |
+    9|  ExternFeature = true;                                                         |
+   10|}                                                                               |
+   11|                                                                                |
+   12|void enableCppFeature();                                                        |
+   13|bool isCppFeatureEnabled();                                                     |
+   14|                                                                                |
+   15|#endif // FEATURE_HEADER_H                                                      |
+
+src/MultiSharedMultipleRegions/MSMRmain.cpp:
+    1|#include "FeatureHeader.h"                                                      |
+    2|                                                                                |
+    3|#include "fpcsc/perf_util/sleep.h"                                              |
+    4|#include "fpcsc/perf_util/feature_cmd.h"                                        |
+    5|                                                                                |
+    6|#include <string>                                                               |
+    7|                                                                                |
+    8|int main(int argc, char *argv[] ) {                                             |
+    9|  bool Slow = false;                                                            |
+   10|                                                                                |
+   11|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--slow"))) {             |+slow
+   12|    Slow = true;                                                                |+slow
+   13|  }                                                                             |
+   14|                                                                                |
+   15|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--header"))) {           |+header
+   16|    HeaderFeature = true;                                                       |+header
+   17|  }                                                                             |
+   18|                                                                                |
+   19|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--extern"))) {           |
+   20|    enableExternFeature();                                                      |
+   21|  }                                                                             |
+   22|                                                                                |
+   23|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--cpp"))) {              |
+   24|    enableCppFeature();                                                         |
+   25|  }                                                                             |
+   26|                                                                                |
+   27|  // Multiple regions related to --slow that take different amounts of time.    |
+   28|                                                                                |
+   29|  if (Slow) {                                                                   |+slow
+   30|    fpcsc::sleep_for_secs(5);                                                   |+slow
+   31|  } else {                                                                      |+slow, -header^slow, -slow
+   32|    fpcsc::sleep_for_secs(3);                                                   |-header^slow, -slow
+   33|  }                                                                             |
+   34|                                                                                |
+   35|  fpcsc::sleep_for_secs(2); // General waiting time                             |
+   36|                                                                                |
+   37|  if (HeaderFeature) {                                                          |+header
+   38|    fpcsc::sleep_for_secs(3);                                                   |+header
+   39|  } else {                                                                      |+header, -header, -header^slow
+   40|    fpcsc::sleep_for_secs(1);                                                   |-header, -header^slow
+   41|  }                                                                             |
+   42|                                                                                |
+   43|  fpcsc::sleep_for_secs(2); // General waiting time                             |
+   44|                                                                                |
+   45|  if (ExternFeature) {                                                          |
+   46|    fpcsc::sleep_for_secs(6);                                                   |
+   47|  }                                                                             |
+   48|                                                                                |
+   49|  fpcsc::sleep_for_secs(2); // General waiting time                             |
+   50|                                                                                |
+   51|  if (isCppFeatureEnabled()) {                                                  |
+   52|    fpcsc::sleep_for_secs(3);                                                   |
+   53|  }                                                                             |
+   54|                                                                                |
+   55|  return 0;                                                                     |
+   56|}                                                                               |
+
+""", cov_show_segment_buffer(config_map.feature_segments(base_dir))
+            )

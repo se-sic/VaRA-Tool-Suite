@@ -41,6 +41,47 @@ from varats.varats.experiments.vara.llvm_coverage_experiment import (
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
 
 
+def setup_config_map():
+    # setup config
+    vara_cfg()['paper_config']['current_config'] = "test_coverage_plot"
+    load_paper_config()
+    save_config()
+
+    plot_generator = CoveragePlotGenerator(
+        PlotConfig.from_kwargs(view=False),
+        experiment_type=[GenerateCoverageExperiment],
+        case_study=get_loaded_paper_config().
+        get_case_studies("FeaturePerfCSCollection")
+    )
+    plots = plot_generator.generate()
+    assert len(plots) == 1
+    coverage_plot = plots[0]
+
+    case_studies = get_loaded_paper_config().get_all_case_studies()
+    assert len(case_studies) == 1
+    case_study = case_studies[0]
+
+    project_name = case_study.project_name
+
+    report_files = get_processed_revisions_files(
+        project_name,
+        GenerateCoverageExperiment,
+        CoverageReport,
+        get_case_study_file_name_filter(case_study),
+        only_newest=False,
+    )
+
+    binary_config_map = coverage_plot._get_binary_config_map(
+        case_study, report_files
+    )
+    assert binary_config_map
+
+    config_map = binary_config_map[next(iter(binary_config_map))]
+    assert len(config_map) == 4
+
+    return config_map
+
+
 class TestCodeRegion(unittest.TestCase):
 
     def setUp(self):
@@ -211,43 +252,7 @@ class TestCodeRegion(unittest.TestCase):
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_merging(self):
-        # setup config
-        vara_cfg()['paper_config']['current_config'] = "test_coverage_plot"
-        load_paper_config()
-        save_config()
-
-        plot_generator = CoveragePlotGenerator(
-            PlotConfig.from_kwargs(view=False),
-            experiment_type=[GenerateCoverageExperiment],
-            case_study=get_loaded_paper_config().
-            get_case_studies("FeaturePerfCSCollection")
-        )
-        plots = plot_generator.generate()
-        self.assertEqual(len(plots), 1)
-        coverage_plot = plots[0]
-
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-        self.assertEqual(len(case_studies), 1)
-        case_study = case_studies[0]
-
-        project_name = case_study.project_name
-
-        report_files = get_processed_revisions_files(
-            project_name,
-            GenerateCoverageExperiment,
-            CoverageReport,
-            get_case_study_file_name_filter(case_study),
-            only_newest=False,
-        )
-
-        binary_config_map = coverage_plot._get_binary_config_map(
-            case_study, report_files
-        )
-        self.assertTrue(binary_config_map)
-
-        config_map = binary_config_map[next(iter(binary_config_map))]
-        self.assertEqual(len(config_map), 3)
-
+        config_map = setup_config_map()
         for config in config_map:
             options = {
                 option.name for option in config.options() if option.value
@@ -297,7 +302,7 @@ class TestCodeRegion(unittest.TestCase):
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
-    def test_cov_show_simple(self):
+    def test_cov_show(self):
         self.maxDiff = None
         with TemporaryDirectory() as tmpdir:
             shutil.unpack_archive(
