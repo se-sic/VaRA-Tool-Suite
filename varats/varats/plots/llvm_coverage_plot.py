@@ -6,6 +6,7 @@ import typing as tp
 from collections import defaultdict
 from copy import deepcopy
 from itertools import filterfalse
+from pathlib import Path
 
 from more_itertools import powerset
 
@@ -14,7 +15,14 @@ from varats.base.configuration import (
     PlainCommandlineConfiguration,
     FrozenConfiguration,
 )
-from varats.data.reports.llvm_coverage_report import CoverageReport, cov_show
+from varats.data.reports.llvm_coverage_report import (
+    CoverageReport,
+    cov_show,
+    cov_segments,
+    cov_show_segment_buffer,
+    Segments,
+    FileSegmentBufferMapping,
+)
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -44,7 +52,7 @@ def contains(configuration: Configuration, name: str, value: tp.Any) -> bool:
 
 
 class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
-    """Maps RunConfigs to CoverageReports."""
+    """Maps Configs to CoverageReports."""
 
     def __init__(
         self, dictionary: tp.Dict[FrozenConfiguration, CoverageReport]
@@ -136,6 +144,63 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
     def merge_all(self) -> CoverageReport:
         """Merge all available Reports into one."""
         return _merge_reports(deepcopy(list(self.values())))
+
+    def feature_segments(self, base_dir: Path) -> FileSegmentBufferMapping:
+        """Returns segments annotated with corresponding feature
+        combinations."""
+
+        # Get segments for all feature combinations.
+        features_file_segments_map = {}
+        for features in non_empty_powerset(self.available_features):
+            diff = self.diff({feature: True for feature in features})
+            features_file_segments_map[features] = cov_segments(diff, base_dir)
+
+        # Combine all segments dicts into one large
+        # {file: {linenumber: {line_part: [(count, features]}}}
+        _file_segments_map: tp.DefaultDict[str, tp.DefaultDict[
+            int, tp.DefaultDict[str, Segments]]] = defaultdict(
+                lambda: defaultdict(lambda: defaultdict(list))
+            )
+        for features, file_segments_map in features_file_segments_map.items():
+            for file, segments_map in file_segments_map.items():
+                for linenumber, segments in segments_map.items():
+                    for segment in segments:
+                        count = segment[0]
+                        line_part = segment[1]
+                        _file_segments_map[file][linenumber][line_part].append(
+                            (count, features)
+                        )
+
+        # Convert for cov_show_segment_buffer
+        file_segments_mapping: FileSegmentBufferMapping = defaultdict(
+            lambda: defaultdict(list)
+        )
+        for file, _segments_map in _file_segments_map.items():
+            for linenumber, segment_features_map in _segments_map.items():
+                for line_part, segments in segment_features_map.items():
+                    affected_by_features = _affected_features(segments)
+                    file_segments_mapping[file][linenumber].append(
+                        (frozenset(affected_by_features), line_part)
+                    )
+        return file_segments_mapping
+
+
+def _affected_features(segments: Segments) -> tp.Set[str]:
+    affected_by_features = set()
+    for count, features in segments:
+        features = "^".join(features)
+        if count is None or count == 0:
+            # Not affected by features
+            continue
+        if count == 1:
+            # Covered when features
+            affected_by_features.add(f"+{features}")
+        elif count == -1:
+            # Not covered when features
+            affected_by_features.add(f"-{features}")
+        else:
+            raise NotImplementedError
+    return affected_by_features
 
 
 BinaryConfigsMapping = tp.NewType(
@@ -244,6 +309,12 @@ class CoveragePlot(Plot, plot_name="coverage"):
                             feature: True for feature in features
                         })
                         print(cov_show(diff, base_dir))
+
+                    print(
+                        cov_show_segment_buffer(
+                            config_report_map.feature_segments(base_dir)
+                        )
+                    )
 
     def calc_missing_revisions(
         self, boundary_gradient: float

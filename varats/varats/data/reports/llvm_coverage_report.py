@@ -17,6 +17,8 @@ from plumbum.colorlib.styles import Color
 
 from varats.report.report import BaseReport
 
+CUTOFF_LENGTH = 80
+
 
 class CodeRegionKind(int, Enum):
     """Code region kinds."""
@@ -476,7 +478,57 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         )
 
 
-SegmentBuffer = tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int], str]]]
+Segments = tp.List[tp.Tuple[tp.Union[tp.Optional[int], frozenset[str]], str]]
+SegmentBuffer = tp.DefaultDict[int, Segments]
+FileSegmentBufferMapping = tp.Mapping[str, SegmentBuffer]
+
+
+def cov_segments(
+    report: CoverageReport,
+    base_dir: Path,
+) -> FileSegmentBufferMapping:
+    """Returns the all segments for this report."""
+    file_segments_mapping = {}
+    for file in list(report.filename_function_mapping):
+        function_region_mapping = report.filename_function_mapping[file]
+        path = Path(file)
+        file_segments_mapping[file] = _cov_segments_file(
+            path, base_dir, function_region_mapping
+        )
+
+    return file_segments_mapping
+
+
+def _cov_segments_file(
+    rel_path: Path,
+    base_dir: Path,
+    function_region_mapping: FunctionCodeRegionMapping,
+) -> SegmentBuffer:
+
+    lines: tp.Dict[int, str] = {}
+    path = base_dir / rel_path
+    with open(path) as file:
+        line_number = 1
+        for line in file.readlines():
+            lines[line_number] = line
+            line_number += 1
+
+    # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
+    segments_dict: SegmentBuffer = defaultdict(list)
+    for function in function_region_mapping:
+        region = function_region_mapping[function]
+        segments_dict = _cov_segments_function(region, lines, segments_dict)
+
+    # Add rest of file
+    segments_dict = __cov_fill_buffer(
+        end_line=len(lines),
+        end_column=len(lines[len(lines)]) + 1,
+        count=None,
+        lines=lines,
+        buffer=segments_dict
+    )
+
+    return segments_dict
 
 
 def cov_show(
@@ -484,15 +536,21 @@ def cov_show(
     base_dir: Path,
 ) -> str:
     """
-    Returns a the coverage in text form similar to llvm-cov show.
+    Returns the coverage in text form similar to llvm-cov show.
 
     NOTE: The colored representation differs a bit!
     """
+    return cov_show_segment_buffer(cov_segments(report, base_dir))
+
+
+def cov_show_segment_buffer(
+    file_segments_mapping: FileSegmentBufferMapping
+) -> str:
+    """Returns the coverage in text form."""
     result = []
-    for file in list(report.filename_function_mapping):
-        function_region_mapping = report.filename_function_mapping[file]
-        path = Path(file)
-        tmp_value = _cov_show_file(path, base_dir, function_region_mapping, [])
+    for file in file_segments_mapping:
+        tmp_value = [_color_str(f"{file}:\n", colors.cyan)]
+        tmp_value.append(__segments_dict_to_str(file_segments_mapping[file]))
 
         if not tmp_value[-1].endswith("\n"):
             # Add newline if file does not end with one
@@ -503,42 +561,7 @@ def cov_show(
     return "\n".join(result) + "\n"
 
 
-def _cov_show_file(
-    rel_path: Path, base_dir: Path,
-    function_region_mapping: FunctionCodeRegionMapping, buffer: tp.List[str]
-) -> tp.List[str]:
-
-    lines: tp.Dict[int, str] = {}
-    path = base_dir / rel_path
-    with open(path) as file:
-        line_number = 1
-        for line in file.readlines():
-            lines[line_number] = line
-            line_number += 1
-
-    buffer.append(_color_str(f"{rel_path}:\n", colors.cyan))
-    # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
-    segments_dict: SegmentBuffer = defaultdict(list)
-    for function in function_region_mapping:
-        region = function_region_mapping[function]
-        segments_dict = _cov_show_function(region, lines, segments_dict)
-
-    # Print rest of file
-    segments_dict = __cov_fill_buffer(
-        end_line=len(lines),
-        end_column=len(lines[len(lines)]) + 1,
-        count=None,
-        lines=lines,
-        buffer=segments_dict
-    )
-
-    buffer.append(__segments_dict_to_str(segments_dict))
-    return buffer
-
-
-def __segments_dict_to_str(
-    segments_dict: tp.DefaultDict[int, tp.List[tp.Tuple[tp.Optional[int], str]]]
-) -> str:
+def __segments_dict_to_str(segments_dict: SegmentBuffer) -> str:
     """Constructs a str from the given segments dictionary."""
     buffer = []
     for line_number, segments in segments_dict.items():
@@ -551,16 +574,15 @@ def __segments_dict_to_str(
                            ) else segments[-1]
         counts = [segment[0] for segment in segments]
 
-        def filter_nones(a: tp.List[tp.Optional[int]]) -> tp.Iterator[int]:
+        def filter_ints(a: tp.List[tp.Any]) -> tp.Iterator[int]:
             for item in a:
-                if item is not None:
+                if isinstance(item, int):
                     yield item
 
-        non_none_counts = list(filter_nones(counts))
+        non_none_counts = list(filter_ints(counts))
         count: tp.Union[int, str] = ""
         if len(non_none_counts) > 0:
             count = max(non_none_counts, key=abs)
-        buffer.append(f"{line_number:>5}|{count:>7}|")
 
         texts = [segment[1] for segment in segments]
         colored_texts = []
@@ -583,15 +605,44 @@ def __segments_dict_to_str(
             else:
                 raise NotImplementedError
 
-        buffer.append("".join(colored_texts))
-    return "".join(buffer)
+        feature_txt = None
+        if all(map(lambda count: isinstance(count, frozenset), counts)):
+            # Features belong to this line. Append them
+            unique_features = sorted(set(y for y in x for x in counts))
+            feature_buffer = []
+            for feature in unique_features:
+                if feature.startswith("-"):
+                    feature_buffer.append(_color_str(feature, colors.red))
+                elif feature.startswith("+"):
+                    feature_buffer.append(_color_str(feature, colors.green))
+                else:
+                    raise NotImplementedError
+            feature_txt = ', '.join(feature_buffer)
+
+        buffer.append((line_number, count, "".join(colored_texts), feature_txt))
+
+    output = []
+    if not any(map(lambda item: item[1] != "" and item[1] is not None, buffer)):
+        # All counts are empty. Skip count column
+        for line_number, _, text, feature_txt in buffer:
+            text = text.replace("\n", "", 1)
+            text = text[:CUTOFF_LENGTH]
+            feature_txt = feature_txt if feature_txt is not None else ''
+            output.append(
+                f"{line_number:>5}|{text:<{CUTOFF_LENGTH}}|{feature_txt}\n"
+            )
+    else:
+        for line_number, count, text, _ in buffer:
+            output.append(f"{line_number:>5}|{count:>7}|{text}")
+
+    return "".join(output)
 
 
-def _cov_show_function(
+def _cov_segments_function(
     region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer
 ) -> SegmentBuffer:
 
-    # Print lines before region.
+    # Add lines before region.
     prev_line, prev_column = __get_previous_line_and_column(
         region.start.line, region.start.column, lines
     )
@@ -603,16 +654,16 @@ def _cov_show_function(
         buffer=buffer
     )
 
-    buffer = _cov_show_function_inner(region, lines, buffer)
+    buffer = _cov_segments_function_inner(region, lines, buffer)
 
     return buffer
 
 
-def _cov_show_function_inner(
+def _cov_segments_function_inner(
     region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer
 ) -> SegmentBuffer:
 
-    # Print childs
+    # Add childs
     for child in region.childs:
         prev_line, prev_column = __get_previous_line_and_column(
             child.start.line, child.start.column, lines
@@ -631,17 +682,17 @@ def _cov_show_function_inner(
                 buffer=buffer
             )
         if child.kind in (CodeRegionKind.CODE, CodeRegionKind.EXPANSION):
-            buffer = _cov_show_function_inner(child, lines, buffer)
+            buffer = _cov_segments_function_inner(child, lines, buffer)
         elif child.kind == CodeRegionKind.GAP:
             #child.count = None  # type: ignore
-            buffer = _cov_show_function_inner(child, lines, buffer)
+            buffer = _cov_segments_function_inner(child, lines, buffer)
         elif child.kind == CodeRegionKind.SKIPPED:
             child.count = None  # type: ignore
-            buffer = _cov_show_function_inner(child, lines, buffer)
+            buffer = _cov_segments_function_inner(child, lines, buffer)
         else:
             raise NotImplementedError
 
-    # Print remaining region
+    # Add remaining region
     buffer = __cov_fill_buffer(
         end_line=region.end.line,
         end_column=region.end.column,
