@@ -2,7 +2,8 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, meson, ninja
+from benchbuild.utils.revision_ranges import GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -63,14 +64,22 @@ class Irssi(VProject):
     def compile(self) -> None:
         """Compile the project."""
         irssi_source = local.path(self.source_of(self.primary_source))
-
+        autogen_revisions = GoodBadSubgraph([
+            "770ae4596d3e826c63e8c9fa441d65bd0889f03c"
+        ], ["b8736225cf11a40c8d585425a1ea9b47a3b706b6"],
+                                            "Revisions to build with autogen")
+        irssi_version = self.version_of_primary
         compiler = bb.compiler.cc(self)
+
         with local.cwd(irssi_source):
             with local.env(CC=str(compiler)):
-                bb.watch(local["./autogen.sh"])()
-                bb.watch(local["./configure"])()
-
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                if irssi_version in autogen_revisions:
+                    bb.watch(local["./autogen.sh"])()
+                    bb.watch(local["./configure"])()
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                else:
+                    bb.watch(meson)("Build")
+                    bb.watch(ninja)("-C", "Build")
 
             verify_binaries(self)
 
