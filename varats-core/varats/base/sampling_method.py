@@ -4,9 +4,9 @@ import json
 import typing as tp
 from enum import Enum
 
-import numpy as np
-import numpy.typing as npt
-from scipy.stats import halfnorm
+if tp.TYPE_CHECKING:
+    import numpy.typing as npt
+    import numpy as np
 
 from varats.base.configuration import Configuration
 
@@ -184,7 +184,7 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
     @abc.abstractmethod
     def gen_distribution_function(
         self
-    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
+    ) -> tp.Callable[[int], 'npt.NDArray[np.float64]']:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -205,6 +205,8 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 
         Returns: list of sampled items
         """
+        import numpy as np  # pylint: disable=import-outside-toplevel
+
         if num_samples >= len(data):
             return data
 
@@ -223,7 +225,7 @@ class UniformSamplingMethod(NormalSamplingMethod):
 
     def gen_distribution_function(
         self
-    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
+    ) -> tp.Callable[[int], 'npt.NDArray[np.float64]']:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -232,7 +234,8 @@ class UniformSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def uniform(num_samples: int) -> npt.NDArray[np.float64]:
+        def uniform(num_samples: int) -> 'npt.NDArray[np.float64]':
+            import numpy as np  # pylint: disable=import-outside-toplevel
             return np.random.uniform(0, 1.0, num_samples)
 
         return uniform
@@ -243,7 +246,7 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
 
     def gen_distribution_function(
         self
-    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
+    ) -> tp.Callable[[int], 'npt.NDArray[np.float64]']:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -252,9 +255,11 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def halfnormal(num_samples: int) -> npt.NDArray[np.float64]:
+        def halfnormal(num_samples: int) -> 'npt.NDArray[np.float64]':
+            # pylint: disable=import-outside-toplevel
+            from scipy.stats import halfnorm
             return tp.cast(
-                npt.NDArray[np.float64],
+                'npt.NDArray[np.float64]',
                 halfnorm.rvs(scale=1, size=num_samples)
             )
 

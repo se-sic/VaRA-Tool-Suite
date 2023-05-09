@@ -59,7 +59,7 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
     @classmethod
     def get_dependencies(cls) -> Dependencies:
         """Returns the dependencies for this research tool."""
-        raise NotImplementedError
+        return cls.__DEPENDENCIES
 
     @staticmethod
     def source_location() -> Path:
@@ -140,7 +140,7 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
 
     def is_up_to_date(self) -> bool:
         """Returns true if VaRA's major release version is up to date."""
-        raise NotImplementedError
+        return True
 
     def build(
         self, build_type: BuildType, install_location: Path,

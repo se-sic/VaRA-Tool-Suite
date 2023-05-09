@@ -7,12 +7,12 @@ from plumbum import local
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     BinaryType,
+    get_local_project_git_path,
 )
 from varats.project.varats_project import VProject
 from varats.ts_utils.project_sources import VaraTestRepoSource
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
 
 class BasicBugDetectionTestRepo(VProject):
@@ -37,7 +37,11 @@ class BasicBugDetectionTestRepo(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([("main", BinaryType.EXECUTABLE)])
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(BasicBugDetectionTestRepo.NAME)
+        ).specify_binary("main", BinaryType.EXECUTABLE)
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass
