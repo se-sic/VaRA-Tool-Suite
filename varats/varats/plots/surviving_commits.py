@@ -1,3 +1,4 @@
+"""Plots for the analysis of loc and interactions over time."""
 import math
 import typing as tp
 
@@ -36,6 +37,8 @@ from varats.utils.git_util import (
 def get_lines_per_commit_long(
     case_study: CaseStudy, filter_cs=True
 ) -> DataFrame:
+    """Get a data frame with the surviving lines of each commit at the revisions
+    of a case study in the format Revision | Commit | Lines."""
     project_name = case_study.project_name
     data = SurvivingLinesDatabase.get_data_for_project(
         project_name, ["revision", "commit_hash", "lines"],
@@ -61,6 +64,9 @@ def get_lines_per_commit_long(
 def get_normalized_lines_per_commit_long(
     case_study: CaseStudy, filter_cs=True
 ) -> DataFrame:
+    """Get a data frame with the surviving lines of each commit at the revisions
+    of a case study normalized by the maximum lines of the commit in the format
+    Revision | Commit | Lines."""
     data = get_lines_per_commit_long(case_study, filter_cs)
     max_lines = data.drop(columns=["revision"]).groupby("base_hash").max()
     data = data.apply(
@@ -76,6 +82,12 @@ def get_normalized_lines_per_commit_long(
 
 
 def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
+    """
+    Get a data frame with the surviving lines of each commit at the revisions of
+    a case study normalized by the maximum lines of the commit.
+
+    each commit is a row , the revisions are the columns.
+    """
     case_study_data = get_normalized_lines_per_commit_long(case_study)
     case_study_data = case_study_data.pivot(
         index="base_hash", columns='revision', values='lines'
@@ -93,6 +105,8 @@ def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
 
 
 def get_interactions_per_commit_long(case_study: CaseStudy, filter_cs=True):
+    """Get a data frame with the surviving interactions of each commit at the
+    revisions of a case study in the format Revision | Commit | Interactions."""
     project_name = case_study.project_name
     data = SurvivingInteractionsDatabase.get_data_for_project(
         project_name, ["revision", "base_hash", "interactions"],
@@ -117,6 +131,9 @@ def get_interactions_per_commit_long(case_study: CaseStudy, filter_cs=True):
 def get_normalized_interactions_per_commit_long(
     case_study: CaseStudy, filter_cs=True
 ) -> DataFrame:
+    """Get a data frame with the surviving interactions of each commit at the
+    revisions of a case study normalized by the maximum interactions of the
+    commit in the format Revision | Commit | Interactions."""
     data = get_interactions_per_commit_long(case_study, filter_cs)
     max_interactions = data.drop(columns=["revision"]
                                 ).groupby("base_hash").max()
@@ -139,6 +156,13 @@ def get_normalized_interactions_per_commit_long(
 def get_normalized_interactions_per_commit_wide(
     case_study: CaseStudy
 ) -> DataFrame:
+    """
+    Get a data frame with the surviving interactions of each commit at the
+    revisions of a case study normalized by the maximum interactions of the
+    commit.
+
+    each commit is a row , the revisions are the columns.
+    """
     data = get_normalized_interactions_per_commit_long(case_study)
     data = data.pivot(
         index="base_hash", columns="revision", values="interactions"
@@ -155,6 +179,14 @@ def get_normalized_interactions_per_commit_wide(
 
 
 def lines_and_interactions(case_study: CaseStudy) -> DataFrame:
+    """
+    Get a data frame with the surviving lines and interactions of each commit at
+    the revisions of a case study each commit is a row , the revisions are the
+    columns, lines and interactions are sublevels.
+
+    An additionla sublevel called space is added for better readability when
+    plotted.
+    """
     lines: DataFrame = get_normalized_lines_per_commit_long(case_study)
 
     interactions: DataFrame = get_normalized_interactions_per_commit_long(
@@ -184,6 +216,8 @@ def lines_and_interactions(case_study: CaseStudy) -> DataFrame:
 
 
 def get_author_color_map(data, case_study) -> dict[tp.Any, tp.Any]:
+    """Generate a color map for authors to collor commits based on theyr
+    authors."""
     commit_lookup_helper = create_commit_lookup_helper(case_study.project_name)
     author_set: set = set()
     for commit_hash in data.index.get_level_values(0):
@@ -198,7 +232,8 @@ def get_author_color_map(data, case_study) -> dict[tp.Any, tp.Any]:
     return dict(zip(author_list, colors))
 
 
-class SingleRevisionPlot(Plot, plot_name="single_commit_survival"):
+class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
+    """Plot for the evolution of a single commit."""
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -267,6 +302,11 @@ class SingleRevisionPlot(Plot, plot_name="single_commit_survival"):
 
 
 class HeatMapPlot(Plot, plot_name=None):
+    """
+    Base Heatmap plot for to plot wide data frames.
+
+    Subclases need to provide data functions to get the dataframes.
+    """
     colormap = 'RdYlGn'
     vmin = 0
     vmax = 100
@@ -392,6 +432,7 @@ class HeatMapPlot(Plot, plot_name=None):
 class SurvivingInteractionsPlot(
     HeatMapPlot, plot_name="surviving_interactions_plot"
 ):
+    """Plot the normalized evolution of commit interactions."""
     NAME = 'surviving_interactions_plot'
     YLABEL = "Surviving Interactions"
 
@@ -403,6 +444,7 @@ class SurvivingInteractionsPlot(
 
 
 class SurvivingLinesPlot(HeatMapPlot, plot_name="surviving_commit_plot"):
+    """Plot the normalized evolution of LOC."""
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -420,6 +462,7 @@ class SurvivingLinesPlot(HeatMapPlot, plot_name="surviving_commit_plot"):
 
 
 class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
+    """Plot the normalized evolution of commit interactions and LOC."""
 
     def calc_missing_revisions(
         self, boundary_gradient: float
