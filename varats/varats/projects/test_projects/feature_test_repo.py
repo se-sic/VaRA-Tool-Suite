@@ -71,6 +71,7 @@ class FeatureTestRepo(VProject):
 
             verify_binaries(self)
 
+
 class CommitFeatureInteractionExample(VProject):
     """Example project for commit feature interactions."""
 
