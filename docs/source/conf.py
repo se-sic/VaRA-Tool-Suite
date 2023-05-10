@@ -97,6 +97,9 @@ import click  # isort:skip
 import git  # isort:skip
 import urllib3.exceptions  # isort:skip
 
+# Some packages use new syntax for type checking that isn't available to us
+import jwt.algorithms
+
 import typing as tp  # isort:skip
 
 tp.TYPE_CHECKING = True
