@@ -95,6 +95,7 @@ import cryptography.hazmat.backends.openssl.backend  # isort:skip
 import cryptography.exceptions  # isort:skip
 import click  # isort:skip
 import git  # isort:skip
+import urllib3.exceptions  # isort:skip
 
 import typing as tp  # isort:skip
 
