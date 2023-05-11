@@ -99,6 +99,7 @@ class TestConfiguration(unittest.TestCase):
         """Test to compare configuration to a mapping."""
         config = ConfigurationImpl()
         config.add_config_option(ConfigurationOptionImpl("foo", 42))
+
         mapping_identical = {"foo": 42}
         mapping_not_identical = {"foo": 43}
         mapping_interpreted = {"foo": True}
@@ -115,6 +116,15 @@ class TestConfiguration(unittest.TestCase):
 
         self.assertFalse(config == mapping_not_interpreted)
         self.assertTrue(config != mapping_not_interpreted)
+
+        config_2 = ConfigurationImpl()
+        config_2.add_config_option(ConfigurationOptionImpl("foo", False))
+
+        self.assertFalse(config_2 == mapping_interpreted)
+        self.assertTrue(config_2 != mapping_interpreted)
+
+        self.assertTrue(config_2 == mapping_not_interpreted)
+        self.assertFalse(config_2 != mapping_not_interpreted)
 
     def test_equality_othertypes(self) -> None:
         """Test to compare configuration to each other."""
