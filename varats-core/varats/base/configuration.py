@@ -141,10 +141,11 @@ class Configuration:
                     if option.name not in other:
                         return False
                     if isinstance(other[option.name], bool):
-                        return other[option.name
-                                    ]  # type: ignore [no-any-return]
-                    return option.value == other[
-                        option.name]  # type: ignore [no-any-return]
+                        if bool(option.value) != other[option.name]:
+                            return False
+                    else:
+                        if option.value != other[option.name]:
+                            return False
                 return True
         return False
 
