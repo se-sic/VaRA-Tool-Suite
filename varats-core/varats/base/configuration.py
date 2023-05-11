@@ -179,7 +179,7 @@ class FrozenConfiguration(Configuration):
         return self.__configuration.dump_to_string()
 
     def freeze(self) -> 'FrozenConfiguration':
-        raise NotImplementedError
+        return self
 
     def unfreeze(self) -> Configuration:
         return deepcopy(self.__configuration)
@@ -358,7 +358,7 @@ class ConfigurationImpl(Configuration):
         return FrozenConfiguration(deepcopy(self))
 
     def unfreeze(self) -> Configuration:
-        raise NotImplementedError
+        return self
 
 
 class PlainConfigurationOption(ConfigurationOptionImpl):
@@ -409,4 +409,4 @@ class PlainCommandlineConfiguration(Configuration):
         return None
 
     def unfreeze(self) -> Configuration:
-        raise NotImplementedError
+        return self
