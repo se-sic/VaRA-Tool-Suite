@@ -44,7 +44,7 @@ class Configuration:
 
     @staticmethod
     @abc.abstractmethod
-    def create_configuration_from_str(config_str: str) -> "Configuration":
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
         """
         Creates a `Configuration` from its string representation.
 
@@ -110,7 +110,7 @@ class Configuration:
         raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
-    def freeze(self) -> "FrozenConfiguration":
+    def freeze(self) -> 'FrozenConfiguration':
         """
         Returns an unmodifiable (hashable) version of the configuration. Useful
         when you want to add a 'Configuration' as key to a 'dict' or as element
@@ -121,7 +121,7 @@ class Configuration:
         raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
-    def unfreeze(self) -> "Configuration":
+    def unfreeze(self) -> 'Configuration':
         """
         Returns an unmodifiable (hashable) version of the configuration.
 
@@ -160,7 +160,7 @@ class FrozenConfiguration(Configuration):
         self.__configuration = configuration
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> "Configuration":
+    def create_configuration_from_str(config_str: str) -> Configuration:
         raise NotImplementedError
 
     def options(self) -> tp.List[ConfigurationOption]:
@@ -178,10 +178,10 @@ class FrozenConfiguration(Configuration):
     def dump_to_string(self) -> str:
         return self.__configuration.dump_to_string()
 
-    def freeze(self) -> "FrozenConfiguration":
+    def freeze(self) -> 'FrozenConfiguration':
         raise NotImplementedError
 
-    def unfreeze(self) -> "Configuration":
+    def unfreeze(self) -> Configuration:
         return deepcopy(self.__configuration)
 
     def __hash__(self) -> int:
@@ -202,7 +202,7 @@ functionality. If a DummyConfiguration shows up in you configuration related
 part which accesses Configurations something is wrong with your setup."""
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> "Configuration":
+    def create_configuration_from_str(config_str: str) -> Configuration:
         """
         Creates a `Configuration` from its string representation.
 
@@ -245,10 +245,10 @@ part which accesses Configurations something is wrong with your setup."""
         """
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
-    def freeze(self) -> "FrozenConfiguration":
+    def freeze(self) -> FrozenConfiguration:
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
-    def unfreeze(self) -> "Configuration":
+    def unfreeze(self) -> Configuration:
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
 
@@ -272,7 +272,7 @@ class ConfigurationImpl(Configuration):
     """A configuration of a software project."""
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> "Configuration":
+    def create_configuration_from_str(config_str: str) -> Configuration:
         """
         Creates a `Configuration` from its string representation.
 
@@ -354,10 +354,10 @@ class ConfigurationImpl(Configuration):
             idx[1].name: idx[1].value for idx in self.__config_values.items()
         })
 
-    def freeze(self) -> "FrozenConfiguration":
+    def freeze(self) -> FrozenConfiguration:
         return FrozenConfiguration(deepcopy(self))
 
-    def unfreeze(self) -> "Configuration":
+    def unfreeze(self) -> Configuration:
         raise NotImplementedError
 
 
@@ -381,7 +381,7 @@ class PlainCommandlineConfiguration(Configuration):
         )
 
     @staticmethod
-    def create_configuration_from_str(config_str: str) -> "Configuration":
+    def create_configuration_from_str(config_str: str) -> Configuration:
         config_str_list = json.loads(config_str)
         return PlainCommandlineConfiguration(config_str_list)
 
@@ -408,5 +408,5 @@ class PlainCommandlineConfiguration(Configuration):
                 return option.value
         return None
 
-    def unfreeze(self) -> "Configuration":
+    def unfreeze(self) -> Configuration:
         raise NotImplementedError
