@@ -140,8 +140,11 @@ class Configuration:
                 for option in self.options():
                     if option.name not in other:
                         return False
-                    if bool(option.value) != other[option.name]:
-                        return False
+                    if isinstance(other[option.name], bool):
+                        return other[option.name
+                                    ]  # type: ignore [no-any-return]
+                    return option.value == other[
+                        option.name]  # type: ignore [no-any-return]
                 return True
         return False
 

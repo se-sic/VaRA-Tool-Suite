@@ -7,6 +7,7 @@ from varats.base.configuration import (
     DummyConfiguration,
     ConfigurationImpl,
     ConfigurationOptionImpl,
+    FrozenConfiguration,
 )
 
 
@@ -74,6 +75,56 @@ class TestConfiguration(unittest.TestCase):
 
         self.assertEqual(str(config), config.dump_to_string())
 
+    def test_equality_same(self) -> None:
+        """Test to compare configuration to each other."""
+        config = ConfigurationImpl()
+        config.add_config_option(ConfigurationOptionImpl("foo", 42))
+        config_2 = ConfigurationImpl()
+        config_2.add_config_option(ConfigurationOptionImpl("foo", 42))
+
+        self.assertTrue(config == config_2)
+        self.assertFalse(config != config_2)
+
+    def test_equality_different(self) -> None:
+        """Test to compare configuration to to each other."""
+        config = ConfigurationImpl()
+        config.add_config_option(ConfigurationOptionImpl("foo", 42))
+        config_2 = ConfigurationImpl()
+        config_2.add_config_option(ConfigurationOptionImpl("foo", False))
+
+        self.assertFalse(config == config_2)
+        self.assertTrue(config != config_2)
+
+    def test_equality_mapping(self) -> None:
+        """Test to compare configuration to a mapping."""
+        config = ConfigurationImpl()
+        config.add_config_option(ConfigurationOptionImpl("foo", 42))
+        mapping_identical = {"foo": 42}
+        mapping_not_identical = {"foo": 43}
+        mapping_interpreted = {"foo": True}
+        mapping_not_interpreted = {"foo": False}
+
+        self.assertTrue(config == mapping_identical)
+        self.assertFalse(config != mapping_identical)
+
+        self.assertFalse(config == mapping_not_identical)
+        self.assertTrue(config != mapping_not_identical)
+
+        self.assertTrue(config == mapping_interpreted)
+        self.assertFalse(config != mapping_interpreted)
+
+        self.assertFalse(config == mapping_not_interpreted)
+        self.assertTrue(config != mapping_not_interpreted)
+
+    def test_equality_othertypes(self) -> None:
+        """Test to compare configuration to each other."""
+        config = ConfigurationImpl()
+        config.add_config_option(ConfigurationOptionImpl("foo", 42))
+        other_object = 42
+
+        self.assertFalse(config == other_object)
+        self.assertTrue(config != other_object)
+
 
 class TestDummyConfiguration(unittest.TestCase):
     """Test if the Dummy Configuration does not allow any interface usage."""
@@ -106,3 +157,36 @@ class TestDummyConfiguration(unittest.TestCase):
         with self.assertRaises(AssertionError):
             d_config = DummyConfiguration()
             d_config.dump_to_string()
+
+    def test_crash_freeze(self) -> None:
+        with self.assertRaises(AssertionError):
+            d_config = DummyConfiguration()
+            d_config.freeze()
+
+    def test_crash_unfreeze(self) -> None:
+        with self.assertRaises(AssertionError):
+            d_config = DummyConfiguration()
+            d_config.unfreeze()
+
+
+class TestFrozenConfiguration(unittest.TestCase):
+    """Test freeze and unfreeze methods of a FrozenConfiguration."""
+
+    def test_freeze_and_unfreeze(self) -> None:
+        config = ConfigurationImpl()
+        config.add_config_option(ConfigurationOptionImpl("foo", 42))
+        frozen_config = config.freeze()
+
+        self.assertTrue(isinstance(frozen_config, FrozenConfiguration))
+        self.assertTrue(frozen_config == config)
+        self.assertTrue(frozen_config is frozen_config.freeze())
+        self.assertFalse(frozen_config is config)
+
+        with self.assertRaises(NotImplementedError):
+            frozen_config.add_config_option(ConfigurationOptionImpl("foo", 42))
+
+        unfrozen_config = frozen_config.unfreeze()
+        self.assertTrue(isinstance(unfrozen_config, ConfigurationImpl))
+        self.assertTrue(unfrozen_config == config)
+        self.assertTrue(unfrozen_config is unfrozen_config.unfreeze())
+        self.assertFalse(unfrozen_config is frozen_config)
