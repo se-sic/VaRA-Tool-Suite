@@ -35,9 +35,7 @@ class Dune(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    )
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
