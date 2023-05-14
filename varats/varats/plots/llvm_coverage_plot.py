@@ -189,6 +189,7 @@ def _affected_features(segments: Segments) -> tp.Set[str]:
     affected_by_features = set()
     for count, features in segments:
         features = "^".join(sorted(features))
+        features = f"({features})" if "^" in features else features
         if count is None or count == 0:
             # Not affected by features
             continue
