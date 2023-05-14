@@ -11,7 +11,7 @@ from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import get_local_project_git_path, BinaryType
+from varats.project.project_util import get_local_project_git_path, BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
