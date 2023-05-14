@@ -3,10 +3,12 @@ import typing as tp
 
 from plumbum import local
 
+from benchbuild.command import WorkloadSet, Command, SourceRoot
 from benchbuild.utils import cmd
 from benchbuild.utils.revision_ranges import RevisionRange
 import benchbuild as bb
 
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path, BinaryType
@@ -33,6 +35,49 @@ class Dune(VProject):
     ]
 
     # TODO: Container support
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot(NAME) / RSBinary("dune-performance-regressions")
+                , label="dune-helloworld"
+            )
+            , Command(
+                SourceRoot(NAME) / RSBinary("poisson-test")
+                , label="poisson-non-separated"
+                , creates=["poisson_UG_Pk_2d.vtu"
+                           , "poisson-yasp-Q1-2d.vtu"
+                           , "poisson-yasp-Q1-3d.vtu"
+                           , "poisson-yasp-Q2-2d.vtu"
+                           , "poisson-yasp-Q2-3d.vtu"]
+            )
+            , Command(
+                SourceRoot(NAME) / RSBinary("poisson-ug-pk-2d"),
+                label="poisson-ug-pk-2d"
+                , creates= ["poisson-UG-Pk-2d.vtu"]
+            )
+            , Command(
+                SourceRoot(NAME) / RSBinary("poisson-yasp-q1-2d")
+                , label="poisson-yasp-q1-2d"
+                , creates=["poisson-yasp-q1-2d.vtu"]
+            )
+            , Command(
+                SourceRoot(NAME) / RSBinary("poisson-yasp-q1-3d")
+                , label="poisson-yasp-q1-3d"
+                , creates=["poisson-yasp-q1-3d.vtu"]
+            )
+            , Command(
+                SourceRoot(NAME) / RSBinary("poisson-yasp-q2-2d")
+                , label="poisson-yasp-q2-2d"
+                , creates=["poisson-yasp-q2-2d.vtu"]
+            )
+            , Command(
+                SourceRoot(NAME) / RSBinary("poisson-yasp-q2-3d")
+                , label="poisson-yasp-q2-3d"
+                , creates=["poisson-yasp-q2-3d.vtu"]
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(revision: ShortCommitHash) -> tp.List['ProjectBinaryWrapper']:
@@ -73,8 +118,6 @@ class Dune(VProject):
                                   , only_valid_in=separated_poisson_range)
 
         return binary_map[revision]
-
-
 
     def compile(self) -> None:
         """Compile the project using the in-built tooling from dune"""
