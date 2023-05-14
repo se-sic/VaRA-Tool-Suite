@@ -7,6 +7,7 @@ from benchbuild.utils import cmd
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
@@ -34,7 +35,9 @@ class Dune(VProject):
         )
     ]
 
-    # TODO: Container support
+    CONTAINER = get_base_image(
+        ImageBase.DEBIAN_10
+    )
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
