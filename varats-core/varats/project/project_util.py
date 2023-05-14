@@ -310,49 +310,8 @@ class ProjectBinaryWrapper():
         return f"({str(self)})"
 
 
-def wrap_paths_to_binaries_with_name(
-    binaries: tp.List[tp.Tuple[str, str, BinaryType]]
-) -> tp.List[ProjectBinaryWrapper]:
-    """
-    Generates a wrapper for project binaries.
-
-    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
-                                           BinaryType.EXECUTABLE)])
-    [(fooer: src/foo | executable)]
-
-    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
-                                           BinaryType.EXECUTABLE), \
-                                          ("barer", "src/bar", \
-                                           BinaryType.SHARED_LIBRARY)])
-    [(fooer: src/foo | executable), (barer: src/bar | shared_library)]
-    """
-    return [ProjectBinaryWrapper(x[0], Path(x[1]), x[2]) for x in binaries]
-
-
-def wrap_paths_to_binaries(
-    binaries: tp.List[tp.Tuple[str, BinaryType]]
-) -> tp.List[ProjectBinaryWrapper]:
-    """
-    Generates a wrapper for project binaries, automatically infering the binary
-    name.
-
-    >>> wrap_paths_to_binaries([("src/foo", BinaryType.EXECUTABLE)])
-    [(foo: src/foo | executable)]
-
-    >>> wrap_paths_to_binaries([("src/foo.so", BinaryType.SHARED_LIBRARY)])
-    [(foo: src/foo.so | shared_library)]
-
-    >>> wrap_paths_to_binaries([("src/foo", BinaryType.STATIC_LIBRARY), \
-                                ("src/bar",BinaryType.EXECUTABLE)])
-    [(foo: src/foo | static_library), (bar: src/bar | executable)]
-    """
-    return wrap_paths_to_binaries_with_name([
-        (Path(x[0]).stem, x[0], x[1]) for x in binaries
-    ])
-
-
 class BinaryNotFound(CompilationError):
-    """Exception raised if an binary that should exist was not found."""
+    """Exception raised if a binary that should exist was not found."""
 
     @staticmethod
     def create_error_for_binary(

@@ -1,7 +1,6 @@
 {% raw %}#!/bin/bash
 #SBATCH -o /dev/null
 #SBATCH --ntasks {{ ntasks|default(1) }}
-#SBATCH --cpus-per-task {{ cpus|default(1) }}
 {% if max_running > 0 %}
 #SBATCH --array=0-{{ projects|length() - 1 }}%{{ max_running }}
 {% else %}

@@ -204,6 +204,7 @@ def __prepare_slurm_for_container() -> None:
     template_path = Path(
         str(vara_cfg()["benchbuild_root"])
     ) / "slurm_container.sh.inc"
+    bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
     bb_cfg()["slurm"]["node_dir"] = node_dir
     bb_cfg()["slurm"]["container_root"] = f"{node_dir}/containers/lib"
