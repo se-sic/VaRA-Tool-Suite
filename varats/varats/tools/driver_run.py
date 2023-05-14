@@ -25,7 +25,7 @@ from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.ts_utils.click_param_types import (
-    create_multi_experiment_type_choice
+    create_multi_experiment_type_choice,
 )
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
