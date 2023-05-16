@@ -16,11 +16,14 @@ from varats.data.reports.llvm_coverage_report import CoverageReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
+    exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
+    create_default_analysis_failure_handler,
     create_default_compiler_error_handler,
     create_new_success_result_filepath,
     get_extra_config_options,
     get_current_config_id,
+    wrap_unlimit_stack_size,
     ZippedExperimentSteps,
 )
 from varats.experiment.wllvm import (
@@ -45,6 +48,7 @@ from varats.report.report import ReportSpecification
 BC_FILE_EXTENSIONS = [
     BCFileExtensions.NO_OPT, BCFileExtensions.TBAA, BCFileExtensions.FEATURE
 ]
+TIMEOUT = "1h"
 
 
 class GenerateCoverage(actions.ProjectStep):  # type: ignore
@@ -68,6 +72,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         super().__init__(project=project)
         self.binary = binary
         self.__workload_cmds = workload_cmds
+        self.__experiment_handle = _experiment_handle
 
     def __call__(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
@@ -139,13 +144,26 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 )
                 copy(bc_path, bc_name)
 
-                opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
-                                  "-vara-view-IRegions",
-                                  f"-vara-report-outfile={ptfdd_report_name}",
-                                  "-S", bc_path] > str(ptfdd_report_name)
+                opt_command = opt[
+                    "-enable-new-pm=0", "-vara-PTFDD",
+                    "-vara-export-feature-dbg",
+                    # "-vara-view-IRegions",
+                    # f"-vara-report-outfile={ptfdd_report_name}",
+                    "-S", bc_path]
+
+                opt_command = wrap_unlimit_stack_size(opt_command)
+                opt_command = opt_command > str(ptfdd_report_name)
 
                 with cleanup(prj_command):
-                    opt_command()
+                    exec_func_with_pe_error_handler(
+                        run_cmd,
+                        create_default_analysis_failure_handler(
+                            self.__experiment_handle,
+                            self.project,
+                            CoverageReport,
+                            timeout_duration=TIMEOUT
+                        )
+                    )
 
         return actions.StepResult.OK
 
