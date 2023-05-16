@@ -36,10 +36,10 @@ class Curl(VProject):
         block_revisions([
             GoodBadSubgraph(["3af90a6e19249807f99bc9ee7b50d3e58849072a"],
                             ["30ef1a077996c71e463beae53354e8ffc7a4c90d"],
-                            "compile error without ssl"),
+                            "Compile error without ssl"),
             GoodBadSubgraph(["ae1912cb0d494b48d514d937826c9fe83ec96c4d"],
                             ["98dcde4ec3397d8626e2c8f29abaf481fc42e8ec"],
-                            "Checks for old libtool version")
+                            "Requires old libtool version")
         ])(
             PaperConfigSpecificGit(
                 project_name="curl",
