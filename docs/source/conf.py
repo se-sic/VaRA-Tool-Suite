@@ -95,6 +95,10 @@ import cryptography.hazmat.backends.openssl.backend  # isort:skip
 import cryptography.exceptions  # isort:skip
 import click  # isort:skip
 import git  # isort:skip
+import urllib3.exceptions  # isort:skip
+
+# Some packages use new syntax for type checking that isn't available to us
+import jwt.algorithms
 
 import typing as tp  # isort:skip
 
