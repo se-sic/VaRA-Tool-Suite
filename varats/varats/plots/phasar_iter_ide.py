@@ -14,6 +14,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.gridspec import GridSpec
+from matplotlib.markers import MarkerStyle, JoinStyle
 from matplotlib.ticker import Locator, FixedLocator, StrMethodFormatter
 
 from varats.data.reports.blame_interaction_graph import (
@@ -30,6 +31,7 @@ from varats.experiments.phasar.iter_ide import (
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
 )
+from varats.experiments.vara.iter_ide_br_iia import IterIDEBlameReportExperiment
 from varats.jupyterhelper.file import load_phasar_iter_ide_stats_report
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
@@ -56,6 +58,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
     TAINT = "Taint"
     TYPESTATE = "Typestate"
     LCA = "LCA"
+    IIA = "IIA"
 
     JF1 = 0
     JF2 = 1
@@ -90,6 +93,11 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                 report.new_lca_jf1, report.new_lca, report.new_lca_jf3,
                 report.old_lca
             ]
+        elif ana == self.IIA:
+            return [
+                report.new_iia_jf1, report.new_iia, report.new_iia_jf3,
+                report.old_iia
+            ]
         else:
             raise "ERROR: Invalid analysis: " + ana
 
@@ -121,8 +129,31 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                 get_case_study_file_name_filter(case_study)
             )
 
-            for report_file in report_files:
+            assert len(
+                report_files
+            ) <= 1, f"Invalid length of report_files list: got {len(report_files)}, expected 1"
+
+            iia_report_files = get_processed_revisions_files(
+                case_study.project_name, IterIDEBlameReportExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+
+            assert len(iia_report_files) <= 1
+
+            for report_file, iia_report_file in zip(
+                report_files, iia_report_files
+            ):
                 report = load_phasar_iter_ide_stats_report(report_file)
+                iia_report = load_phasar_iter_ide_stats_report(iia_report_file)
+                # print(iia_report)
+                if report is None:
+                    # print("Have IIA report, but no regular report")
+                    report = iia_report
+                elif not (iia_report is None):
+                    # print("Have both reports")
+                    report.merge_with(iia_report)
+
                 nodes.extend(
                     self._get_data_entries(report, case_study.project_name)
                 )
@@ -267,6 +298,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             # inner="point",
         )
         ax.axhline(1)
+
         ax = sns.stripplot(
             x="Analysis",
             y=self.YNAME,
@@ -274,8 +306,10 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             hue="JF",
             dodge=True,
             legend=False,
-            # color="black"
-            # palette='dark:black',
+            jitter=True,
+            marker='x',
+            edgecolor='face',
+            linewidth=1,
             ax=ax,
         )
         return ax
@@ -316,9 +350,17 @@ class PhasarIterIDEJF1JF2TimeViolinPlot(
                           cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
             aggregates = self._get_aggregates(report, ana)
+            # print(aggregates)
+            if aggregates[self.OLD] is None:
+                print(f"Skip {ana} with Old as there is no reference data")
             for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    print(
+                        f"Skip {ana} with {self._get_jf_name(jf)} as there is no data"
+                    )
+                    continue
                 for time, old_time in zip(
                     aggregates[jf].measurements_wall_clock_time,
                     aggregates[self.OLD].measurements_wall_clock_time
@@ -344,9 +386,13 @@ class PhasarIterIDESpeedupVsJF1Plot(
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
         # TODO: cross product (see __compute_speedups)
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
             aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.OLD] is None:
+                continue
             for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    continue
                 for s in PhasarIterIDEPlotBase.compute_speedups(
                     aggregates[self.OLD].measurements_wall_clock_time,
                     aggregates[jf].measurements_wall_clock_time
@@ -363,39 +409,10 @@ class PhasarIterIDESpeedupVsJF1Plot(
 
         return nodes
 
-    def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
-        ax = sns.violinplot(
-            x="Analysis",
-            y=self.YNAME,
-            data=data,
-            hue="JF",
-            cut=0,
-            palette="pastel",
-            # inner="point",
-        )
-        ax.axhline(1)
-        ax = sns.stripplot(
-            x="Analysis",
-            y=self.YNAME,
-            data=data,
-            hue="JF",
-            dodge=True,
-            legend=False,
-            # color="black"
-            # palette='dark:black',
-            # ax=ax
-        )
-        # fgrid = sns.catplot(
-        #     x="JF",
-        #     y=self.YNAME,
-        #     data=data,
-        #     hue="JF",
-        #     col="Analysis",
-        # )
-        # fgrid.set(ylim=(0,20))
-        # ax.set_ylim(top=20)
-        return ax
+    # def make_phasar_plot(self) -> matplotlib.axes.Axes:
+    #     ax = super().make_phasar_plot()
+    #     ax.axhline(1)
+    #     return ax
 
 
 class PhasarIterIDESpeedupHeatmap(
@@ -409,8 +426,10 @@ class PhasarIterIDESpeedupHeatmap(
                           cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
             aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.OLD] is None:
+                continue
 
             Old = aggregates[self.OLD].measurements_wall_clock_time
             JFMeanSpeedups = [
@@ -418,7 +437,7 @@ class PhasarIterIDESpeedupHeatmap(
                     self.compute_speedups(
                         Old, aggregates[jf].measurements_wall_clock_time
                     )
-                ) for jf in range(0, 3)
+                ) for jf in range(0, 3) if aggregates[jf] is not None
             ]
 
             MaxSpeedupJF, OtherJF = self.get_argmaxmin(JFMeanSpeedups)
@@ -472,14 +491,15 @@ class PhasarIterIDEMemSpeedupHeatmap(
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
-
+            if aggregates[self.OLD] is None:
+                continue
             Old = aggregates[self.OLD].max_resident_sizes
             JFMeanSpeedups = [
                 np.mean(
                     self.compute_speedups(
                         Old, aggregates[jf].max_resident_sizes
                     )
-                ) for jf in range(0, 3)
+                ) for jf in range(0, 3) if aggregates[jf] is not None
             ]
 
             # MaxSpeedupJF = int(np.argmax(JFMeanSpeedups))
@@ -536,6 +556,8 @@ class PhasarIterIDENewTime(
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
             for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    continue
                 for time in aggregates[jf].measurements_wall_clock_time:
                     nodes.append({
                         self.YNAME: time,
@@ -569,9 +591,13 @@ class PhasarIterIDEMemSpeedupVsJF1Plot(
                           cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
             aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.OLD] is None:
+                continue
             for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    continue
                 for s in PhasarIterIDEPlotBase.compute_speedups(
                     aggregates[self.OLD].max_resident_sizes,
                     aggregates[jf].max_resident_sizes
@@ -614,6 +640,8 @@ class PhasarIterIDENewMem(
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
             for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    continue
                 for mem in aggregates[jf].max_resident_sizes:
                     nodes.append({
                         self.YNAME: mem / 1000,
@@ -650,6 +678,8 @@ class PhasarIterIDEOldNewMemViolinPlot(
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
             for jf in [self.JF1, self.JF2, self.JF3, self.OLD]:
+                if aggregates[jf] is None:
+                    continue
                 for mem, old_mem in zip(
                     aggregates[jf].max_resident_sizes,
                     aggregates[self.OLD].max_resident_sizes
@@ -683,6 +713,8 @@ class PhasarIterIDEOldNewTimeViolinPlot(
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
             for jf in [0, 1, 2, 3]:
+                if aggregates[jf] is None:
+                    continue
                 for time in aggregates[jf].measurements_wall_clock_time:
                     nodes.append({
                         self.YNAME: time,

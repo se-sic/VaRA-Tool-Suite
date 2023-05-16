@@ -12,7 +12,7 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import time, mkdir, touch, opt
+from benchbuild.utils.cmd import time, mkdir, touch, opt, timeout, rm
 from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import RETCODE
 
@@ -59,6 +59,37 @@ class IterIDEBRIIAKind(Enum):
 
     def __str__(self) -> str:
         return f"{self.value}"
+
+
+def _run_phasar_analysis(phasar_cmd, result_file: Path) -> actions.StepResult:
+    run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+    run_cmd = timeout['-v', '5h', run_cmd]
+
+    (ret_code, stdout, stderr) = run_cmd.run(retcode=None)
+
+    if ret_code != 0:
+        if ret_code == 137:
+            error_file = result_file.with_suffix(".oom")
+            touch(error_file)
+            return actions.StepResult.OK
+
+        if "timeout: " in stderr:
+            error_file = result_file.with_suffix(".timeout")
+            touch(error_file)
+            rm(result_file)
+            return actions.StepResult.OK
+
+        error_file = result_file.with_suffix(".err")
+        with open(error_file, "w") as output_file:
+            output_file.write(f"Error Code: {ret_code}\n")
+            output_file.write("\nStdout:\n")
+            output_file.write(stdout)
+            output_file.write("\nStderr:\n")
+            output_file.write(stderr)
+
+        return actions.StepResult.ERROR
+
+    return actions.StepResult.OK
 
 
 class IterIDEBlameReportGeneration(actions.ProjectStep):  # type: ignore
@@ -115,19 +146,22 @@ class IterIDEBlameReportGeneration(actions.ProjectStep):  # type: ignore
 
         run_cmd = wrap_unlimit_stack_size(opt[opt_params])
         result_file = tmp_dir / f"new_iia_{self.__num}.txt"
-        run_cmd = time['-v', '-o', f"{result_file}", run_cmd]
 
-        ret_code = run_cmd & RETCODE
-        if ret_code == 137:
-            print("Found OOM (new)")
-            return actions.StepResult.OK
+        return _run_phasar_analysis(run_cmd, result_file)
+        # run_cmd = time['-v', '-o', f"{result_file}", run_cmd]
+        # run_cmd = timeout['5h', run_cmd]
 
-        if ret_code != 0:
-            error_file = tmp_dir / f"new_iia_{self.__num}_err_{ret_code}.txt"
-            touch(error_file)
-            return actions.StepResult.ERROR
+        # ret_code = run_cmd & RETCODE
+        # if ret_code == 137:
+        #     print("Found OOM (new)")
+        #     return actions.StepResult.OK
 
-        return actions.StepResult.OK
+        # if ret_code != 0:
+        #     error_file = tmp_dir / f"new_iia_{self.__num}_err_{ret_code}.txt"
+        #     touch(error_file)
+        #     return actions.StepResult.ERROR
+
+        # return actions.StepResult.OK
 
 
 class IterIDEBlameReportExperiment(VersionExperiment, shorthand="IterIDEBRIA"):
@@ -193,7 +227,7 @@ class IterIDEBlameReportExperiment(VersionExperiment, shorthand="IterIDEBRIA"):
         #     )
         # )
 
-        reps = range(0, 1)
+        reps = range(0, 3)
 
         analysis_actions.append(
             ZippedExperimentSteps(

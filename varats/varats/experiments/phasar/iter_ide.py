@@ -7,11 +7,14 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.extensions import compiler, run
+from benchbuild.project import Project
 from benchbuild.utils import actions
+from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import (
     iteridebenchmark,
     phasar_llvm,
     time,
+    timeout,
     mkdir,
     touch,
 )
@@ -103,6 +106,36 @@ def _get_enabled_worklist_kinds() -> tp.List[WorklistKind]:
     return [wl for wl in WorklistKind]
 
 
+def _run_phasar_analysis(phasar_cmd, result_file) -> actions.StepResult:
+    run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+    run_cmd = timeout['-v', '5h', run_cmd]
+
+    (ret_code, stdout, stderr) = run_cmd.run(retcode=None)
+
+    if ret_code != 0:
+        if ret_code == 137:
+            error_file = result_file.with_suffix(".oom")
+            touch(error_file)
+            return actions.StepResult.OK
+
+        if "timeout: " in stderr:
+            error_file = result_file.with_suffix(".timeout")
+            touch(error_file)
+            return actions.StepResult.OK
+
+        error_file = result_file.with_suffix(".err")
+        with open(error_file, "w") as output_file:
+            output_file.write(f"Error Code: {ret_code}\n")
+            output_file.write("\nStdout:\n")
+            output_file.write(stdout)
+            output_file.write("\nStderr:\n")
+            output_file.write(stderr)
+
+        return actions.StepResult.ERROR
+
+    return actions.StepResult.OK
+
+
 class IterIDETimeOld(actions.ProjectStep):  # type: ignore
 
     NAME = "OldIDESolver"
@@ -138,19 +171,30 @@ class IterIDETimeOld(actions.ProjectStep):  # type: ignore
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}.txt"
-        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        ret_code = run_cmd & RETCODE
-        if ret_code == 137:
-            print("Found OOM (old)")
-            return actions.StepResult.OK
+        return _run_phasar_analysis(phasar_cmd, result_file)
 
-        if ret_code != 0:
-            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
-            touch(error_file)
-            return actions.StepResult.ERROR
+        # run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+        # run_cmd = timeout['5h', run_cmd]
 
-        return actions.StepResult.OK
+        # (ret_code, stdout, stderr) = run_cmd.run(retcode=None)
+
+        # if ret_code == 137:
+        #     print("Found OOM (old)")
+        #     return actions.StepResult.OK
+
+        # if ret_code != 0:
+        #     error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+        #     with open(error_file, "w") as output_file:
+        #         output_file.write(f"Error Code: {ret_code}\n")
+        #         output_file.write("\nStdout:\n")
+        #         output_file.write(stdout)
+        #         output_file.write("\nStderr:\n")
+        #         output_file.write(stderr)
+
+        #     return actions.StepResult.ERROR
+
+        # return actions.StepResult.OK
 
 
 class IterIDETimeNew(actions.ProjectStep):  # type: ignore
@@ -190,19 +234,23 @@ class IterIDETimeNew(actions.ProjectStep):  # type: ignore
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
-        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        ret_code = run_cmd & RETCODE
-        if ret_code == 137:
-            print("Found OOM (new)")
-            return actions.StepResult.OK
+        return _run_phasar_analysis(phasar_cmd, result_file)
 
-        if ret_code != 0:
-            error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
-            touch(error_file)
-            return actions.StepResult.ERROR
+        # run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+        # run_cmd = timeout['5h', run_cmd]
 
-        return actions.StepResult.OK
+        # ret_code = run_cmd & RETCODE
+        # if ret_code == 137:
+        #     print("Found OOM (new)")
+        #     return actions.StepResult.OK
+
+        # if ret_code != 0:
+        #     error_file = tmp_dir / f"old_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+        #     touch(error_file)
+        #     return actions.StepResult.ERROR
+
+        # return actions.StepResult.OK
 
 
 class IterIDETimeNewJF1(actions.ProjectStep):  # type: ignore
@@ -240,19 +288,23 @@ class IterIDETimeNewJF1(actions.ProjectStep):  # type: ignore
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
-        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        ret_code = run_cmd & RETCODE
-        if ret_code == 137:
-            print("Found OOM (new)")
-            return actions.StepResult.OK
+        return _run_phasar_analysis(phasar_cmd, result_file)
 
-        if ret_code != 0:
-            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
-            touch(error_file)
-            return actions.StepResult.ERROR
+        # run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+        # run_cmd = timeout['5h', run_cmd]
 
-        return actions.StepResult.OK
+        # ret_code = run_cmd & RETCODE
+        # if ret_code == 137:
+        #     print("Found OOM (new)")
+        #     return actions.StepResult.OK
+
+        # if ret_code != 0:
+        #     error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+        #     touch(error_file)
+        #     return actions.StepResult.ERROR
+
+        # return actions.StepResult.OK
 
 
 class IterIDETimeNewJF3(actions.ProjectStep):  # type: ignore
@@ -290,19 +342,23 @@ class IterIDETimeNewJF3(actions.ProjectStep):  # type: ignore
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
-        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        ret_code = run_cmd & RETCODE
-        if ret_code == 137:
-            print("Found OOM (new)")
-            return actions.StepResult.OK
+        return _run_phasar_analysis(phasar_cmd, result_file)
 
-        if ret_code != 0:
-            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
-            touch(error_file)
-            return actions.StepResult.ERROR
+        # run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+        # run_cmd = timeout['5h', run_cmd]
 
-        return actions.StepResult.OK
+        # ret_code = run_cmd & RETCODE
+        # if ret_code == 137:
+        #     print("Found OOM (new)")
+        #     return actions.StepResult.OK
+
+        # if ret_code != 0:
+        #     error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+        #     touch(error_file)
+        #     return actions.StepResult.ERROR
+
+        # return actions.StepResult.OK
 
 
 class IterIDETimeNewGC(actions.ProjectStep):  # type: ignore
@@ -340,19 +396,23 @@ class IterIDETimeNewGC(actions.ProjectStep):  # type: ignore
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
-        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        ret_code = run_cmd & RETCODE
-        if ret_code == 137:
-            print("Found OOM (new)")
-            return actions.StepResult.OK
+        return _run_phasar_analysis(phasar_cmd, result_file)
 
-        if ret_code != 0:
-            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
-            touch(error_file)
-            return actions.StepResult.ERROR
+        # run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+        # run_cmd = timeout['5h', run_cmd]
 
-        return actions.StepResult.OK
+        # ret_code = run_cmd & RETCODE
+        # if ret_code == 137:
+        #     print("Found OOM (new)")
+        #     return actions.StepResult.OK
+
+        # if ret_code != 0:
+        #     error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+        #     touch(error_file)
+        #     return actions.StepResult.ERROR
+
+        # return actions.StepResult.OK
 
 
 class IterIDETimeNewGCJF1(actions.ProjectStep):  # type: ignore
@@ -390,19 +450,23 @@ class IterIDETimeNewGCJF1(actions.ProjectStep):  # type: ignore
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
 
         result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
-        run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
 
-        ret_code = run_cmd & RETCODE
-        if ret_code == 137:
-            print("Found OOM (new)")
-            return actions.StepResult.OK
+        return _run_phasar_analysis(phasar_cmd, result_file)
 
-        if ret_code != 0:
-            error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
-            touch(error_file)
-            return actions.StepResult.ERROR
+        # run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
+        # run_cmd = timeout['5h', run_cmd]
 
-        return actions.StepResult.OK
+        # ret_code = run_cmd & RETCODE
+        # if ret_code == 137:
+        #     print("Found OOM (new)")
+        #     return actions.StepResult.OK
+
+        # if ret_code != 0:
+        #     error_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}_err_{ret_code}.txt"
+        #     touch(error_file)
+        #     return actions.StepResult.ERROR
+
+        # return actions.StepResult.OK
 
 
 class IterIDECompareAnalysisResults(actions.ProjectStep):  # type: ignore
@@ -645,7 +709,68 @@ class PhasarIDEStats(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
+class PhasarBCStatsExperiment(VersionExperiment, shorthand="BCStats"):
+    """Experiment class to collect some statistics about the LLVM IR of the
+    target projects within the paper config."""
+
+    NAME = "PhasarBCStats"
+    REPORT_SPEC = ReportSpecification(PhasarIterIDEStatsReport)
+
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self)
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << RunWLLVM()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+        ]
+
+        # Only consider the main/first binary
+        print(f"{project.name}")
+        if len(project.binaries) < 1:
+            return []
+        binary = project.binaries[0]
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), self.REPORT_SPEC.main_report, project, binary
+        )
+
+        analysis_actions = []
+
+        analysis_actions += get_bc_cache_actions(
+            project,
+            bc_file_extensions=bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
+            )
+        )
+
+        reps = range(0, 3)
+
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_file, [
+                    PhasarIDEStats(project, binary),
+                ]
+            )
+        )
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+
+
 # TODO: fix wrong name
+
+
 class IDELinearConstantAnalysisExperiment(
     VersionExperiment, shorthand="IterIDE"
 ):
@@ -706,7 +831,7 @@ class IDELinearConstantAnalysisExperiment(
             )
         )
 
-        reps = range(0, 1)
+        reps = range(0, 3)
 
         analysis_actions.append(
             ZippedExperimentSteps(
@@ -826,7 +951,7 @@ class IDELinearConstantAnalysisExperimentDebug(
             )
         )
 
-        reps = range(0, 1)
+        reps = range(0, 3)
 
         analysis_actions.append(
             ZippedExperimentSteps(
