@@ -3,11 +3,13 @@
 import json
 import typing as tp
 from pathlib import Path
+from shutil import copy
 
 from benchbuild import Project
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
+from benchbuild.utils.cmd import opt
 from plumbum import local
 
 from varats.data.reports.llvm_coverage_report import CoverageReport
@@ -15,19 +17,34 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
     get_default_compile_error_wrapped,
+    create_default_compiler_error_handler,
     create_new_success_result_filepath,
     get_extra_config_options,
     get_current_config_id,
     ZippedExperimentSteps,
 )
-from varats.experiment.wllvm import RunWLLVM
+from varats.experiment.wllvm import (
+    RunWLLVM,
+    get_cached_bc_file_path,
+    BCFileExtensions,
+    Extract,
+)
 from varats.experiment.workload_util import (
     workload_commands,
     WorkloadCategory,
     create_workload_specific_filename,
 )
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
+from varats.provider.feature.feature_model_provider import (
+    FeatureModelNotFound,
+    FeatureModelProvider,
+)
 from varats.report.report import ReportSpecification
+
+BC_FILE_EXTENSIONS = [
+    BCFileExtensions.NO_OPT, BCFileExtensions.TBAA, BCFileExtensions.FEATURE
+]
 
 
 class GenerateCoverage(actions.ProjectStep):  # type: ignore
@@ -44,7 +61,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
     def __init__(
         self,
         project: Project,
-        binary: Path,
+        binary: ProjectBinaryWrapper,
         workload_cmds: tp.List[ProjectCommand],
         _experiment_handle: ExperimentHandle,
     ):
@@ -56,7 +73,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
-        """Runs project and export coverage."""
+        """Runs project and export coverage information + bc files."""
         with local.cwd(self.project.builddir):
             if not self.__workload_cmds:
                 # No workload to execute.
@@ -84,7 +101,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 llvm_cov = llvm_cov["export",
                                     f"--instr-profile={profdata_name}",
                                     Path(self.project.source_of_primary) /
-                                    self.binary]
+                                    self.binary.path]
 
                 with cleanup(prj_command):
                     run_cmd(*extra_args)
@@ -105,7 +122,46 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                     with open(json_name, "w") as file:
                         json.dump(coverage, file)
 
+                # BC file handling
+                bc_name = tmp_dir / create_workload_specific_filename(
+                    "coverage_report",
+                    prj_command.command,
+                    file_suffix=f".{extra_args}.bc"
+                )
+                ptfdd_report_name = tmp_dir / create_workload_specific_filename(
+                    "coverage_report",
+                    prj_command.command,
+                    file_suffix=f".{extra_args}.ptfdd"
+                )
+
+                bc_path = get_cached_bc_file_path(
+                    self.project, self.binary, BC_FILE_EXTENSIONS
+                )
+                copy(bc_path, bc_name)
+
+                opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
+                                  "-vara-view-IRegions",
+                                  f"-vara-report-outfile={ptfdd_report_name}",
+                                  "-S", bc_path] > str(ptfdd_report_name)
+
+                with cleanup(prj_command):
+                    opt_command()
+
         return actions.StepResult.OK
+
+
+def get_feature_model_path(project: Project) -> Path:
+    """Return the path to the feature model or raise an exception."""
+    # FeatureModelProvider
+    provider = FeatureModelProvider.create_provider_for_project(project)
+    if provider is None:
+        raise FeatureModelNotFound(project, None)
+
+    path = provider.get_feature_model_path(project)
+
+    if path is None or not path.exists():
+        raise FeatureModelNotFound(project, path)
+    return path
 
 
 class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
@@ -121,9 +177,23 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
+        # Try, to build the project without optimizations to get more precise
+        # blame annotations. Note: this does not guarantee that a project is
+        # build without optimizations because the used build tool/script can
+        # still add optimizations flags after the experiment specified cflags.
+        #project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
+        project.cflags += ["-O1", "-g"]
+
         # Activate source-based code coverage:
         # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
         project.cflags += ["-fprofile-instr-generate", "-fcoverage-mapping"]
+
+        feature_model = get_feature_model_path(project).absolute()
+        # Get clang to output bc files with feature annotations
+        project.cflags += [
+            "-fvara-feature",
+            f"-fvara-fm-path={feature_model}",
+        ]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = (
@@ -142,6 +212,17 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
+        analysis_actions.append(
+            Extract(
+                project,
+                BC_FILE_EXTENSIONS,
+                handler=create_default_compiler_error_handler(
+                    self.get_handle(),
+                    project,
+                    self.get_handle().report_spec().main_report,
+                )
+            )
+        )
 
         # Only consider binaries with a workload
         for binary in project.binaries:
@@ -164,8 +245,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
                     result_filepath,
                     [
                         GenerateCoverage(
-                            project, binary.path, workload_cmds,
-                            self.get_handle()
+                            project, binary, workload_cmds, self.get_handle()
                         )
                     ],
                 )
