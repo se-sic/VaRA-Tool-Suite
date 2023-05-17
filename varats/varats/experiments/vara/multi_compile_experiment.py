@@ -19,9 +19,9 @@ class Flags:
 
     def __init__(
         self,
-        cflags: tp.List[str] | None = None,
-        ldflags: tp.List[str] | None = None,
-        result_folder_name: str | None = None
+        cflags: tp.Optional[tp.List[str]] = None,
+        ldflags: tp.Optional[tp.List[str]] = None,
+        result_folder_name: tp.Optional[str] = None
     ):
         self.__cflags = cflags or []
         self.__ldflags = ldflags or []
@@ -36,7 +36,7 @@ class Flags:
         return self.__ldflags
 
     @property
-    def result_folder_name(self) -> str | None:
+    def result_folder_name(self) -> tp.Optional[str]:
         return self.__result_folder_name
 
     def __str__(self):
