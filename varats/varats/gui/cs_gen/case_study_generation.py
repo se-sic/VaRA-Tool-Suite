@@ -29,7 +29,6 @@ from varats.paper_mgmt.case_study import (
 from varats.project.project_util import (
     get_loaded_vara_projects,
     get_local_project_git_path,
-    get_local_project_git,
     get_project_cls_by_name,
     get_primary_project_source,
 )
@@ -136,11 +135,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         strategy specific arguments."""
         cmap = get_commit_map(self.selected_project, refspec='HEAD')
         version = self.cs_version.value()
-        case_study = CaseStudy(self.revision_list_project, version)
-        paper_config = vara_cfg()["paper_config"]["current_config"].value
-        path = Path(vara_cfg()["paper_config"]["folder"].value) / (
-            paper_config + f"/{self.revision_list_project}_{version}.case_study"
-        )
+        case_study = CaseStudy(self.selected_project, version)
 
         if self.strategie_forms.currentIndex(
         ) == GenerationStrategy.SAMPLE.value:
@@ -165,6 +160,11 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
                 get_local_project_git_path(self.selected_project),
                 self.revs_per_year.value(), self.seperate.checkState()
             )
+
+        paper_config = vara_cfg()["paper_config"]["current_config"].value
+        path = Path(
+            vara_cfg()["paper_config"]["folder"].value
+        ) / (paper_config + f"/{self.selected_project}_{version}.case_study")
         store_case_study(case_study, path)
 
     def show_project_data(self, index: QModelIndex) -> None:
@@ -183,12 +183,12 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             commits = num_project_commits(project_name, last_commit)
             authors = num_project_authors(project_name, last_commit)
             project_info = f"{project_name.upper()} : " \
-                           f"\nDomain: {project.DOMAIN}" \
-                           f"\nSource: " \
+                           f"\n  Domain: \t{project.DOMAIN}" \
+                           f"\n  Source: \t" \
                            f"{bb.source.primary(*project.SOURCE).remote}" \
-                           f"\n Commits: {commits}" \
-                           f"\n Auhtors: {authors}" \
-                           f"\nSize: {project_loc} loc"
+                           f"\n  Commits: \t{commits}" \
+                           f"\n  Authors: \t{authors}" \
+                           f"\n  Size: \t{project_loc} loc"
             self.project_details.setText(project_info)
             self.project_details.update()
         if self.strategie_forms.currentIndex(
@@ -234,9 +234,10 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
     def show_revision_data(self, index: QModelIndex) -> None:
         """Update the revision data field."""
         commit = self.revision_list.model().data(index, Qt.WhatsThisRole)
-        commit_info = f"{commit.hex}\nAuthor:{commit.author.name}," \
-                      f"{commit.author.email}\n" \
-                      f"Msg:{commit.message}"
+        commit_info = f"{commit.hex}:\n" \
+                      f"{commit.author.name}, " \
+                      f"<{commit.author.email}>\n\n" \
+                      f"{commit.message}"
         self.selected_commit = commit.hex
         self.revision_details.setText(commit_info)
         self.revision_details.update()
@@ -321,7 +322,7 @@ class CommitTableModel(QAbstractTableModel):
 
 
 class VaRATSGui:
-    """Start VaRA-TS grafical user interface for graphs."""
+    """Start VaRA-TS graphical user interface for graphs."""
 
     def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
