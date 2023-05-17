@@ -144,12 +144,11 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 )
                 copy(bc_path, bc_name)
 
-                opt_command = opt[
-                    "-enable-new-pm=0", "-vara-PTFDD",
-                    "-vara-export-feature-dbg",
-                    # "-vara-view-IRegions",
-                    # f"-vara-report-outfile={ptfdd_report_name}",
-                    "-S", bc_path]
+                opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
+                                  "-vara-export-feature-dbg",
+                                  #"-vara-view-IRegions",
+                                  f"-vara-report-outfile={ptfdd_report_name}",
+                                  "-S", bc_path]
 
                 opt_command = wrap_unlimit_stack_size(opt_command)
                 opt_command = opt_command > str(ptfdd_report_name)
@@ -200,7 +199,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         #project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
-        project.cflags += ["-O1", "-g"]
+        project.cflags += ["-O0", "-g"]
 
         # Activate source-based code coverage:
         # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
