@@ -59,7 +59,8 @@ class RunUntraced(FeatureExperiment, shorthand="RU"):
         )
 
 
-class RunTraced(VaryingStartingBudgetExperiment, shorthand="RT"):
+
+class RunTraced(FeatureExperiment, shorthand="RT"):
     """Build and run the traced version of the binary"""
 
     NAME = "RunTraced"
@@ -117,6 +118,76 @@ class RunTracedNaive(RunTraced, shorthand=RunTraced.SHORTHAND + "N"):
 
 
 class RunTracedAlternating(RunTraced, shorthand=RunTraced.SHORTHAND + "A"):
+    """Build and run the traced version of the binary"""
+
+    NAME = "RunTracedAlternating"
+
+    @property
+    @abstractmethod
+    def optimizer_policy(self) -> OptimizerPolicyType:
+        return OptimizerPolicyType.ALTERNATING
+
+
+class RunTracedBudget(VaryingStartingBudgetExperiment, shorthand="RTB"):
+    """Build and run the traced version of the binary"""
+
+    NAME = "RunTracedBudget"
+    REPORT_SPEC = ReportSpecification(WLTimeReportAggregate)
+
+    @property
+    @abstractmethod
+    def optimizer_policy(self) -> OptimizerPolicyType:
+        return OptimizerPolicyType.NONE
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+
+        project.cflags += [
+            "-mllvm",
+            f"-vara-optimizer-policy={self.optimizer_policy.value}",
+        ]
+
+        actions = []
+        for binary in project.binaries:
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary
+            )
+            actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        TimeProjectWorkloads(
+                            project,
+                            num,
+                            binary,
+                            categories=[
+                                WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
+                            ]
+                        ) for num in range(MEASUREMENT_REPS)
+                    ]
+                )
+            )
+
+        return self.get_common_tracing_actions(
+            project, FeatureInstrType.TEF, actions, save_temps=True
+        )
+
+
+
+
+class RunTracedNaiveBudget(RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "N"):
+    """Build and run the traced version of the binary"""
+
+    NAME = "RunTracedNaive"
+
+    @property
+    @abstractmethod
+    def optimizer_policy(self) -> OptimizerPolicyType:
+        return OptimizerPolicyType.NAIVE
+
+
+class RunTracedAlternatingBudget(RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "A"):
     """Build and run the traced version of the binary"""
 
     NAME = "RunTracedAlternating"
