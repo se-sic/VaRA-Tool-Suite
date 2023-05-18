@@ -136,7 +136,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 ptfdd_report_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",
                     prj_command.command,
-                    file_suffix=f".{extra_args}.ptfdd"
+                    file_suffix=f".ptfdd"
                 )
 
                 bc_path = get_cached_bc_file_path(
@@ -151,11 +151,11 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                                   "-S", bc_path]
 
                 opt_command = wrap_unlimit_stack_size(opt_command)
-                opt_command = opt_command > str(ptfdd_report_name)
+                opt_command = opt_command > f"{ptfdd_report_name}.log"
 
                 with cleanup(prj_command):
                     exec_func_with_pe_error_handler(
-                        run_cmd,
+                        opt_command,
                         create_default_analysis_failure_handler(
                             self.__experiment_handle,
                             self.project,
