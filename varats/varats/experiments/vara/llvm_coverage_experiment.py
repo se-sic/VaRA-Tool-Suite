@@ -136,7 +136,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
                 ptfdd_report_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",
                     prj_command.command,
-                    file_suffix=f".ptfdd"
+                    file_suffix=".ptfdd"
                 )
 
                 bc_path = get_cached_bc_file_path(
