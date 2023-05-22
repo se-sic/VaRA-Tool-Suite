@@ -3,6 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake
+from benchbuild.utils.revision_ranges import GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -38,8 +39,8 @@ class Libxml2(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)\
-        .run('apt', 'install', '-y', 'wget', 'liblzma-dev')\
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10) \
+        .run('apt', 'install', '-y', 'wget', 'liblzma-dev') \
         .run('/bin/bash', '-c',
              'wget -qO- '
              '\"https://cmake.org/files/v3.20'
@@ -62,11 +63,17 @@ class Libxml2(VProject):
     def compile(self) -> None:
         """Compile the project."""
         libxml2_version_source = local.path(self.source_of(self.primary_source))
-
+        libxml2_versions_wo_cmake = GoodBadSubgraph([
+            "01791d57d650e546a915522e57c079157a5bb395"
+        ], ["2a2c38f3a35f415e7f407e171c07bb48bda0711e"], "No CmakeList")
+        libxml2_version = self.version_of_primary
         c_compiler = bb.compiler.cc(self)
         with local.cwd(libxml2_version_source):
             with local.env(CC=str(c_compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", ".")
+                if libxml2_version in libxml2_versions_wo_cmake:
+                    bb.watch(local["./configure"])
+                else:
+                    bb.watch(cmake)("-G", "Unix Makefiles", ".")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
