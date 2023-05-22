@@ -11,129 +11,56 @@ from varats.report.report import BaseReport
 from varats.utils.git_util import CommitRepoPair
 
 
-class FeatureCommitRegionInstruction():
-    """An instruction that has one or more feature-commit interaction and its
-    location in the project."""
+class CommitFeatureInteraction():
+    """A CommitFeatureInteraction detailing the specific commit-hash and repo
+    and feature and the number of instructions this cfi occurs in."""
 
     def __init__(
-        self, instruction: str, location: str, features: tp.List[str],
-        commit: CommitRepoPair
+        self, num_instructions: int, feature: str, commit: CommitRepoPair
     ) -> None:
-        self.__instruction = instruction
-        self.__location = location
-        self.__features = features
+        self.__num_instructions = num_instructions
+        self.__feature = feature
         self.__commit = commit
 
     @staticmethod
-    def create_feature_tainted_instruction(
+    def create_commit_feature_interaction(
         raw_inst_entry: tp.Dict[str, tp.Any]
-    ) -> 'FeatureCommitRegionInstruction':
-        """Creates a `FeatureCommitRegionInstruction` entry from the
-        corresponding yaml document section."""
-        instruction = str(raw_inst_entry['inst'])
-        location = str(raw_inst_entry['location'])
-        features: tp.List[str] = raw_inst_entry['features']
-        crp: tp.Dict[str, any] = raw_inst_entry['commit']
+    ) -> 'CommitFeatureInteraction':
+        """Creates a `CommitFeatureInteraction` entry from the corresponding
+        yaml document section."""
+        num_instructions = int(raw_inst_entry['num-instructions'])
+        feature: str = str(raw_inst_entry['feature'])
         commit: CommitRepoPair = CommitRepoPair(
-            crp['commit'], crp['repository']
+            raw_inst_entry['commit-hash'], raw_inst_entry['commit-repo']
         )
-        return FeatureCommitRegionInstruction(
-            instruction, location, features, commit
-        )
+        return CommitFeatureInteraction(num_instructions, feature, commit)
 
     def print(self) -> None:
-        """'FeatureCommitRegionInstruction' prints itself."""
-        print("    -FEATURE COMMIT REGION INSTRUCTION")
-        print("      -INSTRUCTION: " + self.__instruction)
-        print("      -LOCATION: " + self.__location)
-        print("      -FEATURES: ")
-        for feature_region in self.__features:
-            print("        -" + feature_region)
-        print("      -COMMIT: ")
+        """'CommitFeatureInteraction' prints itself."""
+        print("    -COMMIT FEATURE INTERACTION")
+        print("      -NUM OF INSTRUCTIONS: " + str(self.__num_instructions))
+        print("      -FEATURE: " + self.__feature)
         print("        -HASH: " + self.__commit.commit_hash.__str__())
         print("        -REPO: " + self.__commit.repository_name)
 
     @property
-    def instruction(self) -> str:
-        """instruction containg commit and feature regions."""
-        return self.__instruction
+    def num_instructions(self) -> int:
+        """number of instructions the specified cfi occurs in."""
+        return self.__num_instructions
 
     @property
-    def location(self) -> str:
-        """Location of instruction in the project."""
-        return self.__location
+    def feature(self) -> str:
+        """The feature of this cfi."""
+        return self.__feature
 
     @property
-    def features(self) -> tp.List[str]:
-        """List of feature regions of this instruction."""
-        return self.__features
-
-    @property
-    def commit_region(self) -> CommitRepoPair:
-        """commit region of this instruction."""
+    def commit(self) -> CommitRepoPair:
+        """commit of this cfi."""
         return self.__commit
 
     def is_terminator(self) -> bool:
         br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
         return br_regex.search(self.__instruction) is not None
-
-
-class FeatureBlameResultFunctionEntry():
-    """Collection of all feature commit region instructions for a specific
-    function."""
-
-    def __init__(
-        self, name: str, demangled_name: str,
-        feature_commit_region_insts: tp.List[FeatureCommitRegionInstruction]
-    ) -> None:
-        self.__name = name
-        self.__demangled_name = demangled_name
-        self.__feature_commit_region_insts = feature_commit_region_insts
-
-    @staticmethod
-    def create_feature_blame_result_function_entry(
-        name: str, raw_function_entry: tp.Dict[str, tp.Any]
-    ) -> 'FeatureBlameResultFunctionEntry':
-        """Creates a `FeatureBlameResultFunctionEntry` from the corresponding
-        yaml document section."""
-        demangled_name = str(raw_function_entry['demangled-name'])
-        inst_list: tp.List[FeatureCommitRegionInstruction] = []
-        for raw_inst_entry in raw_function_entry[
-            'commit-feature-interaction-related-insts']:
-            inst_list.append(
-                FeatureCommitRegionInstruction.
-                create_feature_tainted_instruction(raw_inst_entry)
-            )
-        return FeatureBlameResultFunctionEntry(name, demangled_name, inst_list)
-
-    def print(self) -> None:
-        """'FeatureBlameResultFunctionEntry' prints itself."""
-        print("  -FEATURE BLAME RESULT FUNCTION ENTRY")
-        print("    -FUNCTION: " + self.demangled_name)
-        for feature_commit_region_inst in self.__feature_commit_region_insts:
-            feature_commit_region_inst.print()
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the function.
-
-        The name is mangled for C++ code, either with the itanium or windows
-        mangling schema.
-        """
-        return self.__name
-
-    @property
-    def demangled_name(self) -> str:
-        """Demangled name of the function."""
-        return self.__demangled_name
-
-    @property
-    def feature_commit_region_insts(
-        self
-    ) -> tp.List[FeatureCommitRegionInstruction]:
-        """List of found feature commit region instructions."""
-        return self.__feature_commit_region_insts
 
 
 class FeatureBlameReportMetaData():
@@ -194,25 +121,26 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
             self.__meta_data = FeatureBlameReportMetaData \
                 .create_feature_analysis_report_meta_data(next(documents))
 
-            self.__function_entries: tp.Dict[
-                str, FeatureBlameResultFunctionEntry] = {}
+            self.__commit_feature_interactions: tp.Dict[
+                str, CommitFeatureInteraction] = {}
             raw_feature_blame_report = next(documents)
-            for raw_func_entry in raw_feature_blame_report['result-map']:
-                new_function_entry = (
-                    FeatureBlameResultFunctionEntry.
-                    create_feature_blame_result_function_entry(
-                        raw_func_entry,
-                        raw_feature_blame_report['result-map'][raw_func_entry]
+            counter: int = 1
+            for cfi in raw_feature_blame_report['commit-feature-interactions']:
+                key: str = "cfi_" + str(counter)
+                new_cfi = (
+                    CommitFeatureInteraction.create_commit_feature_interaction(
+                        raw_feature_blame_report['commit-feature-interactions']
+                        [key]
                     )
                 )
-                self.__function_entries[new_function_entry.name
-                                       ] = new_function_entry
+                self.__commit_feature_interactions[key] = new_cfi
+                counter = counter + 1
 
     def print(self) -> None:
         """'FeatureBlameReport' prints itself."""
         print("FEATURE BLAME REPORT")
-        for feature_blame_result_func_entr in self.__function_entries.values():
-            feature_blame_result_func_entr.print()
+        for cfi in self.__commit_feature_interactions.values():
+            cfi.print()
 
     @property
     def meta_data(self) -> FeatureBlameReportMetaData:
@@ -221,23 +149,8 @@ class FeatureBlameReport(BaseReport, shorthand="FBR", file_type="yaml"):
         return self.__meta_data
 
     @property
-    def function_entries(
+    def commit_feature_interactions(
         self
-    ) -> tp.ValuesView[FeatureBlameResultFunctionEntry]:
-        """Iterate over all function entries."""
-        return self.__function_entries.values()
-
-    def get_feature_analysis_result_function_entry(
-        self, mangled_function_name: str
-    ) -> FeatureBlameResultFunctionEntry:
-        """
-        Get the result entry for a specific function.
-
-        Args:
-            mangled_function_name: mangled name of the function to look up
-        """
-        return self.__function_entries[mangled_function_name]
-
-    # def get_feature_locations_dict(self) -> tp.Dict[str, tp.Set[str]]:
-    # """Returns a dictionary that maps a feature name to a list of all
-    # locations of tainted br and switch instructions."""
+    ) -> tp.ValuesView[CommitFeatureInteraction]:
+        """Iterate over all cfis."""
+        return self.__commit_feature_interactions.values()
