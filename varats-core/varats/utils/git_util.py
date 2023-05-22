@@ -10,7 +10,6 @@ from types import TracebackType
 
 import pygit2
 from benchbuild.utils.cmd import git, grep
-from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local, TF, RETCODE
 
 from varats.project.project_util import (
@@ -23,6 +22,8 @@ from varats.project.project_util import (
 )
 
 if tp.TYPE_CHECKING:
+    from benchbuild.utils.revision_ranges import AbstractRevisionRange
+
     import varats.mapping.commit_map as cm  # pylint: disable=W0611
 
 LOG = logging.Logger(__name__)
@@ -274,6 +275,26 @@ def get_all_revisions_between(
         )
     )
     return list(map(hash_type, result))
+
+
+def typed_revision_range(
+    rev_range: 'AbstractRevisionRange', repo_path: Path,
+    hash_type: tp.Type[CommitHashTy]
+) -> tp.Iterator[CommitHashTy]:
+    """
+    Typed iterator for revision ranges.
+
+    Args:
+        rev_range: the revision range to iterate
+        repo_path: the path to the git repo
+        hash_type: the commit type to use for iteration
+
+    Returns:
+        an iterator over the typed commits in the range
+    """
+    rev_range.init_cache(str(repo_path))
+    for revision in rev_range:
+        yield hash_type(revision)
 
 
 def get_commits_before_timestamp(
@@ -696,8 +717,7 @@ def get_submodule_head(
     commit_pattern = re.compile(
         r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
     )
-    match = commit_pattern.search(submodule_status)
-    if match:
+    if (match := commit_pattern.search(submodule_status)):
         return FullCommitHash(match.group(1))
 
     raise AssertionError(f"Unknown submodule {submodule_name}")
@@ -934,8 +954,7 @@ def calc_code_churn(
     stdout = git(__get_git_path_arg(repo_path), diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
-    match = GIT_DIFF_MATCHER.match(stdout)
-    if match:
+    if (match := GIT_DIFF_MATCHER.match(stdout)):
 
         def value_or_zero(match_result: tp.Any) -> int:
             if match_result is not None:
@@ -1082,14 +1101,15 @@ class RevisionBinaryMap(tp.Container[str]):
 
     def __init__(self, repo_location: Path) -> None:
         self.__repo_location = repo_location
-        self.__revision_specific_mappings: tp.Dict[RevisionRange,
+        self.__revision_specific_mappings: tp.Dict['AbstractRevisionRange',
                                                    ProjectBinaryWrapper] = {}
         self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
 
     def specify_binary(
         self, location: str, binary_type: BinaryType, **kwargs: tp.Any
-    ) -> None:
+    ) -> 'RevisionBinaryMap':
         """
+        Add a binary to the map.
 
         Args:
             location: where the binary can be found, relative to the
@@ -1100,6 +1120,9 @@ class RevisionBinaryMap(tp.Container[str]):
             only_valid_in: additionally specifies a validity range that
                            specifies in which revision range this binary is
                            produced
+
+        Returns:
+            self for builder-style usage
         """
         binary_location_path = Path(location)
         binary_name: str = kwargs.get(
@@ -1120,6 +1143,8 @@ class RevisionBinaryMap(tp.Container[str]):
             self.__revision_specific_mappings[validity_range] = wrapped_binary
         else:
             self.__always_valid_mappings.append(wrapped_binary)
+
+        return self
 
     def __getitem__(self,
                     revision: CommitHash) -> tp.List[ProjectBinaryWrapper]:

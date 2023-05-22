@@ -4,6 +4,7 @@ Driver module for `vara-container`.
 This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
+import getpass
 import itertools
 import logging
 import re
@@ -13,7 +14,9 @@ from pathlib import Path
 from subprocess import PIPE
 
 import click
+import jinja2
 from benchbuild.utils.cmd import benchbuild, sbatch
+from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
 
@@ -21,9 +24,16 @@ from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
+from varats.ts_utils.click_param_types import (
+    create_multi_experiment_type_choice,
+)
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
+
+if tp.TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from varats.experiment.experiment_util import VersionExperiment
 
 LOG = logging.Logger(__name__)
 
@@ -81,7 +91,11 @@ def __validate_project_parameters(
     "--container", is_flag=True, help="Run experiments in a container."
 )
 @click.option(
-    "-E", "--experiment", required=True, help="The experiment to run."
+    "-E",
+    "--experiment",
+    type=create_multi_experiment_type_choice(),
+    required=True,
+    help="The experiment to run."
 )
 @click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")
 @click.argument("projects", nargs=-1, callback=__validate_project_parameters)
@@ -90,7 +104,7 @@ def main(
     slurm: bool,
     submit: bool,
     container: bool,
-    experiment: str,
+    experiment: tp.List[tp.Type['VersionExperiment']],
     projects: tp.List[str],
     pretend: bool,
 ) -> None:
@@ -125,13 +139,7 @@ def main(
 
     if container:
         if slurm:
-            if not __is_slurm_prepared():
-                click.echo(
-                    "It seems like benchbuild is not properly "
-                    "configured for slurm + containers. "
-                    "Please run 'vara-container prepare-slurm' first."
-                )
-                sys.exit(1)
+            __prepare_slurm_for_container()
             bb_extra_args = ["--", "container", "run"]
             if bb_cfg()["container"]["import"].value:
                 bb_extra_args.append("--import")
@@ -151,13 +159,18 @@ def main(
 
     bb_args = list(
         itertools.chain(
-            bb_command_args, ["-E", experiment], projects, bb_extra_args
+            bb_command_args, *[["-E", e.NAME] for e in experiment], projects,
+            bb_extra_args
         )
     )
 
+    env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
+
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
-            with benchbuild[bb_args].bgrun(stdout=PIPE, stderr=PIPE) as bb_proc:
+            with benchbuild[bb_args].bgrun(
+                stdout=PIPE, stderr=PIPE, env=env
+            ) as bb_proc:
                 try:
                     _, stdout, _ = tee(bb_proc)
                 except KeyboardInterrupt:
@@ -186,14 +199,40 @@ def main(
             sys.exit(1)
 
 
-def __is_slurm_prepared() -> bool:
-    """Check whether the slurm/container setup seems to be configured
-    properly."""
-    if not bb_cfg()["container"]["root"].value:
-        return False
-    if not Path(bb_cfg()["slurm"]["template"].value).exists():
-        return False
-    return True
+def __prepare_slurm_for_container() -> None:
+    """Prepare the benchbuild slurm config for container use."""
+    node_dir = f"/tmp/{getpass.getuser()}"
+    template_path = Path(
+        str(vara_cfg()["benchbuild_root"])
+    ) / "slurm_container.sh.inc"
+    bb_cfg()["jobs"] = 0
+    bb_cfg()["slurm"]["template"] = str(template_path)
+    bb_cfg()["slurm"]["node_dir"] = node_dir
+    bb_cfg()["slurm"]["container_root"] = f"{node_dir}/containers/lib"
+    bb_cfg()["slurm"]["container_runroot"] = f"{node_dir}/containers/run"
+
+    __render_slurm_script_template(
+        template_path, [
+            repr(vara_cfg()["paper_config"]["folder"]),
+            repr(vara_cfg()["paper_config"]["current_config"]),
+            repr(vara_cfg()["container"]["research_tool"])
+        ]
+    )
+
+
+def __render_slurm_script_template(
+    output_path: Path, env_vars: tp.List[str]
+) -> None:
+    loader = jinja2.PackageLoader('varats.tools', 'templates')
+    env = jinja2.Environment(
+        trim_blocks=True, lstrip_blocks=True, loader=loader
+    )
+    template = env.get_template("slurm_container.sh.inc")
+
+    with open(output_path, 'w') as slurm2:
+        slurm2.write(
+            template.render(vara_config=[f"export {x}" for x in env_vars])
+        )
 
 
 if __name__ == '__main__':

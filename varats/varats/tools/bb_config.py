@@ -15,28 +15,12 @@ from varats.tools.tool_util import (
 from varats.utils.settings import add_vara_experiment_options
 
 
-def create_new_bb_config(
-    varats_cfg: s.Configuration,
-    include_test_projects: bool = False
-) -> s.Configuration:
-    """
-    Create a new default bb config.
-
-    For internal use only! If you want to access the current bb config, use
-    :func:`bb_cfg()` instead.
-
-    Args:
-        varats_cfg: the varats config this bb config is based on
-        include_test_projects: changes whether test projects are included
-
-    Returns:
-        a new default bb config object
-    """
-    from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
-    new_bb_cfg = deepcopy(BB_CFG)
-
-    # Projects for VaRA
-    projects_conf = new_bb_cfg["plugins"]["projects"]
+def update_projects(
+    bb_cfg: s.Configuration, include_test_projects: bool = False
+) -> None:
+    """update the projects entry in the benchbuild config to contain our
+    projects."""
+    projects_conf = bb_cfg["plugins"]["projects"]
     # If we want later to use default BB projects
     # projects_conf.value[:] = [ x for x in projects_conf.value
     #                           if not x.endswith('gzip')]
@@ -110,8 +94,10 @@ def create_new_bb_config(
             'varats.projects.perf_tests.feature_perf_regression'
         ]
 
-    # Experiments for VaRA
-    projects_conf = new_bb_cfg["plugins"]["experiments"]
+
+def update_experiments(bb_cfg: s.Configuration) -> None:
+    """update the given benchbuild config to contain our experiments."""
+    projects_conf = bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
@@ -120,6 +106,7 @@ def create_new_bb_config(
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.vara.agg_region_interaction_perf_runner',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
@@ -133,6 +120,33 @@ def create_new_bb_config(
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.vara.feature_region_verifier_experiment',
     ]
+
+
+def create_new_bb_config(
+    varats_cfg: s.Configuration,
+    include_test_projects: bool = False
+) -> s.Configuration:
+    """
+    Create a new default bb config.
+
+    For internal use only! If you want to access the current bb config, use
+    :func:`bb_cfg()` instead.
+
+    Args:
+        varats_cfg: the varats config this bb config is based on
+        include_test_projects: changes whether test projects are included
+
+    Returns:
+        a new default bb config object
+    """
+    from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+    new_bb_cfg = deepcopy(BB_CFG)
+
+    # Projects for VaRA
+    update_projects(new_bb_cfg, include_test_projects)
+
+    # Experiments for VaRA
+    update_experiments(new_bb_cfg)
     # yapf: enable
 
     # Enable version exploration by default

@@ -1,8 +1,10 @@
 """Project file for htop."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
+from benchbuild.utils.revision_ranges import GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -16,7 +18,11 @@ from varats.project.project_util import (
     get_local_project_git_path,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import (
+    ShortCommitHash,
+    RevisionBinaryMap,
+    typed_revision_range,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -59,12 +65,25 @@ class Htop(VProject):
     def compile(self) -> None:
         """Compile the project."""
         htop_source = local.path(self.source_of_primary)
+        htop_version_source = Path(self.source_of_primary)
+        htop_version = ShortCommitHash(self.version_of_primary)
+
+        configure_flags: tp.List[str] = []
+
+        # older htop versions do not declare some globals as extern properly
+        old_revs = GoodBadSubgraph(["d6231bab89d634da5564491196b7c478db038505"],
+                                   ["dfd9279f87791e36a5212726781c31fbe7110361"],
+                                   "Needs CFLAGS=-fcommon")
+        if htop_version in typed_revision_range(
+            old_revs, htop_version_source, ShortCommitHash
+        ):
+            configure_flags += ["CFLAGS=-fcommon"]
 
         clang = bb.compiler.cc(self)
         with local.cwd(htop_source):
             with local.env(CC=str(clang)):
                 bb.watch(local["./autogen.sh"])()
-                bb.watch(local["./configure"])()
+                bb.watch(local["./configure"])(*configure_flags)
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 

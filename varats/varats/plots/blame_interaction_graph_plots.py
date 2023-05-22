@@ -40,6 +40,7 @@ from varats.ts_utils.click_param_types import (
     REQUIRE_REVISION,
     REQUIRE_CASE_STUDY,
 )
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
@@ -58,7 +59,10 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
 
     def save(self, plot_dir: Path, filetype: str = 'svg') -> None:
         project_name = self.plot_kwargs["case_study"].project_name
-        revision = ShortCommitHash(self.plot_kwargs["revision"])
+        commit_map = get_commit_map(project_name)
+        short_revision = ShortCommitHash(self.plot_kwargs["revision"])
+        revision = commit_map.convert_to_full_or_warn(short_revision)
+
         cig = create_blame_interaction_graph(
             project_name, revision, BlameReportExperiment
         ).commit_interaction_graph()
@@ -75,7 +79,7 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CommitInteractionGraphPlotGenerator(
@@ -186,7 +190,7 @@ class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CIGChordPlotGenerator(
@@ -247,7 +251,7 @@ class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CIGArcPlotGenerator(
@@ -356,7 +360,7 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CIGNodeDegreePlotGenerator(
@@ -430,7 +434,7 @@ class AuthorInteractionGraphNodeDegreePlot(Plot, plot_name='aig_node_degrees'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class AIGNodeDegreePlotGenerator(
@@ -494,7 +498,7 @@ class CommitAuthorInteractionGraphNodeDegreePlot(
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CAIGNodeDegreePlotGenerator(

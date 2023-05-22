@@ -172,13 +172,12 @@ class BlameInteractionDegreeDatabase(
                          list_of_lib_degree_amount_tuples
                      )
 
-                    for i, _ in enumerate(inter_degrees):
-                        degree = inter_degrees[i]
+                    for i, inter_deg in enumerate(inter_degrees):
                         lib_amount = inter_amounts[i]
 
                         interaction_data_dict = build_dataframe_row(
                             degree_type=DegreeType.INTERACTION,
-                            degree=degree,
+                            degree=inter_deg,
                             amount=lib_amount,
                             total_amount=total_amounts_of_all_libs,
                             base_library=base_lib_name,
@@ -192,10 +191,10 @@ class BlameInteractionDegreeDatabase(
                 amounts: tp.List[int],
                 sum_amounts: int,
             ) -> None:
-                for k, _ in enumerate(degrees):
+                for k, deg in enumerate(degrees):
                     data_dict = build_dataframe_row(
                         degree_type=degree_type,
-                        degree=degrees[k],
+                        degree=deg,
                         amount=amounts[k],
                         total_amount=sum_amounts
                     )

@@ -13,8 +13,8 @@ from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 from pygtrie import CharTrie
 
 import varats.paper_mgmt.paper_config_manager as PCM
+from tests.helper_utils import DummyGit
 from tests.paper.test_case_study import YAML_CASE_STUDY
-from tests.test_utils import DummyGit
 from tests.utils.test_experiment_util import (
     MockExperiment,
     MockExperimentMultiReport,

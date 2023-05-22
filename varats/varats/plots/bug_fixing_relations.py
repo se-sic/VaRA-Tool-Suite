@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+import click
 import numpy as np
 import numpy.typing as npt
 import plotly.graph_objs as gob
@@ -16,6 +17,7 @@ from varats.experiments.szz.szz_unleashed_experiment import (
     SZZUnleashedExperiment,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git,
@@ -23,6 +25,9 @@ from varats.project.project_util import (
 from varats.provider.bug.bug import PygitBug, as_pygit_bug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.revision.revisions import get_processed_revisions_files
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -91,7 +96,7 @@ def _plot_chord_diagram_for_raw_bugs(
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
 
     for commit in project_repo.walk(
-        project_repo.head.target.id, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.GIT_SORT_TIME
     ):
         commit_type[commit] = NodeType.DEFAULT
 
@@ -229,17 +234,18 @@ def _generate_line_data(
 def _generate_node_data(
     project_repo: pygit2.Repository,
     commit_coordinates: tp.List[npt.NDArray[np.float64]],
-    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, NodeType]
+    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[pygit2.Commit,
+                                                              NodeType]
 ) -> tp.List[gob.Scatter]:
     nodes = []
 
     for commit in project_repo.walk(
-        project_repo.head.target.id, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.GIT_SORT_TIME
     ):
         # draw commit nodes using preprocessed commit types
         commit_id = map_commit_to_id[commit]
 
-        if commit.id == project_repo.head.target.id:
+        if commit.id == project_repo.head.target:
             commit_type[commit] = NodeType.FIXING_HEAD if commit_type[
                 commit] == NodeType.FIX else NodeType.HEAD
 
@@ -247,7 +253,7 @@ def _generate_node_data(
         node_size = 10 if commit_type[commit] == NodeType.HEAD or commit_type[
             commit] == NodeType.FIXING_HEAD else 8
         displayed_message = commit.message.partition('\n')[0]
-        node_label = f'Type: {commit_type[commit.hex]}<br>' \
+        node_label = f'Type: {commit_type[commit]}<br>' \
                      f'Hash: {commit.hex}<br>' \
                      f'Author: {commit.author.name}<br>' \
                      f'Date: {datetime.fromtimestamp(commit.commit_time)}<br>' \
@@ -269,8 +275,7 @@ def _create_line(
     dist = _get_distance(start, end)
     interval = _get_interval(dist)
 
-    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
-    control_points: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array([
+    control_points: np.ndarray[tp.Literal[2], np.dtype[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
@@ -281,7 +286,10 @@ def _create_line(
         x=curve_points[:, 0],
         y=curve_points[:, 1],
         mode='lines',
-        line=dict(color=color, shape='spline'),
+        line={
+            'color': color,
+            'shape': 'spline'
+        },
         hoverinfo='none'
     )
 
@@ -294,20 +302,24 @@ def _create_node(
         y=[coordinates[1]],
         mode='markers',
         name='',
-        marker=dict(symbol='circle', size=size, color=color),
+        marker={
+            'symbol': 'circle',
+            'size': size,
+            'color': color
+        },
         text=text,
         hoverinfo='text'
     )
 
 
 def _create_layout(title: str) -> gob.Layout:
-    axis = dict(
-        showline=False,
-        zeroline=False,
-        showgrid=False,
-        showticklabels=False,
-        title=''
-    )  # hide the axis
+    axis = {
+        'showline': False,
+        'zeroline': False,
+        'showgrid': False,
+        'showticklabels': False,
+        'title': ''
+    }  # hide the axis
 
     width = 900
     height = 900
@@ -321,7 +333,12 @@ def _create_layout(title: str) -> gob.Layout:
         yaxis=dict(axis),
         hovermode='closest',
         clickmode='event',
-        margin=dict(l=0, r=0, b=0, t=50),
+        margin={
+            'l': 0,
+            'r': 0,
+            'b': 0,
+            't': 50
+        },
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
@@ -379,7 +396,6 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
 
 
 def _get_bezier_curve(
-    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
     ctrl_points: npt.NDArray[np.float64],
     num_points: int = 5
 ) -> npt.NDArray[np.float64]:
@@ -474,8 +490,8 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
 
     NAME = 'bug_relation_graph'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(plot_config, **kwargs)
         self.__szz_tool: str = kwargs.get('szz_tool', 'pydriller')
         self.__figure: gob.Figure = gob.Figure()
 
@@ -485,7 +501,7 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
 
     def plot(self, view_mode: bool) -> None:
         """Plots bug plot for the whole project."""
-        project_name = self.plot_kwargs['project']
+        project_name = self.plot_kwargs['case_study'].project_name
         project_repo = get_local_project_git(project_name)
 
         bug_provider = BugProvider.get_provider_for_project(
@@ -521,31 +537,24 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning("No data for this plot.")
             return
         self.__figure.show()
 
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'html'
-    ) -> None:
+    def save(self, plot_dir: Path, filetype: str = 'html') -> None:
         """
         Save the current plot to a file. Supports html, json and image
         filetypes.
 
         Args:
-            path: The path where the file is stored (excluding the file name).
-            filetype: The file type of the plot.
+            plot_dir: path where the file is stored (excluding the file name)
+            filetype: file type of the plot
         """
         try:
             self.plot(False)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning("No data for this plot.")
             return
-
-        if path is None:
-            plot_dir = Path(self.plot_kwargs["plot_dir"])
-        else:
-            plot_dir = path
 
         output_path_prefix = f"{plot_dir}/" if plot_dir else ""
 
@@ -582,4 +591,24 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         """Plot always includes all revisions."""
-        return set()
+        raise UnsupportedOperation
+
+
+SZZ_TOOL_CHOICE: CLIOptionTy = make_cli_option(
+    "--szz-tool",
+    type=click.Choice(["pydriller", "szz_unleashed", "szz_diff"]),
+    default=None,
+    required=True,
+    help="Which SZZ tool was used for generating the data."
+)
+
+
+class BugFixingRelationPlotGenerator(
+    PlotGenerator,
+    generator_name="bug-fix-relations",
+    options=[REQUIRE_CASE_STUDY, SZZ_TOOL_CHOICE]
+):
+    """Generates a case study overview plot."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [BugFixingRelationPlot(self.plot_config, **self.plot_kwargs)]

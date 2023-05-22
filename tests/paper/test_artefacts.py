@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from tests.test_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.experiments.base.just_compile import JustCompileReport
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import (

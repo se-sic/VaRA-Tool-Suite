@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from tests.test_utils import run_in_test_environment
+from tests.helper_utils import run_in_test_environment
 from varats.data.cache_helper import (
     build_cached_report_table,
     get_data_file_path,

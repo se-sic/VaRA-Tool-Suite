@@ -367,7 +367,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             )
 
     def get_install_binaries(self) -> tp.List[str]:
-        return ["bin/clang++", "bin/opt", "bin/phasar-llvm"]
+        return ["bin/clang++", "bin/opt", "bin/phasar-cli"]
 
     def verify_install(self, install_location: Path) -> bool:
         """
@@ -378,7 +378,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """
         status_ok = self.install_exists(install_location)
 
-        # Check that clang++ can display it's version
+        # Check that clang++ can display its version
         clang = local[str(install_location / "bin/clang++")]
         ret, stdout, _ = clang.run("--version")
 
@@ -386,9 +386,9 @@ class VaRA(ResearchTool[VaRACodeBase]):
         status_ok &= ret == 0
         status_ok &= vara_name in stdout
 
-        # Check that phasar-llvm can display it's version
-        phasar_llvm = local[str(install_location / "bin/phasar-llvm")]
-        ret, stdout, _ = phasar_llvm.run("--version")
+        # Check that phasar-cli can display its version
+        phasar_cli = local[str(install_location / "bin/phasar-cli")]
+        ret, stdout, _ = phasar_cli.run("--version")
         status_ok &= ret == 0
 
         phasar_name = self.code_base.get_sub_project("phasar").name.lower()
@@ -423,16 +423,39 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ret, _, _ = ninja.run("check-vara")
         return bool(ret == 0)
 
+
+# ContainerInstallable protocol implementation ---------------------------------
+
+    def container_install_dependencies(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> None:
+        """
+        Add layers for installing this research tool's dependencies to the given
+        container.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        """
+        if self.get_dependencies().has_dependencies_for_distro(
+            stage_builder.base.distro
+        ):
+            stage_builder.layers.run(
+                *(
+                    self.get_dependencies().
+                    get_install_command(stage_builder.base.distro).split(" ")
+                )
+            )
+
     def container_install_tool(
-        self, image_context: 'containers.BaseImageCreationContext'
+        self, stage_builder: 'containers.StageBuilder'
     ) -> None:
         """
         Add layers for installing this research tool to the given container.
 
         Args:
-            image_context: the base image creation context
+            stage_builder: the builder object for the current container stage
         """
-        img_name = image_context.base.name
+        img_name = stage_builder.base.name
         vara_install_dir = str(self.install_location()) + "_" + img_name
         if not self.install_exists(Path(vara_install_dir)):
             raise AssertionError(
@@ -441,8 +464,24 @@ class VaRA(ResearchTool[VaRACodeBase]):
                 f"to compile VaRA for this base image."
             )
 
-        container_vara_dir = image_context.varats_root / (
+        container_vara_dir = stage_builder.varats_root / (
             "tools/VaRA_" + img_name
         )
-        image_context.layers.copy_([vara_install_dir], str(container_vara_dir))
-        image_context.append_to_env("PATH", [str(container_vara_dir / 'bin')])
+        stage_builder.layers.copy_([vara_install_dir], str(container_vara_dir))
+
+    def container_tool_env(
+        self, stage_builder: 'containers.StageBuilder'
+    ) -> tp.Dict[str, tp.List[str]]:
+        """
+        Tool-specific container configuration in the form of environment
+        variables.
+
+        Args:
+            stage_builder: the builder object for the current container stage
+        Returns:
+            a dictionary of environment variables and their values
+        """
+        container_vara_dir = stage_builder.varats_root / (
+            "tools/VaRA_" + stage_builder.base.name
+        )
+        return {"PATH": [str(container_vara_dir / 'bin')]}

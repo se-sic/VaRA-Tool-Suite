@@ -26,6 +26,7 @@ from varats.project.project_util import (
 )
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     create_commit_lookup_helper,
     CommitRepoPair,
@@ -136,7 +137,7 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class CentralCodeScatterPlotGenerator(
@@ -202,7 +203,7 @@ class AuthorInteractionScatterPlot(
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
+        raise UnsupportedOperation
 
 
 class AuthorInteractionScatterPlotGenerator(

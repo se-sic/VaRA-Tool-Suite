@@ -5,6 +5,7 @@ import unittest.mock as mock
 from pathlib import Path
 
 from varats.data.reports.szz_report import SZZReport, SZZUnleashedReport
+from varats.utils.git_util import FullCommitHash
 
 YAML_DOC_HEADER = """---
 DocType:         SZZReport
@@ -61,37 +62,39 @@ class TestBlameReport(unittest.TestCase):
     def test_get_raw_bug_by_fix(self):
         """Test if we get the correct bugs."""
         bug1 = self.report.get_raw_bug_by_fix(
-            "029c5c8aaa410aa7ddb2bdf192201af4672e5af6"
+            FullCommitHash("029c5c8aaa410aa7ddb2bdf192201af4672e5af6")
         )
         self.assertIsNotNone(bug1)
         if bug1:
             self.assertEqual(len(bug1.introducing_commits), 1)
             self.assertEqual(
-                bug1.fixing_commit, "029c5c8aaa410aa7ddb2bdf192201af4672e5af6"
+                bug1.fixing_commit,
+                FullCommitHash("029c5c8aaa410aa7ddb2bdf192201af4672e5af6")
             )
             self.assertIn(
-                "e8999a84efbd9c3e739bff7af39500d14e61bfbc",
+                FullCommitHash("e8999a84efbd9c3e739bff7af39500d14e61bfbc"),
                 bug1.introducing_commits
             )
 
         bug2 = self.report.get_raw_bug_by_fix(
-            "02dc0af07eb7c08ca7644c29e9aaa779ee591da9"
+            FullCommitHash("02dc0af07eb7c08ca7644c29e9aaa779ee591da9")
         )
         self.assertIsNotNone(bug2)
         if bug2:
             self.assertEqual(
-                bug2.fixing_commit, "02dc0af07eb7c08ca7644c29e9aaa779ee591da9"
+                bug2.fixing_commit,
+                FullCommitHash("02dc0af07eb7c08ca7644c29e9aaa779ee591da9")
             )
             self.assertEqual(len(bug2.introducing_commits), 3)
             self.assertIn(
-                "e8999a84efbd9c3e739bff7af39500d14e61bfbc",
+                FullCommitHash("e8999a84efbd9c3e739bff7af39500d14e61bfbc"),
                 bug2.introducing_commits
             )
             self.assertIn(
-                "9231f9e1a7d52712a06390ece55a30fe0d60677a",
+                FullCommitHash("9231f9e1a7d52712a06390ece55a30fe0d60677a"),
                 bug2.introducing_commits
             )
             self.assertIn(
-                "fa26077135ea9102195980a9ae3fc2ec686f84ba",
+                FullCommitHash("fa26077135ea9102195980a9ae3fc2ec686f84ba"),
                 bug2.introducing_commits
             )

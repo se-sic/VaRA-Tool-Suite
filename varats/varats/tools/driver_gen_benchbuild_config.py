@@ -7,9 +7,13 @@ import typing as tp
 
 import click
 
-from varats.tools.bb_config import create_new_bb_config
+from varats.tools.bb_config import (
+    create_new_bb_config,
+    update_projects,
+    update_experiments,
+)
 from varats.ts_utils.cli_util import cli_yn_choice
-from varats.utils.settings import save_config, vara_cfg, save_bb_config
+from varats.utils.settings import save_config, vara_cfg, save_bb_config, bb_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -20,8 +24,17 @@ LOG = logging.getLogger(__name__)
     type=click.Path(),
     help="Set an alternative BenchBuild root folder."
 )
+@click.option(
+    "--update",
+    is_flag=True,
+    help="Only update projects and experiments, and keep other values."
+)
 @click.option("--test-projects", is_flag=True, help="Include test projects")
-def main(bb_root: tp.Optional[str] = None, test_projects: bool = False) -> None:
+def main(
+    bb_root: tp.Optional[str] = None,
+    update: bool = False,
+    test_projects: bool = False
+) -> None:
     """
     Main function for the benchbuild config creator.
 
@@ -51,8 +64,13 @@ def main(bb_root: tp.Optional[str] = None, test_projects: bool = False) -> None:
         LOG.info(f"Setting BB path to: {vara_cfg()['benchbuild_root']}")
         save_config()
 
-    bb_cfg = create_new_bb_config(vara_cfg(), test_projects)
-    save_bb_config(bb_cfg)
+    if update:
+        config = bb_cfg()
+        update_projects(config, test_projects)
+        update_experiments(config)
+    else:
+        config = create_new_bb_config(vara_cfg(), test_projects)
+    save_bb_config(config)
 
 
 if __name__ == '__main__':

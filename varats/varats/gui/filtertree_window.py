@@ -116,11 +116,10 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
         self._setEditorsInvisible()
 
     def setSelection(self, current: QModelIndex, old: QModelIndex) -> None:
-        node = current.internalPointer()
 
         self._setEditorsInvisible()
 
-        if node is not None:
+        if (node := current.internalPointer()) is not None:
             if node.name() == 'AndOperator':
                 pass
             if node.name() == 'OrOperator':

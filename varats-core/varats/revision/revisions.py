@@ -69,8 +69,8 @@ def filter_blocked_revisions(
 
 def __get_result_files_dict(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
-    report_type: tp.Optional[tp.Type[BaseReport]] = None
+    opt_experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
+    opt_report_type: tp.Optional[tp.Type[BaseReport]] = None
 ) -> tp.Dict[ShortCommitHash, tp.List[ReportFilepath]]:
     """
     Returns a dict that maps the commit_hash to a list of all result files of
@@ -78,8 +78,8 @@ def __get_result_files_dict(
 
     Args:
         project_name: target project
-        experiment_type: the experiment type that created the result files
-        report_type: the report type of the result files;
+        opt_experiment_type: the experiment type that created the result files
+        opt_report_type: the report type of the result files;
                      defaults to experiment's main report
     """
     res_dir = Path(f"{vara_cfg()['result_dir']}/{project_name}/")
@@ -89,9 +89,20 @@ def __get_result_files_dict(
                                  tp.List[ReportFilepath]] = defaultdict(list)
     if not res_dir.exists():
         return result_files
+    if opt_experiment_type is None:
+        condition: tp.Callable[[ReportFilename], bool] = lambda x: True
+    else:
+        experiment_type = opt_experiment_type
+        if opt_report_type:
+            report_type = opt_report_type
+        else:
+            report_type = experiment_type.report_spec().main_report
 
-    if report_type is None:
-        report_type = experiment_type.report_spec().main_report
+        def matches_report_type(file: ReportFilename) -> bool:
+            return file.report_shorthand == report_type.shorthand(
+            ) and file.experiment_shorthand == experiment_type.shorthand()
+
+        condition = matches_report_type
 
     for res_file in res_dir.rglob("*"):
         if res_file.is_dir():
@@ -99,9 +110,7 @@ def __get_result_files_dict(
 
         report_filepath = ReportFilepath.construct(res_file, res_dir)
         report_file = report_filepath.report_filename
-        if report_file.is_result_file(
-        ) and report_file.report_shorthand == report_type.shorthand(
-        ) and report_file.experiment_shorthand == experiment_type.shorthand():
+        if report_file.is_result_file() and condition(report_file):
             commit_hash = report_file.commit_hash
             result_files[commit_hash].append(report_filepath)
 
@@ -111,7 +120,7 @@ def __get_result_files_dict(
 def __get_files_with_status(
     project_name: str,
     file_statuses: tp.List[FileStatusExtension],
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -156,7 +165,7 @@ def __get_files_with_status(
 
 def get_all_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -186,7 +195,7 @@ def get_all_revisions_files(
 
 def get_processed_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True
@@ -230,7 +239,7 @@ def get_processed_revision_files(
 
 def get_failed_revisions_files(
     project_name: str,
-    experiment_type: tp.Type["exp_u.VersionExperiment"],
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
     only_newest: bool = True

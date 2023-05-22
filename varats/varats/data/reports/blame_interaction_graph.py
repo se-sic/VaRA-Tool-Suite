@@ -2,12 +2,12 @@
 import abc
 import itertools
 import re
-import sys
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
+from typing import TypedDict
 
 import networkx as nx
 from benchbuild.utils.cmd import git
@@ -36,11 +36,6 @@ from varats.utils.git_util import (
     get_submodule_head,
     ShortCommitHash,
 )
-
-if sys.version_info <= (3, 8):
-    from typing_extensions import TypedDict
-else:
-    from typing import TypedDict
 
 if tp.TYPE_CHECKING:
     # pylint: disable=W0611
