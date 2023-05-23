@@ -39,7 +39,9 @@ class Git(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+    CONTAINER = get_base_image(
+        ImageBase.DEBIAN_10
+    ).run('apt-get', 'install', '-y', 'libcurl4-openssl-dev', 'zlib1g')
 
     @staticmethod
     def binaries_for_revision(
