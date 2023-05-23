@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import shutil
 import string
@@ -29,17 +30,23 @@ class CodeRegionKind(int, Enum):
     BRANCH = 4
 
 
-@dataclass
-class Segment:
+@dataclass(frozen=True)
+class FrozenLocation:
     line: int
     column: int
 
 
-class RegionStart(Segment):
+@dataclass
+class Location:
+    line: int
+    column: int
+
+
+class RegionStart(Location):
     pass
 
 
-class RegionEnd(Segment):
+class RegionEnd(Location):
     pass
 
 
@@ -53,6 +60,9 @@ class CodeRegion:
     function: str
     parent: tp.Optional[CodeRegion] = None
     childs: tp.List[CodeRegion] = field(default_factory=list)
+    # TODO
+    # vara_features: tp.List[str] = field(default_factory=list)
+    # coverage_features: tp.List[str] = field(default_factory=list)
 
     @classmethod
     def from_list(cls, region: tp.List[int], function: str) -> CodeRegion:
@@ -255,6 +265,30 @@ class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
     """Mapping from filenames to FunctionCodeRegions."""
 
 
+class FeatureKind(Enum):
+    FeatureVariable = "FVar"
+    FeatureRegion = "FReg"
+
+
+@dataclass
+class VaraInstr:
+    kind: FeatureKind
+    source_file: Path
+    line: int
+    column: int
+    features: tp.List[str]
+    instr_index: int
+    instr: str
+
+
+class LocationInstrMapping(tp.DefaultDict[Location, tp.List[VaraInstr]]):
+    """Mapping from location to VaRAInstr."""
+
+
+class FilenameLocationMapping(tp.DefaultDict[str, LocationInstrMapping]):
+    """Mapping from filenames to Locations."""
+
+
 class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     """Parses llvm-cov export json files and displays them."""
 
@@ -283,6 +317,16 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     json_file,
                     c_r.filename_function_mapping,
                 )
+
+            def csv_filter(y: Path) -> bool:
+                return y.name.endswith(".csv") or y.name.endswith(".ptfdd")
+
+            for csv_file in filter(csv_filter, Path(tmpdir).iterdir()):
+                c_r.vara_feature_location_export = c_r._parse_instrs(
+                    csv_file,
+                    c_r.vara_feature_location_export,
+                )
+
         return c_r
 
     def __init__(self, path: Path) -> None:
@@ -290,6 +334,10 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         self.filename_function_mapping = FilenameFunctionMapping(
             FunctionCodeRegionMapping
+        )
+        # filename => (line, column) => (type, features, instr_index, instr)
+        self.vara_feature_location_export = FilenameLocationMapping(
+            lambda: LocationInstrMapping(lambda: list())
         )
 
     def merge(self, report: CoverageReport) -> None:
@@ -331,6 +379,29 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 assert code_region_a == code_region_b
 
                 code_region_a.diff(code_region_b)
+
+    def _parse_instrs(
+        self, csv_file: Path, filename_location_mapping: FilenameLocationMapping
+    ) -> FilenameLocationMapping:
+        with csv_file.open() as file:
+            reader = csv.DictReader(file, quotechar="'", delimiter=";")
+            for row in reader:
+                kind = FeatureKind(row["type"])
+                source_file = row["source_file"]
+                line = int(row["line"])
+                column = int(row["column"])
+                location = FrozenLocation(line, column)
+                features = row["features"].split(",")
+                instr_index = int(row["instr_index"])
+                instr = row["instr"]
+                vara_instr = VaraInstr(
+                    kind, Path(source_file), line, column, features,
+                    instr_index, instr
+                )
+                filename_location_mapping[source_file][location].append(
+                    vara_instr
+                )
+        return filename_location_mapping
 
     def _import_functions(
         self, json_file: Path,
