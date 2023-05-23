@@ -8,6 +8,7 @@ from benchbuild.utils.cmd import mkdir, cmake
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
@@ -51,6 +52,7 @@ class Bzip2(VProject):
             ]
         )
     ]
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
