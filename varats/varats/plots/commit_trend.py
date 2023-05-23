@@ -372,9 +372,9 @@ class ChangesHeatMap(Plot, plot_name=None):
             for i in axis.yaxis.get_ticklabels()
         ]
         axis.set_yticklabels(new_labels)
-        axis.set_ylabel("")
-        axis.set_xlabel("")
-        axis.set_xticklabels([])
+        #axis.set_ylabel("")
+        #axis.set_xlabel("")
+        #axis.set_xticklabels([])
 
     def calc_missing_revisions(
         self, boundary_gradient: float
