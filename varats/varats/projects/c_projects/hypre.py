@@ -8,6 +8,7 @@ from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -56,6 +57,7 @@ class Hypre(VProject, ReleaseProviderHook):
             )
         )
     ]
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
     @staticmethod
     def binaries_for_revision(
