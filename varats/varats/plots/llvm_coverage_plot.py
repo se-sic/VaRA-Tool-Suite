@@ -23,6 +23,7 @@ from varats.data.reports.llvm_coverage_report import (
     Segments,
     FileSegmentBufferMapping,
 )
+from varats.experiment.experiment_util import ZippedReportFolder
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -261,6 +262,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
         return BinaryConfigsMapping(result)
 
     def plot(self, view_mode: bool) -> None:
+        pass
+
+    def save(self, plot_dir: Path, filetype: str = 'zip') -> None:
         if len(self.plot_kwargs["experiment_type"]) > 1:
             print(
                 "Plot can currently only handle a single experiment, "
@@ -297,30 +301,60 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 )
 
             with RepositoryAtCommit(project_name, revision) as base_dir:
-                for binary in binary_config_map:
-                    config_report_map = binary_config_map[binary]
+                zip_file = plot_dir / self.plot_file_name("zip")
+                print(zip)
+                with ZippedReportFolder(zip_file) as tmpdir:
 
-                    print("Code executed by all feature combinations")
-                    print(cov_show(config_report_map.merge_all(), base_dir))
-                    for features in non_empty_powerset(
-                        config_report_map.available_features
-                    ):
-                        print(f"Diff for '{features}':")
-                        diff = config_report_map.diff({
-                            feature: True for feature in features
-                        })
-                        print(cov_show(diff, base_dir))
+                    for binary in binary_config_map:
+                        config_report_map = binary_config_map[binary]
 
-                    print(
-                        cov_show_segment_buffer(
-                            config_report_map.feature_segments(base_dir)
+                        binary_dir = Path(tmpdir) / binary
+                        binary_dir.mkdir()
+
+                        coverage_diff = binary_dir / "coverage_diff.txt"
+                        _plot_coverage_diff(
+                            config_report_map, base_dir, coverage_diff
                         )
-                    )
+
+                        coverage_annotations = \
+                            binary_dir / "coverage_annotations.txt"
+                        _plot_coverage_annotations(
+                            config_report_map, base_dir, coverage_annotations
+                        )
 
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+def _plot_coverage_diff(
+    config_report_map: ConfigCoverageReportMapping, base_dir: Path,
+    outfile: Path
+) -> None:
+    with outfile.open("w") as output:
+        output.write("Code executed by all feature combinations\n")
+        output.write(cov_show(config_report_map.merge_all(), base_dir))
+        for features in non_empty_powerset(
+            config_report_map.available_features
+        ):
+            output.write(f"Diff for '{features}':\n")
+            diff = config_report_map.diff({
+                feature: True for feature in features
+            })
+            output.write(cov_show(diff, base_dir))
+
+
+def _plot_coverage_annotations(
+    config_report_map: ConfigCoverageReportMapping, base_dir: Path,
+    outfile: Path
+) -> None:
+    with outfile.open("w") as output:
+        output.write(
+            cov_show_segment_buffer(
+                config_report_map.feature_segments(base_dir)
+            )
+        )
 
 
 class CoveragePlotGenerator(
