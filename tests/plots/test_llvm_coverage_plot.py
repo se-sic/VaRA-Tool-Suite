@@ -300,5 +300,10 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
    55|  return 0;                                                                     |
    56|}                                                                               |
 
-""", cov_show_segment_buffer(config_map.feature_segments(base_dir))
+""",
+                cov_show_segment_buffer(
+                    config_map.feature_segments(base_dir),
+                    show_counts=False,
+                    show_coverage_features=True
+                )
             )

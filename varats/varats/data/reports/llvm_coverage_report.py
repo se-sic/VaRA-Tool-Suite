@@ -50,6 +50,13 @@ class RegionEnd(Location):
     pass
 
 
+def _format_features(features: tp.List[str]) -> str:
+    features_txt = "^".join(sorted(features))
+    if "^" in features_txt:
+        features_txt = f"({features_txt})"
+    return features_txt
+
+
 @dataclass
 class CodeRegion:
     """Code region tree."""
@@ -60,9 +67,9 @@ class CodeRegion:
     function: str
     parent: tp.Optional[CodeRegion] = None
     childs: tp.List[CodeRegion] = field(default_factory=list)
-    # TODO
-    # vara_features: tp.List[str] = field(default_factory=list)
-    # coverage_features: tp.List[str] = field(default_factory=list)
+    coverage_features: tp.List[str] = field(default_factory=list)
+    coverage_features_set: tp.Set[str] = field(default_factory=set)
+    vara_features: tp.Set[str] = field(default_factory=set)
 
     @classmethod
     def from_list(cls, region: tp.List[int], function: str) -> CodeRegion:
@@ -172,9 +179,26 @@ class CodeRegion:
                 raise AssertionError("CodeRegions are not identical")
             x.count += y.count
 
-    def diff(self, region: CodeRegion) -> None:
-        """Builds the difference between self (base code) and region (new code)
-        by comparing them."""
+    def combine_features(self, region: CodeRegion) -> None:
+        """Combines features of region with features of self."""
+        for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
+            if x != y:
+                raise AssertionError("CodeRegions are not identical")
+            x.coverage_features.extend(y.coverage_features)
+            x.coverage_features_set.update(y.coverage_features_set)
+            x.vara_features.update(y.vara_features)
+
+    def diff(
+        self,
+        region: CodeRegion,
+        features: tp.Optional[tp.List[str]] = None
+    ) -> None:
+        """
+        Builds the difference between self (base code) and region (new code) by
+        comparing them.
+
+        If features are given, annotate them.
+        """
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
             assert x == y, "CodeRegions are not identical"
             if x.is_covered() and y.is_covered(
@@ -184,9 +208,15 @@ class CodeRegion:
             elif x.is_covered() and not y.is_covered():
                 # Coverage decreased
                 x.count = -1
+                if features is not None:
+                    x.coverage_features_set.update(features)
+                    x.coverage_features.append(f"-{_format_features(features)}")
             elif not x.is_covered() and y.is_covered():
                 # Coverage increased
                 x.count = 1
+                if features is not None:
+                    x.coverage_features_set.update(features)
+                    x.coverage_features.append(f"+{_format_features(features)}")
 
     def is_identical(self, other: object) -> bool:
         """Is the code region equal and has the same coverage?"""
@@ -360,7 +390,31 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
                 code_region_a.merge(code_region_b)
 
-    def diff(self, report: CoverageReport) -> None:
+    def combine_features(self, report: CoverageReport) -> None:
+        """Combine features of report with self."""
+        for filename_a, filename_b in zip(
+            self.filename_function_mapping, report.filename_function_mapping
+        ):
+            assert Path(filename_a).name == Path(filename_b).name
+
+            for function_a, function_b in zip(
+                self.filename_function_mapping[filename_a],
+                report.filename_function_mapping[filename_b]
+            ):
+                assert function_a == function_b
+                code_region_a = self.filename_function_mapping[filename_a][
+                    function_a]
+                code_region_b = report.filename_function_mapping[filename_b][
+                    function_b]
+                assert code_region_a == code_region_b
+
+                code_region_a.combine_features(code_region_b)
+
+    def diff(
+        self,
+        report: CoverageReport,
+        features: tp.Optional[tp.List[str]] = None
+    ) -> None:
         """Diff report from self."""
         for filename_a, filename_b in zip(
             self.filename_function_mapping, report.filename_function_mapping
@@ -378,7 +432,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     function_b]
                 assert code_region_a == code_region_b
 
-                code_region_a.diff(code_region_b)
+                code_region_a.diff(code_region_b, features)
 
     def _parse_instrs(
         self, csv_file: Path, filename_location_mapping: FilenameLocationMapping
@@ -549,8 +603,14 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         )
 
 
-Count = tp.Union[tp.Optional[int], frozenset[str]]
-Segments = tp.List[tp.Tuple[Count, str]]
+Count = tp.Optional[int]
+LinePart = str
+CoverageFeatures = tp.Optional[tp.List[str]]
+CoverageFeaturesSet = tp.Optional[tp.Set[str]]
+VaraFeatures = tp.Optional[tp.Set[str]]
+Segment = tp.Tuple[Count, LinePart, CoverageFeatures, CoverageFeaturesSet,
+                   VaraFeatures]
+Segments = tp.List[Segment]
 SegmentBuffer = tp.DefaultDict[int, Segments]
 FileSegmentBufferMapping = tp.Mapping[str, SegmentBuffer]
 
@@ -596,6 +656,9 @@ def _cov_segments_file(
         end_line=len(lines),
         end_column=len(lines[len(lines)]) + 1,
         count=None,
+        cov_features=None,
+        cov_features_set=None,
+        vara_features=None,
         lines=lines,
         buffer=segments_dict
     )
@@ -616,13 +679,27 @@ def cov_show(
 
 
 def cov_show_segment_buffer(
-    file_segments_mapping: FileSegmentBufferMapping
+    file_segments_mapping: FileSegmentBufferMapping,
+    show_counts: bool = True,
+    show_coverage_features: bool = False,
+    show_coverage_feature_set: bool = False,
+    show_vara_features: bool = False,
 ) -> str:
     """Returns the coverage in text form."""
     result = []
     for file in file_segments_mapping:
         tmp_value = [_color_str(f"{file}:\n", colors.cyan)]
-        tmp_value.append(__segments_dict_to_str(file_segments_mapping[file]))
+        tmp_value.append(
+            __table_to_text(
+                __segments_dict_to_table(
+                    file_segments_mapping[file], color_counts=show_counts
+                ),
+                show_counts,
+                show_coverage_features,
+                show_coverage_feature_set,
+                show_vara_features,
+            )
+        )
 
         if not tmp_value[-1].endswith("\n"):
             # Add newline if file does not end with one
@@ -633,25 +710,81 @@ def cov_show_segment_buffer(
     return "\n".join(result) + "\n"
 
 
-def __segments_dict_to_str(segments_dict: SegmentBuffer) -> str:
+class TableEntry(tp.NamedTuple):
+    count: tp.Union[int, str]
+    text: str
+    coverage_features: str
+    coverage_feature_set: str
+    vara_features: str
+
+
+def __table_to_text(
+    table: tp.Dict[int, TableEntry],
+    show_counts: bool = True,
+    show_coverage_features: bool = False,
+    show_coverage_feature_set: bool = False,
+    show_vara_features: bool = False,
+) -> str:
+    output = []
+    for line_number, entry in table.items():
+        line = []
+        line.append(f"{line_number:>5}")
+        if show_counts:
+            line.append(f"|{entry.count:>7}")
+
+        text = entry.text.replace("\n", "", 1)
+        if not show_coverage_features and not show_coverage_feature_set and not show_vara_features:
+            line.append(f"|{text}")
+        else:
+            text = text[:CUTOFF_LENGTH]
+            line.append(f"|{text:<{CUTOFF_LENGTH}}")
+        if show_coverage_features:
+            line.append(f"|{entry.coverage_features}")
+        if show_coverage_feature_set:
+            line.append(f"|{entry.coverage_feature_set}")
+        if show_vara_features:
+            line.append(f"|{entry.vara_features}")
+        output.append("".join(line))
+    return "\n".join(output)
+    """
+    if not any(map(lambda item: item[1] != "" and item[1] is not None, buffer)):
+        # All counts are empty. Skip count column
+        for line_number, _, text, feature_txt, _, _ in buffer:
+            text = text.replace("\n", "", 1)
+            text = text[:CUTOFF_LENGTH]
+            feature_txt = feature_txt if feature_txt is not None else ''
+            output.append(
+                f"{line_number:>5}|{text:<{CUTOFF_LENGTH}}|{feature_txt}\n"
+            )
+    else:
+        for line_number, count, text, _, _, _ in buffer:
+            output.append(f"{line_number:>5}|{count:>7}|{text}")
+
+    return "".join(output)"""
+
+
+def __segments_dict_to_table(
+    segments_dict: SegmentBuffer,
+    color_counts: bool = False,
+) -> tp.Dict[int, TableEntry]:
     """Constructs a str from the given segments dictionary."""
-    buffer = []
+    table = {}
     for line_number, segments in segments_dict.items():
         if len(segments) > 1:
             # Workaround: Ignore counts for last segment with whitespaces
             # and single ';' that ends with "\n"
-            segments[-1] = (None, segments[-1][1]
+            segments[-1] = (None, segments[-1][1], None, None, None
                            ) if segments[-1][1].endswith("\n") and (
                                str.isspace(segments[-1][1].replace(";", "", 1))
                            ) else segments[-1]
         counts = [segment[0] for segment in segments]
 
-        def filter_ints(a: tp.List[tp.Any]) -> tp.Iterator[int]:
+        def filter_out_nones(a: tp.List[tp.Any]) -> tp.Iterator[int]:
             for item in a:
-                if isinstance(item, int):
+                if item is not None:
                     yield item
 
-        non_none_counts = list(filter_ints(counts))
+        non_none_counts = list(filter_out_nones(counts))
         count: tp.Union[int, str] = ""
         if len(non_none_counts) > 0:
             count = max(non_none_counts, key=abs)
@@ -659,7 +792,7 @@ def __segments_dict_to_str(segments_dict: SegmentBuffer) -> str:
         texts = [segment[1] for segment in segments]
         colored_texts = []
         for x, y in zip(counts, texts):
-            if x is None or x != 0:
+            if not color_counts or x is None or x != 0:
                 colored_texts.append(y)
             elif x == 0:
                 y_stripped = y.lstrip(f"else){string.whitespace}")
@@ -677,15 +810,40 @@ def __segments_dict_to_str(segments_dict: SegmentBuffer) -> str:
             else:
                 raise NotImplementedError
 
-        buffer.append((
-            line_number, count, "".join(colored_texts), __feature_text(counts)
-        ))
+        coverage_features = filter_out_nones(segment[2] for segment in segments)
+        coverage_features_set = filter_out_nones(
+            segment[3] for segment in segments
+        )
+        vara_features = filter_out_nones(segment[4] for segment in segments)
 
-    return __text_table(buffer)
+        table[line_number] = TableEntry(
+            count,
+            "".join(colored_texts),
+            __feature_text(coverage_features),
+            __feature_text(coverage_features_set),
+            __feature_text(vara_features),
+        )
+
+    return table
 
 
-def __feature_text(counts: tp.List[Count]) -> tp.Optional[str]:
-    if all(map(lambda count: isinstance(count, frozenset), counts)):
+def __feature_text(
+    iterable: tp.Optional[tp.Iterable[tp.Iterable[str]]]
+) -> tp.Optional[str]:
+    if iterable is None:
+        return None
+
+    feature_buffer = []
+    for x in iterable:
+        for feature in x:
+            if feature.startswith("+"):
+                feature_buffer.append(_color_str(feature, colors.green))
+            elif feature.startswith("-"):
+                feature_buffer.append(_color_str(feature, colors.red))
+            else:
+                feature_buffer.append(feature)
+    return ', '.join(feature_buffer)
+    """if all(map(lambda count: isinstance(count, frozenset), counts)):
         unique_features: tp.Set[str] = set()
         for count in counts:
             unique_features.update(count)  # type: ignore [arg-type]
@@ -701,27 +859,7 @@ def __feature_text(counts: tp.List[Count]) -> tp.Optional[str]:
             else:
                 raise NotImplementedError
         return ', '.join(feature_buffer)
-    return None
-
-
-def __text_table(
-    buffer: tp.List[tp.Tuple[int, tp.Union[int, str], str, tp.Optional[str]]]
-) -> str:
-    output = []
-    if not any(map(lambda item: item[1] != "" and item[1] is not None, buffer)):
-        # All counts are empty. Skip count column
-        for line_number, _, text, feature_txt in buffer:
-            text = text.replace("\n", "", 1)
-            text = text[:CUTOFF_LENGTH]
-            feature_txt = feature_txt if feature_txt is not None else ''
-            output.append(
-                f"{line_number:>5}|{text:<{CUTOFF_LENGTH}}|{feature_txt}\n"
-            )
-    else:
-        for line_number, count, text, _ in buffer:
-            output.append(f"{line_number:>5}|{count:>7}|{text}")
-
-    return "".join(output)
+    return None"""
 
 
 def _cov_segments_function(
@@ -736,6 +874,9 @@ def _cov_segments_function(
         end_line=prev_line,
         end_column=prev_column,
         count=None,
+        cov_features=None,
+        cov_features_set=None,
+        vara_features=None,
         lines=lines,
         buffer=buffer
     )
@@ -764,6 +905,9 @@ def _cov_segments_function_inner(
                 end_line=prev_line,
                 end_column=prev_column,
                 count=region.count,
+                cov_features=region.coverage_features,
+                cov_features_set=region.coverage_features_set,
+                vara_features=region.vara_features,
                 lines=lines,
                 buffer=buffer
             )
@@ -783,6 +927,9 @@ def _cov_segments_function_inner(
         end_line=region.end.line,
         end_column=region.end.column,
         count=region.count,
+        cov_features=region.coverage_features,
+        cov_features_set=region.coverage_features_set,
+        vara_features=region.vara_features,
         lines=lines,
         buffer=buffer
     )
@@ -791,8 +938,9 @@ def _cov_segments_function_inner(
 
 
 def __cov_fill_buffer(
-    end_line: int, end_column: int, count: tp.Optional[int],
-    lines: tp.Dict[int, str], buffer: SegmentBuffer
+    end_line: int, end_column: int, count: Count,
+    cov_features: CoverageFeatures, cov_features_set: CoverageFeaturesSet,
+    vara_features: VaraFeatures, lines: tp.Dict[int, str], buffer: SegmentBuffer
 ) -> SegmentBuffer:
 
     start_line, start_column = __get_next_line_and_column(lines, buffer)
@@ -816,7 +964,9 @@ def __cov_fill_buffer(
         else:
             text = lines[line_number]
 
-        buffer[line_number].append((count, text))
+        buffer[line_number].append(
+            (count, text, cov_features, cov_features_set, vara_features)
+        )
 
     return buffer
 

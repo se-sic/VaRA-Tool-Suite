@@ -238,13 +238,17 @@ class TestCodeRegion(unittest.TestCase):
         self.left_left_2.count = 0
         self.right_right.count = 0
 
-        self.root.diff(root_3)
+        self.root.diff(root_3, features=["Foo", "Bar"])
         self.assertEqual(self.root.count, -1)
+        self.assertEqual(self.root.coverage_features_set, {"Foo", "Bar"})
+        self.assertEqual(self.root.coverage_features, ["-(Bar^Foo)"])
         self.assertEqual(self.right.count, 0)
         self.assertEqual(self.left.count, 0)
         self.assertEqual(self.left_left.count, 1)
         self.assertEqual(self.left_left_2.count, 1)
         self.assertEqual(self.right_right.count, 1)
+        self.assertEqual(self.right_right.coverage_features_set, {"Foo", "Bar"})
+        self.assertEqual(self.right_right.coverage_features, ["+(Bar^Foo)"])
 
         self.assertFalse(self.root.is_identical(root_3))
 
@@ -366,34 +370,68 @@ class TestCodeRegion(unittest.TestCase):
         buffer = defaultdict(list)
 
         buffer = cov_fill_buffer(
-            end_line=1, end_column=6, count=0, lines=lines, buffer=buffer
+            end_line=1,
+            end_column=6,
+            count=0,
+            cov_features=None,
+            cov_features_set=None,
+            vara_features=None,
+            lines=lines,
+            buffer=buffer
         )
-        self.assertEqual(buffer, {1: [(0, "Hello")]})
+        self.assertEqual(buffer, {1: [(0, "Hello", None, None, None)]})
         self.assertEqual((1, 6), get_next_line_and_column(lines, buffer))
         buffer = cov_fill_buffer(
-            end_line=1, end_column=14, count=1, lines=lines, buffer=buffer
-        )
-        self.assertEqual(buffer, {1: [(0, "Hello"), (1, " World!\n")]})
-        self.assertEqual((2, 1), get_next_line_and_column(lines, buffer))
-        buffer = cov_fill_buffer(
-            end_line=2, end_column=10, count=42, lines=lines, buffer=buffer
+            end_line=1,
+            end_column=14,
+            count=1,
+            cov_features=None,
+            cov_features_set=None,
+            vara_features=None,
+            lines=lines,
+            buffer=buffer
         )
         self.assertEqual(
             buffer, {
-                1: [(0, "Hello"), (1, " World!\n")],
-                2: [(42, "Goodbye;\n")]
+                1: [(0, "Hello", None, None, None),
+                    (1, " World!\n", None, None, None)]
+            }
+        )
+        self.assertEqual((2, 1), get_next_line_and_column(lines, buffer))
+        buffer = cov_fill_buffer(
+            end_line=2,
+            end_column=10,
+            count=42,
+            cov_features=None,
+            cov_features_set=None,
+            vara_features=None,
+            lines=lines,
+            buffer=buffer
+        )
+        self.assertEqual(
+            buffer, {
+                1: [(0, "Hello", None, None, None),
+                    (1, " World!\n", None, None, None)],
+                2: [(42, "Goodbye;\n", None, None, None)]
             }
         )
         self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))
 
         buffer = defaultdict(list)
         buffer = cov_fill_buffer(
-            end_line=2, end_column=10, count=None, lines=lines, buffer=buffer
+            end_line=2,
+            end_column=10,
+            count=None,
+            cov_features=["Foo"],
+            cov_features_set={"Boo"},
+            vara_features={"Bar"},
+            lines=lines,
+            buffer=buffer
         )
         self.assertEqual(
             buffer, {
-                1: [(None, "Hello World!\n")],
-                2: [(None, "Goodbye;\n")]
+                1: [(None, "Hello World!\n", ["Foo"], {"Boo"}, {"Bar"})],
+                2: [(None, "Goodbye;\n", ["Foo"], {"Boo"}, {"Bar"})]
             }
         )
         self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))

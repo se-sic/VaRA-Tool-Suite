@@ -139,7 +139,10 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
             list(deepcopy(self[x]) for x in configs_without_features)
         )
 
-        result.diff(report_with_features)
+        result.diff(
+            report_with_features,
+            features=[x for x, y in features.items() if y == True]
+        )
         return result
 
     def merge_all(self) -> CoverageReport:
@@ -151,11 +154,17 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
         combinations."""
 
         # Get segments for all feature combinations.
-        features_file_segments_map = {}
+        diffs: tp.List[CoverageReport] = []
         for features in non_empty_powerset(self.available_features):
-            diff = self.diff({feature: True for feature in features})
-            features_file_segments_map[features] = cov_segments(diff, base_dir)
+            print(features)
+            diffs.append(self.diff({feature: True for feature in features}))
 
+        result = deepcopy(diffs[0])
+        for report in diffs[1:]:
+            result.combine_features(report)
+
+        return cov_segments(report, base_dir)
+        """
         # Combine all segments dicts into one large
         # {file: {linenumber: {line_part: [(count, features]}}}
         _file_segments_map: tp.DefaultDict[str, tp.DefaultDict[
@@ -183,6 +192,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
                     file_segments_mapping[file][linenumber].append(
                         (frozenset(affected_by_features), line_part)
                     )
+
         return file_segments_mapping
 
 
@@ -203,6 +213,7 @@ def _affected_features(segments: Segments) -> tp.Set[str]:
         else:
             raise NotImplementedError
     return affected_by_features
+"""
 
 
 BinaryConfigsMapping = tp.NewType(
@@ -302,7 +313,6 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
             with RepositoryAtCommit(project_name, revision) as base_dir:
                 zip_file = plot_dir / self.plot_file_name("zip")
-                print(zip)
                 with ZippedReportFolder(zip_file) as tmpdir:
 
                     for binary in binary_config_map:
@@ -321,6 +331,17 @@ class CoveragePlot(Plot, plot_name="coverage"):
                         _plot_coverage_annotations(
                             config_report_map, base_dir, coverage_annotations
                         )
+
+                        print("Code executed by all feature combinations\n")
+                        print(cov_show(config_report_map.merge_all(), base_dir))
+                        for features in non_empty_powerset(
+                            config_report_map.available_features
+                        ):
+                            print(f"Diff for '{features}':\n")
+                            diff = config_report_map.diff({
+                                feature: True for feature in features
+                            })
+                            print(cov_show(diff, base_dir))
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -352,7 +373,9 @@ def _plot_coverage_annotations(
     with outfile.open("w") as output:
         output.write(
             cov_show_segment_buffer(
-                config_report_map.feature_segments(base_dir)
+                config_report_map.feature_segments(base_dir),
+                show_counts=False,
+                show_coverage_features=True
             )
         )
 
