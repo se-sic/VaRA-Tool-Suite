@@ -128,19 +128,21 @@ class Bzip2(VProject):
         bzip2_version = ShortCommitHash(self.version_of_primary)
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
-
+        clang = bb.compiler.cc(self)
         if bzip2_version in typed_revision_range(
             Bzip2._MAKE_VERSIONS, bzip2_version_source, ShortCommitHash
         ):
-            bb.watch(make)
+            with local.cwd(bzip2_source):
+                with local.env(CC=str(clang)):
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         elif bzip2_version in typed_revision_range(
             Bzip2._AUTOTOOLS_VERSIONS, bzip2_version_source, ShortCommitHash
         ):
-            clang = bb.compiler.cc(self)
-            with local.env(CC=str(clang)):
-                bb.watch(local["./autogen.sh"])()
-                bb.watch(local["./configure"])()
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            with local.cwd(bzip2_source):
+                with local.env(CC=str(clang)):
+                    bb.watch(local["./autogen.sh"])()
+                    bb.watch(local["./configure"])()
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         else:
             mkdir("-p", bzip2_source / "build")
             with local.cwd(bzip2_source / "build"):
