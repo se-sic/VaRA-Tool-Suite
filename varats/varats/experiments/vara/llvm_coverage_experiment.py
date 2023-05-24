@@ -244,7 +244,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         # Only consider binaries with a workload
         for binary in project.binaries:
             workload_cmds = workload_commands(
-                project, binary, [WorkloadCategory.EXAMPLE]
+                project, binary, [WorkloadCategory.JAN]
             )
             if not workload_cmds:
                 continue
