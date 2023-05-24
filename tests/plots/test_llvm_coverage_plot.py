@@ -255,11 +255,11 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
    10|                                                                                |
    11|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--slow"))) {             |+slow
    12|    Slow = true;                                                                |+slow
-   13|  }                                                                             |
+   13|  }                                                                             |+slow
    14|                                                                                |
    15|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--header"))) {           |+header
    16|    HeaderFeature = true;                                                       |+header
-   17|  }                                                                             |
+   17|  }                                                                             |+header
    18|                                                                                |
    19|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--extern"))) {           |
    20|    enableExternFeature();                                                      |
@@ -275,7 +275,7 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
    30|    fpcsc::sleep_for_secs(5);                                                   |+slow
    31|  } else {                                                                      |+slow, -(header^slow), -slow
    32|    fpcsc::sleep_for_secs(3);                                                   |-(header^slow), -slow
-   33|  }                                                                             |
+   33|  }                                                                             |-(header^slow), -slow
    34|                                                                                |
    35|  fpcsc::sleep_for_secs(2); // General waiting time                             |
    36|                                                                                |
@@ -283,7 +283,7 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
    38|    fpcsc::sleep_for_secs(3);                                                   |+header
    39|  } else {                                                                      |+header, -(header^slow), -header
    40|    fpcsc::sleep_for_secs(1);                                                   |-(header^slow), -header
-   41|  }                                                                             |
+   41|  }                                                                             |-(header^slow), -header
    42|                                                                                |
    43|  fpcsc::sleep_for_secs(2); // General waiting time                             |
    44|                                                                                |

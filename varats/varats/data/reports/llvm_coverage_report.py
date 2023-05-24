@@ -58,7 +58,7 @@ def _format_features(features: tp.List[str]) -> str:
 
 
 @dataclass
-class CodeRegion:
+class CodeRegion:  # pylint: disable=too-many-instance-attributes
     """Code region tree."""
     start: RegionStart
     end: RegionEnd
@@ -296,12 +296,13 @@ class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
 
 
 class FeatureKind(Enum):
-    FeatureVariable = "FVar"
-    FeatureRegion = "FReg"
+    FEATURE_VARIABLE = "FVar"
+    FEATURE_REGION = "FReg"
 
 
 @dataclass
 class VaraInstr:
+    """Instr exported from VaRA."""
     kind: FeatureKind
     source_file: Path
     line: int
@@ -311,7 +312,7 @@ class VaraInstr:
     instr: str
 
 
-class LocationInstrMapping(tp.DefaultDict[Location, tp.List[VaraInstr]]):
+class LocationInstrMapping(tp.DefaultDict[FrozenLocation, tp.List[VaraInstr]]):
     """Mapping from location to VaRAInstr."""
 
 
@@ -367,7 +368,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         )
         # filename => (line, column) => (type, features, instr_index, instr)
         self.vara_feature_location_export = FilenameLocationMapping(
-            lambda: LocationInstrMapping(lambda: list())
+            lambda: LocationInstrMapping(lambda: [])
         )
 
     def merge(self, report: CoverageReport) -> None:
@@ -711,7 +712,8 @@ def cov_show_segment_buffer(
 
 
 class TableEntry(tp.NamedTuple):
-    count: tp.Union[int, str]
+    """Entry for __table_to_text."""
+    count: tp.Union[int, str]  # type: ignore[assignment]
     text: str
     coverage_features: str
     coverage_feature_set: str
@@ -733,7 +735,10 @@ def __table_to_text(
             line.append(f"|{entry.count:>7}")
 
         text = entry.text.replace("\n", "", 1)
-        if not show_coverage_features and not show_coverage_feature_set and not show_vara_features:
+        if not any([
+            show_coverage_features, show_coverage_feature_set,
+            show_vara_features
+        ]):
             line.append(f"|{text}")
         else:
             text = text[:CUTOFF_LENGTH]
@@ -746,24 +751,9 @@ def __table_to_text(
             line.append(f"|{entry.vara_features}")
         output.append("".join(line))
     return "\n".join(output)
-    """
-    if not any(map(lambda item: item[1] != "" and item[1] is not None, buffer)):
-        # All counts are empty. Skip count column
-        for line_number, _, text, feature_txt, _, _ in buffer:
-            text = text.replace("\n", "", 1)
-            text = text[:CUTOFF_LENGTH]
-            feature_txt = feature_txt if feature_txt is not None else ''
-            output.append(
-                f"{line_number:>5}|{text:<{CUTOFF_LENGTH}}|{feature_txt}\n"
-            )
-    else:
-        for line_number, count, text, _, _, _ in buffer:
-            output.append(f"{line_number:>5}|{count:>7}|{text}")
-
-    return "".join(output)"""
 
 
-def __segments_dict_to_table(
+def __segments_dict_to_table( # pylint: disable=too-many-locals
     segments_dict: SegmentBuffer,
     color_counts: bool = False,
 ) -> tp.Dict[int, TableEntry]:
@@ -779,7 +769,7 @@ def __segments_dict_to_table(
                            ) else segments[-1]
         counts = [segment[0] for segment in segments]
 
-        def filter_out_nones(a: tp.List[tp.Any]) -> tp.Iterator[int]:
+        def filter_out_nones(a: tp.Iterable[tp.Any]) -> tp.Iterator[tp.Any]:
             for item in a:
                 if item is not None:
                     yield item
@@ -827,39 +817,17 @@ def __segments_dict_to_table(
     return table
 
 
-def __feature_text(
-    iterable: tp.Optional[tp.Iterable[tp.Iterable[str]]]
-) -> tp.Optional[str]:
-    if iterable is None:
-        return None
-
-    feature_buffer = []
+def __feature_text(iterable: tp.Iterable[tp.Iterable[str]]) -> str:
+    feature_buffer = set()
     for x in iterable:
         for feature in x:
             if feature.startswith("+"):
-                feature_buffer.append(_color_str(feature, colors.green))
+                feature_buffer.add(_color_str(feature, colors.green))
             elif feature.startswith("-"):
-                feature_buffer.append(_color_str(feature, colors.red))
+                feature_buffer.add(_color_str(feature, colors.red))
             else:
-                feature_buffer.append(feature)
-    return ', '.join(feature_buffer)
-    """if all(map(lambda count: isinstance(count, frozenset), counts)):
-        unique_features: tp.Set[str] = set()
-        for count in counts:
-            unique_features.update(count)  # type: ignore [arg-type]
-        sorted_features = sorted(unique_features)
-        if sorted_features:
-            print(sorted_features)
-        feature_buffer = []
-        for feature in sorted_features:
-            if feature.startswith("-"):
-                feature_buffer.append(_color_str(feature, colors.red))
-            elif feature.startswith("+"):
-                feature_buffer.append(_color_str(feature, colors.green))
-            else:
-                raise NotImplementedError
-        return ', '.join(feature_buffer)
-    return None"""
+                feature_buffer.add(feature)
+    return ', '.join(sorted(feature_buffer))
 
 
 def _cov_segments_function(

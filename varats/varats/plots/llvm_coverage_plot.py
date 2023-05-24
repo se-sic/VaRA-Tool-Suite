@@ -20,7 +20,6 @@ from varats.data.reports.llvm_coverage_report import (
     cov_show,
     cov_segments,
     cov_show_segment_buffer,
-    Segments,
     FileSegmentBufferMapping,
 )
 from varats.experiment.experiment_util import ZippedReportFolder
@@ -141,7 +140,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
 
         result.diff(
             report_with_features,
-            features=[x for x, y in features.items() if y == True]
+            features=[x for x, y in features.items() if y]
         )
         return result
 
@@ -163,57 +162,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
         for report in diffs[1:]:
             result.combine_features(report)
 
-        return cov_segments(report, base_dir)
-        """
-        # Combine all segments dicts into one large
-        # {file: {linenumber: {line_part: [(count, features]}}}
-        _file_segments_map: tp.DefaultDict[str, tp.DefaultDict[
-            int, tp.DefaultDict[str, Segments]]] = defaultdict(
-                lambda: defaultdict(lambda: defaultdict(list))
-            )
-        for features, file_segments_map in features_file_segments_map.items():
-            for file, segments_map in file_segments_map.items():
-                for linenumber, segments in segments_map.items():
-                    for segment in segments:
-                        count = segment[0]
-                        line_part = segment[1]
-                        _file_segments_map[file][linenumber][line_part].append(
-                            (count, features)
-                        )
-
-        # Convert for cov_show_segment_buffer
-        file_segments_mapping: FileSegmentBufferMapping = defaultdict(
-            lambda: defaultdict(list)
-        )
-        for file, _segments_map in _file_segments_map.items():
-            for linenumber, segment_features_map in _segments_map.items():
-                for line_part, segments in segment_features_map.items():
-                    affected_by_features = _affected_features(segments)
-                    file_segments_mapping[file][linenumber].append(
-                        (frozenset(affected_by_features), line_part)
-                    )
-
-        return file_segments_mapping
-
-
-def _affected_features(segments: Segments) -> tp.Set[str]:
-    affected_by_features = set()
-    for count, features in segments:
-        features = "^".join(sorted(features))
-        features = f"({features})" if "^" in features else features
-        if count is None or count == 0:
-            # Not affected by features
-            continue
-        if count == 1:
-            # Covered when features
-            affected_by_features.add(f"+{features}")
-        elif count == -1:
-            # Not covered when features
-            affected_by_features.add(f"-{features}")
-        else:
-            raise NotImplementedError
-    return affected_by_features
-"""
+        return cov_segments(result, base_dir)
 
 
 BinaryConfigsMapping = tp.NewType(
@@ -332,16 +281,13 @@ class CoveragePlot(Plot, plot_name="coverage"):
                             config_report_map, base_dir, coverage_annotations
                         )
 
-                        print("Code executed by all feature combinations\n")
-                        print(cov_show(config_report_map.merge_all(), base_dir))
-                        for features in non_empty_powerset(
-                            config_report_map.available_features
-                        ):
-                            print(f"Diff for '{features}':\n")
-                            diff = config_report_map.diff({
-                                feature: True for feature in features
-                            })
-                            print(cov_show(diff, base_dir))
+                        print(
+                            cov_show_segment_buffer(
+                                config_report_map.feature_segments(base_dir),
+                                show_counts=False,
+                                show_coverage_features=True
+                            )
+                        )
 
     def calc_missing_revisions(
         self, boundary_gradient: float
