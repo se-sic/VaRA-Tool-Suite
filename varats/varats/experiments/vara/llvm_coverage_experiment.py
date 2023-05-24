@@ -199,7 +199,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         #project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
-        project.cflags += ["-O0", "-g"]
+        project.cflags += ["-O0", "-g", "-fno-exceptions"]
 
         # Activate source-based code coverage:
         # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
