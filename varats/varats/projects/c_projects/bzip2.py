@@ -1,5 +1,6 @@
 """Project file for xz."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
@@ -20,7 +21,11 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import (
+    ShortCommitHash,
+    RevisionBinaryMap,
+    typed_revision_range,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -119,13 +124,18 @@ class Bzip2(VProject):
     def compile(self) -> None:
         """Compile the project."""
         bzip2_source = local.path(self.source_of(self.primary_source))
-        bzip2_version = self.version_of_primary
+        bzip2_version_source = Path(self.source_of_primary)
+        bzip2_version = ShortCommitHash(self.version_of_primary)
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        if bzip2_version in Bzip2._MAKE_VERSIONS:
+        if bzip2_version in typed_revision_range(
+            Bzip2._MAKE_VERSIONS, bzip2_version_source, ShortCommitHash
+        ):
             bb.watch(make)
-        elif bzip2_version in Bzip2._AUTOTOOLS_VERSIONS:
+        elif bzip2_version in typed_revision_range(
+            Bzip2._AUTOTOOLS_VERSIONS, bzip2_version_source, ShortCommitHash
+        ):
             clang = bb.compiler.cc(self)
             with local.env(CC=str(clang)):
                 bb.watch(local["./autogen.sh"])()
