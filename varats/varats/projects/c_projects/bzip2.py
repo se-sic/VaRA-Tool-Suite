@@ -106,10 +106,10 @@ class Bzip2(VProject):
         binary_map.specify_binary(
             'bzip2',
             BinaryType.EXECUTABLE,
-            only_valid_in=Bzip2._AUTOTOOLS_VERSIONS
-        )
-        binary_map.specify_binary(
-            'bzip2', BinaryType.EXECUTABLE, only_valid_in=Bzip2._MAKE_VERSIONS
+            only_valid_in=RevisionRange(
+                "33d134030248633ffa7d60c0a35a783c46da034b",
+                "e264a7f7c44fae62f5be9840946f6bc0e8cd6512"
+            )
         )
         return binary_map[revision]
 
