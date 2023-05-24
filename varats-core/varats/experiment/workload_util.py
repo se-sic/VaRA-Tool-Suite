@@ -34,6 +34,7 @@ class WorkloadCategory(Enum):
     SMALL = 1
     MEDIUM = 2
     LARGE = 3
+    JAN = 4
 
     def __str__(self) -> str:
         return self.name.lower()

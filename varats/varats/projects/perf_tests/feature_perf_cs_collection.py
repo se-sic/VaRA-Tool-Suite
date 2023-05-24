@@ -43,6 +43,13 @@ class FeaturePerfCSCollection(VProject):
     ]
 
     WORKLOADS = {
+        WorkloadSet(WorkloadCategory.JAN): [
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SimpleFeatureInteraction"),
+                label="SFI-no-input"
+            )
+        ],
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
