@@ -188,6 +188,35 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             x.coverage_features_set.update(y.coverage_features_set)
             x.vara_features.update(y.vara_features)
 
+    def find_code_region(self, line: int,
+                         column: int) -> tp.Optional[CodeRegion]:
+        """
+        Returns the smallest code region with the corresponding location.
+
+        If not found, returns None
+        """
+        for node in self.iter_postorder():
+            if node.is_location_inside(line, column):
+                # node with location found.
+                return node
+        return None
+
+    def is_location_inside(self, line: int, column: int) -> bool:
+        if self.start.line <= line <= self.end.line:
+            # Location could be inside. Check cases.
+            if self.start.line == line == self.end.line:
+                # Location in same line
+                return self.start.column <= column <= self.end.column
+            elif self.start.line == line:
+                # Location in start line
+                return self.start.column <= column
+            elif self.end.line == line:
+                # Location in end line
+                return column <= self.end.column
+            # Location neither in start line not in end line
+            return self.start.line < line < self.end.line
+        return False
+
     def diff(
         self,
         region: CodeRegion,
@@ -357,6 +386,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     csv_file,
                     c_r.vara_feature_location_export,
                 )
+                c_r.annotate_vara_features()
 
         return c_r
 
@@ -457,6 +487,22 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     vara_instr
                 )
         return filename_location_mapping
+
+    def annotate_vara_features(self) -> None:
+        """Finds the corresponding code region for every location in
+        self.vara_feature_location_export and annotates the features."""
+        for file, location_map in self.vara_feature_location_export.items():
+            for location, vara_instrs in location_map.items():
+                for _, code_region_tree in self.filename_function_mapping[
+                    file].items():
+                    feature_node = code_region_tree.find_code_region(
+                        location.line, location.column
+                    )
+                    if feature_node is not None:
+                        for vara_instr in vara_instrs:
+                            features = vara_instr.features
+                            feature_node.vara_features.update(features)
+                        break
 
     def _import_functions(
         self, json_file: Path,

@@ -5,6 +5,8 @@ from __future__ import annotations
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import dataclass, field
+from enum import Enum
 from itertools import filterfalse
 from pathlib import Path
 
@@ -16,6 +18,7 @@ from varats.base.configuration import (
     FrozenConfiguration,
 )
 from varats.data.reports.llvm_coverage_report import (
+    CodeRegion,
     CoverageReport,
     cov_show,
     cov_segments,
@@ -148,11 +151,8 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
         """Merge all available Reports into one."""
         return _merge_reports(deepcopy(list(self.values())))
 
-    def feature_segments(self, base_dir: Path) -> FileSegmentBufferMapping:
-        """Returns segments annotated with corresponding feature
-        combinations."""
-
-        # Get segments for all feature combinations.
+    def feature_report(self) -> CoverageReport:
+        """Creates a Coverage Report with all features annotated."""
         diffs: tp.List[CoverageReport] = []
         for features in non_empty_powerset(self.available_features):
             print(features)
@@ -162,7 +162,171 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
         for report in diffs[1:]:
             result.combine_features(report)
 
-        return cov_segments(result, base_dir)
+        return result
+
+    def feature_segments(self, base_dir: Path) -> FileSegmentBufferMapping:
+        """Returns segments annotated with corresponding feature
+        combinations."""
+
+        feature_report = self.feature_report()
+
+        return cov_segments(feature_report, base_dir)
+
+    def confusion_matrix(
+        self, vara_coverage_features_map: tp.Dict[str, str]
+    ) -> tp.Dict[str, ConfusionMatrix]:
+        """Returns the confusion matrix."""
+
+        report = self.feature_report()
+
+        result = {}
+        matrix_all = ConfusionMatrix()
+        # Iterate over feature_report and compare vara to coverage features
+        for feature in self.available_features:
+            matrix_feature = ConfusionMatrix()
+            for file, func_map in report.filename_function_mapping.items():
+                for function, tree in func_map.items():
+                    for region in tree.iter_breadth_first():
+                        coverage_features = region.coverage_features_set
+                        # Map coverage to vara feature names
+                        vara_features = set()
+                        for vara_feature in region.vara_features:
+                            vara_features.add(
+                                vara_coverage_features_map[vara_feature]
+                            )
+
+                        classification_feature = classify_feature(
+                            feature, vara_features, coverage_features
+                        )
+                        matrix_feature.add(
+                            classification_feature,
+                            ConfusionEntry(
+                                feature, file, function, region.start.line,
+                                region.start.column, region.end.line,
+                                region.end.column
+                            )
+                        )
+
+                        classification_all = classify_all(
+                            vara_features, coverage_features
+                        )
+                        matrix_all.add(
+                            classification_all,
+                            ConfusionEntry(
+                                "__all__", file, function, region.start.line,
+                                region.start.column, region.end.line,
+                                region.end.column
+                            )
+                        )
+            result[feature] = matrix_feature
+
+        result["__all__"] = matrix_all
+
+        return result
+
+
+class Classification(Enum):
+    TRUE_POSITIVE = "TP"
+    TRUE_NEGATIVE = "TN"
+    FALSE_POSITIVE = "FP"
+    FALSE_NEGATIVE = "FN"
+
+
+def classify_feature(
+    feature: str, vara_features: tp.Set[str], coverage_features: tp.Set[str]
+) -> Classification:
+    """Classify single feature."""
+    if feature in vara_features and feature in coverage_features:
+        return Classification.TRUE_POSITIVE
+    elif feature in vara_features:
+        return Classification.FALSE_POSITIVE
+    elif feature in coverage_features:
+        return Classification.FALSE_NEGATIVE
+    return Classification.TRUE_NEGATIVE
+
+
+def classify_all(
+    vara_features: tp.Set[str], coverage_features: tp.Set[str]
+) -> Classification:
+    """Classify all features at once."""
+    print(vara_features, coverage_features)
+    if len(vara_features) > 0 or len(coverage_features) > 0:
+        if vara_features == coverage_features:
+            return Classification.TRUE_POSITIVE
+        elif len(vara_features.difference(coverage_features)) > 0:
+            return Classification.FALSE_POSITIVE
+        elif len(coverage_features.difference(vara_features)) > 0:
+            return Classification.FALSE_NEGATIVE
+    return Classification.TRUE_NEGATIVE
+
+
+@dataclass(frozen=True)
+class ConfusionEntry:
+    feature: str
+    file: str
+    function: str
+    start_line: int
+    start_column: int
+    end_line: int
+    end_column: int
+
+
+@dataclass
+class ConfusionMatrix:
+    """Confusion matrix."""
+    true_positive: tp.Set[ConfusionEntry] = field(default_factory=set)
+    true_negative: tp.Set[ConfusionEntry] = field(default_factory=set)
+    false_positive: tp.Set[ConfusionEntry] = field(default_factory=set)
+    false_negative: tp.Set[ConfusionEntry] = field(default_factory=set)
+
+    def add(
+        self, classification: Classification, entry: ConfusionEntry
+    ) -> None:
+        if classification == Classification.TRUE_POSITIVE:
+            self.true_positive.add(entry)
+        elif classification == Classification.TRUE_NEGATIVE:
+            self.true_negative.add(entry)
+        elif classification == Classification.FALSE_POSITIVE:
+            self.false_positive.add(entry)
+        elif classification == Classification.FALSE_NEGATIVE:
+            self.false_negative.add(entry)
+        else:
+            raise NotImplemented("")
+
+    def accuracy(self) -> tp.Optional[float]:
+        numerator = (len(self.true_positive) + len(self.true_negative))
+        denumerator = (
+            len(self.true_positive) + len(self.true_negative) +
+            len(self.false_positive) + len(self.false_negative)
+        )
+        if denumerator == 0:
+            return None
+        return numerator / denumerator
+
+    def precision(self) -> tp.Optional[float]:
+        numerator = len(self.true_positive)
+        denumerator = len(self.true_positive) + len(self.false_positive)
+        if denumerator == 0:
+            return None
+        return numerator / denumerator
+
+    def recall(self) -> tp.Optional[float]:
+        numerator = len(self.true_positive)
+        denumerator = len(self.true_positive) + len(self.false_negative)
+        if denumerator == 0:
+            return None
+        return numerator / denumerator
+
+    def __str__(self) -> str:
+        return f"""True Positives: {len(self.true_positive)}
+True Negatives: {len(self.true_negative)}
+False Positives: {len(self.false_positive)}
+False Negatives: {len(self.false_negative)}
+
+Accuracy: {self.accuracy()}
+Precision: {self.precision()}
+Recall: {self.recall()}
+"""
 
 
 BinaryConfigsMapping = tp.NewType(
@@ -289,6 +453,8 @@ class CoveragePlot(Plot, plot_name="coverage"):
                             )
                         )
 
+                        _plot_confusion_matrix(config_report_map, binary_dir)
+
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
@@ -324,6 +490,21 @@ def _plot_coverage_annotations(
                 show_coverage_features=True
             )
         )
+
+
+def _plot_confusion_matrix(
+    config_report_map: ConfigCoverageReportMapping, outdir: Path
+) -> None:
+
+    matrix_dict = config_report_map.confusion_matrix({
+        "Encryption": "enc",
+        "Compression": "compress"
+    })
+
+    for feature in matrix_dict:
+        outfile = outdir / f"{feature}.matrix"
+        with outfile.open("w") as output:
+            output.write(str(matrix_dict[feature]))
 
 
 class CoveragePlotGenerator(
