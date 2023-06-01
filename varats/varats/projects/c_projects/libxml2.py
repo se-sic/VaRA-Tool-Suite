@@ -62,7 +62,7 @@ class Libxml2(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        libxml2_version_source = local.path(self.source_of(self.primary_source))
+        libxml2_version_source = local.path(self.source_of_primary)
         libxml2_versions_wo_cmake = GoodBadSubgraph([
             "01791d57d650e546a915522e57c079157a5bb395"
         ], ["2a2c38f3a35f415e7f407e171c07bb48bda0711e"], "No CmakeList")

@@ -123,23 +123,22 @@ class Bzip2(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        bzip2_source = local.path(self.source_of(self.primary_source))
+        bzip2_source = local.path(self.source_of_primary)```
         bzip2_version_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
-        clang = bb.compiler.cc(self)
         if bzip2_version in typed_revision_range(
             Bzip2._MAKE_VERSIONS, bzip2_version_source, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
-                with local.env(CC=str(clang)):
+                with local.env(CC=str(cc_compiler)):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         elif bzip2_version in typed_revision_range(
             Bzip2._AUTOTOOLS_VERSIONS, bzip2_version_source, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
-                with local.env(CC=str(clang)):
+                with local.env(CC=str(cc_compiler)):
                     bb.watch(local["./autogen.sh"])()
                     bb.watch(local["./configure"])()
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
