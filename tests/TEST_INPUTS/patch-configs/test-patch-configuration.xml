@@ -1,0 +1,68 @@
+<config>
+	<repository>github.com/se-sic/FeaturePerfCSCollection.git</repository>
+	<patches>
+		<patch>
+			<shortname>unrestricted-range</shortname>
+			<description>
+			Patch describing an unrestricted range of commits, meaning it should include all commits
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>include-single-revision</shortname>
+			<description>
+			Patch that is valid for a single revision
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>include-revision-range</shortname>
+			<description>
+			Patch that is valid for a range of commits
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>include-single-and-revision-range</shortname>
+			<description>
+			Patch that is valid for a revision range AND another single commit
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>exclude-single-revision</shortname>
+			<description>
+			Patch that is valid for all commits except a single one
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>exclude-revision-range</shortname>
+			<description>
+			Patch that excludes a range of commits (Otherwise includes all)
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>exclude-single-and-revision-range</shortname>
+			<description>
+			Patch that excludes a certain range and individual commits (Otherwise includes all)
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>include-range-exclude-single</shortname>
+			<description>
+			Patch valid for a range of commits where a single one is excluded
+			</description>
+			<path>bug.patch</path>
+		</patch>
+		<patch>
+			<shortname>include-range-exclude-range</shortname>
+			<description>
+			Patch valid for a range of commits where a subrange is explicitly excluded
+			</description>
+			<path>bug.patch</path>
+		</patch>
+	</patches>
+</config>

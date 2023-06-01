@@ -26,7 +26,7 @@ class PatchProvider(Provider):
             # TODO: Add proper error message
             raise PatchesNotFoundError()
 
-        patches_config_file = Path(patches_project_dir / ".patches.xml")
+        patches_config_file = Path(patches_project_dir / "test-patch-configuration.xml")
 
         if not patches_config_file.exists():
             # TODO: Add proper error handling
