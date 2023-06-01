@@ -154,9 +154,9 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
         diffs: tp.List[CoverageReport] = []
-        for features in non_empty_powerset(self.available_features):
-            print(features)
-            diffs.append(self.diff({feature: True for feature in features}))
+        for feature in self.available_features:
+            print(feature)
+            diffs.append(self.diff({feature: True}))
 
         result = deepcopy(diffs[0])
         for report in diffs[1:]:

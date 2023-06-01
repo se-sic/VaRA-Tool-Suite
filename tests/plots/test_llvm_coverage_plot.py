@@ -273,17 +273,17 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
    28|                                                                                |
    29|  if (Slow) {                                                                   |+slow
    30|    fpcsc::sleep_for_secs(5);                                                   |+slow
-   31|  } else {                                                                      |+slow, -(header^slow), -slow
-   32|    fpcsc::sleep_for_secs(3);                                                   |-(header^slow), -slow
-   33|  }                                                                             |-(header^slow), -slow
+   31|  } else {                                                                      |+slow, -slow
+   32|    fpcsc::sleep_for_secs(3);                                                   |-slow
+   33|  }                                                                             |-slow
    34|                                                                                |
    35|  fpcsc::sleep_for_secs(2); // General waiting time                             |
    36|                                                                                |
    37|  if (HeaderFeature) {                                                          |+header
    38|    fpcsc::sleep_for_secs(3);                                                   |+header
-   39|  } else {                                                                      |+header, -(header^slow), -header
-   40|    fpcsc::sleep_for_secs(1);                                                   |-(header^slow), -header
-   41|  }                                                                             |-(header^slow), -header
+   39|  } else {                                                                      |+header, -header
+   40|    fpcsc::sleep_for_secs(1);                                                   |-header
+   41|  }                                                                             |-header
    42|                                                                                |
    43|  fpcsc::sleep_for_secs(2); // General waiting time                             |
    44|                                                                                |
