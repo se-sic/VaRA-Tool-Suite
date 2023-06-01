@@ -1,7 +1,7 @@
 vara-cs-gui
 ===========
 
-This gui tool provides some functionality to create :ref:`case studies<Module: case_study>`.
+This gui tool provides functionality to create :ref:`case studies<Module: case_study>`.
 Detailed information about how case studies work can be found :ref:`here<How to use case studies>`.
 
 The gui is started by::

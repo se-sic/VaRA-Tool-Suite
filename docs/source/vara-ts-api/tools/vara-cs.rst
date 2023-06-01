@@ -24,7 +24,7 @@ For more options, take a look at the command line parameters:
 .. program-output:: vara-cs gen --help
     :nostderr:
 
-Also look at :ref:`vara-cs-gui<vara-cs-gui>` which can be used to create case studies using a graphical interface.
+Also look at :ref:`vara-cs-gui<vara-cs-gui>`, which can be used to create case studies using a graphical interface.
 
 vara-cs status
 --------------
