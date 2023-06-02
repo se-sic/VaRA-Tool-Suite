@@ -2,6 +2,7 @@
 
 import json
 import typing as tp
+from copy import deepcopy
 from pathlib import Path
 from shutil import copy
 
@@ -194,24 +195,6 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
-        # Try, to build the project without optimizations to get more precise
-        # blame annotations. Note: this does not guarantee that a project is
-        # build without optimizations because the used build tool/script can
-        # still add optimizations flags after the experiment specified cflags.
-        #project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
-        project.cflags += ["-O0", "-g", "-fno-exceptions"]
-
-        # Activate source-based code coverage:
-        # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
-        project.cflags += ["-fprofile-instr-generate", "-fcoverage-mapping"]
-
-        feature_model = get_feature_model_path(project).absolute()
-        # Get clang to output bc files with feature annotations
-        project.cflags += [
-            "-fvara-feature",
-            f"-fvara-fm-path={feature_model}",
-        ]
-
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = (
             run.RuntimeExtension(project, self) << time.RunWithTime()
@@ -227,6 +210,29 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
+        # Try, to build the project without optimizations to get more precise
+        # blame annotations. Note: this does not guarantee that a project is
+        # build without optimizations because the used build tool/script can
+        # still add optimizations flags after the experiment specified cflags.
+        #project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
+        project.cflags += ["-O0", "-g", "-fno-exceptions"]
+
+        # Compile coverage instructions seperate. We don't want them in LLVM IR
+        project_coverage = deepcopy(project)
+
+        # Activate source-based code coverage:
+        # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
+        project_coverage.cflags += [
+            "-fprofile-instr-generate", "-fcoverage-mapping"
+        ]
+
+        feature_model = get_feature_model_path(project).absolute()
+        # Get clang to output bc files with feature annotations
+        project.cflags += [
+            "-fvara-feature",
+            f"-fvara-fm-path={feature_model}",
+        ]
+
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
@@ -240,6 +246,12 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
                 )
             )
         )
+        analysis_actions.append(actions.Clean(project))
+        analysis_actions.append(actions.MakeBuildDir(project))
+        analysis_actions.append(actions.ProjectEnvironment(project))
+
+        project = project_coverage
+        analysis_actions.append(actions.Compile(project))
 
         # Only consider binaries with a workload
         for binary in project.binaries:
