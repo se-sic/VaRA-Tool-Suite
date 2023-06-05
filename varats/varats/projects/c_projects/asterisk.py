@@ -29,7 +29,7 @@ class Asterisk(VProject):
 
     NAME = 'asterisk'
     GROUP = 'c_projects'
-    DOMAIN = ProjectDomains.PARSER
+    DOMAIN = ProjectDomains.SIGNAL_PROCESSING
 
     SOURCE = [
         PaperConfigSpecificGit(

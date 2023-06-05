@@ -22,14 +22,14 @@ from varats.utils.settings import bb_cfg
 
 class OpenCV(VProject):
     """
-    Open Source PBX and telephony toolkit.
+    Open Source Computer Vision Library.
 
     (fetched by Git)
     """
 
     NAME = 'opencv'
     GROUP = 'c_projects'
-    DOMAIN = ProjectDomains.PARSER
+    DOMAIN = ProjectDomains.CPP_LIBRARY
 
     SOURCE = [
         PaperConfigSpecificGit(
