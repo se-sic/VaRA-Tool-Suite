@@ -23,8 +23,6 @@ from varats.utils.settings import bb_cfg
 class Asterisk(VProject):
     """
     Open Source PBX and telephony toolkit.
-
-    (fetched by Git)
     """
 
     NAME = 'asterisk'

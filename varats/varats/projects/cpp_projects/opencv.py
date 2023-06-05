@@ -23,8 +23,6 @@ from varats.utils.settings import bb_cfg
 class OpenCV(VProject):
     """
     Open Source Computer Vision Library.
-
-    (fetched by Git)
     """
 
     NAME = 'opencv'
