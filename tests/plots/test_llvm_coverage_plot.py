@@ -11,12 +11,95 @@ from varats.data.reports.llvm_coverage_report import (
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
-from varats.varats.plots.llvm_coverage_plot import ConfigCoverageReportMapping
+from varats.varats.plots.llvm_coverage_plot import (
+    ConfigCoverageReportMapping,
+    ConfusionMatrix,
+    ConfusionEntry,
+    classify_feature,
+    classify_all,
+    Classification,
+)
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
 
 
 class TestCodeRegion(unittest.TestCase):
+
+    def test_confusion_matrix_perfect(self):
+        tp = [create_autospec(ConfusionEntry) for x in range(20)]
+        tn = [create_autospec(ConfusionEntry) for x in range(10)]
+        fp = []
+        fn = []
+
+        matrix = ConfusionMatrix(
+            true_positive=tp,
+            true_negative=tn,
+            false_positive=fp,
+            false_negative=fn
+        )
+        self.assertEqual(matrix.accuracy(), 1.0)
+        self.assertEqual(matrix.precision(), 1.0)
+        self.assertEqual(matrix.recall(), 1.0)
+
+    def test_confusion_matrix_not_working(self):
+        tp = []
+        tn = [create_autospec(ConfusionEntry) for x in range(90)]
+        fp = []
+        fn = [create_autospec(ConfusionEntry) for x in range(10)]
+
+        matrix = ConfusionMatrix(
+            true_positive=tp,
+            true_negative=tn,
+            false_positive=fp,
+            false_negative=fn
+        )
+        self.assertEqual(matrix.accuracy(), 0.9)
+        self.assertEqual(matrix.precision(), None)
+        self.assertEqual(matrix.recall(), 0.0)
+
+    def test_classify_feature(self):
+        coverage_features = set(["A", "B"])
+        vara_features = set(["A", "C"])
+
+        self.assertEqual(
+            classify_feature("A", vara_features, coverage_features),
+            Classification.TRUE_POSITIVE
+        )
+        self.assertEqual(
+            classify_feature("B", vara_features, coverage_features),
+            Classification.FALSE_NEGATIVE
+        )
+        self.assertEqual(
+            classify_feature("C", vara_features, coverage_features),
+            Classification.FALSE_POSITIVE
+        )
+        self.assertEqual(
+            classify_feature("", vara_features, coverage_features),
+            Classification.TRUE_NEGATIVE
+        )
+
+    def test_classify_all(self):
+        self.assertEqual(
+            classify_all(set(["A", "B"]), set(["A", "B"])),
+            Classification.TRUE_POSITIVE
+        )
+        self.assertEqual(
+            classify_all(set(["A"]), set(["A", "B"])),
+            Classification.FALSE_NEGATIVE
+        )
+        self.assertEqual(
+            classify_all(set(["A", "B"]), set(["A"])),
+            Classification.FALSE_POSITIVE
+        )
+        self.assertEqual(
+            classify_all(set([]), set(["B"])), Classification.FALSE_NEGATIVE
+        )
+        self.assertEqual(
+            classify_all(set(["B"]), set([])), Classification.FALSE_POSITIVE
+        )
+        self.assertEqual(
+            classify_all(set([]), set([])), Classification.TRUE_NEGATIVE
+        )
 
     def test_feature_config_report_map(self):
         report_slow = create_autospec(CoverageReport)

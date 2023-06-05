@@ -69,7 +69,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     childs: tp.List[CodeRegion] = field(default_factory=list)
     coverage_features: tp.List[str] = field(default_factory=list)
     coverage_features_set: tp.Set[str] = field(default_factory=set)
-    vara_features: tp.Set[str] = field(default_factory=set)
+    vara_instrs: tp.List[VaraInstr] = field(default_factory=list)
 
     @classmethod
     def from_list(cls, region: tp.List[int], function: str) -> CodeRegion:
@@ -114,6 +114,26 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         if self.parent is None:
             return False
         return True
+
+    def feature_threshold(self, feature: str) -> float:
+        with_feature = []
+        wo_feature = []
+
+        for instr in self.vara_instrs:
+            if instr.has_feature(feature):
+                with_feature.append(instr)
+            else:
+                wo_feature.append(instr)
+
+        return len(with_feature) / (len(with_feature) + len(wo_feature))
+
+    def vara_features(self) -> tp.Set[str]:
+        """Returns all features from annotated vara instrs."""
+        features = set()
+        for instr in self.vara_instrs:
+            features.update(instr.features)
+
+        return features
 
     def is_covered(self) -> bool:
         return self.count > 0
@@ -186,7 +206,6 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
                 raise AssertionError("CodeRegions are not identical")
             x.coverage_features.extend(y.coverage_features)
             x.coverage_features_set.update(y.coverage_features_set)
-            x.vara_features.update(y.vara_features)
 
     def find_code_region(self, line: int,
                          column: int) -> tp.Optional[CodeRegion]:
@@ -195,6 +214,10 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
 
         If not found, returns None
         """
+        if not self.is_location_inside(line, column):
+            # Early exit. Location is not inside root node
+            return None
+
         for node in self.iter_postorder():
             if node.is_location_inside(line, column):
                 # node with location found.
@@ -327,6 +350,7 @@ class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
 class FeatureKind(Enum):
     FEATURE_VARIABLE = "FVar"
     FEATURE_REGION = "FReg"
+    NORMAL_REGION = "Norm"
 
 
 @dataclass
@@ -339,6 +363,9 @@ class VaraInstr:
     features: tp.List[str]
     instr_index: int
     instr: str
+
+    def has_feature(self, feature: str) -> bool:
+        return feature in self.features
 
 
 class LocationInstrMapping(tp.DefaultDict[FrozenLocation, tp.List[VaraInstr]]):
@@ -382,11 +409,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 return y.name.endswith(".csv") or y.name.endswith(".ptfdd")
 
             for csv_file in filter(csv_filter, Path(tmpdir).iterdir()):
-                c_r.vara_feature_location_export = c_r._parse_instrs(
-                    csv_file,
-                    c_r.vara_feature_location_export,
-                )
-                c_r.annotate_vara_features()
+                c_r._parse_instrs(csv_file)
 
         return c_r
 
@@ -395,10 +418,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         self.filename_function_mapping = FilenameFunctionMapping(
             FunctionCodeRegionMapping
-        )
-        # filename => (line, column) => (type, features, instr_index, instr)
-        self.vara_feature_location_export = FilenameLocationMapping(
-            lambda: LocationInstrMapping(lambda: [])
         )
 
     def merge(self, report: CoverageReport) -> None:
@@ -465,9 +484,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
                 code_region_a.diff(code_region_b, features)
 
-    def _parse_instrs(
-        self, csv_file: Path, filename_location_mapping: FilenameLocationMapping
-    ) -> FilenameLocationMapping:
+    def _parse_instrs(self, csv_file: Path) -> None:
         with csv_file.open() as file:
             reader = csv.DictReader(file, quotechar="'", delimiter=";")
             for row in reader:
@@ -476,33 +493,26 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 line = int(row["line"])
                 column = int(row["column"])
                 location = FrozenLocation(line, column)
-                features = row["features"].split(",")
+                _features = row["features"].split(",")
+                # Don't consider features belonging to conditions a feature.
+                features = []
+                for feature in _features:
+                    if not feature.startswith("__CONDITION__:"):
+                        features.append(feature)
                 instr_index = int(row["instr_index"])
                 instr = row["instr"]
                 vara_instr = VaraInstr(
                     kind, Path(source_file), line, column, features,
                     instr_index, instr
                 )
-                filename_location_mapping[source_file][location].append(
-                    vara_instr
-                )
-        return filename_location_mapping
-
-    def annotate_vara_features(self) -> None:
-        """Finds the corresponding code region for every location in
-        self.vara_feature_location_export and annotates the features."""
-        for file, location_map in self.vara_feature_location_export.items():
-            for location, vara_instrs in location_map.items():
-                for _, code_region_tree in self.filename_function_mapping[
-                    file].items():
-                    feature_node = code_region_tree.find_code_region(
-                        location.line, location.column
-                    )
-                    if feature_node is not None:
-                        for vara_instr in vara_instrs:
-                            features = vara_instr.features
-                            feature_node.vara_features.update(features)
-                        break
+                if source_file in self.filename_function_mapping:
+                    for _, code_region_tree in self.filename_function_mapping[
+                        source_file].items():
+                        feature_node = code_region_tree.find_code_region(
+                            location.line, location.column
+                        )
+                        if feature_node is not None:
+                            feature_node.vara_instrs.append(vara_instr)
 
     def _import_functions(
         self, json_file: Path,
@@ -921,7 +931,7 @@ def _cov_segments_function_inner(
                 count=region.count,
                 cov_features=region.coverage_features,
                 cov_features_set=region.coverage_features_set,
-                vara_features=region.vara_features,
+                vara_features=region.vara_features(),
                 lines=lines,
                 buffer=buffer
             )
@@ -943,7 +953,7 @@ def _cov_segments_function_inner(
         count=region.count,
         cov_features=region.coverage_features,
         cov_features_set=region.coverage_features_set,
-        vara_features=region.vara_features,
+        vara_features=region.vara_features(),
         lines=lines,
         buffer=buffer
     )

@@ -19,6 +19,8 @@ from varats.data.reports.llvm_coverage_report import (
     RegionEnd,
     CoverageReport,
     cov_show,
+    VaraInstr,
+    FeatureKind,
 )
 from varats.data.reports.llvm_coverage_report import (
     __cov_fill_buffer as cov_fill_buffer,
@@ -224,6 +226,39 @@ class TestCodeRegion(unittest.TestCase):
         self.assertTrue(self.left_left_2.parent is self.left)
         self.assertTrue(self.right_right.parent is self.right)
 
+    def test_find_region(self):
+        self.assertEqual(
+            self.root.find_code_region(line=0, column=0), self.root
+        )
+        self.assertEqual(
+            self.root.find_code_region(line=0, column=1), self.left
+        )
+        self.assertEqual(
+            self.root.find_code_region(line=49, column=100), self.left
+        )
+        self.assertEqual(
+            self.root.find_code_region(line=50, column=0), self.right
+        )
+        self.assertEqual(
+            self.root.find_code_region(line=100, column=99), self.right
+        )
+        self.assertEqual(
+            self.root.find_code_region(line=100, column=100), self.root
+        )
+        self.assertEqual(
+            self.root.find_code_region(line=10, column=0), self.left_left_2
+        )
+
+    def test_feature_threshold(self):
+        self.root.vara_instrs.append(
+            VaraInstr(
+                FeatureKind.FEATURE_REGION, Path(""), 1, 1, ["A"], 42, "test"
+            )
+        )
+
+        self.assertEqual(self.root.feature_threshold("A"), 1.0)
+        self.assertEqual(self.root.feature_threshold("B"), 0.0)
+
     def test_diff(self):
         root_2 = deepcopy(self.root)
         root_3 = deepcopy(self.root)
@@ -364,6 +399,74 @@ class TestCodeRegion(unittest.TestCase):
                                    "1").replace("\x1b[0;41m", "\x1b[41m"
                                                ).replace("\x1b[41m\x1b[0m", "")
             self.assertEqual(cov_show_slow_color_txt, output)
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_vara_feature_export(self):
+        report = CoverageReport.from_report(
+            Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+            "GenCov-CovR-FeaturePerfCSCollection-SimpleFeatureInteraction-4300ea495e"
+            / "6fd8f465-ad2e-484c-a7c4-a3c1d0fed05f_config-0_success.zip"
+        )
+
+        for func, code_region in report.filename_function_mapping[
+            "src/SimpleFeatureInteraction/SFImain.cpp"].items():
+            print(func)
+            if func == "_Z11sendPackage11PackageData":
+                for region in code_region.iter_preorder():
+                    if region.start.line == 51 and region.start.column == 36:
+                        self.assertEqual(region.vara_features(), set())
+                    elif region.start.line == 52 and region.start.column == 7:
+                        self.assertEqual(region.vara_features(), set())
+                    elif region.start.line == 52 and region.start.column == 22:
+                        self.assertEqual(region.vara_instrs, [])
+                    elif region.start.line == 52 and region.start.column == 23:
+                        self.assertEqual(
+                            region.vara_features(), {"Compression"}
+                        )
+                        self.assertEqual(
+                            region.feature_threshold("Compression"), 1.0
+                        )
+                    elif region.start.line == 55 and region.start.column == 7:
+                        self.assertEqual(region.vara_features(), set())
+                    elif region.start.line == 55 and region.start.column == 21:
+                        self.assertEqual(region.vara_instrs, [])
+                    elif region.start.line == 55 and region.start.column == 22:
+                        self.assertEqual(region.vara_features(), {"Encryption"})
+                        self.assertEqual(
+                            region.feature_threshold("Encryption"), 1.0
+                        )
+                    elif region.start.line == 56 and region.start.column == 9:
+                        self.assertEqual(region.vara_features(), {"Encryption"})
+                        self.assertEqual(
+                            region.feature_threshold("Encryption"), 1.0
+                        )
+                    elif region.start.line == 56 and region.start.column == 28:
+                        self.assertEqual(region.vara_instrs, [])
+                    elif region.start.line == 56 and region.start.column == 29:
+                        self.assertEqual(
+                            region.vara_features(),
+                            {"Encryption", "Compression"}
+                        )
+                        self.assertEqual(
+                            region.feature_threshold("Encryption"), 1.0
+                        )
+                        self.assertEqual(
+                            region.feature_threshold("Compression"), 1.0
+                        )
+                    elif region.start.line == 59 and region.start.column == 1:
+                        self.assertEqual(region.vara_instrs, [])
+                    elif region.start.line == 62 and region.start.column == 1:
+                        self.assertEqual(region.vara_instrs, [])
+                    elif region.start.line == 66 and region.start.column == 1:
+                        self.assertEqual(region.vara_instrs, [])
+                    else:
+                        self.fail()
+                    #print(region.vara_instrs)
+                    #print(region.vara_features())
+            #else:
+            #    self.fail()
 
     def test_cov_fill_buffer(self):
         lines = {1: "Hello World!\n", 2: "Goodbye;\n"}

@@ -190,7 +190,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
                         coverage_features = region.coverage_features_set
                         # Map coverage to vara feature names
                         vara_features = set()
-                        for vara_feature in region.vara_features:
+                        for vara_feature in region.vara_features():
                             vara_features.add(
                                 vara_coverage_features_map[vara_feature]
                             )
