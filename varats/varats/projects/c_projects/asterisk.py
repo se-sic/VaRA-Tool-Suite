@@ -1,16 +1,13 @@
-"""Project file for bison."""
+"""Project file for asterisk."""
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import make, git
+from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper.paper_config import (
-    PaperConfigSpecificGit,
-    project_filter_generator,
-)
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
