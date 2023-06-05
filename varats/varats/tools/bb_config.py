@@ -27,6 +27,7 @@ def update_projects(
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         # yapf: disable
+        'varats.projects.c_projects.asterisk',
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
