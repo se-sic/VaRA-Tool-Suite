@@ -21,9 +21,7 @@ from varats.utils.settings import bb_cfg
 
 
 class Asterisk(VProject):
-    """
-    Open Source PBX and telephony toolkit.
-    """
+    """Open Source PBX and telephony toolkit."""
 
     NAME = 'asterisk'
     GROUP = 'c_projects'
