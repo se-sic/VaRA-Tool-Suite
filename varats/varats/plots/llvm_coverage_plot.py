@@ -173,7 +173,9 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
         return cov_segments(feature_report, base_dir)
 
     def confusion_matrix(
-        self, vara_coverage_features_map: tp.Dict[str, str]
+        self,
+        feature_name_map: tp.Dict[str, str],
+        threshold: float = 1.0
     ) -> tp.Dict[str, ConfusionMatrix]:
         """Returns the confusion matrix."""
 
@@ -188,15 +190,8 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
                 for function, tree in func_map.items():
                     for region in tree.iter_breadth_first():
                         coverage_features = region.coverage_features_set
-                        # Map coverage to vara feature names
-                        vara_features = set()
-                        for vara_feature in region.vara_features():
-                            vara_features.add(
-                                vara_coverage_features_map[vara_feature]
-                            )
-
                         classification_feature = classify_feature(
-                            feature, vara_features, coverage_features
+                            feature, region, threshold, feature_name_map
                         )
                         matrix_feature.add(
                             classification_feature,
@@ -208,7 +203,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
                         )
 
                         classification_all = classify_all(
-                            vara_features, coverage_features
+                            region, threshold, feature_name_map
                         )
                         matrix_all.add(
                             classification_all,
@@ -233,23 +228,40 @@ class Classification(Enum):
 
 
 def classify_feature(
-    feature: str, vara_features: tp.Set[str], coverage_features: tp.Set[str]
+    feature: str, code_region: CodeRegion, threshold: float,
+    feature_name_map: tp.Dict[str, str]
 ) -> Classification:
     """Classify single feature."""
-    if feature in vara_features and feature in coverage_features:
+    # Convert_feature_name
+    vara_feature_name = feature_name_map[feature]
+    vara_found = code_region.features_threshold([vara_feature_name]
+                                               ) >= threshold
+    coverage_found = feature in code_region.coverage_features_set
+
+    if vara_found and coverage_found:
         return Classification.TRUE_POSITIVE
-    elif feature in vara_features:
+    elif vara_found:
         return Classification.FALSE_POSITIVE
-    elif feature in coverage_features:
+    elif coverage_found:
         return Classification.FALSE_NEGATIVE
     return Classification.TRUE_NEGATIVE
 
 
 def classify_all(
-    vara_features: tp.Set[str], coverage_features: tp.Set[str]
+    code_region: CodeRegion, threshold: float, feature_name_map: tp.Dict[str,
+                                                                         str]
 ) -> Classification:
-    """Classify all features at once."""
-    print(vara_features, coverage_features)
+    """Classify all given features at once."""
+    features = code_region.vara_features()
+    vara_features = features if code_region.features_threshold(
+        features
+    ) >= threshold else set()
+
+    # Convert feature names
+    coverage_features = set()
+    for feature in code_region.coverage_features_set:
+        coverage_features.add(feature_name_map[feature])
+
     if len(vara_features) > 0 or len(coverage_features) > 0:
         if vara_features == coverage_features:
             return Classification.TRUE_POSITIVE
@@ -497,8 +509,8 @@ def _plot_confusion_matrix(
 ) -> None:
 
     matrix_dict = config_report_map.confusion_matrix({
-        "Encryption": "enc",
-        "Compression": "compress"
+        "enc": "Encryption",
+        "compress": "Compression"
     })
 
     for feature in matrix_dict:

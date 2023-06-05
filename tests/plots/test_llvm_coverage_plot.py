@@ -6,6 +6,9 @@ from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.base.configuration import PlainCommandlineConfiguration
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
+    CodeRegionKind,
+    VaraInstr,
+    FeatureKind,
     CoverageReport,
     cov_show_segment_buffer,
 )
@@ -15,10 +18,12 @@ from varats.varats.plots.llvm_coverage_plot import (
     ConfigCoverageReportMapping,
     ConfusionMatrix,
     ConfusionEntry,
-    classify_feature,
-    classify_all,
-    Classification,
 )
+from varats.varats.plots.llvm_coverage_plot import (
+    classify_feature as _classify_feature,
+)
+from varats.varats.plots.llvm_coverage_plot import classify_all as _classify_all
+from varats.varats.plots.llvm_coverage_plot import Classification
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
 
@@ -58,47 +63,148 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(matrix.recall(), 0.0)
 
     def test_classify_feature(self):
-        coverage_features = set(["A", "B"])
-        vara_features = set(["A", "C"])
+        classify_feature = lambda feature, region, threshold: _classify_feature(
+            feature, region, threshold, {
+                "A": "A",
+                "B": "B",
+                "C": "C",
+                "": ""
+            }
+        )
+
+        region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test")
+        region.coverage_features_set = {"A", "B"}
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "C"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
 
         self.assertEqual(
-            classify_feature("A", vara_features, coverage_features),
-            Classification.TRUE_POSITIVE
+            classify_feature("A", region, 1.0), Classification.TRUE_POSITIVE
         )
         self.assertEqual(
-            classify_feature("B", vara_features, coverage_features),
-            Classification.FALSE_NEGATIVE
+            classify_feature("A", region, 0.0), Classification.TRUE_POSITIVE
         )
         self.assertEqual(
-            classify_feature("C", vara_features, coverage_features),
-            Classification.FALSE_POSITIVE
+            classify_feature("B", region, 1.0), Classification.FALSE_NEGATIVE
         )
         self.assertEqual(
-            classify_feature("", vara_features, coverage_features),
-            Classification.TRUE_NEGATIVE
+            classify_feature("B", region, 0.5), Classification.TRUE_POSITIVE
+        )
+        self.assertEqual(
+            classify_feature("C", region, 1.0), Classification.TRUE_NEGATIVE
+        )
+        self.assertEqual(
+            classify_feature("C", region, 0.5), Classification.FALSE_POSITIVE
+        )
+        self.assertEqual(
+            classify_feature("", region, 1.0), Classification.TRUE_NEGATIVE
+        )
+        self.assertEqual(
+            classify_feature("", region, 0.0001), Classification.TRUE_NEGATIVE
+        )
+        self.assertEqual(
+            classify_feature("", region, 0.0), Classification.FALSE_POSITIVE
         )
 
     def test_classify_all(self):
+        classify_all = lambda region, threshold: _classify_all(
+            region, threshold, {
+                "A": "A",
+                "B": "B",
+            }
+        )
+
+        region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test")
+        region.coverage_features_set = {"A", "B"}
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
+
+        # Coverage: A,B == VaRA: A,B
+
         self.assertEqual(
-            classify_all(set(["A", "B"]), set(["A", "B"])),
-            Classification.TRUE_POSITIVE
+            classify_all(region, 1.0), Classification.TRUE_POSITIVE
+        )
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
+
+        # Coverage: A,B == VaRA: A,(B)
+
+        self.assertEqual(
+            classify_all(region, 1.0), Classification.FALSE_NEGATIVE
         )
         self.assertEqual(
-            classify_all(set(["A"]), set(["A", "B"])),
-            Classification.FALSE_NEGATIVE
+            classify_all(region, 0.5), Classification.TRUE_POSITIVE
+        )
+
+        region.coverage_features_set = {"A"}
+
+        # Coverage: A == VaRA: A,(B)
+
+        self.assertEqual(
+            classify_all(region, 1.0), Classification.FALSE_NEGATIVE
+        )
+
+        self.assertEqual(
+            classify_all(region, 0.0), Classification.FALSE_POSITIVE
+        )
+
+        instr_3 = VaraInstr(
+            FeatureKind.NORMAL_REGION, "", 1, 1, [], 42, "test_instr"
+        )
+        region.vara_instrs = [instr_3]
+
+        # Coverage: A == VaRA:
+
+        self.assertEqual(
+            classify_all(region, 1.0), Classification.FALSE_NEGATIVE
         )
         self.assertEqual(
-            classify_all(set(["A", "B"]), set(["A"])),
-            Classification.FALSE_POSITIVE
+            classify_all(region, 0.0), Classification.FALSE_NEGATIVE
         )
+
+        region.vara_instrs = [instr_2, instr_3]
+        region.coverage_features_set = {}
+
+        # Coverage:  == VaRA: (A)
+
         self.assertEqual(
-            classify_all(set([]), set(["B"])), Classification.FALSE_NEGATIVE
+            classify_all(region, 0.0), Classification.FALSE_POSITIVE
         )
+
         self.assertEqual(
-            classify_all(set(["B"]), set([])), Classification.FALSE_POSITIVE
+            classify_all(region, 1.0), Classification.TRUE_NEGATIVE
         )
+
+        region.vara_instrs = []
+
+        # Coverage:  == VaRA:
+
         self.assertEqual(
-            classify_all(set([]), set([])), Classification.TRUE_NEGATIVE
+            classify_all(region, 1.0), Classification.TRUE_NEGATIVE
+        )
+
+        self.assertEqual(
+            classify_all(region, 0.0), Classification.TRUE_NEGATIVE
         )
 
     def test_feature_config_report_map(self):

@@ -115,17 +115,21 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             return False
         return True
 
-    def feature_threshold(self, feature: str) -> float:
+    def features_threshold(self, features: tp.List[str]) -> float:
+        """Returns the proportion of this features in vara instrs."""
         with_feature = []
         wo_feature = []
 
         for instr in self.vara_instrs:
-            if instr.has_feature(feature):
+            if instr.has_features(features):
                 with_feature.append(instr)
             else:
                 wo_feature.append(instr)
 
-        return len(with_feature) / (len(with_feature) + len(wo_feature))
+        denominator = (len(with_feature) + len(wo_feature))
+        if denominator == 0:
+            return float("-inf")
+        return len(with_feature) / denominator
 
     def vara_features(self) -> tp.Set[str]:
         """Returns all features from annotated vara instrs."""
@@ -364,8 +368,11 @@ class VaraInstr:
     instr_index: int
     instr: str
 
-    def has_feature(self, feature: str) -> bool:
-        return feature in self.features
+    def has_features(self, features: tp.List[str]) -> bool:
+        for feature in features:
+            if feature not in self.features:
+                return False
+        return True
 
 
 class LocationInstrMapping(tp.DefaultDict[FrozenLocation, tp.List[VaraInstr]]):
@@ -498,6 +505,8 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 features = []
                 for feature in _features:
                     if not feature.startswith("__CONDITION__:"):
+                        # Translate vara feature name to command-line option name
+
                         features.append(feature)
                 instr_index = int(row["instr_index"])
                 instr = row["instr"]

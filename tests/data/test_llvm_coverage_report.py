@@ -256,8 +256,8 @@ class TestCodeRegion(unittest.TestCase):
             )
         )
 
-        self.assertEqual(self.root.feature_threshold("A"), 1.0)
-        self.assertEqual(self.root.feature_threshold("B"), 0.0)
+        self.assertEqual(self.root.features_threshold(["A"]), 1.0)
+        self.assertEqual(self.root.features_threshold(["B"]), 0.0)
 
     def test_diff(self):
         root_2 = deepcopy(self.root)
@@ -426,7 +426,7 @@ class TestCodeRegion(unittest.TestCase):
                             region.vara_features(), {"Compression"}
                         )
                         self.assertEqual(
-                            region.feature_threshold("Compression"), 1.0
+                            region.features_threshold(["Compression"]), 1.0
                         )
                     elif region.start.line == 55 and region.start.column == 7:
                         self.assertEqual(region.vara_features(), set())
@@ -435,12 +435,12 @@ class TestCodeRegion(unittest.TestCase):
                     elif region.start.line == 55 and region.start.column == 22:
                         self.assertEqual(region.vara_features(), {"Encryption"})
                         self.assertEqual(
-                            region.feature_threshold("Encryption"), 1.0
+                            region.features_threshold(["Encryption"]), 1.0
                         )
                     elif region.start.line == 56 and region.start.column == 9:
                         self.assertEqual(region.vara_features(), {"Encryption"})
                         self.assertEqual(
-                            region.feature_threshold("Encryption"), 1.0
+                            region.features_threshold(["Encryption"]), 1.0
                         )
                     elif region.start.line == 56 and region.start.column == 28:
                         self.assertEqual(region.vara_instrs, [])
@@ -450,11 +450,17 @@ class TestCodeRegion(unittest.TestCase):
                             {"Encryption", "Compression"}
                         )
                         self.assertEqual(
-                            region.feature_threshold("Encryption"), 1.0
+                            region.features_threshold(["Encryption"]), 1.0
                         )
                         self.assertEqual(
-                            region.feature_threshold("Compression"), 1.0
+                            region.features_threshold(["Compression"]), 1.0
                         )
+                        self.assertEqual(
+                            region.features_threshold([
+                                "Encryption", "Compression"
+                            ]), 1.0
+                        )
+
                     elif region.start.line == 59 and region.start.column == 1:
                         self.assertEqual(region.vara_instrs, [])
                     elif region.start.line == 62 and region.start.column == 1:
