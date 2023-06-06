@@ -107,7 +107,13 @@ class Bzip2(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Bzip2.NAME))
 
-        binary_map.specify_binary('build/bzip2', BinaryType.EXECUTABLE)
+        binary_map.specify_binary(
+            'build/bzip2',
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "e264a7f7c44fae62f5be9840946f6bc0e8cd6512", "HEAD"
+            )
+        )
         binary_map.specify_binary(
             'bzip2',
             BinaryType.EXECUTABLE,
@@ -123,7 +129,7 @@ class Bzip2(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        bzip2_source = local.path(self.source_of_primary)```
+        bzip2_source = local.path(self.source_of_primary)
         bzip2_version_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
         cc_compiler = bb.compiler.cc(self)
