@@ -101,9 +101,62 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         else:
             raise "ERROR: Invalid analysis: " + ana
 
+    def _get_gc_aggregates(self, report: PhasarIterIDEStatsReport,
+                           ana: str) -> tp.List[TimeReportAggregate]:
+        if ana == self.TAINT:
+            return [
+                report.new_taint_gc_jf1, report.new_taint_gc,
+                report.new_taint_jf3, report.old_taint
+            ]
+        elif ana == self.TYPESTATE:
+            return [
+                report.new_typestate_gc_jf1, report.new_typestate_gc,
+                report.new_typestate_jf3, report.old_typestate
+            ]
+        elif ana == self.LCA:
+            return [
+                report.new_lca_gc_jf1, report.new_lca_gc, report.new_lca_jf3,
+                report.old_lca
+            ]
+        elif ana == self.IIA:
+            return [
+                report.new_iia_gc_jf1, report.new_iia_gc, report.new_iia_jf3,
+                report.old_iia
+            ]
+        else:
+            raise "ERROR: Invalid analysis: " + ana
+
+    @staticmethod
+    def compute_speedups(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return list(
+            map(
+                lambda x: round(x[0] / x[1], 3),
+                itertools.product(old_measurements, new_measurements)
+            )
+        )
+
+    @staticmethod
+    def compute_mean_speedup(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return [
+            np.mean(
+                list(
+                    map(
+                        lambda x: round(x[0] / x[1], 3),
+                        itertools.product(old_measurements, new_measurements)
+                    )
+                )
+            )
+        ]
+
     @abc.abstractmethod
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         pass
 
     def _get_jf_name(self, jf: int) -> str:
@@ -118,7 +171,10 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         else:
             raise "ERROR: Table Rep out-of-range: " + str(jf)
 
-    def make_dataframe(self) -> pd.DataFrame:
+    def make_dataframe(
+        self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
+                                            float]
+    ) -> pd.DataFrame:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
@@ -155,7 +211,9 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                     report.merge_with(iia_report)
 
                 nodes.extend(
-                    self._get_data_entries(report, case_study.project_name)
+                    self._get_data_entries(
+                        report, case_study.project_name, speedup_computer
+                    )
                 )
 
         return pd.DataFrame(nodes).sort_values(by=["Analysis", "JF"])
@@ -286,8 +344,8 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
 
         return ax
 
-    def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
+    def make_phasar_violinplot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(self.compute_speedups)
         ax = sns.violinplot(
             x="Analysis",
             y=self.YNAME,
@@ -297,7 +355,17 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             palette="pastel",
             # inner="point",
         )
-        ax.axhline(1)
+        #ax.axhline(1)
+
+        data = self.make_dataframe(self.compute_mean_speedup)
+
+        print(f"make_phasar_plot: {data}")
+        for ana in ["Taint", "IIA"]:
+            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+            Min = Rows.min()
+            Max = Rows.max()
+            Mean = Rows.mean()
+            print(f"{ana}: Min {Min}, Max {Max}, Mean {Mean}")
 
         ax = sns.stripplot(
             x="Analysis",
@@ -314,6 +382,11 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         )
         return ax
 
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        ax = self.make_phasar_violinplot()
+        ax.axhline(1)
+        return ax
+
     def plot(self, view_mode: bool) -> None:
         ax = self.make_phasar_plot()
 
@@ -322,70 +395,31 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
     ) -> tp.Set[FullCommitHash]:
         raise UnsupportedOperation
 
-    @staticmethod
-    def compute_speedups(
-        old_measurements: tp.List[float], new_measurements: tp.List[float]
-    ) -> tp.List[float]:
-        return list(
-            map(
-                lambda x: round(x[0] / x[1], 3),
-                itertools.product(old_measurements, new_measurements)
-            )
-        )
-
     def get_argmaxmin(self, Args: tp.List[float]) -> tp.Tuple[int, int]:
         Max = np.argmax(Args)
         Min = np.argmin(Args)
         return (Max, Min)
 
 
-class PhasarIterIDEJF1JF2TimeViolinPlot(
-    PhasarIterIDEPlotBase,
-    plot_name='phasar-iter-ide-jf1-jf2-time',
-    yname="Relative time savings"
-):
-    """Box plot of commit-author interaction commit node degrees."""
+class PhasarIterIDERuntimeSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
 
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def __init_subclass__(
+        cls,
+        *,
+        plot_name: tp.Optional[str],
+        yname: tp.Optional[str] = None,
+        **kwargs: tp.Any
+    ) -> None:
+        return super().__init_subclass__(
+            plot_name=plot_name, yname=yname, **kwargs
+        )
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
-            aggregates = self._get_aggregates(report, ana)
-            # print(aggregates)
-            if aggregates[self.OLD] is None:
-                print(f"Skip {ana} with Old as there is no reference data")
-            for jf in [self.JF1, self.JF2, self.JF3]:
-                if aggregates[jf] is None:
-                    print(
-                        f"Skip {ana} with {self._get_jf_name(jf)} as there is no data"
-                    )
-                    continue
-                for time, old_time in zip(
-                    aggregates[jf].measurements_wall_clock_time,
-                    aggregates[self.OLD].measurements_wall_clock_time
-                ):
-                    nodes.append({
-                        self.YNAME: (old_time - time) / old_time,
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-
-        return nodes
-
-
-class PhasarIterIDESpeedupVsJF1Plot(
-    PhasarIterIDEPlotBase,
-    plot_name='phasar-iter-ide-speedup-jf1',
-    yname="Runtime Speedup vs Old"
-):
-    """Box plot of commit-author interaction commit node degrees."""
-
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
-
-        # TODO: cross product (see __compute_speedups)
         for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
             aggregates = self._get_aggregates(report, ana)
             if aggregates[self.OLD] is None:
@@ -393,14 +427,202 @@ class PhasarIterIDESpeedupVsJF1Plot(
             for jf in [self.JF1, self.JF2, self.JF3]:
                 if aggregates[jf] is None:
                     continue
-                for s in PhasarIterIDEPlotBase.compute_speedups(
+                for s in speedup_computer(
                     aggregates[self.OLD].measurements_wall_clock_time,
                     aggregates[jf].measurements_wall_clock_time
                 ):
-                    # for time, old_time in zip(
-                    #     aggregates[jf].measurements_wall_clock_time,
-                    #     aggregates[self.OLD].measurements_wall_clock_time
-                    # ):
+                    nodes.append({
+                        self.YNAME:
+                            s,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Old":
+                            np.mean(
+                                aggregates[self.OLD
+                                          ].measurements_wall_clock_time
+                            ),
+                        "New":
+                            np.mean(
+                                aggregates[jf].measurements_wall_clock_time
+                            ),
+                        "Target":
+                            cs,
+                    })
+
+        return nodes
+
+
+class PhasarIterIDEMemorySpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
+
+    def __init_subclass__(
+        cls,
+        *,
+        plot_name: tp.Optional[str],
+        yname: tp.Optional[str] = None,
+        **kwargs: tp.Any
+    ) -> None:
+        return super().__init_subclass__(
+            plot_name=plot_name, yname=yname, **kwargs
+        )
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.OLD] is None:
+                continue
+            for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    continue
+                for s in speedup_computer(
+                    aggregates[self.OLD].max_resident_sizes,
+                    aggregates[jf].max_resident_sizes
+                ):
+                    nodes.append({
+                        self.YNAME:
+                            s,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Old":
+                            np.mean(aggregates[self.OLD].max_resident_sizes) /
+                            1000,
+                        "New":
+                            np.mean(aggregates[jf].max_resident_sizes) / 1000,
+                        "Target":
+                            cs,
+                    })
+
+        return nodes
+
+
+################################################################################
+#                         Concrete Implementations                             #
+################################################################################
+
+
+class PhasarIterIDESpeedupVsJF1Plot(
+    PhasarIterIDERuntimeSpeedupPlotBase,
+    plot_name='phasar-iter-ide-speedup-jf1',
+    yname="Runtime Speedup vs Old"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    # def make_phasar_plot(self) -> matplotlib.axes.Axes:
+    #     ax = super().make_phasar_plot()
+    #     ax.axhline(1)
+    #     return ax
+
+
+class PhasarIterIDEMemSpeedupVsJF1Plot(
+    PhasarIterIDEMemorySpeedupPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-jf1',
+    yname="Memory Speedup vs Old"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    # def make_phasar_plot(self) -> matplotlib.axes.Axes:
+    #     data = self.make_dataframe()
+    #     ax = sns.boxplot(
+    #         x="Analysis",
+    #         y=self.YNAME,
+    #         data=data,
+    #         hue="JF",
+    #     )
+    #     ax.set_ylim(bottom=-7500)
+    #     return ax
+
+
+class PhasarIterIDESpeedupScatterPlot(
+    PhasarIterIDERuntimeSpeedupPlotBase,
+    plot_name='phasar-iter-ide-speedup-scatter',
+    yname="Runtime Speedup vs Old"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        # data = data.loc[data["Analysis"] == "Taint"]
+
+        ax = sns.scatterplot(
+            data=data,
+            x="New",
+            y="Old",
+            # x = "Old",
+            # y = "New",
+            hue="Target",
+            style="JF",
+        )
+
+        ax.axline(xy1=(0, 0), slope=1)
+        # ax.set_yscale('log')
+
+        return ax
+
+
+class PhasarIterIDEMemSpeedupScatterPlot(
+    PhasarIterIDEMemorySpeedupPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-scatter',
+    yname="Memory Speedup vs Old"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        # data = data.loc[data["Analysis"] == "Taint"]
+
+        ax = sns.scatterplot(
+            data=data,
+            x="New",
+            y="Old",
+            # x = "Old",
+            # y = "New",
+            hue="Target",
+            style="JF",
+        )
+
+        ax.axline(xy1=(0, 0), slope=1)
+        # ax.set_yscale('log')
+
+        return ax
+
+
+class PhasarIterIDESpeedupGCPlot(
+    PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-speedup-gc',
+    yname="Runtime Speedup /w GC"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            gc_aggregates = self._get_gc_aggregates(report, ana)
+
+            for jf in [self.JF1, self.JF2]:
+                if aggregates[jf] is None or gc_aggregates[jf] is None:
+                    nodes.append({
+                        self.YNAME: float('nan'),
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                    })
+                    continue
+                for s in speedup_computer(
+                    aggregates[jf].measurements_wall_clock_time,
+                    gc_aggregates[jf].measurements_wall_clock_time
+                ):
                     nodes.append({
                         self.YNAME: s,
                         "JF": self._get_jf_name(jf),
@@ -409,10 +631,86 @@ class PhasarIterIDESpeedupVsJF1Plot(
 
         return nodes
 
-    # def make_phasar_plot(self) -> matplotlib.axes.Axes:
-    #     ax = super().make_phasar_plot()
-    #     ax.axhline(1)
-    #     return ax
+
+class PhasarIterIDEMemSpeedupGCPlot(
+    PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-gc',
+    yname="Memory Speedup /w GC"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            gc_aggregates = self._get_gc_aggregates(report, ana)
+
+            for jf in [self.JF1, self.JF2]:
+                if aggregates[jf] is None or gc_aggregates[jf] is None:
+                    nodes.append({
+                        self.YNAME: float('nan'),
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                    })
+                    continue
+                for s in speedup_computer(
+                    aggregates[jf].max_resident_sizes,
+                    gc_aggregates[jf].max_resident_sizes
+                ):
+                    nodes.append({
+                        self.YNAME: s,
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                    })
+
+        return nodes
+
+
+class PhasarIterIDEMemSavingsGCPlot(
+    PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-mem-savings-gc',
+    yname="Memory Savings /w GC [%]"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            gc_aggregates = self._get_gc_aggregates(report, ana)
+
+            for jf in [self.JF1, self.JF2]:
+                if aggregates[jf] is None or gc_aggregates[jf] is None:
+                    nodes.append({
+                        self.YNAME: float('nan'),
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                    })
+                    continue
+                for s in speedup_computer(
+                    aggregates[jf].max_resident_sizes,
+                    gc_aggregates[jf].max_resident_sizes
+                ):
+                    nodes.append({
+                        self.YNAME: (1 - 1 / s) * 100,
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                    })
+
+        return nodes
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        ax = self.make_phasar_violinplot()
+        ax.axhline(0)
+        return ax
 
 
 class PhasarIterIDESpeedupHeatmap(
@@ -422,8 +720,10 @@ class PhasarIterIDESpeedupHeatmap(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
@@ -434,7 +734,7 @@ class PhasarIterIDESpeedupHeatmap(
             Old = aggregates[self.OLD].measurements_wall_clock_time
             JFMeanSpeedups = [
                 np.mean(
-                    self.compute_speedups(
+                    speedup_computer(
                         Old, aggregates[jf].measurements_wall_clock_time
                     )
                 ) for jf in range(0, 3) if aggregates[jf] is not None
@@ -455,7 +755,7 @@ class PhasarIterIDESpeedupHeatmap(
         return nodes
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
         # print(f"Data: {data}")
         annot = pd.pivot_table(
             data=data, index="Target", columns="Analysis", values=self.YNAME
@@ -485,20 +785,20 @@ class PhasarIterIDEMemSpeedupHeatmap(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
             aggregates = self._get_aggregates(report, ana)
             if aggregates[self.OLD] is None:
                 continue
             Old = aggregates[self.OLD].max_resident_sizes
             JFMeanSpeedups = [
                 np.mean(
-                    self.compute_speedups(
-                        Old, aggregates[jf].max_resident_sizes
-                    )
+                    speedup_computer(Old, aggregates[jf].max_resident_sizes)
                 ) for jf in range(0, 3) if aggregates[jf] is not None
             ]
 
@@ -520,7 +820,7 @@ class PhasarIterIDEMemSpeedupHeatmap(
         return nodes
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
         # print(f"Data: {data}")
         annot = pd.pivot_table(
             data=data, index="Target", columns="Analysis", values=self.YNAME
@@ -549,8 +849,10 @@ class PhasarIterIDENewTime(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
@@ -568,7 +870,7 @@ class PhasarIterIDENewTime(
         return nodes
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
         ax = sns.boxplot(
             x="Analysis",
             y=self.YNAME,
@@ -580,52 +882,6 @@ class PhasarIterIDENewTime(
         return ax
 
 
-class PhasarIterIDEMemSpeedupVsJF1Plot(
-    PhasarIterIDEPlotBase,
-    plot_name='phasar-iter-ide-mem-speedup-jf1',
-    yname="Memory Speedup vs Old"
-):
-    """Box plot of commit-author interaction commit node degrees."""
-
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
-
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
-            aggregates = self._get_aggregates(report, ana)
-            if aggregates[self.OLD] is None:
-                continue
-            for jf in [self.JF1, self.JF2, self.JF3]:
-                if aggregates[jf] is None:
-                    continue
-                for s in PhasarIterIDEPlotBase.compute_speedups(
-                    aggregates[self.OLD].max_resident_sizes,
-                    aggregates[jf].max_resident_sizes
-                ):
-                    # for mem, old_mem in zip(
-                    #     aggregates[jf].max_resident_sizes,
-                    #     aggregates[self.JF1].max_resident_sizes
-                    # ):
-                    nodes.append({
-                        self.YNAME: s,
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-
-        return nodes
-
-    # def make_phasar_plot(self) -> matplotlib.axes.Axes:
-    #     data = self.make_dataframe()
-    #     ax = sns.boxplot(
-    #         x="Analysis",
-    #         y=self.YNAME,
-    #         data=data,
-    #         hue="JF",
-    #     )
-    #     ax.set_ylim(bottom=-7500)
-    #     return ax
-
-
 class PhasarIterIDENewMem(
     PhasarIterIDEPlotBase,
     plot_name='phasar-iter-ide-new-mem',
@@ -633,8 +889,10 @@ class PhasarIterIDENewMem(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
@@ -652,7 +910,7 @@ class PhasarIterIDENewMem(
         return nodes
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
         ax = sns.boxplot(
             x="Analysis",
             y=self.YNAME,
@@ -671,8 +929,10 @@ class PhasarIterIDEOldNewMemViolinPlot(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
@@ -693,7 +953,7 @@ class PhasarIterIDEOldNewMemViolinPlot(
         return nodes
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
         return self.broken_boxplot(
             data, [1, 2], [15000, 0, 2500], [100000, 55000, 10000]
         )
@@ -706,8 +966,10 @@ class PhasarIterIDEOldNewTimeViolinPlot(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(self, report: PhasarIterIDEStatsReport,
-                          cs: str) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
@@ -725,7 +987,7 @@ class PhasarIterIDEOldNewTimeViolinPlot(
         return nodes
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe()
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
         return self.broken_boxplot(
             data, [1, 2], [500, 0, 60], [4000, 2250, 500]
         )
@@ -744,7 +1006,13 @@ class CAIGViolinPlotGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            PhasarIterIDEJF1JF2TimeViolinPlot(
+            # PhasarIterIDEJF1JF2TimeViolinPlot(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
+            PhasarIterIDESpeedupScatterPlot(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDEMemSpeedupScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
             PhasarIterIDEOldNewTimeViolinPlot(
@@ -763,4 +1031,7 @@ class CAIGViolinPlotGenerator(
             PhasarIterIDEMemSpeedupHeatmap(
                 self.plot_config, **self.plot_kwargs
             ),
+            PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDEMemSavingsGCPlot(self.plot_config, **self.plot_kwargs),
         ]
