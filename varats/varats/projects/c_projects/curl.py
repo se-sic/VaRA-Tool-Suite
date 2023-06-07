@@ -3,6 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
+from benchbuild.utils.revision_ranges import block_revisions, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -32,13 +33,22 @@ class Curl(VProject):
     DOMAIN = ProjectDomains.WEB_TOOLS
 
     SOURCE = [
-        PaperConfigSpecificGit(
-            project_name="curl",
-            remote="https://github.com/curl/curl.git",
-            local="curl",
-            refspec="origin/HEAD",
-            limit=None,
-            shallow=False
+        block_revisions([
+            GoodBadSubgraph(["3af90a6e19249807f99bc9ee7b50d3e58849072a"],
+                            ["30ef1a077996c71e463beae53354e8ffc7a4c90d"],
+                            "Compile error without ssl"),
+            GoodBadSubgraph(["ae1912cb0d494b48d514d937826c9fe83ec96c4d"],
+                            ["98dcde4ec3397d8626e2c8f29abaf481fc42e8ec"],
+                            "Requires old libtool version")
+        ])(
+            PaperConfigSpecificGit(
+                project_name="curl",
+                remote="https://github.com/curl/curl.git",
+                local="curl",
+                refspec="origin/HEAD",
+                limit=None,
+                shallow=False
+            )
         )
     ]
 

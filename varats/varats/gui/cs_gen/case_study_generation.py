@@ -29,7 +29,6 @@ from varats.paper_mgmt.case_study import (
 from varats.project.project_util import (
     get_loaded_vara_projects,
     get_local_project_git_path,
-    get_local_project_git,
     get_project_cls_by_name,
     get_primary_project_source,
 )
@@ -44,12 +43,18 @@ from varats.utils.git_util import (
     create_commit_lookup_helper,
     FullCommitHash,
     CommitRepoPair,
+    num_commits,
+    num_authors,
+    calc_repo_loc,
+    calc_project_loc,
+    num_project_commits,
+    num_project_authors,
 )
 from varats.utils.settings import vara_cfg
 
 
-class GenerationStrategie(Enum):
-    """Enum for the Startegie used when Generating a CaseStudy."""
+class GenerationStrategy(Enum):
+    """Enum for the Strategy used when Generating a CaseStudy."""
     SELECT_REVISION = 0
     SAMPLE = 1
     REVS_PER_YEAR = 2
@@ -76,7 +81,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             for x in NormalSamplingMethod.normal_sampling_method_types()
         ])
         self.strategie_forms.setCurrentIndex(
-            GenerationStrategie.SELECT_REVISION.value
+            GenerationStrategy.SELECT_REVISION.value
         )
         self.revision_list.clicked.connect(self.show_revision_data)
         self.select_specific.clicked.connect(self.revisions_of_project)
@@ -116,13 +121,13 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
     def revs_per_year_view(self) -> None:
         """Switch to revision per year strategy view."""
         self.strategie_forms.setCurrentIndex(
-            GenerationStrategie.REVS_PER_YEAR.value
+            GenerationStrategy.REVS_PER_YEAR.value
         )
         self.strategie_forms.update()
 
     def sample_view(self):
         """Switch to sampling strategy view."""
-        self.strategie_forms.setCurrentIndex(GenerationStrategie.SAMPLE.value)
+        self.strategie_forms.setCurrentIndex(GenerationStrategy.SAMPLE.value)
         self.strategie_forms.update()
 
     def gen(self) -> None:
@@ -130,14 +135,10 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         strategy specific arguments."""
         cmap = get_commit_map(self.selected_project, refspec='HEAD')
         version = self.cs_version.value()
-        case_study = CaseStudy(self.revision_list_project, version)
-        paper_config = vara_cfg()["paper_config"]["current_config"].value
-        path = Path(vara_cfg()["paper_config"]["folder"].value) / (
-            paper_config + f"/{self.revision_list_project}_{version}.case_study"
-        )
+        case_study = CaseStudy(self.selected_project, version)
 
         if self.strategie_forms.currentIndex(
-        ) == GenerationStrategie.SAMPLE.value:
+        ) == GenerationStrategy.SAMPLE.value:
             sampling_method = NormalSamplingMethod.get_sampling_method_type(
                 self.sampling_method.currentText()
             )
@@ -146,19 +147,24 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
                 True, self.code_commits.clicked
             )
         elif self.strategie_forms.currentIndex(
-        ) == GenerationStrategie.SELECT_REVISION.value:
+        ) == GenerationStrategy.SELECT_REVISION.value:
             selected_rows = self.revision_list.selectionModel().selectedRows(0)
             selected_commits = [row.data() for row in selected_rows]
             extend_with_extra_revs(case_study, cmap, selected_commits, 0)
             self.revision_list.clearSelection()
             self.revision_list.update()
         elif self.strategie_forms.currentIndex(
-        ) == GenerationStrategie.REVS_PER_YEAR.value:
+        ) == GenerationStrategy.REVS_PER_YEAR.value:
             extend_with_revs_per_year(
                 case_study, cmap, 0, True,
                 get_local_project_git_path(self.selected_project),
                 self.revs_per_year.value(), self.seperate.checkState()
             )
+
+        paper_config = vara_cfg()["paper_config"]["current_config"].value
+        path = Path(
+            vara_cfg()["paper_config"]["folder"].value
+        ) / (paper_config + f"/{self.selected_project}_{version}.case_study")
         store_case_study(case_study, path)
 
     def show_project_data(self, index: QModelIndex) -> None:
@@ -167,21 +173,33 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         if self.selected_project != project_name:
             self.selected_project = project_name
             project = get_project_cls_by_name(project_name)
+            git_path = get_local_project_git_path(project_name)
+            repo = pygit2.Repository(pygit2.discover_repository(git_path))
+
+            last_pygit_commit: pygit2.Commit = repo[repo.head.target]
+            last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
+
+            project_loc = calc_project_loc(project_name, last_commit)
+            commits = num_project_commits(project_name, last_commit)
+            authors = num_project_authors(project_name, last_commit)
             project_info = f"{project_name.upper()} : " \
-                           f"\nDomain: {project.DOMAIN}" \
-                           f"\nSource: " \
-                           f"{bb.source.primary(*project.SOURCE).remote}"
+                           f"\n  Domain: \t{project.DOMAIN}" \
+                           f"\n  Source: \t" \
+                           f"{bb.source.primary(*project.SOURCE).remote}" \
+                           f"\n  Commits: \t{commits}" \
+                           f"\n  Authors: \t{authors}" \
+                           f"\n  Size: \t{project_loc} loc"
             self.project_details.setText(project_info)
             self.project_details.update()
-            if self.strategie_forms.currentIndex(
-            ) == GenerationStrategie.SELECT_REVISION.value:
-                self.revisions_of_project()
+        if self.strategie_forms.currentIndex(
+        ) == GenerationStrategy.SELECT_REVISION.value:
+            self.revisions_of_project()
 
     def revisions_of_project(self) -> None:
         """Generate the Revision list for the selected project if select
         specific is enabled."""
         self.strategie_forms.setCurrentIndex(
-            GenerationStrategie.SELECT_REVISION.value
+            GenerationStrategy.SELECT_REVISION.value
         )
         if self.selected_project != self.revision_list_project:
             self.revision_details.setText("Loading Revisions")
@@ -216,9 +234,10 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
     def show_revision_data(self, index: QModelIndex) -> None:
         """Update the revision data field."""
         commit = self.revision_list.model().data(index, Qt.WhatsThisRole)
-        commit_info = f"{commit.hex}\nAuthor:{commit.author.name}," \
-                      f"{commit.author.email}\n" \
-                      f"Msg:{commit.message}"
+        commit_info = f"{commit.hex}:\n" \
+                      f"{commit.author.name}, " \
+                      f"<{commit.author.email}>\n\n" \
+                      f"{commit.message}"
         self.selected_commit = commit.hex
         self.revision_details.setText(commit_info)
         self.revision_details.update()
@@ -303,7 +322,7 @@ class CommitTableModel(QAbstractTableModel):
 
 
 class VaRATSGui:
-    """Start VaRA-TS grafical user interface for graphs."""
+    """Start VaRA-TS graphical user interface for graphs."""
 
     def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
