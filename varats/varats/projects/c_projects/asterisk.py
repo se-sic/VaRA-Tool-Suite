@@ -21,15 +21,11 @@ from varats.utils.settings import bb_cfg
 
 
 class Asterisk(VProject):
-    """
-    Open Source PBX and telephony toolkit.
-
-    (fetched by Git)
-    """
+    """Open Source PBX and telephony toolkit."""
 
     NAME = 'asterisk'
     GROUP = 'c_projects'
-    DOMAIN = ProjectDomains.PARSER
+    DOMAIN = ProjectDomains.SIGNAL_PROCESSING
 
     SOURCE = [
         PaperConfigSpecificGit(

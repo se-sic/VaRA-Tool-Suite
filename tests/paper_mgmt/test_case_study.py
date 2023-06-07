@@ -260,8 +260,8 @@ class TestCaseStudyExtenders(unittest.TestCase):
         self.assertEqual(cs.num_stages, 17)
         self.assertEqual(len(cs.revisions), 31)
         self.assertEqual(
-            cs.revisions[0],
-            FullCommitHash("c563a4bc554a96bd0b6aab3c139715b7ec8f6ca3")
+            cs.get_stage_by_name('2022').revisions[0],
+            FullCommitHash("8fd225a2c149f30aeac377e68eb5abf6b28300ad")
         )
         self.assertEqual(
             cs.revisions[-1],
