@@ -189,7 +189,6 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
             for file, func_map in report.filename_function_mapping.items():
                 for function, tree in func_map.items():
                     for region in tree.iter_breadth_first():
-                        coverage_features = region.coverage_features_set
                         classification_feature = classify_feature(
                             feature, region, threshold, feature_name_map
                         )
@@ -221,6 +220,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
 
 
 class Classification(Enum):
+    """Classification in confusion matrix."""
     TRUE_POSITIVE = "TP"
     TRUE_NEGATIVE = "TN"
     FALSE_POSITIVE = "FP"
@@ -240,9 +240,9 @@ def classify_feature(
 
     if vara_found and coverage_found:
         return Classification.TRUE_POSITIVE
-    elif vara_found:
+    if vara_found:
         return Classification.FALSE_POSITIVE
-    elif coverage_found:
+    if coverage_found:
         return Classification.FALSE_NEGATIVE
     return Classification.TRUE_NEGATIVE
 
@@ -265,15 +265,16 @@ def classify_all(
     if len(vara_features) > 0 or len(coverage_features) > 0:
         if vara_features == coverage_features:
             return Classification.TRUE_POSITIVE
-        elif len(vara_features.difference(coverage_features)) > 0:
+        if len(vara_features.difference(coverage_features)) > 0:
             return Classification.FALSE_POSITIVE
-        elif len(coverage_features.difference(vara_features)) > 0:
+        if len(coverage_features.difference(vara_features)) > 0:
             return Classification.FALSE_NEGATIVE
     return Classification.TRUE_NEGATIVE
 
 
 @dataclass(frozen=True)
 class ConfusionEntry:
+    """Entry in confusion matrix."""
     feature: str
     file: str
     function: str
@@ -294,6 +295,7 @@ class ConfusionMatrix:
     def add(
         self, classification: Classification, entry: ConfusionEntry
     ) -> None:
+        """Add classified entry to confusion matrix."""
         if classification == Classification.TRUE_POSITIVE:
             self.true_positive.add(entry)
         elif classification == Classification.TRUE_NEGATIVE:
@@ -302,10 +304,9 @@ class ConfusionMatrix:
             self.false_positive.add(entry)
         elif classification == Classification.FALSE_NEGATIVE:
             self.false_negative.add(entry)
-        else:
-            raise NotImplemented("")
 
     def accuracy(self) -> tp.Optional[float]:
+        """Calculate accuracy."""
         numerator = (len(self.true_positive) + len(self.true_negative))
         denumerator = (
             len(self.true_positive) + len(self.true_negative) +
@@ -316,6 +317,7 @@ class ConfusionMatrix:
         return numerator / denumerator
 
     def precision(self) -> tp.Optional[float]:
+        """Calculate precision."""
         numerator = len(self.true_positive)
         denumerator = len(self.true_positive) + len(self.false_positive)
         if denumerator == 0:
@@ -323,6 +325,7 @@ class ConfusionMatrix:
         return numerator / denumerator
 
     def recall(self) -> tp.Optional[float]:
+        """Calculate recall."""
         numerator = len(self.true_positive)
         denumerator = len(self.true_positive) + len(self.false_negative)
         if denumerator == 0:

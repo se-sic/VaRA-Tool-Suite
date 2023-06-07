@@ -115,7 +115,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             return False
         return True
 
-    def features_threshold(self, features: tp.List[str]) -> float:
+    def features_threshold(self, features: tp.Iterable[str]) -> float:
         """Returns the proportion of this features in vara instrs."""
         with_feature = []
         wo_feature = []
@@ -229,15 +229,16 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         return None
 
     def is_location_inside(self, line: int, column: int) -> bool:
+        """Returns true if line and column is inside code region."""
         if self.start.line <= line <= self.end.line:
             # Location could be inside. Check cases.
             if self.start.line == line == self.end.line:
                 # Location in same line
                 return self.start.column <= column <= self.end.column
-            elif self.start.line == line:
+            if self.start.line == line:
                 # Location in start line
                 return self.start.column <= column
-            elif self.end.line == line:
+            if self.end.line == line:
                 # Location in end line
                 return column <= self.end.column
             # Location neither in start line not in end line
@@ -368,7 +369,8 @@ class VaraInstr:
     instr_index: int
     instr: str
 
-    def has_features(self, features: tp.List[str]) -> bool:
+    def has_features(self, features: tp.Iterable[str]) -> bool:
+        """Checks if instr is marked with given features."""
         for feature in features:
             if feature not in self.features:
                 return False
@@ -504,9 +506,9 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 # Don't consider features belonging to conditions a feature.
                 features = []
                 for feature in _features:
-                    if not feature.startswith("__CONDITION__:"):
-                        # Translate vara feature name to command-line option name
-
+                    if not feature.startswith(
+                        "__CONDITION__:"
+                    ) and feature != "":
                         features.append(feature)
                 instr_index = int(row["instr_index"])
                 instr = row["instr"]
