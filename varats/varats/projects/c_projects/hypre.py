@@ -1,6 +1,7 @@
 """Project file for Hypre."""
 import re
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake
@@ -73,7 +74,7 @@ class Hypre(VProject, ReleaseProviderHook):
 
     def compile(self) -> None:
         """Compile the project."""
-        hypre_source = local.path(self.source_of(self.primary_source))
+        hypre_source = Path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)

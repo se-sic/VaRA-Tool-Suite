@@ -5,7 +5,7 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
-from benchbuild.utils.cmd import mkdir, cmake, make
+from benchbuild.utils.cmd import cmake, make
 from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -129,19 +129,19 @@ class Bzip2(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        bzip2_source = local.path(self.source_of_primary)
-        bzip2_version_source = Path(self.source_of_primary)
+        bzip2_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
+
         if bzip2_version in typed_revision_range(
-            Bzip2._MAKE_VERSIONS, bzip2_version_source, ShortCommitHash
+            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         elif bzip2_version in typed_revision_range(
-            Bzip2._AUTOTOOLS_VERSIONS, bzip2_version_source, ShortCommitHash
+            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
@@ -149,7 +149,7 @@ class Bzip2(VProject):
                     bb.watch(local["./configure"])()
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         else:
-            mkdir("-p", bzip2_source / "build")
+            (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
             with local.cwd(bzip2_source / "build"):
 
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
@@ -159,6 +159,5 @@ class Bzip2(VProject):
                     "--build", ".", "--config", "Release", "-j",
                     get_number_of_jobs(bb_cfg())
                 )
-
         with local.cwd(bzip2_source):
             verify_binaries(self)

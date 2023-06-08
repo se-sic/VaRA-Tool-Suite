@@ -1,5 +1,6 @@
 """Project file for git."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
@@ -58,7 +59,7 @@ class Git(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        git_source = local.path(self.source_of_primary)
+        git_source = Path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         with local.cwd(git_source):
