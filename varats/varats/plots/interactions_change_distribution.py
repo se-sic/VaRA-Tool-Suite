@@ -101,6 +101,24 @@ class RevisionImpactDistribution(
         #plt.yscale("asinh")
 
 
+def impact_data(case_studys: tp.List[CaseStudy]):
+    data = pd.DataFrame({
+        "revision": [],
+        "interaction_change": [],
+        "line_change": [],
+        "impacted_commits": [],
+        "project": []
+    })
+    for case_study in case_studys:
+        cs_data = revision_impact(case_study)
+        cs_data.insert(1, "project", case_study.project_name)
+        data = pd.concat([data, cs_data],
+                         ignore_index=True,
+                         copy=False,
+                         join="inner")
+    return data
+
+
 class RevisionImpactScatterInteractions(
     Plot, plot_name="revision_impact_interactions"
 ):
@@ -112,20 +130,7 @@ class RevisionImpactScatterInteractions(
 
     def plot(self, view_mode: bool) -> None:
         case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
-        data = pd.DataFrame({
-            "revision": [],
-            "interaction_change": [],
-            "line_change": [],
-            "impacted_commits": [],
-            "project": []
-        })
-        for case_study in case_studys:
-            cs_data = revision_impact(case_study)
-            cs_data.insert(1, "project", case_study.project_name)
-            data = pd.concat([data, cs_data],
-                             ignore_index=True,
-                             copy=False,
-                             join="inner")
+        data = impact_data(case_studys)
         multivariate_grid(
             data, "impacted_commits", "interaction_change", "project"
         )
@@ -142,20 +147,7 @@ class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
 
     def plot(self, view_mode: bool) -> None:
         case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
-        data = pd.DataFrame({
-            "revision": [],
-            "interaction_change": [],
-            "line_change": [],
-            "impacted_commits": [],
-            "project": []
-        })
-        for case_study in case_studys:
-            cs_data = revision_impact(case_study)
-            cs_data.insert(1, "project", case_study.project_name)
-            data = pd.concat([data, cs_data],
-                             ignore_index=True,
-                             copy=False,
-                             join="inner")
+        data = impact_data(case_studys)
         multivariate_grid(data, "impacted_commits", "line_change", "project")
         ymax = data["line_change"].max()
         plt.ylim(-0.01, ymax + 0.01)
@@ -172,7 +164,8 @@ class RevisionImpactScatter(Plot, plot_name="revision_impact"):
         case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
         data = pd.DataFrame({
             "revision": [],
-            "change": [],
+            "interaction_change": [],
+            "line_change": [],
             "impacted_commits": [],
             "project": []
         })
@@ -183,6 +176,7 @@ class RevisionImpactScatter(Plot, plot_name="revision_impact"):
                              ignore_index=True,
                              copy=False,
                              join="inner")
+        print(data)
         multivariate_grid(data, "impacted_commits", "change", "project")
 
 
@@ -229,6 +223,7 @@ class InteractionChangeDistribution(
         )
         axis.plot(range(len(case_studys)), [1 for _ in case_studys], "--k")
         #divnorm = colors.TwoSlopeNorm(vmin=-1,vcenter=0,vmax=df["interactions_diff"].max())
+
         axis.set_ylabel("")
         axis.yaxis.set_visible(False)
         plt.yscale("asinh")
@@ -305,5 +300,9 @@ class RevisionImpactGenerator(
                 self.plot_config, **self.plot_kwargs
             ),
             RevisionImpactScatterLines(self.plot_config, **self.plot_kwargs),
+            RevisionImpactScatterInteractions(
+                self.plot_config, **self.plot_kwargs
+            ),
+            #RevisionImpactScatter(self.plot_config, **self.plot_kwargs)
             #InteractionChangeAuthorDistribution(self.plot_config,**self.plot_kwargs)
         ]

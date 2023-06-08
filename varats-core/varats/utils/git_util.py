@@ -1190,7 +1190,11 @@ tp.Dict[str, int]:
                     for line in lines:
                         if line:
                             last_change = line[:FullCommitHash.hash_length()]
-                            last_change = FullCommitHash(last_change)
+                            try:
+                                last_change = FullCommitHash(last_change)
+                            except ValueError:
+                                continue
+
                             if lines_per_revision.keys(
                             ).__contains__(last_change):
                                 lines_per_revision[

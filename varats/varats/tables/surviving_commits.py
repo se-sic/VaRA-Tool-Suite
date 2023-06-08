@@ -4,7 +4,10 @@ import pandas as pd
 
 from varats.paper.case_study import CaseStudy
 from varats.plots.commit_trend import lines_per_interactions_squashed
-from varats.plots.interactions_change_distribution import revision_impact
+from varats.plots.interactions_change_distribution import (
+    revision_impact,
+    impact_data,
+)
 from varats.plots.surviving_commits import lines_and_interactions
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -48,6 +51,16 @@ class Impact(Table, table_name="revision_impact"):
         return dataframe_to_table(data, table_format, wrap_table=wrap_table)
 
 
+class ImpactCorrelation(Table, table_name="impact_correlation"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studys: tp.List[CaseStudy] = self.table_kwargs["case_study"]
+        data = impact_data(case_studys)
+        return dataframe_to_table(
+            data.corr(), table_format, wrap_table=wrap_table
+        )
+
+
 class CommitSurvivalChangesTable(Table, table_name="interactions_loc_change"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
@@ -87,4 +100,7 @@ class ImpactTableGenerator(
 ):
 
     def generate(self) -> tp.List['varats.table.table.Table']:
-        return [Impact(self.table_config, **self.table_kwargs)]
+        return [
+            Impact(self.table_config, **self.table_kwargs),
+            ImpactCorrelation(self.table_config, **self.table_kwargs)
+        ]
