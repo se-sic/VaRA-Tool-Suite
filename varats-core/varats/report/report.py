@@ -655,7 +655,6 @@ class BaseReport():
         except ValueError:
             return False
 
-
 class ReportSpecification():
     """Groups together multiple report types into a specification that can be
     used, e.g., by experiments, to request multiple reports."""

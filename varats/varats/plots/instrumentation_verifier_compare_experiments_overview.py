@@ -74,6 +74,7 @@ class InstrumentationOverviewCompareExperimentsPlot(
 
             for report in reports:
                 for binary in report.binaries():
+                    print(binary)
                     labels.append(f"{binary}")
                     num_enters.append(report.num_enters(binary),)
                     num_leaves.append(report.num_leaves(binary),)
@@ -136,8 +137,6 @@ class InstrumentationOverviewCompareExperimentsPlot(
         )
         ax.legend()
         # ax.set_xticks(ind + width, labels=labels, rotation=30, ha="right")
-
-        print(minor_labels)
 
         ax.set_xticks(
             minor_ticks,

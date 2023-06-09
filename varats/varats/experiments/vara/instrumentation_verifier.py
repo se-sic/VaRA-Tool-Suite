@@ -20,7 +20,7 @@ from varats.experiments.vara.feature_experiment import (
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
-from varats.experiments.vara.multi_compile_experiment import VaryingStartingBudgetExperiment
+from varats.experiments.vara.multi_compile_experiment import Flags, VaryingStartingBudgetExperiment
 
 
 class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
@@ -86,7 +86,7 @@ class RunInstrVerifierBudget(VaryingStartingBudgetExperiment, shorthand="RIVB"):
     REPORT_SPEC = ReportSpecification(InstrVerifierReport)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject, flags: Flags
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -95,6 +95,7 @@ class RunInstrVerifierBudget(VaryingStartingBudgetExperiment, shorthand="RIVB"):
         Args:
             project: to analyze
         """
+        print(flags)
         project.cflags += self.get_vara_feature_cflags(project)
 
         project.cflags += self.get_vara_tracing_cflags(
@@ -126,7 +127,8 @@ class RunInstrVerifierBudget(VaryingStartingBudgetExperiment, shorthand="RIVB"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             RunVaRATracedWorkloads(
-                project, self.get_handle(), report_file_ending="ivr", workload_categories=[WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL]
+                project, self.get_handle(), report_file_ending="ivr", workload_categories=[WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL],
+                additional_flags=flags
             )
         )
         analysis_actions.append(actions.Clean(project))

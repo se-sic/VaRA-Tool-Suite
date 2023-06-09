@@ -39,6 +39,44 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
 )
 from varats.report.report import ReportSpecification
+import yaml
+
+# TODO: Figure out a better location for this, this is just here to fix the circular import from multi_compile_experiment
+class Flags:
+
+    def __init__(
+        self,
+        cflags: tp.Optional[tp.List[str]] = None,
+        ldflags: tp.Optional[tp.List[str]] = None,
+        result_folder_name: tp.Optional[str] = None
+    ):
+        self.__cflags = cflags or []
+        self.__ldflags = ldflags or []
+        self.__result_folder_name = result_folder_name
+
+    @property
+    def cflags(self) -> tp.List[str]:
+        return self.__cflags
+
+    @property
+    def ldflags(self) -> tp.List[str]:
+        return self.__ldflags
+
+    @property
+    def result_folder_name(self) -> tp.Optional[str]:
+        return self.__result_folder_name
+
+    def __str__(self):
+        return f"Flags(cflags={self.cflags}, ldflags={self.ldflags}, result_folder_name={self.result_folder_name})"
+
+    def dump_yaml(self):
+        return yaml.dump({
+            "cflags": self.cflags,
+            "ldflags": self.ldflags,
+        })
+
+    __repr__ = __str__
+
 
 
 class FeatureInstrType(Enum):
@@ -226,12 +264,14 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
         report_file_ending: str = "json",
         workload_categories: tp.List[WorkloadCategory] = [
             WorkloadCategory.EXAMPLE
-        ]
+        ],
+        additional_flags: tp.Optional[Flags] = None
     ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__report_file_ending = report_file_ending
         self.__workload_categories = workload_categories
+        self.__additional_flags = additional_flags
 
     def __call__(self) -> StepResult:
         return self.run_traced_code()
@@ -259,6 +299,12 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                     for prj_command in workload_commands(
                         self.project, binary, self.__workload_categories
                     ):
+                        if self.__additional_flags is not None:
+                            local_metadata_path = Path(tmp_dir) / "metadata.yml"
+
+                            with open(local_metadata_path, "w") as f:
+                                f.write(self.__additional_flags.dump_yaml())
+
                         local_tracefile_path = Path(
                             tmp_dir
                         ) / f"trace_{prj_command.command.label}" \

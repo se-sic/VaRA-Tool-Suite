@@ -11,38 +11,8 @@ import benchbuild.utils.actions as actns
 from varats.experiment.experiment_util import Project
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
-from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.experiments.vara.feature_experiment import FeatureExperiment, Flags
 from benchbuild.experiment import Actions
-
-
-class Flags:
-
-    def __init__(
-        self,
-        cflags: tp.Optional[tp.List[str]] = None,
-        ldflags: tp.Optional[tp.List[str]] = None,
-        result_folder_name: tp.Optional[str] = None
-    ):
-        self.__cflags = cflags or []
-        self.__ldflags = ldflags or []
-        self.__result_folder_name = result_folder_name
-
-    @property
-    def cflags(self) -> tp.List[str]:
-        return self.__cflags
-
-    @property
-    def ldflags(self) -> tp.List[str]:
-        return self.__ldflags
-
-    @property
-    def result_folder_name(self) -> tp.Optional[str]:
-        return self.__result_folder_name
-
-    def __str__(self):
-        return f"Flags(cflags={self.cflags}, ldflags={self.ldflags}, result_folder_name={self.result_folder_name})"
-
-    __repr__ = __str__
 
 
 class MultiCompileExperiment(FeatureExperiment, shorthand=""):
@@ -54,7 +24,8 @@ class MultiCompileExperiment(FeatureExperiment, shorthand=""):
 
     @abstractmethod
     def actions_for_project(self,
-                            project: VProject) -> tp.MutableSequence[Step]:
+                            project: VProject,
+                            flags: Flags) -> tp.MutableSequence[Step]:
         """Get the actions a project wants to run."""
 
     def get_flags(self) -> tp.List[Flags]:
@@ -64,7 +35,6 @@ class MultiCompileExperiment(FeatureExperiment, shorthand=""):
     def actions(self) -> Actions:
         actions: Actions = []
 
-        # TODO: Add additional echo to provide more information about the  current run
         def new_actions(self, proj: Project, flags: Flags) -> Actions:
             atomic_actions: Actions = [
                 tp.cast(Step, actns.Clean(proj)),
@@ -91,7 +61,7 @@ class MultiCompileExperiment(FeatureExperiment, shorthand=""):
                     )
                 )
             atomic_actions.append(actns.ProjectEnvironment(proj))
-            atomic_actions.extend(self.actions_for_project(proj))
+            atomic_actions.extend(self.actions_for_project(proj, flags))
             return [tp.cast(Step, actns.RequireAll(actions=atomic_actions))]
 
         for prj_cls in self.projects:
@@ -126,7 +96,8 @@ class VaryingStartingBudgetExperiment(MultiCompileExperiment, shorthand=""):
 
     @abstractmethod
     def actions_for_project(self,
-                            project: VProject) -> tp.MutableSequence[Step]:
+                            project: VProject,
+                            flags: Flags) -> tp.MutableSequence[Step]:
         """Get the actions a project wants to run."""
 
     def get_flags(self) -> tp.List[Flags]:
