@@ -15,7 +15,6 @@ runs:
         pip install -e ./varats-core
         pip install -e ./varats
         pip install -r requirements.txt
-        pip install codecov
         pip install pytest-cov
         pip install coverage
         pip install mypy

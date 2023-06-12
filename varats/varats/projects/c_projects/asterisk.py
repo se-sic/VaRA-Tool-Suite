@@ -1,12 +1,10 @@
-"""Project file for git."""
+"""Project file for asterisk."""
 import typing as tp
-from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
-from plumbum.path.utils import delete
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -14,26 +12,26 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    verify_binaries,
     get_local_project_git_path,
+    verify_binaries,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
 
-class Git(VProject):
-    """Git."""
+class Asterisk(VProject):
+    """Open Source PBX and telephony toolkit."""
 
-    NAME = 'git'
+    NAME = 'asterisk'
     GROUP = 'c_projects'
-    DOMAIN = ProjectDomains.VERSION_CONTROL
+    DOMAIN = ProjectDomains.SIGNAL_PROCESSING
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="git",
-            remote="https://github.com/git/git.git",
-            local="git",
+            project_name="asterisk",
+            remote="https://github.com/asterisk/asterisk.git",
+            local="asterisk",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
@@ -42,15 +40,17 @@ class Git(VProject):
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
-    ).run('apt-get', 'install', '-y', 'libcurl4-openssl-dev', 'zlib1g')
+    ).run('apt', 'install', '-y', 'libedit-dev', 'uuid-dev', 'libjansson-dev')
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Git.NAME))
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(Asterisk.NAME)
+        )
 
-        binary_map.specify_binary("git", BinaryType.EXECUTABLE)
+        binary_map.specify_binary('./main/asterisk', BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -59,18 +59,15 @@ class Git(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        git_source = Path(self.source_of_primary)
+        asterisk_source = local.path(self.source_of(self.primary_source))
 
-        clang = bb.compiler.cc(self)
-        with local.cwd(git_source):
-            with local.env(CC=str(clang)):
-                delete("configure", "config.status")
-                bb.watch(make)("configure")
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+        with local.cwd(asterisk_source):
+
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 bb.watch(local["./configure"])()
+
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
-
-    @classmethod
-    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
-        return [("git", "git")]
