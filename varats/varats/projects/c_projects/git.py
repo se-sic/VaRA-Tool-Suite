@@ -1,5 +1,6 @@
 """Project file for git."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
@@ -7,6 +8,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.path.utils import delete
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -38,6 +40,10 @@ class Git(VProject):
         )
     ]
 
+    CONTAINER = get_base_image(
+        ImageBase.DEBIAN_10
+    ).run('apt-get', 'install', '-y', 'libcurl4-openssl-dev', 'zlib1g')
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -53,7 +59,7 @@ class Git(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        git_source = local.path(self.source_of_primary)
+        git_source = Path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         with local.cwd(git_source):
