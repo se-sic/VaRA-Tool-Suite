@@ -19,7 +19,7 @@ class TestAuthorMap(unittest.TestCase):
             Author(19, "Jim Meyering", "meyering@redhat.com")
         )
 
-    def test_get_author_by_email(self):
+    def test_get_author_by_name(self):
         initialize_projects()
         git_path = get_local_project_git_path("xz")
         amap = generate_author_map(git_path)
