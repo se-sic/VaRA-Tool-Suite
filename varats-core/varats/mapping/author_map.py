@@ -38,7 +38,7 @@ class Author():
         return f"{self.id} {self.name} <{self.mail}>"
 
     def __repr__(self):
-        return f"{self.id} {self.name} <{self.mail}>"
+        return f"{self.id} {self.name} <{self.mail}>; {self.names},{self.mail_addresses}"
 
     @property
     def names(self):
@@ -48,10 +48,16 @@ class Author():
     def mail_addresses(self):
         return self.__mail_addresses
 
+    def add_data(self, name: str, mail: str):
+        if not name in self.names:
+            self.names.append(name)
+        if not mail in self.mail:
+            self.mail_addresses.append(mail)
+
     def merge(self, other: ['Author']) -> ['Author']:
         if other.id < self.id:
-            other.names.append(other.names)
-            other.mail_addresses.append(other.mail_addresses)
+            other.names.append(self.names)
+            other.mail_addresses.append(self.mail_addresses)
             return other
         else:
             self.names.append(other.names)
@@ -64,20 +70,20 @@ class AuthorMap():
     mail address."""
 
     def __init__(self):
-        self.look_up_invalid = True
+        self._look_up_invalid = True
         self.current_id = 0
         self.mail_dict: tp.Dict[str, Author] = {}
         self.name_dict: tp.Dict[str, Author] = {}
         self.__authors: tp.List[Author] = []
 
     def get_author_by_name(self, name: str):
-        if self.look_up_invalid:
-            self.gen_lookup_dicts()
+        if self._look_up_invalid:
+            self._gen_lookup_dicts()
         return self.name_dict[name]
 
     def get_author_by_email(self, email: str):
-        if self.look_up_invalid:
-            self.gen_lookup_dicts()
+        if self._look_up_invalid:
+            self._gen_lookup_dicts()
         return self.mail_dict[email]
 
     @property
@@ -87,8 +93,8 @@ class AuthorMap():
     def get_author(self, name: str, mail: str):
         """Get an author by name and mail Throws AmbiguousAuthor exception if no
         author matches the combination."""
-        if self.look_up_invalid:
-            self.gen_lookup_dicts()
+        if self._look_up_invalid:
+            self._gen_lookup_dicts()
         if self.mail_dict[mail] == self.name_dict[name]:
             return self.name_dict[name]
         else:
@@ -106,20 +112,28 @@ class AuthorMap():
             author for author in self.__authors
             if name in author.names or mail in author.mail_addresses
         ]
+
         if not ambiguos_authors:
             self.__authors.append(Author(self.new_author_id(), name, mail))
             self.look_up_invalid = True
+            return
         if len(ambiguos_authors) > 1:
-            reduce(lambda accu, author: accu.merge(author), ambiguos_authors)
-            self.look_up_invalid = True
+            existing_author = reduce(
+                lambda accu, author: accu.merge(author), ambiguos_authors
+            )
+        else:
+            existing_author = ambiguos_authors[0]
+        existing_author.add_data(name, mail)
+        self._look_up_invalid = True
 
-    def gen_lookup_dicts(self):
+    def _gen_lookup_dicts(self):
         """Generate the dicts for name and mail lookups."""
         for author in self.__authors:
             for mail in author.mail_addresses:
                 self.mail_dict[mail] = author
             for name in author.names:
                 self.name_dict[name] = author
+        self._look_up_invalid = False
 
     def __repr__(self):
         return f"{self.name_dict} \n {self.mail_dict}"
