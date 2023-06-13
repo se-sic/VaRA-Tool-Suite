@@ -12,11 +12,6 @@ from varats.utils.git_util import __get_git_path_arg
 
 LOG = logging.getLogger(__name__)
 
-
-class AmbiguousAuthor(Exception):
-    """Raised if an ambiguous author is encountered."""
-
-
 NAME_REGEX = re.compile("\s*\d+\t(.*) <(.*)>")
 
 
