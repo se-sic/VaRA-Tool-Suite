@@ -77,30 +77,34 @@ class AuthorMap():
         self.name_dict: tp.Dict[str, Author] = {}
         self.__authors: tp.List[Author] = []
 
-    def get_author_by_name(self, name: str):
+    def get_author_by_name(self, name: str) -> tp.Optional[Author]:
         if self._look_up_invalid:
             self._gen_lookup_dicts()
-        return self.name_dict[name]
+        return self.name_dict.get(name, None)
 
-    def get_author_by_email(self, email: str):
+    def get_author_by_email(self, email: str) -> tp.Optional[Author]:
         if self._look_up_invalid:
             self._gen_lookup_dicts()
-        return self.mail_dict[email]
+        return self.mail_dict.get(email, None)
 
     @property
     def authors(self):
         return self.__authors
 
-    def get_author(self, name: str, mail: str):
-        """Get an author by name and mail Throws AmbiguousAuthor exception if
-        multiple authors match the combination."""
+    def get_author(self, name: str, mail: str) -> tp.Optional[Author]:
+        """
+        Get an author by name and mail.
+
+        Returns None if no author or multiple authors were found matching the
+        combination of name and mail-address.
+        """
         if self._look_up_invalid:
             self._gen_lookup_dicts()
-
-        if self.mail_dict[mail] == self.name_dict[name]:
-            return self.name_dict[name]
-
-        raise AmbiguousAuthor
+        mail_author = self.mail_dict.get(mail, None)
+        if mail_author == (name_author := self.name_dict.get(name, None)):
+            return name_author
+        else:
+            return None
 
     def new_author_id(self):
         """Get a unique id for an author."""
