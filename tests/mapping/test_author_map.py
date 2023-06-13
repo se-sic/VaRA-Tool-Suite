@@ -14,16 +14,22 @@ class TestAuthorMap(unittest.TestCase):
         initialize_projects()
         git_path = get_local_project_git_path("xz")
         amap = generate_author_map(git_path)
+        test_author = amap.get_author_by_email("jim@meyering.net")
         self.assertEqual(
-            amap.get_author_by_email("jim@meyering.net"),
-            Author(19, "Jim Meyering", "meyering@redhat.com")
+            test_author.mail_addresses,
+            {"meyering@redhat.com", "jim@meyering.net"}
         )
+        self.assertEqual(test_author.names, {"Jim Meyering"})
 
     def test_get_author_by_name(self):
         initialize_projects()
         git_path = get_local_project_git_path("xz")
         amap = generate_author_map(git_path)
+        test_author = amap.get_author_by_name("Jia Cheong Tan")
         self.assertEqual(
-            amap.get_author_by_name("Jia Cheong Tan"),
-            Author(1, "Jia  Tan", "jiat0218@gmail.com")
+            test_author.names, {"Jia Cheong Tan", "Jia Tan", "jiat75"}
+        )
+        self.assertEqual(
+            test_author.mail_addresses,
+            {"jiat0218@gmail.com", "jiat75@gmail.com"}
         )

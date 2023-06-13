@@ -26,9 +26,9 @@ class Author():
     def __init__(self, id: int, name: str, email: str):
         self.id = id
         self.name = name
-        self.__names = [name]
+        self.__names = {name}
         self.mail = email
-        self.__mail_addresses = [email]
+        self.__mail_addresses = {email}
 
     def __eq__(self, other):
         if isinstance(other, Author):
@@ -51,18 +51,18 @@ class Author():
 
     def add_data(self, name: str, mail: str):
         if not name in self.names:
-            self.names.append(name)
+            self.names.add(name)
         if not mail in self.mail:
-            self.mail_addresses.append(mail)
+            self.mail_addresses.add(mail)
 
     def merge(self, other: 'Author') -> 'Author':
         if other.id < self.id:
-            other.names.append(self.names)
-            other.mail_addresses.append(self.mail_addresses)
+            other.names.union(self.names)
+            other.mail_addresses.union(self.mail_addresses)
             return other
 
-        self.names.append(other.names)
-        self.mail_addresses.append(other.mail_addresses)
+        self.names.union(other.names)
+        self.mail_addresses.union(other.mail_addresses)
         return self
 
 
