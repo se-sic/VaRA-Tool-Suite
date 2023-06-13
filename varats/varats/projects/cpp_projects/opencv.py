@@ -73,4 +73,5 @@ class OpenCV(VProject):
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
+        with local.cwd(opencv_source):
             verify_binaries(self)
