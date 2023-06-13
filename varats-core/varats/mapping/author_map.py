@@ -59,10 +59,10 @@ class Author():
             other.names.append(self.names)
             other.mail_addresses.append(self.mail_addresses)
             return other
-        else:
-            self.names.append(other.names)
-            self.mail_addresses.append(other.mail_addresses)
-            return self
+
+        self.names.append(other.names)
+        self.mail_addresses.append(other.mail_addresses)
+        return self
 
 
 class AuthorMap():
@@ -95,6 +95,7 @@ class AuthorMap():
         author matches the combination."""
         if self._look_up_invalid:
             self._gen_lookup_dicts()
+
         if self.mail_dict[mail] == self.name_dict[name]:
             return self.name_dict[name]
         else:
@@ -117,12 +118,14 @@ class AuthorMap():
             self.__authors.append(Author(self.new_author_id(), name, mail))
             self.look_up_invalid = True
             return
+
         if len(ambiguos_authors) > 1:
             existing_author = reduce(
                 lambda accu, author: accu.merge(author), ambiguos_authors
             )
         else:
             existing_author = ambiguos_authors[0]
+
         existing_author.add_data(name, mail)
         self._look_up_invalid = True
 
@@ -133,6 +136,7 @@ class AuthorMap():
                 self.mail_dict[mail] = author
             for name in author.names:
                 self.name_dict[name] = author
+
         self._look_up_invalid = False
 
     def __repr__(self):
@@ -152,11 +156,5 @@ def generate_author_map(path: Path) -> AuthorMap:
             name = match.group(1)
             email = match.group(2)
             author_map.add_entry(name, email)
+
         return author_map
-
-
-if __name__ == '__main__':
-    a = generate_author_map(
-        "/home/simon/Documents/Vara/vara-ts/VaRA-Tool-Suite"
-    )
-    print(a)
