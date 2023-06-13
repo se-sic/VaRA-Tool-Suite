@@ -1164,8 +1164,9 @@ class RepositoryAtCommit:
 
 
 def calc_surviving_lines(project_name: str, revision: CommitHash) -> \
-tp.Dict[str, int]:
+tp.Dict[FullCommitHash, int]:
     """
+    Get the surviving lines of older commits at a given revision.
 
     Args:
         project_name: project to analyze
@@ -1178,7 +1179,7 @@ tp.Dict[str, int]:
         "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
     )
     revision = revision.to_short_commit_hash()
-    lines_per_revision: dict = {}
+    lines_per_revision: tp.Dict[FullCommitHash, int] = {}
     print(revision)
     with RepositoryAtCommit(project_name, revision) as project_path:
         print(project_path)
