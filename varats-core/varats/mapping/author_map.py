@@ -95,9 +95,11 @@ class AuthorMap():
         """
         if self._look_up_invalid:
             self._gen_lookup_dicts()
+
         mail_author = self.mail_dict.get(mail, None)
         if mail_author == (name_author := self.name_dict.get(name, None)):
             return name_author
+
         return None
 
     def new_author_id(self) -> int:
