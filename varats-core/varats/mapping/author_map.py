@@ -7,7 +7,8 @@ from functools import reduce
 from pathlib import Path
 
 from benchbuild.utils.cmd import git, mkdir
-from plumbum import local
+
+from varats.utils.git_util import __get_git_path_arg
 
 LOG = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class AmbiguousAuthor(Exception):
     """Raised if an ambiguous author is encountered."""
 
 
-name_regex = re.compile("\s*\d+\t(.*) <(.*)>")
+NAME_REGEX = re.compile("\s*\d+\t(.*) <(.*)>")
 
 
 class Author():
@@ -54,7 +55,7 @@ class Author():
         if not mail in self.mail:
             self.mail_addresses.append(mail)
 
-    def merge(self, other: ['Author']) -> ['Author']:
+    def merge(self, other: 'Author') -> 'Author':
         if other.id < self.id:
             other.names.append(self.names)
             other.mail_addresses.append(self.mail_addresses)
@@ -91,8 +92,8 @@ class AuthorMap():
         return self.__authors
 
     def get_author(self, name: str, mail: str):
-        """Get an author by name and mail Throws AmbiguousAuthor exception if no
-        author matches the combination."""
+        """Get an author by name and mail Throws AmbiguousAuthor exception if
+        multiple authors match the combination."""
         if self._look_up_invalid:
             self._gen_lookup_dicts()
 
@@ -145,16 +146,16 @@ class AuthorMap():
 
 def generate_author_map(path: Path) -> AuthorMap:
     """Generate an AuthorMap for the repository at the given path."""
-    with local.cwd(path):
-        author_map = AuthorMap()
-        test = git["shortlog", "-sne", "--all"]().strip().split("\n")
-        for line in test:
-            match = name_regex.match(line)
-            if not match:
-                LOG.info("Invalid author format.")
-                continue
-            name = match.group(1)
-            email = match.group(2)
-            author_map.add_entry(name, email)
+    author_map = AuthorMap()
+    test = git[__get_git_path_arg(path), "shortlog", "-sne",
+               "--all"]().strip().split("\n")
+    for line in test:
+        match = NAME_REGEX.match(line)
+        if not match:
+            LOG.warning(f"Invalid author format. {line}")
+            continue
+        name = match.group(1)
+        email = match.group(2)
+        author_map.add_entry(name, email)
 
-        return author_map
+    return author_map
