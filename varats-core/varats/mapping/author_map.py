@@ -98,8 +98,8 @@ class AuthorMap():
 
         if self.mail_dict[mail] == self.name_dict[name]:
             return self.name_dict[name]
-        else:
-            raise AmbiguousAuthor
+
+        raise AmbiguousAuthor
 
     def new_author_id(self):
         """Get a unique id for an author."""
