@@ -23,33 +23,33 @@ NAME_REGEX = re.compile("\s*\d+\t(.*) <(.*)>")
 class Author():
     """Representation of one author."""
 
-    def __init__(self, id: int, name: str, email: str):
+    def __init__(self, id: int, name: str, email: str) -> None:
         self.id = id
         self.name = name
         self.__names = {name}
         self.mail = email
         self.__mail_addresses = {email}
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, Author):
             return self.id == other.id
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.id} {self.name} <{self.mail}>"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.id} {self.name} <{self.mail}>; {self.names},{self.mail_addresses}"
 
     @property
-    def names(self):
+    def names(self) -> tp.Set[str]:
         return self.__names
 
     @property
-    def mail_addresses(self):
+    def mail_addresses(self) -> tp.Set[str]:
         return self.__mail_addresses
 
-    def add_data(self, name: str, mail: str):
+    def add_data(self, name: str, mail: str) -> None:
         if not name in self.names:
             self.names.add(name)
         if not mail in self.mail:
@@ -70,7 +70,7 @@ class AuthorMap():
     """Provides a mapping of an author to all combinations of author name to
     mail address."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._look_up_invalid = True
         self.current_id = 0
         self.mail_dict: tp.Dict[str, Author] = {}
@@ -88,7 +88,7 @@ class AuthorMap():
         return self.mail_dict.get(email, None)
 
     @property
-    def authors(self):
+    def authors(self) -> tp.List[Author]:
         return self.__authors
 
     def get_author(self, name: str, mail: str) -> tp.Optional[Author]:
@@ -106,13 +106,13 @@ class AuthorMap():
         else:
             return None
 
-    def new_author_id(self):
+    def new_author_id(self) -> int:
         """Get a unique id for an author."""
         new_id = self.current_id
         self.current_id += 1
         return new_id
 
-    def add_entry(self, name: str, mail: str):
+    def add_entry(self, name: str, mail: str) -> None:
         """Add authors to the map and invalidate look up dicts."""
         ambiguos_authors = [
             author for author in self.__authors
@@ -134,7 +134,7 @@ class AuthorMap():
         existing_author.add_data(name, mail)
         self._look_up_invalid = True
 
-    def _gen_lookup_dicts(self):
+    def _gen_lookup_dicts(self) -> None:
         """Generate the dicts for name and mail lookups."""
         for author in self.__authors:
             for mail in author.mail_addresses:
@@ -144,7 +144,7 @@ class AuthorMap():
 
         self._look_up_invalid = False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.name_dict} \n {self.mail_dict}"
 
 

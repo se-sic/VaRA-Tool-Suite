@@ -10,7 +10,7 @@ from varats.projects.discover_projects import initialize_projects
 
 class TestAuthorMap(unittest.TestCase):
 
-    def test_get_author_by_email(self):
+    def test_get_author_by_email(self) -> None:
         initialize_projects()
         git_path = get_local_project_git_path("xz")
         amap = generate_author_map(git_path)
@@ -21,7 +21,7 @@ class TestAuthorMap(unittest.TestCase):
         )
         self.assertEqual(test_author.names, {"Jim Meyering"})
 
-    def test_get_author_by_name(self):
+    def test_get_author_by_name(self) -> None:
         initialize_projects()
         git_path = get_local_project_git_path("xz")
         amap = generate_author_map(git_path)
