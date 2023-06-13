@@ -103,8 +103,7 @@ class AuthorMap():
         mail_author = self.mail_dict.get(mail, None)
         if mail_author == (name_author := self.name_dict.get(name, None)):
             return name_author
-        else:
-            return None
+        return None
 
     def new_author_id(self) -> int:
         """Get a unique id for an author."""
