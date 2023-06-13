@@ -153,7 +153,8 @@ class Table:
             if isinstance(case_study, varats.paper.case_study.CaseStudy):
                 table_ident = f"{case_study.project_name}_{case_study.version}_"
             else:
-                table_ident = f"{reduce(lambda x, y: f'{x}{y.project_name}_', case_study, '')}"
+                table_ident = \
+                    f"{reduce(lambda x, y: f'{x}{y.project_name}_', case_study, '')}"
         elif 'project' in self.table_kwargs:
             table_ident = f"{self.table_kwargs['project']}_"
 
