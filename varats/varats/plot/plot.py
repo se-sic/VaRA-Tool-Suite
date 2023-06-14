@@ -156,7 +156,7 @@ class Plot:
                 plot_ident = f"{case_study.project_name}_{case_study.version}_"
             else:
                 plot_ident = \
-                    f"{reduce(lambda x,y: f'{x}{y.project_name}_',case_study,'')}"
+                f"{reduce(lambda x,y: f'{x}{y.project_name}_',case_study,'')}"
         elif 'project' in self.plot_kwargs:
             plot_ident = f"{self.plot_kwargs['project']}_"
 
