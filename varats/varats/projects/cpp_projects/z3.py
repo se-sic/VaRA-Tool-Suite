@@ -1,9 +1,10 @@
 """Project file for Z3."""
 import re
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, mkdir
+from benchbuild.utils.cmd import cmake
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -64,12 +65,12 @@ class Z3(VProject, ReleaseProviderHook):
 
     def compile(self) -> None:
         """Compile the project."""
-        z3_source = local.path(self.source_of(self.primary_source))
+        z3_source = Path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        mkdir("-p", z3_source / "build")
+        (z3_source / "build").mkdir(parents=True, exist_ok=True)
 
         with local.cwd(z3_source / "build"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
