@@ -108,7 +108,7 @@ def _get_enabled_worklist_kinds() -> tp.List[WorklistKind]:
 
 def _run_phasar_analysis(phasar_cmd, result_file) -> actions.StepResult:
     run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
-    run_cmd = timeout['-v', '5h', run_cmd]
+    # run_cmd = timeout['-v', '5h', run_cmd]
 
     (ret_code, stdout, stderr) = run_cmd.run(retcode=None)
 
@@ -927,28 +927,28 @@ class IDELinearConstantAnalysisExperiment(
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
                     ],
-                    *[
-                        IterIDETimeNewRec(
-                            project, rep, binary, analysis_type,
-                            WorklistKind.STACK
-                        )
-                        for analysis_type in _get_enabled_analyses()
-                        for rep in reps
-                    ],
-                    *[
-                        IterIDETimeNewJF1Rec(
-                            project, rep, binary, analysis_type
-                        )
-                        for analysis_type in _get_enabled_analyses()
-                        for rep in reps
-                    ],
-                    *[
-                        IterIDETimeNewJF3Rec(
-                            project, rep, binary, analysis_type
-                        )
-                        for analysis_type in _get_enabled_analyses()
-                        for rep in reps
-                    ],
+                    # *[
+                    #     IterIDETimeNewRec(
+                    #         project, rep, binary, analysis_type,
+                    #         WorklistKind.STACK
+                    #     )
+                    #     for analysis_type in _get_enabled_analyses()
+                    #     for rep in reps
+                    # ],
+                    # *[
+                    #     IterIDETimeNewJF1Rec(
+                    #         project, rep, binary, analysis_type
+                    #     )
+                    #     for analysis_type in _get_enabled_analyses()
+                    #     for rep in reps
+                    # ],
+                    # *[
+                    #     IterIDETimeNewJF3Rec(
+                    #         project, rep, binary, analysis_type
+                    #     )
+                    #     for analysis_type in _get_enabled_analyses()
+                    #     for rep in reps
+                    # ],
                 ]
             )
         )

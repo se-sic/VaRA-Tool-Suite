@@ -163,9 +163,9 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         if jf == self.JF1:
             return "JF1"
         elif jf == self.JF2:
-            return "JF2"
+            return "JF4"
         elif jf == self.JF3:
-            return "JF2S"
+            return "JF4S"
         elif jf == self.OLD:
             return "Old"
         else:
