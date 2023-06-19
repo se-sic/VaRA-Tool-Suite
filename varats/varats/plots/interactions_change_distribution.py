@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import colors
 
-from varats.mapping.commit_map import get_commit_map
+from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotConfig, PlotGenerator
@@ -126,7 +126,43 @@ class RevisionImpactScatterInteractions(
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        pass
+        commit_map: CommitMap = get_commit_map(
+            self.plot_kwargs['case_study'][0].project_name
+        )
+
+        def head_cm_neighbours(lhs_cm: int, rhs_cm: int) -> bool:
+            return lhs_cm + 1 == rhs_cm
+
+        new_revs: tp.Set[FullCommitHash] = set()
+
+        data = impact_data(self.plot_kwargs['case_study'])
+        data.fillna(value=0, inplace=True)
+        df_iter = data.iterrows()
+        _, last_row = next(df_iter)
+        for _, row in df_iter:
+            change = row["impacted_commits"]
+            if change > (boundary_gradient):
+                lhs_cm = last_row["revision"]
+                rhs_cm = row["revision"]
+                if head_cm_neighbours(lhs_cm, rhs_cm):
+                    print(
+                        "Found steep gradient between neighbours " +
+                        f"{lhs_cm} - {rhs_cm}: {round(change, 5)}"
+                    )
+                else:
+                    print(
+                        "Unusual gradient between " +
+                        f"{lhs_cm} - {rhs_cm}: {round(change, 5)}"
+                    )
+                    new_rev_id = round((lhs_cm + rhs_cm) / 2.0)
+                    new_rev = commit_map.c_hash(new_rev_id)
+                    print(
+                        f"-> Adding {new_rev} as new revision to the sample set"
+                    )
+                    new_revs.add(new_rev)
+                print()
+            last_row = row
+        return new_revs
 
     def plot(self, view_mode: bool) -> None:
         case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
@@ -300,9 +336,6 @@ class RevisionImpactGenerator(
                 self.plot_config, **self.plot_kwargs
             ),
             RevisionImpactScatterLines(self.plot_config, **self.plot_kwargs),
-            RevisionImpactScatterInteractions(
-                self.plot_config, **self.plot_kwargs
-            ),
             #RevisionImpactScatter(self.plot_config, **self.plot_kwargs)
             #InteractionChangeAuthorDistribution(self.plot_config,**self.plot_kwargs)
         ]
