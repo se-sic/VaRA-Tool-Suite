@@ -1,5 +1,6 @@
 import math
 import typing as tp
+from pathlib import Path
 
 from pandas import DataFrame
 
@@ -7,11 +8,15 @@ from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
 from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
+from varats.mapping.author_map import generate_author_map, Author
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plots import PlotConfig, PlotGenerator
 from varats.plots.surviving_commits import HeatMapPlot
-from varats.project.project_util import get_primary_project_source
+from varats.project.project_util import (
+    get_primary_project_source,
+    get_local_project_git_path,
+)
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import (
     FullCommitHash,
@@ -27,12 +32,16 @@ def _group_data_by_author(
 ) -> DataFrame:
     commit_lookup_helper = create_commit_lookup_helper(project_name)
     repo = get_primary_project_source(project_name).local
+    repo_path = get_local_project_git_path(project_name, repo)
+    amap = generate_author_map(repo_path)
 
-    def author_data(commit_hash: str) -> tp.Tuple[str, str]:
+    def author_data(commit_hash: str) -> tp.Optional[Author]:
+        if commit_hash == UNCOMMITTED_COMMIT_HASH.hash:
+            return None
         commit = commit_lookup_helper(
-            CommitRepoPair(FullCommitHash(commit_hash), repo)
+            CommitRepoPair(FullCommitHash(commit_hash), str(repo))
         )
-        return commit.author.name + " " + commit.author.email
+        return amap.get_author(commit.author.name, commit.author.email)
 
     data = data.apply(
         lambda x: [
@@ -74,12 +83,14 @@ def get_lines_per_author(case_study: CaseStudy):
 
 def get_interactions_per_author_normalized_per_revision(case_study: CaseStudy):
     data: DataFrame = get_interactions_per_author(case_study)
-    ref_data = data.groupby(by=['revision'], sort=False).amount.sum(min_count=1)
+    print(data)
+    ref_data = data.groupby(by=['revision'],
+                            sort=False).interactions.sum(min_count=1)
     data = data.apply(
         lambda x: [
             x['revision'], x['author'],
             (x['interactions'] * 100 / ref_data[x['revision']])
-            if not math.isnan(x['amount']) else math.nan
+            if not math.isnan(x['interactions']) else math.nan
         ],
         axis=1,
         result_type='broadcast'
