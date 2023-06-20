@@ -4,6 +4,9 @@ from pathlib import Path
 
 from pandas import DataFrame
 
+from varats.data.databases.author_interactions_database import (
+    AuthorInteractionsDatabase,
+)
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
@@ -58,16 +61,22 @@ def _group_data_by_author(
 
 def get_interactions_per_author(case_study: CaseStudy) -> DataFrame:
     project_name = case_study.project_name
-    data: DataFrame = BlameLibraryInteractionsDatabase().get_data_for_project(
-        project_name, ["revision", "base_hash", "amount", "base_lib"],
-        get_commit_map(project_name), case_study
+    repo = get_primary_project_source(project_name).local
+    repo_path = get_local_project_git_path(project_name, repo)
+    amap = generate_author_map(repo_path)
+    data: DataFrame = AuthorInteractionsDatabase().get_data_for_project(
+        project_name, [
+            "revision", "author_name", "internal_interactions",
+            "external_interactions"
+        ], get_commit_map(project_name), case_study
     )
-    data = data[data.base_lib.str.startswith(project_name)]
-    data = data[data.base_hash != UNCOMMITTED_COMMIT_HASH.hash]
-    data.drop(columns="base_lib", inplace=True)
-    return _group_data_by_author(
-        project_name, data, 'revision', 'base_hash', 'amount'
-    ).rename(columns={'amount': 'interactions'})
+    data["author"] = data["author_name"].apply(
+        lambda x: amap.get_author_by_name(x)
+    )
+    data.drop(columns=["author_name"], inplace=True)
+    data["interactions"
+        ] = data["internal_interactions"] + data["external_interactions"]
+    return data.rename({"author_name": "author"})
 
 
 def get_lines_per_author(case_study: CaseStudy):
@@ -88,9 +97,20 @@ def get_interactions_per_author_normalized_per_revision(case_study: CaseStudy):
                             sort=False).interactions.sum(min_count=1)
     data = data.apply(
         lambda x: [
-            x['revision'], x['author'],
-            (x['interactions'] * 100 / ref_data[x['revision']])
-            if not math.isnan(x['interactions']) else math.nan
+            x['revision'],
+            (
+                x['internal_interactions'] / x['interactions']
+                if not math.isnan(x['interactions']) else math.nan
+            ),
+            (
+                x['external_interactions'] / x['interactions']
+                if not math.isnan(x['interactions']) else math.nan
+            ),
+            x['author'],
+            (
+                x['interactions'] * 100 / ref_data[x['revision']]
+                if not math.isnan(x['interactions']) else math.nan
+            ),
         ],
         axis=1,
         result_type='broadcast'
