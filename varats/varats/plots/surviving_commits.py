@@ -5,10 +5,8 @@ import typing as tp
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
 from matplotlib import style
-from matplotlib.colors import LogNorm
 from pandas import DataFrame
 from pygtrie import CharTrie
 
@@ -28,7 +26,6 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.git_util import (
     ShortCommitHash,
     FullCommitHash,
-    UNCOMMITTED_COMMIT_HASH,
     create_commit_lookup_helper,
     CommitRepoPair,
 )
@@ -250,6 +247,7 @@ class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
         ).hash
 
     def plot(self, view_mode: bool) -> None:
+        """Plot the evolution of a single commit."""
         _, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
         revision = self.plot_kwargs['revision']
@@ -272,9 +270,7 @@ class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
         data.set_index("revision", inplace=True)
         cmap = get_commit_map(case_study.project_name)
         data.sort_index(
-            axis=0,
-            key=lambda x: x.map(lambda y: cmap.short_time_id(y)),
-            inplace=True
+            axis=0, key=lambda x: x.map(cmap.short_time_id), inplace=True
         )
         data.drop(columns="base_hash")
         _, axis = plt.subplots(1, 1)
@@ -313,7 +309,7 @@ class HeatMapPlot(Plot, plot_name=None):
     xticklabels = 1
     yticklabels = 1
     XLABEL = "Sampled revisions"
-    YLABEL = None
+    y_label = None
 
     def __init__(
         self, plot_config: PlotConfig,
@@ -324,6 +320,7 @@ class HeatMapPlot(Plot, plot_name=None):
         self.data_function = data_function
 
     def plot(self, view_mode: bool) -> None:
+        """Plot the heatmap."""
         style.use(self.plot_config.get_dict())
         _, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
@@ -341,8 +338,8 @@ class HeatMapPlot(Plot, plot_name=None):
         )
         if self.XLABEL:
             axis.set_xlabel(self.XLABEL)
-        if self.YLABEL:
-            axis.set_ylabel(self.YLABEL)
+        if self.y_label:
+            axis.set_ylabel(self.y_label)
         if self.color_commits:
             color_map = get_author_color_map(data, case_study)
             commit_lookup_helper = create_commit_lookup_helper(
@@ -452,7 +449,7 @@ class SurvivingLinesPlot(HeatMapPlot, plot_name="surviving_commit_plot"):
         pass
 
     NAME = 'surviving_lines_plot'
-    YLABEL = "Surviving Lines"
+    y_label = "Surviving Lines"
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
@@ -471,7 +468,7 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
 
     NAME = 'compare_survival'
 
-    YLABEL = "Commit Interactions vs. Lines"
+    y_label = "Commit Interactions vs. Lines"
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(plot_config, lines_and_interactions, **kwargs)
@@ -484,9 +481,10 @@ class SingleCommitSurvivalPlotGenerator(
     generator_name="single-survival",
     options=[REQUIRE_REVISION, REQUIRE_CASE_STUDY]
 ):
+    """Generator for the Plot of the evolution of a single commit."""
 
     def generate(self) -> tp.List['Plot']:
-        return [SingleRevisionPlot(self.plot_config, **self.plot_kwargs)]
+        return [SingleCommitPlot(self.plot_config, **self.plot_kwargs)]
 
 
 class SurvivingCommitPlotGenerator(
@@ -494,6 +492,7 @@ class SurvivingCommitPlotGenerator(
     generator_name="commit-survival",
     options=[REQUIRE_CASE_STUDY]
 ):
+    """Generator for the Plot of the evolution of all commits."""
 
     def generate(self) -> tp.List['Plot']:
         return [
