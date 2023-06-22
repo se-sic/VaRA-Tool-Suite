@@ -282,7 +282,7 @@ class ContributionPlot(Plot, plot_name=None):
         case_study = self.plot_kwargs['case_study']
         data = self.data_function(case_study, 1)
         data.sort_index(
-            axis=0, inplace=True, key=lambda x: x.map(lambda y: y.id)
+            axis=0, inplace=True, key=lambda x: x.map(lambda y: y.author_id)
         )
         data.fillna(0, inplace=True)
         data.T.plot.area(ax=axis, stacked=True)
