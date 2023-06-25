@@ -32,7 +32,7 @@ class CFI(VProject):  # type: ignore
         )
     ]
 
-    test_files = ["main.cpp", "helper.cpp"]
+    test_files = ["main.cpp", "helper.cpp", "dataflow.cpp", "more_dataflow.cpp"]
 
     @staticmethod
     def binaries_for_revision(
