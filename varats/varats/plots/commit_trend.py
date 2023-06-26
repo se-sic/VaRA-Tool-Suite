@@ -19,8 +19,15 @@ from varats.plots.surviving_commits import (
     get_lines_per_commit_long,
     get_interactions_per_commit_long,
 )
-from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
-from varats.utils.git_util import FullCommitHash, ShortCommitHash
+from varats.ts_utils.click_param_types import (
+    REQUIRE_CASE_STUDY,
+    REQUIRE_MULTI_CASE_STUDY,
+)
+from varats.utils.git_util import (
+    FullCommitHash,
+    ShortCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
+)
 
 
 def lines_per_interactions_normalized(case_study: CaseStudy) -> DataFrame:
@@ -349,6 +356,11 @@ class ChangesHeatMap(Plot, plot_name=None):
             columns="revision",
             values="interactions_diff"
         )
+        cs_data.drop(
+            cs_data["revision" == UNCOMMITTED_COMMIT_HASH.to_short_commit_hash()
+                   ].index,
+            inplace=True
+        )
         cmap = get_commit_map(case_study.project_name)
         if self.columns_label == "base_hash":
             cs_data.sort_index(
@@ -563,14 +575,17 @@ class TrendlinesPlotGenerator(
 
 
 class ChangesMapGenerator(
-    PlotGenerator, generator_name="change-map", options=[REQUIRE_CASE_STUDY]
+    PlotGenerator,
+    generator_name="change-map",
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List['Plot']:
-        return [
-            InteractionChangeHeatmap(self.plot_config, **self.plot_kwargs),
-            # InteractionPerLineChangeHeatmap(self.plot_config,
-            #                                 **self.plot_kwargs),
-            LineChangeHeatmap(self.plot_config, **self.plot_kwargs)
-            # InteractionPerLineChangeAuthorHeatmap(self.plot_config, **self.plot_kwargs)
-        ]
+        case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
+        plots: tp.List[Plot] = []
+        for case_study in case_studys:
+            kwargs = self.plot_kwargs.copy()
+            kwargs["case_study"] = case_study
+            plots.append(InteractionChangeHeatmap(self.plot_config, **kwargs))
+            plots.append(LineChangeHeatmap(self.plot_config, **kwargs))
+        return plots
