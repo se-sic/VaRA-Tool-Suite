@@ -60,6 +60,9 @@ class Author():
         self.mail_addresses.union(other.mail_addresses)
         return self
 
+    def __hash__(self) -> int:
+        return hash(self.id)
+
 
 class AuthorMap():
     """Provides a mapping of an author to all combinations of author name to
