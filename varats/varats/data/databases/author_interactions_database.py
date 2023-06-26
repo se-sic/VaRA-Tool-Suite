@@ -74,7 +74,7 @@ class AuthorInteractionsDatabase(
                 return data_dict
 
             result_data_dicts: tp.Dict[Author, tp.Dict[str, tp.Any]] = {}
-            amap = generate_author_map(get_local_project_git_path(project_name))
+            amap = generate_author_map(project_name)
             repo_name = get_primary_project_source(project_name).local
             commit_lookup_helper = create_commit_lookup_helper(project_name)
             for base_pair in base_inter_c_repo_pair_mapping:

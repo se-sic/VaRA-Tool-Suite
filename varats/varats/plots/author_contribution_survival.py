@@ -35,8 +35,7 @@ def _group_data_by_author(
 ) -> DataFrame:
     commit_lookup_helper = create_commit_lookup_helper(project_name)
     repo = get_primary_project_source(project_name).local
-    repo_path = get_local_project_git_path(project_name, repo)
-    amap = generate_author_map(repo_path)
+    amap = generate_author_map(project_name)
 
     def author_data(commit_hash: str) -> tp.Optional[Author]:
         if commit_hash == UNCOMMITTED_COMMIT_HASH.hash:
@@ -63,9 +62,7 @@ def get_interactions_per_author(case_study: CaseStudy) -> DataFrame:
     """Returns a DataFrame with the number of interactions per author per
     revision."""
     project_name = case_study.project_name
-    repo = get_primary_project_source(project_name).local
-    repo_path = get_local_project_git_path(project_name, repo)
-    amap = generate_author_map(repo_path)
+    amap = generate_author_map(project_name)
     data: DataFrame = AuthorInteractionsDatabase().get_data_for_project(
         project_name, [
             "revision", "author_name", "internal_interactions",
