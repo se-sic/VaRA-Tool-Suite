@@ -11,10 +11,10 @@ class TestAuthor(unittest.TestCase):
         author_two = Author(4, "J. Doe", "jon_doe@jon_doe.com")
         author_three = Author(2, "Jon Doe", "j_doe@gmail.com")
         merge_one = author_one.merge(author_two)
-        merge_two = author_three.merge(author_one)
         self.assertEqual(merge_one.author_id, 1)
         self.assertEqual(merge_one.names, {"Jon Doe", "J. Doe"})
         self.assertEqual(merge_one.mail_addresses, {"jon_doe@jon_doe.com"})
+        merge_two = author_three.merge(author_one)
         self.assertEqual(merge_two.author_id, 1)
         self.assertEqual(merge_two.names, {"Jon Doe", "J. Doe"})
         self.assertEqual(
