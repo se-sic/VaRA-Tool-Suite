@@ -5,7 +5,7 @@ import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
 
-from varats.provider.patch.patch import Patch
+from varats.provider.patch.patch import Patch, ProjectPatchesConfiguration
 from varats.provider.provider import Provider, ProviderType
 
 
@@ -60,7 +60,7 @@ class PatchProvider(Provider):
         return Path(Path(target_prefix()) / patches_source.local)
 
     @staticmethod
-    def _parse_patches_config(config_file: Path) -> tp.List[Patch]:
+    def _parse_patches_config(config_file: Path) -> ProjectPatchesConfiguration:
         # TODO: Implement XML parsing for patches config
         pass
 

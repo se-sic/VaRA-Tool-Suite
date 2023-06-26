@@ -3,7 +3,8 @@ from pathlib import Path
 import typing as tp
 import xml.etree.ElementTree as ET
 
-from benchbuild.utils.revision_ranges import _get_all_revisions_between, _get_git_for_path, RevisionRange, SingleRevision
+from benchbuild.utils.revision_ranges import _get_all_revisions_between, _get_git_for_path, RevisionRange, \
+    SingleRevision
 
 from varats.utils.git_util import CommitHash, ShortCommitHash
 
@@ -11,7 +12,8 @@ from varats.utils.git_util import CommitHash, ShortCommitHash
 class Patch:
     """A class for storing a single project-specific Patch"""
 
-    def __init__(self, project: str, shortname: str, description: str, path: Path, valid_revisions: tp.Optional[tp.Set[CommitHash]] = None
+    def __init__(self, project: str, shortname: str, description: str, path: Path,
+                 valid_revisions: tp.Optional[tp.Set[CommitHash]] = None
                  , invalid_revisions: tp.Optional[tp.Set[CommitHash]] = None):
         self.project: str = project
         self.shortname: str = shortname
@@ -21,7 +23,7 @@ class Patch:
         self.invalid_revisions: tp.Set[CommitHash] = invalid_revisions
 
 
-class ProjectPatches:
+class ProjectPatchesConfiguration:
     """A class storing a set of patches specific to a project"""
 
     def __init__(self, project_name: str, repository: str, patches: tp.List[Patch]):
@@ -60,6 +62,21 @@ class ProjectPatches:
         repo_git = _get_git_for_path(repository)
         patch_list: tp.List[Patch] = []
 
+        def parse_revisions(revisions_tag: ET.Element) -> tp.Set[CommitHash]:
+            res: tp.Set[CommitHash] = set()
+
+            for revision_tag in revisions_tag.findall("single_revision"):
+                res.add(ShortCommitHash(revision_tag.text))
+
+            for revision_range_tag in revisions_tag.findall("revision_range"):
+                start_tag = revision_range_tag.find("start")
+                end_tag = revision_range_tag.find("end")
+
+                res.update(
+                    {ShortCommitHash(h) for h in _get_all_revisions_between(start_tag.text, end_tag.text, repo_git)})
+
+            return res
+
         # We explicitly ignore further validity checking of the XML at that point
         # As for now, this is already done by a CI Job in the vara-project-patches
         # repository
@@ -73,11 +90,17 @@ class ProjectPatches:
             include_revs_tag = patch.find("include_revisions")
 
             if include_revs_tag:
-                pass
+                include_revisions = parse_revisions(include_revs_tag)
             else:
                 revs_list = repo_git('log', '--pretty="%H"', '--first-parent').strip().split()
 
+            include_revisions.update([ShortCommitHash(rev) for rev in revs_list])
+
             exclude_revs_tag = patch.find("exclude_revisions")
-            pass
 
+            if exclude_revs_tag:
+                include_revisions.difference_update(parse_revisions(exclude_revs_tag))
 
+            patch_list.append(Patch(project_name, shortname, description, path, include_revisions))
+
+        return ProjectPatchesConfiguration(project_name, repository, patch_list)
