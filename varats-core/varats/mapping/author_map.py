@@ -4,10 +4,10 @@ import logging
 import re
 import typing as tp
 from functools import reduce
-from pathlib import Path
 
 from benchbuild.utils.cmd import git
 
+from varats.project.project_util import get_local_project_git_path
 from varats.utils.git_util import __get_git_path_arg
 
 LOG = logging.getLogger(__name__)
@@ -35,6 +35,12 @@ class Author():
 
     def __repr__(self) -> str:
         return f"{self.name} <{self.mail}>; {self.names},{self.mail_addresses}"
+
+    def __lt__(self, other):
+        return self.author_id < other.author_id
+
+    def __le__(self, other):
+        return self.author_id <= other.author_id
 
     @property
     def names(self) -> tp.Set[str]:
@@ -155,8 +161,9 @@ class AuthorMap():
         return f"{self.name_dict} \n {self.mail_dict}"
 
 
-def generate_author_map(path: Path) -> AuthorMap:
+def generate_author_map(project_name: str) -> AuthorMap:
     """Generate an AuthorMap for the repository at the given path."""
+    path = get_local_project_git_path(project_name)
     author_map = AuthorMap()
     test = git[__get_git_path_arg(path), "shortlog", "-sne",
                "--all"]().strip().split("\n")
