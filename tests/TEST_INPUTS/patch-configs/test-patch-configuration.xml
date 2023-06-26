@@ -14,6 +14,9 @@
 			Patch that is valid for a single revision
 			</description>
 			<path>bug.patch</path>
+			<include_revisions>
+				<single_revision>8ca5cc28e6746eef7340064b5d843631841bf31e</single_revision>
+			</include_revisions>
 		</patch>
 		<patch>
 			<shortname>include-revision-range</shortname>
@@ -21,6 +24,12 @@
 			Patch that is valid for a range of commits
 			</description>
 			<path>bug.patch</path>
+			<include_revisions>
+				<revision_range>
+					<start_revision>01f9f1f07bef22d4248e8349aba4f0c1f204607e</start_revision>
+					<end_revision>8ca5cc28e6746eef7340064b5d843631841bf31e</end_revision>
+				</revision_range>
+			</include_revisions>
 		</patch>
 		<patch>
 			<shortname>include-single-and-revision-range</shortname>
@@ -28,6 +37,15 @@
 			Patch that is valid for a revision range AND another single commit
 			</description>
 			<path>bug.patch</path>
+			<include_revisions>
+				<revision_range>
+					<start_revision>01f9f1f07bef22d4248e8349aba4f0c1f204607e</start_revision>
+					<end_revision>8ca5cc28e6746eef7340064b5d843631841bf31e</end_revision>
+				</revision_range>
+				<single_revision>
+					27f17080376e409860405c40744887d81d6b3f34
+				</single_revision>
+			</include_revisions>
 		</patch>
 		<patch>
 			<shortname>exclude-single-revision</shortname>
@@ -35,6 +53,9 @@
 			Patch that is valid for all commits except a single one
 			</description>
 			<path>bug.patch</path>
+			<exclude_revisions>
+				<single_revision>8ca5cc28e6746eef7340064b5d843631841bf31e</single_revision>
+			</exclude_revisions>
 		</patch>
 		<patch>
 			<shortname>exclude-revision-range</shortname>
@@ -42,6 +63,12 @@
 			Patch that excludes a range of commits (Otherwise includes all)
 			</description>
 			<path>bug.patch</path>
+			<exclude_revisions>
+				<revision_range>
+					<start_revision>01f9f1f07bef22d4248e8349aba4f0c1f204607e</start_revision>
+					<end_revision>8ca5cc28e6746eef7340064b5d843631841bf31e</end_revision>
+				</revision_range>
+			</exclude_revisions>
 		</patch>
 		<patch>
 			<shortname>exclude-single-and-revision-range</shortname>
@@ -49,6 +76,15 @@
 			Patch that excludes a certain range and individual commits (Otherwise includes all)
 			</description>
 			<path>bug.patch</path>
+			<exclude_revisions>
+				<revision_range>
+					<start_revision>01f9f1f07bef22d4248e8349aba4f0c1f204607e</start_revision>
+					<end_revision>8ca5cc28e6746eef7340064b5d843631841bf31e</end_revision>
+				</revision_range>
+				<single_revision>
+					27f17080376e409860405c40744887d81d6b3f34
+				</single_revision>
+			</exclude_revisions>
 		</patch>
 		<patch>
 			<shortname>include-range-exclude-single</shortname>
@@ -56,6 +92,15 @@
 			Patch valid for a range of commits where a single one is excluded
 			</description>
 			<path>bug.patch</path>
+			<include_revisions>
+				<revision_range>
+					<start_revision>01f9f1f07bef22d4248e8349aba4f0c1f204607e</start_revision>
+					<end_revision>8ca5cc28e6746eef7340064b5d843631841bf31e</end_revision>
+				</revision_range>
+			</include_revisions>
+			<exclude_revisions>
+				<single_revision>162db88346b06be20faac6976f1ff9bad986accf</single_revision>
+			</exclude_revisions>
 		</patch>
 		<patch>
 			<shortname>include-range-exclude-range</shortname>
@@ -63,6 +108,18 @@
 			Patch valid for a range of commits where a subrange is explicitly excluded
 			</description>
 			<path>bug.patch</path>
+			<include_revisions>
+				<revision_range>
+					<start_revision>01f9f1f07bef22d4248e8349aba4f0c1f204607e</start_revision>
+					<end_revision>4300ea495e7f013f68e785fdde5c4ead81297999</end_revision>
+				</revision_range>
+			</include_revisions>
+			<exclude_revisions>
+				<revision_range>
+					<start_revision>c051e44a973ee31b3baa571407694467a513ba68</start_revision>
+					<end_revision>a94fb35ca49719028a1c50bdbc2fb82122043f46</end_revision>
+				</revision_range>
+			</exclude_revisions>
 		</patch>
 	</patches>
 </config>
