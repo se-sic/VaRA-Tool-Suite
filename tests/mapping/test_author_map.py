@@ -1,6 +1,6 @@
 import unittest
 
-from varats.mapping.author_map import generate_author_map, Author
+from varats.mapping.author_map import generate_author_map, Author, AuthorMap
 from varats.projects.discover_projects import initialize_projects
 
 
@@ -82,6 +82,19 @@ class TestAuthorMap(unittest.TestCase):
         self.assertIsNone(amap.get_author("Not Present", "notpresent@None.com"))
 
     def test_author_merging(self) -> None:
+        amap = AuthorMap()
+        amap.add_entry("Jon Doe", "jon_doe@jon_doe.com")
+        amap.add_entry("JD", "jon.d@gmail.com")
+        amap.add_entry("Jon Doe", "jon.d@gmail.com")
+        disambiguated_author = amap.get_author("JD", "jon_doe@jon_doe.com")
+        self.assertEqual(disambiguated_author.author_id, 0)
+        self.assertEqual(disambiguated_author.names, {"Jon Doe", "JD"})
+        self.assertEqual(
+            disambiguated_author.mail_addresses,
+            {"jon_doe@jon_doe.com", "jon.d@gmail.com"}
+        )
+
+    def test_author_merging_generate(self) -> None:
         initialize_projects()
         amap = generate_author_map("brotli")
         test_author = amap.get_author("eustas", "eustas@google.com")
