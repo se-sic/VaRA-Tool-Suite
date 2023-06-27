@@ -77,7 +77,7 @@ class ProjectPatchesConfiguration:
             res: tp.Set[CommitHash] = set()
 
             for revision_tag in revisions_tag.findall("single_revision"):
-                res.add(ShortCommitHash(revision_tag.text))
+                res.add(ShortCommitHash(revision_tag.text.strip()))
 
             for revision_range_tag in revisions_tag.findall("revision_range"):
                 start_tag = revision_range_tag.find("start")
