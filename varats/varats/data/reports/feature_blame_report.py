@@ -5,6 +5,7 @@ import typing as tp
 from pathlib import Path
 
 import yaml
+import pandas as pd
 
 from varats.base.version_header import VersionHeader
 from varats.data.reports.blame_report import BlameReportMetaData
@@ -122,6 +123,27 @@ class StructuralFeatureBlameReport(
     ) -> tp.ValuesView[StructuralCommitFeatureInteraction]:
         """Iterate over all cfis."""
         return self.__commit_feature_interactions
+
+def generate_features_scfi_data(
+        SFBR: StructuralFeatureBlameReport
+) -> pd.DataFrame:
+    features_cfi_data: tp.Dict[str, tp.Tuple(int, int)] = {}
+    for SCFI in SFBR.commit_feature_interactions:
+        entry = features_cfi_data.get(SCFI.feature)
+        if not entry:
+            features_cfi_data.update({
+                SCFI.feature: (1, SCFI.num_instructions)
+            })
+        else:
+            features_cfi_data.update({
+                SCFI.feature: (entry[0] + 1, entry[1] + SCFI.num_instructions)
+            })
+    rows = []
+    for feature_data in features_cfi_data.items():
+        rows.append([feature_data[0], feature_data[1][0], feature_data[1][1]])
+    return pd.DataFrame(
+        rows, columns=["feature", "num_interacting_commits", "feature_scope"]
+    )
 
 
 ##### DATAFLOW #####
