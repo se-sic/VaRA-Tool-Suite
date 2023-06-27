@@ -84,7 +84,9 @@ class ProjectPatchesConfiguration:
                 end_tag = revision_range_tag.find("end")
 
                 res.update(
-                    {ShortCommitHash(h) for h in _get_all_revisions_between(start_tag.text, end_tag.text, repo_git)})
+                    {ShortCommitHash(h) for h in _get_all_revisions_between(start_tag.text.strip(),
+                                                                            end_tag.text.strip(),
+                                                                            repo_git)})
 
             return res
 

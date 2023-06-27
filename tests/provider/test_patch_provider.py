@@ -1,4 +1,5 @@
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 import benchbuild as bb
@@ -65,13 +66,13 @@ class TestPatchRevisionRanges(unittest.TestCase):
         self.__test_patch_revisions("include-single-and-revision-range", expected_revisions)
 
     def test_exclude_single_revision(self):
-        expected_revisions = self.all_revisions
+        expected_revisions = deepcopy(self.all_revisions)
         expected_revisions.remove(ShortCommitHash("8ca5cc28e6746eef7340064b5d843631841bf31e"))
 
         self.__test_patch_revisions("exclude-single-revision", expected_revisions)
 
     def test_exclude_revision_range(self):
-        expected_revisions = self.all_revisions
+        expected_revisions = deepcopy(self.all_revisions)
         expected_revisions.difference_update(
             {ShortCommitHash("01f9f1f07bef22d4248e8349aba4f0c1f204607e"),
              ShortCommitHash("8ca5cc28e6746eef7340064b5d843631841bf31e"),
@@ -83,7 +84,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
         self.__test_patch_revisions("exclude-revision-range", expected_revisions)
 
     def test_exclude_single_and_revision_range(self):
-        expected_revisions = self.all_revisions
+        expected_revisions = deepcopy(self.all_revisions)
         expected_revisions.difference_update(
             {ShortCommitHash("01f9f1f07bef22d4248e8349aba4f0c1f204607e"),
              ShortCommitHash("8ca5cc28e6746eef7340064b5d843631841bf31e"),
