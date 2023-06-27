@@ -8,7 +8,6 @@ from itertools import chain
 from pathlib import Path
 from types import TracebackType
 
-import numpy
 import pygit2
 from benchbuild.utils.cmd import git, grep
 from plumbum import local, TF, RETCODE
@@ -1180,29 +1179,35 @@ tp.Dict[FullCommitHash, int]:
     )
     revision = revision.to_short_commit_hash()
     lines_per_revision: tp.Dict[FullCommitHash, int] = {}
-    print(revision)
-    with RepositoryAtCommit(project_name, revision) as project_path:
-        print(project_path)
-        with local.cwd(project_path):
-            files = git("ls-tree", "-r", "--name-only",
-                        revision.hash).splitlines()
+    repo = pygit2.Repository(get_local_project_git_path(project_name))
 
-            for file in files:
-                if file_pattern.match(file):
-                    lines = git("blame", "--root", "-l", f"{file}").splitlines()
-                    for line in lines:
-                        if line:
-                            last_change = line[:FullCommitHash.hash_length()]
-                            try:
-                                last_change = FullCommitHash(last_change)
-                            except ValueError:
-                                continue
+    initial_head: pygit2.Reference = repo.head
+    repo_folder = get_local_project_git_path(project_name)
+    git(__get_git_path_arg(repo_folder), "checkout", "-f", revision.hash)
+    files = git(
+        __get_git_path_arg(repo_folder), "ls-tree", "-r", "--name-only",
+        revision.hash
+    ).splitlines()
 
-                            if lines_per_revision.keys(
-                            ).__contains__(last_change):
-                                lines_per_revision[
-                                    last_change
-                                ] = lines_per_revision[last_change] + 1
-                            else:
-                                lines_per_revision[last_change] = 1
+    for file in files:
+        if file_pattern.match(file):
+            lines = git(
+                __get_git_path_arg(repo_folder), "blame", "--root", "-l",
+                f"{file}"
+            ).splitlines()
+            for line in lines:
+                if line:
+                    last_change = line[:FullCommitHash.hash_length()]
+                    try:
+                        last_change = FullCommitHash(last_change)
+                    except ValueError:
+                        continue
+
+                    if lines_per_revision.keys().__contains__(last_change):
+                        lines_per_revision[
+                            last_change] = lines_per_revision[last_change] + 1
+                    else:
+                        lines_per_revision[last_change] = 1
+
+    git(__get_git_path_arg(repo_folder), "checkout", initial_head.name)
     return lines_per_revision
