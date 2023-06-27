@@ -42,6 +42,7 @@ class FeatureSCFIPlotGenerator(
     """Generates correlation-matrix plot(s) for the selected case study(ies)."""
 
     def generate(self) -> tp.List[Plot]:
+        # failed hier
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             FeatureSCFIPlot(
