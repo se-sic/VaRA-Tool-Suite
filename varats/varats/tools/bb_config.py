@@ -27,6 +27,7 @@ def update_projects(
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         # yapf: disable
+        'varats.projects.c_projects.asterisk',
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
@@ -68,6 +69,7 @@ def update_projects(
         'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
+        'varats.projects.cpp_projects.opencv',
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
         'varats.projects.cpp_projects.ect',

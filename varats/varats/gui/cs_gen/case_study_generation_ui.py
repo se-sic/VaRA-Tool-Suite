@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'CaseStudyGeneration.ui'
+# Form implementation generated from reading ui file '../uicomponents/CaseStudyGeneration.ui'
 #
 # Created by: PyQt5 UI code generator 5.13.2
 #
@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(757, 443)
+        MainWindow.resize(760, 443)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding,
             QtWidgets.QSizePolicy.MinimumExpanding
@@ -64,25 +64,6 @@ class Ui_MainWindow(object):
         )
         self.verticalLayout.addItem(spacerItem1)
         self.gridLayout.addWidget(self.strategie, 0, 1, 1, 1)
-        self.projects = QtWidgets.QGroupBox(self.centralwidget)
-        self.projects.setObjectName("projects")
-        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.projects)
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.project_search = QtWidgets.QLineEdit(self.projects)
-        self.project_search.setClearButtonEnabled(True)
-        self.project_search.setObjectName("project_search")
-        self.verticalLayout_4.addWidget(self.project_search)
-        self.project_list = QtWidgets.QListWidget(self.projects)
-        self.project_list.setEditTriggers(
-            QtWidgets.QAbstractItemView.NoEditTriggers
-        )
-        self.project_list.setObjectName("project_list")
-        self.verticalLayout_4.addWidget(self.project_list)
-        self.project_details = QtWidgets.QTextBrowser(self.projects)
-        self.project_details.setMaximumSize(QtCore.QSize(16777189, 100))
-        self.project_details.setObjectName("project_details")
-        self.verticalLayout_4.addWidget(self.project_details)
-        self.gridLayout.addWidget(self.projects, 0, 0, 1, 1)
         self.strategie_forms = QtWidgets.QStackedWidget(self.centralwidget)
         self.strategie_forms.setEnabled(True)
         self.strategie_forms.setMinimumSize(QtCore.QSize(100, 0))
@@ -149,7 +130,7 @@ class Ui_MainWindow(object):
             self.revision_details.sizePolicy().hasHeightForWidth()
         )
         self.revision_details.setSizePolicy(sizePolicy)
-        self.revision_details.setMaximumSize(QtCore.QSize(16777215, 100))
+        self.revision_details.setMaximumSize(QtCore.QSize(16777215, 132))
         self.revision_details.setObjectName("revision_details")
         self.verticalLayout_3.addWidget(self.revision_details)
         self.strategie_forms.addWidget(self.revisionsPage)
@@ -181,23 +162,51 @@ class Ui_MainWindow(object):
         self.per_year_page = QtWidgets.QWidget()
         self.per_year_page.setObjectName("per_year_page")
         self.seperate = QtWidgets.QCheckBox(self.per_year_page)
-        self.seperate.setGeometry(QtCore.QRect(0, 40, 246, 22))
+        self.seperate.setGeometry(QtCore.QRect(0, 40, 271, 22))
         self.seperate.setObjectName("seperate")
         self.widget = QtWidgets.QWidget(self.per_year_page)
         self.widget.setGeometry(QtCore.QRect(252, 189, 16, 16))
         self.widget.setObjectName("widget")
         self.label_3 = QtWidgets.QLabel(self.per_year_page)
-        self.label_3.setGeometry(QtCore.QRect(0, 0, 111, 21))
+        self.label_3.setGeometry(QtCore.QRect(0, 0, 141, 21))
         self.label_3.setObjectName("label_3")
         self.revs_per_year = QtWidgets.QSpinBox(self.per_year_page)
-        self.revs_per_year.setGeometry(QtCore.QRect(120, 0, 52, 32))
+        self.revs_per_year.setGeometry(QtCore.QRect(130, 0, 52, 32))
         self.revs_per_year.setMaximum(1000000000)
         self.revs_per_year.setObjectName("revs_per_year")
         self.strategie_forms.addWidget(self.per_year_page)
         self.gridLayout.addWidget(self.strategie_forms, 0, 2, 1, 1)
+        self.projects = QtWidgets.QGroupBox(self.centralwidget)
+        self.projects.setObjectName("projects")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.projects)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.project_search = QtWidgets.QLineEdit(self.projects)
+        self.project_search.setClearButtonEnabled(True)
+        self.project_search.setObjectName("project_search")
+        self.verticalLayout_4.addWidget(self.project_search)
+        self.project_list = QtWidgets.QListWidget(self.projects)
+        self.project_list.setEditTriggers(
+            QtWidgets.QAbstractItemView.NoEditTriggers
+        )
+        self.project_list.setObjectName("project_list")
+        self.verticalLayout_4.addWidget(self.project_list)
+        self.project_details = QtWidgets.QTextBrowser(self.projects)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(
+            self.project_details.sizePolicy().hasHeightForWidth()
+        )
+        self.project_details.setSizePolicy(sizePolicy)
+        self.project_details.setMaximumSize(QtCore.QSize(16777189, 132))
+        self.project_details.setObjectName("project_details")
+        self.verticalLayout_4.addWidget(self.project_details)
+        self.gridLayout.addWidget(self.projects, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 757, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 760, 22))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -205,7 +214,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.strategie_forms.setCurrentIndex(2)
+        self.strategie_forms.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -219,10 +228,6 @@ class Ui_MainWindow(object):
         self.per_year.setText(_translate("MainWindow", "Revisions Per Year"))
         self.label_2.setText(_translate("MainWindow", "Casestudy Version"))
         self.generate.setText(_translate("MainWindow", "Generate"))
-        self.projects.setTitle(_translate("MainWindow", "Projects"))
-        self.project_search.setPlaceholderText(
-            _translate("MainWindow", "Search")
-        )
         self.revisions.setText(_translate("MainWindow", "Revisions"))
         self.commit_search.setPlaceholderText(
             _translate("MainWindow", "Search")
@@ -238,6 +243,20 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Seperate Years into different Stages")
         )
         self.label_3.setText(_translate("MainWindow", "Revisions Per Year"))
+        self.projects.setTitle(_translate("MainWindow", "Projects"))
+        self.project_search.setPlaceholderText(
+            _translate("MainWindow", "Search")
+        )
+        self.project_details.setHtml(
+            _translate(
+                "MainWindow",
+                "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+                "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+                "p, li { white-space: pre-wrap; }\n"
+                "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
+                "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"
+            )
+        )
 
 
 if __name__ == "__main__":
