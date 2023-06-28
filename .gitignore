@@ -19,3 +19,4 @@ tmp/
 .tox/
 docs/source/.varats.yaml
 docs/**/*.inc
+pre-commit-env
