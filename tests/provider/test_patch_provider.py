@@ -19,6 +19,16 @@ class TestPatchProvider(unittest.TestCase):
         provider = PatchProvider.create_provider_for_project(FeaturePerfCSCollection)
         self.assertIsNotNone(provider)
 
+    def test_get_patch_by_shortname(self):
+        provider = PatchProvider.create_provider_for_project(FeaturePerfCSCollection)
+        self.assertIsNotNone(provider)
+
+        patch = provider.patches_config.get_by_shortname("patch-10")
+        self.assertIsNotNone(patch)
+
+        patch = provider.patches_config.get_by_shortname("dummy-patch")
+        self.assertIsNone(patch)
+
 
 class TestPatchRevisionRanges(unittest.TestCase):
     @classmethod
