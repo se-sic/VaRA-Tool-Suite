@@ -17,14 +17,12 @@ class Patch:
     """A class for storing a single project-specific Patch"""
 
     def __init__(self, project: str, shortname: str, description: str, path: Path,
-                 valid_revisions: tp.Optional[tp.Set[CommitHash]] = None
-                 , invalid_revisions: tp.Optional[tp.Set[CommitHash]] = None):
+                 valid_revisions: tp.Optional[tp.Set[CommitHash]] = None):
         self.project: str = project
         self.shortname: str = shortname
         self.description: str = description
         self.path: Path = path
         self.valid_revisions: tp.Set[CommitHash] = valid_revisions
-        self.invalid_revisions: tp.Set[CommitHash] = invalid_revisions
 
 
 class ProjectPatchesConfiguration:
@@ -134,7 +132,7 @@ class PatchProvider(Provider):
             # TODO: Add proper error message
             raise PatchesNotFoundError()
 
-        patches_config_file = Path(patches_project_dir / "test-patch-configuration.xml")
+        patches_config_file = Path(patches_project_dir / ".patches.xml")
 
         if not patches_config_file.exists():
             # TODO: Add proper error handling
@@ -142,17 +140,34 @@ class PatchProvider(Provider):
             # not the patches itself
             raise PatchesNotFoundError()
 
-        self.project_patches = self._parse_patches_config(patches_config_file)
+        self.patches_config = ProjectPatchesConfiguration.from_xml(patches_config_file)
 
         super().__init__(project)
 
     @classmethod
     def create_provider_for_project(cls: tp.Type[ProviderType], project: tp.Type[Project]) -> tp.Optional[ProviderType]:
-        pass
+        """
+                Creates a provider instance for the given project if possible.
+
+                Returns:
+                    a provider instance for the given project if possible,
+                    otherwise, ``None``
+        """
+        try:
+            return PatchProvider(project)
+        except PatchesNotFoundError:
+            # TODO: Warnings?
+            return None
 
     @classmethod
     def create_default_provider(cls: tp.Type[ProviderType], project: tp.Type[Project]) -> ProviderType:
-        pass
+        """
+                Creates a default provider instance that can be used with any project.
+
+                Returns:
+                    a default provider instance
+        """
+        raise AssertionError("All usages should be covered by the project specific provider.")
 
     @staticmethod
     def _get_patches_repository_path() -> Path:
@@ -166,8 +181,3 @@ class PatchProvider(Provider):
         patches_source.fetch()
 
         return Path(Path(target_prefix()) / patches_source.local)
-
-    @staticmethod
-    def _parse_patches_config(config_file: Path) -> ProjectPatchesConfiguration:
-        # TODO: Implement XML parsing for patches config
-        pass
