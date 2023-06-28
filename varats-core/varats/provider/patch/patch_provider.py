@@ -123,10 +123,15 @@ class PatchesNotFoundError(FileNotFoundError):
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project"""
 
-    patches_repository = "https://github.com/se-sic/vara-project-patches.git"
+    patches_repository = "git@github.com:se-sic/vara-project-patches.git"
 
     def __init__(self, project: tp.Type[Project]):
+        super().__init__(project)
+
         patches_project_dir = Path(self._get_patches_repository_path() / self.project.NAME)
+
+        # BB only performs a fetch so our repo might be out of date
+        _get_git_for_path(patches_project_dir)("pull")
 
         if not patches_project_dir.is_dir():
             # TODO: Add proper error message
@@ -141,8 +146,6 @@ class PatchProvider(Provider):
             raise PatchesNotFoundError()
 
         self.patches_config = ProjectPatchesConfiguration.from_xml(patches_config_file)
-
-        super().__init__(project)
 
     @classmethod
     def create_provider_for_project(cls: tp.Type[ProviderType], project: tp.Type[Project]) -> tp.Optional[ProviderType]:

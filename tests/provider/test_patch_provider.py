@@ -7,9 +7,17 @@ from benchbuild.source.base import target_prefix
 from benchbuild.utils.revision_ranges import _get_git_for_path
 
 from tests.helper_utils import TEST_INPUTS_DIR
-from varats.provider.patch.patch_provider import ProjectPatchesConfiguration
+from varats.projects.perf_tests.feature_perf_cs_collection import FeaturePerfCSCollection
+from varats.provider.patch.patch_provider import ProjectPatchesConfiguration, PatchProvider
 
 from varats.utils.git_util import ShortCommitHash
+
+
+class TestPatchProvider(unittest.TestCase):
+    def test_correct_patch_config_access(self):
+        """Checks if we get a correct path for accessing the PatchConfig."""
+        provider = PatchProvider.create_provider_for_project(FeaturePerfCSCollection)
+        self.assertIsNotNone(provider)
 
 
 class TestPatchRevisionRanges(unittest.TestCase):
