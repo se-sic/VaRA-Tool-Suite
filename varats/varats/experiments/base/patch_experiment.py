@@ -1,7 +1,10 @@
+import os
 import typing as tp
 
 from benchbuild import Project
 from benchbuild.utils import actions
+from benchbuild.utils.revision_ranges import _get_git_for_path
+from benchbuild.utils.actions import StepResult
 
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import VersionExperiment
@@ -15,11 +18,39 @@ EXPERIMENTS = [JustCompileReport]
 
 
 class ApplyPatch(actions.ProjectStep):
-    pass
+    NAME = "ApplyPatch"
+    DESCRIPTION = "Apply a Git patch to a project."
+
+    def __init__(self, project, patch):
+        super().__init__(project)
+        self.__patch = patch
+
+    def __call__(self) -> StepResult:
+        repo_git = _get_git_for_path(os.path.abspath(self.project.builddir))
+
+        patch_path = self.__patch.path
+
+        repo_git("apply", patch_path)
+
+        return StepResult.OK
 
 
 class RevertPatch(actions.ProjectStep):
-    pass
+    NAME = "RevertPatch"
+    DESCRIPTION = "Revert a Git patch from a project."
+
+    def __init__(self, project, patch):
+        super().__init__(project)
+        self.__patch = patch
+
+    def __call__(self) -> StepResult:
+        repo_git = _get_git_for_path(os.path.abspath(self.project.builddir))
+
+        patch_path = self.__patch.path
+
+        repo_git("apply", "-R", patch_path)
+
+        return StepResult.OK
 
 
 class PatchExperiment(VersionExperiment, shorthand="PE"):
@@ -38,7 +69,7 @@ class PatchExperiment(VersionExperiment, shorthand="PE"):
             # In any case we always want to run the experiment without any patches
             analysis_actions.append(actions.RequireAll(experiment.actions_for_project(project)))
 
-            patch_provider = PatchProvider.get_provider_for_project(project.cls)
+            patch_provider = PatchProvider.get_provider_for_project(project)
 
             # This seems brittle but I don't know how to get the current revision
             commit_hash = ShortCommitHash(str(project.revision))

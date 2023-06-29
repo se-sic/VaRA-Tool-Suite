@@ -94,6 +94,8 @@ class ProjectPatchesConfiguration:
         for patch in root.find("patches").findall("patch"):
             shortname = patch.findtext("shortname")
             description = patch.findtext("description")
+
+            # TODO: Proper path handling (Absolute/relative)
             path = Path(patch.findtext("path"))
 
             include_revisions: tp.Set[CommitHash] = set()
