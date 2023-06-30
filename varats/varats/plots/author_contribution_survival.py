@@ -20,7 +20,7 @@ from varats.project.project_util import (
     get_primary_project_source,
     get_local_project_git_path,
 )
-from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     FullCommitHash,
     create_commit_lookup_helper,
@@ -283,9 +283,7 @@ class ContributionPlot(Plot, plot_name=None):
         )
         data.fillna(0, inplace=True)
         data.T.plot.area(ax=axis, stacked=True)
-        plt.legend(
-            fontsize=8, bbox_to_anchor=(1.2, 0.5), loc=2, borderaxespad=0.
-        )
+        plt.legend(fontsize=8, bbox_to_anchor=(1, 0), loc=2, borderaxespad=0.)
 
 
 class AuthorLineContribution(
@@ -368,18 +366,21 @@ class AuthorContributionPlotAuthor(
 class AuthorContributionPlotGenerator(
     PlotGenerator,
     generator_name="author-contribution",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates contribution plots."""
 
+    def name_addition(self, i: int) -> str:
+        return self.plot_kwargs["case_study"][i].project_name
+
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
-        return [
-            AuthorLineContribution(self.plot_config, **self.plot_kwargs),
-            AuthorInteractionsContribution(
-                self.plot_config, **self.plot_kwargs
-            ),
-            # AuthorContributionPlotRevision(
-            #     self.plot_config, **self.plot_kwargs
-            # ),
-            # AuthorContributionPlotAuthor(self.plot_config, **self.plot_kwargs)
-        ]
+        case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
+        plots: tp.List[Plot] = []
+        for case_study in case_studys:
+            kwargs = self.plot_kwargs.copy()
+            kwargs["case_study"] = case_study
+            plots.append(AuthorLineContribution(self.plot_config, **kwargs))
+            plots.append(
+                AuthorInteractionsContribution(self.plot_config, **kwargs)
+            )
+        return plots
