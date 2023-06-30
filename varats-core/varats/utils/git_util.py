@@ -476,7 +476,7 @@ class ChurnConfig():
         value: tp.Set[str]  # pylint: disable=invalid-name
 
         C = {"h", "c"}
-        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}
+        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc", "hh"}
 
     def __init__(self) -> None:
         self.__enabled_languages: tp.List[ChurnConfig.Language] = []
