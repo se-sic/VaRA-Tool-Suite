@@ -24,7 +24,10 @@ from varats.revision.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
 )
-from varats.utils.git_util import create_commit_lookup_helper
+from varats.utils.git_util import (
+    create_commit_lookup_helper,
+    UNCOMMITTED_COMMIT_HASH,
+)
 
 
 class AuthorInteractionsDatabase(
@@ -62,7 +65,6 @@ class AuthorInteractionsDatabase(
                 author: Author, internal_interactions: int,
                 external_interactions: int
             ) -> tp.Dict[str, tp.Any]:
-
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision': revision.hash,
                     'time_id': commit_map.short_time_id(revision),
@@ -82,13 +84,24 @@ class AuthorInteractionsDatabase(
                     # Skip interactions with submodules
                     continue
                 inter_pair_dict = base_inter_c_repo_pair_mapping[base_pair]
+                if base_pair.commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
+                    continue
                 base_commit = commit_lookup_helper(base_pair.commit)
                 base_author = amap.get_author(
                     base_commit.author.name, base_commit.author.email
                 )
+                if base_author is None:
+                    amap.add_entry(
+                        base_commit.author.name, base_commit.author.email
+                    )
+                    base_author = amap.get_author(
+                        base_commit.author.name, base_commit.author.email
+                    )
                 internal_interactions = 0
                 external_interactions = 0
                 for inter_pair, interactions in inter_pair_dict.items():
+                    if inter_pair.commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
+                        continue
                     inter_commit = commit_lookup_helper(inter_pair.commit)
                     inter_author = amap.get_author(
                         inter_commit.author.name, inter_commit.author.email
