@@ -351,15 +351,16 @@ class ChangesHeatMap(Plot, plot_name=None):
                 -cs_data["interactions_diff"].min()
             )
             vmin = -vmax
+        cs_data.drop(
+            cs_data[cs_data[self.columns_label] ==
+                    UNCOMMITTED_COMMIT_HASH.to_short_commit_hash()].index,
+            inplace=True
+        )
+
         cs_data = cs_data.pivot(
             index=self.columns_label,
             columns="revision",
             values="interactions_diff"
-        )
-        cs_data.drop(
-            cs_data["revision" == UNCOMMITTED_COMMIT_HASH.to_short_commit_hash()
-                   ].index,
-            inplace=True
         )
         cmap = get_commit_map(case_study.project_name)
         if self.columns_label == "base_hash":
@@ -408,8 +409,10 @@ class ChangesHeatMap(Plot, plot_name=None):
         self.value_label = value_label
 
 
-def interactions_per_commit_wrapper(case_study: CaseStudy, cs_filter=True):
-    print("Getting Lines per commit")
+def interactions_and_lines_per_commit_wrapper(
+    case_study: CaseStudy, cs_filter=True
+):
+    print(f"Getting Lines per commit for {case_study.project_name}")
     lines: DataFrame = get_lines_per_commit_long(case_study, cs_filter)
     print("Getting Interactions")
     interactions: DataFrame = get_interactions_per_commit_long(
@@ -420,37 +423,11 @@ def interactions_per_commit_wrapper(case_study: CaseStudy, cs_filter=True):
     data.dropna(
         axis=0, how='any', inplace=True, subset=["lines", "interactions"]
     )
-    data.drop(columns="lines", inplace=True)
     cmap = get_commit_map(case_study.project_name)
     data = data.apply(
         lambda x: (
             cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
-            x["interactions"]
-        ),
-        axis=1,
-        result_type="broadcast"
-    )
-    return data.sort_values(by="revision")
-
-
-def lines_per_commit_wrapper(case_study: CaseStudy, cs_filter=True):
-    print("Getting Lines per commit")
-    lines: DataFrame = get_lines_per_commit_long(case_study, cs_filter)
-    print("Getting Interactions")
-    interactions: DataFrame = get_interactions_per_commit_long(
-        case_study, cs_filter
-    )
-    print("Merging")
-    data = lines.merge(interactions, how='left', on=["base_hash", "revision"])
-    data.dropna(
-        axis=0, how='any', inplace=True, subset=["lines", "interactions"]
-    )
-    data.drop(columns="interactions", inplace=True)
-    cmap = get_commit_map(case_study.project_name)
-    data = data.apply(
-        lambda x: (
-            cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
-            x["lines"]
+            x["lines"], x["interactions"]
         ),
         axis=1,
         result_type="broadcast"
@@ -463,7 +440,9 @@ class InteractionChangeHeatmap(
 ):
 
     def __init__(self, plot_config: PlotConfig, **kwargs):
-        super().__init__(plot_config, interactions_per_commit_wrapper, **kwargs)
+        super().__init__(
+            plot_config, interactions_and_lines_per_commit_wrapper, **kwargs
+        )
 
 
 class LineChangeHeatmap(ChangesHeatMap, plot_name="line-change-heatmap"):
@@ -471,7 +450,7 @@ class LineChangeHeatmap(ChangesHeatMap, plot_name="line-change-heatmap"):
     def __init__(self, plot_config: PlotConfig, **kwargs):
         super().__init__(
             plot_config,
-            lines_per_commit_wrapper,
+            interactions_and_lines_per_commit_wrapper,
             value_label="lines",
             **kwargs
         )
