@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../uicomponents/CaseStudyGeneration.ui'
+# Form implementation generated from reading ui file 'VaRA-Tool-Suite/uicomponents/CaseStudyGeneration.ui'
 #
 # Created by: PyQt5 UI code generator 5.13.2
 #
@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(760, 443)
+        MainWindow.resize(760, 491)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding,
             QtWidgets.QSizePolicy.MinimumExpanding
@@ -87,6 +87,15 @@ class Ui_MainWindow(object):
         self.revisions.setSizePolicy(sizePolicy)
         self.revisions.setObjectName("revisions")
         self.verticalLayout_3.addWidget(self.revisions)
+        self.case_study = QtWidgets.QComboBox(self.revisionsPage)
+        self.case_study.setObjectName("case_study")
+        self.verticalLayout_3.addWidget(self.case_study)
+        self.experiment = QtWidgets.QComboBox(self.revisionsPage)
+        self.experiment.setObjectName("experiment")
+        self.verticalLayout_3.addWidget(self.experiment)
+        self.cs_filter = QtWidgets.QCheckBox(self.revisionsPage)
+        self.cs_filter.setObjectName("cs_filter")
+        self.verticalLayout_3.addWidget(self.cs_filter)
         self.commit_search = QtWidgets.QLineEdit(self.revisionsPage)
         self.commit_search.setClearButtonEnabled(True)
         self.commit_search.setObjectName("commit_search")
@@ -206,7 +215,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.projects, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 760, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 760, 34))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -229,6 +238,7 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Casestudy Version"))
         self.generate.setText(_translate("MainWindow", "Generate"))
         self.revisions.setText(_translate("MainWindow", "Revisions"))
+        self.cs_filter.setText(_translate("MainWindow", "Filter CaseStudy´"))
         self.commit_search.setPlaceholderText(
             _translate("MainWindow", "Search")
         )
@@ -253,8 +263,8 @@ class Ui_MainWindow(object):
                 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
                 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
                 "p, li { white-space: pre-wrap; }\n"
-                "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
-                "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"
+                "</style></head><body style=\" font-family:\'Noto Sans\'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
+                "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'Ubuntu\'; font-size:11pt;\"><br /></p></body></html>"
             )
         )
 
