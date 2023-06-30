@@ -5,12 +5,13 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
+from varats.data.metrics import apply_tukeys_fence
 from varats.mapping.author_map import generate_author_map
 from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotConfig, PlotGenerator
-from varats.plots.commit_trend import interactions_per_commit_wrapper
+from varats.plots.commit_trend import interactions_and_lines_per_commit_wrapper
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.plots.surviving_commits import get_lines_per_commit_long
 from varats.project.project_util import get_primary_project_source
@@ -27,25 +28,15 @@ from varats.utils.git_util import (
 def revision_impact(case_study: CaseStudy) -> pd.DataFrame:
     """Returns a dataframe with the impact of each revision of a single
     case_study."""
-    interaction_data = interactions_per_commit_wrapper(case_study, False)
-    lines_data = get_lines_per_commit_long(case_study, False)
-    cmap = get_commit_map(case_study.project_name)
-    lines_data = lines_data.apply(
-        lambda x: (
-            cmap.short_time_id(x["revision"]), ShortCommitHash(x["base_hash"]),
-            x["lines"]
-        ),
-        axis=1,
-        result_type="broadcast"
+    interaction_data = interactions_and_lines_per_commit_wrapper(
+        case_study, False
     )
-    lines_data.sort_values(by="revision", inplace=True)
     interaction_data["interactions_diff"] = \
         interaction_data.groupby("base_hash", sort=False)[
             "interactions"].diff().astype(float)
     interaction_data["lines_diff"] = \
-        lines_data.groupby("base_hash", sort=False)[
+        interaction_data.groupby("base_hash", sort=False)[
             "lines"].diff().astype(float)
-    interaction_data["lines"] = lines_data["lines"]
     interaction_data.drop(columns=["base_hash"], inplace=True)
     interaction_data["interactions_diff"] = interaction_data["interactions_diff"
                                                             ].abs()
@@ -53,10 +44,9 @@ def revision_impact(case_study: CaseStudy) -> pd.DataFrame:
     data = interaction_data.groupby("revision").agg({
         "interactions": "sum",
         "interactions_diff": "sum",
-        "lines_diff": "sum"
+        "lines_diff": "sum",
+        "lines": "sum"
     })
-    data["lines"] = lines_data.groupby("revision").agg({"lines": "sum"}
-                                                      )["lines"]
     data["interaction_change"
         ] = data["interactions_diff"] / data["interactions"]
     data["line_change"] = data["lines_diff"] / data["lines"]
@@ -76,8 +66,10 @@ def impact_data(case_studys: tp.List[CaseStudy]) -> pd.DataFrame:
     data = pd.DataFrame({
         "revision": [],
         "interactions": [],
+        "interactions_diff": [],
         "interaction_change": [],
         "lines": [],
+        "lines_diff": [],
         "line_change": [],
         "impacted_commits": [],
         "project": [],
@@ -147,9 +139,14 @@ class RevisionImpactDistribution(
 
     def plot(self, view_mode: bool) -> None:
         case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
-        data = impact_data(case_studys)
+        data = self.plot_kwargs["data"]
         axis = sns.violinplot(
-            data=data, y="impacted_commits", x="project", bw=0.15
+            data=data,
+            y="impacted_commits",
+            x="project",
+            bw=0.15,
+            scale="width",
+            inner=None
         )
         axis.plot(range(len(case_studys)), [0 for _ in case_studys], "--k")
 
@@ -169,11 +166,9 @@ class RevisionImpactDistributionAll(
         super().__init__(plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
-        data = impact_data(case_studys)
+        data = self.plot_kwargs["data"]
         data.drop(columns=["project"], inplace=True)
-        axis = sns.violinplot(data=data, y="impacted_commits", bw=0.15)
-        axis.plot(range(len(case_studys)), [0 for _ in case_studys], "--k")
+        sns.violinplot(data=data, y="impacted_commits", bw=0.15)
 
 
 class RevisionImpactScatterInteractions(
@@ -190,13 +185,12 @@ class RevisionImpactScatterInteractions(
         )
 
     def plot(self, view_mode: bool) -> None:
-        case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
-        data = impact_data(case_studys)
+        data = self.plot_kwargs["data"]
         multivariate_grid(
             data, "impacted_commits", "interaction_change", "project"
         )
         ymax = data["interaction_change"].max()
-        plt.ylim(-0.01, ymax + 0.01)
+        plt.ylim(-0.001, ymax + 0.01)
 
 
 class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
@@ -212,9 +206,10 @@ class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
 
     def plot(self, view_mode: bool) -> None:
         case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
-        data = impact_data(case_studys)
+        data = self.plot_kwargs["data"]
         data.fillna(value=0, inplace=True)
         if len(case_studys) == 1:
+            data = data.loc[data["project"] == case_studys[0].project_name]
             cmap = get_commit_map(case_studys[0].project_name)
             commit_helper = create_commit_lookup_helper(
                 case_studys[0].project_name
@@ -227,14 +222,16 @@ class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
                     name
                 )
             )
+        data = apply_tukeys_fence(data, "line_change", 3)
         multivariate_grid(
             data,
             "impacted_commits",
             "line_change",
             "project",
+            alpha=0.3,
         )
         ymax = data["line_change"].max()
-        plt.ylim(-0.01, ymax + 0.01)
+        plt.ylim(-0.001, ymax + 0.01)
 
 
 class RevisionImpactGenerator(
@@ -251,6 +248,7 @@ class RevisionImpactGenerator(
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
         plots: tp.List[Plot] = []
+        self.plot_kwargs["data"] = impact_data(case_studys)
         if self.plot_kwargs["individual"]:
             for case_study in case_studys:
                 kwargs = self.plot_kwargs.copy()
@@ -258,6 +256,7 @@ class RevisionImpactGenerator(
                 plots.append(
                     RevisionImpactScatterLines(self.plot_config, **kwargs)
                 )
+
         plots.append(
             RevisionImpactScatterLines(self.plot_config, **self.plot_kwargs)
         )

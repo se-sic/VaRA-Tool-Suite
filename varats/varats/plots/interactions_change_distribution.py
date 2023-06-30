@@ -39,22 +39,23 @@ class InteractionChangeDistribution(
             cs_data["interactions_diff"] = cs_data.groupby(
                 "base_hash", sort=False
             )["interactions"].diff().astype(float)
-            print(cs_data)
             cs_data.insert(2, "project", case_study.project_name)
             data = pd.concat([data, cs_data],
                              ignore_index=True,
                              copy=False,
                              join="inner")
-        print(data)
         data_sub = data.groupby(["base_hash", "project"],
                                 sort=False)["interactions_diff"].sum()
 
-        print(data_sub)
         df = data_sub.to_frame().reset_index()
         df["interactions_diff"] = df["interactions_diff"].apply(lambda x: x + 1)
-        print(df.dtypes)
         axis = sns.violinplot(
-            data=df, y="interactions_diff", x="project", bw=0.15
+            data=df,
+            y="interactions_diff",
+            x="project",
+            bw=0.15,
+            scale="width",
+            inner=None
         )
         axis.plot(range(len(case_studys)), [1 for _ in case_studys], "--k")
 
@@ -98,7 +99,7 @@ class InteractionChangeAuthorDistribution(
         df = data_sub.to_frame().reset_index()
         print(df.dtypes)
         axis = sns.violinplot(
-            data=df, y="interactions_diff", x="project", bw=0.1
+            data=df, y="interactions_diff", x="project", bw=0.1, scale="width"
         )
         plt.scale('asinh')
         axis.set_ylabel("")
@@ -114,7 +115,7 @@ class InteractionChangeDistributionGenerator(
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         return [
             InteractionChangeDistribution(self.plot_config, **self.plot_kwargs),
-            InteractionChangeAuthorDistribution(
-                self.plot_config, **self.plot_kwargs
-            )
+            # InteractionChangeAuthorDistribution(
+            #     self.plot_config, **self.plot_kwargs
+            # )
         ]

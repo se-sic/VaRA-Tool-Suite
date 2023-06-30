@@ -1,5 +1,6 @@
 import typing as tp
 
+import click
 import pandas as pd
 
 from varats.mapping.commit_map import CommitMap, get_commit_map
@@ -30,41 +31,44 @@ class HighImpactRevisions(Table, table_name="high_impact_revisions"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """Tabulate the table."""
-        project_name: str = self.table_kwargs["case_study"].project_name
-        commit_map: CommitMap = get_commit_map(project_name)
-        commit_lookup_helper = create_commit_lookup_helper(project_name)
-        repo = get_primary_project_source(project_name).local
-
-        def revison_data(time_id: int, prev_time_id,
-                         impact: float) -> dict[str, tp.Any]:
-            revision = commit_map.c_hash(time_id)
-            commit = commit_lookup_helper(CommitRepoPair(revision, repo))
-            return {
-                "project": project_name,
-                "hash": revision,
-                "time_id": commit_map.time_id(revision),
-                "message": commit.message,
-                "author": commit.author.name,
-                "impact": impact,
-                "prev_revision": prev_time_id
-            }
 
         high_impact_revs: tp.List[dict[str, tp.Any]] = []
 
-        data = impact_data([self.table_kwargs['case_study']])
+        data = impact_data(self.table_kwargs['case_study'])
         data.fillna(value=0, inplace=True)
-        df_iter = data.iterrows()
-        _, last_row = next(df_iter)
-        for _, row in df_iter:
-            change = row["impacted_commits"]
-            if change > (self.table_kwargs['threshold'] / 100.0):
-                lhs_cm = last_row["revision"]
-                rhs_cm = row["revision"]
-                high_impact_revs.append(revison_data(rhs_cm, lhs_cm, change))
-            last_row = row
-        return dataframe_to_table(
-            pd.DataFrame(high_impact_revs), table_format, wrap_table=wrap_table
-        )
+        for project_name, project_data in data.groupby("project"):
+            print(project_data)
+            commit_map: CommitMap = get_commit_map(project_name)
+            commit_lookup_helper = create_commit_lookup_helper(project_name)
+            repo = get_primary_project_source(project_name).local
+
+            def revison_data(time_id: int, row: pd.Series) -> dict[str, tp.Any]:
+                revision = commit_map.c_hash(time_id)
+                commit = commit_lookup_helper(CommitRepoPair(revision, repo))
+                return {
+                    "project": project_name,
+                    "hash": revision.to_short_commit_hash(),
+                    #"time_id": commit_map.time_id(revision),
+                    "message": f"\\detokenize{{{commit.message}}}",
+                    "author": commit.author.name,
+                    "impact": row["impacted_commits"],
+                    "line_change": row["line_change"],
+                    #"prev_revision": prev_time_id
+                }
+
+            df_iter = project_data.iterrows()
+            _, last_row = next(df_iter)
+            for _, row in df_iter:
+                change = row["impacted_commits"]
+                if change > (self.table_kwargs['threshold'] / 100.0):
+                    lhs_cm = last_row["revision"]
+                    rhs_cm = row["revision"]
+                    if lhs_cm + 1 == rhs_cm:
+                        high_impact_revs.append(revison_data(rhs_cm, row))
+                last_row = row
+        data = pd.DataFrame(high_impact_revs).set_index("project")
+        data.to_csv("high_impact_revs.csv")
+        return dataframe_to_table(data, table_format, wrap_table=wrap_table)
 
 
 class ImpactDistribution(Table, table_name="impact_distribution"):
@@ -74,27 +78,32 @@ class ImpactDistribution(Table, table_name="impact_distribution"):
         """Tabulate the table."""
 
         high_impact_revs: dict[str, tp.Any] = {}
-
+        step_size = self.table_kwargs["step_size"]
         data = self.table_kwargs["data"]
         data.fillna(value=0, inplace=True)
         project_groups = data.groupby("project")
         for project, project_data in project_groups:
             project_counts: tp.List[int] = []
-            for i in range(100 // 10):
+            for i in range(100 // step_size):
                 project_counts.append(
                     len(
-                        project_data[project_data["impacted_commits"] >
-                                     (i * 10 / 100)]
+                        project_data[(
+                            project_data["impacted_commits"] >
+                            (i * step_size / 100)
+                        ) & (
+                            project_data["impacted_commits"] <=
+                            ((i + 1) * step_size / 100)
+                        )]
                     )
                 )
-
+            project_counts.append(len(project_data["impacted_commits"]))
             high_impact_revs[project] = project_counts
-        print(high_impact_revs)
+
+        columns = [i * step_size for i in range(100 // step_size)]
+        columns.append("Total")
         return dataframe_to_table(
             pd.DataFrame.from_dict(
-                high_impact_revs,
-                orient='index',
-                columns=[i * 10 for i in range(100 // 10)]
+                high_impact_revs, orient='index', columns=columns
             ),
             table_format,
             wrap_table=wrap_table
@@ -107,19 +116,39 @@ class LineImpactDistribution(Table, table_name="line_impact_distribution"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """Tabulate the table."""
 
-        high_impact_revs: tp.List[dict[str, tp.Any]] = []
-
+        high_impact_revs: dict[str, tp.Any] = {}
+        step_size = self.table_kwargs["step_size"]
         data = self.table_kwargs["data"]
         data.fillna(value=0, inplace=True)
         project_groups = data.groupby("project")
         for project, project_data in project_groups:
-            project_counts: dict[int, tp.Any] = {}
-            for i in range(100 // 10):
-                project_counts[i] = project_data[project_data["line_change"] >
-                                                 (i / 100)].count()
-            high_impact_revs.append({project: project_counts})
+            project_counts: tp.List[int] = []
+            for i in range(100 // step_size):
+                project_counts.append(
+                    len(
+                        project_data[(
+                            project_data["line_change"] > (i * step_size / 100)
+                        ) & (
+                            project_data["line_change"] <=
+                            ((i + 1) * step_size / 100)
+                        )]
+                    )
+                )
+            project_counts.append(len(project_data["line_change"]))
+            high_impact_revs[project] = project_counts
+            print(
+                project_data["line_change"].quantile([
+                    0.1, 0.25, 0.5, 0.75, 0.9
+                ])
+            )
+        columns = [i * step_size for i in range(100 // step_size)]
+        columns.append("Total")
         return dataframe_to_table(
-            pd.DataFrame(high_impact_revs), table_format, wrap_table=wrap_table
+            pd.DataFrame.from_dict(
+                high_impact_revs, orient='index', columns=columns
+            ),
+            table_format,
+            wrap_table=wrap_table
         )
 
 
@@ -132,11 +161,17 @@ class ImpactCorrelation(Table, table_name="impact_correlation"):
         data = self.table_kwargs["data"]
         correlation_data = data.groupby("project"
                                        ).corr()["impacted_commits"].unstack()
-        correlation_data.drop(["impacted_commits", "interactions", "lines"],
+        correlation_data.drop([
+            "impacted_commits", "interactions", "lines", "interactions_diff",
+            "lines_diff"
+        ],
                               axis=1,
                               inplace=True)
         return dataframe_to_table(
-            correlation_data, table_format, wrap_table=wrap_table
+            correlation_data.round(3),
+            table_format,
+            wrap_table=wrap_table,
+            float_format="{:0.3f}".format
         )
 
 
@@ -152,7 +187,10 @@ class ImpactCorrelationAgg(Table, table_name="impact_correlation_agg"):
                               axis=1,
                               inplace=True)
         return dataframe_to_table(
-            correlation_data, table_format, wrap_table=wrap_table
+            correlation_data.round(3),
+            table_format,
+            wrap_table=wrap_table,
+            float_format="{:0.3f}".format
         )
 
 
@@ -177,7 +215,7 @@ class HighImpactTableGenerator(
     TableGenerator,
     generator_name="high-impact-revs",
     options=[
-        REQUIRE_CASE_STUDY,
+        REQUIRE_MULTI_CASE_STUDY,
         make_cli_option("--threshold", type=int, default=50, required=True)
     ]
 ):
@@ -191,7 +229,10 @@ class HighImpactTableGenerator(
 class ImpactDistributionGenerator(
     TableGenerator,
     generator_name="impact-distribution",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    options=[
+        REQUIRE_MULTI_CASE_STUDY,
+        make_cli_option("--step-size", type=click.IntRange(0, 100), default=10)
+    ]
 ):
 
     def generate(self) -> tp.List['varats.table.table.Table']:
