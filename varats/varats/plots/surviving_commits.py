@@ -2,6 +2,7 @@
 import math
 import typing as tp
 
+import click
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,10 +20,7 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import get_primary_project_source
-from varats.ts_utils.click_param_types import (
-    REQUIRE_CASE_STUDY,
-    REQUIRE_REVISION,
-)
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import (
     ShortCommitHash,
     FullCommitHash,
@@ -237,20 +235,20 @@ class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
     ) -> tp.Set[FullCommitHash]:
         pass
 
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+    def __init__(
+        self, plot_config: PlotConfig, revision: str, **kwargs: tp.Any
+    ):
+        self._revision = revision
         super().__init__(plot_config, **kwargs)
 
     @property
     def name(self) -> str:
-        return "single_commit_survival_" + ShortCommitHash(
-            self.plot_kwargs['revision']
-        ).hash
+        return "single_commit_survival_" + ShortCommitHash(self._revision).hash
 
     def plot(self, view_mode: bool) -> None:
         """Plot the evolution of a single commit."""
         _, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
-        revision = self.plot_kwargs['revision']
         lines: DataFrame = get_lines_per_commit_long(case_study, False)
 
         interactions: DataFrame = get_interactions_per_commit_long(
@@ -263,10 +261,8 @@ class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
             axis=0, how='any', inplace=True, subset=["lines", "interactions"]
         )
 
-        print(data)
-        print(data.dtypes)
-        print(type(revision))
-        data = data[data["base_hash"].apply(lambda x: x.startswith(revision))]
+        data = data[
+            data["base_hash"].apply(lambda x: x.startswith(self._revision))]
         data.set_index("revision", inplace=True)
         cmap = get_commit_map(case_study.project_name)
         data.sort_index(
@@ -282,18 +278,18 @@ class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
         ax = axis.twinx()
         x_axis = range(len(data))
         ax.scatter(x_axis, data['lines'], color="green")
-        #ax.set_ylabel("Lines",color="g")
+        ax.set_ylabel("Lines", color="g")
         axis.scatter(x_axis, data['interactions'], color="orange")
-        #axis.set_ylabel("Interactions",color="orange")
+        axis.set_ylabel("Interactions", color="orange")
         ax.set_ylim(ymin=0)
         axis.set_ylim(ymin=0)
         lines_legend = mpatches.Patch(color='green', label="Lines")
         interactions_legend = mpatches.Patch(
             color="orange", label='Interactions'
         )
-        #plt.legend(handles=[lines_legend, interactions_legend])
+        plt.legend(handles=[lines_legend, interactions_legend])
         plt.ticklabel_format(axis='x', useOffset=False)
-        axis.set_xticklabels([])
+        axis.set_xticklabels(data.index.map(cmap.short_time_id), rotation=90)
         axis.tick_params(axis="x", labelrotation=90)
 
 
@@ -479,12 +475,20 @@ class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
 class SingleCommitSurvivalPlotGenerator(
     PlotGenerator,
     generator_name="single-survival",
-    options=[REQUIRE_REVISION, REQUIRE_CASE_STUDY]
+    options=[
+        REQUIRE_CASE_STUDY,
+        click.argument("revisions", nargs=-1, type=str)
+    ]
 ):
     """Generator for the Plot of the evolution of a single commit."""
 
     def generate(self) -> tp.List['Plot']:
-        return [SingleCommitPlot(self.plot_config, **self.plot_kwargs)]
+
+        return [
+            SingleCommitPlot(
+                self.plot_config, revision=revision, **self.plot_kwargs
+            ) for revision in self.plot_kwargs['revisions']
+        ]
 
 
 class SurvivingCommitPlotGenerator(
