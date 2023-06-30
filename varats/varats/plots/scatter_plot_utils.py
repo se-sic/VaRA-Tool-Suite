@@ -13,6 +13,7 @@ def multivariate_grid(
     y: str,
     hue: str,
     global_kde: bool = True,
+    individual_kde: bool = True,
     **kwargs: tp.Any
 ) -> sns.JointGrid:
     """
@@ -55,20 +56,21 @@ def multivariate_grid(
         ax.xaxis.label.set_size(25)
         ax.yaxis.label.set_size(25)
         ax.tick_params(labelsize=15)
-        sns.kdeplot(
-            data=df_group,
-            x=x,
-            ax=grid.ax_marg_x,
-            fill=True,
-            warn_singular=False
-        )
-        sns.kdeplot(
-            data=df_group,
-            y=y,
-            ax=grid.ax_marg_y,
-            fill=True,
-            warn_singular=False
-        )
+        if individual_kde:
+            sns.kdeplot(
+                data=df_group,
+                x=x,
+                ax=grid.ax_marg_x,
+                fill=True,
+                warn_singular=False
+            )
+            sns.kdeplot(
+                data=df_group,
+                y=y,
+                ax=grid.ax_marg_y,
+                fill=True,
+                warn_singular=False
+            )
     if global_kde:
         sns.kdeplot(
             data=data,
