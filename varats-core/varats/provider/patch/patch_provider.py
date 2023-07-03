@@ -14,6 +14,7 @@ from benchbuild.utils.revision_ranges import _get_all_revisions_between, _get_gi
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.git_util import CommitHash, ShortCommitHash
 
+
 class ApplyPatch(actions.ProjectStep):
     NAME = "ApplyPatch"
     DESCRIPTION = "Apply a Git patch to a project."
@@ -30,6 +31,7 @@ class ApplyPatch(actions.ProjectStep):
         repo_git("apply", patch_path)
 
         return StepResult.OK
+
 
 class RevertPatch(actions.ProjectStep):
     NAME = "RevertPatch"
@@ -48,6 +50,7 @@ class RevertPatch(actions.ProjectStep):
 
         return StepResult.OK
 
+
 class Patch:
     """A class for storing a single project-specific Patch"""
 
@@ -58,6 +61,7 @@ class Patch:
         self.description: str = description
         self.path: Path = path
         self.valid_revisions: tp.Set[CommitHash] = valid_revisions
+
 
 class ProjectPatchesConfiguration:
     """A class storing a set of patches specific to a project"""
@@ -139,7 +143,8 @@ class ProjectPatchesConfiguration:
             if include_revs_tag:
                 include_revisions = parse_revisions(include_revs_tag)
             else:
-                include_revisions = { ShortCommitHash(h) for h in repo_git('log', '--pretty=%H', '--first-parent').strip().split() }
+                include_revisions = {ShortCommitHash(h) for h in
+                                     repo_git('log', '--pretty=%H', '--first-parent').strip().split()}
 
             exclude_revs_tag = patch.find("exclude_revisions")
 
@@ -222,7 +227,8 @@ class PatchProvider(Provider):
         return Path(Path(target_prefix()) / patches_source.local)
 
 
-def create_patch_action_list(project: Project, standard_actions: tp.MutableSequence[actions.Step], hash: CommitHash) -> tp.Mapping[str, tp.MutableSequence[actions.Step]]:
+def create_patch_action_list(project: Project, standard_actions: tp.MutableSequence[actions.Step], hash: CommitHash) -> \
+tp.Mapping[str, tp.MutableSequence[actions.Step]]:
     """ Creates a map of actions for applying and reverting all patches that are valid for the given revision """
     result_actions = {}
 
@@ -230,6 +236,12 @@ def create_patch_action_list(project: Project, standard_actions: tp.MutableSeque
     patches = patch_provider.patches_config.get_patches_for_revision(hash)
 
     for patch in patches:
-        result_actions[patch.shortname] = [ApplyPatch(project,patch), *standard_actions, RevertPatch(project,patch)]
+        result_actions[patch.shortname] = [ApplyPatch(project, patch), *standard_actions, RevertPatch(project, patch)]
 
     return result_actions
+
+
+def wrap_action_list_with_patch(action_list: tp.MutableSequence[actions.Step], patch: Patch) -> tp.MutableSequence[
+    actions.Step]:
+    """ Wraps the given action list with the given patch """
+    return [ApplyPatch(patch.project, patch), *action_list, RevertPatch(patch.project, patch)]

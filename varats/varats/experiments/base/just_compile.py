@@ -19,6 +19,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.varats_project import VProject
+from varats.provider.patch.patch_provider import Patch, PatchProvider, wrap_action_list_with_patch
 from varats.report.report import ReportSpecification
 
 
@@ -31,9 +32,10 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle, patch: Patch = None):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.__patch = patch
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
@@ -46,7 +48,7 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, EmptyReport, self.project, binary,
-                config_id
+                config_id, self.__patch.shortname if self.__patch else None
             )
 
             run_cmd = touch[f"{result_file}"]
@@ -69,20 +71,23 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
 
     REPORT_SPEC = ReportSpecification(EmptyReport)
 
+    # WIP Patch Support
+    __USE_PATCHES = True
+
     def actions_for_project(
-        self, project: Project
+            self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+                                    << time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM() \
-            << run.WithTimeout()
+                                     << RunWLLVM() \
+                                     << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -92,5 +97,17 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
         analysis_actions.append(actions.Clean(project))
+
+        if self.__USE_PATCHES:
+            patch_provider = PatchProvider.create_provider_for_project(project)
+            patches = patch_provider.patches_config.get_patches_for_revision(hash)
+
+            for patch in patches:
+                patch_actions = [actions.Compile(project),
+                                 EmptyAnalysis(project, self.get_handle(), patch=patch),
+                                 actions.Clean(project)]
+
+                analysis_actions.append(actions.RequireAll(wrap_action_list_with_patch(patch_actions, patch)))
+            pass
 
         return analysis_actions
