@@ -87,6 +87,8 @@ class ProjectPatchesConfiguration:
 
     @staticmethod
     def from_xml(xml_path: Path):
+        base_dir = xml_path.parent
+
         project_name: str = Path(os.path.abspath(xml_path)).parts[-2]
         tree = ET.parse(xml_path)
         root = tree.getroot()
@@ -133,8 +135,10 @@ class ProjectPatchesConfiguration:
             shortname = patch.findtext("shortname")
             description = patch.findtext("description")
 
-            # TODO: Proper path handling (Absolute/relative)
             path = Path(patch.findtext("path"))
+
+            if not path.is_absolute():
+                path = base_dir / path
 
             include_revisions: tp.Set[CommitHash] = set()
 
@@ -200,7 +204,7 @@ class PatchProvider(Provider):
         try:
             return PatchProvider(project)
         except PatchesNotFoundError:
-            # TODO: Warnings?
+            # TODO: Warnings
             return None
 
     @classmethod
