@@ -10,6 +10,7 @@ from benchbuild.utils import actions
 from benchbuild.source.base import target_prefix
 from benchbuild.utils.actions import StepResult
 from benchbuild.utils.revision_ranges import _get_all_revisions_between, _get_git_for_path
+from plumbum import local
 
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.git_util import CommitHash, ShortCommitHash
@@ -24,7 +25,7 @@ class ApplyPatch(actions.ProjectStep):
         self.__patch = patch
 
     def __call__(self) -> StepResult:
-        repo_git = _get_git_for_path(os.path.abspath(self.project.builddir))
+        repo_git = _get_git_for_path(local.path(self.project.source_of(self.project.primary_source)))
 
         patch_path = self.__patch.path
 
@@ -42,7 +43,7 @@ class RevertPatch(actions.ProjectStep):
         self.__patch = patch
 
     def __call__(self) -> StepResult:
-        repo_git = _get_git_for_path(os.path.abspath(self.project.builddir))
+        repo_git = _get_git_for_path(local.path(self.project.source_of(self.project.primary_source)))
 
         patch_path = self.__patch.path
 
@@ -54,9 +55,9 @@ class RevertPatch(actions.ProjectStep):
 class Patch:
     """A class for storing a single project-specific Patch"""
 
-    def __init__(self, project: str, shortname: str, description: str, path: Path,
+    def __init__(self, project_name: str, shortname: str, description: str, path: Path,
                  valid_revisions: tp.Optional[tp.Set[CommitHash]] = None):
-        self.project: str = project
+        self.project_name: str = project_name
         self.shortname: str = shortname
         self.description: str = description
         self.path: Path = path
@@ -245,7 +246,7 @@ tp.Mapping[str, tp.MutableSequence[actions.Step]]:
     return result_actions
 
 
-def wrap_action_list_with_patch(action_list: tp.MutableSequence[actions.Step], patch: Patch) -> tp.MutableSequence[
+def wrap_action_list_with_patch(action_list: tp.MutableSequence[actions.Step], project: Project, patch: Patch) -> tp.MutableSequence[
     actions.Step]:
     """ Wraps the given action list with the given patch """
-    return [ApplyPatch(patch.project, patch), *action_list, RevertPatch(patch.project, patch)]
+    return [ApplyPatch(project, patch), *action_list, RevertPatch(project, patch)]

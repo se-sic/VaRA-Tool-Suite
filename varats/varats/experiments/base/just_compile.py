@@ -21,6 +21,7 @@ from varats.experiment.wllvm import RunWLLVM
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import Patch, PatchProvider, wrap_action_list_with_patch
 from varats.report.report import ReportSpecification
+from varats.utils.git_util import ShortCommitHash
 
 
 # Please take care when changing this file, see docs experiments/just_compile
@@ -96,18 +97,18 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
-        analysis_actions.append(actions.Clean(project))
 
         if self.__USE_PATCHES:
+
             patch_provider = PatchProvider.create_provider_for_project(project)
-            patches = patch_provider.patches_config.get_patches_for_revision(hash)
+            patches = patch_provider.patches_config.get_patches_for_revision(ShortCommitHash(str(project.revision)))
 
             for patch in patches:
                 patch_actions = [actions.Compile(project),
-                                 EmptyAnalysis(project, self.get_handle(), patch=patch),
-                                 actions.Clean(project)]
+                                 EmptyAnalysis(project, self.get_handle(), patch=patch)]
 
-                analysis_actions.append(actions.RequireAll(wrap_action_list_with_patch(patch_actions, patch)))
-            pass
+                analysis_actions.append(actions.RequireAll(wrap_action_list_with_patch(patch_actions, project, patch)))
+
+        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
