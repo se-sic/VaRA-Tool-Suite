@@ -1,17 +1,52 @@
 import os
 import xml.etree.ElementTree as ET
 import typing as tp
+from copy import deepcopy
 from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.project import Project
+from benchbuild.utils import actions
 from benchbuild.source.base import target_prefix
+from benchbuild.utils.actions import StepResult
 from benchbuild.utils.revision_ranges import _get_all_revisions_between, _get_git_for_path
 
-from varats.project.project_util import get_local_project_git_path
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.git_util import CommitHash, ShortCommitHash
 
+class ApplyPatch(actions.ProjectStep):
+    NAME = "ApplyPatch"
+    DESCRIPTION = "Apply a Git patch to a project."
+
+    def __init__(self, project, patch):
+        super().__init__(project)
+        self.__patch = patch
+
+    def __call__(self) -> StepResult:
+        repo_git = _get_git_for_path(os.path.abspath(self.project.builddir))
+
+        patch_path = self.__patch.path
+
+        repo_git("apply", patch_path)
+
+        return StepResult.OK
+
+class RevertPatch(actions.ProjectStep):
+    NAME = "RevertPatch"
+    DESCRIPTION = "Revert a Git patch from a project."
+
+    def __init__(self, project, patch):
+        super().__init__(project)
+        self.__patch = patch
+
+    def __call__(self) -> StepResult:
+        repo_git = _get_git_for_path(os.path.abspath(self.project.builddir))
+
+        patch_path = self.__patch.path
+
+        repo_git("apply", "-R", patch_path)
+
+        return StepResult.OK
 
 class Patch:
     """A class for storing a single project-specific Patch"""
@@ -23,7 +58,6 @@ class Patch:
         self.description: str = description
         self.path: Path = path
         self.valid_revisions: tp.Set[CommitHash] = valid_revisions
-
 
 class ProjectPatchesConfiguration:
     """A class storing a set of patches specific to a project"""
@@ -186,3 +220,16 @@ class PatchProvider(Provider):
         patches_source.fetch()
 
         return Path(Path(target_prefix()) / patches_source.local)
+
+
+def create_patch_action_list(project: Project, standard_actions: tp.MutableSequence[actions.Step], hash: CommitHash) -> tp.Mapping[str, tp.MutableSequence[actions.Step]]:
+    """ Creates a map of actions for applying and reverting all patches that are valid for the given revision """
+    result_actions = {}
+
+    patch_provider = PatchProvider.create_provider_for_project(project)
+    patches = patch_provider.patches_config.get_patches_for_revision(hash)
+
+    for patch in patches:
+        result_actions[patch.shortname] = [ApplyPatch(project,patch), *standard_actions, RevertPatch(project,patch)]
+
+    return result_actions
