@@ -30,7 +30,7 @@ class TestCSMetricsTable(unittest.TestCase):
 \toprule
  & Domain & LOC (repo) & LOC (project) & Commits & Authors & Revision \\
 \midrule
-brotli & Compression & 34\,639 & 34\,639 & 848 & 40 & aaa4424d9b \\
+brotli & Compression & 35\,662 & 35\,662 & 848 & 40 & aaa4424d9b \\
 \bottomrule
 \end{tabular}
 """, table_str
