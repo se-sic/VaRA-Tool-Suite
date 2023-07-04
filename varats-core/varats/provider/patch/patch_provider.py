@@ -1,17 +1,17 @@
 import os
 import textwrap
-import xml.etree.ElementTree as ET
 import typing as tp
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.project import Project
-from benchbuild.utils import actions
 from benchbuild.source.base import target_prefix
+from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult
 from benchbuild.utils.revision_ranges import (
     _get_all_revisions_between,
-    _get_git_for_path
+    _get_git_for_path,
 )
 from plumbum import local
 
@@ -21,7 +21,8 @@ from varats.utils.git_util import CommitHash, ShortCommitHash
 
 def __get_project_git(project: Project) -> tp.Optional[local.cmd]:
     return _get_git_for_path(
-        local.path(project.source_of(project.primary_source)))
+        local.path(project.source_of(project.primary_source))
+    )
 
 
 class ApplyPatch(actions.ProjectStep):
@@ -44,10 +45,11 @@ class ApplyPatch(actions.ProjectStep):
         return StepResult.OK
 
     def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(f"* {self.project.name}: "
-                               f"Apply the patch "
-                               f"'{self.__patch.shortname}' to the project.",
-                               " " * indent)
+        return textwrap.indent(
+            f"* {self.project.name}: "
+            f"Apply the patch "
+            f"'{self.__patch.shortname}' to the project.", " " * indent
+        )
 
 
 class RevertPatch(actions.ProjectStep):
@@ -70,20 +72,24 @@ class RevertPatch(actions.ProjectStep):
         return StepResult.OK
 
     def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(f"* {self.project.name}: "
-                               f"Revert the patch '{self.__patch.shortname}' "
-                               f"from the project.",
-                               " " * indent)
+        return textwrap.indent(
+            f"* {self.project.name}: "
+            f"Revert the patch '{self.__patch.shortname}' "
+            f"from the project.", " " * indent
+        )
 
 
 class Patch:
-    """A class for storing a single project-specific Patch"""
+    """A class for storing a single project-specific Patch."""
 
-    def __init__(self, project_name: str,
-                 shortname: str,
-                 description: str,
-                 path: Path,
-                 valid_revisions: tp.Optional[tp.Set[CommitHash]] = None):
+    def __init__(
+        self,
+        project_name: str,
+        shortname: str,
+        description: str,
+        path: Path,
+        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None
+    ):
         self.project_name: str = project_name
         self.shortname: str = shortname
         self.description: str = description
@@ -92,22 +98,22 @@ class Patch:
 
 
 class ProjectPatchesConfiguration:
-    """A class storing a set of patches specific to a project"""
+    """A class storing a set of patches specific to a project."""
 
-    def __init__(self, project_name: str,
-                 repository: str,
-                 patches: tp.List[Patch]):
+    def __init__(
+        self, project_name: str, repository: str, patches: tp.List[Patch]
+    ):
         self.project_name: str = project_name
         self.repository: str = repository
         self.patches: tp.List[Patch] = patches
 
     def get_patches_for_revision(self, revision: CommitHash) -> tp.Set[Patch]:
-        """Returns all patches that are valid for the given revision"""
+        """Returns all patches that are valid for the given revision."""
 
         return {p for p in self.patches if revision in p.valid_revisions}
 
     def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
-        """Returns the patch with the given shortname"""
+        """Returns the patch with the given shortname."""
 
         for patch in self.patches:
             if patch.shortname == shortname:
@@ -117,7 +123,7 @@ class ProjectPatchesConfiguration:
 
     @staticmethod
     def from_xml(xml_path: Path):
-        """Creates a ProjectPatchesConfiguration from an XML file"""
+        """Creates a ProjectPatchesConfiguration from an XML file."""
 
         base_dir = xml_path.parent
 
@@ -153,11 +159,11 @@ class ProjectPatchesConfiguration:
                 start_tag = revision_range_tag.find("start")
                 end_tag = revision_range_tag.find("end")
 
-                res.update(
-                    {ShortCommitHash(h) for h in
-                     _get_all_revisions_between(start_tag.text.strip(),
-                                                end_tag.text.strip(),
-                                                repo_git)})
+                res.update({
+                    ShortCommitHash(h) for h in _get_all_revisions_between(
+                        start_tag.text.strip(), end_tag.text.strip(), repo_git
+                    )
+                })
 
             return res
 
@@ -179,10 +185,11 @@ class ProjectPatchesConfiguration:
             if include_revs_tag:
                 include_revisions = parse_revisions(include_revs_tag)
             else:
-                include_revisions = {ShortCommitHash(h) for h in
-                                     repo_git('log',
-                                              '--pretty=%H',
-                                              '--first-parent').strip().split()}
+                include_revisions = {
+                    ShortCommitHash(h)
+                    for h in repo_git('log', '--pretty=%H', '--first-parent'
+                                     ).strip().split()
+                }
 
             exclude_revs_tag = patch.find("exclude_revisions")
 
@@ -190,11 +197,12 @@ class ProjectPatchesConfiguration:
                 revs = parse_revisions(exclude_revs_tag)
                 include_revisions.difference_update(revs)
 
-            patch_list.append(Patch(project_name,
-                                    shortname,
-                                    description,
-                                    path,
-                                    include_revisions))
+            patch_list.append(
+                Patch(
+                    project_name, shortname, description, path,
+                    include_revisions
+                )
+            )
 
         return ProjectPatchesConfiguration(project_name, repository, patch_list)
 
@@ -205,15 +213,16 @@ class PatchesNotFoundError(FileNotFoundError):
 
 
 class PatchProvider(Provider):
-    """A provider for getting patch files for a certain project"""
+    """A provider for getting patch files for a certain project."""
 
     patches_repository = "git@github.com:se-sic/vara-project-patches.git"
 
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
 
-        patches_project_dir = Path(self._get_patches_repository_path()
-                                   / self.project.NAME)
+        patches_project_dir = Path(
+            self._get_patches_repository_path() / self.project.NAME
+        )
 
         # BB only performs a fetch so our repo might be out of date
         _get_git_for_path(patches_project_dir)("pull")
@@ -231,14 +240,15 @@ class PatchProvider(Provider):
         self.patches_config = ProjectPatchesConfiguration.from_xml(conf_file)
 
     @classmethod
-    def create_provider_for_project(cls: tp.Type[ProviderType],
-                                    project: tp.Type[Project]):
+    def create_provider_for_project(
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
+    ):
         """
-                Creates a provider instance for the given project if possible.
+        Creates a provider instance for the given project if possible.
 
-                Returns:
-                    a provider instance for the given project if possible,
-                    otherwise, ``None``
+        Returns:
+            a provider instance for the given project if possible,
+            otherwise, ``None``
         """
         try:
             return PatchProvider(project)
@@ -247,15 +257,18 @@ class PatchProvider(Provider):
             return None
 
     @classmethod
-    def create_default_provider(cls: tp.Type[ProviderType],
-                                project: tp.Type[Project]):
+    def create_default_provider(
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
+    ):
         """
-                Creates a default provider instance that can be used with any project.
+        Creates a default provider instance that can be used with any project.
 
-                Returns:
-                    a default provider instance
+        Returns:
+            a default provider instance
         """
-        raise AssertionError("All usages should be covered by the project specific provider.")
+        raise AssertionError(
+            "All usages should be covered by the project specific provider."
+        )
 
     @staticmethod
     def _get_patches_repository_path() -> Path:
@@ -275,18 +288,19 @@ def create_patch_action_list(project: Project,
                              standard_actions: tp.MutableSequence[actions.Step],
                              commit: CommitHash) \
         -> tp.Mapping[str, tp.MutableSequence[actions.Step]]:
-    """ Creates a map of actions for applying
-    all patches that are valid for the given revision """
+    """Creates a map of actions for applying all patches that are valid for the
+    given revision."""
     result_actions = {}
 
     patch_provider = PatchProvider.create_provider_for_project(project)
     patches = patch_provider.patches_config.get_patches_for_revision(commit)
 
     for patch in patches:
-        result_actions[patch.shortname] = [actions.MakeBuildDir(project),
-                                           actions.ProjectEnvironment(project),
-                                           ApplyPatch(project, patch),
-                                           *standard_actions]
+        result_actions[patch.shortname] = [
+            actions.MakeBuildDir(project),
+            actions.ProjectEnvironment(project),
+            ApplyPatch(project, patch), *standard_actions
+        ]
 
     return result_actions
 
@@ -294,8 +308,9 @@ def create_patch_action_list(project: Project,
 def wrap_action_list_with_patch(action_list: tp.MutableSequence[actions.Step],
                                 project: Project, patch: Patch) \
         -> tp.MutableSequence[actions.Step]:
-    """ Wraps the given action list with the given patch """
-    return [actions.MakeBuildDir(project),
-            actions.ProjectEnvironment(project),
-            ApplyPatch(project, patch),
-            *action_list]
+    """Wraps the given action list with the given patch."""
+    return [
+        actions.MakeBuildDir(project),
+        actions.ProjectEnvironment(project),
+        ApplyPatch(project, patch), *action_list
+    ]

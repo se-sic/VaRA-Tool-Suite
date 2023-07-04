@@ -147,15 +147,15 @@ class ReportFilename():
         r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)[_\/](?P<UUID>[0-9a-fA-F\-]*)"
-        r"(_config-(?P<config_id>\d+))?" + r"(_patch-(?P<match_name>.+))?" + "_" +
-        FileStatusExtension.get_regex_grp() + r"?" + r"(?P<file_ext>\..*)?" +
-        "$"
+        r"(_config-(?P<config_id>\d+))?" + r"(_patch-(?P<match_name>.+))?" +
+        "_" + FileStatusExtension.get_regex_grp() + r"?" +
+        r"(?P<file_ext>\..*)?" + "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
         "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
-        "{binary_name}-" + "{project_revision}_" + "{project_uuid}_{patch_name}" +
-        "{status_ext}" + "{file_ext}"
+        "{binary_name}-" + "{project_revision}_" +
+        "{project_uuid}_{patch_name}" + "{status_ext}" + "{file_ext}"
     )
 
     __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (

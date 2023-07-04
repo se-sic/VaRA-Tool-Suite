@@ -22,7 +22,7 @@ from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import (
     Patch,
     PatchProvider,
-    wrap_action_list_with_patch
+    wrap_action_list_with_patch,
 )
 from varats.report.report import ReportSpecification
 from varats.utils.git_util import ShortCommitHash
@@ -37,9 +37,12 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: Project,
-                 experiment_handle: ExperimentHandle,
-                 patch: tp.Optional[Patch] = None):
+    def __init__(
+        self,
+        project: Project,
+        experiment_handle: ExperimentHandle,
+        patch: tp.Optional[Patch] = None
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__patch = patch
@@ -48,8 +51,9 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
         return self.analyze()
 
     def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(f"* {self.project.name}: EmptyAnalysis",
-                               " " * indent)
+        return textwrap.indent(
+            f"* {self.project.name}: EmptyAnalysis", " " * indent
+        )
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
@@ -86,7 +90,7 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
     __USE_PATCHES = True
 
     def actions_for_project(
-            self, project: Project
+        self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
@@ -117,17 +121,22 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
             if patch_provider:
                 config = patch_provider.patches_config
                 patches = config.get_patches_for_revision(
-                    ShortCommitHash(str(project.revision)))
+                    ShortCommitHash(str(project.revision))
+                )
 
             for patch in patches:
-                patch_actions = [actions.Compile(project),
-                                 EmptyAnalysis(project,
-                                               self.get_handle(),
-                                               patch=patch),
-                                 actions.Clean(project)]
+                patch_actions = [
+                    actions.Compile(project),
+                    EmptyAnalysis(project, self.get_handle(), patch=patch),
+                    actions.Clean(project)
+                ]
 
-                analysis_actions.append(actions.RequireAll(
-                    wrap_action_list_with_patch(patch_actions, project, patch))
+                analysis_actions.append(
+                    actions.RequireAll(
+                        wrap_action_list_with_patch(
+                            patch_actions, project, patch
+                        )
+                    )
                 )
 
         return analysis_actions
