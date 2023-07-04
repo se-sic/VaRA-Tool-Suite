@@ -47,7 +47,7 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
     def __call__(self) -> actions.StepResult:
         return self.analyze()
 
-    def __str__(self, indent: int=0) -> str :
+    def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(f"* {self.project.name}: EmptyAnalysis",
                                " " * indent)
 
@@ -129,6 +129,5 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
                 analysis_actions.append(actions.RequireAll(
                     wrap_action_list_with_patch(patch_actions, project, patch))
                 )
-
 
         return analysis_actions

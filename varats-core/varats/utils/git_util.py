@@ -37,7 +37,9 @@ class CommitHash(abc.ABC):
 
     def __init__(self, short_commit_hash: str):
         if not len(short_commit_hash) >= self.hash_length():
-            raise ValueError("Commit hash too short")
+            raise ValueError(
+                f"Commit hash too short, only got {short_commit_hash}"
+            )
         self.__commit_hash = short_commit_hash[:self.hash_length()]
 
     @property
@@ -474,7 +476,7 @@ class ChurnConfig():
         value: tp.Set[str]  # pylint: disable=invalid-name
 
         C = {"h", "c"}
-        CPP = {"h", "hxx", "hpp", "cxx", "cpp"}
+        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}
 
     def __init__(self) -> None:
         self.__enabled_languages: tp.List[ChurnConfig.Language] = []
