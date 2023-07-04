@@ -1,4 +1,5 @@
 import os
+import textwrap
 import xml.etree.ElementTree as ET
 import typing as tp
 from copy import deepcopy
@@ -33,6 +34,10 @@ class ApplyPatch(actions.ProjectStep):
 
         return StepResult.OK
 
+    def __str__(self, indent: int = 0)->str:
+        return textwrap.indent(f"* {self.project.name}: Apply the patch '{self.__patch.shortname}' to the project.",
+                               " " * indent)
+
 
 class RevertPatch(actions.ProjectStep):
     NAME = "RevertPatch"
@@ -50,6 +55,10 @@ class RevertPatch(actions.ProjectStep):
         repo_git("apply", "-R", patch_path)
 
         return StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(f"* {self.project.name}: Revert the patch '{self.__patch.shortname}' from the project.",
+                               " " * indent)
 
 
 class Patch:

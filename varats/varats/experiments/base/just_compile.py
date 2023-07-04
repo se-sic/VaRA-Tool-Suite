@@ -1,5 +1,5 @@
 """Implements an empty experiment that just compiles the project."""
-
+import textwrap
 import typing as tp
 
 from benchbuild import Project
@@ -40,6 +40,9 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
+
+    def __str__(self, indent: int=0) -> str :
+        return textwrap.indent(f"* {self.project.name}: EmptyAnalysis", " " * indent)
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
