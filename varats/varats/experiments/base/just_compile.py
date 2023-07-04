@@ -100,6 +100,7 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
+        analysis_actions.append(actions.Clean(project))
 
         if self.__USE_PATCHES:
 
@@ -108,10 +109,10 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
 
             for patch in patches:
                 patch_actions = [actions.Compile(project),
-                                 EmptyAnalysis(project, self.get_handle(), patch=patch)]
+                                 EmptyAnalysis(project, self.get_handle(), patch=patch),
+                                 actions.Clean(project)]
 
                 analysis_actions.append(actions.RequireAll(wrap_action_list_with_patch(patch_actions, project, patch)))
 
-        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

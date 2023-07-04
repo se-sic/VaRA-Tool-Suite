@@ -258,4 +258,4 @@ tp.Mapping[str, tp.MutableSequence[actions.Step]]:
 def wrap_action_list_with_patch(action_list: tp.MutableSequence[actions.Step], project: Project, patch: Patch) -> tp.MutableSequence[
     actions.Step]:
     """ Wraps the given action list with the given patch """
-    return [ApplyPatch(project, patch), *action_list, RevertPatch(project, patch)]
+    return [actions.MakeBuildDir(project), actions.ProjectEnvironment(project), ApplyPatch(project, patch), *action_list]
