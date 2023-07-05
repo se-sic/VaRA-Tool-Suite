@@ -15,6 +15,11 @@ from varats.data.reports.feature_analysis_report import (
 from varats.report.report import BaseReport
 from varats.utils.git_util import CommitRepoPair
 
+from varats.utils.git_util import (
+    ShortCommitHash,
+    FullCommitHash,
+)
+
 
 class StructuralCommitFeatureInteraction():
     """A StructuralCommitFeatureInteraction detailing the specific commit-hash
@@ -125,7 +130,9 @@ class StructuralFeatureBlameReport(
         return self.__commit_feature_interactions
 
 def generate_features_scfi_data(
-        SFBR: StructuralFeatureBlameReport
+        SFBR: StructuralFeatureBlameReport,
+        revision: str,
+        time_id: int
 ) -> pd.DataFrame:
     features_cfi_data: tp.Dict[str, tp.Tuple(int, int)] = {}
     for SCFI in SFBR.commit_feature_interactions:
@@ -140,9 +147,9 @@ def generate_features_scfi_data(
             })
     rows = []
     for feature_data in features_cfi_data.items():
-        rows.append([feature_data[0], feature_data[1][0], feature_data[1][1]])
+        rows.append([revision, time_id, feature_data[0], feature_data[1][0], feature_data[1][1]])
     return pd.DataFrame(
-        rows, columns=["feature", "num_interacting_commits", "feature_scope"]
+        rows, columns=["revision", "time_id", "feature", "num_interacting_commits", "feature_scope"]
     )
 
 

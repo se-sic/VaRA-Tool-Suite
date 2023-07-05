@@ -47,8 +47,8 @@ from varats.utils.git_util import (
     FullCommitHash,
 )
 
-def build_structural_report_files_tuple(
-    project_name: str, case_study: tp.Optional[CaseStudy]
+def build_feature_blame_report_files_tuple(
+    project_name: str, case_study: tp.Optional[CaseStudy], fbr_type: type
 ) -> tp.Tuple[tp.Dict[ShortCommitHash, ReportFilepath], tp.Dict[
     ShortCommitHash, ReportFilepath]]:
     """
@@ -68,10 +68,9 @@ def build_structural_report_files_tuple(
     report_files: tp.Dict[ShortCommitHash, ReportFilepath] = {
         report.report_filename.commit_hash: report
         for report in get_processed_revisions_files(
-            project_name,
-            StructuralFeatureBlameReportExperiment,
-            file_name_filter=get_case_study_file_name_filter(case_study)
-            if case_study else lambda x: False,
+            project_name=project_name,
+            report_type=fbr_type,
+            only_newest=False
         )
     }
 
@@ -79,7 +78,7 @@ def build_structural_report_files_tuple(
         report.report_filename.commit_hash: report
         for report in get_failed_revisions_files(
             project_name,
-            StructuralFeatureBlameReportExperiment,
+            fbr_type,
             file_name_filter=get_case_study_file_name_filter(case_study)
             if case_study else lambda x: False,
         )
@@ -106,9 +105,12 @@ def build_structural_report_pairs_tuple(
         failed reports
     """
 
-    report_files, failed_report_files = build_structural_report_files_tuple(
-        project_name, case_study
+    report_files, failed_report_files = build_feature_blame_report_files_tuple(
+        project_name, case_study, StructuralFeatureBlameReport
     )
+
+    print("REPORT FILES")
+    print(report_files)
 
     sampled_revs: tp.List[ShortCommitHash]
     if case_study:
@@ -175,18 +177,32 @@ class FeaturesSCFIMetricsDatabase(
             report_path: ReportFilepath
         ) -> pd.DataFrame:
             report = load_structural_feature_blame_report(report_path)
-            return generate_features_scfi_data(report)
-        
-        report_pairs, failed_report_pairs = build_structural_report_pairs_tuple(
-            project_name, commit_map, case_study
+            revision = case_study.revisions[0]
+            time_id = commit_map.short_time_id(revision.to_short_commit_hash())
+            return generate_features_scfi_data(report, revision.hash, time_id)
+
+        report_paths, failed_report_paths = build_feature_blame_report_files_tuple(
+            project_name, case_study, StructuralFeatureBlameReport
         )
+
+        data_frame: pd.DataFrame = None
+        for RFP in report_paths.values():
+            if not data_frame:
+                data_frame = create_data_frame_for_report(RFP)
+                continue
+            pd.concat([data_frame, create_data_frame_for_report(RFP)])
+        
+        return data_frame
+        #report_pairs, failed_report_pairs = build_structural_report_pairs_tuple(
+        #    project_name, commit_map, case_study
+        #)
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
-        data_frame = build_cached_report_table(
-            cls.CACHE_ID, project_name, report_pairs, failed_report_pairs,
-            create_dataframe_layout, create_data_frame_for_report,
-            id_from_paths, timestamp_from_paths, compare_timestamps
-        )
+        #data_frame = build_cached_report_table(
+        #    cls.CACHE_ID, project_name, report_pairs, failed_report_pairs,
+        #    create_dataframe_layout, create_data_frame_for_report,
+        #    id_from_paths, timestamp_from_paths, compare_timestamps
+        #) 
 
-        return data_frame
+        #return data_frame

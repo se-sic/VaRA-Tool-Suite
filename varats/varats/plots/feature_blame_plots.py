@@ -19,6 +19,9 @@ from varats.utils.git_util import FullCommitHash
 from varats.data.databases.feature_blame_databases import (
     FeaturesSCFIMetricsDatabase
 )
+from varats.ts_utils.click_param_types import (
+    REQUIRE_CASE_STUDY
+)
 
 class FeatureSCFIPlot(Plot, plot_name="feature_scfi_plot"):
 
@@ -27,25 +30,27 @@ class FeatureSCFIPlot(Plot, plot_name="feature_scfi_plot"):
         project_name: str = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)
 
+        variables = ["feature", "num_interacting_commits", "feature_scope"]
+
         df = FeaturesSCFIMetricsDatabase.get_data_for_project(
-            project_name, ["feature", "num_interacting_commits", "feature_scope"], commit_map,
+            project_name, ["revision", "time_id", *variables], commit_map,
             case_study
         )
-        # nur zum testen, failed schon vorher
-        print(df)
+        
+        data = df.sort_values(by=['feature_scope'])
+        sns.regplot(data=data, x='feature_scope', y='num_interacting_commits')
 
 class FeatureSCFIPlotGenerator(
     PlotGenerator,
     generator_name="feature-scfi-plot",
-    options=[]
+    options=[REQUIRE_CASE_STUDY]
 ):
     """Generates correlation-matrix plot(s) for the selected case study(ies)."""
 
     def generate(self) -> tp.List[Plot]:
-        # failed hier
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
         return [
             FeatureSCFIPlot(
-                self.plot_config, case_study=cs, **self.plot_kwargs
-            ) for cs in case_studies
+                self.plot_config, case_study=case_study, **self.plot_kwargs
+            )
         ]
