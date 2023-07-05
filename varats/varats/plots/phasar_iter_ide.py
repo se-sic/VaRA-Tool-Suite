@@ -24,7 +24,10 @@ from varats.data.reports.blame_interaction_graph import (
     AIGNodeAttrs,
     create_callgraph_based_interaction_graph,
 )
-from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
+from varats.data.reports.phasar_iter_ide import (
+    PhasarIterIDEStatsReport,
+    merge_dict,
+)
 from varats.experiments.phasar.iter_ide import (
     IDELinearConstantAnalysisExperiment,
 )
@@ -50,6 +53,10 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
+
+
+def from_kibytes_to_mibytes(kbytes: float) -> float:
+    return kbytes / 1024.
 
 
 class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
@@ -178,6 +185,9 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        timeouts = dict()
+        ooms = dict()
         for case_study in case_studies:
             report_files = get_processed_revisions_files(
                 case_study.project_name, IDELinearConstantAnalysisExperiment,
@@ -197,11 +207,21 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
 
             assert len(iia_report_files) <= 1
 
-            for report_file, iia_report_file in zip(
+            if (len(report_files) == 0 and len(iia_report_files) == 0):
+                continue
+
+            print("Num Reports: ", len(report_files))
+
+            for report_file, iia_report_file in itertools.zip_longest(
                 report_files, iia_report_files
             ):
-                report = load_phasar_iter_ide_stats_report(report_file)
-                iia_report = load_phasar_iter_ide_stats_report(iia_report_file)
+                # print("Report: ", report_file)
+                report = load_phasar_iter_ide_stats_report(
+                    report_file
+                ) if report_file is not None else None
+                iia_report = load_phasar_iter_ide_stats_report(
+                    iia_report_file
+                ) if iia_report_file is not None else None
                 # print(iia_report)
                 if report is None:
                     # print("Have IIA report, but no regular report")
@@ -209,6 +229,14 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                 elif not (iia_report is None):
                     # print("Have both reports")
                     report.merge_with(iia_report)
+                # else:
+                #     print("Have only regular report")
+
+                local_timeouts = report.aggregate_timeouts()
+                merge_dict(timeouts, local_timeouts, lambda x, y: x + y)
+
+                local_ooms = report.aggregate_ooms()
+                merge_dict(ooms, local_ooms, lambda x, y: x + y)
 
                 nodes.extend(
                     self._get_data_entries(
@@ -216,7 +244,11 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                     )
                 )
 
-        return pd.DataFrame(nodes).sort_values(by=["Analysis", "JF"])
+        print("Timeouts: ", timeouts)
+        print("OOMs: ", ooms)
+        df = pd.DataFrame(nodes)
+        # print("DataFrame: ", df)
+        return df.sort_values(by=["Analysis", "JF"])
 
     def broken_boxplot(
         self,
@@ -421,16 +453,20 @@ class PhasarIterIDERuntimeSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            # print(f"Processing {ana} analysis results")
             aggregates = self._get_aggregates(report, ana)
             if aggregates[self.OLD] is None:
+                print(f"Skip {ana}")
                 continue
             for jf in [self.JF1, self.JF2, self.JF3]:
                 if aggregates[jf] is None:
+                    print(f"Skip {self._get_jf_name(jf)} for {ana}")
                     continue
                 for s in speedup_computer(
                     aggregates[self.OLD].measurements_wall_clock_time,
                     aggregates[jf].measurements_wall_clock_time
                 ):
+                    # print(f"> {s}")
                     nodes.append({
                         self.YNAME:
                             s,
@@ -492,10 +528,15 @@ class PhasarIterIDEMemorySpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
                         "Analysis":
                             ana,
                         "Old":
-                            np.mean(aggregates[self.OLD].max_resident_sizes) /
-                            1000,
+                            from_kibytes_to_mibytes(
+                                np.mean(
+                                    aggregates[self.OLD].max_resident_sizes
+                                )
+                            ),
                         "New":
-                            np.mean(aggregates[jf].max_resident_sizes) / 1000,
+                            from_kibytes_to_mibytes(
+                                np.mean(aggregates[jf].max_resident_sizes)
+                            ),
                         "Target":
                             cs,
                     })
@@ -543,13 +584,23 @@ class PhasarIterIDEMemSpeedupVsJF1Plot(
 class PhasarIterIDESpeedupScatterPlot(
     PhasarIterIDERuntimeSpeedupPlotBase,
     plot_name='phasar-iter-ide-speedup-scatter',
-    yname="Runtime Speedup vs Old"
+    yname="Runtime Old vs New [s]"
 ):
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
 
+        # print(data.to_string())
         # data = data.loc[data["Analysis"] == "Taint"]
+
+        # markers = ['x', (5, 2),  matplotlib.markers.MarkerStyle("s", fillstyle="none")]
+        # markers = ['X', '^', (5, 1)]
+        # markers = [
+        #     matplotlib.markers.MarkerStyle("X", fillstyle="none"),
+        #     matplotlib.markers.MarkerStyle("o", fillstyle="none"),
+        #     matplotlib.markers.MarkerStyle("*", fillstyle="none"),
+        #    # matplotlib.markers.MarkerStyle("s", fillstyle="none")
+        # ]
 
         ax = sns.scatterplot(
             data=data,
@@ -559,9 +610,20 @@ class PhasarIterIDESpeedupScatterPlot(
             # y = "New",
             hue="Target",
             style="JF",
+            # markers = markers,
+            # fillstyle="none",
+            # facecolors="none",
+            # edgecolor="face",
+            # c='none',
+            linewidth=0,
+            alpha=0.5,
+            # s=25,
         )
 
         ax.axline(xy1=(0, 0), slope=1)
+
+        ax.set_ylabel("Old Runtime [s]")
+        ax.set_xlabel("New Runtime [s]")
         # ax.set_yscale('log')
 
         return ax
@@ -570,13 +632,14 @@ class PhasarIterIDESpeedupScatterPlot(
 class PhasarIterIDEMemSpeedupScatterPlot(
     PhasarIterIDEMemorySpeedupPlotBase,
     plot_name='phasar-iter-ide-mem-speedup-scatter',
-    yname="Memory Speedup vs Old"
+    yname="Memory Old vs New [MiB]"
 ):
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
 
         # data = data.loc[data["Analysis"] == "Taint"]
+        # markers = ['X', '^', (5, 1)]
 
         ax = sns.scatterplot(
             data=data,
@@ -586,9 +649,16 @@ class PhasarIterIDEMemSpeedupScatterPlot(
             # y = "New",
             hue="Target",
             style="JF",
+            linewidth=0,
+            #s=30,
+            #markers=markers,
+            alpha=0.5,
         )
 
         ax.axline(xy1=(0, 0), slope=1)
+
+        ax.set_ylabel("Old Memory [MiB]")
+        ax.set_xlabel("New Memory [MiB]")
         # ax.set_yscale('log')
 
         return ax
@@ -1034,4 +1104,21 @@ class CAIGViolinPlotGenerator(
             PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
             PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
             PhasarIterIDEMemSavingsGCPlot(self.plot_config, **self.plot_kwargs),
+        ]
+
+
+class CAIGScatterPlotGenerator(
+    PlotGenerator, generator_name="phasar-iter-ide-scatter", options=[]
+):
+    """Generates a violin plot showing the distribution of interacting authors
+    for each case study."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            PhasarIterIDESpeedupScatterPlot(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDEMemSpeedupScatterPlot(
+                self.plot_config, **self.plot_kwargs
+            ),
         ]

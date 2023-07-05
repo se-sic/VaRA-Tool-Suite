@@ -244,15 +244,49 @@ class TimeReportAggregate(
     """Context Manager for parsing multiple time reports stored inside a zip
     file."""
 
+    _num_timeouts: int = 0
+    _num_oom: int = 0
+
+    def _needs_skip_file(self, file: Path) -> bool:
+        if (file.suffix in ['.oom', '.timeout', '.err']):
+            return True
+        return file.with_suffix('.oom').exists() or file.with_suffix(
+            '.timeout'
+        ).exists() or file.with_suffix('.err').exists()
+
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReport)
         self._measurements_wall_clock_time = [
-            report.wall_clock_time.total_seconds() for report in self.reports()
+            report.wall_clock_time.total_seconds()
+            for report in self.reports()
+            if not self._needs_skip_file(Path(report.filename.filename))
         ]
         self._measurements_ctx_switches = [
             report.voluntary_ctx_switches + report.involuntary_ctx_switches
             for report in self.reports()
+            if not self._needs_skip_file(Path(report.filename.filename))
         ]
+        self._max_resident_sizes = [
+            # TODO: Clamp to max
+            report.max_res_size
+            for report in self.reports()
+            if not self._needs_skip_file(Path(report.filename.filename))
+        ]
+        MEMORY_LIMIT = 250 * 2**20  # 250GiB in kilobytes
+        for report in self.reports():
+            if Path(report.filename.filename).suffix == '.oom':
+                self._max_resident_sizes.append(MEMORY_LIMIT)
+                self._num_oom += 1
+            if Path(report.filename.filename).suffix == '.timeout':
+                self._num_timeouts += 1
+
+    @property
+    def num_timeouts(self) -> int:
+        return self._num_timeouts
+
+    @property
+    def num_out_of_memory(self) -> int:
+        return self._num_oom
 
     @property
     def measurements_wall_clock_time(self) -> tp.List[float]:
@@ -266,7 +300,7 @@ class TimeReportAggregate(
 
     @property
     def max_resident_sizes(self) -> tp.List[int]:
-        return [report.max_res_size for report in self.reports()]
+        return self._max_resident_sizes
 
     @property
     def summary(self) -> str:

@@ -8,6 +8,35 @@ from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.report import BaseReport
 
 
+def flatten_dict(reports: dict, trn) -> dict:
+
+    def aggregate_into(into: dict, src: dict):
+        # print("src: ", src)
+        for k, v in src.items():
+            if isinstance(v, dict):
+                tmp = dict()
+                aggregate_into(tmp, v)
+                into[k] = tmp
+            else:
+                into[k] = trn(v)
+
+    ret = dict()
+    aggregate_into(ret, reports)
+    return ret
+
+
+def merge_dict(dest: dict, src: dict, join):
+    for k, v in src.items():
+        if isinstance(v, dict):
+            tmp = dest[k] if k in dest else dict()
+            merge_dict(tmp, v, join)
+            dest[k] = tmp
+        elif k in dest:
+            dest[k] = join(dest[k], v)
+        else:
+            dest[k] = v
+
+
 class PhasarBCStats():
 
     def __init__(self, path: Path) -> None:
@@ -318,13 +347,22 @@ class PhasarIterIDEStatsReport(
             shutil.unpack_archive(path, tmpdir)
 
             for file in Path(tmpdir).iterdir():
-                if file.suffix in (
-                    ".timeout",
-                    ".oom",
-                    ".err",
-                ):
-                    print(f"Skip errorneous file {file}")
-                    continue
+                # if file.suffix in (
+                #     ".timeout",
+                #     ".oom",
+                #     ".err",
+                # ):
+                #     print(f"Skip metadata file {file}")
+                #     continue
+                # if(file.with_suffix(".timeout").exists()):
+                #     print(f"Skip file {file} because of timeout")
+                #     continue
+                # if(file.with_suffix(".oom").exists()):
+                #     print(f"Skip file {file} because of out-of-memory")
+                #     continue
+                # if(file.with_suffix(".err").exists()):
+                #     print(f"Skip file {file} because of error")
+                #     continue
 
                 if file.name.startswith("phasar_bc_stats"):
                     self._bc_stats = PhasarBCStats(file)
@@ -729,3 +767,84 @@ class PhasarIterIDEStatsReport(
     @property
     def solver_stats_lca_jf2(self) -> tp.Optional[PhasarIterIDESolverStats]:
         return self._solver_stats_lca_jf2
+
+    def time_reports_as_dict(self) -> dict:
+        ret = {
+            "old": {},
+            "new": {
+                "taint": {},
+                "typestate": {},
+                "lca": {},
+                "iia": {}
+            }
+        }
+        # OLD
+        if self._old_taint is not None:
+            ret["old"]["taint"] = self._old_taint
+        if self._old_typestate is not None:
+            ret["old"]["typestate"] = self._old_typestate
+        if self._old_lca is not None:
+            ret["old"]["lca"] = self._old_lca
+        if self._old_iia is not None:
+            ret["old"]["iia"] = self._old_iia
+
+        # NEW regular
+        if self._new_taint_stack is not None:
+            ret["new"]["taint"]["JF2"] = self._new_taint_stack
+        if self._new_taint_jf1 is not None:
+            ret["new"]["taint"]["JF1"] = self._new_taint_jf1
+        if self._new_taint_jf3 is not None:
+            ret["new"]["taint"]["JF3"] = self._new_taint_jf3
+
+        if self._new_typestate_stack is not None:
+            ret["new"]["typestate"]["JF2"] = self._new_typestate_stack
+        if self._new_typestate_jf1 is not None:
+            ret["new"]["typestate"]["JF1"] = self._new_typestate_jf1
+        if self._new_typestate_jf3 is not None:
+            ret["new"]["typestate"]["JF3"] = self._new_typestate_jf3
+
+        if self._new_lca_stack is not None:
+            ret["new"]["lca"]["JF2"] = self._new_lca_stack
+        if self._new_lca_jf1 is not None:
+            ret["new"]["lca"]["JF1"] = self._new_lca_jf1
+        if self._new_lca_jf3 is not None:
+            ret["new"]["lca"]["JF3"] = self._new_lca_jf3
+
+        if self._new_iia_stack is not None:
+            ret["new"]["iia"]["JF2"] = self._new_iia_stack
+        if self._new_iia_jf1 is not None:
+            ret["new"]["iia"]["JF1"] = self._new_iia_jf1
+        if self._new_iia_jf3 is not None:
+            ret["new"]["iia"]["JF3"] = self._new_iia_jf3
+
+        # NEW GC
+        if self._new_taint_gc is not None:
+            ret["new"]["taint"]["JF2GC"] = self._new_taint_gc
+        if self._new_taint_gc_jf1 is not None:
+            ret["new"]["taint"]["JF1GC"] = self._new_taint_gc_jf1
+
+        if self._new_typestate_gc is not None:
+            ret["new"]["typestate"]["JF2GC"] = self._new_typestate_gc
+        if self._new_typestate_gc_jf1 is not None:
+            ret["new"]["typestate"]["JF1GC"] = self._new_typestate_gc_jf1
+
+        if self._new_lca_gc is not None:
+            ret["new"]["lca"]["JF2GC"] = self._new_lca_gc
+        if self._new_lca_gc_jf1 is not None:
+            ret["new"]["lca"]["JF1GC"] = self._new_lca_gc_jf1
+
+        # TODO: Iteration orders (queue, ...)
+
+        return ret
+
+    def aggregate_timeouts(self) -> dict:
+        reports = self.time_reports_as_dict()
+
+        ret = flatten_dict(reports, lambda x: x.num_timeouts)
+        return ret
+
+    def aggregate_ooms(self) -> dict:
+        reports = self.time_reports_as_dict()
+
+        ret = flatten_dict(reports, lambda x: x.num_out_of_memory)
+        return ret

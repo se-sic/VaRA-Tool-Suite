@@ -86,6 +86,9 @@ class WorklistKind(Enum):
         return f"{self.value}"
 
 
+PHASAR_TIMEOUT = '4h'
+
+
 def _get_enabled_analyses() -> tp.List[AnalysisType]:
     """Allows overriding of analyses run by an experiment, this should only be
     used for testing purposes, as the experiment will not generate all the
@@ -108,7 +111,7 @@ def _get_enabled_worklist_kinds() -> tp.List[WorklistKind]:
 
 def _run_phasar_analysis(phasar_cmd, result_file) -> actions.StepResult:
     run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
-    # run_cmd = timeout['-v', '5h', run_cmd]
+    run_cmd = timeout['-v', PHASAR_TIMEOUT, run_cmd]
 
     (ret_code, stdout, stderr) = run_cmd.run(retcode=None)
 
@@ -175,7 +178,7 @@ class IterIDETimeOld(actions.ProjectStep):  # type: ignore
         return _run_phasar_analysis(phasar_cmd, result_file)
 
         # run_cmd = time['-v', '-o', f'{result_file}', phasar_cmd]
-        # run_cmd = timeout['5h', run_cmd]
+        # run_cmd = timeout[PHASAR_TIMEOUT, run_cmd]
 
         # (ret_code, stdout, stderr) = run_cmd.run(retcode=None)
 
@@ -544,6 +547,7 @@ class IterIDECompareAnalysisResults(actions.ProjectStep):  # type: ignore
         ]
 
         phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
+        phasar_cmd = timeout['-v', PHASAR_TIMEOUT, phasar_cmd]
 
         result_file = tmp_dir / f"cmp_{self.__analysis_type}.txt"
 
@@ -605,9 +609,12 @@ class IterIDESolverStats(actions.ProjectStep):  # type: ignore
         phasar_cmd_jf2 = wrap_unlimit_stack_size(
             iteridebenchmark[phasar_params_jf2]
         )
+        phasar_cmd_jf2 = timeout['-v', PHASAR_TIMEOUT, phasar_cmd_jf2]
+
         phasar_cmd_jf1 = wrap_unlimit_stack_size(
             iteridebenchmark[phasar_params_jf1]
         )
+        phasar_cmd_jf1 = timeout['-v', PHASAR_TIMEOUT, phasar_cmd_jf1]
 
         result_file_jf2 = tmp_dir / f"stats_{self.__analysis_type}_jf2.txt"
         result_file_jf1 = tmp_dir / f"stats_{self.__analysis_type}_jf1.txt"
@@ -875,7 +882,7 @@ class IDELinearConstantAnalysisExperiment(
             )
         )
 
-        reps = range(0, 3)
+        reps = range(0, 1)
 
         analysis_actions.append(
             ZippedExperimentSteps(
