@@ -25,6 +25,30 @@ from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
+def _do_feature_perf_cs_collection_compile(
+    project: VProject, cmake_flag: str
+) -> None:
+    """Base class that implements common project functionality."""
+    feature_perf_source = local.path(project.source_of(project.primary_source))
+
+    cc_compiler = bb.compiler.cc(project)
+    cxx_compiler = bb.compiler.cxx(project)
+
+    mkdir("-p", feature_perf_source / "build")
+
+    init_all_submodules(Path(feature_perf_source))
+    update_all_submodules(Path(feature_perf_source))
+
+    with local.cwd(feature_perf_source / "build"):
+        with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
+
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    with local.cwd(feature_perf_source):
+        verify_binaries(project)
+
+
 class FeaturePerfCSCollection(VProject):
     """Test project for feature performance case studies."""
 
@@ -122,59 +146,10 @@ class FeaturePerfCSCollection(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        feature_perf_source = local.path(self.source_of(self.primary_source))
-
-        cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
-
-        mkdir("-p", feature_perf_source / "build")
-
-        init_all_submodules(Path(feature_perf_source))
-        update_all_submodules(Path(feature_perf_source))
-
-        with local.cwd(feature_perf_source / "build"):
-            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)(
-                    "..", "-G", "Unix Makefiles", "-DFPCSC_ENABLE_SRC=ON"
-                )
-
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
-        with local.cwd(feature_perf_source):
-            verify_binaries(self)
+        _do_feature_perf_cs_collection_compile(self, "FPCSC_ENABLE_SRC")
 
 
-class FPCSProjectBase():
-    """Base class that implements common project functionality."""
-    # TODO: make function if not other shared state exists
-
-    @staticmethod
-    def do_compile(project: VProject, cmake_flag: str) -> None:
-        """Compile the project."""
-        feature_perf_source = local.path(
-            project.source_of(project.primary_source)
-        )
-
-        cc_compiler = bb.compiler.cc(project)
-        cxx_compiler = bb.compiler.cxx(project)
-
-        mkdir("-p", feature_perf_source / "build")
-
-        init_all_submodules(Path(feature_perf_source))
-        update_all_submodules(Path(feature_perf_source))
-
-        with local.cwd(feature_perf_source / "build"):
-            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake
-                        )("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
-
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
-        with local.cwd(feature_perf_source):
-            verify_binaries(project)
-
-
-class SynthSAFieldSensitivity(VProject, FPCSProjectBase):
+class SynthSAFieldSensitivity(VProject):
     """Synthetic case-study project for testing field sensitivity."""
 
     NAME = 'SynthSAFieldSensitivity'
@@ -227,12 +202,12 @@ class SynthSAFieldSensitivity(VProject, FPCSProjectBase):
 
     def compile(self) -> None:
         """Compile the project."""
-        FPCSProjectBase.do_compile(
+        _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
         )
 
 
-class SynthSAFlowSensitivity(VProject, FPCSProjectBase):
+class SynthSAFlowSensitivity(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
     NAME = 'SynthSAFlowSensitivity'
@@ -285,12 +260,12 @@ class SynthSAFlowSensitivity(VProject, FPCSProjectBase):
 
     def compile(self) -> None:
         """Compile the project."""
-        FPCSProjectBase.do_compile(
+        _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAFLOWSENSITIVITY"
         )
 
 
-class SynthSAContextSensitivity(VProject, FPCSProjectBase):
+class SynthSAContextSensitivity(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
     NAME = 'SynthSAContextSensitivity'
@@ -346,12 +321,12 @@ class SynthSAContextSensitivity(VProject, FPCSProjectBase):
 
     def compile(self) -> None:
         """Compile the project."""
-        FPCSProjectBase.do_compile(
+        _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSACONTEXTSENSITIVITY"
         )
 
 
-class SynthSAInterProcedural(VProject, FPCSProjectBase):
+class SynthSAInterProcedural(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
     NAME = 'SynthSAInterProcedural'
@@ -405,6 +380,6 @@ class SynthSAInterProcedural(VProject, FPCSProjectBase):
 
     def compile(self) -> None:
         """Compile the project."""
-        FPCSProjectBase.do_compile(
+        _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAINTERPROCEDURAL"
         )
