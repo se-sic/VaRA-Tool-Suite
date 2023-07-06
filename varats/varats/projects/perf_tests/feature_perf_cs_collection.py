@@ -1,5 +1,6 @@
 """Project file for the feature performance case study collection."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
@@ -19,6 +20,7 @@ from varats.project.project_util import (
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
+from varats.utils.git_commands import init_all_submodules, update_all_submodules
 from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
@@ -127,9 +129,14 @@ class FeaturePerfCSCollection(VProject):
 
         mkdir("-p", feature_perf_source / "build")
 
+        init_all_submodules(Path(feature_perf_source))
+        update_all_submodules(Path(feature_perf_source))
+
         with local.cwd(feature_perf_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", "..")
+                bb.watch(cmake)(
+                    "..", "-G", "Unix Makefiles", "-DFPCSC_ENABLE_SRC=ON"
+                )
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
