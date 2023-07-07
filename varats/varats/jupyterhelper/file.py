@@ -18,6 +18,7 @@ from varats.data.reports.szz_report import (
     SZZReport,
     PyDrillerSZZReport,
 )
+from varats.report.tef_report import TEFReport
 
 
 def load_commit_report(file_path: PathLikeTy) -> CommitReport:
@@ -113,3 +114,13 @@ def load_feature_analysis_report(file_path: PathLikeTy) -> \
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, FeatureAnalysisReport)
+
+
+def load_tef_report(file_path: PathLikeTy) -> TEFReport:
+    """
+    Load a FeatureAnalysisReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, TEFReport)

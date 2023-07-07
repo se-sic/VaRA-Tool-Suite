@@ -1,25 +1,110 @@
 """Module for the FeaturePerfPrecision table."""
 import abc
+import shutil
+import tempfile
 import typing as tp
+from pathlib import Path
 
 import pandas as pd
 
 import varats.experiments.vara.feature_perf_precision as fpp
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
+from varats.jupyterhelper.file import load_tef_report
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import BaseReport
-from varats.report.tef_report import TEFReport
+from varats.report.report import BaseReport, ReportFilepath
+from varats.report.tef_report import TEFReport, TraceEvent, TraceEventType
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 
 
+def get_interactions_from_fr_string(interactions: str) -> str:
+    """Convert the feature strings in a TEFReport from FR(x,y) to x*y, similar
+    to the format used by SPLConqueror."""
+    interactions = (
+        interactions.replace("FR", "").replace("(", "").replace(")", "")
+    )
+    interactions_list = interactions.split(",")
+    # Ignore interactions with base, but do not remove base if it's the only
+    # feature
+    if "Base" in interactions_list and len(interactions_list) > 1:
+        interactions_list.remove("Base")
+    # Features cannot interact with itself, so remove duplicastes
+    interactions_list = list(set(interactions_list))
+
+    interactions_str = "*".join(interactions_list)
+
+    return interactions_str
+
+
+def get_feature_performance_from_tef_report(
+    tef_report: TEFReport,
+) -> tp.Dict[str, int]:
+    """Extract feature performance from a TEFReport."""
+    open_events: tp.List[TraceEvent] = []
+
+    feature_performances: tp.Dict[str, int] = {}
+
+    for trace_event in tef_report.trace_events:
+        if trace_event.category == "Feature":
+            if (trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN):
+                open_events.append(trace_event)
+            elif (trace_event.event_type == TraceEventType.DURATION_EVENT_END):
+                opening_event = open_events.pop()
+
+                end_timestamp = trace_event.timestamp
+                begin_timestamp = opening_event.timestamp
+
+                # Subtract feature duration from parent duration such that
+                # it is not counted twice, similar to behavior in
+                # Performance-Influence models.
+                interactions = [event.name for event in open_events]
+                if open_events:
+                    # Parent is equivalent to interaction of all open
+                    # events.
+                    interaction_string = get_interactions_from_fr_string(
+                        ",".join(interactions)
+                    )
+                    if interaction_string in feature_performances:
+                        feature_performances[interaction_string] -= (
+                            end_timestamp - begin_timestamp
+                        )
+                    else:
+                        feature_performances[interaction_string] = -(
+                            end_timestamp - begin_timestamp
+                        )
+
+                interaction_string = get_interactions_from_fr_string(
+                    ",".join(interactions + [trace_event.name])
+                )
+
+                current_performance = feature_performances.get(
+                    interaction_string, 0
+                )
+                feature_performances[interaction_string] = (
+                    current_performance + end_timestamp - begin_timestamp
+                )
+
+    return feature_performances
+
+
 def get_regressing_config_ids_GT(case_study: CaseStudy) -> tp.Dict[int, bool]:
-    #if case_study.project_name == "SynthSAContextSensitivity":
+    if case_study.project_name == "SynthSAContextSensitivity":
+        return {
+            0: True,
+            1: False,
+            2: False,
+            3: True,
+            4: False,
+            5: False,
+            6: False,
+            7: False
+        }
+
     return {
         0: True,
         1: True,
@@ -98,6 +183,9 @@ class ClassificationResults:
         return self.PN - self.TN
 
     def precision(self) -> float:
+        if self.PP == 0:
+            return 0.0
+
         return self.TP / self.PP
 
     def recall(self) -> float:
@@ -138,23 +226,77 @@ class Profiler():
         """Report type used to load this profilers information."""
         return self.__report_type
 
+    @abc.abstractmethod
+    def is_regression(self, report_path: ReportFilepath) -> bool:
+        """Checks if there was a regression between the old an new data."""
+
 
 class VXray(Profiler):
 
     def __init__(self) -> None:
-        # TODO: fix with actual
         super().__init__("WXray", fpp.TEFProfileRunner, TEFReport)
+
+    def is_regression(self, report_path: ReportFilepath) -> bool:
+        """Checks if there was a regression between the old an new data."""
+        is_regression = False
+
+        with tempfile.TemporaryDirectory() as tmp_result_dir:
+            shutil.unpack_archive(
+                report_path.full_path(), extract_dir=tmp_result_dir
+            )
+            old_report = None
+            new_report = None
+            for report in Path(tmp_result_dir).iterdir():
+                # print(f"Zipped: {report=}")
+                if report.name.endswith("old.json"):
+                    old_report = load_tef_report(report)
+                else:
+                    new_report = load_tef_report(report)
+
+            old_features = get_feature_performance_from_tef_report(old_report)
+            new_features = get_feature_performance_from_tef_report(new_report)
+
+            # TODO: correctly implement how to identify a regression
+            for feature, old_value in old_features.items():
+                if feature in new_features:
+                    new_value = new_features[feature]
+                    if abs(new_value - old_value) > 10000:
+                        print(f"Found regression for feature {feature}.")
+                        is_regression = True
+                else:
+                    print(f"Could not find feature {feature} in new trace.")
+                    # TODO: how to handle this?
+                    is_regression = True
+
+        return is_regression
 
 
 def compute_profiler_predictions(
-    profiler: Profiler, project_name: str, case_study: CaseStudy
+    profiler: Profiler, project_name: str, case_study: CaseStudy,
+    config_ids: tp.List[int]
 ) -> tp.Dict[int, bool]:
-    report_files = get_processed_revisions_files(
-        project_name, profiler.experiment, profiler.report_type,
-        get_case_study_file_name_filter(case_study)
-    )
 
-    return {}
+    result_dict: tp.Dict[int, bool] = {}
+    for config_id in config_ids:
+        report_files = get_processed_revisions_files(
+            project_name,
+            profiler.experiment,
+            profiler.report_type,
+            get_case_study_file_name_filter(case_study),
+            config_id=config_id
+        )
+        # print(f"{config_id=} = {report_files=}")
+
+        if len(report_files) > 1:
+            raise AssertionError("Should only be one")
+        if not report_files:
+            # TODO: not sure how to handle this
+            continue
+
+        result_dict[config_id] = profiler.is_regression(report_files[0])
+
+    print(f"{result_dict=}")
+    return result_dict
 
 
 class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
@@ -186,19 +328,22 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
 
             for profiler in profilers:
                 # multiple patch cycles
-                predicted = compute_profiler_predictions(
-                    profiler, project_name, case_study
-                )
-                predicted = {
-                    0: True,
-                    1: True,
-                    2: False,
-                    3: True,
-                    4: False,
-                    5: True,
-                    6: True,
-                    7: False
-                }
+                if case_study.project_name == "SynthSAContextSensitivity":
+                    predicted = compute_profiler_predictions(
+                        profiler, project_name, case_study,
+                        case_study.get_config_ids_for_revision(rev)
+                    )
+                else:
+                    predicted = {
+                        0: True,
+                        1: True,
+                        2: False,
+                        3: True,
+                        4: False,
+                        5: True,
+                        6: True,
+                        7: False
+                    }
 
                 results = ClassificationResults(
                     map_to_positive_config_ids(ground_truth),

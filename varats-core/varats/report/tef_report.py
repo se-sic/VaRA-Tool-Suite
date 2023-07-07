@@ -169,6 +169,10 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         self.__trace_events: tp.List[TraceEvent] = trace_events
 
 
+def extract_feature_data():
+    pass
+
+
 class TEFReportAggregate(
     ReportAggregate[TEFReport],
     shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
