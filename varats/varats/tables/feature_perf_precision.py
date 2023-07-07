@@ -4,6 +4,7 @@ import typing as tp
 
 import pandas as pd
 
+import varats.experiments.vara.feature_perf_precision as fpp
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
 from varats.paper.case_study import CaseStudy
@@ -142,7 +143,7 @@ class VXray(Profiler):
 
     def __init__(self) -> None:
         # TODO: fix with actual
-        super().__init__("WXray", FeaturePerfRunner, TEFReport)
+        super().__init__("WXray", fpp.TEFProfileRunner, TEFReport)
 
 
 def compute_profiler_predictions(
@@ -184,6 +185,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
             }
 
             for profiler in profilers:
+                # multiple patch cycles
                 predicted = compute_profiler_predictions(
                     profiler, project_name, case_study
                 )
