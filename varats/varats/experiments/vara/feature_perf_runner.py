@@ -42,7 +42,7 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         project.cflags += self.get_vara_feature_cflags(project)
 
         project.cflags += self.get_vara_tracing_cflags(
-            instr_type, project=project
+            instr_type, project=project, instruction_threshold=0
         )
 
         project.ldflags += self.get_vara_tracing_ldflags()

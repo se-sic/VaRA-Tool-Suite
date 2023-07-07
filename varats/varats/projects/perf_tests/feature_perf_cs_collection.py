@@ -276,7 +276,7 @@ class SynthSAContextSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAContextSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
@@ -310,7 +310,7 @@ class SynthSAContextSensitivity(VProject):
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
             only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
+                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
             )
         )
 

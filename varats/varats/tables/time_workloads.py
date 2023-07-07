@@ -95,7 +95,11 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
             kwargs["column_format"] = "llr|rr|r|r"
 
         return dataframe_to_table(
-            df, table_format, wrap_table, wrap_landscape=True, **kwargs
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
         )
 
 
