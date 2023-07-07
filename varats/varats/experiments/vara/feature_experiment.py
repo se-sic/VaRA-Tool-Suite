@@ -231,7 +231,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: Run instrumentation verifier", indent * " "
+            f"* {self.project.name}: Run instrumented code", indent * " "
         )
 
     def run_traced_code(self) -> StepResult:
