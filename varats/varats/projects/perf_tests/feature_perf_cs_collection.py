@@ -28,7 +28,7 @@ from varats.utils.settings import bb_cfg
 def _do_feature_perf_cs_collection_compile(
     project: VProject, cmake_flag: str
 ) -> None:
-    """Base class that implements common project functionality."""
+    """Common compile function for FeaturePerfCSCollection projects."""
     feature_perf_source = local.path(project.source_of(project.primary_source))
 
     cc_compiler = bb.compiler.cc(project)
@@ -160,7 +160,7 @@ class SynthSAFieldSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFieldSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFieldSensitivity")
@@ -188,11 +188,7 @@ class SynthSAFieldSensitivity(VProject):
         binary_map.specify_binary(
             "build/bin/FieldSense",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
-            )
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
@@ -218,7 +214,7 @@ class SynthSAFlowSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFlowSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFlowSensitivity")
@@ -246,11 +242,7 @@ class SynthSAFlowSensitivity(VProject):
         binary_map.specify_binary(
             "build/bin/FlowSense",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
-            )
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
@@ -276,7 +268,7 @@ class SynthSAContextSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAContextSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
@@ -307,11 +299,7 @@ class SynthSAContextSensitivity(VProject):
         binary_map.specify_binary(
             "build/bin/ContextSense",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
-            )
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
@@ -337,7 +325,7 @@ class SynthSAInterProcedural(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAInterProcedural",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAInterProcedural")
@@ -366,11 +354,7 @@ class SynthSAInterProcedural(VProject):
         binary_map.specify_binary(
             "build/bin/InterProcedural",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
-            )
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
