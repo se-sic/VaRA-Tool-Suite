@@ -3,8 +3,10 @@
 import abc
 import logging
 import typing as tp
+from functools import reduce
 from pathlib import Path
 
+import varats.paper.case_study
 from varats.table.tables import TableFormat, TableConfig
 
 if tp.TYPE_CHECKING:
@@ -147,8 +149,13 @@ class Table:
         """
         table_ident = ''
         if 'case_study' in self.table_kwargs:
-            case_study: 'CaseStudy' = self.table_kwargs['case_study']
-            table_ident = f"{case_study.project_name}_{case_study.version}_"
+            case_study = self.table_kwargs['case_study']
+            if isinstance(case_study, varats.paper.case_study.CaseStudy):
+                table_ident = f"{case_study.project_name}_{case_study.version}_"
+            else:
+                table_ident = reduce(
+                    lambda x, y: f'{x}{y.project_name}_', case_study, ''
+                )
         elif 'project' in self.table_kwargs:
             table_ident = f"{self.table_kwargs['project']}_"
 

@@ -24,7 +24,9 @@ from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
-from varats.ts_utils.click_param_types import create_experiment_type_choice
+from varats.ts_utils.click_param_types import (
+    create_multi_experiment_type_choice,
+)
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
@@ -91,7 +93,7 @@ def __validate_project_parameters(
 @click.option(
     "-E",
     "--experiment",
-    type=create_experiment_type_choice(),
+    type=create_multi_experiment_type_choice(),
     required=True,
     help="The experiment to run."
 )
@@ -102,7 +104,7 @@ def main(
     slurm: bool,
     submit: bool,
     container: bool,
-    experiment: tp.Type['VersionExperiment'],
+    experiment: tp.List[tp.Type['VersionExperiment']],
     projects: tp.List[str],
     pretend: bool,
 ) -> None:
@@ -157,7 +159,8 @@ def main(
 
     bb_args = list(
         itertools.chain(
-            bb_command_args, ["-E", experiment.NAME], projects, bb_extra_args
+            bb_command_args, *[["-E", e.NAME] for e in experiment], projects,
+            bb_extra_args
         )
     )
 
@@ -202,6 +205,7 @@ def __prepare_slurm_for_container() -> None:
     template_path = Path(
         str(vara_cfg()["benchbuild_root"])
     ) / "slurm_container.sh.inc"
+    bb_cfg()["jobs"] = 0
     bb_cfg()["slurm"]["template"] = str(template_path)
     bb_cfg()["slurm"]["node_dir"] = node_dir
     bb_cfg()["slurm"]["container_root"] = f"{node_dir}/containers/lib"
