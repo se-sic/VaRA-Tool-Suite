@@ -82,6 +82,14 @@ class MPRTRA(
         super().__init__(path, TimeReportAggregate)
 
 
+class MPRTEFA(
+    MultiPatchReport[TEFReportAggregate], shorthand="MPRTEFA", file_type=".zip"
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, TEFReportAggregate)
+
+
 class ReCompile(ProjectStep):
     NAME = "RECOMPILE"
     DESCRIPTION = "Recompile the project"
@@ -144,12 +152,14 @@ class RunTEFTracedWorkloads(ProjectStep):  # type: ignore
         project: VProject,
         binary: ProjectBinaryWrapper,
         result_post_fix: str = "",
-        report_file_ending: str = "json"
+        report_file_ending: str = "json",
+        reps=2
     ):
         super().__init__(project=project)
         self.__binary = binary
         self.__report_file_ending = report_file_ending
         self.__result_pre_fix = result_post_fix
+        self.__reps = reps
 
     def __call__(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -162,25 +172,32 @@ class RunTEFTracedWorkloads(ProjectStep):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
-            ):
-                local_tracefile_path = Path(tmp_dir) / (
-                    f"{self.__result_pre_fix}_trace_"
-                    f"{prj_command.command.label}_.{self.__report_file_ending}"
-                )
-                with local.env(VARA_TRACE_FILE=local_tracefile_path):
-                    pb_cmd = prj_command.command.as_plumbum(
-                        project=self.project
-                    )
-                    print(f"Running example {prj_command.command.label}")
-
-                    extra_options = get_extra_config_options(self.project)
-                    with cleanup(prj_command):
-                        pb_cmd(
-                            *extra_options,
-                            retcode=self.__binary.valid_exit_codes
+            zip_tmp_dir = tmp_dir / f"{self.__result_pre_fix}_rep_measures"
+            with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
+                for rep in range(0, self.__reps):
+                    for prj_command in workload_commands(
+                        self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        local_tracefile_path = Path(reps_tmp_dir) / (
+                            f"trace_{prj_command.command.label}_{rep}_"
+                            f".{self.__report_file_ending}"
                         )
+                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
+
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+                            with cleanup(prj_command):
+                                pb_cmd(
+                                    *extra_options,
+                                    retcode=self.__binary.valid_exit_codes
+                                )
 
         return StepResult.OK
 
@@ -190,7 +207,7 @@ class TEFProfileRunner(FeatureExperiment, shorthand="TEFp"):
 
     NAME = "RunTEFProfiler"
 
-    REPORT_SPEC = ReportSpecification(TEFReport)
+    REPORT_SPEC = ReportSpecification(MPRTEFA)
 
     def actions_for_project(
         self, project: VProject
@@ -225,7 +242,7 @@ class TEFProfileRunner(FeatureExperiment, shorthand="TEFp"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, TEFReport
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         binary = project.binaries[0]

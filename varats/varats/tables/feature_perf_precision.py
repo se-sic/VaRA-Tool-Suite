@@ -3,6 +3,7 @@ import abc
 import shutil
 import tempfile
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +19,12 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.report import BaseReport, ReportFilepath
-from varats.report.tef_report import TEFReport, TraceEvent, TraceEventType
+from varats.report.tef_report import (
+    TEFReport,
+    TraceEvent,
+    TraceEventType,
+    TEFReportAggregate,
+)
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -259,46 +265,38 @@ class VXray(Profiler):
     """Profiler mapper implementation for the vara tef tracer."""
 
     def __init__(self) -> None:
-        super().__init__("WXray", fpp.TEFProfileRunner, TEFReport)
+        super().__init__("WXray", fpp.TEFProfileRunner, fpp.MPRTEFA)
 
     def is_regression(self, report_path: ReportFilepath) -> bool:
         """Checks if there was a regression between the old an new data."""
         is_regression = False
 
-        #        with tempfile.TemporaryDirectory() as tmp_result_dir:
-        #            shutil.unpack_archive(
-        #                report_path.full_path(), extract_dir=tmp_result_dir
-        #            )
-        #
-        # old_report = None
-        # new_report = None
-        # for report in Path(tmp_result_dir).iterdir():
-        #     # print(f"Zipped: {report=}")
-        #     if report.name.endswith("old.json"):
-        #         old_report = load_tef_report(report)
-        #     else:
-        #         new_report = load_tef_report(report)
-
-        # if not old_report or not new_report:
-        #     raise AssertionError(
-        #         "Reports where missing in the file {report_path=}"
-        #     )
-
-        multi_report = fpp.MultiPatchReport(report_path.full_path(), TEFReport)
-
-        old_features = get_feature_performance_from_tef_report(
-            multi_report.get_old_report()
-        )
-        new_features = get_feature_performance_from_tef_report(
-            multi_report.get_new_report()
+        multi_report = fpp.MultiPatchReport(
+            report_path.full_path(), TEFReportAggregate
         )
 
-        # TODO: correctly implement how to identify a regression
-        for feature, old_value in old_features.items():
-            if feature in new_features:
-                new_value = new_features[feature]
-                if abs(new_value - old_value) > 10000:
-                    print(f"Found regression for feature {feature}.")
+        old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for old_tef_report in multi_report.get_old_report().reports():
+            pim = get_feature_performance_from_tef_report(old_tef_report)
+            for feature, value in pim.items():
+                old_acc_pim[feature].append(value)
+
+        new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for new_tef_report in multi_report.get_new_report().reports():
+            pim = get_feature_performance_from_tef_report(new_tef_report)
+            for feature, value in pim.items():
+                new_acc_pim[feature].append(value)
+
+        for feature, old_values in old_acc_pim.items():
+            if feature in new_acc_pim:
+                new_values = new_acc_pim[feature]
+                ttest_res = ttest_ind(old_values, new_values)
+
+                # TODO: check, maybe we need a "very small value cut off"
+                if ttest_res.pvalue < 0.05:
+                    print(
+                        f"{self.name} found regression for feature {feature}."
+                    )
                     is_regression = True
             else:
                 print(f"Could not find feature {feature} in new trace.")
@@ -335,7 +333,6 @@ def compute_profiler_predictions(
 
         result_dict[config_id] = profiler.is_regression(report_files[0])
 
-    print(f"{result_dict=}")
     return result_dict
 
 
