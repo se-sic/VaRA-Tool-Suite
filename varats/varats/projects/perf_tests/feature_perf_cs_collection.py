@@ -28,7 +28,7 @@ from varats.utils.settings import bb_cfg
 def _do_feature_perf_cs_collection_compile(
     project: VProject, cmake_flag: str
 ) -> None:
-    """Base class that implements common project functionality."""
+    """Common compile function for FeaturePerfCSCollection projects."""
     feature_perf_source = local.path(project.source_of(project.primary_source))
 
     cc_compiler = bb.compiler.cc(project)
