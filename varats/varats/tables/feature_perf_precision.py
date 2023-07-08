@@ -5,7 +5,9 @@ import tempfile
 import typing as tp
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
 from varats.experiments.vara.feature_experiment import FeatureExperiment
@@ -14,12 +16,14 @@ from varats.jupyterhelper.file import load_tef_report
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.report import BaseReport, ReportFilepath
 from varats.report.tef_report import TEFReport, TraceEvent, TraceEventType
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.utils.git_util import FullCommitHash
 
 
 def get_interactions_from_fr_string(interactions: str) -> str:
@@ -92,32 +96,51 @@ def get_feature_performance_from_tef_report(
     return feature_performances
 
 
-def get_regressing_config_ids_GT(case_study: CaseStudy) -> tp.Dict[int, bool]:
-    if case_study.project_name == "SynthSAContextSensitivity":
-        return {
-            0: True,
-            1: False,
-            2: False,
-            3: True,
-            4: False,
-            5: False,
-            6: False,
-            7: False
-        }
+def get_regressing_config_ids_gt(
+    project_name: str, case_study: CaseStudy, rev: FullCommitHash
+) -> tp.Optional[tp.Dict[int, bool]]:
+    """Computes the baseline data, i.e., the config ids where a regression was
+    identified."""
 
-    return {
-        0: True,
-        1: True,
-        2: True,
-        3: True,
-        4: False,
-        5: False,
-        6: False,
-        7: False
-    }
+    gt: tp.Dict[int, bool] = {}
 
-    # raise NotImplementedError()
-    return {}
+    for config_id in case_study.get_config_ids_for_revision(rev):
+        report_files = get_processed_revisions_files(
+            project_name,
+            fpp.BlackBoxBaselineRunner,
+            fpp.MPRTRA,
+            get_case_study_file_name_filter(case_study),
+            config_id=config_id
+        )
+        if len(report_files) > 1:
+            raise AssertionError("Should only be one")
+        if not report_files:
+            print(
+                f"Could not find profiling data. {config_id=}, "
+                f"profiler=Baseline"
+            )
+            return None
+
+        time_reports = fpp.MPRTRA(report_files[0].full_path())
+
+        old_time = time_reports.get_old_report()
+        new_time = time_reports.get_new_report()
+
+        if np.mean(old_time.measurements_wall_clock_time
+                  ) == np.mean(new_time.measurements_wall_clock_time):
+            gt[config_id] = False
+        else:
+            # TODO: double check ttest handling
+            ttest_res = ttest_ind(
+                old_time.measurements_wall_clock_time,
+                new_time.measurements_wall_clock_time
+            )
+            if ttest_res.pvalue < 0.05:
+                gt[config_id] = True
+            else:
+                gt[config_id] = False
+
+    return gt
 
 
 def map_to_positive_config_ids(reg_dict: tp.Dict[int, bool]) -> tp.List[int]:
@@ -202,6 +225,7 @@ class ClassificationResults:
 
 
 class Profiler():
+    """Profiler interface to add different profilers to the evaluation."""
 
     def __init__(
         self, name: str, experiment: tp.Type[FeatureExperiment],
@@ -232,6 +256,7 @@ class Profiler():
 
 
 class VXray(Profiler):
+    """Profiler mapper implementation for the vara tef tracer."""
 
     def __init__(self) -> None:
         super().__init__("WXray", fpp.TEFProfileRunner, TEFReport)
@@ -240,33 +265,45 @@ class VXray(Profiler):
         """Checks if there was a regression between the old an new data."""
         is_regression = False
 
-        with tempfile.TemporaryDirectory() as tmp_result_dir:
-            shutil.unpack_archive(
-                report_path.full_path(), extract_dir=tmp_result_dir
-            )
-            old_report = None
-            new_report = None
-            for report in Path(tmp_result_dir).iterdir():
-                # print(f"Zipped: {report=}")
-                if report.name.endswith("old.json"):
-                    old_report = load_tef_report(report)
-                else:
-                    new_report = load_tef_report(report)
+        #        with tempfile.TemporaryDirectory() as tmp_result_dir:
+        #            shutil.unpack_archive(
+        #                report_path.full_path(), extract_dir=tmp_result_dir
+        #            )
+        #
+        # old_report = None
+        # new_report = None
+        # for report in Path(tmp_result_dir).iterdir():
+        #     # print(f"Zipped: {report=}")
+        #     if report.name.endswith("old.json"):
+        #         old_report = load_tef_report(report)
+        #     else:
+        #         new_report = load_tef_report(report)
 
-            old_features = get_feature_performance_from_tef_report(old_report)
-            new_features = get_feature_performance_from_tef_report(new_report)
+        # if not old_report or not new_report:
+        #     raise AssertionError(
+        #         "Reports where missing in the file {report_path=}"
+        #     )
 
-            # TODO: correctly implement how to identify a regression
-            for feature, old_value in old_features.items():
-                if feature in new_features:
-                    new_value = new_features[feature]
-                    if abs(new_value - old_value) > 10000:
-                        print(f"Found regression for feature {feature}.")
-                        is_regression = True
-                else:
-                    print(f"Could not find feature {feature} in new trace.")
-                    # TODO: how to handle this?
+        multi_report = fpp.MultiPatchReport(report_path.full_path(), TEFReport)
+
+        old_features = get_feature_performance_from_tef_report(
+            multi_report.get_old_report()
+        )
+        new_features = get_feature_performance_from_tef_report(
+            multi_report.get_new_report()
+        )
+
+        # TODO: correctly implement how to identify a regression
+        for feature, old_value in old_features.items():
+            if feature in new_features:
+                new_value = new_features[feature]
+                if abs(new_value - old_value) > 10000:
+                    print(f"Found regression for feature {feature}.")
                     is_regression = True
+            else:
+                print(f"Could not find feature {feature} in new trace.")
+                # TODO: how to handle this?
+                is_regression = True
 
         return is_regression
 
@@ -274,7 +311,8 @@ class VXray(Profiler):
 def compute_profiler_predictions(
     profiler: Profiler, project_name: str, case_study: CaseStudy,
     config_ids: tp.List[int]
-) -> tp.Dict[int, bool]:
+) -> tp.Optional[tp.Dict[int, bool]]:
+    """Computes the regression predictions for a given profiler."""
 
     result_dict: tp.Dict[int, bool] = {}
     for config_id in config_ids:
@@ -285,13 +323,15 @@ def compute_profiler_predictions(
             get_case_study_file_name_filter(case_study),
             config_id=config_id
         )
-        # print(f"{config_id=} = {report_files=}")
 
         if len(report_files) > 1:
             raise AssertionError("Should only be one")
         if not report_files:
-            # TODO: not sure how to handle this
-            continue
+            print(
+                f"Could not find profiling data. {config_id=}, "
+                f"profiler={profiler.name}"
+            )
+            return None
 
         result_dict[config_id] = profiler.is_regression(report_files[0])
 
@@ -315,7 +355,9 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
-            ground_truth = get_regressing_config_ids_GT(case_study)
+            ground_truth = get_regressing_config_ids_gt(
+                project_name, case_study, rev
+            )
 
             new_row = {
                 'CaseStudy':
@@ -324,37 +366,31 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
                     len(case_study.get_config_ids_for_revision(rev)),
                 'RegressedConfigs':
                     len(map_to_positive_config_ids(ground_truth))
+                    if ground_truth else np.nan
             }
 
             for profiler in profilers:
-                # multiple patch cycles
-                if case_study.project_name == "SynthSAContextSensitivity":
-                    predicted = compute_profiler_predictions(
-                        profiler, project_name, case_study,
-                        case_study.get_config_ids_for_revision(rev)
-                    )
-                else:
-                    predicted = {
-                        0: True,
-                        1: True,
-                        2: False,
-                        3: True,
-                        4: False,
-                        5: True,
-                        6: True,
-                        7: False
-                    }
-
-                results = ClassificationResults(
-                    map_to_positive_config_ids(ground_truth),
-                    map_to_negative_config_ids(ground_truth),
-                    map_to_positive_config_ids(predicted),
-                    map_to_negative_config_ids(predicted)
+                # TODO: multiple patch cycles
+                predicted = compute_profiler_predictions(
+                    profiler, project_name, case_study,
+                    case_study.get_config_ids_for_revision(rev)
                 )
-                new_row[f"{profiler.name}_precision"] = results.precision()
-                new_row[f"{profiler.name}_recall"] = results.recall()
-                new_row[f"{profiler.name}_baccuracy"
-                       ] = results.balanced_accuracy()
+
+                if ground_truth and predicted:
+                    results = ClassificationResults(
+                        map_to_positive_config_ids(ground_truth),
+                        map_to_negative_config_ids(ground_truth),
+                        map_to_positive_config_ids(predicted),
+                        map_to_negative_config_ids(predicted)
+                    )
+                    new_row[f"{profiler.name}_precision"] = results.precision()
+                    new_row[f"{profiler.name}_recall"] = results.recall()
+                    new_row[f"{profiler.name}_baccuracy"
+                           ] = results.balanced_accuracy()
+                else:
+                    new_row[f"{profiler.name}_precision"] = np.nan
+                    new_row[f"{profiler.name}_recall"] = np.nan
+                    new_row[f"{profiler.name}_baccuracy"] = np.nan
 
             table_rows.append(new_row)
             # df.append(new_row, ignore_index=True)
