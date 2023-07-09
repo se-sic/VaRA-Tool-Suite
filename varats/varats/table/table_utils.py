@@ -10,7 +10,10 @@ from varats.table.tables import TableFormat
 
 
 def wrap_table_in_latex_document(
-    table: str, landscape: bool = False, margin: float = 1.5
+    table: str,
+    landscape: bool = False,
+    margin: float = 1.5,
+    document_decorator: tp.Callable[[Document], None] = lambda _: None
 ) -> str:
     """
     Wraps a table inside a proper latex document.
@@ -39,10 +42,13 @@ def wrap_table_in_latex_document(
         Package("hyperref"),
         Package("longtable"),
         Package("multirow"),
-        Package("xcolor", options=["table"]),
+        Package("multicol"),
+        Package("xcolor", options=["table", "dvipsnames"]),
     ])
 
     doc.change_document_style("empty")
+
+    document_decorator(doc)
 
     # embed latex table inside document
     doc.append(NoEscape(table))
@@ -56,6 +62,8 @@ def dataframe_to_table(
     style: tp.Optional["pd.io.formats.style.Styler"] = None,
     wrap_table: bool = False,
     wrap_landscape: bool = False,
+    margin: float = 1.5,
+    document_decorator: tp.Callable[[Document], None] = lambda _: None,
     **kwargs: tp.Any
 ) -> str:
     """
@@ -70,6 +78,9 @@ def dataframe_to_table(
                     document (latex only)
         wrap_landscape: whether to use landscape mode to wrap the
                         table (latex only)
+        margin: margin around the table in cm
+        document_decorator: callable function to decorate the document with
+                            addition things (e.g., packages, macros, etc.)
         **kwargs: kwargs that get passed to pandas' conversion functions
                   (``DataFrame.to_latex`` or ``DataFrame.to_html``)
 
@@ -82,7 +93,12 @@ def dataframe_to_table(
     if table_format.is_latex():
         table = style.to_latex(**kwargs)
         if wrap_table:
-            table = wrap_table_in_latex_document(table, wrap_landscape)
+            table = wrap_table_in_latex_document(
+                table,
+                wrap_landscape,
+                margin=margin,
+                document_decorator=document_decorator
+            )
 
     elif table_format.is_html():
         table = style.to_html(**kwargs)
