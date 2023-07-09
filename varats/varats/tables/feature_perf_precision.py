@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from pylatex import Document, NoEscape, Package
 from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
@@ -363,7 +364,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
                     len(case_study.get_config_ids_for_revision(rev)),
                 'RegressedConfigs':
                     len(map_to_positive_config_ids(ground_truth))
-                    if ground_truth else np.nan
+                    if ground_truth else -1
             }
 
             for profiler in profilers:
@@ -394,17 +395,26 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
 
         df = pd.concat([df, pd.DataFrame(table_rows)])
         df.sort_values(["CaseStudy"], inplace=True)
-        df.set_index(
-            ["CaseStudy"],
-            inplace=True,
-        )
+        print(f"{df=}")
+        #df.set_index(
+        #    ["CaseStudy"],
+        #    inplace=True,
+        #)
+        # df = df.astype({'RegressedConfigs': 'int'})
+
+        symb_precision = "\\textsc{PPV}"
+        symb_recall = "\\textsc{TPR}"
+        symb_b_accuracy = "\\textsc{BA}"
+        symb_configs = "$\\mathbb{C}$"
+        symb_regressed_configs = "$\\mathbb{R}$"
 
         print(f"{df=}")
-        colum_setup = [('', 'Configs'), ('', 'RegressedConfigs')]
+        colum_setup = [(' ', 'CaseStudy'), ('', f'{symb_configs}'),
+                       ('', f'{symb_regressed_configs}')]
         for profiler in profilers:
-            colum_setup.append((profiler.name, 'Precision'))
-            colum_setup.append((profiler.name, 'Recall'))
-            colum_setup.append((profiler.name, 'BAcc'))
+            colum_setup.append((profiler.name, f'{symb_precision}'))
+            colum_setup.append((profiler.name, f'{symb_recall}'))
+            colum_setup.append((profiler.name, f'{symb_b_accuracy}'))
 
         print(f"{colum_setup=}")
         df.columns = pd.MultiIndex.from_tuples(colum_setup)
@@ -413,15 +423,32 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
 
         print(f"{df=}")
 
+        style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
-        # if table_format.is_latex():
-        #     kwargs["column_format"] = "llr|rr|r|r"
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            kwargs["column_format"] = "l|rr|rrr"
+            kwargs["multicol_align"] = "|c"
+            kwargs[
+                "caption"
+            ] = f"""Localization precision of different performance profiling approaches to detect configuration-specific performance regression detection.
+On the left, we show the amount of different configurations ({symb_configs}) analyzed and the amount of regressed configurations ({symb_regressed_configs}), determined through our baseline measurements.
+Furthermore, the table depicts for each profiler, precision ({symb_precision}), recall ({symb_recall}), and balanced accuracy ({symb_b_accuracy}).
+"""
+            style.format(precision=2)
+            style.hide()
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amsmath"))
+            doc.packages.append(Package("amssymb"))
 
         return dataframe_to_table(
             df,
             table_format,
+            style=style,
             wrap_table=wrap_table,
             wrap_landscape=True,
+            document_decorator=add_extras,
             **kwargs
         )
 
