@@ -19,6 +19,9 @@ from benchbuild.utils.actions import (
 from benchbuild.utils.cmd import time
 from plumbum import local, ProcessExecutionError
 
+from varats.data.reports.performance_influence_trace_report import (
+    PerfInfluenceTraceReportAggregate,
+)
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     VersionExperiment,
@@ -44,6 +47,25 @@ from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.report import ReportSpecification, ReportTy, BaseReport
 from varats.report.tef_report import TEFReport, TEFReportAggregate
 from varats.utils.git_commands import apply_patch
+
+
+class AnalysisProjectStepBase(ProjectStep):
+
+    project: VProject
+
+    def __init__(
+        self,
+        project: VProject,
+        binary: ProjectBinaryWrapper,
+        result_post_fix: str = "",
+        report_file_ending: str = "json",
+        reps=2
+    ):
+        super().__init__(project=project)
+        self._binary = binary
+        self._report_file_ending = report_file_ending
+        self._result_pre_fix = result_post_fix
+        self._reps = reps
 
 
 class MultiPatchReport(
@@ -88,6 +110,14 @@ class MPRTEFA(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReportAggregate)
+
+
+class MPRPIMA(
+    MultiPatchReport[TEFReportAggregate], shorthand="MPRPIMA", file_type=".zip"
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, PerfInfluenceTraceReportAggregate)
 
 
 class ReCompile(ProjectStep):
@@ -139,7 +169,7 @@ class ApplyPatch(ProjectStep):
         )
 
 
-class RunTEFTracedWorkloads(ProjectStep):  # type: ignore
+class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -155,11 +185,9 @@ class RunTEFTracedWorkloads(ProjectStep):  # type: ignore
         report_file_ending: str = "json",
         reps=2
     ):
-        super().__init__(project=project)
-        self.__binary = binary
-        self.__report_file_ending = report_file_ending
-        self.__result_pre_fix = result_post_fix
-        self.__reps = reps
+        super().__init__(
+            project, binary, result_post_fix, report_file_ending, reps
+        )
 
     def __call__(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -172,15 +200,15 @@ class RunTEFTracedWorkloads(ProjectStep):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            zip_tmp_dir = tmp_dir / f"{self.__result_pre_fix}_rep_measures"
+            zip_tmp_dir = tmp_dir / f"{self._result_pre_fix}_rep_measures"
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
-                for rep in range(0, self.__reps):
+                for rep in range(0, self._reps):
                     for prj_command in workload_commands(
-                        self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                        self.project, self._binary, [WorkloadCategory.EXAMPLE]
                     ):
                         local_tracefile_path = Path(reps_tmp_dir) / (
                             f"trace_{prj_command.command.label}_{rep}"
-                            f".{self.__report_file_ending}"
+                            f".{self._report_file_ending}"
                         )
                         with local.env(VARA_TRACE_FILE=local_tracefile_path):
                             pb_cmd = prj_command.command.as_plumbum(
@@ -196,10 +224,77 @@ class RunTEFTracedWorkloads(ProjectStep):  # type: ignore
                             with cleanup(prj_command):
                                 pb_cmd(
                                     *extra_options,
-                                    retcode=self.__binary.valid_exit_codes
+                                    retcode=self._binary.valid_exit_codes
                                 )
 
         return StepResult.OK
+
+
+def setup_actions_for_vara_experiment(
+    experiment: FeatureExperiment, project: VProject,
+    instr_type: FeatureInstrType,
+    analysis_step: tp.Type[AnalysisProjectStepBase]
+) -> tp.MutableSequence[actions.Step]:
+
+    project.cflags += experiment.get_vara_feature_cflags(project)
+
+    threshold = 0 if project.DOMAIN.value is ProjectDomains.TEST else 100
+    project.cflags += experiment.get_vara_tracing_cflags(
+        instr_type, project=project, instruction_threshold=threshold
+    )
+
+    project.ldflags += experiment.get_vara_tracing_ldflags()
+
+    # Add the required runtime extensions to the project(s).
+    project.runtime_extension = bb_ext.run.RuntimeExtension(
+        project, experiment
+    ) << bb_ext.time.RunWithTime()
+
+    # Add the required compiler extensions to the project(s).
+    project.compiler_extension = bb_ext.compiler.RunCompiler(
+        project, experiment
+    ) << WithUnlimitedStackSize()
+
+    # Add own error handler to compile step.
+    project.compile = get_default_compile_error_wrapped(
+        experiment.get_handle(), project, experiment.REPORT_SPEC.main_report
+    )
+
+    binary = project.binaries[0]
+    if binary.type != BinaryType.EXECUTABLE:
+        raise AssertionError("Experiment only works with executables.")
+
+    result_filepath = create_new_success_result_filepath(
+        experiment.get_handle(),
+        experiment.get_handle().report_spec().main_report, project, binary,
+        get_current_config_id(project)
+    )
+
+    analysis_actions = []
+
+    analysis_actions.append(actions.Compile(project))
+    analysis_actions.append(
+        ZippedExperimentSteps(
+            result_filepath, [  # type: ignore
+                analysis_step(
+                    project, binary, result_post_fix="old"
+                ),
+                ApplyPatch(
+                    project,
+                    Path(
+                        "/home/vulder/git/FeaturePerfCSCollection/test.patch"
+                    )
+                ),
+                ReCompile(project),
+                analysis_step(
+                    project, binary, result_post_fix="new"
+                )
+            ]
+        )
+    )
+    analysis_actions.append(actions.Clean(project))
+
+    return analysis_actions
 
 
 class TEFProfileRunner(FeatureExperiment, shorthand="TEFp"):
@@ -219,67 +314,32 @@ class TEFProfileRunner(FeatureExperiment, shorthand="TEFp"):
         Args:
             project: to analyze
         """
-        instr_type = FeatureInstrType.TEF
-
-        project.cflags += self.get_vara_feature_cflags(project)
-
-        threshold = 0 if project.DOMAIN.value is ProjectDomains.TEST else 100
-        project.cflags += self.get_vara_tracing_cflags(
-            instr_type, project=project, instruction_threshold=threshold
+        return setup_actions_for_vara_experiment(
+            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads
         )
 
-        project.ldflags += self.get_vara_tracing_ldflags()
 
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = bb_ext.run.RuntimeExtension(
-            project, self
-        ) << bb_ext.time.RunWithTime()
+class PIMProfileRunner(FeatureExperiment, shorthand="PIMp"):
+    """Test runner for feature performance."""
 
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = bb_ext.compiler.RunCompiler(
-            project, self
-        ) << WithUnlimitedStackSize()
+    NAME = "RunPIMProfiler"
 
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
+    REPORT_SPEC = ReportSpecification(MPRPIMA)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+        return setup_actions_for_vara_experiment(
+            self, project, FeatureInstrType.PERF_INFLUENCE_TRACE,
+            RunGenTracedWorkloads
         )
-
-        binary = project.binaries[0]
-        if binary.type != BinaryType.EXECUTABLE:
-            raise AssertionError("Experiment only works with executables.")
-
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary,
-            get_current_config_id(project)
-        )
-
-        analysis_actions = []
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath, [  # type: ignore
-                    RunTEFTracedWorkloads(
-                        project, binary, result_post_fix="old"
-                    ),
-                    ApplyPatch(
-                        project,
-                        Path(
-                            "/home/vulder/git/FeaturePerfCSCollection/test.patch"
-                        )
-                    ),
-                    ReCompile(project),
-                    RunTEFTracedWorkloads(
-                        project, binary, result_post_fix="new"
-                    )
-                ]
-            )
-        )
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
 
 
 class RunBackBoxBaseline(ProjectStep):  # type: ignore
@@ -418,7 +478,7 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
 ################################################################################
 
 
-class RunTEFTracedWorkloadsOverhead(ProjectStep):  # type: ignore
+class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -430,13 +490,13 @@ class RunTEFTracedWorkloadsOverhead(ProjectStep):  # type: ignore
         self,
         project: VProject,
         binary: ProjectBinaryWrapper,
+        result_post_fix: str = "",
         report_file_ending: str = "txt",
         reps=2
     ):
-        super().__init__(project=project)
-        self.__binary = binary
-        self.__report_file_ending = report_file_ending
-        self.__reps = reps
+        super().__init__(
+            project, binary, result_post_fix, report_file_ending, reps
+        )
 
     def __call__(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -449,9 +509,9 @@ class RunTEFTracedWorkloadsOverhead(ProjectStep):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            for rep in range(0, self.__reps):
+            for rep in range(0, self._reps):
                 for prj_command in workload_commands(
-                    self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                    self.project, self._binary, [WorkloadCategory.EXAMPLE]
                 ):
                     base = Path("/tmp/")
                     fake_tracefile_path = base / (
@@ -461,7 +521,7 @@ class RunTEFTracedWorkloadsOverhead(ProjectStep):  # type: ignore
 
                     time_report_file = tmp_dir / (
                         f"overhead_{prj_command.command.label}_{rep}"
-                        f".{self.__report_file_ending}"
+                        f".{self._report_file_ending}"
                     )
 
                     with local.env(VARA_TRACE_FILE=fake_tracefile_path):
@@ -477,10 +537,69 @@ class RunTEFTracedWorkloadsOverhead(ProjectStep):  # type: ignore
                         with cleanup(prj_command):
                             timed_pb_cmd(
                                 *extra_options,
-                                retcode=self.__binary.valid_exit_codes
+                                retcode=self._binary.valid_exit_codes
                             )
 
         return StepResult.OK
+
+
+def setup_actions_for_vara_overhead_experiment(
+    experiment: FeatureExperiment, project: VProject,
+    instr_type: FeatureInstrType,
+    analysis_step: tp.Type[AnalysisProjectStepBase]
+) -> tp.MutableSequence[actions.Step]:
+    instr_type = FeatureInstrType.TEF
+
+    project.cflags += experiment.get_vara_feature_cflags(project)
+
+    threshold = 0 if project.DOMAIN.value is ProjectDomains.TEST else 100
+    project.cflags += experiment.get_vara_tracing_cflags(
+        instr_type, project=project, instruction_threshold=threshold
+    )
+
+    project.ldflags += experiment.get_vara_tracing_ldflags()
+
+    # Add the required runtime extensions to the project(s).
+    project.runtime_extension = bb_ext.run.RuntimeExtension(
+        project, experiment
+    ) << bb_ext.time.RunWithTime()
+
+    # Add the required compiler extensions to the project(s).
+    project.compiler_extension = bb_ext.compiler.RunCompiler(
+        project, experiment
+    ) << WithUnlimitedStackSize()
+
+    # Add own error handler to compile step.
+    project.compile = get_default_compile_error_wrapped(
+        experiment.get_handle(), project, experiment.REPORT_SPEC.main_report
+    )
+
+    binary = project.binaries[0]
+    if binary.type != BinaryType.EXECUTABLE:
+        raise AssertionError("Experiment only works with executables.")
+
+    result_filepath = create_new_success_result_filepath(
+        experiment.get_handle(),
+        experiment.get_handle().report_spec().main_report, project, binary,
+        get_current_config_id(project)
+    )
+
+    analysis_actions = []
+
+    analysis_actions.append(actions.Compile(project))
+    analysis_actions.append(
+        ZippedExperimentSteps(
+            result_filepath,
+            [
+                analysis_step(  # type: ignore
+                    project, binary
+                )
+            ]
+        )
+    )
+    analysis_actions.append(actions.Clean(project))
+
+    return analysis_actions
 
 
 class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
@@ -500,57 +619,32 @@ class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
         Args:
             project: to analyze
         """
-        instr_type = FeatureInstrType.TEF
-
-        project.cflags += self.get_vara_feature_cflags(project)
-
-        threshold = 0 if project.DOMAIN.value is ProjectDomains.TEST else 100
-        project.cflags += self.get_vara_tracing_cflags(
-            instr_type, project=project, instruction_threshold=threshold
+        return setup_actions_for_vara_overhead_experiment(
+            self, project, FeatureInstrType.TEF, RunGenTracedWorkloadsOverhead
         )
 
-        project.ldflags += self.get_vara_tracing_ldflags()
 
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = bb_ext.run.RuntimeExtension(
-            project, self
-        ) << bb_ext.time.RunWithTime()
+class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
+    """Test runner for feature performance."""
 
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = bb_ext.compiler.RunCompiler(
-            project, self
-        ) << WithUnlimitedStackSize()
+    NAME = "RunPIMProfilerO"
 
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+        return setup_actions_for_vara_overhead_experiment(
+            self, project, FeatureInstrType.PERF_INFLUENCE_TRACE,
+            RunGenTracedWorkloadsOverhead
         )
-
-        binary = project.binaries[0]
-        if binary.type != BinaryType.EXECUTABLE:
-            raise AssertionError("Experiment only works with executables.")
-
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary,
-            get_current_config_id(project)
-        )
-
-        analysis_actions = []
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath, [
-                    RunTEFTracedWorkloadsOverhead(  # type: ignore
-                        project, binary
-                    )
-                ]
-            )
-        )
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
 
 
 class RunBackBoxBaselineOverhead(ProjectStep):  # type: ignore

@@ -222,6 +222,12 @@ class ClassificationResults:
         return self.TP / self.P
 
     def specificity(self) -> float:
+        if self.N == 0:
+            if self.TN == 0:
+                return 1.0
+
+            return 0.0
+
         return self.TN / self.N
 
     def accuracy(self) -> float:
@@ -317,6 +323,66 @@ class VXray(Profiler):
         return is_regression
 
 
+class PIMTracer(Profiler):
+    """Profiler mapper implementation for the vara performance-influence-model
+    tracer."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "PIM Tracer", fpp.PIMProfileRunner, fpp.PIMProfileOverheadRunner,
+            fpp.MPRPIMA
+        )
+
+    def is_regression(self, report_path: ReportFilepath) -> bool:
+        """Checks if there was a regression between the old an new data."""
+        is_regression = False
+
+        multi_report = fpp.MultiPatchReport(
+            report_path.full_path(), fpp.PerfInfluenceTraceReportAggregate
+        )
+
+        old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for old_pim_report in multi_report.get_old_report().reports():
+            for region_inter in old_pim_report.region_interaction_entries:
+                name = get_interactions_from_fr_string(
+                    old_pim_report._translate_interaction(
+                        region_inter.interaction
+                    )
+                )
+                time = region_inter.time
+                old_acc_pim[name].append(time)
+
+        new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for new_pim_report in multi_report.get_new_report().reports():
+            for region_inter in new_pim_report.region_interaction_entries:
+                name = get_interactions_from_fr_string(
+                    new_pim_report._translate_interaction(
+                        region_inter.interaction
+                    )
+                )
+                time = region_inter.time
+                new_acc_pim[name].append(time)
+
+        # TODO: same for TEF
+        for feature, old_values in old_acc_pim.items():
+            if feature in new_acc_pim:
+                new_values = new_acc_pim[feature]
+                ttest_res = ttest_ind(old_values, new_values)
+
+                # TODO: check, maybe we need a "very small value cut off"
+                if ttest_res.pvalue < 0.05:
+                    print(
+                        f"{self.name} found regression for feature {feature}."
+                    )
+                    is_regression = True
+            else:
+                print(f"Could not find feature {feature} in new trace.")
+                # TODO: how to handle this?
+                is_regression = True
+
+        return is_regression
+
+
 class Baseline(Profiler):
     """Profiler mapper implementation for the black-box baseline."""
 
@@ -366,7 +432,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray()]
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
 
         # Data aggregation
         df = pd.DataFrame()
@@ -578,7 +644,7 @@ class FeaturePerfOverheadTable(Table, table_name="fperf_overhead"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray()]
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
 
         # Data aggregation
         df = pd.DataFrame()
