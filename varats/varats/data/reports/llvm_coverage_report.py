@@ -16,6 +16,7 @@ from tempfile import TemporaryDirectory
 from plumbum import colors
 from plumbum.colorlib.styles import Color
 
+from varats.base.configuration import Configuration, ConfigurationImpl
 from varats.report.report import BaseReport
 
 CUTOFF_LENGTH = 80
@@ -50,11 +51,104 @@ class RegionEnd(Location):
     pass
 
 
-def _format_features(features: tp.List[str]) -> str:
-    features_txt = "^".join(sorted(features))
-    if "^" in features_txt:
-        features_txt = f"({features_txt})"
-    return features_txt
+from pyeda.boolalg.expr import Complement, Variable
+from pyeda.inter import Expression, exprvar, expr, espresso_exprs
+
+
+class PresenceKind(Enum):
+    """Code region kinds."""
+    BECOMES_ACTIVE = "+"
+    BECOMES_INACTIVE = "-"
+
+
+@dataclass
+class PresenceCondition:
+    """
+    Presence Condition.
+
+    Tells how the presence changed for this specific configuration.
+    """
+    kind: PresenceKind
+    configuration: Configuration
+
+    def __str__(self) -> str:
+        return f"{self.kind.value}({self.configuration})"
+
+
+def simplify(conditions: tp.List[PresenceCondition]) -> Expression:
+    """Build the DNF of all conditions and simplify it."""
+    dnf = expr(False)
+    for condition in conditions:
+        expression = expr(True)
+        for option in condition.configuration.options():
+            expr_var = exprvar(option.name)
+            if bool(option.value):
+                expression = expression & expr_var
+            else:
+                expression = expression & ~expr_var
+        dnf = dnf | expression
+    if dnf.equivalent(expr(False)):
+        return dnf
+    return espresso_exprs(dnf.to_dnf())[0]
+
+
+class PresenceConditions(
+    tp.DefaultDict[PresenceKind, tp.List[PresenceCondition]]
+):
+    """Presence Conditions obtained from diffing coverage data."""
+
+    def extend(self, other: PresenceConditions):
+        for kind, conditions in other.items():
+            self[kind].extend(conditions)
+
+    def simplify(self, kind: tp.Optional[PresenceKind] = None) -> Expression:
+        """Build the DNF of all conditions for kind and simplifies it."""
+        if kind is None:
+            conditions = []
+            for values in self.values():
+                conditions.extend(values)
+        else:
+            conditions = self[kind]
+        return simplify(conditions)
+
+    def all_conditions(self) -> tp.Set[str]:
+        """All conditions that are relevant."""
+        output = set()
+        for presence_kind in self.keys():
+            if self[presence_kind]:
+                output.update(
+                    str(feature)
+                    for feature in self.simplify(presence_kind).support
+                )
+        return output
+
+    def __str__(self) -> str:
+        output = []
+        for presence_kind in self.keys():
+            if self[presence_kind]:
+                expression = self.simplify(presence_kind)
+                output.append(f"{presence_kind.value}{expr_to_str(expression)}")
+        return ",".join(output)
+
+
+def expr_to_str(expression: Expression) -> str:
+    if expression.is_zero() or expression.is_one():
+        return str(bool(expression))
+    if expression.ASTOP == "lit":
+        if isinstance(expression, Complement):
+            return f"~{expr_to_str(expression.__invert__())}"
+        if isinstance(expression, Variable):
+            return str(expression)
+        else:
+            raise NotImplementedError()
+    if expression.ASTOP == "and":
+        return f"({' & '.join(map(expr_to_str, expression.xs))})"
+    if expression.ASTOP == "or":
+        return f"({' | '.join(map(expr_to_str, expression.xs))})"
+    #if expression.ASTOP == "xor":
+    #    return f"({' ^ '.join(map(expr_to_str, expression.xs))})"
+
+    raise NotImplementedError()
 
 
 @dataclass
@@ -67,8 +161,9 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     function: str
     parent: tp.Optional[CodeRegion] = None
     childs: tp.List[CodeRegion] = field(default_factory=list)
-    coverage_features: tp.List[str] = field(default_factory=list)
-    coverage_features_set: tp.Set[str] = field(default_factory=set)
+    presence_conditions: PresenceConditions = field(
+        default_factory=lambda: PresenceConditions(list)
+    )
     vara_instrs: tp.List[VaraInstr] = field(default_factory=list)
 
     @classmethod
@@ -130,6 +225,14 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         if denominator == 0:
             return float("-inf")
         return len(with_feature) / denominator
+
+    def coverage_features(self) -> str:
+        """Returns presence conditions."""
+        return str(self.presence_conditions)
+
+    def coverage_features_set(self) -> tp.Set[str]:
+        """Returns features affecting code region somehow."""
+        return self.presence_conditions.all_conditions()
 
     def vara_features(self) -> tp.Set[str]:
         """Returns all features from annotated vara instrs."""
@@ -208,8 +311,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
             if x != y:
                 raise AssertionError("CodeRegions are not identical")
-            x.coverage_features.extend(y.coverage_features)
-            x.coverage_features_set.update(y.coverage_features_set)
+            x.presence_conditions.extend(y.presence_conditions)
 
     def find_code_region(self, line: int,
                          column: int) -> tp.Optional[CodeRegion]:
@@ -248,7 +350,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     def diff(
         self,
         region: CodeRegion,
-        features: tp.Optional[tp.List[str]] = None
+        configurations: tp.Optional[tp.List[Configuration]] = None
     ) -> None:
         """
         Builds the difference between self (base code) and region (new code) by
@@ -262,18 +364,26 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             ) or not x.is_covered() and not y.is_covered():
                 # No difference in coverage
                 x.count = 0
-            elif x.is_covered() and not y.is_covered():
-                # Coverage decreased
-                x.count = -1
-                if features is not None:
-                    x.coverage_features_set.update(features)
-                    x.coverage_features.append(f"-{_format_features(features)}")
             elif not x.is_covered() and y.is_covered():
+                x.count = 0
+                # Coverage decreased
+                """x.count = -1
+                if configurations is not None:
+                    kind = PresenceKind.BECOMES_INACTIVE
+                    for configuration in configurations:
+                        x.presence_conditions[kind].append(
+                            PresenceCondition(kind, configuration)
+                        )"""
+
+            elif x.is_covered() and not y.is_covered():
                 # Coverage increased
                 x.count = 1
-                if features is not None:
-                    x.coverage_features_set.update(features)
-                    x.coverage_features.append(f"+{_format_features(features)}")
+                if configurations is not None:
+                    kind = PresenceKind.BECOMES_ACTIVE
+                    for configuration in configurations:
+                        x.presence_conditions[kind].append(
+                            PresenceCondition(kind, configuration)
+                        )
 
     def is_identical(self, other: object) -> bool:
         """Is the code region equal and has the same coverage?"""
@@ -472,7 +582,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     def diff(
         self,
         report: CoverageReport,
-        features: tp.Optional[tp.List[str]] = None
+        configurations: tp.Optional[tp.List[Configuration]] = None
     ) -> None:
         """Diff report from self."""
         for filename_a, filename_b in zip(
@@ -491,7 +601,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     function_b]
                 assert code_region_a == code_region_b
 
-                code_region_a.diff(code_region_b, features)
+                code_region_a.diff(code_region_b, configurations)
 
     def _parse_instrs(self, csv_file: Path) -> None:
         with csv_file.open() as file:
@@ -725,7 +835,6 @@ def _cov_segments_file(
         end_column=len(lines[len(lines)]) + 1,
         count=None,
         cov_features=None,
-        cov_features_set=None,
         vara_features=None,
         lines=lines,
         buffer=segments_dict
@@ -750,7 +859,6 @@ def cov_show_segment_buffer(
     file_segments_mapping: FileSegmentBufferMapping,
     show_counts: bool = True,
     show_coverage_features: bool = False,
-    show_coverage_feature_set: bool = False,
     show_vara_features: bool = False,
 ) -> str:
     """Returns the coverage in text form."""
@@ -764,7 +872,6 @@ def cov_show_segment_buffer(
                 ),
                 show_counts,
                 show_coverage_features,
-                show_coverage_feature_set,
                 show_vara_features,
             )
         )
@@ -783,7 +890,6 @@ class TableEntry(tp.NamedTuple):
     count: tp.Union[int, str]  # type: ignore[assignment]
     text: str
     coverage_features: str
-    coverage_feature_set: str
     vara_features: str
 
 
@@ -791,7 +897,6 @@ def __table_to_text(
     table: tp.Dict[int, TableEntry],
     show_counts: bool = True,
     show_coverage_features: bool = False,
-    show_coverage_feature_set: bool = False,
     show_vara_features: bool = False,
 ) -> str:
     output = []
@@ -802,18 +907,13 @@ def __table_to_text(
             line.append(f"|{entry.count:>7}")
 
         text = entry.text.replace("\n", "", 1)
-        if not any([
-            show_coverage_features, show_coverage_feature_set,
-            show_vara_features
-        ]):
+        if not any([show_coverage_features, show_vara_features]):
             line.append(f"|{text}")
         else:
             text = text[:CUTOFF_LENGTH]
             line.append(f"|{text:<{CUTOFF_LENGTH}}")
         if show_coverage_features:
             line.append(f"|{entry.coverage_features}")
-        if show_coverage_feature_set:
-            line.append(f"|{entry.coverage_feature_set}")
         if show_vara_features:
             line.append(f"|{entry.vara_features}")
         output.append("".join(line))
@@ -868,16 +968,13 @@ def __segments_dict_to_table( # pylint: disable=too-many-locals
                 raise NotImplementedError
 
         coverage_features = filter_out_nones(segment[2] for segment in segments)
-        coverage_features_set = filter_out_nones(
-            segment[3] for segment in segments
-        )
-        vara_features = filter_out_nones(segment[4] for segment in segments)
+        vara_features = filter_out_nones(segment[3] for segment in segments)
 
         table[line_number] = TableEntry(
             count,
             "".join(colored_texts),
-            __feature_text(coverage_features),
-            __feature_text(coverage_features_set),
+            __feature_text([coverage_features]),
+            #list(coverage_features),
             __feature_text(vara_features),
         )
 
@@ -910,7 +1007,6 @@ def _cov_segments_function(
         end_column=prev_column,
         count=None,
         cov_features=None,
-        cov_features_set=None,
         vara_features=None,
         lines=lines,
         buffer=buffer
@@ -940,8 +1036,7 @@ def _cov_segments_function_inner(
                 end_line=prev_line,
                 end_column=prev_column,
                 count=region.count,
-                cov_features=region.coverage_features,
-                cov_features_set=region.coverage_features_set,
+                cov_features=region.coverage_features(),
                 vara_features=region.vara_features(),
                 lines=lines,
                 buffer=buffer
@@ -962,8 +1057,7 @@ def _cov_segments_function_inner(
         end_line=region.end.line,
         end_column=region.end.column,
         count=region.count,
-        cov_features=region.coverage_features,
-        cov_features_set=region.coverage_features_set,
+        cov_features=region.coverage_features(),
         vara_features=region.vara_features(),
         lines=lines,
         buffer=buffer
@@ -974,8 +1068,8 @@ def _cov_segments_function_inner(
 
 def __cov_fill_buffer(
     end_line: int, end_column: int, count: Count,
-    cov_features: CoverageFeatures, cov_features_set: CoverageFeaturesSet,
-    vara_features: VaraFeatures, lines: tp.Dict[int, str], buffer: SegmentBuffer
+    cov_features: CoverageFeatures, vara_features: VaraFeatures,
+    lines: tp.Dict[int, str], buffer: SegmentBuffer
 ) -> SegmentBuffer:
 
     start_line, start_column = __get_next_line_and_column(lines, buffer)
@@ -999,9 +1093,7 @@ def __cov_fill_buffer(
         else:
             text = lines[line_number]
 
-        buffer[line_number].append(
-            (count, text, cov_features, cov_features_set, vara_features)
-        )
+        buffer[line_number].append((count, text, cov_features, vara_features))
 
     return buffer
 

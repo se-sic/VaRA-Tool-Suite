@@ -73,7 +73,7 @@ class TestCodeRegion(unittest.TestCase):
         )
 
         region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test")
-        region.coverage_features_set = {"A", "B"}
+        region.coverage_features_set = lambda: {"A", "B"}
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -121,7 +121,7 @@ class TestCodeRegion(unittest.TestCase):
         )
 
         region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test")
-        region.coverage_features_set = {"A", "B"}
+        region.coverage_features_set = lambda: {"A", "B"}
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -156,7 +156,7 @@ class TestCodeRegion(unittest.TestCase):
             classify_all(region, 0.5), Classification.TRUE_POSITIVE
         )
 
-        region.coverage_features_set = {"A"}
+        region.coverage_features_set = lambda: {"A"}
 
         # Coverage: A == VaRA: A,(B)
 
@@ -183,7 +183,7 @@ class TestCodeRegion(unittest.TestCase):
         )
 
         region.vara_instrs = [instr_2, instr_3]
-        region.coverage_features_set = {}
+        region.coverage_features_set = lambda: {}
 
         # Coverage:  == VaRA: (A)
 
@@ -323,9 +323,46 @@ class TestCodeRegion(unittest.TestCase):
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
+    def test_diff_feature_interactions(self):
+        config_map = setup_config_map("test_coverage_SimpleFeatureInteraction")
+        report = config_map.feature_report()
+
+        # Only feature interactions should be annotated
+        for func, code_region in report.filename_function_mapping[
+            "src/SimpleFeatureInteraction/SFImain.cpp"].items():
+            print(func)
+            if func == "_Z10addPadding11PackageData":
+                for region in code_region.iter_preorder():
+                    # Every code region should be annotated with enc & ~compress
+                    self.assertEqual(
+                        region.coverage_features(), "+(enc & ~compress)"
+                    )
+            elif func == "_Z11sendPackage11PackageData":
+                for region in code_region.iter_preorder():
+                    if (region.start.line == 56 and
+                        region.start.column == 28) or (
+                            region.start.line == 56 and
+                            region.start.column == 29
+                        ):
+                        self.assertEqual(
+                            region.coverage_features(), "+(enc & ~compress)"
+                        )
+                    else:
+                        self.assertEqual(region.coverage_features(), "")
+            else:
+                for region in code_region.iter_preorder():
+                    if region.coverage_features() != "":
+                        pass
+                    self.assertEqual(region.coverage_features(), "")
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
     def test_line_feature_plot(self):
         self.maxDiff = None
-        config_map = setup_config_map()
+        config_map = setup_config_map(
+            "test_coverage_MultiSharedMultipleRegions"
+        )
         initialize_projects()
         commit_hash = FullCommitHash("27f17080376e409860405c40744887d81d6b3f34")
         with RepositoryAtCommit(

@@ -6,12 +6,14 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from plumbum import colors
+from pyeda.inter import exprvar, expr
 
 from tests.helper_utils import (
     run_in_test_environment,
     UnitTestFixtures,
     TEST_INPUTS_DIR,
 )
+from varats.base.configuration import ConfigurationImpl
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
@@ -21,6 +23,7 @@ from varats.data.reports.llvm_coverage_report import (
     cov_show,
     VaraInstr,
     FeatureKind,
+    PresenceKind,
 )
 from varats.data.reports.llvm_coverage_report import (
     __cov_fill_buffer as cov_fill_buffer,
@@ -31,7 +34,10 @@ from varats.data.reports.llvm_coverage_report import (
 from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plots import PlotConfig
-from varats.plots.llvm_coverage_plot import CoveragePlotGenerator
+from varats.plots.llvm_coverage_plot import (
+    CoveragePlotGenerator,
+    ConfigCoverageReportMapping,
+)
 from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
@@ -43,9 +49,9 @@ from varats.varats.experiments.vara.llvm_coverage_experiment import (
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
 
 
-def setup_config_map():
+def setup_config_map(config_name: str) -> ConfigCoverageReportMapping:
     # setup config
-    vara_cfg()['paper_config']['current_config'] = "test_coverage_plot"
+    vara_cfg()['paper_config']['current_config'] = config_name
     load_paper_config()
     save_config()
 
@@ -119,6 +125,9 @@ class TestCodeRegion(unittest.TestCase):
         self.root.insert(self.left_left_2)
         self.root.insert(self.left)
         self.root.insert(self.right_right)
+        self.tree = self.root
+        self.tree.left = self.left
+        self.tree.right = self.right
 
     def test_eq(self):
         self.assertEqual(self.CODE_REGION_1, CODE_REGION_1)
@@ -273,25 +282,79 @@ class TestCodeRegion(unittest.TestCase):
         self.left_left_2.count = 0
         self.right_right.count = 0
 
-        self.root.diff(root_3, features=["Foo", "Bar"])
+        foo_bar_configuration = ConfigurationImpl()
+        foo_bar_configuration.set_config_option("Foo", True)
+        foo_bar_configuration.set_config_option("Bar", False)
+        self.root.diff(root_3, configuration=foo_bar_configuration)
         self.assertEqual(self.root.count, -1)
-        self.assertEqual(self.root.coverage_features_set, {"Foo", "Bar"})
-        self.assertEqual(self.root.coverage_features, ["-(Bar^Foo)"])
+        self.assertTrue(
+            self.root.presence_conditions.simplify(
+                PresenceKind.BECOMES_INACTIVE
+            ).equivalent(exprvar("Foo") & ~exprvar("Bar"))
+        )
+        print((
+            self.root.presence_conditions.simplify(
+                PresenceKind.BECOMES_INACTIVE
+            )
+        ))
+        self.assertTrue(
+            self.root.presence_conditions.simplify(PresenceKind.BECOMES_ACTIVE
+                                                  ).equivalent(expr(False))
+        )
+        self.assertEqual(self.root.coverage_features_set(), {"Foo", "Bar"})
+        self.assertEqual(self.root.coverage_features(), "-(Foo & ~Bar)")
         self.assertEqual(self.right.count, 0)
         self.assertEqual(self.left.count, 0)
         self.assertEqual(self.left_left.count, 1)
         self.assertEqual(self.left_left_2.count, 1)
         self.assertEqual(self.right_right.count, 1)
-        self.assertEqual(self.right_right.coverage_features_set, {"Foo", "Bar"})
-        self.assertEqual(self.right_right.coverage_features, ["+(Bar^Foo)"])
+        self.assertEqual(
+            self.right_right.coverage_features_set(), {"Foo", "Bar"}
+        )
+        self.assertEqual(self.right_right.coverage_features(), "+(Foo & ~Bar)")
 
         self.assertFalse(self.root.is_identical(root_3))
+
+    def test_diff_feature_cancels_itself(self):
+        config_a = deepcopy(self.tree)
+        config_a.count = 3  # normal region
+        config_a.left.count = 24  # A
+        config_a.right.count = 0  # ~A
+
+        config_not_a = deepcopy(self.tree)
+        config_not_a.count = 3
+        config_not_a.left.count = 0
+        config_not_a.right.count = 12
+
+        # ~A - A = A ~A
+        difference = deepcopy(config_not_a)
+        difference.diff(config_a)
+        self.assertEqual(difference.count, 0)
+        self.assertEqual(difference.left.count, 1)
+        self.assertEqual(difference.right.count, -1)
+
+        # A + ~A
+        merge_1 = deepcopy(config_a)
+        merge_1.merge(deepcopy(config_not_a))
+        # (~A + A + ~A)
+        merge_2 = deepcopy(config_not_a)
+        merge_2.merge(merge_1)
+        # A - (~A + A + ~A)
+        result = deepcopy(config_a)
+        result.diff(merge_2)
+
+        # A - (~A + A + ~A) = ~A
+        self.assertEqual(result.count, 0)
+        self.assertEqual(result.left.count, 0)
+        self.assertEqual(result.right.count, 1)
 
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_merging(self):
-        config_map = setup_config_map()
+        config_map = setup_config_map(
+            "test_coverage_MultiSharedMultipleRegions"
+        )
         for config in config_map:
             options = {
                 option.name for option in config.options() if option.value
@@ -483,28 +546,24 @@ class TestCodeRegion(unittest.TestCase):
             end_column=6,
             count=0,
             cov_features=None,
-            cov_features_set=None,
             vara_features=None,
             lines=lines,
             buffer=buffer
         )
-        self.assertEqual(buffer, {1: [(0, "Hello", None, None, None)]})
+        self.assertEqual(buffer, {1: [(0, "Hello", None, None)]})
         self.assertEqual((1, 6), get_next_line_and_column(lines, buffer))
         buffer = cov_fill_buffer(
             end_line=1,
             end_column=14,
             count=1,
             cov_features=None,
-            cov_features_set=None,
             vara_features=None,
             lines=lines,
             buffer=buffer
         )
         self.assertEqual(
-            buffer, {
-                1: [(0, "Hello", None, None, None),
-                    (1, " World!\n", None, None, None)]
-            }
+            buffer,
+            {1: [(0, "Hello", None, None), (1, " World!\n", None, None)]}
         )
         self.assertEqual((2, 1), get_next_line_and_column(lines, buffer))
         buffer = cov_fill_buffer(
@@ -512,16 +571,14 @@ class TestCodeRegion(unittest.TestCase):
             end_column=10,
             count=42,
             cov_features=None,
-            cov_features_set=None,
             vara_features=None,
             lines=lines,
             buffer=buffer
         )
         self.assertEqual(
             buffer, {
-                1: [(0, "Hello", None, None, None),
-                    (1, " World!\n", None, None, None)],
-                2: [(42, "Goodbye;\n", None, None, None)]
+                1: [(0, "Hello", None, None), (1, " World!\n", None, None)],
+                2: [(42, "Goodbye;\n", None, None)]
             }
         )
         self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))
@@ -532,15 +589,14 @@ class TestCodeRegion(unittest.TestCase):
             end_column=10,
             count=None,
             cov_features=["Foo"],
-            cov_features_set={"Boo"},
             vara_features={"Bar"},
             lines=lines,
             buffer=buffer
         )
         self.assertEqual(
             buffer, {
-                1: [(None, "Hello World!\n", ["Foo"], {"Boo"}, {"Bar"})],
-                2: [(None, "Goodbye;\n", ["Foo"], {"Boo"}, {"Bar"})]
+                1: [(None, "Hello World!\n", ["Foo"], {"Bar"})],
+                2: [(None, "Goodbye;\n", ["Foo"], {"Bar"})]
             }
         )
         self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))

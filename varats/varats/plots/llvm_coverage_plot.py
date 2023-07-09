@@ -16,6 +16,7 @@ from varats.base.configuration import (
     Configuration,
     PlainCommandlineConfiguration,
     FrozenConfiguration,
+    ConfigurationImpl,
 )
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
@@ -117,7 +118,10 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
                 )
 
         configs_with_features = self._get_configs_with_features(features)
-        configs_without_features = self._get_configs_without_features(features)
+        configs_without_features = self._get_configs_with_features({
+            feature: not value for feature, value in features.items()
+        })
+        #configs_without_features = self._get_configs_without_features(features)
 
         _ = ",".join("\n" + str(x.options()) for x in configs_with_features)
         print(f"Configs with features:\n[{_}\n]")
@@ -137,15 +141,15 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
             list(deepcopy(self[x]) for x in configs_with_features)
         )
 
-        result = _merge_reports(
+        report_without_features = _merge_reports(
             list(deepcopy(self[x]) for x in configs_without_features)
         )
 
-        result.diff(
-            report_with_features,
-            features=[x for x, y in features.items() if y]
+        report_with_features.diff(
+            report_without_features, configs_with_features
         )
-        return result
+
+        return report_with_features
 
     def merge_all(self) -> CoverageReport:
         """Merge all available Reports into one."""
@@ -154,9 +158,19 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
         diffs: tp.List[CoverageReport] = []
-        for feature in self.available_features:
-            print(feature)
-            diffs.append(self.diff({feature: True}))
+        for features in powerset(self.available_features):
+            print(features)
+            feature_values = {feature: True for feature in features}
+            for feature in self.available_features:
+                if feature not in feature_values:
+                    feature_values[feature] = False
+            print(feature_values)
+            diffs.append(self.diff(feature_values))
+            #print(cov_show_segment_buffer(
+            #        cov_segments(self.diff(feature_values), base_dir),
+            #        show_counts=False,
+            #        show_coverage_features=True
+            #    ))
 
         result = deepcopy(diffs[0])
         for report in diffs[1:]:
@@ -236,7 +250,7 @@ def classify_feature(
     vara_feature_name = feature_name_map[feature]
     vara_found = code_region.features_threshold([vara_feature_name]
                                                ) >= threshold
-    coverage_found = feature in code_region.coverage_features_set
+    coverage_found = feature in code_region.coverage_features_set()
 
     if vara_found and coverage_found:
         return Classification.TRUE_POSITIVE
@@ -259,7 +273,7 @@ def classify_all(
 
     # Convert feature names
     coverage_features = set()
-    for feature in code_region.coverage_features_set:
+    for feature in code_region.coverage_features_set():
         coverage_features.add(feature_name_map[feature])
 
     if len(vara_features) > 0 or len(coverage_features) > 0:
