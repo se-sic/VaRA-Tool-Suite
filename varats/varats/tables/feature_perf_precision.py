@@ -485,11 +485,6 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
         df = pd.concat([df, pd.DataFrame(table_rows)])
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
-        #df.set_index(
-        #    ["CaseStudy"],
-        #    inplace=True,
-        #)
-        # df = df.astype({'RegressedConfigs': 'int'})
 
         symb_precision = "\\textsc{PPV}"
         symb_recall = "\\textsc{TPR}"
@@ -516,7 +511,10 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
-            kwargs["column_format"] = "l|rr|rrr"
+            column_format = "l|rr"
+            for _ in profilers:
+                column_format += "|rrr"
+            kwargs["column_format"] = column_format
             kwargs["multicol_align"] = "|c"
             kwargs[
                 "caption"
@@ -737,7 +735,10 @@ class FeaturePerfOverheadTable(Table, table_name="fperf_overhead"):
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
-            kwargs["column_format"] = "l|rr|rrrrrr"
+            column_format = "l|rr"
+            for _ in profilers:
+                column_format += "|rrrrrr"
+            kwargs["column_format"] = column_format
             kwargs["multicol_align"] = "|c"
             kwargs["caption"
                   ] = """This table depicts the overhead measurement data.
