@@ -236,10 +236,12 @@ class Profiler():
 
     def __init__(
         self, name: str, experiment: tp.Type[FeatureExperiment],
+        overhead_experiment: tp.Type[FeatureExperiment],
         report_type: tp.Type[BaseReport]
     ) -> None:
         self.__name = name
         self.__experiment = experiment
+        self.__overhead_experiment = overhead_experiment
         self.__report_type = report_type
 
     @property
@@ -251,6 +253,11 @@ class Profiler():
     def experiment(self) -> tp.Type[FeatureExperiment]:
         """Experiment used to produce this profilers information."""
         return self.__experiment
+
+    @property
+    def overhead_experiment(self) -> tp.Type[FeatureExperiment]:
+        """Experiment used to produce this profilers information."""
+        return self.__overhead_experiment
 
     @property
     def report_type(self) -> tp.Type[BaseReport]:
@@ -266,7 +273,10 @@ class VXray(Profiler):
     """Profiler mapper implementation for the vara tef tracer."""
 
     def __init__(self) -> None:
-        super().__init__("WXray", fpp.TEFProfileRunner, fpp.MPRTEFA)
+        super().__init__(
+            "WXray", fpp.TEFProfileRunner, fpp.TEFProfileOverheadRunner,
+            fpp.MPRTEFA
+        )
 
     def is_regression(self, report_path: ReportFilepath) -> bool:
         """Checks if there was a regression between the old an new data."""
@@ -305,6 +315,19 @@ class VXray(Profiler):
                 is_regression = True
 
         return is_regression
+
+
+class Baseline(Profiler):
+    """Profiler mapper implementation for the black-box baseline."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
+            fpp.TimeReportAggregate
+        )
+
+    def is_regression(self, report_path: ReportFilepath) -> bool:
+        raise NotImplementedError()
 
 
 def compute_profiler_predictions(
@@ -461,4 +484,224 @@ class FeaturePerfPrecisionTableGenerator(
     def generate(self) -> tp.List[Table]:
         return [
             FeaturePerfPrecisionTable(self.table_config, **self.table_kwargs)
+        ]
+
+
+class OverheadData:
+
+    def __init__(
+        self, profiler, mean_time: tp.Dict[int, float],
+        ctx_switches: tp.Dict[int, float]
+    ) -> None:
+        self.__profiler = profiler
+        self.__mean_time: tp.Dict[int, float] = mean_time
+        self.__mean_ctx_switches: tp.Dict[int, float] = ctx_switches
+
+    def mean_time(self) -> float:
+        return np.mean(list(map(lambda x: float(x), self.__mean_time.values())))
+
+    def mean_ctx(self) -> float:
+        return np.mean(
+            list(map(lambda x: float(x), self.__mean_ctx_switches.values()))
+        )
+
+    def config_wise_time_diff(self,
+                              other: 'OverheadData') -> tp.Dict[int, float]:
+        return self.__config_wise(self.__mean_time, other.__mean_time)
+
+    def config_wise_ctx_diff(self,
+                             other: 'OverheadData') -> tp.Dict[int, float]:
+        return self.__config_wise(
+            self.__mean_ctx_switches, other.__mean_ctx_switches
+        )
+
+    @staticmethod
+    def __config_wise(
+        self_map: tp.Dict[int, float], other_map: tp.Dict[int, float]
+    ) -> tp.Dict[int, float]:
+        gen_diff: tp.Dict[int, float] = {}
+        for config_id, gen_value in self_map.items():
+            if config_id not in other_map:
+                raise AssertionError("Could not find config id in other")
+
+            gen_diff[config_id] = gen_value - other_map[config_id]
+
+        return gen_diff
+
+    @staticmethod
+    def compute_overhead_data(
+        profiler: Profiler, case_study: CaseStudy, rev: FullCommitHash
+    ) -> tp.Optional['OverheadData']:
+
+        mean_time: tp.Dict[int, float] = {}
+        mean_cxt_switches: tp.Dict[int, float] = {}
+
+        for config_id in case_study.get_config_ids_for_revision(rev):
+            report_files = get_processed_revisions_files(
+                case_study.project_name,
+                profiler.overhead_experiment,
+                TimeReportAggregate,
+                get_case_study_file_name_filter(case_study),
+                config_id=config_id
+            )
+
+            if len(report_files) > 1:
+                raise AssertionError("Should only be one")
+            if not report_files:
+                print(
+                    f"Could not find overhead data. {config_id=}, "
+                    f"profiler={profiler.name}"
+                )
+                return None
+
+            time_report = TimeReportAggregate(report_files[0].full_path())
+            mean_time[config_id] = float(
+                np.mean(time_report.measurements_wall_clock_time)
+            )
+            mean_cxt_switches[config_id] = float(
+                np.mean(time_report.measurements_ctx_switches)
+            )
+        if not mean_time:
+            print(
+                f"Case study for project {case_study.project_name} had "
+                "no configs, skipping..."
+            )
+            return None
+
+        # print(f"{mean_time=}")
+        return OverheadData(profiler, mean_time, mean_cxt_switches)
+
+
+class FeaturePerfOverheadTable(Table, table_name="fperf_overhead"):
+    """Table that compares overhead of different feature performance measurement
+    approaches."""
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [VXray()]
+
+        # Data aggregation
+        df = pd.DataFrame()
+        table_rows = []
+
+        for case_study in case_studies:
+            rev = case_study.revisions[0]
+            project_name = case_study.project_name
+
+            overhead_ground_truth = OverheadData.compute_overhead_data(
+                Baseline(), case_study, rev
+            )
+            if not overhead_ground_truth:
+                print(
+                    f"No baseline data for {case_study.project_name}, skipping"
+                )
+                continue
+
+            new_row = {
+                'CaseStudy': project_name,
+                'WithoutProfiler_mean_time': overhead_ground_truth.mean_time(),
+                'WithoutProfiler_mean_ctx': overhead_ground_truth.mean_ctx()
+            }
+
+            for profiler in profilers:
+                profiler_overhead = OverheadData.compute_overhead_data(
+                    profiler, case_study, rev
+                )
+                if profiler_overhead:
+                    time_diff = profiler_overhead.config_wise_time_diff(
+                        overhead_ground_truth
+                    )
+                    ctx_diff = profiler_overhead.config_wise_ctx_diff(
+                        overhead_ground_truth
+                    )
+                    print(f"{time_diff=}")
+                    new_row[f"{profiler.name}_time_mean"] = np.mean(
+                        list(time_diff.values())
+                    )
+                    new_row[f"{profiler.name}_time_std"] = np.std(
+                        list(time_diff.values())
+                    )
+                    new_row[f"{profiler.name}_time_max"] = np.max(
+                        list(time_diff.values())
+                    )
+                    new_row[f"{profiler.name}_ctx_mean"] = np.mean(
+                        list(ctx_diff.values())
+                    )
+                    new_row[f"{profiler.name}_ctx_std"] = np.std(
+                        list(ctx_diff.values())
+                    )
+                    new_row[f"{profiler.name}_ctx_max"] = np.max(
+                        list(ctx_diff.values())
+                    )
+                else:
+                    new_row[f"{profiler.name}_time_mean"] = np.nan
+                    new_row[f"{profiler.name}_time_std"] = np.nan
+                    new_row[f"{profiler.name}_time_max"] = np.nan
+
+                    new_row[f"{profiler.name}_ctx_mean"] = np.nan
+                    new_row[f"{profiler.name}_ctx_std"] = np.nan
+                    new_row[f"{profiler.name}_ctx_max"] = np.nan
+
+            table_rows.append(new_row)
+            # df.append(new_row, ignore_index=True)
+
+        df = pd.concat([df, pd.DataFrame(table_rows)])
+        df.sort_values(["CaseStudy"], inplace=True)
+        print(f"{df=}")
+
+        colum_setup = [('', '', 'CaseStudy'), ('Baseline', 'time', 'mean'),
+                       ('Baseline', 'ctx', 'mean')]
+        for profiler in profilers:
+            colum_setup.append((profiler.name, 'time', 'mean'))
+            colum_setup.append((profiler.name, 'time', 'std'))
+            colum_setup.append((profiler.name, 'time', 'max'))
+
+            colum_setup.append((profiler.name, 'ctx', 'mean'))
+            colum_setup.append((profiler.name, 'ctx', 'std'))
+            colum_setup.append((profiler.name, 'ctx', 'max'))
+
+        print(f"{colum_setup=}")
+        df.columns = pd.MultiIndex.from_tuples(colum_setup)
+
+        # Table config
+
+        print(f"{df=}")
+
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            kwargs["column_format"] = "l|rr|rrrrrr"
+            kwargs["multicol_align"] = "|c"
+            kwargs["caption"
+                  ] = """This table depicts the overhead measurement data.
+For each case study, we show on the left the mean time it took to execute it without instrumentation (Baseline).
+To the right of the baseline, we show for each profiler the induced overhead.
+"""
+            style.format(precision=2)
+            style.hide()
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amsmath"))
+            doc.packages.append(Package("amssymb"))
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style=style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            document_decorator=add_extras,
+            **kwargs
+        )
+
+
+class FeaturePerfOverheadTableGenerator(
+    TableGenerator, generator_name="fperf-overhead", options=[]
+):
+    """Generator for `FeaturePerfOverheadTable`."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            FeaturePerfOverheadTable(self.table_config, **self.table_kwargs)
         ]
