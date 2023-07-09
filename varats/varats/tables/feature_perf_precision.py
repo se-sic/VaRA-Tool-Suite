@@ -12,6 +12,7 @@ from pylatex import Document, NoEscape, Package
 from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
+from varats.data.metrics import ClassificationResults
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_runner import FeaturePerfRunner
 from varats.jupyterhelper.file import load_tef_report
@@ -158,83 +159,6 @@ def map_to_negative_config_ids(reg_dict: tp.Dict[int, bool]) -> tp.List[int]:
     return [
         config_id for config_id, value in reg_dict.items() if value is False
     ]
-
-
-class ClassificationResults:
-    """Helper class to automatically calculate classification results."""
-
-    def __init__(
-        self, actual_positive_values: tp.List[tp.Any],
-        actual_negative_values: tp.List[tp.Any],
-        predicted_positive_values: tp.List[tp.Any],
-        predicted_negative_values: tp.List[tp.Any]
-    ) -> None:
-        self.__actual_positive_values = actual_positive_values
-        self.__actual_negative_values = actual_negative_values
-        self.__predicted_positive_values = predicted_positive_values
-        self.__predicted_negative_values = predicted_negative_values
-
-    @property
-    def P(self) -> int:  # pylint: disable=C0103
-        return len(self.__actual_positive_values)
-
-    @property
-    def N(self) -> int:  # pylint: disable=C0103
-        return len(self.__actual_negative_values)
-
-    @property
-    def PP(self) -> int:  # pylint: disable=C0103
-        return len(self.__predicted_positive_values)
-
-    @property
-    def PN(self) -> int:  # pylint: disable=C0103
-        return len(self.__predicted_negative_values)
-
-    @property
-    def TP(self) -> int:  # pylint: disable=C0103
-        return len(
-            set(self.__actual_positive_values
-               ).intersection(self.__predicted_positive_values)
-        )
-
-    @property
-    def TN(self) -> int:  # pylint: disable=C0103
-        return len(
-            set(self.__actual_negative_values
-               ).intersection(self.__predicted_negative_values)
-        )
-
-    @property
-    def FP(self) -> int:  # pylint: disable=C0103
-        return self.PP - self.TP
-
-    @property
-    def FN(self) -> int:  # pylint: disable=C0103
-        return self.PN - self.TN
-
-    def precision(self) -> float:
-        if self.PP == 0:
-            return 0.0
-
-        return self.TP / self.PP
-
-    def recall(self) -> float:
-        return self.TP / self.P
-
-    def specificity(self) -> float:
-        if self.N == 0:
-            if self.TN == 0:
-                return 1.0
-
-            return 0.0
-
-        return self.TN / self.N
-
-    def accuracy(self) -> float:
-        return (self.TP + self.TN) / (self.P + self.N)
-
-    def balanced_accuracy(self) -> float:
-        return (self.recall() + self.specificity()) / 2
 
 
 class Profiler():
