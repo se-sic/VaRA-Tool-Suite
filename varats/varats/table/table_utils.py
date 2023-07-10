@@ -80,7 +80,7 @@ def dataframe_to_table(
                         table (latex only)
         margin: margin around the table in cm
         document_decorator: callable function to decorate the document with
-                            addition things (e.g., packages, macros, etc.)
+                            additional things (e.g., packages, macros, etc.)
         **kwargs: kwargs that get passed to pandas' conversion functions
                   (``DataFrame.to_latex`` or ``DataFrame.to_html``)
 
