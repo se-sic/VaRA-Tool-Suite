@@ -142,12 +142,9 @@ def expr_to_str(expression: Expression) -> str:
         else:
             raise NotImplementedError()
     if expression.ASTOP == "and":
-        return f"({' & '.join(map(expr_to_str, expression.xs))})"
+        return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
     if expression.ASTOP == "or":
-        return f"({' | '.join(map(expr_to_str, expression.xs))})"
-    #if expression.ASTOP == "xor":
-    #    return f"({' ^ '.join(map(expr_to_str, expression.xs))})"
-
+        return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
     raise NotImplementedError()
 
 
@@ -350,11 +347,11 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     def diff(
         self,
         region: CodeRegion,
-        configurations: tp.Optional[tp.List[Configuration]] = None
+        configuration: tp.Optional[Configuration] = None
     ) -> None:
         """
-        Builds the difference between self (base code) and region (new code) by
-        comparing them.
+        Builds the symmetric difference between self (base code) and region (new
+        code) by comparing them.
 
         If features are given, annotate them.
         """
@@ -364,26 +361,32 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             ) or not x.is_covered() and not y.is_covered():
                 # No difference in coverage
                 x.count = 0
-            elif not x.is_covered() and y.is_covered():
-                x.count = 0
-                # Coverage decreased
-                """x.count = -1
-                if configurations is not None:
-                    kind = PresenceKind.BECOMES_INACTIVE
-                    for configuration in configurations:
-                        x.presence_conditions[kind].append(
-                            PresenceCondition(kind, configuration)
-                        )"""
-
             elif x.is_covered() and not y.is_covered():
+                # Coverage decreased
+                x.count = -1
+                if configuration is not None:
+                    kind = PresenceKind.BECOMES_INACTIVE
+                    x.presence_conditions[kind].append(
+                        PresenceCondition(kind, configuration)
+                    )
+
+            elif not x.is_covered() and y.is_covered():
                 # Coverage increased
                 x.count = 1
-                if configurations is not None:
+                if configuration is not None:
                     kind = PresenceKind.BECOMES_ACTIVE
-                    for configuration in configurations:
-                        x.presence_conditions[kind].append(
-                            PresenceCondition(kind, configuration)
-                        )
+                    x.presence_conditions[kind].append(
+                        PresenceCondition(kind, configuration)
+                    )
+
+    def annotate_covered(self, configuration: Configuration):
+        """Adds the presence condition to all covered regions."""
+        kind = PresenceKind.BECOMES_ACTIVE
+        for region in self.iter_breadth_first():
+            if region.is_covered():
+                region.presence_conditions[kind].append(
+                    PresenceCondition(kind, configuration)
+                )
 
     def is_identical(self, other: object) -> bool:
         """Is the code region equal and has the same coverage?"""
@@ -582,7 +585,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     def diff(
         self,
         report: CoverageReport,
-        configurations: tp.Optional[tp.List[Configuration]] = None
+        configuration: tp.Optional[Configuration] = None
     ) -> None:
         """Diff report from self."""
         for filename_a, filename_b in zip(
@@ -601,7 +604,14 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     function_b]
                 assert code_region_a == code_region_b
 
-                code_region_a.diff(code_region_b, configurations)
+                code_region_a.diff(code_region_b, configuration)
+
+    def annotate_covered(self, configuration: Configuration):
+        """Adds the presence condition to all covered code regions."""
+        for filename in self.filename_function_mapping:
+            for function in self.filename_function_mapping[filename]:
+                code_region = self.filename_function_mapping[filename][function]
+                code_region.annotate_covered(configuration)
 
     def _parse_instrs(self, csv_file: Path) -> None:
         with csv_file.open() as file:
@@ -985,7 +995,10 @@ def __feature_text(iterable: tp.Iterable[tp.Iterable[str]]) -> str:
     feature_buffer = set()
     for x in iterable:
         for feature in x:
-            if feature.startswith("+"):
+            if feature == "":
+                # Ignore empty buffer entries
+                continue
+            elif feature.startswith("+"):
                 feature_buffer.add(_color_str(feature, colors.green))
             elif feature.startswith("-"):
                 feature_buffer.add(_color_str(feature, colors.red))

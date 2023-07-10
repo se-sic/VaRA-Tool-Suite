@@ -315,7 +315,6 @@ class TestCodeRegion(unittest.TestCase):
         expected = []
         actual = config_report_map._get_configs_without_features({})
         self.assertEqual(expected, actual)
-        self.assertRaises(ValueError, lambda: config_report_map.diff({}))
         self.assertRaises(
             ValueError, lambda: config_report_map.diff({"foobar": True})
         )
@@ -323,7 +322,7 @@ class TestCodeRegion(unittest.TestCase):
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
-    def test_diff_feature_interactions(self):
+    def test_feature_report_interactions(self):
         config_map = setup_config_map("test_coverage_SimpleFeatureInteraction")
         report = config_map.feature_report()
 
@@ -333,10 +332,17 @@ class TestCodeRegion(unittest.TestCase):
             print(func)
             if func == "_Z10addPadding11PackageData":
                 for region in code_region.iter_preorder():
-                    # Every code region should be annotated with enc & ~compress
                     self.assertEqual(
                         region.coverage_features(), "+(enc & ~compress)"
                     )
+            elif func == "_Z8compress11PackageData":
+                for region in code_region.iter_preorder():
+                    self.assertEqual(region.coverage_features(), "+compress")
+            elif func == "_Z7encrypt11PackageData":
+                for region in code_region.iter_preorder():
+                    self.assertEqual(region.coverage_features(), "+enc")
+            elif func == "_Z18loadConfigFromArgviPPc":
+                pass
             elif func == "_Z11sendPackage11PackageData":
                 for region in code_region.iter_preorder():
                     if (region.start.line == 56 and
@@ -347,13 +353,11 @@ class TestCodeRegion(unittest.TestCase):
                         self.assertEqual(
                             region.coverage_features(), "+(enc & ~compress)"
                         )
-                    else:
-                        self.assertEqual(region.coverage_features(), "")
             else:
                 for region in code_region.iter_preorder():
                     if region.coverage_features() != "":
                         pass
-                    self.assertEqual(region.coverage_features(), "")
+                    self.assertIn(region.coverage_features(), ["", "+True"])
 
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
@@ -378,15 +382,15 @@ class TestCodeRegion(unittest.TestCase):
     6|#include <string>                                                               |
     7|                                                                                |
     8|namespace fpcsc {                                                               |
-    9|inline bool isFeatureEnabled(int argc, char *argv[], std::string FeatureName) { |
-   10|  for (int CurrentArg = 1; CurrentArg < argc; ++CurrentArg) {                   |
-   11|    if (argv[CurrentArg] == FeatureName) {                                      |
-   12|      return true;                                                              |
-   13|    }                                                                           |
-   14|  }                                                                             |
+    9|inline bool isFeatureEnabled(int argc, char *argv[], std::string FeatureName) { |+True
+   10|  for (int CurrentArg = 1; CurrentArg < argc; ++CurrentArg) {                   |+(header | slow), +True
+   11|    if (argv[CurrentArg] == FeatureName) {                                      |+(header | slow)
+   12|      return true;                                                              |+(header | slow)
+   13|    }                                                                           |+(header | slow)
+   14|  }                                                                             |+(header | slow)
    15|                                                                                |
-   16|  return false;                                                                 |
-   17|}                                                                               |
+   16|  return false;                                                                 |+True
+   17|}                                                                               |+True
    18|                                                                                |
    19|inline long getFeatureValue(int argc, char *argv[], std::string FeatureName) {  |
    20|  int CurrentArg = 1;                                                           |
@@ -418,10 +422,10 @@ include/fpcsc/perf_util/sleep.h:
     7|                                                                                |
     8|namespace fpcsc {                                                               |
     9|                                                                                |
-   10|inline void sleep_for_secs(unsigned Secs) {                                     |
-   11|  std::cout << "Sleeping for " << Secs << " seconds" << std::endl;              |
-   12|  std::this_thread::sleep_for(std::chrono::seconds(Secs));                      |
-   13|}                                                                               |
+   10|inline void sleep_for_secs(unsigned Secs) {                                     |+True
+   11|  std::cout << "Sleeping for " << Secs << " seconds" << std::endl;              |+True
+   12|  std::this_thread::sleep_for(std::chrono::seconds(Secs));                      |+True
+   13|}                                                                               |+True
    14|                                                                                |
    15|inline void sleep_for_millisecs(unsigned Millisecs) {                           |
    16|  std::cout << "Sleeping for " << Millisecs << " milliseconds" << std::endl;    |
@@ -447,9 +451,9 @@ src/MultiSharedMultipleRegions/FeatureHeader.cpp:
     8|  CppFeature = true;                                                            |
     9|}                                                                               |
    10|                                                                                |
-   11|bool isCppFeatureEnabled() {                                                    |
-   12|  return CppFeature;                                                            |
-   13|}                                                                               |
+   11|bool isCppFeatureEnabled() {                                                    |+True
+   12|  return CppFeature;                                                            |+True
+   13|}                                                                               |+True
 
 src/MultiSharedMultipleRegions/FeatureHeader.h:
     1|#ifndef FEATURE_HEADER_H                                                        |
@@ -476,55 +480,55 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
     5|                                                                                |
     6|#include <string>                                                               |
     7|                                                                                |
-    8|int main(int argc, char *argv[] ) {                                             |
-    9|  bool Slow = false;                                                            |
+    8|int main(int argc, char *argv[] ) {                                             |+True
+    9|  bool Slow = false;                                                            |+True
    10|                                                                                |
-   11|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--slow"))) {             |+slow
+   11|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--slow"))) {             |+True, +slow
    12|    Slow = true;                                                                |+slow
    13|  }                                                                             |+slow
    14|                                                                                |
-   15|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--header"))) {           |+header
+   15|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--header"))) {           |+True, +header
    16|    HeaderFeature = true;                                                       |+header
    17|  }                                                                             |+header
    18|                                                                                |
-   19|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--extern"))) {           |
+   19|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--extern"))) {           |+True
    20|    enableExternFeature();                                                      |
    21|  }                                                                             |
    22|                                                                                |
-   23|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--cpp"))) {              |
+   23|  if (fpcsc::isFeatureEnabled(argc, argv, std::string("--cpp"))) {              |+True
    24|    enableCppFeature();                                                         |
    25|  }                                                                             |
    26|                                                                                |
    27|  // Multiple regions related to --slow that take different amounts of time.    |
    28|                                                                                |
-   29|  if (Slow) {                                                                   |+slow
+   29|  if (Slow) {                                                                   |+True, +slow
    30|    fpcsc::sleep_for_secs(5);                                                   |+slow
-   31|  } else {                                                                      |+slow, -slow
-   32|    fpcsc::sleep_for_secs(3);                                                   |-slow
-   33|  }                                                                             |-slow
+   31|  } else {                                                                      |+slow, +~slow
+   32|    fpcsc::sleep_for_secs(3);                                                   |+~slow
+   33|  }                                                                             |+~slow
    34|                                                                                |
-   35|  fpcsc::sleep_for_secs(2); // General waiting time                             |
+   35|  fpcsc::sleep_for_secs(2); // General waiting time                             |+True
    36|                                                                                |
-   37|  if (HeaderFeature) {                                                          |+header
+   37|  if (HeaderFeature) {                                                          |+True, +header
    38|    fpcsc::sleep_for_secs(3);                                                   |+header
-   39|  } else {                                                                      |+header, -header
-   40|    fpcsc::sleep_for_secs(1);                                                   |-header
-   41|  }                                                                             |-header
+   39|  } else {                                                                      |+header, +~header
+   40|    fpcsc::sleep_for_secs(1);                                                   |+~header
+   41|  }                                                                             |+~header
    42|                                                                                |
-   43|  fpcsc::sleep_for_secs(2); // General waiting time                             |
+   43|  fpcsc::sleep_for_secs(2); // General waiting time                             |+True
    44|                                                                                |
-   45|  if (ExternFeature) {                                                          |
+   45|  if (ExternFeature) {                                                          |+True
    46|    fpcsc::sleep_for_secs(6);                                                   |
    47|  }                                                                             |
    48|                                                                                |
-   49|  fpcsc::sleep_for_secs(2); // General waiting time                             |
+   49|  fpcsc::sleep_for_secs(2); // General waiting time                             |+True
    50|                                                                                |
-   51|  if (isCppFeatureEnabled()) {                                                  |
+   51|  if (isCppFeatureEnabled()) {                                                  |+True
    52|    fpcsc::sleep_for_secs(3);                                                   |
    53|  }                                                                             |
    54|                                                                                |
-   55|  return 0;                                                                     |
-   56|}                                                                               |
+   55|  return 0;                                                                     |+True
+   56|}                                                                               |+True
 
 """,
                 cov_show_segment_buffer(

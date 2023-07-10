@@ -118,18 +118,7 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
                 )
 
         configs_with_features = self._get_configs_with_features(features)
-        configs_without_features = self._get_configs_with_features({
-            feature: not value for feature, value in features.items()
-        })
-        #configs_without_features = self._get_configs_without_features(features)
-
-        _ = ",".join("\n" + str(x.options()) for x in configs_with_features)
-        print(f"Configs with features:\n[{_}\n]")
-
-        _ = ",".join(
-            "\n" + str(set(x.options())) for x in configs_without_features
-        )
-        print(f"Configs without features:\n[{_}\n]")
+        configs_without_features = self._get_configs_without_features(features)
 
         if len(configs_with_features
               ) == 0 or len(configs_without_features) == 0:
@@ -145,11 +134,14 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
             list(deepcopy(self[x]) for x in configs_without_features)
         )
 
-        report_with_features.diff(
-            report_without_features, configs_with_features
-        )
+        # Convert features to configuration
+        configuration = ConfigurationImpl()
+        for feature, value in features.items():
+            configuration.set_config_option(feature, value)
 
-        return report_with_features
+        report_without_features.diff(report_with_features, configuration)
+
+        return report_without_features
 
     def merge_all(self) -> CoverageReport:
         """Merge all available Reports into one."""
@@ -157,23 +149,20 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
 
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
-        diffs: tp.List[CoverageReport] = []
+        annotated_reports = []
         for features in powerset(self.available_features):
-            print(features)
             feature_values = {feature: True for feature in features}
             for feature in self.available_features:
                 if feature not in feature_values:
                     feature_values[feature] = False
-            print(feature_values)
-            diffs.append(self.diff(feature_values))
-            #print(cov_show_segment_buffer(
-            #        cov_segments(self.diff(feature_values), base_dir),
-            #        show_counts=False,
-            #        show_coverage_features=True
-            #    ))
+            configs = self._get_configs_with_features(feature_values)
+            assert len(configs) == 1
+            annotated_report = deepcopy(self[configs[0]])
+            annotated_report.annotate_covered(configs[0])
+            annotated_reports.append(annotated_report)
 
-        result = deepcopy(diffs[0])
-        for report in diffs[1:]:
+        result = annotated_reports[0]
+        for report in annotated_reports[1:]:
             result.combine_features(report)
 
         return result
