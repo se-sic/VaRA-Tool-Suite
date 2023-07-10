@@ -248,8 +248,8 @@ class ClassificationResults:
     def f1_score(self) -> float:
         """In statistical analysis of binary classification, the F-score or
         F-measure is a measure of a test's accuracy."""
-        numerator = (2 * self.TP)
-        denominator = (2 * self.TP + self.FP + self.FN)
+        numerator = 2 * self.TP
+        denominator = 2 * self.TP + self.FP + self.FN
         if denominator == 0.0:
             if numerator == 0.0:
                 return 1.0
