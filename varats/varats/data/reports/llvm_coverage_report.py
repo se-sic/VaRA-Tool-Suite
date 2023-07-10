@@ -15,8 +15,13 @@ from tempfile import TemporaryDirectory
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
-from pyeda.boolalg.expr import Complement, Variable
-from pyeda.inter import Expression, exprvar, expr, espresso_exprs
+from pyeda.boolalg.expr import Complement, Variable  # type: ignore
+from pyeda.inter import (  # type: ignore
+    Expression,
+    exprvar,
+    expr,
+    espresso_exprs,
+)
 
 from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
@@ -95,7 +100,7 @@ class PresenceConditions(
 ):
     """Presence Conditions obtained from diffing coverage data."""
 
-    def extend(self, other: PresenceConditions):
+    def extend(self, other: PresenceConditions) -> None:
         for kind, conditions in other.items():
             self[kind].extend(conditions)
 
@@ -377,7 +382,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
                         PresenceCondition(kind, configuration)
                     )
 
-    def annotate_covered(self, configuration: Configuration):
+    def annotate_covered(self, configuration: Configuration) -> None:
         """Adds the presence condition to all covered regions."""
         kind = PresenceKind.BECOMES_ACTIVE
         for region in self.iter_breadth_first():
@@ -604,7 +609,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
                 code_region_a.diff(code_region_b, configuration)
 
-    def annotate_covered(self, configuration: Configuration):
+    def annotate_covered(self, configuration: Configuration) -> None:
         """Adds the presence condition to all covered code regions."""
         for filename in self.filename_function_mapping:
             for function in self.filename_function_mapping[filename]:
