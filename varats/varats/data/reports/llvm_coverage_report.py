@@ -15,8 +15,10 @@ from tempfile import TemporaryDirectory
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
+from pyeda.boolalg.expr import Complement, Variable
+from pyeda.inter import Expression, exprvar, expr, espresso_exprs
 
-from varats.base.configuration import Configuration, ConfigurationImpl
+from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
 
 CUTOFF_LENGTH = 80
@@ -49,10 +51,6 @@ class RegionStart(Location):
 
 class RegionEnd(Location):
     pass
-
-
-from pyeda.boolalg.expr import Complement, Variable
-from pyeda.inter import Expression, exprvar, expr, espresso_exprs
 
 
 class PresenceKind(Enum):
@@ -113,8 +111,8 @@ class PresenceConditions(
 
     def all_conditions(self) -> tp.Set[str]:
         """All conditions that are relevant."""
-        output = set()
-        for presence_kind in self.keys():
+        output: tp.Set[str] = set()
+        for presence_kind in self:
             if self[presence_kind]:
                 output.update(
                     str(feature)
@@ -124,7 +122,7 @@ class PresenceConditions(
 
     def __str__(self) -> str:
         output = []
-        for presence_kind in self.keys():
+        for presence_kind in self:
             if self[presence_kind]:
                 expression = self.simplify(presence_kind)
                 output.append(f"{presence_kind.value}{expr_to_str(expression)}")
@@ -132,15 +130,15 @@ class PresenceConditions(
 
 
 def expr_to_str(expression: Expression) -> str:
+    """Converts expression back to str representation."""
     if expression.is_zero() or expression.is_one():
         return str(bool(expression))
     if expression.ASTOP == "lit":
         if isinstance(expression, Complement):
-            return f"~{expr_to_str(expression.__invert__())}"
+            return f"~{expr_to_str(~expression)}"
         if isinstance(expression, Variable):
             return str(expression)
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
     if expression.ASTOP == "and":
         return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
     if expression.ASTOP == "or":
@@ -793,11 +791,9 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
 Count = tp.Optional[int]
 LinePart = str
-CoverageFeatures = tp.Optional[tp.List[str]]
-CoverageFeaturesSet = tp.Optional[tp.Set[str]]
+CoverageFeatures = tp.Optional[str]
 VaraFeatures = tp.Optional[tp.Set[str]]
-Segment = tp.Tuple[Count, LinePart, CoverageFeatures, CoverageFeaturesSet,
-                   VaraFeatures]
+Segment = tp.Tuple[Count, LinePart, CoverageFeatures, VaraFeatures]
 Segments = tp.List[Segment]
 SegmentBuffer = tp.DefaultDict[int, Segments]
 FileSegmentBufferMapping = tp.Mapping[str, SegmentBuffer]
@@ -940,7 +936,7 @@ def __segments_dict_to_table( # pylint: disable=too-many-locals
         if len(segments) > 1:
             # Workaround: Ignore counts for last segment with whitespaces
             # and single ';' that ends with "\n"
-            segments[-1] = (None, segments[-1][1], None, None, None
+            segments[-1] = (None, segments[-1][1], None, None
                            ) if segments[-1][1].endswith("\n") and (
                                str.isspace(segments[-1][1].replace(";", "", 1))
                            ) else segments[-1]
@@ -998,7 +994,7 @@ def __feature_text(iterable: tp.Iterable[tp.Iterable[str]]) -> str:
             if feature == "":
                 # Ignore empty buffer entries
                 continue
-            elif feature.startswith("+"):
+            if feature.startswith("+"):
                 feature_buffer.add(_color_str(feature, colors.green))
             elif feature.startswith("-"):
                 feature_buffer.add(_color_str(feature, colors.red))
