@@ -15,8 +15,9 @@ from benchbuild.utils.requirements import Requirement, SlurmMem
 import varats.experiments.vara.feature_blame_experiment as FBE
 from varats.data.reports.feature_blame_report import (
     StructuralFeatureBlameReport as SFBR,
+)
+from varats.data.reports.feature_blame_report import (
     DataflowFeatureBlameReport as DFBR,
-    generate_features_scfi_data
 )
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
@@ -98,9 +99,8 @@ class StructuralFeatureBlameReportGeneration(
             )
 
             test_fbr = SFBR(path=result_file.full_path())
-            
-            # test_fbr.print()
-            print(generate_features_scfi_data(test_fbr))
+
+            test_fbr.print()
 
         return actions.StepResult.OK
 
