@@ -215,35 +215,35 @@ class TestClassificationResults(unittest.TestCase):
     def test_no_positive_values(self) -> None:
         """Test if call metrics are correctly calculated even without positive
         values."""
-        cr = ConfusionMatrix([], [4, 5, 6], [], [4, 5, 6])
+        conf_matrix = ConfusionMatrix([], [4, 5, 6], [], [4, 5, 6])
 
-        self.assertTrue(math.isnan(cr.precision()))
-        self.assertTrue(math.isnan(cr.recall()))
-        self.assertEqual(cr.specificity(), 1.0)
-        self.assertEqual(cr.accuracy(), 1.0)
-        self.assertTrue(math.isnan(cr.balanced_accuracy()))
-        self.assertTrue(math.isnan(cr.f1_score()))
+        self.assertTrue(math.isnan(conf_matrix.precision()))
+        self.assertTrue(math.isnan(conf_matrix.recall()))
+        self.assertEqual(conf_matrix.specificity(), 1.0)
+        self.assertEqual(conf_matrix.accuracy(), 1.0)
+        self.assertTrue(math.isnan(conf_matrix.balanced_accuracy()))
+        self.assertTrue(math.isnan(conf_matrix.f1_score()))
 
     def test_no_true_positive_values(self) -> None:
         """Test if call metrics are correctly calculated even without positive
         values."""
-        cr = ConfusionMatrix([], [4, 5, 6], [1, 2, 3], [4, 5, 6])
+        conf_matrix = ConfusionMatrix([], [4, 5, 6], [1, 2, 3], [4, 5, 6])
 
-        self.assertEqual(cr.precision(), 0.0)
-        self.assertTrue(math.isnan(cr.recall()))
-        self.assertEqual(cr.specificity(), 1.0)
-        self.assertEqual(cr.accuracy(), 1.0)
-        self.assertTrue(math.isnan(cr.balanced_accuracy()))
-        self.assertEqual(cr.f1_score(), 0.0)
+        self.assertEqual(conf_matrix.precision(), 0.0)
+        self.assertTrue(math.isnan(conf_matrix.recall()))
+        self.assertEqual(conf_matrix.specificity(), 1.0)
+        self.assertEqual(conf_matrix.accuracy(), 1.0)
+        self.assertTrue(math.isnan(conf_matrix.balanced_accuracy()))
+        self.assertEqual(conf_matrix.f1_score(), 0.0)
 
     def test_no_pred_positive_values(self) -> None:
         """Test if call metrics are correctly calculated even without positive
         values."""
-        cr = ConfusionMatrix([1, 2, 3], [4, 5, 6], [], [4, 5, 6])
+        conf_matrix = ConfusionMatrix([1, 2, 3], [4, 5, 6], [], [4, 5, 6])
 
-        self.assertTrue(math.isnan(cr.precision()))
-        self.assertEqual(cr.recall(), 0.0)
-        self.assertEqual(cr.specificity(), 1.0)
-        self.assertEqual(cr.accuracy(), 0.5)
-        self.assertEqual(cr.balanced_accuracy(), 0.5)
-        self.assertTrue(math.isnan(cr.f1_score()))
+        self.assertTrue(math.isnan(conf_matrix.precision()))
+        self.assertEqual(conf_matrix.recall(), 0.0)
+        self.assertEqual(conf_matrix.specificity(), 1.0)
+        self.assertEqual(conf_matrix.accuracy(), 0.5)
+        self.assertEqual(conf_matrix.balanced_accuracy(), 0.5)
+        self.assertTrue(math.isnan(conf_matrix.f1_score()))
