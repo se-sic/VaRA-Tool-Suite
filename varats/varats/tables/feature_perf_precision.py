@@ -410,6 +410,25 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
 
+        # insert totals
+        totals = {
+            'CaseStudy': "Total (avg)",
+            "Configs": 0,
+            "RegressedConfigs": 0
+        }
+        for profiler in profilers:
+            totals[f"{profiler.name}_precision"] = df[
+                f"{profiler.name}_precision"].mean()
+            totals[f"{profiler.name}_recall"] = df[f"{profiler.name}_recall"
+                                                  ].mean()
+            totals[f"{profiler.name}_baccuracy"] = df[
+                f"{profiler.name}_baccuracy"].mean()
+
+        tdf = pd.DataFrame(totals, index=[0])
+        df = pd.concat([df, tdf], ignore_index=True)
+
+        print(f"{df=}")
+
         symb_precision = "\\textsc{PPV}"
         symb_recall = "\\textsc{TPR}"
         symb_b_accuracy = "\\textsc{BA}"
