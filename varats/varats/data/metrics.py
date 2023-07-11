@@ -135,7 +135,14 @@ def min_max_normalize(values: pd.Series) -> pd.Series:
 
 
 class ClassificationResults:
-    """Helper class to automatically calculate classification results."""
+    """
+    Helper class to automatically calculate classification results.
+
+                        |  Predicted Positive (PP)  |  Predicted Negative (PN)
+    --------------------|---------------------------|--------------------------
+    Actual Positive (P) |  True Positive      (TP)  |  False Negative     (FN)
+    Actual Negative (N) |  False Positive     (FP)  |  True Negative      (TN)
+    """
 
     def __init__(
         self, actual_positive_values: tp.List[tp.Any],
