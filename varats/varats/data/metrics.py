@@ -4,7 +4,6 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import sklearn.metrics as mt
 
 
 def lorenz_curve(data: pd.Series) -> pd.Series:
