@@ -4,6 +4,7 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import sklearn.metrics as mt
 
 
 def lorenz_curve(data: pd.Series) -> pd.Series:
@@ -134,7 +135,7 @@ def min_max_normalize(values: pd.Series) -> pd.Series:
     return tp.cast(pd.Series, (values - min_value) / (max_value - min_value))
 
 
-class ClassificationResults:
+class ConfusionMatrix:
     """
     Helper class to automatically calculate classification results.
 
@@ -207,40 +208,28 @@ class ClassificationResults:
     def precision(self) -> float:
         """Positive predictive value (PPV)"""
         if self.PP == 0:
-            if self.TP == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return self.TP / self.PP
 
     def recall(self) -> float:
         """True positive rate (TPR)"""
         if self.P == 0:
-            if self.TP == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return self.TP / self.P
 
     def specificity(self) -> float:
         """True negative rate (TNR)"""
         if self.N == 0:
-            if self.TN == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return self.TN / self.N
 
     def accuracy(self) -> float:
         """Accuracy (ACC)"""
         if (self.P + self.N) == 0:
-            if (self.TP + self.TN) == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return (self.TP + self.TN) / (self.P + self.N)
 
@@ -260,9 +249,6 @@ class ClassificationResults:
         numerator = 2 * self.TP
         denominator = 2 * self.TP + self.FP + self.FN
         if denominator == 0.0:
-            if numerator == 0.0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return numerator / denominator

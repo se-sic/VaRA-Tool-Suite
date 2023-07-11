@@ -1,4 +1,5 @@
 """Test example file that can be used as orientation."""
+import math
 import unittest
 
 import pandas as pd
@@ -8,7 +9,7 @@ from varats.data.metrics import (
     lorenz_curve,
     gini_coefficient,
     normalized_gini_coefficient,
-    ClassificationResults,
+    ConfusionMatrix,
 )
 
 
@@ -95,28 +96,29 @@ class TestNormalizedGiniCoefficient(unittest.TestCase):
 class TestClassificationResults(unittest.TestCase):
     """Test if the classification metrics are correctly calculated."""
 
-    all_good: ClassificationResults
-    all_bad: ClassificationResults
-    balanced_50_50: ClassificationResults
-    skewed_positiv_entries: ClassificationResults
-    skewed_negative_entries: ClassificationResults
+    all_good: ConfusionMatrix
+    all_bad: ConfusionMatrix
+    balanced_50_50: ConfusionMatrix
+    skewed_positiv_entries: ConfusionMatrix
+    skewed_negative_entries: ConfusionMatrix
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.all_good = ClassificationResults([1, 2, 3], [4, 5, 6], [1, 2, 3],
-                                             [4, 5, 6])
+        cls.all_good = ConfusionMatrix([1, 2, 3], [4, 5, 6], [1, 2, 3],
+                                       [4, 5, 6])
 
-        cls.all_bad = ClassificationResults([1, 2, 3], [4, 5, 6], [4, 5, 6],
-                                            [1, 2, 3])
-        cls.balanced_50_50 = ClassificationResults([1, 2, 3, 4], [5, 6, 7, 8],
-                                                   [1, 2, 5, 6], [3, 4, 7, 8])
+        cls.all_bad = ConfusionMatrix([1, 2, 3], [4, 5, 6], [4, 5, 6],
+                                      [1, 2, 3])
+        cls.balanced_50_50 = ConfusionMatrix([1, 2, 3, 4], [5, 6, 7, 8],
+                                             [1, 2, 5, 6], [3, 4, 7, 8])
 
-        cls.skewed_positiv_entries = ClassificationResults([
-            2, 3, 4, 5, 6, 7, 8, 9
-        ], [1], [3, 4, 5, 6, 7, 8, 9], [1, 2])
-        cls.skewed_negative_entries = ClassificationResults([1], [
-            2, 3, 4, 5, 6, 7, 8, 9
-        ], [1, 2], [3, 4, 5, 6, 7, 8, 9])
+        cls.skewed_positiv_entries = ConfusionMatrix([2, 3, 4, 5, 6, 7, 8, 9],
+                                                     [1], [3, 4, 5, 6, 7, 8, 9],
+                                                     [1, 2])
+        cls.skewed_negative_entries = ConfusionMatrix([1],
+                                                      [2, 3, 4, 5, 6, 7, 8, 9],
+                                                      [1, 2],
+                                                      [3, 4, 5, 6, 7, 8, 9])
 
     def test_true_positive(self) -> None:
         """Test if true positives are correctly calculated."""
@@ -209,3 +211,39 @@ class TestClassificationResults(unittest.TestCase):
         self.assertAlmostEqual(
             self.skewed_negative_entries.f1_score(), 0.66666666, places=7
         )
+
+    def test_no_positive_values(self) -> None:
+        """Test if call metrics are correctly calculated even without positive
+        values."""
+        cr = ConfusionMatrix([], [4, 5, 6], [], [4, 5, 6])
+
+        self.assertTrue(math.isnan(cr.precision()))
+        self.assertTrue(math.isnan(cr.recall()))
+        self.assertEqual(cr.specificity(), 1.0)
+        self.assertEqual(cr.accuracy(), 1.0)
+        self.assertTrue(math.isnan(cr.balanced_accuracy()))
+        self.assertTrue(math.isnan(cr.f1_score()))
+
+    def test_no_true_positive_values(self) -> None:
+        """Test if call metrics are correctly calculated even without positive
+        values."""
+        cr = ConfusionMatrix([], [4, 5, 6], [1, 2, 3], [4, 5, 6])
+
+        self.assertEqual(cr.precision(), 0.0)
+        self.assertTrue(math.isnan(cr.recall()))
+        self.assertEqual(cr.specificity(), 1.0)
+        self.assertEqual(cr.accuracy(), 1.0)
+        self.assertTrue(math.isnan(cr.balanced_accuracy()))
+        self.assertEqual(cr.f1_score(), 0.0)
+
+    def test_no_pred_positive_values(self) -> None:
+        """Test if call metrics are correctly calculated even without positive
+        values."""
+        cr = ConfusionMatrix([1, 2, 3], [4, 5, 6], [], [4, 5, 6])
+
+        self.assertTrue(math.isnan(cr.precision()))
+        self.assertEqual(cr.recall(), 0.0)
+        self.assertEqual(cr.specificity(), 1.0)
+        self.assertEqual(cr.accuracy(), 0.5)
+        self.assertEqual(cr.balanced_accuracy(), 0.5)
+        self.assertTrue(math.isnan(cr.f1_score()))
