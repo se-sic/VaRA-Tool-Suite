@@ -142,6 +142,8 @@ class ClassificationResults:
     --------------------|---------------------------|--------------------------
     Actual Positive (P) |  True Positive      (TP)  |  False Negative     (FN)
     Actual Negative (N) |  False Positive     (FP)  |  True Negative      (TN)
+
+    Reference: https://en.wikipedia.org/wiki/Precision_and_recall
     """
 
     def __init__(
