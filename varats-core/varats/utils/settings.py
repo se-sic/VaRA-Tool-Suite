@@ -317,6 +317,7 @@ def create_missing_folders() -> None:
         config_node = local_cfg[cfg_varname]
         if config_node.has_value() and\
                 config_node.value is not None and\
+                not isinstance(config_node.value, s.ConfigPath) and\
                 not path.isdir(config_node.value):
             makedirs(config_node.value)
 
@@ -327,6 +328,7 @@ def create_missing_folders() -> None:
     create_missing_folder_for_cfg("plot_dir", vara_cfg()["plots"])
     create_missing_folder_for_cfg("table_dir", vara_cfg()["tables"])
     create_missing_folder_for_cfg("artefacts_dir", vara_cfg()["artefacts"])
+    create_missing_folder_for_cfg("result", bb_cfg()["varats"])
 
 
 def save_config() -> None:
