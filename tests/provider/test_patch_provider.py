@@ -46,7 +46,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
         patch_config = ProjectPatchesConfiguration.from_xml(
             Path(
                 TEST_INPUTS_DIR /
-                'patch-configs/FeaturePerfCSCollection/test-patch-configuration.xml'
+                'patch_configs/FeaturePerfCSCollection/test-patch-configuration.xml'
             )
         )
         cls.patch_config = patch_config

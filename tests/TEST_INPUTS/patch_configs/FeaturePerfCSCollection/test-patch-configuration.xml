@@ -29,6 +29,10 @@
 					<start>01f9f1f07bef22d4248e8349aba4f0c1f204607e</start>
 					<end>8ca5cc28e6746eef7340064b5d843631841bf31e</end>
 				</revision_range>
+				<revision_range>
+					<start>start2</start>
+					<end>end2</end>
+				</revision_range>
 			</include_revisions>
 		</patch>
 		<patch>

@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import benchbuild as bb
+import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
 from benchbuild.utils import actions
@@ -15,6 +16,7 @@ from benchbuild.utils.revision_ranges import (
 )
 from plumbum import local
 
+from varats.project.project_util import get_local_project_git_path
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.git_util import CommitHash, ShortCommitHash
 
@@ -88,13 +90,68 @@ class Patch:
         shortname: str,
         description: str,
         path: Path,
-        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None
+        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
+        tags: tp.Optional[tp.Set[str]] = None
     ):
         self.project_name: str = project_name
         self.shortname: str = shortname
         self.description: str = description
         self.path: Path = path
         self.valid_revisions: tp.Optional[tp.Set[CommitHash]] = valid_revisions
+        self.tags: tp.Optional[tp.Set[str]] = tags
+
+    @staticmethod
+    def from_yaml(yaml_path: Path):
+        """Creates a Patch from a YAML file."""
+
+        yaml_dict = yaml.safe_load(yaml_path.read_text())
+
+        project_name = yaml_dict["project_name"]
+        shortname = yaml_dict["shortname"]
+        description = yaml_dict["description"]
+        path = yaml_dict["path"]
+        tags = yaml_dict["tags"]
+
+        main_repo_git = _get_git_for_path(get_local_project_git_path(project_name))
+
+        def parse_revisions(rev_dict: tp.Dict) -> tp.Set[CommitHash]:
+            res: tp.Set[CommitHash] = set()
+
+            if "single_revision" in rev_dict:
+                if type(rev_dict["single_revision"]) == str:
+                    res.add(ShortCommitHash(rev_dict["single_revision"]))
+                else:
+                    res.update([ShortCommitHash(r) for r in rev_dict["single_revision"]])
+
+            if "revision_range" in rev_dict:
+                if type(rev_dict["revision_range"]) == list:
+                    for rev_range in rev_dict["revision_range"]:
+                        res.update({ShortCommitHash(h) for h in _get_all_revisions_between(
+                            rev_range["start"],
+                            rev_range["end"],
+                            main_repo_git)})
+                else:
+                    res.update({ShortCommitHash(h) for h in _get_all_revisions_between(
+                        rev_dict["revision_range"]["start"],
+                        rev_dict["revision_range"]["end"],
+                        main_repo_git
+                    )})
+
+            return res
+
+        if "include_revisions" in yaml_dict:
+            include_revisions = parse_revisions(yaml_dict["include_revisions"])
+        else:
+            include_revisions = {
+                ShortCommitHash(h)
+                for h in main_repo_git('log', '--pretty=%H', '--first-parent'
+                                  ).strip().split()
+            }
+
+        if "exclude_revisions" in yaml_dict:
+            include_revisions.difference_update(parse_revisions(yaml_dict["exclude_revisions"]))
+
+        return Patch(project_name, shortname, description, path, include_revisions, tags)
 
 
 class ProjectPatchesConfiguration:
