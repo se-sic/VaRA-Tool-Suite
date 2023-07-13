@@ -81,72 +81,6 @@ class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
 
         super().__init__(tmp)
 
-    def create_feature_filter(
-        self, features: tp.Dict[str, bool]
-    ) -> tp.Callable[[Configuration], bool]:
-        """Create filter for the given features."""
-
-        def feature_filter(config: Configuration) -> bool:
-            """Filter all configs that contain the given features."""
-            for feature, value in features.items():
-                if not contains(config, feature, value):
-                    return False
-            return True
-
-        return feature_filter
-
-    def _get_configs_with_features(
-        self, features: tp.Dict[str, bool]
-    ) -> tp.List[FrozenConfiguration]:
-        feature_filter = self.create_feature_filter(features)
-        return list(filter(feature_filter, list(self)))
-
-    def _get_configs_without_features(
-        self, features: tp.Dict[str, bool]
-    ) -> tp.List[FrozenConfiguration]:
-        feature_filter = self.create_feature_filter(features)
-        return list(filterfalse(feature_filter, list(self)))
-
-    def diff(self, features: tp.Dict[str, bool]) -> CoverageReport:
-        """Creates a coverage report by diffing all coverage reports that
-        contain the given features with all that do not share them."""
-
-        for feature in features:
-            if feature not in self.available_features:
-                raise ValueError(
-                    f"No reports with feature '{feature}' available!"
-                )
-
-        configs_with_features = self._get_configs_with_features(features)
-        configs_without_features = self._get_configs_without_features(features)
-
-        if len(configs_with_features
-              ) == 0 or len(configs_without_features) == 0:
-            raise ValueError(
-                "Diff impossible! No reports with given features available!"
-            )
-
-        report_with_features = _merge_reports(
-            list(deepcopy(self[x]) for x in configs_with_features)
-        )
-
-        report_without_features = _merge_reports(
-            list(deepcopy(self[x]) for x in configs_without_features)
-        )
-
-        # Convert features to configuration
-        configuration = ConfigurationImpl()
-        for feature, value in features.items():
-            configuration.set_config_option(feature, value)
-
-        report_without_features.diff(report_with_features, configuration)
-
-        return report_without_features
-
-    def merge_all(self) -> CoverageReport:
-        """Merge all available Reports into one."""
-        return _merge_reports(deepcopy(list(self.values())))
-
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
         annotated_reports = []
@@ -352,21 +286,6 @@ BinaryConfigsMapping = tp.NewType(
 )
 
 
-def non_empty_powerset(iterable: tp.Iterable[tp.Any]) -> tp.Iterable[tp.Any]:
-    """Powerset without empty set."""
-    iterator = powerset(iterable)
-    next(iterator)
-    return iterator
-
-
-def _merge_reports(reports: tp.Iterable[CoverageReport]) -> CoverageReport:
-    reports = iter(reports)
-    report = next(reports)
-    for coverage_report in reports:
-        report.merge(coverage_report)
-    return report
-
-
 class CoveragePlot(Plot, plot_name="coverage"):
     """Plot to visualize coverage diffs."""
 
@@ -452,11 +371,6 @@ class CoveragePlot(Plot, plot_name="coverage"):
                         binary_dir = Path(tmpdir) / binary
                         binary_dir.mkdir()
 
-                        coverage_diff = binary_dir / "coverage_diff.txt"
-                        _plot_coverage_diff(
-                            config_report_map, base_dir, coverage_diff
-                        )
-
                         coverage_annotations = \
                             binary_dir / "coverage_annotations.txt"
                         _plot_coverage_annotations(
@@ -477,23 +391,6 @@ class CoveragePlot(Plot, plot_name="coverage"):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
-
-
-def _plot_coverage_diff(
-    config_report_map: ConfigCoverageReportMapping, base_dir: Path,
-    outfile: Path
-) -> None:
-    with outfile.open("w") as output:
-        output.write("Code executed by all feature combinations\n")
-        output.write(cov_show(config_report_map.merge_all(), base_dir))
-        for features in non_empty_powerset(
-            config_report_map.available_features
-        ):
-            output.write(f"Diff for '{features}':\n")
-            diff = config_report_map.diff({
-                feature: True for feature in features
-            })
-            output.write(cov_show(diff, base_dir))
 
 
 def _plot_coverage_annotations(

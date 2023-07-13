@@ -298,14 +298,6 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
                 region.parent = node
                 break
 
-    def merge(self, region: CodeRegion) -> None:
-        """Merges region into self by adding all counts of region to the counts
-        of self."""
-        for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
-            if x != y:
-                raise AssertionError("CodeRegions are not identical")
-            x.count += y.count
-
     def combine_features(self, region: CodeRegion) -> None:
         """Combines features of region with features of self."""
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
@@ -346,41 +338,6 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             # Location neither in start line not in end line
             return self.start.line < line < self.end.line
         return False
-
-    def diff(
-        self,
-        region: CodeRegion,
-        configuration: tp.Optional[Configuration] = None
-    ) -> None:
-        """
-        Builds the symmetric difference between self (base code) and region (new
-        code) by comparing them.
-
-        If features are given, annotate them.
-        """
-        for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
-            assert x == y, "CodeRegions are not identical"
-            if x.is_covered() and y.is_covered(
-            ) or not x.is_covered() and not y.is_covered():
-                # No difference in coverage
-                x.count = 0
-            elif x.is_covered() and not y.is_covered():
-                # Coverage decreased
-                x.count = -1
-                if configuration is not None:
-                    kind = PresenceKind.BECOMES_INACTIVE
-                    x.presence_conditions[kind].append(
-                        PresenceCondition(kind, configuration)
-                    )
-
-            elif not x.is_covered() and y.is_covered():
-                # Coverage increased
-                x.count = 1
-                if configuration is not None:
-                    kind = PresenceKind.BECOMES_ACTIVE
-                    x.presence_conditions[kind].append(
-                        PresenceCondition(kind, configuration)
-                    )
 
     def annotate_covered(self, configuration: Configuration) -> None:
         """Adds the presence condition to all covered regions."""
@@ -545,26 +502,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             FunctionCodeRegionMapping
         )
 
-    def merge(self, report: CoverageReport) -> None:
-        """Merge report into self."""
-        for filename_a, filename_b in zip(
-            self.filename_function_mapping, report.filename_function_mapping
-        ):
-            assert Path(filename_a).name == Path(filename_b).name
-
-            for function_a, function_b in zip(
-                self.filename_function_mapping[filename_a],
-                report.filename_function_mapping[filename_b]
-            ):
-                assert function_a == function_b
-                code_region_a = self.filename_function_mapping[filename_a][
-                    function_a]
-                code_region_b = report.filename_function_mapping[filename_b][
-                    function_b]
-                assert code_region_a == code_region_b
-
-                code_region_a.merge(code_region_b)
-
     def combine_features(self, report: CoverageReport) -> None:
         """Combine features of report with self."""
         for filename_a, filename_b in zip(
@@ -584,30 +521,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 assert code_region_a == code_region_b
 
                 code_region_a.combine_features(code_region_b)
-
-    def diff(
-        self,
-        report: CoverageReport,
-        configuration: tp.Optional[Configuration] = None
-    ) -> None:
-        """Diff report from self."""
-        for filename_a, filename_b in zip(
-            self.filename_function_mapping, report.filename_function_mapping
-        ):
-            assert Path(filename_a).name == Path(filename_b).name
-
-            for function_a, function_b in zip(
-                self.filename_function_mapping[filename_a],
-                report.filename_function_mapping[filename_b]
-            ):
-                assert function_a == function_b
-                code_region_a = self.filename_function_mapping[filename_a][
-                    function_a]
-                code_region_b = report.filename_function_mapping[filename_b][
-                    function_b]
-                assert code_region_a == code_region_b
-
-                code_region_a.diff(code_region_b, configuration)
 
     def annotate_covered(self, configuration: Configuration) -> None:
         """Adds the presence condition to all covered code regions."""
