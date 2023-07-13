@@ -21,7 +21,6 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.utils.settings import save_config, vara_cfg
 from varats.varats.plots.llvm_coverage_plot import (
-    BinaryReportsMapping,
     ConfusionMatrix,
     ConfusionEntry,
     CoveragePlotGenerator,
