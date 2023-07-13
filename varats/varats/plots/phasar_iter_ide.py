@@ -362,12 +362,15 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                     (2.0 / 3, light_cmap[2]), (1, dark_cmap[2])]
         )
 
-        ax: matplotlib.axes.Axes = sns.heatmap(
+        fig, ax = plt.subplots(figsize=(3.5, 4))
+
+        sns.heatmap(
             data,
             annot=annot,
-            # fmt='',
+            fmt=".1f",
             cmap=cmap,
             vmax=3,
+            ax=ax,
         )
 
         colorbar = ax.collections[0].colorbar
@@ -392,7 +395,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         data = self.make_dataframe(self.compute_mean_speedup)
 
         print(f"make_phasar_plot: {data}")
-        for ana in ["Taint", "IIA"]:
+        for ana in ["Taint", "LCA", "IIA"]:
             Rows = data.loc[data["Analysis"] == ana][self.YNAME]
             Min = Rows.min()
             Max = Rows.max()
@@ -629,6 +632,46 @@ class PhasarIterIDESpeedupScatterPlot(
         return ax
 
 
+class PhasarIterIDESpeedupTargetScatter(
+    PhasarIterIDERuntimeSpeedupPlotBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter',
+    yname="Runtime Old vs New [s]"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        # print("Dataset: ", data.to_string())
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Runtime Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
 class PhasarIterIDEMemSpeedupScatterPlot(
     PhasarIterIDEMemorySpeedupPlotBase,
     plot_name='phasar-iter-ide-mem-speedup-scatter',
@@ -660,6 +703,48 @@ class PhasarIterIDEMemSpeedupScatterPlot(
         ax.set_ylabel("Old Memory [MiB]")
         ax.set_xlabel("New Memory [MiB]")
         # ax.set_yscale('log')
+
+        return ax
+
+
+class PhasarIterIDEMemSpeedupTargetScatter(
+    PhasarIterIDEMemorySpeedupPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-target-scatter',
+    yname="Memory Old vs New [s]"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        for ana in ["Taint", "LCA", "IIA"]:
+            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+            Min = Rows.min()
+            Max = Rows.max()
+            Mean = Rows.mean()
+            print(
+                f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+            )
+
+        print("Dataset: ", data.to_string())
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Memory Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
         return ax
 
@@ -700,6 +785,79 @@ class PhasarIterIDESpeedupGCPlot(
                     })
 
         return nodes
+
+
+class PhasarIterIDESpeedupGCScatterPlot(
+    PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-speedup-scatter-gc',
+    yname="Runtime Speedup /w GC"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            gc_aggregates = self._get_gc_aggregates(report, ana)
+
+            for jf in [self.JF1, self.JF2]:
+                if aggregates[jf] is None or gc_aggregates[jf] is None:
+                    nodes.append({
+                        self.YNAME: float('nan'),
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                        "Target": cs,
+                    })
+                    continue
+                for s in speedup_computer(
+                    aggregates[jf].measurements_wall_clock_time,
+                    gc_aggregates[jf].measurements_wall_clock_time
+                ):
+                    nodes.append({
+                        self.YNAME: s,
+                        "JF": self._get_jf_name(jf),
+                        "Analysis": ana,
+                        "Target": cs,
+                    })
+
+        return nodes
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        # print("Dataset: ", data.to_string())
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="Analysis",
+            style="JF",
+            linewidth=0,
+            alpha=0.5,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Runtime Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
 
 
 class PhasarIterIDEMemSpeedupGCPlot(
@@ -1118,7 +1276,16 @@ class CAIGScatterPlotGenerator(
             PhasarIterIDESpeedupScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
+            PhasarIterIDESpeedupTargetScatter(
+                self.plot_config, **self.plot_kwargs
+            ),
             PhasarIterIDEMemSpeedupScatterPlot(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDEMemSpeedupTargetScatter(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDESpeedupGCScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
         ]

@@ -227,7 +227,7 @@ class IterIDEBlameReportExperiment(VersionExperiment, shorthand="IterIDEBRIA"):
         #     )
         # )
 
-        reps = range(0, 3)
+        reps = range(0, 1)
 
         analysis_actions.append(
             ZippedExperimentSteps(

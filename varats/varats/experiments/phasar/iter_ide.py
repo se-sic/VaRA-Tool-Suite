@@ -964,6 +964,86 @@ class IDELinearConstantAnalysisExperiment(
         return analysis_actions
 
 
+class IDELinearConstantAnalysisExperimentWL(
+    VersionExperiment, shorthand="IterIDE-WL"
+):
+    """Experiment class to build and analyse a project with an
+    IterIDEBasicStats."""
+
+    NAME = "PhasarIterIDE-WL"
+
+    REPORT_SPEC = ReportSpecification(PhasarIterIDEStatsReport)
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
+    CONTAINER = ContainerImage().run("apt", "install", "-y", "time")
+
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self)
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << RunWLLVM()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+        ]
+
+        # Only consider the main/first binary
+        print(f"{project.name}")
+        if len(project.binaries) < 1:
+            return []
+        binary = project.binaries[0]
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), self.REPORT_SPEC.main_report, project, binary
+        )
+
+        analysis_actions = []
+
+        analysis_actions += get_bc_cache_actions(
+            project,
+            bc_file_extensions=bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
+            )
+        )
+
+        reps = range(0, 1)
+
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_file, [
+                    *[
+                        IterIDETimeNew(
+                            project, rep, binary, analysis_type, worklist_kind
+                        ) for analysis_type in _get_enabled_analyses()
+                        for worklist_kind in _get_enabled_worklist_kinds()
+                        for rep in reps
+                    ],
+                ]
+            )
+        )
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+
+
 # class IDELinearConstantAnalysisExperimentDebug(
 #     VersionExperiment, shorthand="IterIDEDebug"
 # ):

@@ -12,6 +12,7 @@ from varats.data.reports.phasar_iter_ide import (
 from varats.experiments.phasar.iter_ide import (
     IDELinearConstantAnalysisExperiment,
 )
+from varats.experiments.vara.iter_ide_br_iia import IterIDEBlameReportExperiment
 from varats.jupyterhelper.file import load_phasar_iter_ide_stats_report
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -32,7 +33,7 @@ def latex_sanitize_project_name(project_name: str) -> str:
 
 
 def from_kbytes_to_mbytes(kbytes: float) -> float:
-    return kbytes / 1000.
+    return kbytes / 1024.
 
 
 def all_from_kbytes_to_mbytes(kbytes_list: tp.List[float]) -> tp.List[float]:
@@ -62,7 +63,13 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                 PhasarIterIDEStatsReport,
                 get_case_study_file_name_filter(case_study)
             )
+            iia_report_files = get_processed_revisions_files(
+                case_study.project_name, IterIDEBlameReportExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
             # print(f"{report_files=}")
+            # print(f"{iia_report_files=}")
 
             revision = None
             revisions = case_study.revisions
@@ -71,44 +78,61 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
 
             rev_range = revision.hash if revision else "HEAD"
 
-            for report_file in report_files:
-                report = load_phasar_iter_ide_stats_report(report_file)
+            if (len(report_files) == 0 and len(iia_report_files) == 0):
+                print(f"Skip {project_name}")
+                continue
+
+            for report_file, iia_report_file in itertools.zip_longest(
+                report_files, iia_report_files
+            ):
+                report = load_phasar_iter_ide_stats_report(
+                    report_file
+                ) if report_file is not None else None
+                iia_report = load_phasar_iter_ide_stats_report(
+                    iia_report_file
+                ) if iia_report_file is not None else None
+                # print(iia_report)
+                if report is None:
+                    # print("Have IIA report, but no regular report")
+                    report = iia_report
+                elif not (iia_report is None):
+                    # print("Have both reports")
+                    report.merge_with(iia_report)
+
+                # print(f"Report: {report}")
+
                 project_cls = get_project_cls_by_name(project_name)
                 project_repo = get_local_project_git_path(project_name)
                 if not report.basic_bc_stats:
-                    raise TableDataEmpty(
-                        "Stats file was not present in the report."
-                    )
+                    print(f"No basic stats on {project_name}, skip")
+                    continue
+                    # raise TableDataEmpty(
+                    #     "Stats file was not present in the report."
+                    # )
 
-                typestate_time = np.nan
-                typestate_mem = np.nan
-                if report.old_typestate:
-                    typestate_time = np.mean(
-                        report.old_typestate.measurements_wall_clock_time
-                    )
-                    typestate_mem = from_kbytes_to_mbytes(
-                        np.mean(report.old_typestate.max_resident_sizes)
-                    )
+                def handle_time_report(tr: tp.Optional[TimeReportAggregate]):
+                    if tr is None:
+                        return np.nan, np.nan
+                    if tr.num_timeouts == len(tr.measurements_wall_clock_time):
+                        time = "timeout"
+                        mem = np.nan
+                        return time, mem
+                    time = np.mean(tr.measurements_wall_clock_time)
+                    if tr.num_out_of_memory == len(tr.max_resident_sizes):
+                        mem = 250 * 1024
+                    else:
+                        mem = from_kbytes_to_mbytes(
+                            np.mean(tr.max_resident_sizes)
+                        )
 
-                taint_time = np.nan
-                taint_mem = np.nan
-                if report.old_taint:
-                    taint_time = np.mean(
-                        report.old_taint.measurements_wall_clock_time
-                    )
-                    taint_mem = from_kbytes_to_mbytes(
-                        np.mean(report.old_taint.max_resident_sizes)
-                    )
+                    return time, mem
 
-                lca_time = np.nan
-                lca_mem = np.nan
-                if report.old_lca:
-                    lca_time = np.mean(
-                        report.old_lca.measurements_wall_clock_time
-                    )
-                    lca_mem = from_kbytes_to_mbytes(
-                        np.mean(report.old_lca.max_resident_sizes)
-                    )
+                typestate_time, typestate_mem = handle_time_report(
+                    report.old_typestate
+                )
+                taint_time, taint_mem = handle_time_report(report.old_taint)
+                lca_time, lca_mem = handle_time_report(report.old_lca)
+                iia_time, iia_mem = handle_time_report(report.old_iia)
 
                 cs_dict = {
                     latex_sanitize_project_name(project_name): {
@@ -121,10 +145,10 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                             calc_repo_loc(project_repo, rev_range),
                         "IR-LOC":
                             report.basic_bc_stats.num_instructions,
-                        "Typestate-T":
-                            typestate_time,
-                        "Typestate-M":
-                            typestate_mem,
+                        "IIA-T":
+                            iia_time,
+                        "IIA-M":
+                            iia_mem,
                         "Taint-T":
                             taint_time,
                         "Taint-M":
@@ -133,6 +157,10 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                             lca_time,
                         "LCA-M":
                             lca_mem,
+                        "Typestate-T":
+                            typestate_time,
+                        "Typestate-M":
+                            typestate_mem,
                     }
                 }
 
@@ -146,16 +174,18 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
         print(df.columns)
 
         df.columns = pd.MultiIndex.from_tuples([
-            ('', 'Revision'),
-            ('', 'Domain'),
-            ('', 'LOC'),
-            ('', 'IR-LOC'),
-            ('Typestate', 'Time (s)'),
-            ('Typestate', 'Mem (mbytes)'),
-            ('Taint', 'Time (s)'),
-            ('Taint', 'Mem (mbytes)'),
-            ('LCA', 'Time (s)'),
-            ('LCA', 'Mem (mbytes)'),
+            ('', '{Revision}'),
+            ('', '{Domain}'),
+            ('', '{LOC}'),
+            ('', '{IR-LOC}'),
+            ('IIA', '{Time}'),
+            ('IIA', '{Mem}'),
+            ('Taint', '{Time}'),
+            ('Taint', '{Mem}'),
+            ('LCA', '{Time}'),
+            ('LCA', '{Mem}'),
+            ('Typestate', '{Time}'),
+            ('Typestate', '{Mem}'),
         ])
 
         print(df)
@@ -169,26 +199,26 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             style.highlight_between(
                 left=cluster_memory_limit,
                 props='cellcolor:{red};',
-                subset=[('Typestate', 'Mem (mbytes)'),
-                        ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
+                subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
+                        ('LCA', '{Mem}'), ('IIA', '{Mem}')]
             )
             style.highlight_between(
                 left=dev_memory_limit,
                 right=cluster_memory_limit,
                 props='cellcolor:{orange};',
-                subset=[('Typestate', 'Mem (mbytes)'),
-                        ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
+                subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
+                        ('LCA', '{Mem}'), ('IIA', '{Mem}')]
             )
             # df.style.format('j')
-            kwargs["column_format"] = "lr|crr|rr|rr|rr"
+            kwargs["column_format"] = "lr|crr|rr|rr|rr|rr"
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
             kwargs[
                 "caption"
-            ] = f"""On the left, we see all evaluted projectes with additional information, such as, revision we analyzed, the amount of C/C++ code.
-The three columns on the right show time and memory consumption of the benchmarked analyses utilizing the current version of the IDE solver.
-The orange cells indicate that the memory of a usual developer maschine ({dev_memory_limit} mbytes) was exceeded and the red cells indicate that even a compute cluster with {cluster_memory_limit} mbytes would be not enough."""
+            ] = f"""On the left, we see all evaluted projectes with additional information, such as, revision we analyzed, the amount of C/C++ code and the amount of LLVM IR code. The IR code size is important because both IDE implementations work on IR level.
+The three columns on the right show time [s] and memory consumption [MiB] of the benchmarked analyses utilizing the current version of the \\texttt{{IDESolver}}.
+The orange cells indicate that the memory of a usual developer machine ({dev_memory_limit} MiB) was exceeded and the red cells indicate that even a compute cluster with {cluster_memory_limit} MiB would be not enough."""
             style.format(precision=2)
 
         return dataframe_to_table(
@@ -1711,6 +1741,15 @@ class PhasarIterIDESolverStatsGenerator(
         return [
             PhasarIterIDESolverStats(self.table_config, **self.table_kwargs)
         ]
+
+
+class PhasarIterIDEStatsGenerator(
+    TableGenerator, generator_name="phasar-iter-ide-stats", options=[]
+):
+    """TODO: """
+
+    def generate(self) -> tp.List[Table]:
+        return [PhasarIterIDEStats(self.table_config, **self.table_kwargs)]
 
 
 class PhasarIterIDEALLTablesGenerator(
