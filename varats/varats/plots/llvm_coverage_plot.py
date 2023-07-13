@@ -7,21 +7,15 @@ from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import filterfalse
 from pathlib import Path
-
-from more_itertools import powerset
 
 from varats.base.configuration import (
     Configuration,
     PlainCommandlineConfiguration,
-    FrozenConfiguration,
-    ConfigurationImpl,
 )
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CoverageReport,
-    cov_show,
     cov_segments,
     cov_show_segment_buffer,
     FileSegmentBufferMapping,
@@ -55,48 +49,33 @@ def contains(configuration: Configuration, name: str, value: tp.Any) -> bool:
     return False
 
 
-class ConfigCoverageReportMapping(tp.Dict[FrozenConfiguration, CoverageReport]):
-    """Maps Configs to CoverageReports."""
-
-    def __init__(
-        self, dictionary: tp.Dict[FrozenConfiguration, CoverageReport]
-    ) -> None:
-        available_features = set()
-        for config in dictionary:
+def available_features(
+    objs: tp.Union[tp.Iterable[CoverageReport], tp.Iterable[Configuration]]
+) -> tp.Set[str]:
+    """Returns available features in all reports."""
+    result = set()
+    for obj in objs:
+        config = obj if isinstance(obj, Configuration) else obj.configuration
+        if config is not None:
             for feature in get_option_names(config):
-                available_features.add(feature)
-        self.available_features = frozenset(available_features)
+                result.add(feature)
+    return result
 
-        tmp = {}
-        for configuration, report in dictionary.items():
-            # Recreate configuration with missing features
-            new_configuration = configuration.unfreeze()
-            for option_name in available_features.difference(
-                set(get_option_names(configuration))
-            ):
-                # Option was not given. Assume this corresponds to value False.
-                new_configuration.set_config_option(option_name, False)
-            new_configuration = new_configuration.freeze()
-            tmp[new_configuration] = report
 
-        super().__init__(tmp)
+class CoverageReports:
+    """Helper class to work with a list of coverage reports."""
+
+    def __init__(self, reports: tp.List[CoverageReport]) -> None:
+        super().__init__()
+
+        self._reports = reports
+        self.available_features = frozenset(available_features(self._reports))
 
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
-        annotated_reports = []
-        for features in powerset(self.available_features):
-            feature_values = {feature: True for feature in features}
-            for feature in self.available_features:
-                if feature not in feature_values:
-                    feature_values[feature] = False
-            configs = self._get_configs_with_features(feature_values)
-            assert len(configs) == 1
-            annotated_report = deepcopy(self[configs[0]])
-            annotated_report.annotate_covered(configs[0])
-            annotated_reports.append(annotated_report)
 
-        result = annotated_reports[0]
-        for report in annotated_reports[1:]:
+        result = deepcopy(self._reports[0])
+        for report in self._reports[1:]:
             result.combine_features(report)
 
         return result
@@ -281,17 +260,17 @@ Recall: {self.recall()}
 """
 
 
-BinaryConfigsMapping = tp.NewType(
-    "BinaryConfigsMapping", tp.Dict[str, ConfigCoverageReportMapping]
+BinaryReportsMapping = tp.NewType(
+    "BinaryReportsMapping", tp.DefaultDict[str, tp.List[CoverageReport]]
 )
 
 
 class CoveragePlot(Plot, plot_name="coverage"):
     """Plot to visualize coverage diffs."""
 
-    def _get_binary_config_map(
+    def _get_binary_reports_map(
         self, case_study: CaseStudy, report_files: tp.List[ReportFilepath]
-    ) -> tp.Optional[BinaryConfigsMapping]:
+    ) -> tp.Optional[BinaryReportsMapping]:
         try:
             config_map = load_configuration_map_for_case_study(
                 get_loaded_paper_config(), case_study,
@@ -300,27 +279,29 @@ class CoveragePlot(Plot, plot_name="coverage"):
         except StopIteration:
             return None
 
-        binary_config_map: tp.DefaultDict[str, tp.Dict[
-            FrozenConfiguration, CoverageReport]] = defaultdict(dict)
+        binary_reports_map: BinaryReportsMapping = BinaryReportsMapping(
+            defaultdict(list)
+        )
 
         for report_filepath in report_files:
             binary = report_filepath.report_filename.binary_name
             config_id = report_filepath.report_filename.config_id
             assert config_id is not None
 
-            coverage_report = CoverageReport.from_report(
-                report_filepath.full_path()
-            )
             config = config_map.get_configuration(config_id)
             assert config is not None
-            binary_config_map[binary][config.freeze()] = coverage_report
 
-        result = {}
-        for binary in list(binary_config_map):
-            result[binary] = ConfigCoverageReportMapping(
-                binary_config_map[binary]
+            # Set not set features in configuration to false
+            for feature in available_features(config_map.configurations()):
+                if feature not in get_option_names(config):
+                    config.set_config_option(feature, False)
+
+            coverage_report = CoverageReport.from_report(
+                report_filepath.full_path(), config
             )
-        return BinaryConfigsMapping(result)
+            binary_reports_map[binary].append(coverage_report)
+
+        return binary_reports_map
 
     def plot(self, view_mode: bool) -> None:
         pass
@@ -350,11 +331,11 @@ class CoveragePlot(Plot, plot_name="coverage"):
             revisions[revision].append(report_file)
 
         for revision in list(revisions):
-            binary_config_map = self._get_binary_config_map(
+            binary_reports_map = self._get_binary_reports_map(
                 case_study, revisions[revision]
             )
 
-            if not binary_config_map:
+            if not binary_reports_map:
                 raise ValueError(
                     "Cannot load configs for case study '" +
                     case_study.project_name + "'! " +
@@ -365,27 +346,29 @@ class CoveragePlot(Plot, plot_name="coverage"):
                 zip_file = plot_dir / self.plot_file_name("zip")
                 with ZippedReportFolder(zip_file) as tmpdir:
 
-                    for binary in binary_config_map:
-                        config_report_map = binary_config_map[binary]
+                    for binary in binary_reports_map:
+                        reports = CoverageReports(binary_reports_map[binary])
 
                         binary_dir = Path(tmpdir) / binary
                         binary_dir.mkdir()
 
-                        coverage_annotations = \
-                            binary_dir / "coverage_annotations.txt"
+                        feature_annotations = \
+                            binary_dir / "feature_annotations.txt"
+
                         _plot_coverage_annotations(
-                            config_report_map, base_dir, coverage_annotations
+                            reports, base_dir, feature_annotations
                         )
 
                         print(
                             cov_show_segment_buffer(
-                                config_report_map.feature_segments(base_dir),
+                                reports.feature_segments(base_dir),
                                 show_counts=False,
-                                show_coverage_features=True
+                                show_coverage_features=True,
+                                show_vara_features=True
                             )
                         )
 
-                        _plot_confusion_matrix(config_report_map, binary_dir)
+                        _plot_confusion_matrix(reports, binary_dir)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -394,24 +377,22 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
 
 def _plot_coverage_annotations(
-    config_report_map: ConfigCoverageReportMapping, base_dir: Path,
-    outfile: Path
+    reports: CoverageReports, base_dir: Path, outfile: Path
 ) -> None:
     with outfile.open("w") as output:
         output.write(
             cov_show_segment_buffer(
-                config_report_map.feature_segments(base_dir),
+                reports.feature_segments(base_dir),
                 show_counts=False,
-                show_coverage_features=True
+                show_coverage_features=True,
+                show_vara_features=True
             )
         )
 
 
-def _plot_confusion_matrix(
-    config_report_map: ConfigCoverageReportMapping, outdir: Path
-) -> None:
+def _plot_confusion_matrix(reports: CoverageReports, outdir: Path) -> None:
 
-    matrix_dict = config_report_map.confusion_matrix({
+    matrix_dict = reports.confusion_matrix({
         "enc": "Encryption",
         "compress": "Compression"
     })

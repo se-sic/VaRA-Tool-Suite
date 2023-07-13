@@ -1,19 +1,16 @@
 import shutil
 import unittest
 from collections import defaultdict
-from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from plumbum import colors
-from pyeda.inter import exprvar, expr
 
 from tests.helper_utils import (
     run_in_test_environment,
     UnitTestFixtures,
     TEST_INPUTS_DIR,
 )
-from varats.base.configuration import ConfigurationImpl
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
@@ -23,7 +20,6 @@ from varats.data.reports.llvm_coverage_report import (
     cov_show,
     VaraInstr,
     FeatureKind,
-    PresenceKind,
 )
 from varats.data.reports.llvm_coverage_report import (
     __cov_fill_buffer as cov_fill_buffer,
@@ -31,63 +27,10 @@ from varats.data.reports.llvm_coverage_report import (
 from varats.data.reports.llvm_coverage_report import (
     __get_next_line_and_column as get_next_line_and_column,
 )
-from varats.paper.paper_config import load_paper_config, get_loaded_paper_config
-from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.plot.plots import PlotConfig
-from varats.plots.llvm_coverage_plot import (
-    CoveragePlotGenerator,
-    ConfigCoverageReportMapping,
-)
 from varats.projects.discover_projects import initialize_projects
-from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
-from varats.utils.settings import vara_cfg, save_config
-from varats.varats.experiments.vara.llvm_coverage_experiment import (
-    GenerateCoverageExperiment,
-)
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
-
-
-def setup_config_map(config_name: str) -> ConfigCoverageReportMapping:
-    # setup config
-    vara_cfg()['paper_config']['current_config'] = config_name
-    load_paper_config()
-    save_config()
-
-    plot_generator = CoveragePlotGenerator(
-        PlotConfig.from_kwargs(view=False),
-        experiment_type=[GenerateCoverageExperiment],
-        case_study=get_loaded_paper_config().
-        get_case_studies("FeaturePerfCSCollection")
-    )
-    plots = plot_generator.generate()
-    assert len(plots) == 1
-    coverage_plot = plots[0]
-
-    case_studies = get_loaded_paper_config().get_all_case_studies()
-    assert len(case_studies) == 1
-    case_study = case_studies[0]
-
-    project_name = case_study.project_name
-
-    report_files = get_processed_revisions_files(
-        project_name,
-        GenerateCoverageExperiment,
-        CoverageReport,
-        get_case_study_file_name_filter(case_study),
-        only_newest=False,
-    )
-
-    binary_config_map = coverage_plot._get_binary_config_map(
-        case_study, report_files
-    )
-    assert binary_config_map
-
-    config_map = binary_config_map[next(iter(binary_config_map))]
-    assert len(config_map) == 4
-
-    return config_map
 
 
 class TestCodeRegion(unittest.TestCase):
@@ -337,7 +280,7 @@ class TestCodeRegion(unittest.TestCase):
         report = CoverageReport.from_report(
             Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
             "GenCov-CovR-FeaturePerfCSCollection-SimpleFeatureInteraction-4300ea495e"
-            / "ecf322be-565c-4ff0-8ed7-ad8e008049c8_config-0_success.zip"
+            / "ecf322be-565c-4ff0-8ed7-ad8e008049c8_config-0_success.zip", None
         )
 
         for func, code_region in report.filename_function_mapping[
@@ -399,10 +342,16 @@ class TestCodeRegion(unittest.TestCase):
                         self.assertEqual(region.vara_instrs, [])
                     else:
                         self.fail()
-                    #print(region.vara_instrs)
-                    #print(region.vara_features())
-            #else:
-            #    self.fail()
+            else:
+                for region in code_region.iter_preorder():
+                    self.assertTrue(
+                        all(
+                            map(
+                                lambda instr: instr.kind == FeatureKind.
+                                NORMAL_REGION, region.vara_instrs
+                            )
+                        )
+                    )
 
     def test_cov_fill_buffer(self):
         lines = {1: "Hello World!\n", 2: "Goodbye;\n"}

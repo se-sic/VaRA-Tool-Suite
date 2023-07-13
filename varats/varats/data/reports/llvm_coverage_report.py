@@ -472,9 +472,11 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         return c_r
 
     @classmethod
-    def from_report(cls, report_file: Path) -> CoverageReport:
+    def from_report(
+        cls, report_file: Path, configuration: Configuration
+    ) -> CoverageReport:
         """CoverageReport from report file."""
-        c_r = cls(report_file)
+        c_r = cls(report_file, configuration)
         with TemporaryDirectory() as tmpdir:
             shutil.unpack_archive(report_file, tmpdir)
 
@@ -493,14 +495,23 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             for csv_file in filter(csv_filter, Path(tmpdir).iterdir()):
                 c_r._parse_instrs(csv_file)
 
+            if c_r.configuration is not None:
+                c_r.annotate_covered(c_r.configuration)
+
         return c_r
 
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self,
+        path: Path,
+        configuration: tp.Optional[Configuration] = None
+    ) -> None:
         super().__init__(path)
 
         self.filename_function_mapping = FilenameFunctionMapping(
             FunctionCodeRegionMapping
         )
+
+        self.configuration = configuration
 
     def combine_features(self, report: CoverageReport) -> None:
         """Combine features of report with self."""
@@ -524,6 +535,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
     def annotate_covered(self, configuration: Configuration) -> None:
         """Adds the presence condition to all covered code regions."""
+
         for filename in self.filename_function_mapping:
             for function in self.filename_function_mapping[filename]:
                 code_region = self.filename_function_mapping[filename][function]

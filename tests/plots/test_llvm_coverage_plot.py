@@ -1,9 +1,7 @@
 import unittest
 from unittest.mock import create_autospec
 
-from tests.data.test_llvm_coverage_report import setup_config_map
 from tests.helper_utils import run_in_test_environment, UnitTestFixtures
-from varats.base.configuration import PlainCommandlineConfiguration
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
@@ -12,12 +10,22 @@ from varats.data.reports.llvm_coverage_report import (
     CoverageReport,
     cov_show_segment_buffer,
 )
+from varats.experiments.vara.llvm_coverage_experiment import (
+    GenerateCoverageExperiment,
+)
+from varats.paper.paper_config import get_loaded_paper_config, load_paper_config
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.plot.plots import PlotConfig
 from varats.projects.discover_projects import initialize_projects
+from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
+from varats.utils.settings import save_config, vara_cfg
 from varats.varats.plots.llvm_coverage_plot import (
-    ConfigCoverageReportMapping,
+    BinaryReportsMapping,
     ConfusionMatrix,
     ConfusionEntry,
+    CoveragePlotGenerator,
+    CoverageReports,
 )
 from varats.varats.plots.llvm_coverage_plot import (
     classify_feature as _classify_feature,
@@ -26,6 +34,47 @@ from varats.varats.plots.llvm_coverage_plot import classify_all as _classify_all
 from varats.varats.plots.llvm_coverage_plot import Classification
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
+
+
+def setup_reports(config_name: str) -> CoverageReports:
+    # setup config
+    vara_cfg()['paper_config']['current_config'] = config_name
+    load_paper_config()
+    save_config()
+
+    plot_generator = CoveragePlotGenerator(
+        PlotConfig.from_kwargs(view=False),
+        experiment_type=[GenerateCoverageExperiment],
+        case_study=get_loaded_paper_config().
+        get_case_studies("FeaturePerfCSCollection")
+    )
+    plots = plot_generator.generate()
+    assert len(plots) == 1
+    coverage_plot = plots[0]
+
+    case_studies = get_loaded_paper_config().get_all_case_studies()
+    assert len(case_studies) == 1
+    case_study = case_studies[0]
+
+    project_name = case_study.project_name
+
+    report_files = get_processed_revisions_files(
+        project_name,
+        GenerateCoverageExperiment,
+        CoverageReport,
+        get_case_study_file_name_filter(case_study),
+        only_newest=False,
+    )
+
+    binary_reports_map = coverage_plot._get_binary_reports_map(
+        case_study, report_files
+    )
+    assert binary_reports_map
+
+    reports = binary_reports_map[next(iter(binary_reports_map))]
+    assert len(reports) == 4
+
+    return CoverageReports(reports)
 
 
 class TestCodeRegion(unittest.TestCase):
@@ -207,124 +256,12 @@ class TestCodeRegion(unittest.TestCase):
             classify_all(region, 0.0), Classification.TRUE_NEGATIVE
         )
 
-    def test_feature_config_report_map(self):
-        report_slow = create_autospec(CoverageReport)
-        report_slow_header = create_autospec(CoverageReport)
-        report_header = create_autospec(CoverageReport)
-        report = create_autospec(CoverageReport)
-
-        config_slow = PlainCommandlineConfiguration(["--slow"]).freeze()
-        config_slow_header = PlainCommandlineConfiguration([
-            "--slow", "--header"
-        ]).freeze()
-        config_header = PlainCommandlineConfiguration(["--header"]).freeze()
-        config = PlainCommandlineConfiguration([]).freeze()
-
-        config_report_map = ConfigCoverageReportMapping({
-            config_slow: report_slow,
-            config_slow_header: report_slow_header,
-            config_header: report_header,
-            config: report
-        })
-
-        self.assertEqual(
-            config_report_map.available_features, set(["slow", "header"])
-        )
-
-        expected = [
-            {
-                "slow": True,
-                "header": False
-            },
-            {
-                "slow": True,
-                "header": True
-            },
-        ]
-        actual = config_report_map._get_configs_with_features({"slow": True})
-        self.assertEqual(expected, actual)
-        expected = [
-            {
-                "slow": False,
-                "header": True
-            },
-            {
-                "slow": False,
-                "header": False
-            },
-        ]
-        actual = config_report_map._get_configs_with_features({"slow": False})
-        self.assertEqual(expected, actual)
-
-        self.assertEqual(
-            config_report_map._get_configs_with_features({"slow": False}),
-            config_report_map._get_configs_without_features({"slow": True})
-        )
-        expected = [
-            {
-                "slow": True,
-                "header": True
-            },
-        ]
-        actual = config_report_map._get_configs_with_features({
-            "slow": True,
-            "header": True
-        })
-        self.assertEqual(expected, actual)
-
-        expected = [
-            {
-                "slow": True,
-                "header": False
-            },
-            {
-                "slow": False,
-                "header": True
-            },
-            {
-                "slow": False,
-                "header": False
-            },
-        ]
-        actual = config_report_map._get_configs_without_features({
-            "slow": True,
-            "header": True
-        })
-        self.assertEqual(expected, actual)
-        expected = [
-            {
-                "slow": True,
-                "header": False
-            },
-            {
-                "slow": True,
-                "header": True
-            },
-            {
-                "slow": False,
-                "header": True
-            },
-            {
-                "slow": False,
-                "header": False
-            },
-        ]
-        actual = config_report_map._get_configs_with_features({})
-        self.assertEqual(expected, actual)
-
-        expected = []
-        actual = config_report_map._get_configs_without_features({})
-        self.assertEqual(expected, actual)
-        self.assertRaises(
-            ValueError, lambda: config_report_map.diff({"foobar": True})
-        )
-
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_feature_report_interactions(self):
-        config_map = setup_config_map("test_coverage_SimpleFeatureInteraction")
-        report = config_map.feature_report()
+        reports = setup_reports("test_coverage_SimpleFeatureInteraction")
+        report = reports.feature_report()
 
         # Only feature interactions should be annotated
         for func, code_region in report.filename_function_mapping[
@@ -364,9 +301,7 @@ class TestCodeRegion(unittest.TestCase):
     )
     def test_line_feature_plot(self):
         self.maxDiff = None
-        config_map = setup_config_map(
-            "test_coverage_MultiSharedMultipleRegions"
-        )
+        reports = setup_reports("test_coverage_MultiSharedMultipleRegions")
         initialize_projects()
         commit_hash = FullCommitHash("27f17080376e409860405c40744887d81d6b3f34")
         with RepositoryAtCommit(
@@ -532,7 +467,7 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
 
 """,
                 cov_show_segment_buffer(
-                    config_map.feature_segments(base_dir),
+                    reports.feature_segments(base_dir),
                     show_counts=False,
                     show_coverage_features=True
                 )
