@@ -106,6 +106,10 @@ class Patch:
 
         yaml_dict = yaml.safe_load(yaml_path.read_text())
 
+        if not yaml_dict:
+            # TODO: Proper Error/warning
+            raise PatchesNotFoundError()
+
         project_name = yaml_dict["project_name"]
         shortname = yaml_dict["shortname"]
         description = yaml_dict["description"]
@@ -288,13 +292,25 @@ class PatchProvider(Provider):
             # TODO: Error handling/warning and None
             raise PatchesNotFoundError()
 
-        conf_file = Path(patches_project_dir / ".patches.xml")
+        patches = set()
 
-        if not conf_file.exists():
-            # TODO: Error handling/warning and None
-            raise PatchesNotFoundError()
+        for root, dirs, files in os.walk(patches_project_dir):
+            for filename in files:
+                if not filename.endswith(".info"):
+                    continue
 
-        self.patches_config = ProjectPatchesConfiguration.from_xml(conf_file)
+                info_path = Path(os.path.join(root,filename))
+                current_patch = Patch.from_yaml(info_path)
+
+                patches.add(current_patch)
+
+        self.__patches: tp.Set[Patch] = patches
+
+    def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
+        pass
+
+    def get_patches_for_revision(self, revision: CommitHash):
+        pass
 
     @classmethod
     def create_provider_for_project(
