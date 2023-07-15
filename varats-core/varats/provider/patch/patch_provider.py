@@ -251,35 +251,3 @@ class PatchProvider(Provider):
         patches_source.fetch()
 
         return Path(Path(target_prefix()) / patches_source.local)
-
-
-def create_patch_action_list(project: Project,
-                             standard_actions: tp.MutableSequence[actions.Step],
-                             commit: CommitHash) \
-        -> tp.Mapping[str, tp.MutableSequence[actions.Step]]:
-    """Creates a map of actions for applying all patches that are valid for the
-    given revision."""
-    result_actions = {}
-
-    patch_provider = PatchProvider.create_provider_for_project(project)
-    patches = patch_provider.patches_config.get_patches_for_revision(commit)
-
-    for patch in patches:
-        result_actions[patch.shortname] = [
-            actions.MakeBuildDir(project),
-            actions.ProjectEnvironment(project),
-            ApplyPatch(project, patch), *standard_actions
-        ]
-
-    return result_actions
-
-
-def wrap_action_list_with_patch(action_list: tp.MutableSequence[actions.Step],
-                                project: Project, patch: Patch) \
-        -> tp.MutableSequence[actions.Step]:
-    """Wraps the given action list with the given patch."""
-    return [
-        actions.MakeBuildDir(project),
-        actions.ProjectEnvironment(project),
-        ApplyPatch(project, patch), *action_list
-    ]
