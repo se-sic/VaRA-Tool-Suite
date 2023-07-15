@@ -307,10 +307,16 @@ class PatchProvider(Provider):
         self.__patches: tp.Set[Patch] = patches
 
     def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
-        pass
+        for patch in self.__patches:
+            if patch.shortname == shortname:
+                return patch
+
+        return None
 
     def get_patches_for_revision(self, revision: CommitHash):
-        pass
+        """Returns all patches that are valid for the given revision."""
+
+        return {p for p in self.__patches if revision in p.valid_revisions}
 
     @classmethod
     def create_provider_for_project(
