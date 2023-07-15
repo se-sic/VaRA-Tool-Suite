@@ -159,6 +159,47 @@ class Patch:
 
         return Patch(project_name, shortname, description, path, include_revisions, tags)
 
+class PatchSet:
+    def __init__(self, patches: tp.Set[Patch]):
+        self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
+
+    def __iter__(self) -> tp.Iterator[str]:
+        return [k for k, _ in self.__patches].__iter__()
+
+    def __contains__(self, v: tp.Any) -> bool:
+        return self.__patches.__contains__(v)
+
+    def __len__(self) -> int:
+        return len(self.__patches)
+
+    def __getitem__(self, tag):
+        tag_set = set(tag)
+        return PatchSet({p for p in self.__patches if tag_set.issubset(p.tags)})
+
+    def __and__(self, rhs: "PatchSet") -> "PatchSet":
+        lhs_t = self.__patches
+        rhs_t = rhs.__patches
+
+        ret = {}
+        ...
+        return ret
+
+    def __or__(self, rhs: "PatchSet") -> "PatchSet":
+        lhs_t = self.__patches
+        rhs_t = rhs.__patches
+
+        ret = {}
+        ...
+        return ret
+
+    def __hash__(self) -> int:
+        return hash(self.__patches)
+
+    def __repr__(self) -> str:
+        repr_str = ", ".join([f"{k.shortname}" for k in self.__patches])
+
+        return f"PatchSet({{{repr_str}}})"
+
 
 class PatchesNotFoundError(FileNotFoundError):
     # TODO: Implement me
@@ -205,10 +246,10 @@ class PatchProvider(Provider):
 
         return None
 
-    def get_patches_for_revision(self, revision: CommitHash):
+    def get_patches_for_revision(self, revision: CommitHash) -> PatchSet:
         """Returns all patches that are valid for the given revision."""
 
-        return {p for p in self.__patches if revision in p.valid_revisions}
+        return PatchSet({p for p in self.__patches if revision in p.valid_revisions})
 
     @classmethod
     def create_provider_for_project(
@@ -255,43 +296,3 @@ class PatchProvider(Provider):
         return Path(Path(target_prefix()) / patches_source.local)
 
 
-class PatchSet:
-    def __init__(self, patches: tp.Set[Patch]):
-        self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
-
-    def __iter__(self) -> tp.Iterator[str]:
-        return [k for k, _ in self.__patches].__iter__()
-
-    def __contains__(self, v: tp.Any) -> bool:
-        return self.__patches.__contains__(v)
-
-    def __len__(self) -> int:
-        return len(self.__patches)
-
-    def __getitem__(self, tag):
-        tag_set = set(tag)
-        return PatchSet({p for p in self.__patches if tag_set.issubset(p.tags)})
-
-    def __and__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
-
-        ret = {}
-        ...
-        return ret
-
-    def __or__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
-
-        ret = {}
-        ...
-        return ret
-
-    def __hash__(self) -> int:
-        return hash(self.__patches)
-
-    def __repr__(self) -> str:
-        repr_str = ", ".join([f"{k.shortname}" for k in self.__patches])
-
-        return f"PatchSet({{{repr_str}}})"
