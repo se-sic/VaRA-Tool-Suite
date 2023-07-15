@@ -84,13 +84,13 @@ class Patch:
     """A class for storing a single project-specific Patch."""
 
     def __init__(
-        self,
-        project_name: str,
-        shortname: str,
-        description: str,
-        path: Path,
-        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
-        tags: tp.Optional[tp.Set[str]] = None
+            self,
+            project_name: str,
+            shortname: str,
+            description: str,
+            path: Path,
+            valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
+            tags: tp.Optional[tp.Set[str]] = None
     ):
         self.project_name: str = project_name
         self.shortname: str = shortname
@@ -151,7 +151,7 @@ class Patch:
             include_revisions = {
                 ShortCommitHash(h)
                 for h in main_repo_git('log', '--pretty=%H', '--first-parent'
-                                  ).strip().split()
+                                       ).strip().split()
             }
 
         if "exclude_revisions" in yaml_dict:
@@ -191,7 +191,7 @@ class PatchProvider(Provider):
                 if not filename.endswith(".info"):
                     continue
 
-                info_path = Path(os.path.join(root,filename))
+                info_path = Path(os.path.join(root, filename))
                 current_patch = Patch.from_yaml(info_path)
 
                 patches.add(current_patch)
@@ -212,7 +212,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-        cls: tp.Type[ProviderType], project: tp.Type[Project]
+            cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a provider instance for the given project if possible.
@@ -229,7 +229,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_default_provider(
-        cls: tp.Type[ProviderType], project: tp.Type[Project]
+            cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a default provider instance that can be used with any project.
@@ -253,3 +253,45 @@ class PatchProvider(Provider):
         patches_source.fetch()
 
         return Path(Path(target_prefix()) / patches_source.local)
+
+
+class PatchSet:
+    def __init__(self, patches: tp.Set[Patch]):
+        self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
+
+    def __iter__(self) -> tp.Iterator[str]:
+        return [k for k, _ in self.__patches].__iter__()
+
+    def __contains__(self, v: tp.Any) -> bool:
+        return self.__patches.__contains__(v)
+
+    def __len__(self) -> int:
+        return len(self.__patches)
+
+    def __getitem__(self, tag):
+        tag_set = set(tag)
+        return PatchSet({p for p in self.__patches if tag_set.issubset(p.tags)})
+
+    def __and__(self, rhs: "PatchSet") -> "PatchSet":
+        lhs_t = self.__patches
+        rhs_t = rhs.__patches
+
+        ret = {}
+        ...
+        return ret
+
+    def __or__(self, rhs: "PatchSet") -> "PatchSet":
+        lhs_t = self.__patches
+        rhs_t = rhs.__patches
+
+        ret = {}
+        ...
+        return ret
+
+    def __hash__(self) -> int:
+        return hash(self.__patches)
+
+    def __repr__(self) -> str:
+        repr_str = ", ".join([f"{k.shortname}" for k in self.__patches])
+
+        return f"PatchSet({{{repr_str}}})"
