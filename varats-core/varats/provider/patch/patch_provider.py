@@ -1,7 +1,6 @@
 import os
 import textwrap
 import typing as tp
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import benchbuild as bb
@@ -21,7 +20,7 @@ from varats.provider.provider import Provider, ProviderType
 from varats.utils.git_util import CommitHash, ShortCommitHash
 
 
-def __get_project_git(project: Project) -> tp.Optional[local.cmd]:
+def __get_project_git(project: Project):
     return _get_git_for_path(
         local.path(project.source_of(project.primary_source))
     )
@@ -114,7 +113,10 @@ class Patch:
         shortname = yaml_dict["shortname"]
         description = yaml_dict["description"]
         path = yaml_dict["path"]
-        tags = yaml_dict["tags"]
+
+        tags = None
+        if "tags" in yaml_dict:
+            tags = yaml_dict["tags"]
 
         main_repo_git = _get_git_for_path(get_local_project_git_path(project_name))
 

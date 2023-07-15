@@ -11,9 +11,10 @@ from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,
 )
 from varats.provider.patch.patch_provider import (
-    ProjectPatchesConfiguration,
     PatchProvider,
+    Patch,
 )
+
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -32,10 +33,10 @@ class TestPatchProvider(unittest.TestCase):
         )
         self.assertIsNotNone(provider)
 
-        patch = provider.patches_config.get_by_shortname("patch-10")
+        patch = provider.get_by_shortname("patch-10")
         self.assertIsNotNone(patch)
 
-        patch = provider.patches_config.get_by_shortname("dummy-patch")
+        patch = provider.get_by_shortname("dummy-patch")
         self.assertIsNone(patch)
 
 
@@ -43,13 +44,10 @@ class TestPatchRevisionRanges(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        patch_config = ProjectPatchesConfiguration.from_xml(
-            Path(
+        cls.patch_base_path = Path(
                 TEST_INPUTS_DIR /
-                'patch_configs/FeaturePerfCSCollection/test-patch-configuration.xml'
+                'patch_configs/FeaturePerfCSCollection/'
             )
-        )
-        cls.patch_config = patch_config
 
         project_git_source = bb.source.Git(
             remote="git@github.com:se-sic/FeaturePerfCSCollection.git",
@@ -72,7 +70,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
     def __test_patch_revisions(
         self, shortname: str, expected_revisions: set[ShortCommitHash]
     ):
-        patch = self.patch_config.get_by_shortname(shortname)
+        patch = Patch.from_yaml(self.patch_base_path/f"{shortname}.info")
 
         self.assertSetEqual(expected_revisions, patch.valid_revisions)
 
