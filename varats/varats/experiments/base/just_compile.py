@@ -1,5 +1,5 @@
 """Implements an empty experiment that just compiles the project."""
-import textwrap
+
 import typing as tp
 
 from benchbuild import Project
@@ -19,13 +19,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import (
-    Patch,
-    PatchProvider,
-    wrap_action_list_with_patch,
-)
 from varats.report.report import ReportSpecification
-from varats.utils.git_util import ShortCommitHash
 
 
 # Please take care when changing this file, see docs experiments/just_compile
@@ -37,23 +31,12 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(
-        self,
-        project: Project,
-        experiment_handle: ExperimentHandle,
-        patch: tp.Optional[Patch] = None
-    ):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
-        self.__patch = patch
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
-
-    def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* {self.project.name}: EmptyAnalysis", " " * indent
-        )
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
@@ -63,7 +46,7 @@ class EmptyAnalysis(actions.ProjectStep):  # type: ignore
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, EmptyReport, self.project, binary,
-                config_id, self.__patch.shortname if self.__patch else None
+                config_id
             )
 
             run_cmd = touch[f"{result_file}"]
@@ -86,9 +69,6 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
 
     REPORT_SPEC = ReportSpecification(EmptyReport)
 
-    # WIP Patch Support
-    __USE_PATCHES = True
-
     def actions_for_project(
         self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
@@ -97,12 +77,12 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
-                                    << time.RunWithTime()
+            << time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-                                     << RunWLLVM() \
-                                     << run.WithTimeout()
+            << RunWLLVM() \
+            << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -112,31 +92,5 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
         analysis_actions.append(actions.Clean(project))
-
-        if self.__USE_PATCHES:
-
-            patch_provider = PatchProvider.create_provider_for_project(project)
-
-            patches = []
-            if patch_provider:
-                config = patch_provider.patches_config
-                patches = config.get_patches_for_revision(
-                    ShortCommitHash(str(project.revision))
-                )
-
-            for patch in patches:
-                patch_actions = [
-                    actions.Compile(project),
-                    EmptyAnalysis(project, self.get_handle(), patch=patch),
-                    actions.Clean(project)
-                ]
-
-                analysis_actions.append(
-                    actions.RequireAll(
-                        wrap_action_list_with_patch(
-                            patch_actions, project, patch
-                        )
-                    )
-                )
 
         return analysis_actions
