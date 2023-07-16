@@ -152,3 +152,8 @@ def download_repo(
 def apply_patch(repo_folder: Path, patch_file: Path) -> None:
     """Applies a given patch file to the specified git repository."""
     git("-C", repo_folder.absolute(), "apply", str(patch_file))
+
+
+def revert_patch(repo_folder: Path, patch_file: Path) -> None:
+    """Applies a given patch file to the specified git repository."""
+    git("-C", repo_folder.absolute(), "apply", "-R", str(patch_file))
