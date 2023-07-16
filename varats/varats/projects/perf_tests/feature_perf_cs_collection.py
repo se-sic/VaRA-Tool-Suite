@@ -171,7 +171,7 @@ class SynthSAFieldSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFieldSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFieldSensitivity")
@@ -202,7 +202,7 @@ class SynthSAFieldSensitivity(VProject):
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
             only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
+                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
             )
         )
 
@@ -233,7 +233,7 @@ class SynthSAFlowSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFlowSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFlowSensitivity")
@@ -264,7 +264,7 @@ class SynthSAFlowSensitivity(VProject):
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
             only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
+                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
             )
         )
 
@@ -349,21 +349,21 @@ class SynthSAContextSensitivity(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
-class SynthSAInterProcedural(VProject):
+class SynthSAWholeProgram(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
-    NAME = 'SynthSAInterProcedural'
+    NAME = 'SynthSAWholeProgram'
     GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="SynthSAInterProcedural",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarks",
+            local="SynthSAWholeProgram",
+            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
             limit=None,
             shallow=False,
-            version_filter=project_filter_generator("SynthSAInterProcedural")
+            version_filter=project_filter_generator("SynthSAWholeProgram")
         ),
         FeatureSource()
     ]
@@ -371,9 +371,8 @@ class SynthSAInterProcedural(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("SynthSAInterProcedural") /
-                RSBinary("InterProcedural"),
-                label="ContextSense-no-input"
+                SourceRoot("SynthSAWholeProgram") / RSBinary("WholeProgram"),
+                label="WholeProgram-no-input"
             )
         ]
     }
@@ -383,16 +382,16 @@ class SynthSAInterProcedural(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAInterProcedural.NAME)
+            get_local_project_git_path(SynthSAWholeProgram.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/InterProcedural",
+            "build/bin/WholeProgram",
             BinaryType.EXECUTABLE,
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
             only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarks"
+                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
             )
         )
 
@@ -404,7 +403,7 @@ class SynthSAInterProcedural(VProject):
     def compile(self) -> None:
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_SYNTHSAINTERPROCEDURAL"
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSAWHOLEPROGRAM"
         )
 
     def recompile(self) -> None:
