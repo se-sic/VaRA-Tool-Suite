@@ -43,11 +43,14 @@ from varats.experiments.vara.feature_experiment import (
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider, ApplyPatch
+from varats.provider.patch.patch_provider import (
+    PatchProvider,
+    ApplyPatch,
+    RevertPatch,
+)
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.report import ReportSpecification, ReportTy, BaseReport
 from varats.report.tef_report import TEFReport, TEFReportAggregate
-from varats.utils.git_commands import apply_patch
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -255,8 +258,11 @@ def setup_actions_for_vara_experiment(
         patch_steps.append(ApplyPatch(project, patch))
         patch_steps.append(ReCompile(project))
         patch_steps.append(
-            analysis_step(project, binary, result_post_fix="new")
+            analysis_step(
+                project, binary, result_post_fix=f"patched_{patch.shortname}"
+            )
         )
+        patch_steps.append(RevertPatch(project, patch))
 
     # TODO: integrate patches
     analysis_actions = []
@@ -741,7 +747,7 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
             ZippedExperimentSteps(
                 result_filepath,
                 [
-                    RunBackBoxBaselineOverhead(  #  type: ignore
+                    RunBackBoxBaselineOverhead(  # type: ignore
                         project,
                         binary
                     ),

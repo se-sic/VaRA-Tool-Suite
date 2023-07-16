@@ -18,7 +18,11 @@ from plumbum import local, ProcessExecutionError
 from varats.project.project_util import get_local_project_git_path
 from varats.project.varats_project import VProject
 from varats.provider.provider import Provider, ProviderType
-from varats.utils.git_commands import pull_current_branch, apply_patch
+from varats.utils.git_commands import (
+    pull_current_branch,
+    apply_patch,
+    revert_patch,
+)
 from varats.utils.git_util import (
     CommitHash,
     ShortCommitHash,
@@ -71,27 +75,36 @@ class ApplyPatch(actions.ProjectStep):
 class RevertPatch(actions.ProjectStep):
     """Revert a patch from a project."""
 
-    NAME = "RevertPatch"
+    NAME = "REVERT_PATCH"
     DESCRIPTION = "Revert a Git patch from a project."
 
     def __init__(self, project, patch):
         super().__init__(project)
         self.__patch = patch
 
-    def __call__(self) -> StepResult:
-        repo_git = __get_project_git(self.project)
+    # TODO: discuss signature
+    def __call__(self, _: tp.Any) -> StepResult:
+        try:
+            print(
+                f"Reverting {self.__patch.shortname} on "
+                f"{self.project.source_of(self.project.primary_source)}"
+            )
+            revert_patch(
+                Path(self.project.source_of(self.project.primary_source)),
+                self.__patch.path
+            )
 
-        patch_path = self.__patch.path
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
 
-        repo_git("apply", "-R", patch_path)
+        self.status = StepResult.OK
 
         return StepResult.OK
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: "
-            f"Revert the patch '{self.__patch.shortname}' "
-            f"from the project.", " " * indent
+            f"* {self.project.name}: Revert patch "
+            f"{self.__patch.shortname}", " " * indent
         )
 
 
