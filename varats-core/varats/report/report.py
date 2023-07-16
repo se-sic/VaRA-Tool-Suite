@@ -147,21 +147,21 @@ class ReportFilename():
         r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)[_\/](?P<UUID>[0-9a-fA-F\-]*)"
-        r"(_config-(?P<config_id>\d+))?" + r"(_patch-(?P<match_name>.+))?" +
-        "_" + FileStatusExtension.get_regex_grp() + r"?" +
-        r"(?P<file_ext>\..*)?" + "$"
+        r"(_config-(?P<config_id>\d+))?" + "_" +
+        FileStatusExtension.get_regex_grp() + r"?" + r"(?P<file_ext>\..*)?" +
+        "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
         "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
-        "{binary_name}-" + "{project_revision}_" +
-        "{project_uuid}_{patch_name}" + "{status_ext}" + "{file_ext}"
+        "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
+        "{status_ext}" + "{file_ext}"
     )
 
     __CONFIG_SPECIFIC_RESULT_FILE_TEMPLATE = (
         "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
         "{binary_name}-" + "{project_revision}/" + "{project_uuid}" +
-        "_{patch-name}config-{config_id}_" + "{status_ext}" + "{file_ext}"
+        "_config-{config_id}_" + "{status_ext}" + "{file_ext}"
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
@@ -396,8 +396,7 @@ class ReportFilename():
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = ".txt",
-        config_id: tp.Optional[int] = None,
-        patch_name: tp.Optional[str] = None
+        config_id: tp.Optional[int] = None
     ) -> 'ReportFilename':
         """
         Generates a filename for a report file out the different parts.
@@ -413,21 +412,13 @@ class ReportFilename():
             file_ext: file extension of the report file
 
         Returns:
-            name for the report file that can later be uniquely identified
+            name for the report file that can later be uniquly identified
         """
         status_ext = FileStatusExtension.get_status_extension(extension_type)
 
         # Add the missing '.' if none was given by the report
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
-
-        if patch_name is not None:
-            patch_name = f"patch-{patch_name}"
-
-            if not patch_name.endswith("_"):
-                patch_name = patch_name + "_"
-        else:
-            patch_name = ""
 
         if config_id is not None:
             return ReportFilename(
@@ -440,8 +431,7 @@ class ReportFilename():
                     project_uuid=project_uuid,
                     status_ext=status_ext,
                     config_id=config_id,
-                    file_ext=file_ext,
-                    patch_name=patch_name
+                    file_ext=file_ext
                 )
             )
 
@@ -454,8 +444,7 @@ class ReportFilename():
                 project_revision=project_revision,
                 project_uuid=project_uuid,
                 status_ext=status_ext,
-                file_ext=file_ext,
-                patch_name=patch_name
+                file_ext=file_ext
             )
         )
 
@@ -607,8 +596,7 @@ class BaseReport():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        config_id: tp.Optional[int] = None,
-        patch_name: tp.Optional[str] = None
+        config_id: tp.Optional[int] = None
     ) -> ReportFilename:
         """
         Generates a filename for a report file.
@@ -627,7 +615,7 @@ class BaseReport():
         return ReportFilename.get_file_name(
             experiment_shorthand, cls.SHORTHAND, project_name, binary_name,
             project_revision, project_uuid, extension_type, cls.FILE_TYPE,
-            config_id, patch_name
+            config_id
         )
 
     @property

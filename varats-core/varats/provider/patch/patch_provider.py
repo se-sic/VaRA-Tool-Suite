@@ -17,6 +17,7 @@ from plumbum import local
 
 from varats.project.project_util import get_local_project_git_path
 from varats.provider.provider import Provider, ProviderType
+from varats.utils.git_commands import pull_current_branch
 from varats.utils.git_util import CommitHash, ShortCommitHash
 
 
@@ -84,13 +85,13 @@ class Patch:
     """A class for storing a single project-specific Patch."""
 
     def __init__(
-            self,
-            project_name: str,
-            shortname: str,
-            description: str,
-            path: Path,
-            valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
-            tags: tp.Optional[tp.Set[str]] = None
+        self,
+        project_name: str,
+        shortname: str,
+        description: str,
+        path: Path,
+        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
+        tags: tp.Optional[tp.Set[str]] = None
     ):
         self.project_name: str = project_name
         self.shortname: str = shortname
@@ -118,30 +119,38 @@ class Patch:
         if "tags" in yaml_dict:
             tags = yaml_dict["tags"]
 
-        main_repo_git = _get_git_for_path(get_local_project_git_path(project_name))
+        main_repo_git = _get_git_for_path(
+            get_local_project_git_path(project_name)
+        )
 
         def parse_revisions(rev_dict: tp.Dict) -> tp.Set[CommitHash]:
             res: tp.Set[CommitHash] = set()
 
             if "single_revision" in rev_dict:
-                if type(rev_dict["single_revision"]) == str:
+                if isinstance(rev_dict["single_revision"], str):
                     res.add(ShortCommitHash(rev_dict["single_revision"]))
                 else:
-                    res.update([ShortCommitHash(r) for r in rev_dict["single_revision"]])
+                    res.update([
+                        ShortCommitHash(r) for r in rev_dict["single_revision"]
+                    ])
 
             if "revision_range" in rev_dict:
-                if type(rev_dict["revision_range"]) == list:
+                if isinstance(rev_dict["revision_range"], list):
                     for rev_range in rev_dict["revision_range"]:
-                        res.update({ShortCommitHash(h) for h in _get_all_revisions_between(
-                            rev_range["start"],
-                            rev_range["end"],
-                            main_repo_git)})
+                        res.update({
+                            ShortCommitHash(h)
+                            for h in _get_all_revisions_between(
+                                rev_range["start"], rev_range["end"],
+                                main_repo_git
+                            )
+                        })
                 else:
-                    res.update({ShortCommitHash(h) for h in _get_all_revisions_between(
-                        rev_dict["revision_range"]["start"],
-                        rev_dict["revision_range"]["end"],
-                        main_repo_git
-                    )})
+                    res.update({
+                        ShortCommitHash(h) for h in _get_all_revisions_between(
+                            rev_dict["revision_range"]["start"],
+                            rev_dict["revision_range"]["end"], main_repo_git
+                        )
+                    })
 
             return res
 
@@ -151,15 +160,21 @@ class Patch:
             include_revisions = {
                 ShortCommitHash(h)
                 for h in main_repo_git('log', '--pretty=%H', '--first-parent'
-                                       ).strip().split()
+                                      ).strip().split()
             }
 
         if "exclude_revisions" in yaml_dict:
-            include_revisions.difference_update(parse_revisions(yaml_dict["exclude_revisions"]))
+            include_revisions.difference_update(
+                parse_revisions(yaml_dict["exclude_revisions"])
+            )
 
-        return Patch(project_name, shortname, description, path, include_revisions, tags)
+        return Patch(
+            project_name, shortname, description, path, include_revisions, tags
+        )
+
 
 class PatchSet:
+
     def __init__(self, patches: tp.Set[Patch]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
 
@@ -209,7 +224,7 @@ class PatchesNotFoundError(FileNotFoundError):
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
-    patches_repository = "git@github.com:se-sic/vara-project-patches.git"
+    patches_repository = "https://github.com/se-sic/vara-project-patches.git"
 
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
@@ -219,7 +234,7 @@ class PatchProvider(Provider):
         )
 
         # BB only performs a fetch so our repo might be out of date
-        _get_git_for_path(patches_project_dir)("pull")
+        pull_current_branch(patches_project_dir)
 
         if not patches_project_dir.is_dir():
             # TODO: Error handling/warning and None
@@ -248,12 +263,13 @@ class PatchProvider(Provider):
 
     def get_patches_for_revision(self, revision: CommitHash) -> PatchSet:
         """Returns all patches that are valid for the given revision."""
-
-        return PatchSet({p for p in self.__patches if revision in p.valid_revisions})
+        return PatchSet({
+            p for p in self.__patches if revision in p.valid_revisions
+        })
 
     @classmethod
     def create_provider_for_project(
-            cls: tp.Type[ProviderType], project: tp.Type[Project]
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a provider instance for the given project if possible.
@@ -270,7 +286,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_default_provider(
-            cls: tp.Type[ProviderType], project: tp.Type[Project]
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a default provider instance that can be used with any project.
@@ -287,12 +303,10 @@ class PatchProvider(Provider):
         patches_source = bb.source.Git(
             remote=PatchProvider.patches_repository,
             local="patch-configurations",
-            refspec="origin/HEAD",
+            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
             limit=1,
         )
 
         patches_source.fetch()
 
-        return Path(Path(target_prefix()) / patches_source.local)
-
-
+        return Path(target_prefix()) / patches_source.local
