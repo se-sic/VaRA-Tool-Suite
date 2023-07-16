@@ -13,12 +13,17 @@ from benchbuild.utils.revision_ranges import (
     _get_all_revisions_between,
     _get_git_for_path,
 )
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
 from varats.project.project_util import get_local_project_git_path
+from varats.project.varats_project import VProject
 from varats.provider.provider import Provider, ProviderType
-from varats.utils.git_commands import pull_current_branch
-from varats.utils.git_util import CommitHash, ShortCommitHash
+from varats.utils.git_commands import pull_current_branch, apply_patch
+from varats.utils.git_util import (
+    CommitHash,
+    ShortCommitHash,
+    get_all_revisions_between,
+)
 
 
 def __get_project_git(project: Project):
@@ -30,27 +35,36 @@ def __get_project_git(project: Project):
 class ApplyPatch(actions.ProjectStep):
     """Apply a patch to a project."""
 
-    NAME = "ApplyPatch"
+    NAME = "APPLY_PATCH"
     DESCRIPTION = "Apply a Git patch to a project."
 
-    def __init__(self, project, patch):
+    def __init__(self, project: VProject, patch: 'Patch') -> None:
         super().__init__(project)
         self.__patch = patch
 
-    def __call__(self) -> StepResult:
-        repo_git = __get_project_git(self.project)
+    # TODO: discuss signature
+    def __call__(self, _: tp.Any) -> StepResult:
+        try:
+            print(
+                f"Applying {self.__patch.shortname} to "
+                f"{self.project.source_of(self.project.primary_source)}"
+            )
+            apply_patch(
+                Path(self.project.source_of(self.project.primary_source)),
+                self.__patch.path
+            )
 
-        patch_path = self.__patch.path
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
 
-        repo_git("apply", patch_path)
+        self.status = StepResult.OK
 
         return StepResult.OK
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: "
-            f"Apply the patch "
-            f"'{self.__patch.shortname}' to the project.", " " * indent
+            f"* {self.project.name}: Apply patch "
+            f"{self.__patch.shortname}", " " * indent
         )
 
 
@@ -114,6 +128,9 @@ class Patch:
         shortname = yaml_dict["shortname"]
         description = yaml_dict["description"]
         path = yaml_dict["path"]
+        # Convert to full qualified path, as we know that path is relative to
+        # the yaml info file.
+        path = yaml_path.parent / path
 
         tags = None
         if "tags" in yaml_dict:
@@ -137,13 +154,13 @@ class Patch:
             if "revision_range" in rev_dict:
                 if isinstance(rev_dict["revision_range"], list):
                     for rev_range in rev_dict["revision_range"]:
-                        res.update({
-                            ShortCommitHash(h)
-                            for h in _get_all_revisions_between(
+                        res.update(
+                            get_all_revisions_between(
                                 rev_range["start"], rev_range["end"],
-                                main_repo_git
+                                ShortCommitHash,
+                                get_local_project_git_path(project_name)
                             )
-                        })
+                        )
                 else:
                     res.update({
                         ShortCommitHash(h) for h in _get_all_revisions_between(
@@ -172,14 +189,30 @@ class Patch:
             project_name, shortname, description, path, include_revisions, tags
         )
 
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        valid_revs = [str(r) for r in self.valid_revisions
+                     ] if self.valid_revisions else []
+        str_representation = f"""Patch(
+    ProjectName: {self.project_name}
+    Shortname: {self.shortname}
+    Path: {self.path}
+    ValidRevs: {valid_revs}
+)
+"""
+
+        return str_representation
+
 
 class PatchSet:
 
     def __init__(self, patches: tp.Set[Patch]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
 
-    def __iter__(self) -> tp.Iterator[str]:
-        return [k for k, _ in self.__patches].__iter__()
+    def __iter__(self) -> tp.Iterator[Patch]:
+        return self.__patches.__iter__()
 
     def __contains__(self, v: tp.Any) -> bool:
         return self.__patches.__contains__(v)
@@ -224,17 +257,17 @@ class PatchesNotFoundError(FileNotFoundError):
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
-    patches_repository = "https://github.com/se-sic/vara-project-patches.git"
+    patches_repository = "git@github.com:se-sic/vara-project-patches.git"
 
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
 
+        # BB only performs a fetch so our repo might be out of date
+        pull_current_branch(self._get_patches_repository_path())
+
         patches_project_dir = Path(
             self._get_patches_repository_path() / self.project.NAME
         )
-
-        # BB only performs a fetch so our repo might be out of date
-        pull_current_branch(patches_project_dir)
 
         if not patches_project_dir.is_dir():
             # TODO: Error handling/warning and None
@@ -304,7 +337,8 @@ class PatchProvider(Provider):
             remote=PatchProvider.patches_repository,
             local="patch-configurations",
             refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
-            limit=1,
+            limit=None,
+            shallow=False
         )
 
         patches_source.fetch()

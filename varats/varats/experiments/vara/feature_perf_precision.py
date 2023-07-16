@@ -43,10 +43,12 @@ from varats.experiments.vara.feature_experiment import (
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
+from varats.provider.patch.patch_provider import PatchProvider, ApplyPatch
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.report import ReportSpecification, ReportTy, BaseReport
 from varats.report.tef_report import TEFReport, TEFReportAggregate
 from varats.utils.git_commands import apply_patch
+from varats.utils.git_util import ShortCommitHash
 
 
 class AnalysisProjectStepBase(ProjectStep):
@@ -137,35 +139,6 @@ class ReCompile(ProjectStep):
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
             f"* {self.project.name}: Recompile", indent * " "
-        )
-
-
-class ApplyPatch(ProjectStep):
-    NAME = "APPLY_PATCH"
-    DESCRIPTION = "Apply a patch the project"
-
-    def __init__(self, project: VProject, patch_file: Path) -> None:
-        super().__init__(project)
-        self.__patch_file = patch_file
-
-    def __call__(self, _: tp.Any) -> StepResult:
-        try:
-            print(
-                f"Applying {self.__patch_file} to {self.project.source_of(self.project.primary_source)}"
-            )
-            apply_patch(
-                Path(self.project.source_of(self.project.primary_source)),
-                self.__patch_file
-            )
-        except ProcessExecutionError:
-            self.status = StepResult.ERROR
-        self.status = StepResult.OK
-
-        return self.status
-
-    def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* {self.project.name}: Apply patch", indent * " "
         )
 
 
@@ -270,6 +243,7 @@ def setup_actions_for_vara_experiment(
         get_current_config_id(project)
     )
 
+    # TODO: integrate patches
     analysis_actions = []
 
     analysis_actions.append(actions.Compile(project))
@@ -450,22 +424,29 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             get_current_config_id(project)
         )
 
+        patch_provider = PatchProvider.get_provider_for_project(project)
+        patches = patch_provider.get_patches_for_revision(
+            ShortCommitHash(project.version_of_primary)
+        )
+        print(f"{patches=}")
+
+        patch_steps = []
+        for patch in patches:
+            print(f"Got patch with path: {patch.path}")
+            patch_steps.append(ApplyPatch(project, patch))
+            patch_steps.append(ReCompile(project))
+            patch_steps.append(
+                RunBackBoxBaseline(project, binary, result_post_fix="new")
+            )
+
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             ZippedExperimentSteps(
-                result_filepath, [  # type: ignore
-                    RunBackBoxBaseline(project, binary, result_post_fix="old"),
-                    ApplyPatch(
-                        project,
-                        Path(
-                            "/home/vulder/git/FeaturePerfCSCollection/test.patch"
-                        )
-                    ),
-                    ReCompile(project),
-                    RunBackBoxBaseline(project, binary, result_post_fix="new")
-                ]
+                result_filepath,
+                [RunBackBoxBaseline(project, binary, result_post_fix="old")] +
+                patch_steps
             )
         )
         analysis_actions.append(actions.Clean(project))
