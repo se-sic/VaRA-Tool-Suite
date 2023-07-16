@@ -147,3 +147,8 @@ def download_repo(
     output = git("-C", dl_folder, args)
     for line in output.split("\n"):
         post_out(line)
+
+
+def apply_patch(repo_folder: Path, patch_file: Path) -> None:
+    """Applies a given patch file to the specified git repository."""
+    git("-C", repo_folder.absolute(), "apply", str(patch_file))
