@@ -243,27 +243,30 @@ def setup_actions_for_vara_experiment(
         get_current_config_id(project)
     )
 
+    patch_provider = PatchProvider.get_provider_for_project(project)
+    patches = patch_provider.get_patches_for_revision(
+        ShortCommitHash(project.version_of_primary)
+    )
+    print(f"{patches=}")
+
+    patch_steps = []
+    for patch in patches:
+        print(f"Got patch with path: {patch.path}")
+        patch_steps.append(ApplyPatch(project, patch))
+        patch_steps.append(ReCompile(project))
+        patch_steps.append(
+            analysis_step(project, binary, result_post_fix="new")
+        )
+
     # TODO: integrate patches
     analysis_actions = []
 
     analysis_actions.append(actions.Compile(project))
     analysis_actions.append(
         ZippedExperimentSteps(
-            result_filepath, [  # type: ignore
-                analysis_step(
-                    project, binary, result_post_fix="old"
-                ),
-                ApplyPatch(
-                    project,
-                    Path(
-                        "/home/vulder/git/FeaturePerfCSCollection/test.patch"
-                    )
-                ),
-                ReCompile(project),
-                analysis_step(
-                    project, binary, result_post_fix="new"
-                )
-            ]
+            result_filepath,
+            [analysis_step(project, binary, result_post_fix="old")] +
+            patch_steps
         )
     )
     analysis_actions.append(actions.Clean(project))
