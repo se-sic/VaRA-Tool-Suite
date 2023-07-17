@@ -10,11 +10,7 @@ from tests.helper_utils import TEST_INPUTS_DIR
 from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,
 )
-from varats.provider.patch.patch_provider import (
-    PatchProvider,
-    Patch,
-)
-
+from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -45,9 +41,8 @@ class TestPatchRevisionRanges(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.patch_base_path = Path(
-                TEST_INPUTS_DIR /
-                'patch_configs/FeaturePerfCSCollection/'
-            )
+            TEST_INPUTS_DIR / 'patch_configs/FeaturePerfCSCollection/'
+        )
 
         project_git_source = bb.source.Git(
             remote="git@github.com:se-sic/FeaturePerfCSCollection.git",
@@ -70,7 +65,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
     def __test_patch_revisions(
         self, shortname: str, expected_revisions: set[ShortCommitHash]
     ):
-        patch = Patch.from_yaml(self.patch_base_path/f"{shortname}.info")
+        patch = Patch.from_yaml(self.patch_base_path / f"{shortname}.info")
 
         self.assertSetEqual(expected_revisions, patch.valid_revisions)
 
