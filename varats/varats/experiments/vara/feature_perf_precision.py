@@ -22,6 +22,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     get_extra_config_options,
     ZippedExperimentSteps,
+    OutputFolderStep,
 )
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
@@ -44,7 +45,7 @@ from varats.report.tef_report import TEFReport, TEFReportAggregate
 from varats.utils.git_util import ShortCommitHash
 
 
-class AnalysisProjectStepBase(ProjectStep):
+class AnalysisProjectStepBase(OutputFolderStep):
 
     project: VProject
 
@@ -105,7 +106,7 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
-    def __call__(self, tmp_dir: Path) -> StepResult:
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
 
     def __str__(self, indent: int = 0) -> str:
@@ -273,7 +274,7 @@ class PIMProfileRunner(FeatureExperiment, shorthand="PIMp"):
         )
 
 
-class RunBackBoxBaseline(ProjectStep):  # type: ignore
+class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -295,7 +296,7 @@ class RunBackBoxBaseline(ProjectStep):  # type: ignore
         self.__reps = reps
         self.__file_name = file_name
 
-    def __call__(self, tmp_dir: Path) -> StepResult:
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
 
     def __str__(self, indent: int = 0) -> str:
@@ -446,7 +447,7 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
-    def __call__(self, tmp_dir: Path) -> StepResult:
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
 
     def __str__(self, indent: int = 0) -> str:
@@ -615,7 +616,7 @@ class RunBackBoxBaselineOverhead(ProjectStep):  # type: ignore
         self.__report_file_ending = report_file_ending
         self.__reps = reps
 
-    def __call__(self, tmp_dir: Path) -> StepResult:
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
 
     def __str__(self, indent: int = 0) -> str:

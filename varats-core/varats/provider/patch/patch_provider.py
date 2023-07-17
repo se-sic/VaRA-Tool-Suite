@@ -46,8 +46,7 @@ class ApplyPatch(actions.ProjectStep):
         super().__init__(project)
         self.__patch = patch
 
-    # TODO: discuss signature
-    def __call__(self, _: tp.Any) -> StepResult:
+    def __call__(self) -> StepResult:
         try:
             print(
                 f"Applying {self.__patch.shortname} to "
@@ -82,8 +81,7 @@ class RevertPatch(actions.ProjectStep):
         super().__init__(project)
         self.__patch = patch
 
-    # TODO: discuss signature
-    def __call__(self, _: tp.Any) -> StepResult:
+    def __call__(self) -> StepResult:
         try:
             print(
                 f"Reverting {self.__patch.shortname} on "
