@@ -104,8 +104,29 @@ def get_feature_performance_from_tef_report(
     return feature_performances
 
 
+def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
+    report_files = get_processed_revisions_files(
+        case_study.project_name,
+        fpp.BlackBoxBaselineRunner,
+        fpp.MPRTRA,
+        get_case_study_file_name_filter(case_study),
+        config_id=0
+    )
+
+    if len(report_files) > 1:
+        raise AssertionError("Should only be one")
+    if not report_files:
+        print("Could not find profiling data. config_id=0, profiler=Baseline")
+        return []
+
+    # TODO: fix to prevent double loading
+    time_reports = fpp.MPRTRA(report_files[0].full_path())
+    return time_reports.get_patch_names()
+
+
 def get_regressing_config_ids_gt(
-    project_name: str, case_study: CaseStudy, rev: FullCommitHash
+    project_name: str, case_study: CaseStudy, rev: FullCommitHash,
+    report_name: str
 ) -> tp.Optional[tp.Dict[int, bool]]:
     """Computes the baseline data, i.e., the config ids where a regression was
     identified."""
@@ -129,10 +150,14 @@ def get_regressing_config_ids_gt(
             )
             return None
 
+        # TODO: fix to prevent double loading
         time_reports = fpp.MPRTRA(report_files[0].full_path())
 
-        old_time = time_reports.get_old_report()
-        new_time = time_reports.get_new_report()
+        old_time = time_reports.get_baseline_report()
+        # new_time = time_reports.get_new_report()
+        new_time = time_reports.get_report_for_patch(report_name)
+        if not new_time:
+            return None
 
         if np.mean(old_time.measurements_wall_clock_time
                   ) == np.mean(new_time.measurements_wall_clock_time):
@@ -195,7 +220,9 @@ class Profiler():
         return self.__report_type
 
     @abc.abstractmethod
-    def is_regression(self, report_path: ReportFilepath) -> bool:
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
         """Checks if there was a regression between the old an new data."""
 
 
@@ -208,7 +235,9 @@ class VXray(Profiler):
             fpp.MPRTEFA
         )
 
-    def is_regression(self, report_path: ReportFilepath) -> bool:
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
         """Checks if there was a regression between the old an new data."""
         is_regression = False
 
@@ -217,13 +246,17 @@ class VXray(Profiler):
         )
 
         old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
-        for old_tef_report in multi_report.get_old_report().reports():
+        for old_tef_report in multi_report.get_baseline_report().reports():
             pim = get_feature_performance_from_tef_report(old_tef_report)
             for feature, value in pim.items():
                 old_acc_pim[feature].append(value)
 
         new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
-        for new_tef_report in multi_report.get_new_report().reports():
+        opt_mr = multi_report.get_report_for_patch(patch_name)
+        if not opt_mr:
+            raise NotImplementedError()
+
+        for new_tef_report in opt_mr.reports():
             pim = get_feature_performance_from_tef_report(new_tef_report)
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
@@ -257,7 +290,9 @@ class PIMTracer(Profiler):
             fpp.MPRPIMA
         )
 
-    def is_regression(self, report_path: ReportFilepath) -> bool:
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
         """Checks if there was a regression between the old an new data."""
         is_regression = False
 
@@ -266,7 +301,7 @@ class PIMTracer(Profiler):
         )
 
         old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
-        for old_pim_report in multi_report.get_old_report().reports():
+        for old_pim_report in multi_report.get_baseline_report().reports():
             for region_inter in old_pim_report.region_interaction_entries:
                 name = get_interactions_from_fr_string(
                     old_pim_report._translate_interaction(
@@ -277,7 +312,11 @@ class PIMTracer(Profiler):
                 old_acc_pim[name].append(time)
 
         new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
-        for new_pim_report in multi_report.get_new_report().reports():
+        opt_mr = multi_report.get_report_for_patch(patch_name)
+        if not opt_mr:
+            raise NotImplementedError()
+
+        for new_pim_report in opt_mr.reports():
             for region_inter in new_pim_report.region_interaction_entries:
                 name = get_interactions_from_fr_string(
                     new_pim_report._translate_interaction(
@@ -322,7 +361,7 @@ class Baseline(Profiler):
 
 def compute_profiler_predictions(
     profiler: Profiler, project_name: str, case_study: CaseStudy,
-    config_ids: tp.List[int]
+    config_ids: tp.List[int], patch_name: str
 ) -> tp.Optional[tp.Dict[int, bool]]:
     """Computes the regression predictions for a given profiler."""
 
@@ -345,7 +384,9 @@ def compute_profiler_predictions(
             )
             return None
 
-        result_dict[config_id] = profiler.is_regression(report_files[0])
+        result_dict[config_id] = profiler.is_regression(
+            report_files[0], patch_name
+        )
 
     return result_dict
 
@@ -363,48 +404,52 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
         table_rows = []
 
         for case_study in case_studies:
-            rev = case_study.revisions[0]
-            project_name = case_study.project_name
+            for patch_name in get_patch_names(case_study):
+                rev = case_study.revisions[0]
+                project_name = case_study.project_name
 
-            ground_truth = get_regressing_config_ids_gt(
-                project_name, case_study, rev
-            )
-
-            new_row = {
-                'CaseStudy':
-                    project_name,
-                'Configs':
-                    len(case_study.get_config_ids_for_revision(rev)),
-                'RegressedConfigs':
-                    len(map_to_positive_config_ids(ground_truth))
-                    if ground_truth else -1
-            }
-
-            for profiler in profilers:
-                # TODO: multiple patch cycles
-                predicted = compute_profiler_predictions(
-                    profiler, project_name, case_study,
-                    case_study.get_config_ids_for_revision(rev)
+                ground_truth = get_regressing_config_ids_gt(
+                    project_name, case_study, rev, patch_name
                 )
 
-                if ground_truth and predicted:
-                    results = ClassificationResults(
-                        map_to_positive_config_ids(ground_truth),
-                        map_to_negative_config_ids(ground_truth),
-                        map_to_positive_config_ids(predicted),
-                        map_to_negative_config_ids(predicted)
-                    )
-                    new_row[f"{profiler.name}_precision"] = results.precision()
-                    new_row[f"{profiler.name}_recall"] = results.recall()
-                    new_row[f"{profiler.name}_baccuracy"
-                           ] = results.balanced_accuracy()
-                else:
-                    new_row[f"{profiler.name}_precision"] = np.nan
-                    new_row[f"{profiler.name}_recall"] = np.nan
-                    new_row[f"{profiler.name}_baccuracy"] = np.nan
+                new_row = {
+                    'CaseStudy':
+                        project_name,
+                    'Patch':
+                        patch_name,
+                    'Configs':
+                        len(case_study.get_config_ids_for_revision(rev)),
+                    'RegressedConfigs':
+                        len(map_to_positive_config_ids(ground_truth))
+                        if ground_truth else -1
+                }
 
-            table_rows.append(new_row)
-            # df.append(new_row, ignore_index=True)
+                for profiler in profilers:
+                    # TODO: multiple patch cycles
+                    predicted = compute_profiler_predictions(
+                        profiler, project_name, case_study,
+                        case_study.get_config_ids_for_revision(rev), patch_name
+                    )
+
+                    if ground_truth and predicted:
+                        results = ClassificationResults(
+                            map_to_positive_config_ids(ground_truth),
+                            map_to_negative_config_ids(ground_truth),
+                            map_to_positive_config_ids(predicted),
+                            map_to_negative_config_ids(predicted)
+                        )
+                        new_row[f"{profiler.name}_precision"
+                               ] = results.precision()
+                        new_row[f"{profiler.name}_recall"] = results.recall()
+                        new_row[f"{profiler.name}_baccuracy"
+                               ] = results.balanced_accuracy()
+                    else:
+                        new_row[f"{profiler.name}_precision"] = np.nan
+                        new_row[f"{profiler.name}_recall"] = np.nan
+                        new_row[f"{profiler.name}_baccuracy"] = np.nan
+
+                table_rows.append(new_row)
+                # df.append(new_row, ignore_index=True)
 
         df = pd.concat([df, pd.DataFrame(table_rows)])
         df.sort_values(["CaseStudy"], inplace=True)
@@ -436,7 +481,8 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
         symb_regressed_configs = "$\\mathbb{R}$"
 
         print(f"{df=}")
-        colum_setup = [(' ', 'CaseStudy'), ('', f'{symb_configs}'),
+        colum_setup = [(' ', 'CaseStudy'), (' ', 'Patch'),
+                       ('', f'{symb_configs}'),
                        ('', f'{symb_regressed_configs}')]
         for profiler in profilers:
             colum_setup.append((profiler.name, f'{symb_precision}'))

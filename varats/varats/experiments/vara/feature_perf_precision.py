@@ -1,7 +1,5 @@
 """Module for feature performance precision experiments that evaluate
 measurement support of vara."""
-import shutil
-import tempfile
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -9,13 +7,7 @@ from pathlib import Path
 import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup
 from benchbuild.utils import actions
-from benchbuild.utils.actions import (
-    ProjectStep,
-    Step,
-    StepResult,
-    Compile,
-    Clean,
-)
+from benchbuild.utils.actions import ProjectStep, StepResult, Compile, Clean
 from benchbuild.utils.cmd import time
 from plumbum import local, ProcessExecutionError
 
@@ -23,8 +15,6 @@ from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReportAggregate,
 )
 from varats.experiment.experiment_util import (
-    ExperimentHandle,
-    VersionExperiment,
     WithUnlimitedStackSize,
     ZippedReportFolder,
     create_new_success_result_filepath,
@@ -36,8 +26,6 @@ from varats.experiment.experiment_util import (
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
-    RunVaRATracedWorkloads,
-    RunVaRATracedXRayWorkloads,
     FeatureInstrType,
 )
 from varats.project.project_domain import ProjectDomains
@@ -49,6 +37,7 @@ from varats.provider.patch.patch_provider import (
     RevertPatch,
 )
 from varats.report.gnu_time_report import TimeReportAggregate
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification, ReportTy, BaseReport
 from varats.report.tef_report import TEFReport, TEFReportAggregate
 from varats.utils.git_util import ShortCommitHash
@@ -62,43 +51,15 @@ class AnalysisProjectStepBase(ProjectStep):
         self,
         project: VProject,
         binary: ProjectBinaryWrapper,
-        result_post_fix: str = "",
+        file_name: str,
         report_file_ending: str = "json",
         reps=2
     ):
         super().__init__(project=project)
         self._binary = binary
         self._report_file_ending = report_file_ending
-        self._result_pre_fix = result_post_fix
+        self._file_name = file_name
         self._reps = reps
-
-
-class MultiPatchReport(
-    BaseReport, tp.Generic[ReportTy], shorthand="MPR", file_type=".zip"
-):
-
-    def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
-        super().__init__(path)
-        with tempfile.TemporaryDirectory() as tmp_result_dir:
-            shutil.unpack_archive(path, extract_dir=tmp_result_dir)
-
-            # TODO: clean up
-            for report in Path(tmp_result_dir).iterdir():
-                if report.name.startswith("old"):
-                    self.__old = report_type(report)
-                elif report.name.startswith("new"):
-                    self.__new = report_type(report)
-
-            if not self.__old or not self.__new:
-                raise AssertionError(
-                    "Reports where missing in the file {report_path=}"
-                )
-
-    def get_old_report(self) -> ReportTy:
-        return self.__old
-
-    def get_new_report(self) -> ReportTy:
-        return self.__new
 
 
 class MPRTRA(
@@ -157,13 +118,11 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
         self,
         project: VProject,
         binary: ProjectBinaryWrapper,
-        result_post_fix: str = "",
+        file_name: str,
         report_file_ending: str = "json",
         reps=2
     ):
-        super().__init__(
-            project, binary, result_post_fix, report_file_ending, reps
-        )
+        super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def __call__(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -176,7 +135,7 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            zip_tmp_dir = tmp_dir / f"{self._result_pre_fix}_rep_measures"
+            zip_tmp_dir = tmp_dir / self._file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
                     for prj_command in workload_commands(
@@ -259,20 +218,28 @@ def setup_actions_for_vara_experiment(
         patch_steps.append(ReCompile(project))
         patch_steps.append(
             analysis_step(
-                project, binary, result_post_fix=f"patched_{patch.shortname}"
+                project,
+                binary,
+                file_name=MultiPatchReport.create_patched_report_name(
+                    patch, "rep_measurements"
+                )
             )
         )
         patch_steps.append(RevertPatch(project, patch))
 
-    # TODO: integrate patches
     analysis_actions = []
 
     analysis_actions.append(actions.Compile(project))
     analysis_actions.append(
         ZippedExperimentSteps(
-            result_filepath,
-            [analysis_step(project, binary, result_post_fix="old")] +
-            patch_steps
+            result_filepath, [
+                analysis_step(
+                    project,
+                    binary,
+                    file_name=MultiPatchReport.
+                    create_baseline_report_name("rep_measurements")
+                )
+            ] + patch_steps
         )
     )
     analysis_actions.append(actions.Clean(project))
@@ -337,15 +304,15 @@ class RunBackBoxBaseline(ProjectStep):  # type: ignore
         self,
         project: VProject,
         binary: ProjectBinaryWrapper,
-        result_post_fix: str = "",
+        file_name: str,
         report_file_ending: str = "txt",
         reps=2
     ):
         super().__init__(project=project)
         self.__binary = binary
         self.__report_file_ending = report_file_ending
-        self.__result_pre_fix = result_post_fix
         self.__reps = reps
+        self.__file_name = file_name
 
     def __call__(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -358,7 +325,7 @@ class RunBackBoxBaseline(ProjectStep):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            zip_tmp_dir = tmp_dir / f"{self.__result_pre_fix}_rep_measures"
+            zip_tmp_dir = tmp_dir / self.__file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self.__reps):
                     for prj_command in workload_commands(
@@ -445,17 +412,29 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
-                RunBackBoxBaseline(project, binary, result_post_fix="new")
+                RunBackBoxBaseline(
+                    project,
+                    binary,
+                    file_name=MPRTRA.create_patched_report_name(
+                        patch, "rep_measurements"
+                    )
+                )
             )
+            patch_steps.append(RevertPatch(project, patch))
 
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             ZippedExperimentSteps(
-                result_filepath,
-                [RunBackBoxBaseline(project, binary, result_post_fix="old")] +
-                patch_steps
+                result_filepath, [
+                    RunBackBoxBaseline(
+                        project,
+                        binary,
+                        file_name=MPRTRA.
+                        create_baseline_report_name("rep_measurements")
+                    )
+                ] + patch_steps
             )
         )
         analysis_actions.append(actions.Clean(project))
@@ -480,13 +459,11 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         self,
         project: VProject,
         binary: ProjectBinaryWrapper,
-        result_post_fix: str = "",
+        file_name: str,
         report_file_ending: str = "txt",
         reps=2
     ):
-        super().__init__(
-            project, binary, result_post_fix, report_file_ending, reps
-        )
+        super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def __call__(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -582,7 +559,7 @@ def setup_actions_for_vara_overhead_experiment(
             result_filepath,
             [
                 analysis_step(  # type: ignore
-                    project, binary
+                    project, binary, "overhead"
                 )
             ]
         )
