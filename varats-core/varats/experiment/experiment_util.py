@@ -522,8 +522,8 @@ class OutputFolderStep(ProjectStep):  # type: ignore
 
 
 class ZippedExperimentSteps(
-    MultiStep[tp.Union[OutputFolderStep, ProjectStep]]
-):  # type: ingore
+    MultiStep[tp.Union[OutputFolderStep, ProjectStep]]  # type: ignore
+):
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive."""
 
