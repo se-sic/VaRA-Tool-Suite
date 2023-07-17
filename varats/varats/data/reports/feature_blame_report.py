@@ -124,7 +124,7 @@ class StructuralFeatureBlameReport(
         return self.__commit_feature_interactions
 
 
-def generate_features_scfi_data(
+def generate_feature_scfi_data(
     SFBR: StructuralFeatureBlameReport
 ) -> pd.DataFrame:
     features_cfi_data: tp.Dict[str, tp.Tuple(int, int)] = {}
@@ -136,12 +136,27 @@ def generate_features_scfi_data(
             features_cfi_data.update({
                 SCFI.feature: (entry[0] + 1, entry[1] + SCFI.num_instructions)
             })
-    rows = []
-    for feature_data in features_cfi_data.items():
-        rows.append([feature_data[0], feature_data[1][0], feature_data[1][1]])
+    rows = [[feature_data[0], feature_data[1][0], feature_data[1][1]]
+            for feature_data in features_cfi_data.items()]
     return pd.DataFrame(
         rows, columns=["feature", "num_interacting_commits", "feature_scope"]
     )
+
+
+def generate_commit_scfi_data(
+    SFBR: StructuralFeatureBlameReport
+) -> pd.DataFrame:
+    commit_cfi_data: tp.Dict[str, int] = {}
+    for SCFI in SFBR.commit_feature_interactions:
+        commit: str = SCFI.commit.commit_hash
+        entry = commit_cfi_data.get(commit)
+        if not entry:
+            commit_cfi_data.update({commit: 1})
+        else:
+            commit_cfi_data.update({commit: entry + 1})
+    rows = [[commit_data[0], commit_data[1]]
+            for commit_data in commit_cfi_data.items()]
+    return pd.DataFrame(rows, columns=["commit", "num_interacting_features"])
 
 
 ##### DATAFLOW #####
@@ -243,7 +258,7 @@ class DataflowFeatureBlameReport(
 def generate_commit_dcfi_data(
     SFBRs: tp.List[StructuralFeatureBlameReport],
     DFBRs: tp.List[DataflowFeatureBlameReport], num_commits: int
-) -> tp.Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     commits_structurally_interacting_with_features: tp.Set[str] = set()
     for SFBR in SFBRs:
         for SCFI in SFBR.commit_feature_interactions:
@@ -271,25 +286,28 @@ def generate_commit_dcfi_data(
                     else:
                         prev = set([DCFI.feature])
                     dfi_commit_not_in_feature.update({sch: prev})
-
-    rows_dfi_commit_in_feature = [[
-        commit_data_in_feature[0],
-        len(commit_data_in_feature[1])
-    ] for commit_data_in_feature in dfi_commit_in_feature.items()]
-    rows_dfi_commit_not_in_feature = [[
-        commit_data_not_in_feature[0],
-        len(commit_data_not_in_feature[1])
-    ] for commit_data_not_in_feature in dfi_commit_not_in_feature.items()]
+    # value 0 in third column => not part of feature
+    rows_commit_dfi = [
+        [
+            commit_data_in_feature[0],
+            len(commit_data_in_feature[1]),
+            1  # part of feature
+        ] for commit_data_in_feature in dfi_commit_in_feature.items()
+    ]
+    rows_commit_dfi = rows_commit_dfi + [
+        [
+            commit_data_not_in_feature[0],
+            len(commit_data_not_in_feature[1]),
+            0  # not part of feature
+        ] for commit_data_not_in_feature in dfi_commit_not_in_feature.items()
+    ]
     counter = 0
     for _ in range(
         0, num_commits - len(dfi_commit_in_feature) -
         len(dfi_commit_not_in_feature)
     ):
-        rows_dfi_commit_not_in_feature.append([f"fake_hash{counter}", 0])
+        rows_commit_dfi.append([f"fake_hash{counter}", 0, 0])
         counter += 1
 
-    columns = ["commits", "num_interacting_features"]
-    return pd.DataFrame(rows_dfi_commit_in_feature,
-                        columns=columns), pd.DataFrame(
-                            rows_dfi_commit_not_in_feature, columns=columns
-                        )
+    columns = ["commits", "num_interacting_features", "part_of_feature"]
+    return pd.DataFrame(rows_commit_dfi, columns=columns)
