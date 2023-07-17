@@ -510,7 +510,7 @@ class WrongStepCall(Exception):
     """Throw if the common step method was called."""
 
 
-class OutputFolderStep(ProjectStep):
+class OutputFolderStep(ProjectStep):  # type: ignore
     """Special step class that needs an output folder to write to."""
 
     def __call__(self) -> StepResult:
@@ -521,7 +521,9 @@ class OutputFolderStep(ProjectStep):
         """Actual call implementation that gets a path to tmp_folder."""
 
 
-class ZippedExperimentSteps(MultiStep[tp.Union[OutputFolderStep, ProjectStep]]):
+class ZippedExperimentSteps(
+    MultiStep[tp.Union[OutputFolderStep, ProjectStep]]
+):  # type: ingore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive."""
 
