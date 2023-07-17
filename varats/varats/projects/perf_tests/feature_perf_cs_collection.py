@@ -49,6 +49,13 @@ def _do_feature_perf_cs_collection_compile(
         verify_binaries(project)
 
 
+def _do_feature_perf_cs_collection_recompile(project: VProject) -> None:
+    feature_perf_source = local.path(project.source_of(project.primary_source))
+
+    with local.cwd(feature_perf_source / "build"):
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+
 class FeaturePerfCSCollection(VProject):
     """Test project for feature performance case studies."""
 
@@ -148,6 +155,10 @@ class FeaturePerfCSCollection(VProject):
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(self, "FPCSC_ENABLE_SRC")
 
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
 
 class SynthSAFieldSensitivity(VProject):
     """Synthetic case-study project for testing field sensitivity."""
@@ -202,6 +213,10 @@ class SynthSAFieldSensitivity(VProject):
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
         )
 
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
 
 class SynthSAFlowSensitivity(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
@@ -255,6 +270,10 @@ class SynthSAFlowSensitivity(VProject):
         _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAFLOWSENSITIVITY"
         )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthSAContextSensitivity(VProject):
@@ -313,6 +332,10 @@ class SynthSAContextSensitivity(VProject):
             self, "FPCSC_ENABLE_PROJECT_SYNTHSACONTEXTSENSITIVITY"
         )
 
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
 
 class SynthSAInterProcedural(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
@@ -367,3 +390,7 @@ class SynthSAInterProcedural(VProject):
         _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAINTERPROCEDURAL"
         )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
