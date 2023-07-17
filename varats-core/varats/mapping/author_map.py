@@ -31,7 +31,7 @@ class Author():
         return False
 
     def __str__(self) -> str:
-        return f"{self.name} <{self.mail}>"
+        return f"{self.name} {self.mail}"
 
     def __repr__(self) -> str:
         return f"{self.name} <{self.mail}>; {self.names},{self.mail_addresses}"
