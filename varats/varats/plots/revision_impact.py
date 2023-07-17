@@ -138,17 +138,39 @@ class RevisionImpactDistribution(
         super().__init__(plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_studys: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
         data = self.plot_kwargs["data"]
-        axis = sns.violinplot(
+        full_data = self.plot_kwargs["data"].copy()
+        full_data["project"] = "All"
+        data["project"] = data["project"].apply(lambda x: f"\\textsc{{{x}}}")
+        plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
+        grid = sns.JointGrid(
+            x="project",
+            y="impacted_commits",
+            data=data,
+        )
+
+        sns.violinplot(
+            ax=grid.ax_joint,
             data=data,
             y="impacted_commits",
             x="project",
             bw=0.15,
             scale="width",
-            inner=None
+            inner=None,
+            cut=0
         )
-        axis.plot(range(len(case_studys)), [0 for _ in case_studys], "--k")
+        sns.kdeplot(
+            ax=grid.ax_marg_y,
+            data=full_data,
+            y="impacted_commits",
+            bw=0.15,
+            cut=0,
+            fill=True,
+        )
+        grid.set_axis_labels("Projects", "Impact", fontsize=14)
+        plt.gcf().set_size_inches(10, 5)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
 
 
 class RevisionImpactDistributionAll(
@@ -168,7 +190,8 @@ class RevisionImpactDistributionAll(
     def plot(self, view_mode: bool) -> None:
         data = self.plot_kwargs["data"]
         data.drop(columns=["project"], inplace=True)
-        sns.violinplot(data=data, y="impacted_commits", bw=0.15)
+        sns.violinplot(data=data, y="impacted_commits", bw=0.15, cut=0)
+        plt.ylabel("Impact", fontsize=10)
 
 
 class RevisionImpactScatterInteractions(
@@ -223,13 +246,17 @@ class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
                 )
             )
         data = apply_tukeys_fence(data, "line_change", 3)
-        multivariate_grid(
+        data["project"] = data["project"].apply(lambda x: f"\\textsc{{{x}}}")
+
+        plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
+        grid = multivariate_grid(
             data,
             "impacted_commits",
             "line_change",
             "project",
-            alpha=0.3,
         )
+        grid.set_axis_labels("Impact", "Changed Lines", fontsize=10)
+        plt.gcf().set_size_inches(10, 5)
         ymax = data["line_change"].max()
         plt.ylim(-0.001, ymax + 0.01)
 

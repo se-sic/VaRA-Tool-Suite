@@ -248,6 +248,7 @@ class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
     def plot(self, view_mode: bool) -> None:
         """Plot the evolution of a single commit."""
         _, axis = plt.subplots(1, 1)
+        plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
         case_study = self.plot_kwargs['case_study']
         lines: DataFrame = get_lines_per_commit_long(case_study, False)
 
@@ -278,19 +279,16 @@ class SingleCommitPlot(Plot, plot_name="single_commit_survival"):
         ax = axis.twinx()
         x_axis = range(len(data))
         ax.scatter(x_axis, data['lines'], color="green")
-        ax.set_ylabel("Lines", color="g")
+        ax.set_ylabel("Lines", color="g", fontsize=14)
         axis.scatter(x_axis, data['interactions'], color="orange")
-        axis.set_ylabel("Interactions", color="orange")
+        axis.set_ylabel("Interactions", color="orange", fontsize=14)
+        axis.tick_params(axis="y", labelsize=14)
         ax.set_ylim(ymin=0)
         axis.set_ylim(ymin=0)
-        lines_legend = mpatches.Patch(color='green', label="Lines")
-        interactions_legend = mpatches.Patch(
-            color="orange", label='Interactions'
-        )
-        plt.legend(handles=[lines_legend, interactions_legend])
-        plt.ticklabel_format(axis='x', useOffset=False)
-        axis.set_xticklabels(data.index.map(cmap.short_time_id), rotation=90)
-        axis.tick_params(axis="x", labelrotation=90)
+        axis.set_xlabel("Revisions", fontsize=14)
+        axis.set_xticklabels([])
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
 
 
 class HeatMapPlot(Plot, plot_name=None):

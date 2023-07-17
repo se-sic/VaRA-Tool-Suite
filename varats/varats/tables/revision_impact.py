@@ -4,6 +4,7 @@ import click
 import pandas as pd
 
 from varats.mapping.commit_map import CommitMap, get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.plots.revision_impact import impact_data
 from varats.project.project_util import get_primary_project_source
 from varats.table.table import Table
@@ -108,6 +109,16 @@ class ImpactDistribution(Table, table_name="impact_distribution"):
             table_format,
             wrap_table=wrap_table
         )
+
+
+class RandomCommitsTable(Table, table_name="volatile_commits"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studys: tp.List[CaseStudy] = self.table_kwargs["case_study"]
+        data = impact_data(case_studys)
+        df = data.sample(n=100)
+        df.to_csv("random-commits.csv")
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
 
 
 class LineImpactDistribution(Table, table_name="line_impact_distribution"):
@@ -241,3 +252,13 @@ class ImpactDistributionGenerator(
             ImpactDistribution(self.table_config, **self.table_kwargs),
             LineImpactDistribution(self.table_config, **self.table_kwargs)
         ]
+
+
+class RandomCommitsGenerator(
+    TableGenerator,
+    generator_name="random-commits",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List['varats.table.table.Table']:
+        return [RandomCommitsTable(self.table_config, **self.table_kwargs)]

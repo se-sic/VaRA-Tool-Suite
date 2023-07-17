@@ -129,6 +129,7 @@ class VolatileCommitsTable(Table, table_name="volatile_commits"):
                     commmit_data(row["base_hash"], row["interactions_diff"])
                 )
         df = pd.DataFrame(volatile_commits)
+        df.to_csv("volatile_commits.csv")
         return dataframe_to_table(df, table_format, wrap_table=wrap_table)
 
 

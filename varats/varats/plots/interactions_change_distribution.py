@@ -34,6 +34,7 @@ class InteractionChangeDistribution(
             "interactions_diff": [],
             "project": []
         })
+        plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
         for case_study in case_studys:
             cs_data = lines_per_interactions_squashed(case_study, True)
             cs_data["interactions_diff"] = cs_data.groupby(
@@ -49,20 +50,22 @@ class InteractionChangeDistribution(
 
         df = data_sub.to_frame().reset_index()
         df["interactions_diff"] = df["interactions_diff"].apply(lambda x: x + 1)
+        df["project"] = df["project"].apply(lambda x: f"\\textsc{{{x}}}")
         axis = sns.violinplot(
             data=df,
             y="interactions_diff",
             x="project",
             bw=0.15,
             scale="width",
-            inner=None
+            inner=None,
+            cut=0,
         )
         axis.plot(range(len(case_studys)), [1 for _ in case_studys], "--k")
 
-        axis.set_ylabel("")
-        axis.yaxis.set_visible(False)
+        axis.set_ylabel("Change in $\\frac{interactions}{lines}$")
+        axis.set_xlabel("Project")
+        plt.gcf().set_size_inches(10, 5)
         plt.yscale("asinh")
-        axis.set_yticklabels([])
 
 
 class InteractionChangeAuthorDistribution(
