@@ -23,6 +23,7 @@ from varats.experiment.experiment_util import (
     get_extra_config_options,
     ZippedExperimentSteps,
 )
+from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
@@ -84,26 +85,6 @@ class MPRPIMA(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, PerfInfluenceTraceReportAggregate)
-
-
-class ReCompile(ProjectStep):
-    NAME = "RECOMPILE"
-    DESCRIPTION = "Recompile the project"
-
-    def __call__(self, _: tp.Any) -> StepResult:
-        try:
-            self.project.recompile()
-
-        except ProcessExecutionError:
-            self.status = StepResult.ERROR
-        self.status = StepResult.OK
-
-        return self.status
-
-    def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* {self.project.name}: Recompile", indent * " "
-        )
 
 
 class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
