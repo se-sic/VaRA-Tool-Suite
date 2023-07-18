@@ -33,8 +33,6 @@ from varats.varats.plots.llvm_coverage_plot import (
 from varats.varats.plots.llvm_coverage_plot import (
     vara_found_features as _vara_found_features,
 )
-from varats.varats.plots.llvm_coverage_plot import classify_all as _classify_all
-from varats.varats.plots.llvm_coverage_plot import Classification
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
 

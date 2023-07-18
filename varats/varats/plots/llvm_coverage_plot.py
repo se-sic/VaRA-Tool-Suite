@@ -6,14 +6,13 @@ import typing as tp
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 
 from varats.base.configuration import (
     Configuration,
     PlainCommandlineConfiguration,
 )
-from varats.data.metrics import ConfusionMatrix
+from varats.data.metrics import ConfusionMatrix as _ConfusionMatrix
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CoverageReport,
@@ -71,6 +70,7 @@ def coverage_missed_features(features: tp.Set[str],
 def coverage_found_features(
     features: tp.Set[str], code_region: CodeRegion
 ) -> bool:
+    """Are features found by coverage data?"""
     if not features:
         return False
     return len(coverage_missed_features(features, code_region)) == 0
@@ -80,7 +80,8 @@ def vara_found_features(
     features: tp.Set[str], code_region: CodeRegion, threshold: float,
     feature_name_map: tp.Dict[str, str]
 ) -> bool:
-    if not (0 <= threshold <= 1.0):
+    """Are features found by VaRA?"""
+    if not 0 <= threshold <= 1.0:
         raise ValueError("Threshold must be between 0.0 and 1.0.")
     if not features:
         return False
@@ -92,7 +93,10 @@ def vara_found_features(
 def coverage_vara_features_combined(
     region: CodeRegion, feature_name_map: tp.Dict[str, str], threshold: float
 ) -> tp.Set[str]:
-    reverse_features = dict(reversed(item) for item in feature_name_map.items())
+    """Features found by coverage data and VaRA combined."""
+    reverse_features = dict(
+        (item[1], item[0]) for item in feature_name_map.items()
+    )
     found_vara_features = set(
         reverse_features[feature]
         for feature in region.vara_features()
@@ -139,10 +143,10 @@ def _compute_confusion_matrix(
     feature_name_map: tp.Dict[str, str],
     threshold: float = 1.0
 ) -> ConfusionMatrix:
-    coverage_feature_regions = []
-    coverage_normal_regions = []
-    vara_feature_regions = []
-    vara_normal_regions = []
+    coverage_feature_regions: tp.List[tp.Any] = []
+    coverage_normal_regions: tp.List[tp.Any] = []
+    vara_feature_regions: tp.List[tp.Any] = []
+    vara_normal_regions: tp.List[tp.Any] = []
 
     for file, func_map in feature_report.filename_function_mapping.items():
         for _, tree in func_map.items():
@@ -220,34 +224,35 @@ class ConfusionEntry:
     end_column: int
 
 
-class ConfusionMatrix(ConfusionMatrix):
+class ConfusionMatrix(_ConfusionMatrix):
+    """Replace when VaRA's confusion matrix supports this."""
 
-    def get_TP(self) -> tp.Set[tp.Any]:
+    def get_tp(self) -> tp.Set[tp.Any]:
         return set(self.__actual_positive_values
                   ).intersection(self.__predicted_positive_values)
 
-    def get_TN(self) -> tp.Set[tp.Any]:
+    def get_tn(self) -> tp.Set[tp.Any]:
         return set(self.__actual_negative_values
                   ).intersection(self.__predicted_negative_values)
 
-    def get_FP(self) -> tp.Set[tp.Any]:
-        return set(self.__predicted_positive_values).difference(self.get_TP())
+    def get_fp(self) -> tp.Set[tp.Any]:
+        return set(self.__predicted_positive_values).difference(self.get_tp())
 
-    def get_FN(self) -> tp.Set[tp.Any]:
-        return set(self.__predicted_negative_values).difference(self.get_TN())
+    def get_fn(self) -> tp.Set[tp.Any]:
+        return set(self.__predicted_negative_values).difference(self.get_tn())
 
     def __repr__(self) -> str:
         return self.__str__()
 
     def __str__(self) -> str:
         return f"""True Positives: {self.TP}
-{chr(10).join(str(x) for x in self.get_TP())}
+{chr(10).join(str(x) for x in self.get_tp())}
 True Negatives: {self.TN}
-{chr(10).join(str(x) for x in self.get_TN())}
+{chr(10).join(str(x) for x in self.get_tn())}
 False Positives: {self.FP}
-{chr(10).join(str(x) for x in self.get_FP())}
+{chr(10).join(str(x) for x in self.get_fp())}
 False Negatives: {self.FN}
-{chr(10).join(str(x) for x in self.get_FN())}
+{chr(10).join(str(x) for x in self.get_fn())}
 
 Accuracy: {self.accuracy()}
 Precision: {self.precision()}
