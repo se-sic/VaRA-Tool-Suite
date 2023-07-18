@@ -1,3 +1,4 @@
+import typing as tp
 import unittest
 from unittest.mock import create_autospec
 
@@ -5,6 +6,8 @@ from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
+    RegionEnd,
+    RegionStart,
     VaraInstr,
     FeatureKind,
     CoverageReport,
@@ -21,18 +24,42 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.utils.settings import save_config, vara_cfg
 from varats.varats.plots.llvm_coverage_plot import (
-    ConfusionMatrix,
-    ConfusionEntry,
     CoveragePlotGenerator,
     CoverageReports,
+    coverage_found_features,
+    ConfusionMatrix,
+    _matrix_analyze_code_region,
 )
 from varats.varats.plots.llvm_coverage_plot import (
-    classify_feature as _classify_feature,
+    vara_found_features as _vara_found_features,
 )
 from varats.varats.plots.llvm_coverage_plot import classify_all as _classify_all
 from varats.varats.plots.llvm_coverage_plot import Classification
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
+
+
+def _confusion_matrix(
+    feature: tp.Optional[str], tree: CodeRegion,
+    feature_name_map: tp.Dict[str, str], threshold: float, file: str
+) -> ConfusionMatrix:
+    coverage_feature_regions = []
+    coverage_normal_regions = []
+    vara_feature_regions = []
+    vara_normal_regions = []
+
+    _matrix_analyze_code_region(
+        feature, tree, feature_name_map, threshold, file,
+        coverage_feature_regions, coverage_normal_regions, vara_feature_regions,
+        vara_normal_regions
+    )
+
+    return ConfusionMatrix(
+        actual_positive_values=coverage_feature_regions,
+        actual_negative_values=coverage_normal_regions,
+        predicted_positive_values=vara_feature_regions,
+        predicted_negative_values=vara_normal_regions
+    )
 
 
 def setup_reports(config_name: str) -> CoverageReports:
@@ -78,49 +105,80 @@ def setup_reports(config_name: str) -> CoverageReports:
 
 class TestCodeRegion(unittest.TestCase):
 
-    def test_confusion_matrix_perfect(self):
-        tp = [create_autospec(ConfusionEntry) for x in range(20)]
-        tn = [create_autospec(ConfusionEntry) for x in range(10)]
-        fp = []
-        fn = []
+    def test_coverage_found_features(self):
+        region = create_autospec(CodeRegion)
+        region.coverage_features_set = lambda: set(["A", "B"])
 
-        matrix = ConfusionMatrix(
-            true_positive=tp,
-            true_negative=tn,
-            false_positive=fp,
-            false_negative=fn
-        )
-        self.assertEqual(matrix.accuracy(), 1.0)
-        self.assertEqual(matrix.precision(), 1.0)
-        self.assertEqual(matrix.recall(), 1.0)
+        self.assertTrue(coverage_found_features(set(["A", "B"]), region))
+        self.assertFalse(coverage_found_features(set(["A", "B", "C"]), region))
 
-    def test_confusion_matrix_not_working(self):
-        tp = []
-        tn = [create_autospec(ConfusionEntry) for x in range(90)]
-        fp = []
-        fn = [create_autospec(ConfusionEntry) for x in range(10)]
+        self.assertTrue(coverage_found_features(set(["A"]), region))
+        self.assertFalse(coverage_found_features(set(), region))
 
-        matrix = ConfusionMatrix(
-            true_positive=tp,
-            true_negative=tn,
-            false_positive=fp,
-            false_negative=fn
-        )
-        self.assertEqual(matrix.accuracy(), 0.9)
-        self.assertEqual(matrix.precision(), None)
-        self.assertEqual(matrix.recall(), 0.0)
-
-    def test_classify_feature(self):
-        classify_feature = lambda feature, region, threshold: _classify_feature(
+    def test_vara_found_features(self):
+        vara_found_features = lambda feature, region, threshold: _vara_found_features(
             feature, region, threshold, {
-                "A": "A",
-                "B": "B",
-                "C": "C",
+                "a": "A",
+                "b": "B",
+                "c": "C",
                 "": ""
             }
         )
 
         region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test")
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "C"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
+
+        self.assertTrue(vara_found_features(set(["a", "b"]), region, 0.0))
+        self.assertTrue(vara_found_features(set(["a", "b"]), region, 0.5))
+        self.assertFalse(vara_found_features(set(["a", "b"]), region, 1.0))
+
+        self.assertFalse(vara_found_features(set(["a", "b", "c"]), region, 0.0))
+
+        self.assertFalse(vara_found_features(set(["b"]), region, 1.0))
+        self.assertTrue(vara_found_features(set(["b"]), region, 0.5))
+        self.assertTrue(vara_found_features(set(["b"]), region, 0))
+
+        self.assertFalse(vara_found_features(set(["c"]), region, 1.0))
+        self.assertTrue(vara_found_features(set(["c"]), region, 0.5))
+        self.assertTrue(vara_found_features(set(["c"]), region, 0))
+
+        self.assertTrue(vara_found_features(set(["a"]), region, 1.0))
+        self.assertFalse(vara_found_features(set([""]), region, 0.0))
+        self.assertFalse(vara_found_features(set(), region, 0.0))
+
+        with self.assertRaises(ValueError):
+            vara_found_features(set(), region, threshold=100)
+
+        with self.assertRaises(KeyError):
+            self.assertFalse(vara_found_features(set(["d"]), region, 0.0))
+
+    def test_confusion_matrix_single_feature(self):
+
+        def confusion_matrix(
+            feature: tp.Optional[str],
+            tree: CodeRegion,
+            threshold: float,
+        ) -> ConfusionMatrix:
+            return _confusion_matrix(
+                feature, tree, {
+                    "A": "A",
+                    "B": "B",
+                    "C": "C",
+                    "": ""
+                }, threshold, "test"
+            )
+
+        region = CodeRegion(
+            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test"
+        )
         region.coverage_features_set = lambda: {"A", "B"}
 
         instr_1 = VaraInstr(
@@ -132,44 +190,35 @@ class TestCodeRegion(unittest.TestCase):
 
         region.vara_instrs = [instr_1, instr_2]
 
-        self.assertEqual(
-            classify_feature("A", region, 1.0), Classification.TRUE_POSITIVE
-        )
-        self.assertEqual(
-            classify_feature("A", region, 0.0), Classification.TRUE_POSITIVE
-        )
-        self.assertEqual(
-            classify_feature("B", region, 1.0), Classification.FALSE_NEGATIVE
-        )
-        self.assertEqual(
-            classify_feature("B", region, 0.5), Classification.TRUE_POSITIVE
-        )
-        self.assertEqual(
-            classify_feature("C", region, 1.0), Classification.TRUE_NEGATIVE
-        )
-        self.assertEqual(
-            classify_feature("C", region, 0.5), Classification.FALSE_POSITIVE
-        )
-        self.assertEqual(
-            classify_feature("", region, 1.0), Classification.TRUE_NEGATIVE
-        )
-        self.assertEqual(
-            classify_feature("", region, 0.0001), Classification.TRUE_NEGATIVE
-        )
-        self.assertEqual(
-            classify_feature("", region, 0.0), Classification.FALSE_POSITIVE
-        )
+        self.assertEqual(confusion_matrix("A", region, 1.0).TP, 1)
+        self.assertEqual(confusion_matrix("A", region, 0.0).TP, 1)
 
-    def test_classify_all(self):
-        classify_all = lambda region, threshold: _classify_all(
-            region, threshold, {
-                "A": "A",
-                "B": "B",
-            }
-        )
+        self.assertEqual(confusion_matrix("B", region, 1.0).FN, 1)
+        self.assertEqual(confusion_matrix("B", region, 0.5).TP, 1)
 
-        region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test")
-        region.coverage_features_set = lambda: {"A", "B"}
+        self.assertEqual(confusion_matrix("C", region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix("C", region, 0.5).FP, 1)
+
+        self.assertEqual(confusion_matrix("", region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix("", region, 0.0).TN, 1)
+
+    def test_confusion_matrix_all_features(self):
+
+        def confusion_matrix(
+            tree: CodeRegion,
+            threshold: float,
+        ) -> ConfusionMatrix:
+            return _confusion_matrix(
+                None, tree, {
+                    "a": "A",
+                    "b": "B",
+                }, threshold, "test"
+            )
+
+        region = CodeRegion(
+            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test"
+        )
+        region.coverage_features_set = lambda: {"a", "b"}
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -181,10 +230,7 @@ class TestCodeRegion(unittest.TestCase):
         region.vara_instrs = [instr_1, instr_2]
 
         # Coverage: A,B == VaRA: A,B
-
-        self.assertEqual(
-            classify_all(region, 1.0), Classification.TRUE_POSITIVE
-        )
+        self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -197,24 +243,15 @@ class TestCodeRegion(unittest.TestCase):
 
         # Coverage: A,B == VaRA: A,(B)
 
-        self.assertEqual(
-            classify_all(region, 1.0), Classification.FALSE_NEGATIVE
-        )
-        self.assertEqual(
-            classify_all(region, 0.5), Classification.TRUE_POSITIVE
-        )
+        self.assertEqual(confusion_matrix(region, 1.0).FN, 1)
+        self.assertEqual(confusion_matrix(region, 0.5).TP, 1)
 
-        region.coverage_features_set = lambda: {"A"}
+        region.coverage_features_set = lambda: {"a"}
 
         # Coverage: A == VaRA: A,(B)
-
-        self.assertEqual(
-            classify_all(region, 1.0), Classification.FALSE_NEGATIVE
-        )
-
-        self.assertEqual(
-            classify_all(region, 0.0), Classification.FALSE_POSITIVE
-        )
+        self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
+        self.assertEqual(confusion_matrix(region, 0.5).FP, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).FP, 1)
 
         instr_3 = VaraInstr(
             FeatureKind.NORMAL_REGION, "", 1, 1, [], 42, "test_instr"
@@ -223,37 +260,23 @@ class TestCodeRegion(unittest.TestCase):
 
         # Coverage: A == VaRA:
 
-        self.assertEqual(
-            classify_all(region, 1.0), Classification.FALSE_NEGATIVE
-        )
-        self.assertEqual(
-            classify_all(region, 0.0), Classification.FALSE_NEGATIVE
-        )
+        self.assertEqual(confusion_matrix(region, 1.0).FN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).FN, 1)
 
         region.vara_instrs = [instr_2, instr_3]
-        region.coverage_features_set = lambda: {}
+        region.coverage_features_set = lambda: set()
 
         # Coverage:  == VaRA: (A)
 
-        self.assertEqual(
-            classify_all(region, 0.0), Classification.FALSE_POSITIVE
-        )
-
-        self.assertEqual(
-            classify_all(region, 1.0), Classification.TRUE_NEGATIVE
-        )
+        self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).FP, 1)
 
         region.vara_instrs = []
 
         # Coverage:  == VaRA:
 
-        self.assertEqual(
-            classify_all(region, 1.0), Classification.TRUE_NEGATIVE
-        )
-
-        self.assertEqual(
-            classify_all(region, 0.0), Classification.TRUE_NEGATIVE
-        )
+        self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
 
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES

@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
@@ -13,6 +13,7 @@ from varats.base.configuration import (
     Configuration,
     PlainCommandlineConfiguration,
 )
+from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CoverageReport,
@@ -62,6 +63,103 @@ def available_features(
     return result
 
 
+def coverage_missed_features(features: tp.Set[str],
+                             code_region: CodeRegion) -> tp.Set[str]:
+    return features.difference(code_region.coverage_features_set())
+
+
+def coverage_found_features(
+    features: tp.Set[str], code_region: CodeRegion
+) -> bool:
+    if not features:
+        return False
+    return len(coverage_missed_features(features, code_region)) == 0
+
+
+def vara_found_features(
+    features: tp.Set[str], code_region: CodeRegion, threshold: float,
+    feature_name_map: tp.Dict[str, str]
+) -> bool:
+    if not (0 <= threshold <= 1.0):
+        raise ValueError("Threshold must be between 0.0 and 1.0.")
+    if not features:
+        return False
+
+    vara_features = {feature_name_map[feature] for feature in features}
+    return 0 < code_region.features_threshold(vara_features) >= threshold
+
+
+def coverage_vara_features_combined(
+    region: CodeRegion, feature_name_map: tp.Dict[str, str], threshold: float
+) -> tp.Set[str]:
+    reverse_features = dict(reversed(item) for item in feature_name_map.items())
+    found_vara_features = set(
+        reverse_features[feature]
+        for feature in region.vara_features()
+        if 0 < region.features_threshold([feature]) >= threshold
+    )
+    return region.coverage_features_set().union(found_vara_features)
+
+
+def _matrix_analyze_code_region(
+    feature: tp.Optional[str], tree: CodeRegion, feature_name_map: tp.Dict[str,
+                                                                           str],
+    threshold: float, file: str, coverage_feature_regions: tp.List[tp.Any],
+    coverage_normal_regions: tp.List[tp.Any],
+    vara_feature_regions: tp.List[tp.Any], vara_normal_regions: tp.List[tp.Any]
+) -> None:
+    for region in tree.iter_breadth_first():
+        if feature is None:
+            # Compare all coverage and all vara features with each other
+            features = coverage_vara_features_combined(
+                region, feature_name_map, threshold
+            )
+        else:
+            # Consider only single feature
+            features = {feature}
+
+        feature_entry = ConfusionEntry(
+            str(features), file, region.function, region.start.line,
+            region.start.column, region.end.line, region.end.column
+        )
+
+        if coverage_found_features(features, region):
+            coverage_feature_regions.append(feature_entry)
+        else:
+            coverage_normal_regions.append(feature_entry)
+        if vara_found_features(features, region, threshold, feature_name_map):
+            vara_feature_regions.append(feature_entry)
+        else:
+            vara_normal_regions.append(feature_entry)
+
+
+def _compute_confusion_matrix(
+    feature: tp.Optional[str],
+    feature_report: CoverageReport,
+    feature_name_map: tp.Dict[str, str],
+    threshold: float = 1.0
+) -> ConfusionMatrix:
+    coverage_feature_regions = []
+    coverage_normal_regions = []
+    vara_feature_regions = []
+    vara_normal_regions = []
+
+    for file, func_map in feature_report.filename_function_mapping.items():
+        for _, tree in func_map.items():
+            _matrix_analyze_code_region(
+                feature, tree, feature_name_map, threshold, file,
+                coverage_feature_regions, coverage_normal_regions,
+                vara_feature_regions, vara_normal_regions
+            )
+
+    return ConfusionMatrix(
+        actual_positive_values=coverage_feature_regions,
+        actual_negative_values=coverage_normal_regions,
+        predicted_positive_values=vara_feature_regions,
+        predicted_negative_values=vara_normal_regions
+    )
+
+
 class CoverageReports:
     """Helper class to work with a list of coverage reports."""
 
@@ -88,104 +186,26 @@ class CoverageReports:
 
         return cov_segments(feature_report, base_dir)
 
-    def confusion_matrix(
+    def confusion_matrices(
         self,
         feature_name_map: tp.Dict[str, str],
         threshold: float = 1.0
     ) -> tp.Dict[str, ConfusionMatrix]:
-        """Returns the confusion matrix."""
+        """Returns the confusion matrices."""
 
         report = self.feature_report()
 
         result = {}
-        matrix_all = ConfusionMatrix()
         # Iterate over feature_report and compare vara to coverage features
         for feature in self.available_features:
-            matrix_feature = ConfusionMatrix()
-            for file, func_map in report.filename_function_mapping.items():
-                for function, tree in func_map.items():
-                    for region in tree.iter_breadth_first():
-                        classification_feature = classify_feature(
-                            feature, region, threshold, feature_name_map
-                        )
-                        matrix_feature.add(
-                            classification_feature,
-                            ConfusionEntry(
-                                feature, file, function, region.start.line,
-                                region.start.column, region.end.line,
-                                region.end.column
-                            )
-                        )
-
-                        classification_all = classify_all(
-                            region, threshold, feature_name_map
-                        )
-                        matrix_all.add(
-                            classification_all,
-                            ConfusionEntry(
-                                "__all__", file, function, region.start.line,
-                                region.start.column, region.end.line,
-                                region.end.column
-                            )
-                        )
-            result[feature] = matrix_feature
-
-        result["__all__"] = matrix_all
-
+            result[feature] = _compute_confusion_matrix(
+                feature, report, feature_name_map, threshold
+            )
+        result["__all__"] = _compute_confusion_matrix(
+            None, report, feature_name_map, threshold
+        )
+        print(result)
         return result
-
-
-class Classification(Enum):
-    """Classification in confusion matrix."""
-    TRUE_POSITIVE = "TP"
-    TRUE_NEGATIVE = "TN"
-    FALSE_POSITIVE = "FP"
-    FALSE_NEGATIVE = "FN"
-
-
-def classify_feature(
-    feature: str, code_region: CodeRegion, threshold: float,
-    feature_name_map: tp.Dict[str, str]
-) -> Classification:
-    """Classify single feature."""
-    # Convert_feature_name
-    vara_feature_name = feature_name_map[feature]
-    vara_found = code_region.features_threshold([vara_feature_name]
-                                               ) >= threshold
-    coverage_found = feature in code_region.coverage_features_set()
-
-    if vara_found and coverage_found:
-        return Classification.TRUE_POSITIVE
-    if vara_found:
-        return Classification.FALSE_POSITIVE
-    if coverage_found:
-        return Classification.FALSE_NEGATIVE
-    return Classification.TRUE_NEGATIVE
-
-
-def classify_all(
-    code_region: CodeRegion, threshold: float, feature_name_map: tp.Dict[str,
-                                                                         str]
-) -> Classification:
-    """Classify all given features at once."""
-    features = code_region.vara_features()
-    vara_features = features if code_region.features_threshold(
-        features
-    ) >= threshold else set()
-
-    # Convert feature names
-    coverage_features = set()
-    for feature in code_region.coverage_features_set():
-        coverage_features.add(feature_name_map[feature])
-
-    if len(vara_features) > 0 or len(coverage_features) > 0:
-        if vara_features == coverage_features:
-            return Classification.TRUE_POSITIVE
-        if len(vara_features.difference(coverage_features)) > 0:
-            return Classification.FALSE_POSITIVE
-        if len(coverage_features.difference(vara_features)) > 0:
-            return Classification.FALSE_NEGATIVE
-    return Classification.TRUE_NEGATIVE
 
 
 @dataclass(frozen=True)
@@ -200,63 +220,39 @@ class ConfusionEntry:
     end_column: int
 
 
-@dataclass
-class ConfusionMatrix:
-    """Confusion matrix."""
-    true_positive: tp.Set[ConfusionEntry] = field(default_factory=set)
-    true_negative: tp.Set[ConfusionEntry] = field(default_factory=set)
-    false_positive: tp.Set[ConfusionEntry] = field(default_factory=set)
-    false_negative: tp.Set[ConfusionEntry] = field(default_factory=set)
+class ConfusionMatrix(ConfusionMatrix):
 
-    def add(
-        self, classification: Classification, entry: ConfusionEntry
-    ) -> None:
-        """Add classified entry to confusion matrix."""
-        if classification == Classification.TRUE_POSITIVE:
-            self.true_positive.add(entry)
-        elif classification == Classification.TRUE_NEGATIVE:
-            self.true_negative.add(entry)
-        elif classification == Classification.FALSE_POSITIVE:
-            self.false_positive.add(entry)
-        elif classification == Classification.FALSE_NEGATIVE:
-            self.false_negative.add(entry)
+    def get_TP(self) -> tp.Set[tp.Any]:
+        return set(self.__actual_positive_values
+                  ).intersection(self.__predicted_positive_values)
 
-    def accuracy(self) -> tp.Optional[float]:
-        """Calculate accuracy."""
-        numerator = (len(self.true_positive) + len(self.true_negative))
-        denumerator = (
-            len(self.true_positive) + len(self.true_negative) +
-            len(self.false_positive) + len(self.false_negative)
-        )
-        if denumerator == 0:
-            return None
-        return numerator / denumerator
+    def get_TN(self) -> tp.Set[tp.Any]:
+        return set(self.__actual_negative_values
+                  ).intersection(self.__predicted_negative_values)
 
-    def precision(self) -> tp.Optional[float]:
-        """Calculate precision."""
-        numerator = len(self.true_positive)
-        denumerator = len(self.true_positive) + len(self.false_positive)
-        if denumerator == 0:
-            return None
-        return numerator / denumerator
+    def get_FP(self) -> tp.Set[tp.Any]:
+        return set(self.__predicted_positive_values).difference(self.get_TP())
 
-    def recall(self) -> tp.Optional[float]:
-        """Calculate recall."""
-        numerator = len(self.true_positive)
-        denumerator = len(self.true_positive) + len(self.false_negative)
-        if denumerator == 0:
-            return None
-        return numerator / denumerator
+    def get_FN(self) -> tp.Set[tp.Any]:
+        return set(self.__predicted_negative_values).difference(self.get_TN())
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def __str__(self) -> str:
-        return f"""True Positives: {len(self.true_positive)}
-True Negatives: {len(self.true_negative)}
-False Positives: {len(self.false_positive)}
-False Negatives: {len(self.false_negative)}
+        return f"""True Positives: {self.TP}
+{chr(10).join(str(x) for x in self.get_TP())}
+True Negatives: {self.TN}
+{chr(10).join(str(x) for x in self.get_TN())}
+False Positives: {self.FP}
+{chr(10).join(str(x) for x in self.get_FP())}
+False Negatives: {self.FN}
+{chr(10).join(str(x) for x in self.get_FN())}
 
 Accuracy: {self.accuracy()}
 Precision: {self.precision()}
 Recall: {self.recall()}
+Specifity: {self.specificity()}
 """
 
 
@@ -392,7 +388,7 @@ def _plot_coverage_annotations(
 
 def _plot_confusion_matrix(reports: CoverageReports, outdir: Path) -> None:
 
-    matrix_dict = reports.confusion_matrix({
+    matrix_dict = reports.confusion_matrices({
         "enc": "Encryption",
         "compress": "Compression"
     })
