@@ -223,6 +223,12 @@ class PatchSet:
 
     def __init__(self, patches: tp.Set[Patch]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
+        tags: tp.Optional[tp.Set[str]] = set()
+
+        for p in patches:
+            tags.update(p.tags) if p.tags else None
+
+        self.__tags = frozenset(tags)
 
     def __iter__(self) -> tp.Iterator[Patch]:
         return self.__patches.__iter__()
@@ -235,23 +241,41 @@ class PatchSet:
 
     def __getitem__(self, tag):
         tag_set = set(tag)
-        return PatchSet({p for p in self.__patches if tag_set.issubset(p.tags)})
+        res_set = set()
+
+        for patch in self.__patches:
+            if patch.tags and tag_set.issubset(patch.tags):
+                res_set.add(patch)
+
+        return PatchSet(res_set)
 
     def __and__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
+        lhs_tags = self.__tags
+        rhs_tags = rhs.__tags
 
-        ret = {}
-        ...
-        return ret
+        tags: tp.FrozenSet[str] = lhs_tags.intersection(rhs_tags)
+
+        ret: tp.Set[Patch] = set()
+
+        for patch in self.__patches:
+            if patch.tags and any([tag in patch.tags for tag in tags]):
+                ret.add(patch)
+
+        return PatchSet(ret)
 
     def __or__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
+        lhs_t = self.__tags
+        rhs_t = rhs.__tags
 
-        ret = {}
-        ...
-        return ret
+        tags: tp.FrozenSet[str] = lhs_t.union(rhs_t)
+
+        ret = set()
+
+        for patch in self.__patches:
+            if patch.tags and any([tag in patch.tags for tag in tags]):
+                ret.add(patch)
+
+        return PatchSet(ret)
 
     def __hash__(self) -> int:
         return hash(self.__patches)
