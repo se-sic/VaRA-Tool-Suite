@@ -596,7 +596,7 @@ class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
         )
 
 
-class RunBackBoxBaselineOverhead(ProjectStep):  # type: ignore
+class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
