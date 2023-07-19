@@ -180,7 +180,7 @@ def get_fake_prec_rows_overhead() -> tp.List[tp.Any]:
     for prof, seed in fake_prof:
         random.seed(seed)
         for _ in range(0, 3):
-            n = 0.1 if prof == "PIMTracer" else 0.0
+            n = -0.1 if prof == "PIMTracer" else 0.0
             x = random.random()
             y = random.random()
             new_fake_row = {
@@ -385,17 +385,18 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         ax = sns.scatterplot(
             final_df,
-            x="precision",
-            y='overhead_time',
+            x='overhead_time',
+            y="precision",
             hue="profiler",
             style='CaseStudy',
             alpha=0.5
         )
         # grid.ax_marg_x.set_xlim(0.0, 1.01)
-        ax.set_ylabel("Overhead in %")
+        ax.set_xlabel("Overhead in %")
         # ax.set_ylim(np.max(final_df['overhead_time']) + 20, 0)
-        ax.set_ylim(0, np.max(final_df['overhead_time']) + 20)
-        ax.set_xlim(0.0, 1.01)
+        ax.set_ylim(0.0, 1.01)
+        # ax.set_xlim(0, np.max(final_df['overhead_time']) + 20)
+        ax.set_xlim(np.max(final_df['overhead_time']) + 20, 0)
         # ax.set_xlim(1.01, 0.0)
         ax.xaxis.label.set_size(25)
         ax.yaxis.label.set_size(25)
@@ -406,23 +407,25 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         print(f"{prof_df=}")
         sns.scatterplot(
             prof_df,
-            x="precision",
-            y='overhead_time',
+            x='overhead_time',
+            y="precision",
             hue="profiler",
             color='grey',
             ax=ax,
+            legend=False,
         )
 
+        # p = self.plot_pareto_frontier(
+        #     final_df['precision'], final_df['overhead_time']
+        # )
         p = self.plot_pareto_frontier(
-            final_df['precision'], final_df['overhead_time']
-        )
-        p = self.plot_pareto_frontier(
-            prof_df['precision'], prof_df['overhead_time']
+            prof_df['overhead_time'], prof_df['precision'], maxX=False
         )
         pf_x = [pair[0] for pair in p]
         pf_y = [pair[1] for pair in p]
+        print(f"{pf_x=}, {pf_y=}")
         # plt.plot(pf_x, pf_y)
-        sns.lineplot(x=pf_x, y=pf_y, ax=ax, color='grey')
+        sns.lineplot(x=pf_x, y=pf_y, ax=ax, color='grey', legend=False)
 
         # def_totals = pd.DataFrame()
         # def_totals.loc['mean'] = [1, 2, 23]
@@ -431,7 +434,8 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
     def plot_pareto_frontier(self, Xs, Ys, maxX=True, maxY=True):
         """Pareto frontier selection process."""
         sorted_list = sorted([[Xs[i], Ys[i]] for i in range(len(Xs))],
-                             reverse=maxY)
+                             reverse=maxX)
+        print(f"{sorted_list=}")
         pareto_front = [sorted_list[0]]
         for pair in sorted_list[1:]:
             if maxY:
