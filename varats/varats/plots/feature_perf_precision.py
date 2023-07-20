@@ -124,13 +124,19 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
             'precision',
             'recall',
             'profiler',
-            global_kde=True,
+            global_kde=False,
             alpha=0.8,
-            legend=False
+            legend=False,
+            s=100
         )
-        grid.ax_marg_x.set_xlim(0.0, 1.01)
-        grid.ax_marg_y.set_ylim(0.0, 1.01)
+        grid.ax_marg_x.set_xlim(0.0, 1.02)
+        grid.ax_marg_y.set_ylim(0.0, 1.02)
         grid.ax_joint.legend([name for name, _ in df.groupby("profiler")])
+
+        grid.ax_joint.set_xlabel("Precision")
+        grid.ax_joint.set_ylabel("Recall")
+        grid.ax_joint.xaxis.label.set_size(20)
+        grid.ax_joint.yaxis.label.set_size(20)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
