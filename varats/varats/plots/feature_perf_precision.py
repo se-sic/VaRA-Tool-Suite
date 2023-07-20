@@ -5,6 +5,8 @@ import typing as tp
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import pyplot as plt
+from matplotlib.text import Text
 
 from varats.data.databases.feature_perf_precision_database import (
     Profiler,
@@ -43,7 +45,7 @@ def get_fake_prec_rows() -> tp.List[tp.Any]:
                 'RegressedConfigs': 21,
                 'precision': x,
                 'recall': y,
-                'profiler': prof
+                'Profiler': prof
             }
             fake_rows.append(new_fake_row)
 
@@ -98,7 +100,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
 
                         new_row['precision'] = results.precision()
                         new_row['recall'] = results.recall()
-                        new_row['profiler'] = profiler.name
+                        new_row['Profiler'] = profiler.name
                         # new_row[f"{profiler.name}_precision"
                         #        ] = results.precision()
                         # new_row[f"{profiler.name}_recall"] = results.recall()
@@ -107,7 +109,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
                     else:
                         new_row['precision'] = np.nan
                         new_row['recall'] = np.nan
-                        new_row['profiler'] = profiler.name
+                        new_row['Profiler'] = profiler.name
 
                     print(f"{new_row=}")
                     table_rows_plot.append(new_row)
@@ -118,12 +120,12 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
 
-        print(f"{df['profiler']=}")
+        print(f"{df['Profiler']=}")
         grid = multivariate_grid(
             df,
             'precision',
             'recall',
-            'profiler',
+            'Profiler',
             global_kde=False,
             alpha=0.7,
             legend=False,
@@ -131,7 +133,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
         )
         grid.ax_marg_x.set_xlim(0.0, 1.02)
         grid.ax_marg_y.set_ylim(0.0, 1.02)
-        grid.ax_joint.legend([name for name, _ in df.groupby("profiler")])
+        grid.ax_joint.legend([name for name, _ in df.groupby("Profiler")])
 
         grid.ax_joint.set_xlabel("Precision")
         grid.ax_joint.set_ylabel("Recall")
@@ -196,7 +198,7 @@ def get_fake_prec_rows_overhead() -> tp.List[tp.Any]:
                 'RegressedConfigs': 21,
                 'precision': x - n,
                 'recall': y,
-                'profiler': prof
+                'Profiler': prof
             }
             fake_rows.append(new_fake_row)
 
@@ -217,7 +219,7 @@ def get_fake_overhead_better_rows():
 
             new_fake_row = {
                 'CaseStudy': cs,
-                'profiler': prof,
+                'Profiler': prof,
                 'overhead_time':
                     (random.random() * 4) * 100,  # random.randint(2, 230),
                 'overhead_ctx': random.randint(2, 1230)
@@ -349,7 +351,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
                         new_row['precision'] = results.precision()
                         new_row['recall'] = results.recall()
-                        new_row['profiler'] = profiler.name
+                        new_row['Profiler'] = profiler.name
                         # new_row[f"{profiler.name}_precision"
                         #        ] = results.precision()
                         # new_row[f"{profiler.name}_recall"] = results.recall()
@@ -358,7 +360,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                     else:
                         new_row['precision'] = np.nan
                         new_row['recall'] = np.nan
-                        new_row['profiler'] = profiler.name
+                        new_row['Profiler'] = profiler.name
 
                     print(f"{new_row=}")
                     table_rows_plot.append(new_row)
@@ -369,8 +371,8 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
 
-        sub_df = df[["CaseStudy", "precision", "recall", "profiler"]]
-        sub_df = sub_df.groupby(['CaseStudy', "profiler"], as_index=False).agg({
+        sub_df = df[["CaseStudy", "precision", "recall", "Profiler"]]
+        sub_df = sub_df.groupby(['CaseStudy', "Profiler"], as_index=False).agg({
             'precision': 'mean',
             'recall': 'mean'
         })
@@ -382,60 +384,123 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         other_df = pd.concat([
             other_df, pd.DataFrame(get_fake_overhead_better_rows())
         ])
-        # other_df = other_df.groupby(['CaseStudy', 'profiler'])
+        # other_df = other_df.groupby(['CaseStudy', 'Profiler'])
         print(f"{other_df=}")
 
-        # final_df = sub_df.join(other_df, on=["CaseStudy", "profiler"])
-        final_df = pd.merge(sub_df, other_df, on=["CaseStudy", "profiler"])
+        # final_df = sub_df.join(other_df, on=["CaseStudy", "Profiler"])
+        final_df = pd.merge(sub_df, other_df, on=["CaseStudy", "Profiler"])
         print(f"{final_df=}")
 
         ax = sns.scatterplot(
             final_df,
             x='overhead_time',
             y="precision",
-            hue="profiler",
+            hue="Profiler",
             style='CaseStudy',
             alpha=0.5,
             s=100
         )
+
+        print(f"{ax.legend()=}")
+        print(f"{type(ax.legend())=}")
+        print(f"{ax.legend().get_children()=}")
+        print(f"{ax.legend().prop=}")
+        print(f"{ax.legend().get_title()}")
+        print(f"{ax.legend().get_lines()}")
+        print(f"{ax.legend().get_patches()}")
+        print(f"{ax.legend().get_texts()}")
+        ax.legend().set_title("Walrus")
+
+        for text_obj in ax.legend().get_texts():
+            text_obj: Text
+
+            text_obj.set_fontsize("small")
+            print(f"{text_obj=}")
+            if text_obj.get_text() == "Profiler":
+                text_obj.set_text("Profilers")
+                text_obj.set_fontweight("bold")
+
+            if text_obj.get_text() == "CaseStudy":
+                text_obj.set_text("Subject Systems")
+                text_obj.set_fontweight("bold")
+
+        # ax.legend().set_bbox_to_anchor((1, 0.5))
+
         # grid.ax_marg_x.set_xlim(0.0, 1.01)
         ax.set_xlabel("Overhead in %")
         ax.set_ylabel("F1-Score")
         # ax.set_ylim(np.max(final_df['overhead_time']) + 20, 0)
-        ax.set_ylim(0.0, 1.01)
+        ax.set_ylim(0.0, 1.02)
         # ax.set_xlim(0, np.max(final_df['overhead_time']) + 20)
         ax.set_xlim(np.max(final_df['overhead_time']) + 20, 0)
         # ax.set_xlim(1.01, 0.0)
-        ax.xaxis.label.set_size(25)
-        ax.yaxis.label.set_size(25)
+        ax.xaxis.label.set_size(20)
+        ax.yaxis.label.set_size(20)
         ax.tick_params(labelsize=15)
 
-        prof_df = final_df[['profiler', 'precision',
-                            'overhead_time']].groupby('profiler').agg('mean')
+        prof_df = final_df[['Profiler', 'precision', 'overhead_time'
+                           ]].groupby('Profiler').agg(['mean', 'std'])
         print(f"{prof_df=}")
+        p = self.plot_pareto_frontier(
+            prof_df['overhead_time']['mean'],
+            prof_df['precision']['mean'],
+            maxX=False
+        )
+        p = self.plot_pareto_frontier_std(
+            prof_df['overhead_time']['mean'],
+            prof_df['precision']['mean'],
+            prof_df['overhead_time']['std'],
+            prof_df['precision']['std'],
+            maxX=False
+        )
+
+        pf_x = [pair[0] for pair in p]
+        pf_y = [pair[1] for pair in p]
+        pf_x_error = [pair[2] for pair in p]
+        pf_y_error = [pair[3] for pair in p]
+
+        ax.errorbar(
+            pf_x,
+            pf_y,
+            xerr=pf_x_error,
+            yerr=pf_y_error,
+            fmt='none',
+            color='grey',
+            zorder=0,
+            capsize=2,
+            capthick=0.6,
+            elinewidth=0.6
+        )
+
         sns.scatterplot(
             prof_df,
-            x='overhead_time',
-            y="precision",
-            hue="profiler",
-            color='dimgrey',
+            x=('overhead_time', 'mean'),
+            y=("precision", 'mean'),
+            hue="Profiler",
             ax=ax,
             legend=False,
-            s=100
+            s=100,
+            zorder=2
         )
 
         # p = self.plot_pareto_frontier(
         #     final_df['precision'], final_df['overhead_time']
         # )
-        p = self.plot_pareto_frontier(
-            prof_df['overhead_time'], prof_df['precision'], maxX=False
-        )
-        pf_x = [pair[0] for pair in p]
-        pf_y = [pair[1] for pair in p]
-        print(f"{pf_x=}, {pf_y=}")
+
+        print(f"""{pf_x=}
+{pf_y=}
+{pf_x_error=}
+{pf_y_error=}
+""")
         # plt.plot(pf_x, pf_y)
         sns.lineplot(
-            x=pf_x, y=pf_y, ax=ax, color='grey', legend=False, linewidth=2.5
+            x=pf_x,
+            y=pf_y,
+            ax=ax,
+            color='firebrick',
+            legend=False,
+            linewidth=2.5,
+            zorder=1
         )
 
         # def_totals = pd.DataFrame()
@@ -449,6 +514,28 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         print(f"{sorted_list=}")
         pareto_front = [sorted_list[0]]
         for pair in sorted_list[1:]:
+            print(f"{pair=}")
+            if maxY:
+                if pair[1] >= pareto_front[-1][1]:
+                    pareto_front.append(pair)
+            else:
+                if pair[1] <= pareto_front[-1][1]:
+                    pareto_front.append(pair)
+
+        return pareto_front
+
+    def plot_pareto_frontier_std(
+        self, Xs, Ys, Xstds, Ystds, maxX=True, maxY=True
+    ):
+        """Pareto frontier selection process."""
+        sorted_list = sorted([
+            [Xs[i], Ys[i], Xstds[i], Ystds[i]] for i in range(len(Xs))
+        ],
+                             reverse=maxX)
+        print(f"{sorted_list=}")
+        pareto_front = [sorted_list[0]]
+        for pair in sorted_list[1:]:
+            print(f"{pair=}")
             if maxY:
                 if pair[1] >= pareto_front[-1][1]:
                     pareto_front.append(pair)
