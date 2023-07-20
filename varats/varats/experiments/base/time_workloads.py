@@ -15,6 +15,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
     ZippedExperimentSteps,
+    OutputFolderStep,
 )
 from varats.experiment.workload_util import (
     workload_commands,
@@ -27,7 +28,7 @@ from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportSpecification
 
 
-class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
+class TimeProjectWorkloads(OutputFolderStep):
     """Times the execution of all project example workloads."""
 
     NAME = "TimeWorkloads"
@@ -42,7 +43,7 @@ class TimeProjectWorkloads(actions.ProjectStep):  # type: ignore
         self.__num = num
         self.__binary = binary
 
-    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+    def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
