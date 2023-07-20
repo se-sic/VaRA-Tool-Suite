@@ -125,7 +125,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
             'recall',
             'profiler',
             global_kde=False,
-            alpha=0.8,
+            alpha=0.7,
             legend=False,
             s=100
         )
@@ -395,10 +395,12 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             y="precision",
             hue="profiler",
             style='CaseStudy',
-            alpha=0.5
+            alpha=0.5,
+            s=100
         )
         # grid.ax_marg_x.set_xlim(0.0, 1.01)
         ax.set_xlabel("Overhead in %")
+        ax.set_ylabel("F1-Score")
         # ax.set_ylim(np.max(final_df['overhead_time']) + 20, 0)
         ax.set_ylim(0.0, 1.01)
         # ax.set_xlim(0, np.max(final_df['overhead_time']) + 20)
@@ -416,9 +418,10 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             x='overhead_time',
             y="precision",
             hue="profiler",
-            color='grey',
+            color='dimgrey',
             ax=ax,
             legend=False,
+            s=100
         )
 
         # p = self.plot_pareto_frontier(
@@ -431,7 +434,9 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         pf_y = [pair[1] for pair in p]
         print(f"{pf_x=}, {pf_y=}")
         # plt.plot(pf_x, pf_y)
-        sns.lineplot(x=pf_x, y=pf_y, ax=ax, color='grey', legend=False)
+        sns.lineplot(
+            x=pf_x, y=pf_y, ax=ax, color='grey', legend=False, linewidth=2.5
+        )
 
         # def_totals = pd.DataFrame()
         # def_totals.loc['mean'] = [1, 2, 23]
