@@ -267,3 +267,16 @@ class ConfusionMatrix(tp.Generic[T]):
             return float('nan')
 
         return numerator / denominator
+
+    ###################
+    # python underscore methods
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return f"""ConfM[TP={self.TP}, TN={self.TN}, FP={self.FP}, FN={self.FN}]
+  ├─ Precision: {self.precision()}
+  ├─ Recall:    {self.recall()}
+  ├─ Accuracy:  {self.accuracy()}
+  └─ F1_Score:  {self.f1_score()}
+"""

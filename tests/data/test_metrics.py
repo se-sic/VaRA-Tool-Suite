@@ -283,3 +283,14 @@ class TestClassificationResults(unittest.TestCase):
         self.assertEqual(conf_matrix.accuracy(), 0.5)
         self.assertEqual(conf_matrix.balanced_accuracy(), 0.5)
         self.assertTrue(math.isnan(conf_matrix.f1_score()))
+
+    def test_stringify(self) -> None:
+        """Test if we correctly print a ConfusionMatrix."""
+        self.assertEqual(
+            str(self.all_good), """ConfM[TP=3, TN=3, FP=0, FN=0]
+  ├─ Precision: 1.0
+  ├─ Recall:    1.0
+  ├─ Accuracy:  1.0
+  └─ F1_Score:  1.0
+"""
+        )
