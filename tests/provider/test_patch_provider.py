@@ -275,7 +275,23 @@ class TestPatchSet(unittest.TestCase):
                 any([tag in patch.tags for tag in tags])
 
     def test_patchset_intersection(self):
-        pass
+        patches = self.patchSet["A"] & self.patchSet["B"]
+
+        self.assertEqual(4, len(patches))
+
+        patches = patches & self.patchSet["C"]
+        self.assertEqual(2, len(patches))
+
+        patches = patches & self.patchSet["D"]
+        self.assertEqual(1, len(patches))
 
     def test_patchset_union(self):
-        pass
+        patches = self.patchSet["A"] | self.patchSet["B"]
+
+        self.assertEqual(12, len(patches))
+
+        patches = patches | self.patchSet["C"]
+        self.assertEqual(14, len(patches))
+
+        patches = patches | self.patchSet["D"]
+        self.assertEqual(15, len(patches))
