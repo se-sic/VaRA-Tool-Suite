@@ -112,13 +112,13 @@ class Patch:
     """A class for storing a single project-specific Patch."""
 
     def __init__(
-        self,
-        project_name: str,
-        shortname: str,
-        description: str,
-        path: Path,
-        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
-        tags: tp.Optional[tp.Set[str]] = None
+            self,
+            project_name: str,
+            shortname: str,
+            description: str,
+            path: Path,
+            valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
+            tags: tp.Optional[tp.Set[str]] = None
     ):
         self.project_name: str = project_name
         self.shortname: str = shortname
@@ -190,7 +190,7 @@ class Patch:
             include_revisions = {
                 ShortCommitHash(h)
                 for h in main_repo_git('log', '--pretty=%H', '--first-parent'
-                                      ).strip().split()
+                                       ).strip().split()
             }
 
         if "exclude_revisions" in yaml_dict:
@@ -207,7 +207,7 @@ class Patch:
 
     def __str__(self) -> str:
         valid_revs = [str(r) for r in self.valid_revisions
-                     ] if self.valid_revisions else []
+                      ] if self.valid_revisions else []
         str_representation = f"""Patch(
     ProjectName: {self.project_name}
     Shortname: {self.shortname}
@@ -220,15 +220,12 @@ class Patch:
 
 
 class PatchSet:
+    """
+    A PatchSet is a storage container for project specific patches that can easily be accessed via the tags of a patch
+    """
 
     def __init__(self, patches: tp.Set[Patch]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
-        tags: tp.Optional[tp.Set[str]] = set()
-
-        for p in patches:
-            tags.update(p.tags) if p.tags else None
-
-        self.__tags = frozenset(tags)
 
     def __iter__(self) -> tp.Iterator[Patch]:
         return self.__patches.__iter__()
@@ -239,8 +236,21 @@ class PatchSet:
     def __len__(self) -> int:
         return len(self.__patches)
 
-    def __getitem__(self, tag):
-        tag_set = set(tag)
+    def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]):
+        """
+        Overrides the bracket operator of a PatchSet
+
+        Returns a PatchSet, such that all patches include all the tags given
+        """
+        # TODO: Discuss if we really want this. Currently this is an "all_of" access
+        # We could consider to remove the bracket operator and only provide the all_of/any_of accessors as it
+        # would be clearer what the exact behaviour is
+
+        # Trick to handle correct set construction if just a single tag is given
+        if isinstance(tags, str):
+            tags = [tags]
+
+        tag_set = set(tags)
         res_set = set()
 
         for patch in self.__patches:
@@ -250,32 +260,36 @@ class PatchSet:
         return PatchSet(res_set)
 
     def __and__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_tags = self.__tags
-        rhs_tags = rhs.__tags
-
-        tags: tp.FrozenSet[str] = lhs_tags.intersection(rhs_tags)
-
-        ret: tp.Set[Patch] = set()
-
-        for patch in self.__patches:
-            if patch.tags and any([tag in patch.tags for tag in tags]):
-                ret.add(patch)
-
-        return PatchSet(ret)
+        return PatchSet(self.__patches.intersection(rhs.__patches))
 
     def __or__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__tags
-        rhs_t = rhs.__tags
+        """
+        Implementing the union of two sets
+        """
+        return PatchSet(self.__patches.union(rhs.__patches))
 
-        tags: tp.FrozenSet[str] = lhs_t.union(rhs_t)
+    def any_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+        """
+        Returns a patch set with patches containing at least one of the given tags
+        """
+        # Trick to handle just a single tag being passed
+        if isinstance(tags, str):
+            tags = [tags]
 
-        ret = set()
-
-        for patch in self.__patches:
+        result = set()
+        for patch in self:
             if patch.tags and any([tag in patch.tags for tag in tags]):
-                ret.add(patch)
+                result.add(patch)
 
-        return PatchSet(ret)
+        return PatchSet(result)
+
+    def all_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet" :
+        """
+        Returns a patch set with patches containing all the given tags
+
+        Equivalent to bracket operator (__getitem__)
+        """
+        return self.__getitem__(tags)
 
     def __hash__(self) -> int:
         return hash(self.__patches)
@@ -339,7 +353,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-        cls: tp.Type[ProviderType], project: tp.Type[Project]
+            cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a provider instance for the given project if possible.
@@ -356,7 +370,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_default_provider(
-        cls: tp.Type[ProviderType], project: tp.Type[Project]
+            cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a default provider instance that can be used with any project.
