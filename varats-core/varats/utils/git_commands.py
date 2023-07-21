@@ -155,5 +155,5 @@ def apply_patch(repo_folder: Path, patch_file: Path) -> None:
 
 
 def revert_patch(repo_folder: Path, patch_file: Path) -> None:
-    """Applies a given patch file to the specified git repository."""
+    """Reverts a given patch file on the specified git repository."""
     git("-C", repo_folder.absolute(), "apply", "-R", str(patch_file))
