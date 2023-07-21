@@ -250,10 +250,29 @@ class TestPatchSet(unittest.TestCase):
                     self.assertIn(tag, patch.tags)
 
     def test_any_of_single_tag(self):
-        pass
+        for tag in {"A", "B", "C", "D"}:
+            patches = self.patchSet.any_of(tag)
+            self.assertEqual(8, len(patches))
+
+            for patch in patches:
+                self.assertIn(tag, patch.shortname)
 
     def test_any_of_multiple_tags(self):
-        pass
+        tags_count = {
+            ["A", "B"]: 12,
+            ["C", "B"]: 12,
+            ["D", "B"]: 12,
+            ["A", "B", "C"]: 14,
+            ["A", "B", "C", "D"]: 15
+        }
+
+        for tags in tags_count:
+            patches = self.patchSet.any_of(tags)
+
+            self.assertEqual(tags_count[tags], len(patches))
+
+            for patch in patches:
+                any([tag in patch.tags for tag in tags])
 
     def test_patchset_intersection(self):
         pass
