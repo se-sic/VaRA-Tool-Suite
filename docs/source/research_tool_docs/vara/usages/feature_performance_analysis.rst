@@ -34,6 +34,11 @@ The different instrumentation options can be found :ref:`here<Instrumentations>`
     CXX_FLAGS="$CXX_FLAGS -fvara-feature -fsanitize=vara -fvara-instr=trace_event"
 
 
+.. note::
+
+    By default, regions smaller than 100 instructions are ignore. To manualy set the instruction threshold, add ``-vara-instruction-threshold=X`` as a ``C/CXX_FLAG``, where ``X`` defines amount of instruction that need to be contained in a region.
+
+
 (Recommended) Configure your project to use link-time optimization (LTO) for more precise analysis results.
 Without LTO, the analysis can only run within a translation unit, hence, features that are used across different translation units can not be correctly analyzed.
 
