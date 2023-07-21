@@ -218,6 +218,9 @@ class Patch:
 
         return str_representation
 
+    def __hash__(self):
+        return hash((self.shortname, str(self.path), self.tags))
+
 
 class PatchSet:
     """
