@@ -10,7 +10,7 @@ from tests.helper_utils import TEST_INPUTS_DIR
 from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,
 )
-from varats.provider.patch.patch_provider import PatchProvider, Patch
+from varats.provider.patch.patch_provider import PatchProvider, Patch, PatchSet
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -63,7 +63,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
         }
 
     def __test_patch_revisions(
-        self, shortname: str, expected_revisions: set[ShortCommitHash]
+            self, shortname: str, expected_revisions: set[ShortCommitHash]
     ):
         patch = Patch.from_yaml(self.patch_base_path / f"{shortname}.info")
 
@@ -172,3 +172,56 @@ class TestPatchRevisionRanges(unittest.TestCase):
         self.__test_patch_revisions(
             "include-range-exclude-range", expected_revisions
         )
+
+
+class TestPatchSet(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        patches = {
+            Patch("TEST", "Test-ABCD", "", path=Path("test.patch"), tags={"A", "B", "C", "D"}),
+            Patch("TEST", "Test-A", "", path=Path("test.patch"), tags={"A"}),
+            Patch("TEST", "Test-B", "", path=Path("test.patch"), tags={"B"}),
+            Patch("TEST", "Test-C", "", path=Path("test.patch"), tags={"C"}),
+            Patch("TEST", "Test-D", "", path=Path("test.patch"), tags={"D"}),
+            Patch("TEST", "Test-AB", "", path=Path("test.patch"), tags={"A", "B"}),
+            Patch("TEST", "Test-AC", "", path=Path("test.patch"), tags={"A", "C"}),
+            Patch("TEST", "Test-AD", "", path=Path("test.patch"), tags={"A", "D"}),
+            Patch("TEST", "Test-BC", "", path=Path("test.patch"), tags={"B", "C"}),
+            Patch("TEST", "Test-BD", "", path=Path("test.patch"), tags={"B", "D"}),
+            Patch("TEST", "Test-CD", "", path=Path("test.patch"), tags={"C", "D"}),
+            Patch("TEST", "Test-ABC", "", path=Path("test.patch"), tags={"A", "B", "C"}),
+            Patch("TEST", "Test-ABD", "", path=Path("test.patch"), tags={"A", "B", "D"}),
+            Patch("TEST", "Test-ACD", "", path=Path("test.patch"), tags={"A", "C", "D"}),
+            Patch("TEST", "Test-BCD", "", path=Path("test.patch"), tags={"B", "C", "D"}),
+        }
+        
+        cls.patchSet = PatchSet(patches)
+
+    def test_bracket_single_tag(self):
+        for tag in {"A", "B", "C", "D"}:
+            patches = self.patchSet[tag]
+            self.assertEqual(8, len(patches))
+
+            for patch in patches:
+                self.assertIn(tag, patch.shortname)
+
+    def test_bracket_multiple_tags(self):
+        pass
+
+    def test_all_of_single_tag(self):
+        pass
+
+    def test_all_of_multiple_tags(self):
+        pass
+
+    def test_any_of_single_tag(self):
+        pass
+
+    def test_any_of_multiple_tags(self):
+        pass
+
+    def test_patchset_intersection(self):
+        pass
+
+    def test_patchset_union(self):
+        pass
