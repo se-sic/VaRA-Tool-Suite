@@ -1,6 +1,7 @@
 import os
 import textwrap
 import typing as tp
+import warnings
 from pathlib import Path
 
 import benchbuild as bb
@@ -14,6 +15,7 @@ from benchbuild.utils.revision_ranges import (
     _get_git_for_path,
 )
 from plumbum import local, ProcessExecutionError
+from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_git_path
 from varats.project.varats_project import VProject
@@ -132,10 +134,6 @@ class Patch:
         """Creates a Patch from a YAML file."""
 
         yaml_dict = yaml.safe_load(yaml_path.read_text())
-
-        if not yaml_dict:
-            # TODO: Proper Error/warning
-            raise PatchesNotFoundError()
 
         project_name = yaml_dict["project_name"]
         shortname = yaml_dict["shortname"]
@@ -262,11 +260,6 @@ class PatchSet:
         return f"PatchSet({{{repr_str}}})"
 
 
-class PatchesNotFoundError(FileNotFoundError):
-    # TODO: Implement me
-    pass
-
-
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
@@ -283,8 +276,7 @@ class PatchProvider(Provider):
         )
 
         if not patches_project_dir.is_dir():
-            # TODO: Error handling/warning and None
-            raise PatchesNotFoundError()
+            warnings.warn(f"Could not find patches directory for project '{self.project.NAME}'.")
 
         patches = set()
 
@@ -294,13 +286,19 @@ class PatchProvider(Provider):
                     continue
 
                 info_path = Path(os.path.join(root, filename))
-                current_patch = Patch.from_yaml(info_path)
-
-                patches.add(current_patch)
+                try:
+                    current_patch = Patch.from_yaml(info_path)
+                    patches.add(current_patch)
+                except YAMLError:
+                    warnings.warn(f"Unable to parse patch info in: '{filename}'")
 
         self.__patches: tp.Set[Patch] = patches
 
     def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
+        """
+        Returns a patch with a specific shortname, if such a patch exists.
+        None otherwise
+        """
         for patch in self.__patches:
             if patch.shortname == shortname:
                 return patch
@@ -308,7 +306,9 @@ class PatchProvider(Provider):
         return None
 
     def get_patches_for_revision(self, revision: CommitHash) -> PatchSet:
-        """Returns all patches that are valid for the given revision."""
+        """
+        Returns all patches that are valid for the given revision.
+        """
         return PatchSet({
             p for p in self.__patches if revision in p.valid_revisions
         })
@@ -318,17 +318,15 @@ class PatchProvider(Provider):
         cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
-        Creates a provider instance for the given project if possible.
+        Creates a provider instance for the given project.
+
+        Note:
+            A provider may not contain any patches at all if there are no existing patches for a project
 
         Returns:
-            a provider instance for the given project if possible,
-            otherwise, ``None``
+            a provider instance for the given project
         """
-        try:
-            return PatchProvider(project)
-        except PatchesNotFoundError:
-            # TODO: Warnings
-            return None
+        return PatchProvider(project)
 
     @classmethod
     def create_default_provider(
