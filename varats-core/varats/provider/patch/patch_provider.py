@@ -270,7 +270,7 @@ class PatchesNotFoundError(FileNotFoundError):
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
-    patches_repository = "git@github.com:se-sic/vara-project-patches.git"
+    patches_repository = "https://github.com/se-sic/vara-project-patches.git"
 
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)

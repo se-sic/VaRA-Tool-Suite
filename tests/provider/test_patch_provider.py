@@ -29,7 +29,7 @@ class TestPatchProvider(unittest.TestCase):
         )
         self.assertIsNotNone(provider)
 
-        patch = provider.get_by_shortname("patch-10")
+        patch = provider.get_by_shortname("compile-error")
         self.assertIsNotNone(patch)
 
         patch = provider.get_by_shortname("dummy-patch")
@@ -45,7 +45,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
         )
 
         project_git_source = bb.source.Git(
-            remote="git@github.com:se-sic/FeaturePerfCSCollection.git",
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="FeaturePerfCSCollection",
             refspec="origin/HEAD",
             shallow=False,
