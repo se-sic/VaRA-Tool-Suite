@@ -206,13 +206,48 @@ class TestPatchSet(unittest.TestCase):
                 self.assertIn(tag, patch.shortname)
 
     def test_bracket_multiple_tags(self):
-        pass
+        tags_count = {
+            ["A", "B"]: 4,
+            ["C", "B"]: 4,
+            ["D", "B"]: 4,
+            ["A", "B", "C"]: 2,
+            ["A", "B", "C", "D"]: 1
+        }
+
+        for tags in tags_count:
+            patches = self.patchSet[tags]
+
+            self.assertEqual(tags_count[tags], len(patches))
+
+            for patch in patches:
+                for tag in tags:
+                    self.assertIn(tag, patch.tags)
 
     def test_all_of_single_tag(self):
-        pass
+        for tag in {"A", "B", "C", "D"}:
+            patches = self.patchSet.all_of(tag)
+            self.assertEqual(8, len(patches))
+
+            for patch in patches:
+                self.assertIn(tag, patch.shortname)
 
     def test_all_of_multiple_tags(self):
-        pass
+        tags_count = {
+            ["A", "B"]: 4,
+            ["C", "B"]: 4,
+            ["D", "B"]: 4,
+            ["A", "B", "C"]: 2,
+            ["A", "B", "C", "D"]: 1
+        }
+
+        for tags in tags_count:
+            patches = self.patchSet.all_of(tags)
+
+            self.assertEqual(tags_count[tags], len(patches))
+
+            for patch in patches:
+                for tag in tags:
+                    self.assertIn(tag, patch.tags)
 
     def test_any_of_single_tag(self):
         pass
