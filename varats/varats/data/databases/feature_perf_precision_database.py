@@ -176,9 +176,9 @@ class VXray(Profiler):
 
                 # TODO: check, maybe we need a "very small value cut off"
                 if ttest_res.pvalue < 0.05:
-                    print(
-                        f"{self.name} found regression for feature {feature}."
-                    )
+                    # print(
+                    #     f"{self.name} found regression for feature {feature}."
+                    # )
                     is_regression = True
             else:
                 print(f"Could not find feature {feature} in new trace.")
@@ -242,9 +242,9 @@ class PIMTracer(Profiler):
 
                 # TODO: check, maybe we need a "very small value cut off"
                 if ttest_res.pvalue < 0.05:
-                    print(
-                        f"{self.name} found regression for feature {feature}."
-                    )
+                    # print(
+                    #     f"{self.name} found regression for feature {feature}."
+                    # )
                     is_regression = True
             else:
                 print(f"Could not find feature {feature} in new trace.")
@@ -266,7 +266,10 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
     if len(report_files) > 1:
         raise AssertionError("Should only be one")
     if not report_files:
-        print("Could not find profiling data. config_id=0, profiler=Baseline")
+        print(
+            f"Could not find profiling data for {case_study.project_name}"
+            ". config_id=0, profiler=Baseline"
+        )
         return []
 
     # TODO: fix to prevent double loading
@@ -295,8 +298,8 @@ def get_regressing_config_ids_gt(
             raise AssertionError("Should only be one")
         if not report_files:
             print(
-                f"Could not find profiling data. {config_id=}, "
-                f"profiler=Baseline"
+                f"Could not find profiling data for {case_study.project_name}."
+                f" {config_id=}, profiler=Baseline"
             )
             return None
 
@@ -517,9 +520,7 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
                     new_row['f1_score'] = np.nan
                     new_row['Profiler'] = profiler.name
 
-                print(f"{new_row=}")
                 table_rows_plot.append(new_row)
-            # df.append(new_row, ignore_index=True)
 
     return pd.DataFrame(table_rows_plot)
 
