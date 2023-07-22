@@ -191,6 +191,7 @@ def get_fake_prec_rows_overhead() -> tp.List[tp.Any]:
             n = -0.1 if prof == "PIMTracer" else 0.0
             x = random.random()
             y = random.random()
+            z = random.random()
             new_fake_row = {
                 'CaseStudy': "fake",
                 'Patch': "fpatch",
@@ -198,6 +199,7 @@ def get_fake_prec_rows_overhead() -> tp.List[tp.Any]:
                 'RegressedConfigs': 21,
                 'precision': x - n,
                 'recall': y,
+                'f1_score': z,
                 'Profiler': prof
             }
             fake_rows.append(new_fake_row)
@@ -351,6 +353,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
                         new_row['precision'] = results.precision()
                         new_row['recall'] = results.recall()
+                        new_row['f1_score'] = results.f1_score()
                         new_row['Profiler'] = profiler.name
                         # new_row[f"{profiler.name}_precision"
                         #        ] = results.precision()
@@ -360,6 +363,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                     else:
                         new_row['precision'] = np.nan
                         new_row['recall'] = np.nan
+                        new_row['f1_score'] = np.nan
                         new_row['Profiler'] = profiler.name
 
                     print(f"{new_row=}")
@@ -367,14 +371,17 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 # df.append(new_row, ignore_index=True)
 
         df = pd.concat([df, pd.DataFrame(table_rows_plot)])
-        df = pd.concat([df, pd.DataFrame(get_fake_prec_rows_overhead())])
+        # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows_overhead())])
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
 
-        sub_df = df[["CaseStudy", "precision", "recall", "Profiler"]]
+        sub_df = df[[
+            "CaseStudy", "precision", "recall", "Profiler", "f1_score"
+        ]]
         sub_df = sub_df.groupby(['CaseStudy', "Profiler"], as_index=False).agg({
             'precision': 'mean',
-            'recall': 'mean'
+            'recall': 'mean',
+            'f1_score': 'mean'
         })
 
         print(f"{sub_df=}")
@@ -387,6 +394,9 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         # other_df = other_df.groupby(['CaseStudy', 'Profiler'])
         print(f"{other_df=}")
 
+        target_row = "f1_score"
+        # target_row = "precision"
+
         # final_df = sub_df.join(other_df, on=["CaseStudy", "Profiler"])
         final_df = pd.merge(sub_df, other_df, on=["CaseStudy", "Profiler"])
         print(f"{final_df=}")
@@ -394,7 +404,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         ax = sns.scatterplot(
             final_df,
             x='overhead_time',
-            y="precision",
+            y=target_row,
             hue="Profiler",
             style='CaseStudy',
             alpha=0.5,
@@ -428,7 +438,9 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         # grid.ax_marg_x.set_xlim(0.0, 1.01)
         ax.set_xlabel("Overhead in %")
-        ax.set_ylabel("F1-Score")
+        if target_row == "f1_score":
+            ax.set_ylabel("F1-Score")
+
         # ax.set_ylim(np.max(final_df['overhead_time']) + 20, 0)
         ax.set_ylim(0.0, 1.02)
         # ax.set_xlim(0, np.max(final_df['overhead_time']) + 20)
@@ -438,32 +450,40 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         ax.yaxis.label.set_size(20)
         ax.tick_params(labelsize=15)
 
-        prof_df = final_df[['Profiler', 'precision', 'overhead_time'
-                           ]].groupby('Profiler').agg(['mean', 'std'])
+        prof_df = final_df[[
+            'Profiler', 'precision', 'overhead_time', 'f1_score'
+        ]].groupby('Profiler').agg(['mean', 'std'])
+        prof_df.fillna(0, inplace=True)
+
         print(f"{prof_df=}")
         p = self.plot_pareto_frontier(
             prof_df['overhead_time']['mean'],
-            prof_df['precision']['mean'],
+            prof_df[target_row]['mean'],
             maxX=False
         )
-        p = self.plot_pareto_frontier_std(
-            prof_df['overhead_time']['mean'],
-            prof_df['precision']['mean'],
-            prof_df['overhead_time']['std'],
-            prof_df['precision']['std'],
-            maxX=False
-        )
+        # p = self.plot_pareto_frontier_std(
+        #     prof_df['overhead_time']['mean'],
+        #     prof_df[target_row]['mean'],
+        #     prof_df['overhead_time']['std'],
+        #     prof_df[target_row]['std'],
+        #     maxX=False
+        # )
 
         pf_x = [pair[0] for pair in p]
         pf_y = [pair[1] for pair in p]
-        pf_x_error = [pair[2] for pair in p]
-        pf_y_error = [pair[3] for pair in p]
+        # pf_x_error = [pair[2] for pair in p]
+        # pf_y_error = [pair[3] for pair in p]
+
+        x_loc = prof_df['overhead_time']['mean']
+        y_loc = prof_df[target_row]['mean']
+        x_error = prof_df['overhead_time']['std']
+        y_error = prof_df[target_row]['std']
 
         ax.errorbar(
-            pf_x,
-            pf_y,
-            xerr=pf_x_error,
-            yerr=pf_y_error,
+            x_loc,  # pf_x,
+            y_loc,  # pf_y,
+            xerr=x_error,  # xerr=pf_x_error,
+            yerr=y_error,  # yerr=pf_y_error,
             fmt='none',
             color='grey',
             zorder=0,
@@ -475,7 +495,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         sns.scatterplot(
             prof_df,
             x=('overhead_time', 'mean'),
-            y=("precision", 'mean'),
+            y=(target_row, 'mean'),
             hue="Profiler",
             ax=ax,
             legend=False,
@@ -487,11 +507,11 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         #     final_df['precision'], final_df['overhead_time']
         # )
 
-        print(f"""{pf_x=}
-{pf_y=}
-{pf_x_error=}
-{pf_y_error=}
-""")
+        #         print(f"""{pf_x=}
+        # {pf_y=}
+        # {pf_x_error=}
+        # {pf_y_error=}
+        # """)
         # plt.plot(pf_x, pf_y)
         sns.lineplot(
             x=pf_x,
