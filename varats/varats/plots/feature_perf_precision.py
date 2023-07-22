@@ -19,6 +19,7 @@ from varats.data.databases.feature_perf_precision_database import (
     compute_profiler_predictions,
     Baseline,
     OverheadData,
+    load_precision_data,
 )
 from varats.data.metrics import ClassificationResults
 from varats.paper.case_study import CaseStudy
@@ -60,62 +61,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
 
         # Data aggregation
         df = pd.DataFrame()
-        table_rows_plot = []
-
-        for case_study in case_studies:
-            for patch_name in get_patch_names(case_study):
-                rev = case_study.revisions[0]
-                project_name = case_study.project_name
-
-                ground_truth = get_regressing_config_ids_gt(
-                    project_name, case_study, rev, patch_name
-                )
-
-                for profiler in profilers:
-                    new_row = {
-                        'CaseStudy':
-                            project_name,
-                        'Patch':
-                            patch_name,
-                        'Configs':
-                            len(case_study.get_config_ids_for_revision(rev)),
-                        'RegressedConfigs':
-                            len(map_to_positive_config_ids(ground_truth))
-                            if ground_truth else -1
-                    }
-
-                    # TODO: multiple patch cycles
-                    predicted = compute_profiler_predictions(
-                        profiler, project_name, case_study,
-                        case_study.get_config_ids_for_revision(rev), patch_name
-                    )
-
-                    if ground_truth and predicted:
-                        results = ClassificationResults(
-                            map_to_positive_config_ids(ground_truth),
-                            map_to_negative_config_ids(ground_truth),
-                            map_to_positive_config_ids(predicted),
-                            map_to_negative_config_ids(predicted)
-                        )
-
-                        new_row['precision'] = results.precision()
-                        new_row['recall'] = results.recall()
-                        new_row['Profiler'] = profiler.name
-                        # new_row[f"{profiler.name}_precision"
-                        #        ] = results.precision()
-                        # new_row[f"{profiler.name}_recall"] = results.recall()
-                        # new_row[f"{profiler.name}_baccuracy"
-                        #        ] = results.balanced_accuracy()
-                    else:
-                        new_row['precision'] = np.nan
-                        new_row['recall'] = np.nan
-                        new_row['Profiler'] = profiler.name
-
-                    print(f"{new_row=}")
-                    table_rows_plot.append(new_row)
-                # df.append(new_row, ignore_index=True)
-
-        df = pd.concat([df, pd.DataFrame(table_rows_plot)])
+        df = load_precision_data(case_studies, profilers)
         df = pd.concat([df, pd.DataFrame(get_fake_prec_rows())])
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
@@ -312,65 +258,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
 
         # Data aggregation
-        df = pd.DataFrame()
-        table_rows_plot = []
-
-        for case_study in case_studies:
-            for patch_name in get_patch_names(case_study):
-                rev = case_study.revisions[0]
-                project_name = case_study.project_name
-
-                ground_truth = get_regressing_config_ids_gt(
-                    project_name, case_study, rev, patch_name
-                )
-
-                for profiler in profilers:
-                    new_row = {
-                        'CaseStudy':
-                            project_name,
-                        'Patch':
-                            patch_name,
-                        'Configs':
-                            len(case_study.get_config_ids_for_revision(rev)),
-                        'RegressedConfigs':
-                            len(map_to_positive_config_ids(ground_truth))
-                            if ground_truth else -1
-                    }
-
-                    # TODO: multiple patch cycles
-                    predicted = compute_profiler_predictions(
-                        profiler, project_name, case_study,
-                        case_study.get_config_ids_for_revision(rev), patch_name
-                    )
-
-                    if ground_truth and predicted:
-                        results = ClassificationResults(
-                            map_to_positive_config_ids(ground_truth),
-                            map_to_negative_config_ids(ground_truth),
-                            map_to_positive_config_ids(predicted),
-                            map_to_negative_config_ids(predicted)
-                        )
-
-                        new_row['precision'] = results.precision()
-                        new_row['recall'] = results.recall()
-                        new_row['f1_score'] = results.f1_score()
-                        new_row['Profiler'] = profiler.name
-                        # new_row[f"{profiler.name}_precision"
-                        #        ] = results.precision()
-                        # new_row[f"{profiler.name}_recall"] = results.recall()
-                        # new_row[f"{profiler.name}_baccuracy"
-                        #        ] = results.balanced_accuracy()
-                    else:
-                        new_row['precision'] = np.nan
-                        new_row['recall'] = np.nan
-                        new_row['f1_score'] = np.nan
-                        new_row['Profiler'] = profiler.name
-
-                    print(f"{new_row=}")
-                    table_rows_plot.append(new_row)
-                # df.append(new_row, ignore_index=True)
-
-        df = pd.concat([df, pd.DataFrame(table_rows_plot)])
+        df = load_precision_data(case_studies, profilers)
         # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows_overhead())])
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
