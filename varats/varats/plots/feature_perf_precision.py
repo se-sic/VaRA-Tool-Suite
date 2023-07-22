@@ -5,25 +5,15 @@ import typing as tp
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import pyplot as plt
 from matplotlib.text import Text
 
 from varats.data.databases.feature_perf_precision_database import (
     Profiler,
-    get_regressing_config_ids_gt,
     VXray,
     PIMTracer,
-    get_patch_names,
-    map_to_positive_config_ids,
-    map_to_negative_config_ids,
-    compute_profiler_predictions,
-    Baseline,
-    OverheadData,
     load_precision_data,
     load_overhead_data,
 )
-from varats.data.metrics import ClassificationResults
-from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotConfig, PlotGenerator
@@ -63,7 +53,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
         # Data aggregation
         df = pd.DataFrame()
         df = load_precision_data(case_studies, profilers)
-        df = pd.concat([df, pd.DataFrame(get_fake_prec_rows())])
+        # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows())])
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
 
@@ -186,125 +176,10 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         super().__init__(plot_config, **kwargs)
         self.__target_metric = target_metric
 
-    def other_frame(self):
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
-
-        # Data aggregation
-        df = pd.DataFrame()
-        table_rows = []
-
-        for case_study in case_studies:
-            rev = case_study.revisions[0]
-            project_name = case_study.project_name
-
-            overhead_ground_truth = OverheadData.compute_overhead_data(
-                Baseline(), case_study, rev
-            )
-            if not overhead_ground_truth:
-                print(
-                    f"No baseline data for {case_study.project_name}, skipping"
-                )
-                continue
-
-            new_row = {
-                'CaseStudy': project_name,
-                'WithoutProfiler_mean_time': overhead_ground_truth.mean_time(),
-                'WithoutProfiler_mean_ctx': overhead_ground_truth.mean_ctx()
-            }
-
-            for profiler in profilers:
-                profiler_overhead = OverheadData.compute_overhead_data(
-                    profiler, case_study, rev
-                )
-                if profiler_overhead:
-                    time_diff = profiler_overhead.config_wise_time_diff(
-                        overhead_ground_truth
-                    )
-                    ctx_diff = profiler_overhead.config_wise_ctx_diff(
-                        overhead_ground_truth
-                    )
-                    print(f"{time_diff=}")
-                    new_row[f"{profiler.name}_time_mean"] = np.mean(
-                        list(time_diff.values())
-                    )
-                    new_row[f"{profiler.name}_time_std"] = np.std(
-                        list(time_diff.values())
-                    )
-                    new_row[f"{profiler.name}_time_max"] = np.max(
-                        list(time_diff.values())
-                    )
-                    new_row[f"{profiler.name}_ctx_mean"] = np.mean(
-                        list(ctx_diff.values())
-                    )
-                    new_row[f"{profiler.name}_ctx_std"] = np.std(
-                        list(ctx_diff.values())
-                    )
-                    new_row[f"{profiler.name}_ctx_max"] = np.max(
-                        list(ctx_diff.values())
-                    )
-                else:
-                    new_row[f"{profiler.name}_time_mean"] = np.nan
-                    new_row[f"{profiler.name}_time_std"] = np.nan
-                    new_row[f"{profiler.name}_time_max"] = np.nan
-
-                    new_row[f"{profiler.name}_ctx_mean"] = np.nan
-                    new_row[f"{profiler.name}_ctx_std"] = np.nan
-                    new_row[f"{profiler.name}_ctx_max"] = np.nan
-
-            table_rows.append(new_row)
-            # df.append(new_row, ignore_index=True)
-
-        df = pd.concat([df, pd.DataFrame(table_rows)])
-        df.sort_values(["CaseStudy"], inplace=True)
-        # print(f"{df=}")
-        return df
-
     def plot(self, view_mode: bool) -> None:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
-
-        # Data aggregation
-        df = load_precision_data(case_studies, profilers)
-        # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows_overhead())])
-        df.sort_values(["CaseStudy"], inplace=True)
-        print(f"{df=}")
-
-        sub_df = df[[
-            "CaseStudy", "precision", "recall", "Profiler", "f1_score"
-        ]]
-        sub_df = sub_df.groupby(['CaseStudy', "Profiler"], as_index=False).agg({
-            'precision': 'mean',
-            'recall': 'mean',
-            'f1_score': 'mean'
-        })
-
-        print(f"{sub_df=}")
-
-        # other_df = self.other_frame()
-        # other_df = pd.DataFrame()
-        # other_df = pd.concat([
-        #     other_df, pd.DataFrame(get_fake_overhead_better_rows())
-        # ])
-        # other_df = other_df.groupby(['CaseStudy', 'Profiler'])
-        # print(f"other_df=\n{other_df}")
-        other_df = load_overhead_data(case_studies, profilers)
-        print(f"other_df=\n{other_df}")
-        other_df['overhead_time_rel'] = other_df['time'] / (
-            other_df['time'] - other_df['overhead_time']
-        ) * 100
-
-        other_df['overhead_ctx_rel'] = other_df['ctx'] / (
-            other_df['ctx'] - other_df['overhead_ctx']
-        ) * 100
-        print(f"other_df=\n{other_df}")
-
+        # -- Configure plot --
         target_row = "f1_score"
         # target_row = "precision"
-
-        # final_df = sub_df.join(other_df, on=["CaseStudy", "Profiler"])
-        final_df = pd.merge(sub_df, other_df, on=["CaseStudy", "Profiler"])
-        print(f"{final_df=}")
 
         if self.__target_metric == "time":
             plot_extra_name = "Time"
@@ -315,8 +190,41 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         else:
             raise NotImplementedError()
 
+        # Load data
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+
+        # Data aggregation
+        full_precision_df = load_precision_data(case_studies, profilers)
+        full_precision_df.sort_values(["CaseStudy"], inplace=True)
+
+        precision_df = full_precision_df[[
+            "CaseStudy", "precision", "recall", "Profiler", "f1_score"
+        ]]
+        precision_df = precision_df.groupby(['CaseStudy', "Profiler"],
+                                            as_index=False).agg({
+                                                'precision': 'mean',
+                                                'recall': 'mean',
+                                                'f1_score': 'mean'
+                                            })
+        print(f"precision_df=\n{precision_df}")
+
+        overhead_df = load_overhead_data(case_studies, profilers)
+        overhead_df['overhead_time_rel'] = overhead_df['time'] / (
+            overhead_df['time'] - overhead_df['overhead_time']
+        ) * 100
+        overhead_df['overhead_ctx_rel'] = overhead_df['ctx'] / (
+            overhead_df['ctx'] - overhead_df['overhead_ctx']
+        ) * 100
+        print(f"other_df=\n{overhead_df}")
+
+        merged_df = pd.merge(
+            precision_df, overhead_df, on=["CaseStudy", "Profiler"]
+        )
+        print(f"{merged_df=}")
+
         ax = sns.scatterplot(
-            final_df,
+            merged_df,
             x=x_values,
             y=target_row,
             hue="Profiler",
@@ -324,16 +232,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             alpha=0.5,
             s=100
         )
-
-        print(f"{ax.legend()=}")
-        print(f"{type(ax.legend())=}")
-        print(f"{ax.legend().get_children()=}")
-        print(f"{ax.legend().prop=}")
-        print(f"{ax.legend().get_title()}")
-        print(f"{ax.legend().get_lines()}")
-        print(f"{ax.legend().get_patches()}")
-        print(f"{ax.legend().get_texts()}")
-        ax.legend().set_title("Walrus")
 
         for text_obj in ax.legend().get_texts():
             text_obj: Text
@@ -348,42 +246,27 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 text_obj.set_text("Subject Systems")
                 text_obj.set_fontweight("bold")
 
-        # ax.legend().set_bbox_to_anchor((1, 0.5))
-
-        # grid.ax_marg_x.set_xlim(0.0, 1.01)
         ax.set_xlabel(f"{plot_extra_name} Overhead in %")
         if target_row == "f1_score":
             ax.set_ylabel("F1-Score")
 
-        # ax.set_ylim(np.max(final_df['overhead_time']) + 20, 0)
         ax.set_ylim(0.0, 1.02)
-        # ax.set_xlim(0, np.max(final_df['overhead_time']) + 20)
-        ax.set_xlim(np.max(final_df[x_values]) + 20, 0)
-        # ax.set_xlim(1.01, 0.0)
+        ax.set_xlim(np.max(merged_df[x_values]) + 20, 100)
         ax.xaxis.label.set_size(20)
         ax.yaxis.label.set_size(20)
         ax.tick_params(labelsize=15)
 
-        prof_df = final_df[['Profiler', 'precision', x_values, 'f1_score'
-                           ]].groupby('Profiler').agg(['mean', 'std'])
+        prof_df = merged_df[['Profiler', 'precision', x_values, 'f1_score'
+                            ]].groupby('Profiler').agg(['mean', 'std'])
         prof_df.fillna(0, inplace=True)
 
         print(f"{prof_df=}")
-        p = self.plot_pareto_frontier(
+        pareto_front = self.plot_pareto_frontier(
             prof_df[x_values]['mean'], prof_df[target_row]['mean'], maxX=False
         )
-        # p = self.plot_pareto_frontier_std(
-        #     prof_df['overhead_time']['mean'],
-        #     prof_df[target_row]['mean'],
-        #     prof_df['overhead_time']['std'],
-        #     prof_df[target_row]['std'],
-        #     maxX=False
-        # )
 
-        pf_x = [pair[0] for pair in p]
-        pf_y = [pair[1] for pair in p]
-        # pf_x_error = [pair[2] for pair in p]
-        # pf_y_error = [pair[3] for pair in p]
+        pf_x = [pair[0] for pair in pareto_front]
+        pf_y = [pair[1] for pair in pareto_front]
 
         x_loc = prof_df[x_values]['mean']
         y_loc = prof_df[target_row]['mean']
@@ -391,10 +274,10 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         y_error = prof_df[target_row]['std']
 
         ax.errorbar(
-            x_loc,  # pf_x,
-            y_loc,  # pf_y,
-            xerr=x_error,  # xerr=pf_x_error,
-            yerr=y_error,  # yerr=pf_y_error,
+            x_loc,
+            y_loc,
+            xerr=x_error,
+            yerr=y_error,
             fmt='none',
             color='grey',
             zorder=0,
@@ -414,16 +297,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             zorder=2
         )
 
-        # p = self.plot_pareto_frontier(
-        #     final_df['precision'], final_df['overhead_time']
-        # )
-
-        #         print(f"""{pf_x=}
-        # {pf_y=}
-        # {pf_x_error=}
-        # {pf_y_error=}
-        # """)
-        # plt.plot(pf_x, pf_y)
         sns.lineplot(
             x=pf_x,
             y=pf_y,
@@ -434,34 +307,9 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             zorder=1
         )
 
-        # def_totals = pd.DataFrame()
-        # def_totals.loc['mean'] = [1, 2, 23]
-        # print(f"{def_totals=}")
-
     def plot_pareto_frontier(self, Xs, Ys, maxX=True, maxY=True):
         """Pareto frontier selection process."""
         sorted_list = sorted([[Xs[i], Ys[i]] for i in range(len(Xs))],
-                             reverse=maxX)
-        print(f"{sorted_list=}")
-        pareto_front = [sorted_list[0]]
-        for pair in sorted_list[1:]:
-            print(f"{pair=}")
-            if maxY:
-                if pair[1] >= pareto_front[-1][1]:
-                    pareto_front.append(pair)
-            else:
-                if pair[1] <= pareto_front[-1][1]:
-                    pareto_front.append(pair)
-
-        return pareto_front
-
-    def plot_pareto_frontier_std(
-        self, Xs, Ys, Xstds, Ystds, maxX=True, maxY=True
-    ):
-        """Pareto frontier selection process."""
-        sorted_list = sorted([
-            [Xs[i], Ys[i], Xstds[i], Ystds[i]] for i in range(len(Xs))
-        ],
                              reverse=maxX)
         print(f"{sorted_list=}")
         pareto_front = [sorted_list[0]]
