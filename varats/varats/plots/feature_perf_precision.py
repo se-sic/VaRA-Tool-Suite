@@ -20,12 +20,13 @@ from varats.data.databases.feature_perf_precision_database import (
     Baseline,
     OverheadData,
     load_precision_data,
+    load_overhead_data,
 )
 from varats.data.metrics import ClassificationResults
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator
+from varats.plot.plots import PlotConfig, PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
@@ -179,6 +180,12 @@ def get_fake_overhead_better_rows():
 
 class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
+    def __init__(
+        self, target_metric, plot_config: PlotConfig, **kwargs: tp.Any
+    ) -> None:
+        super().__init__(plot_config, **kwargs)
+        self.__target_metric = target_metric
+
     def other_frame(self):
         case_studies = get_loaded_paper_config().get_all_case_studies()
         profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
@@ -275,12 +282,22 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         print(f"{sub_df=}")
 
         # other_df = self.other_frame()
-        other_df = pd.DataFrame()
-        other_df = pd.concat([
-            other_df, pd.DataFrame(get_fake_overhead_better_rows())
-        ])
+        # other_df = pd.DataFrame()
+        # other_df = pd.concat([
+        #     other_df, pd.DataFrame(get_fake_overhead_better_rows())
+        # ])
         # other_df = other_df.groupby(['CaseStudy', 'Profiler'])
-        print(f"{other_df=}")
+        # print(f"other_df=\n{other_df}")
+        other_df = load_overhead_data(case_studies, profilers)
+        print(f"other_df=\n{other_df}")
+        other_df['overhead_time_rel'] = other_df['time'] / (
+            other_df['time'] - other_df['overhead_time']
+        ) * 100
+
+        other_df['overhead_ctx_rel'] = other_df['ctx'] / (
+            other_df['ctx'] - other_df['overhead_ctx']
+        ) * 100
+        print(f"other_df=\n{other_df}")
 
         target_row = "f1_score"
         # target_row = "precision"
@@ -289,9 +306,18 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         final_df = pd.merge(sub_df, other_df, on=["CaseStudy", "Profiler"])
         print(f"{final_df=}")
 
+        if self.__target_metric == "time":
+            plot_extra_name = "Time"
+            x_values = "overhead_time_rel"
+        elif self.__target_metric == "ctx":
+            plot_extra_name = "Ctx"
+            x_values = "overhead_ctx_rel"
+        else:
+            raise NotImplementedError()
+
         ax = sns.scatterplot(
             final_df,
-            x='overhead_time',
+            x=x_values,
             y=target_row,
             hue="Profiler",
             style='CaseStudy',
@@ -325,29 +351,26 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         # ax.legend().set_bbox_to_anchor((1, 0.5))
 
         # grid.ax_marg_x.set_xlim(0.0, 1.01)
-        ax.set_xlabel("Overhead in %")
+        ax.set_xlabel(f"{plot_extra_name} Overhead in %")
         if target_row == "f1_score":
             ax.set_ylabel("F1-Score")
 
         # ax.set_ylim(np.max(final_df['overhead_time']) + 20, 0)
         ax.set_ylim(0.0, 1.02)
         # ax.set_xlim(0, np.max(final_df['overhead_time']) + 20)
-        ax.set_xlim(np.max(final_df['overhead_time']) + 20, 0)
+        ax.set_xlim(np.max(final_df[x_values]) + 20, 0)
         # ax.set_xlim(1.01, 0.0)
         ax.xaxis.label.set_size(20)
         ax.yaxis.label.set_size(20)
         ax.tick_params(labelsize=15)
 
-        prof_df = final_df[[
-            'Profiler', 'precision', 'overhead_time', 'f1_score'
-        ]].groupby('Profiler').agg(['mean', 'std'])
+        prof_df = final_df[['Profiler', 'precision', x_values, 'f1_score'
+                           ]].groupby('Profiler').agg(['mean', 'std'])
         prof_df.fillna(0, inplace=True)
 
         print(f"{prof_df=}")
         p = self.plot_pareto_frontier(
-            prof_df['overhead_time']['mean'],
-            prof_df[target_row]['mean'],
-            maxX=False
+            prof_df[x_values]['mean'], prof_df[target_row]['mean'], maxX=False
         )
         # p = self.plot_pareto_frontier_std(
         #     prof_df['overhead_time']['mean'],
@@ -362,9 +385,9 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         # pf_x_error = [pair[2] for pair in p]
         # pf_y_error = [pair[3] for pair in p]
 
-        x_loc = prof_df['overhead_time']['mean']
+        x_loc = prof_df[x_values]['mean']
         y_loc = prof_df[target_row]['mean']
-        x_error = prof_df['overhead_time']['std']
+        x_error = prof_df[x_values]['std']
         y_error = prof_df[target_row]['std']
 
         ax.errorbar(
@@ -382,7 +405,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         sns.scatterplot(
             prof_df,
-            x=('overhead_time', 'mean'),
+            x=(x_values, 'mean'),
             y=(target_row, 'mean'),
             hue="Profiler",
             ax=ax,
@@ -465,4 +488,7 @@ class PerfOverheadPlotGenerator(
 
     def generate(self) -> tp.List[Plot]:
 
-        return [PerfOverheadPlot(self.plot_config, **self.plot_kwargs)]
+        return [
+            PerfOverheadPlot(metric, self.plot_config, **self.plot_kwargs)
+            for metric in ["time", "ctx"]
+        ]

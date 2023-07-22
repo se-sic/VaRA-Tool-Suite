@@ -464,7 +464,7 @@ class OverheadData:
         return OverheadData(profiler, mean_time, mean_cxt_switches)
 
 
-def load_precision_data(case_studies, profilers):
+def load_precision_data(case_studies, profilers) -> pd.DataFrame:
     table_rows_plot = []
     for case_study in case_studies:
         for patch_name in get_patch_names(case_study):
@@ -521,5 +521,62 @@ def load_precision_data(case_studies, profilers):
                 table_rows_plot.append(new_row)
             # df.append(new_row, ignore_index=True)
 
-    df = pd.DataFrame()
-    return pd.concat([df, pd.DataFrame(table_rows_plot)])
+    return pd.DataFrame(table_rows_plot)
+
+
+def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
+    table_rows = []
+
+    for case_study in case_studies:
+        rev = case_study.revisions[0]
+        project_name = case_study.project_name
+
+        overhead_ground_truth = OverheadData.compute_overhead_data(
+            Baseline(), case_study, rev
+        )
+        if not overhead_ground_truth:
+            print(f"No baseline data for {case_study.project_name}, skipping")
+            continue
+
+        new_row = {
+            'CaseStudy': project_name,
+            'Profiler': "Base",
+            'time':
+                overhead_ground_truth.mean_time(),  # random.randint(2, 230),
+            'ctx': overhead_ground_truth.mean_ctx(),
+            'overhead_time': 0,
+            'overhead_ctx': 0
+        }
+
+        table_rows.append(new_row)
+
+        for profiler in profilers:
+            profiler_overhead = OverheadData.compute_overhead_data(
+                profiler, case_study, rev
+            )
+
+            new_row = {'CaseStudy': project_name, 'Profiler': profiler.name}
+
+            if profiler_overhead:
+                time_diff = profiler_overhead.config_wise_time_diff(
+                    overhead_ground_truth
+                )
+                ctx_diff = profiler_overhead.config_wise_ctx_diff(
+                    overhead_ground_truth
+                )
+
+                new_row['time'] = profiler_overhead.mean_time()
+                new_row['overhead_time'] = np.mean(list(time_diff.values()))
+
+                new_row['ctx'] = profiler_overhead.mean_ctx()
+                new_row['overhead_ctx'] = np.mean(list(ctx_diff.values()))
+            else:
+                new_row['time'] = np.nan
+                new_row['overhead_time'] = np.nan
+
+                new_row['ctx'] = np.nan
+                new_row['overhead_ctx'] = np.nan
+
+            table_rows.append(new_row)
+
+    return pd.DataFrame(table_rows)
