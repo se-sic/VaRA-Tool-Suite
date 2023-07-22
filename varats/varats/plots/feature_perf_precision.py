@@ -2,6 +2,7 @@
 import random
 import typing as tp
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -170,25 +171,12 @@ def get_fake_overhead_better_rows():
 
 class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
-    def __init__(
-        self, target_metric, plot_config: PlotConfig, **kwargs: tp.Any
-    ) -> None:
-        super().__init__(plot_config, **kwargs)
-        self.__target_metric = target_metric
-
     def plot(self, view_mode: bool) -> None:
         # -- Configure plot --
+        plot_metric = [("Time", "overhead_time_rel"),
+                       ("Ctx", "overhead_ctx_rel")]
         target_row = "f1_score"
         # target_row = "precision"
-
-        if self.__target_metric == "time":
-            plot_extra_name = "Time"
-            x_values = "overhead_time_rel"
-        elif self.__target_metric == "ctx":
-            plot_extra_name = "Ctx"
-            x_values = "overhead_ctx_rel"
-        else:
-            raise NotImplementedError()
 
         # Load data
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -223,14 +211,37 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         )
         print(f"{merged_df=}")
 
-        ax = sns.scatterplot(
+        # print(f"{self.plot_config.width()}")
+
+        _, axes = plt.subplots(
+            ncols=len(plot_metric), nrows=1, figsize=(20, 10)
+        )
+
+        if len(plot_metric) == 1:
+            self.do_single_plot(
+                plot_metric[0][1], target_row, merged_df, plot_metric[0][0],
+                axes
+            )
+        else:
+            for idx, ax in enumerate(axes):
+                self.do_single_plot(
+                    plot_metric[idx][1], target_row, merged_df,
+                    plot_metric[idx][0], ax
+                )
+
+    def do_single_plot(
+        self, x_values, target_row, merged_df, plot_extra_name, ax
+    ) -> None:
+        # ax =
+        sns.scatterplot(
             merged_df,
             x=x_values,
             y=target_row,
             hue="Profiler",
             style='CaseStudy',
             alpha=0.5,
-            s=100
+            s=100,
+            ax=ax
         )
 
         for text_obj in ax.legend().get_texts():
@@ -335,8 +346,4 @@ class PerfOverheadPlotGenerator(
 ):
 
     def generate(self) -> tp.List[Plot]:
-
-        return [
-            PerfOverheadPlot(metric, self.plot_config, **self.plot_kwargs)
-            for metric in ["time", "ctx"]
-        ]
+        return [PerfOverheadPlot(self.plot_config, **self.plot_kwargs)]
