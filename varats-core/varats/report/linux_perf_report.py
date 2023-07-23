@@ -38,7 +38,7 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
         with open(self.path, 'r', newline="") as stream:
             for line in stream:
                 line = line.strip("\n ")
-                print(f"{line=}")
+                # print(f"{line=}")
 
                 if line == "" or line.startswith("#"):
                     continue
