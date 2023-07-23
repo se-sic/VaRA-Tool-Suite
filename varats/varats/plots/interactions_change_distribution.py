@@ -46,7 +46,7 @@ class InteractionChangeDistribution(
                              copy=False,
                              join="inner")
         data_sub = data.groupby(["base_hash", "project"],
-                                sort=False)["interactions_diff"].sum()
+                                sort=False)["interactions_diff"].max()
 
         df = data_sub.to_frame().reset_index()
         df["interactions_diff"] = df["interactions_diff"].apply(lambda x: x + 1)

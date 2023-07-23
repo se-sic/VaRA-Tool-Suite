@@ -123,7 +123,7 @@ class VolatileCommitsTable(Table, table_name="volatile_commits"):
             high_q = data["interactions_diff"].quantile(0.95)
             low_q = data["interactions_diff"].quantile(0.05)
             df_iter = data[(data["interactions_diff"] > high_q) |
-                           (data["interactions_diff"] < low_q)].iterrows()
+                           (data["interactions_diff"] < low_q)]
             for _, row in df_iter:
                 volatile_commits.append(
                     commmit_data(row["base_hash"], row["interactions_diff"])

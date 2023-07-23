@@ -367,7 +367,7 @@ class ChangesHeatMap(Plot, plot_name=None):
             cs_data.sort_index(
                 key=lambda x: x.map(cmap.short_time_id), inplace=True
             )
-
+        plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
         axis = sns.heatmap(
             cs_data,
             center=0,
@@ -381,13 +381,14 @@ class ChangesHeatMap(Plot, plot_name=None):
             family='monospace',
         )
         new_labels = [
-            i.get_text()[0:5] if len(i.get_text()) > 5 else i.get_text()
+            f"\\texttt{{{i.get_text()[0:5]}}}"
+            if len(i.get_text()) > 5 else i.get_text()
             for i in axis.yaxis.get_ticklabels()
         ]
         axis.set_yticklabels(new_labels)
-        #axis.set_ylabel("")
-        #axis.set_xlabel("")
-        #axis.set_xticklabels([])
+        axis.set_ylabel("Commits")
+        axis.set_xlabel("Revisions")
+        axis.set_xticklabels([])
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -419,7 +420,7 @@ def interactions_and_lines_per_commit_wrapper(
         case_study, cs_filter
     )
     print("Merging")
-    data = lines.merge(interactions, how='left', on=["base_hash", "revision"])
+    data = lines.merge(interactions, how='right', on=["base_hash", "revision"])
     data.dropna(
         axis=0, how='any', inplace=True, subset=["lines", "interactions"]
     )
