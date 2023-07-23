@@ -521,7 +521,12 @@ class OutputFolderStep(ProjectStep):
         """Actual call implementation that gets a path to tmp_folder."""
 
 
-class ZippedExperimentSteps(MultiStep[tp.Union[OutputFolderStep, ProjectStep]]):
+ZippedStepTy = tp.TypeVar(
+    "ZippedStepTy", bound=tp.Union[OutputFolderStep, ProjectStep]
+)
+
+
+class ZippedExperimentSteps(MultiStep[ZippedStepTy]):
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive."""
 
@@ -530,7 +535,7 @@ class ZippedExperimentSteps(MultiStep[tp.Union[OutputFolderStep, ProjectStep]]):
 
     def __init__(
         self, output_filepath: ReportFilepath,
-        actions: tp.Optional[tp.List[tp.Union[OutputFolderStep, ProjectStep]]]
+        actions: tp.Optional[tp.List[ZippedStepTy]]
     ) -> None:
         super().__init__(actions)
         self.__output_filepath = output_filepath

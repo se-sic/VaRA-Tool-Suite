@@ -2,6 +2,7 @@
 measurement support of vara."""
 import textwrap
 import typing as tp
+from abc import abstractmethod
 from pathlib import Path
 
 import benchbuild.extensions as bb_ext
@@ -62,6 +63,10 @@ class AnalysisProjectStepBase(OutputFolderStep):
         self._report_file_ending = report_file_ending
         self._file_name = file_name
         self._reps = reps
+
+    @abstractmethod
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+        """Actual call implementation that gets a path to tmp_folder."""
 
 
 class MPRTRA(
