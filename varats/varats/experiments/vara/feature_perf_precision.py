@@ -211,7 +211,7 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                                 self.project
                             )
 
-                            bpf_runner = self.attach_usdt_raw_tracing(
+                            bpf_runner = bpf_runner = self.attach_usdt_raw_tracing(
                                 local_tracefile_path,
                                 self.project.source_of_primary /
                                 self._binary.path
@@ -249,6 +249,97 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
         # script because a large number of probes increases the startup time
         sleep(10)
         return bpftrace_runner
+
+
+class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
+    """Executes the traced project binaries on the specified workloads."""
+
+    NAME = "VaRARunBCCTracedBinaries"
+    DESCRIPTION = "Run traced binary on workloads."
+
+    project: VProject
+
+    def __init__(
+        self,
+        project: VProject,
+        binary: ProjectBinaryWrapper,
+        file_name: str,
+        report_file_ending: str = "json",
+        reps=REPS
+    ):
+        super().__init__(project, binary, file_name, report_file_ending, reps)
+
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+        return self.run_traced_code(tmp_dir)
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run instrumented code", indent * " "
+        )
+
+    def run_traced_code(self, tmp_dir: Path) -> StepResult:
+        """Runs the binary with the embedded tracing code."""
+        with local.cwd(local.path(self.project.builddir)):
+            zip_tmp_dir = tmp_dir / self._file_name
+            with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
+                for rep in range(0, self._reps):
+                    for prj_command in workload_commands(
+                        self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        local_tracefile_path = Path(reps_tmp_dir) / (
+                            f"trace_{prj_command.command.label}_{rep}"
+                            f".{self._report_file_ending}"
+                        )
+
+                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
+
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+
+                            bpf_runner = bpf_runner = self.attach_usdt_bcc(
+                                local_tracefile_path,
+                                self.project.source_of_primary /
+                                self._binary.path
+                            )
+
+                            with cleanup(prj_command):
+                                pb_cmd(
+                                    *extra_options,
+                                    retcode=self._binary.valid_exit_codes
+                                )
+
+                            # wait for bpf script to exit
+                            if bpf_runner:
+                                bpf_runner.wait()
+
+        return StepResult.OK
+
+    @staticmethod
+    def attach_usdt_bcc(report_file: Path, binary: Path) -> Future:
+        """Attach bcc script to binary to activate USDT probes."""
+        bcc_script_location = Path(
+            VaRA.install_location(),
+            "share/vara/perf_bpf_tracing/UsdtTefMarker.py"
+        )
+        bcc_script = local[str(bcc_script_location)]
+
+        # Assertion: Can be run without sudo password prompt.
+        bcc_cmd = bcc_script["--output_file", report_file, "--no_poll",
+                             "--executable", binary]
+        print(f"{bcc_cmd=}")
+        bcc_cmd = sudo[bcc_cmd]
+        # bcc_cmd = numactl["--cpunodebind=0", "--membind=0", bcc_cmd]
+
+        bcc_runner = bcc_cmd & BG
+        sleep(3)  # give bcc script time to start up
+        return bcc_runner
 
 
 def setup_actions_for_vara_experiment(
@@ -397,6 +488,28 @@ class EbpfTraceTEFProfileRunner(FeatureExperiment, shorthand="ETEFp"):
         """
         return setup_actions_for_vara_experiment(
             self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads
+        )
+
+
+class BCCTEFProfileRunner(FeatureExperiment, shorthand="BCCp"):
+    """Test runner for feature performance."""
+
+    NAME = "RunBCCTEFProfiler"
+
+    REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+        return setup_actions_for_vara_experiment(
+            self, project, FeatureInstrType.USDT, RunBCCTracedWorkloads
         )
 
 
@@ -691,6 +804,79 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         return StepResult.OK
 
 
+class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
+    """Executes the traced project binaries on the specified workloads."""
+
+    NAME = "VaRARunTracedBinaries"
+    DESCRIPTION = "Run traced binary on workloads."
+
+    project: VProject
+
+    def __init__(
+        self,
+        project: VProject,
+        binary: ProjectBinaryWrapper,
+        file_name: str,
+        report_file_ending: str = "txt",
+        reps=REPS
+    ):
+        super().__init__(project, binary, file_name, report_file_ending, reps)
+
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+        return self.run_traced_code(tmp_dir)
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run instrumented code", indent * " "
+        )
+
+    def run_traced_code(self, tmp_dir: Path) -> StepResult:
+        """Runs the binary with the embedded tracing code."""
+        with local.cwd(local.path(self.project.builddir)):
+            for rep in range(0, self._reps):
+                for prj_command in workload_commands(
+                    self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                ):
+                    base = Path("/tmp/")
+                    fake_tracefile_path = base / (
+                        f"trace_{prj_command.command.label}_{rep}"
+                        f".json"
+                    )
+
+                    time_report_file = tmp_dir / (
+                        f"overhead_{prj_command.command.label}_{rep}"
+                        f".{self._report_file_ending}"
+                    )
+
+                    with local.env(VARA_TRACE_FILE=fake_tracefile_path):
+                        pb_cmd = prj_command.command.as_plumbum(
+                            project=self.project
+                        )
+                        print(f"Running example {prj_command.command.label}")
+
+                        timed_pb_cmd = time["-v", "-o", time_report_file,
+                                            pb_cmd]
+
+                        extra_options = get_extra_config_options(self.project)
+
+                        bpf_runner = RunBCCTracedWorkloads.attach_usdt_bcc(
+                            fake_tracefile_path,
+                            self.project.source_of_primary / self._binary.path
+                        )
+
+                        with cleanup(prj_command):
+                            timed_pb_cmd(
+                                *extra_options,
+                                retcode=self._binary.valid_exit_codes
+                            )
+
+                        # wait for bpf script to exit
+                        if bpf_runner:
+                            bpf_runner.wait()
+
+        return StepResult.OK
+
+
 def setup_actions_for_vara_overhead_experiment(
     experiment: FeatureExperiment, project: VProject,
     instr_type: FeatureInstrType,
@@ -813,6 +999,28 @@ class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
         return setup_actions_for_vara_overhead_experiment(
             self, project, FeatureInstrType.USDT_RAW,
             RunBPFTracedWorkloadsOverhead
+        )
+
+
+class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
+    """Test runner for feature performance."""
+
+    NAME = "RunBCCTEFProfilerO"
+
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+        return setup_actions_for_vara_overhead_experiment(
+            self, project, FeatureInstrType.USDT, RunBCCTracedWorkloadsOverhead
         )
 
 
