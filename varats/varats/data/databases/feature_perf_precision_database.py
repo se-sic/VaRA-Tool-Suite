@@ -140,7 +140,7 @@ class VXray(Profiler):
     def __init__(self) -> None:
         super().__init__(
             "WXray", fpp.TEFProfileRunner, fpp.TEFProfileOverheadRunner,
-            fpp.MPRTEFA
+            fpp.MPRTEFAggregate
         )
 
     def is_regression(
@@ -195,7 +195,7 @@ class PIMTracer(Profiler):
     def __init__(self) -> None:
         super().__init__(
             "PIMTracer", fpp.PIMProfileRunner, fpp.PIMProfileOverheadRunner,
-            fpp.MPRPIMA
+            fpp.MPRPIMAggregate
         )
 
     def is_regression(
@@ -254,11 +254,65 @@ class PIMTracer(Profiler):
         return is_regression
 
 
+class EbpfTraceTEF(Profiler):
+    """Profiler mapper implementation for the vara tef tracer."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "eBPFTrace", fpp.EbpfTraceTEFProfileRunner,
+            fpp.TEFProfileOverheadRunner, fpp.MPRTEFAggregate
+        )
+
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
+        """Checks if there was a regression between the old an new data."""
+        is_regression = False
+
+        multi_report = fpp.MultiPatchReport(
+            report_path.full_path(), TEFReportAggregate
+        )
+
+        old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for old_tef_report in multi_report.get_baseline_report().reports():
+            pim = get_feature_performance_from_tef_report(old_tef_report)
+            for feature, value in pim.items():
+                old_acc_pim[feature].append(value)
+
+        new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        opt_mr = multi_report.get_report_for_patch(patch_name)
+        if not opt_mr:
+            raise NotImplementedError()
+
+        for new_tef_report in opt_mr.reports():
+            pim = get_feature_performance_from_tef_report(new_tef_report)
+            for feature, value in pim.items():
+                new_acc_pim[feature].append(value)
+
+        for feature, old_values in old_acc_pim.items():
+            if feature in new_acc_pim:
+                new_values = new_acc_pim[feature]
+                ttest_res = ttest_ind(old_values, new_values)
+
+                # TODO: check, maybe we need a "very small value cut off"
+                if ttest_res.pvalue < 0.05:
+                    # print(
+                    #     f"{self.name} found regression for feature {feature}."
+                    # )
+                    is_regression = True
+            else:
+                print(f"Could not find feature {feature} in new trace.")
+                # TODO: how to handle this?
+                is_regression = True
+
+        return is_regression
+
+
 def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
     report_files = get_processed_revisions_files(
         case_study.project_name,
         fpp.BlackBoxBaselineRunner,
-        fpp.MPRTRA,
+        fpp.MPRTimeReportAggregate,
         get_case_study_file_name_filter(case_study),
         config_id=0
     )
@@ -273,7 +327,7 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
         return []
 
     # TODO: fix to prevent double loading
-    time_reports = fpp.MPRTRA(report_files[0].full_path())
+    time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
     return time_reports.get_patch_names()
 
 
@@ -290,7 +344,7 @@ def get_regressing_config_ids_gt(
         report_files = get_processed_revisions_files(
             project_name,
             fpp.BlackBoxBaselineRunner,
-            fpp.MPRTRA,
+            fpp.MPRTimeReportAggregate,
             get_case_study_file_name_filter(case_study),
             config_id=config_id
         )
@@ -304,7 +358,7 @@ def get_regressing_config_ids_gt(
             return None
 
         # TODO: fix to prevent double loading
-        time_reports = fpp.MPRTRA(report_files[0].full_path())
+        time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
 
         old_time = time_reports.get_baseline_report()
         # new_time = time_reports.get_new_report()

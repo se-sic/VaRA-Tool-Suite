@@ -12,6 +12,7 @@ from varats.data.databases.feature_perf_precision_database import (
     Profiler,
     VXray,
     PIMTracer,
+    EbpfTraceTEF,
     load_precision_data,
     load_overhead_data,
 )
@@ -49,7 +50,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
         # Data aggregation
         df = pd.DataFrame()
@@ -180,7 +181,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         # Load data
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
         # Data aggregation
         full_precision_df = load_precision_data(case_studies, profilers)
