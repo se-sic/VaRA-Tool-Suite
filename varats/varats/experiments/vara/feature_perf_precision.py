@@ -10,7 +10,7 @@ import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Clean
-from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace
+from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
 
@@ -42,6 +42,7 @@ from varats.provider.patch.patch_provider import (
     RevertPatch,
 )
 from varats.report.gnu_time_report import TimeReportAggregate
+from varats.report.linux_perf_report import LinuxPerfReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReportAggregate
@@ -718,11 +719,13 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         )
                         print(f"Running example {prj_command.command.label}")
 
-                        timed_pb_cmd = time["-v", "-o", time_report_file,
-                                            pb_cmd]
+                        timed_pb_cmd = perf["stat", "-o", time_report_file,
+                                            "--", pb_cmd]
 
                         extra_options = get_extra_config_options(self.project)
                         with cleanup(prj_command):
+                            # print("timed_pb_cmd=", str(timed_pb_cmd[*extra_options]))
+
                             timed_pb_cmd(
                                 *extra_options,
                                 retcode=self._binary.valid_exit_codes
@@ -781,8 +784,8 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         )
                         print(f"Running example {prj_command.command.label}")
 
-                        timed_pb_cmd = time["-v", "-o", time_report_file,
-                                            pb_cmd]
+                        timed_pb_cmd = perf["stat", "-o", time_report_file,
+                                            "--", pb_cmd]
 
                         extra_options = get_extra_config_options(self.project)
 
@@ -854,8 +857,8 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         )
                         print(f"Running example {prj_command.command.label}")
 
-                        timed_pb_cmd = time["-v", "-o", time_report_file,
-                                            pb_cmd]
+                        timed_pb_cmd = perf["stat", "-o", time_report_file,
+                                            "--", pb_cmd]
 
                         extra_options = get_extra_config_options(self.project)
 
@@ -939,7 +942,7 @@ class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
 
     NAME = "RunTEFProfilerO"
 
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
 
     def actions_for_project(
         self, project: VProject
@@ -961,7 +964,7 @@ class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
 
     NAME = "RunPIMProfilerO"
 
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
 
     def actions_for_project(
         self, project: VProject
@@ -984,7 +987,7 @@ class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
 
     NAME = "RunEBPFTraceTEFProfilerO"
 
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
 
     def actions_for_project(
         self, project: VProject
@@ -1007,7 +1010,7 @@ class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
 
     NAME = "RunBCCTEFProfilerO"
 
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
 
     def actions_for_project(
         self, project: VProject
@@ -1069,10 +1072,13 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
                     )
                     print(f"Running example {prj_command.command.label}")
 
-                    timed_pb_cmd = time["-v", "-o", time_report_file, pb_cmd]
+                    # timed_pb_cmd = time["-v", "-o", time_report_file, pb_cmd]
+                    timed_pb_cmd = perf["stat", "-o", time_report_file, "--",
+                                        pb_cmd]
 
                     extra_options = get_extra_config_options(self.project)
                     with cleanup(prj_command):
+                        # print("timed_pb_cmd=", str(timed_pb_cmd[*extra_options]))
                         timed_pb_cmd(
                             *extra_options,
                             retcode=self.__binary.valid_exit_codes
@@ -1086,7 +1092,7 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
 
     NAME = "GenBBBaselineO"
 
-    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
+    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
 
     def actions_for_project(
         self, project: VProject

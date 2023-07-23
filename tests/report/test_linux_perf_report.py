@@ -7,42 +7,64 @@ from pathlib import Path
 
 from varats.report.linux_perf_report import LinuxPerfReport
 
-PERF_REPORT_1 = """# started on Sun Jul 23 16:33:56 2023
+PERF_REPORT_1 = """# started on Sun Jul 23 22:51:54 2023
 
-0.28;msec;task-clock:u;281620;100.00;0.398;CPUs utilized
-0;;context-switches:u;281620;100.00;0.000;/sec
-0;;cpu-migrations:u;281620;100.00;0.000;/sec
-63;;page-faults:u;281620;100.00;223.706;K/sec
-297468;;cycles:u;282100;100.00;1.056;GHz
-21086;;stalled-cycles-frontend:u;282100;100.00;7.09;frontend cycles idle
-84315;;stalled-cycles-backend:u;282100;100.00;28.34;backend cycles idle
-200506;;instructions:u;282100;100.00;0.67;insn per cycle
-;;;;;0.42;stalled cycles per insn
-48602;;branches:u;282100;100.00;172.580;M/sec
-2946;;branch-misses:u;282100;100.00;6.06;of all branches
-<not counted>;;L1-dcache-loads:u;0;0.00;;
-<not counted>;;L1-dcache-load-misses:u;0;0.00;;
-<not supported>;;LLC-loads:u;0;100.00;;
-<not supported>;;LLC-load-misses:u;0;100.00;;
+
+ Performance counter stats for 'echo foo:bar':
+
+              0.30 msec task-clock:u                     #    0.406 CPUs utilized
+                 0      context-switches:u               #    0.000 /sec
+                 0      cpu-migrations:u                 #    0.000 /sec
+                64      page-faults:u                    #  212.723 K/sec
+           360,721      cycles:u                         #    1.199 GHz
+            26,199      stalled-cycles-frontend:u        #    7.26% frontend cycles idle
+           111,008      stalled-cycles-backend:u         #   30.77% backend cycles idle
+           200,655      instructions:u                   #    0.56  insn per cycle
+                                                  #    0.55  stalled cycles per insn
+            48,631      branches:u                       #  161.639 M/sec
+             3,012      branch-misses:u                  #    6.19% of all branches
+     <not counted>      L1-dcache-loads:u                                                       (0.00%)
+     <not counted>      L1-dcache-load-misses:u                                                 (0.00%)
+   <not supported>      LLC-loads:u
+   <not supported>      LLC-load-misses:u
+
+       0.000741511 seconds time elapsed
+
+       0.000000000 seconds user
+       0.000822000 seconds sys
+
+
+
 """
 
-PERF_REPORT_2 = """# started on Sun Jul 23 16:36:38 2023
+PERF_REPORT_2 = """# started on Sun Jul 23 22:44:31 2023
 
-689.70;msec;task-clock:u;689702567;100.00;0.158;CPUs utilized
-0;;context-switches:u;689702567;100.00;0.000;/sec
-0;;cpu-migrations:u;689702567;100.00;0.000;/sec
-2924;;page-faults:u;689702567;100.00;4.240;K/sec
-442557352;;cycles:u;513385825;74.00;0.642;GHz
-6447861;;stalled-cycles-frontend:u;513968009;74.00;1.46;frontend cycles idle
-120234822;;stalled-cycles-backend:u;517763201;75.00;27.17;backend cycles idle
-944044714;;instructions:u;519151351;75.00;2.13;insn per cycle
-;;;;;0.13;stalled cycles per insn
-216559082;;branches:u;517782741;75.00;313.989;M/sec
-1542284;;branch-misses:u;517881196;75.00;0.71;of all branches
-286757265;;L1-dcache-loads:u;517504374;75.00;415.769;M/sec
-9357536;;L1-dcache-load-misses:u;515435585;74.00;3.26;of all L1-dcache accesses
-<not supported>;;LLC-loads:u;0;100.00;;
-<not supported>;;LLC-load-misses:u;0;100.00;;
+
+ Performance counter stats for '/home/vulder/vara-root/benchbuild/results/GenBBBaselineO/SynthSAContextSensitivity-perf_tests@a8c3a8722f,0/SynthSAContextSensitivity/build/bin/ContextSense --compress --mem 10 8':
+
+              1.23 msec task-clock:u                     #    0.000 CPUs utilized
+                 0      context-switches:u               #    0.000 /sec
+                 0      cpu-migrations:u                 #    0.000 /sec
+               132      page-faults:u                    #  107.572 K/sec
+           850,975      cycles:u                         #    0.693 GHz                         (12.81%)
+           140,154      stalled-cycles-frontend:u        #   16.47% frontend cycles idle
+         1,012,322      stalled-cycles-backend:u         #  118.96% backend cycles idle
+         1,785,912      instructions:u                   #    2.10  insn per cycle
+                                                  #    0.57  stalled cycles per insn
+           325,708      branches:u                       #  265.433 M/sec
+            11,160      branch-misses:u                  #    3.43% of all branches
+           840,918      L1-dcache-loads:u                #  685.298 M/sec                       (87.19%)
+     <not counted>      L1-dcache-load-misses:u                                                 (0.00%)
+   <not supported>      LLC-loads:u
+   <not supported>      LLC-load-misses:u
+
+       5.945920439 seconds time elapsed
+
+       0.000376000 seconds user
+       0.001390000 seconds sys
+
+
+
 """
 
 
@@ -67,8 +89,8 @@ class TestLinuxPerfReport(unittest.TestCase):
 
     def test_task_clock_parsing(self) -> None:
         """Checks if we correctly parsed the value for task clock."""
-        self.assertEqual(self.report_1.task_clock, 0.28)
-        self.assertEqual(self.report_2.task_clock, 689.70)
+        self.assertEqual(self.report_1.elapsed_time, 0.000741511)
+        self.assertEqual(self.report_2.elapsed_time, 5.945920439)
 
     def test_context_switches_parsing(self) -> None:
         """Checks if we correctly parsed the value for context switches."""
@@ -77,5 +99,5 @@ class TestLinuxPerfReport(unittest.TestCase):
 
     def test_branch_misses_parsing(self) -> None:
         """Checks if we correctly parsed the value for branch misses."""
-        self.assertEqual(self.report_1.branch_misses, 2946)
-        self.assertEqual(self.report_2.branch_misses, 1542284)
+        self.assertEqual(self.report_1.branch_misses, 3012)
+        self.assertEqual(self.report_2.branch_misses, 11160)

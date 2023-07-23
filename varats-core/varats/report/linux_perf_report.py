@@ -31,46 +31,52 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        self.__task_clock = math.nan
+        self.__elapsed_time = math.nan
         self.__ctx_switches: int = -1
         self.__branch_misses: int = -1
 
         with open(self.path, 'r', newline="") as stream:
-            reader = csv.reader(stream, delimiter=';')
-            print(f"{reader=}")
+            for line in stream:
+                line = line.strip("\n ")
+                print(f"{line=}")
 
-            for row in reader:
-                print(f"{row=}")
-
-                if len(row) == 0 or row[0].startswith("#"):
+                if line == "" or line.startswith("#"):
                     continue
 
-                metric_name = self.__metric_name(row)
-                if not metric_name:
-                    continue
+                # TODO: impl cmd
+                # if line.startswith("Performance counter"):
+                #     print(f"CMD: {line}")
 
-                if metric_name == "task-clock:u":
-                    self.__task_clock = float(self.__metric_value(row))
-                elif metric_name == "context-switches:u":
-                    self.__ctx_switches = int(self.__metric_value(row))
-                elif metric_name == "branch-misses:u":
-                    self.__branch_misses = int(self.__metric_value(row))
+                if "time elapsed" in line:
+                    print("time line")
+                    self.__elapsed_time = self.__parse_elapsed_time(line)
+
+                if "context-switches:u" in line:
+                    print("branchi line")
+                    self.__ctx_switches = self.__parse_ctx_switches(line)
+
+                if "branch-misses:u" in line:
+                    print("branchi line")
+                    self.__branch_misses = self.__parse_branch_misses(line)
+
+            if self.__branch_misses == math.nan:
+                raise AssertionError()
 
     @staticmethod
-    def __metric_value(row: tp.List[tp.Any]) -> tp.Any:
-        return row[0]
+    def __parse_elapsed_time(line: str) -> float:
+        return float(line.split(" ")[0].replace(",", ""))
 
     @staticmethod
-    def __metric_unit(row: tp.List[tp.Any]) -> tp.Any:
-        return row[1]
+    def __parse_ctx_switches(line: str) -> int:
+        return int(line.split(" ")[0].replace(",", ""))
 
     @staticmethod
-    def __metric_name(row: tp.List[tp.Any]) -> str:
-        return row[2]
+    def __parse_branch_misses(line: str) -> int:
+        return int(line.split(" ")[0].replace(",", ""))
 
     @property
-    def task_clock(self) -> float:
-        return self.__task_clock
+    def elapsed_time(self) -> float:
+        return self.__elapsed_time
 
     @property
     def ctx_switches(self) -> int:
@@ -85,7 +91,7 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
 
     def __str__(self) -> str:
         return f"""LPR ({self.path})
-  ├─ TaskClock:    {self.task_clock}
+  ├─ ElapsedTime:  {self.elapsed_time}
   ├─ CtxSwitches:  {self.ctx_switches}
   └─ BranchMisses: {self.branch_misses}
 """
@@ -103,8 +109,8 @@ class LinuxPerfReportAggregate(
         super().__init__(path, LinuxPerfReport)
 
     @property
-    def clock_times(self) -> tp.List[float]:
-        return [report.task_clock for report in self.reports()]
+    def elapsed_time(self) -> tp.List[float]:
+        return [report.elapsed_time for report in self.reports()]
 
     @property
     def ctx_switches(self) -> tp.List[int]:

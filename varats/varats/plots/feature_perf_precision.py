@@ -175,6 +175,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
     def plot(self, view_mode: bool) -> None:
         # -- Configure plot --
         plot_metric = [("Time", "overhead_time_rel"),
+                       ("Branch Misses", "overhead_bmiss_rel"),
                        ("Ctx", "overhead_ctx_rel")]
         target_row = "f1_score"
         # target_row = "precision"
@@ -202,20 +203,26 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         overhead_df['overhead_time_rel'] = overhead_df['time'] / (
             overhead_df['time'] - overhead_df['overhead_time']
         ) * 100
+
         overhead_df['overhead_ctx_rel'] = overhead_df['ctx'] / (
             overhead_df['ctx'] - overhead_df['overhead_ctx']
+        ) * 100
+        overhead_df["overhead_ctx_rel"].fillna(100, inplace=True)
+
+        overhead_df['overhead_bmiss_rel'] = overhead_df['bmiss'] / (
+            overhead_df['bmiss'] - overhead_df['overhead_bmiss']
         ) * 100
         print(f"other_df=\n{overhead_df}")
 
         merged_df = pd.merge(
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
-        print(f"{merged_df=}")
+        print(f"merged_df=\n{merged_df}")
 
         # print(f"{self.plot_config.width()}")
 
         _, axes = plt.subplots(
-            ncols=len(plot_metric), nrows=1, figsize=(20, 10)
+            ncols=len(plot_metric), nrows=1, figsize=(30, 10)
         )
 
         if len(plot_metric) == 1:

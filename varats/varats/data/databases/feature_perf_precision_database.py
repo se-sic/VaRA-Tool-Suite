@@ -13,6 +13,7 @@ from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.gnu_time_report import TimeReportAggregate
+from varats.report.linux_perf_report import LinuxPerfReportAggregate
 from varats.report.report import BaseReport, ReportFilepath
 from varats.report.tef_report import (
     TEFReport,
@@ -399,7 +400,7 @@ class Baseline(Profiler):
     def __init__(self) -> None:
         super().__init__(
             "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
-            fpp.TimeReportAggregate
+            fpp.LinuxPerfReportAggregate
         )
 
     def is_regression(self, report_path: ReportFilepath) -> bool:
@@ -442,14 +443,19 @@ class OverheadData:
 
     def __init__(
         self, profiler, mean_time: tp.Dict[int, float],
-        ctx_switches: tp.Dict[int, float]
+        mean_bmiss: tp.Dict[int, float], ctx_switches: tp.Dict[int, float]
     ) -> None:
         self.__profiler = profiler
         self.__mean_time: tp.Dict[int, float] = mean_time
+        self.__mean_bmiss: tp.Dict[int, float] = mean_bmiss
         self.__mean_ctx_switches: tp.Dict[int, float] = ctx_switches
 
     def mean_time(self) -> float:
         return float(np.mean(list(self.__mean_time.values())))
+
+    def mean_bmiss(self) -> float:
+        print(f"----> here {float(np.mean(list(self.__mean_bmiss.values())))}")
+        return float(np.mean(list(self.__mean_bmiss.values())))
 
     def mean_ctx(self) -> float:
         return float(np.mean(list(self.__mean_ctx_switches.values())))
@@ -457,6 +463,10 @@ class OverheadData:
     def config_wise_time_diff(self,
                               other: 'OverheadData') -> tp.Dict[int, float]:
         return self.__config_wise(self.__mean_time, other.__mean_time)
+
+    def config_wise_bmiss_diff(self,
+                               other: 'OverheadData') -> tp.Dict[int, float]:
+        return self.__config_wise(self.__mean_bmiss, other.__mean_bmiss)
 
     def config_wise_ctx_diff(self,
                              other: 'OverheadData') -> tp.Dict[int, float]:
@@ -483,13 +493,14 @@ class OverheadData:
     ) -> tp.Optional['OverheadData']:
 
         mean_time: tp.Dict[int, float] = {}
+        mean_bmiss: tp.Dict[int, float] = {}
         mean_cxt_switches: tp.Dict[int, float] = {}
 
         for config_id in case_study.get_config_ids_for_revision(rev):
             report_files = get_processed_revisions_files(
                 case_study.project_name,
                 profiler.overhead_experiment,
-                TimeReportAggregate,
+                LinuxPerfReportAggregate,
                 get_case_study_file_name_filter(case_study),
                 config_id=config_id
             )
@@ -503,12 +514,11 @@ class OverheadData:
                 )
                 return None
 
-            time_report = TimeReportAggregate(report_files[0].full_path())
-            mean_time[config_id] = float(
-                np.mean(time_report.measurements_wall_clock_time)
-            )
+            time_report = LinuxPerfReportAggregate(report_files[0].full_path())
+            mean_time[config_id] = float(np.mean(time_report.elapsed_time))
+            mean_bmiss[config_id] = float(np.mean(time_report.branch_misses))
             mean_cxt_switches[config_id] = float(
-                np.mean(time_report.measurements_ctx_switches)
+                np.mean(time_report.ctx_switches)
             )
         if not mean_time:
             print(
@@ -518,7 +528,7 @@ class OverheadData:
             return None
 
         # print(f"{mean_time=}")
-        return OverheadData(profiler, mean_time, mean_cxt_switches)
+        return OverheadData(profiler, mean_time, mean_bmiss, mean_cxt_switches)
 
 
 def load_precision_data(case_studies, profilers) -> pd.DataFrame:
@@ -563,11 +573,6 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
                     new_row['recall'] = results.recall()
                     new_row['f1_score'] = results.f1_score()
                     new_row['Profiler'] = profiler.name
-                    # new_row[f"{profiler.name}_precision"
-                    #        ] = results.precision()
-                    # new_row[f"{profiler.name}_recall"] = results.recall()
-                    # new_row[f"{profiler.name}_baccuracy"
-                    #        ] = results.balanced_accuracy()
                 else:
                     new_row['precision'] = np.nan
                     new_row['recall'] = np.nan
@@ -596,10 +601,11 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
         new_row = {
             'CaseStudy': project_name,
             'Profiler': "Base",
-            'time':
-                overhead_ground_truth.mean_time(),  # random.randint(2, 230),
+            'time': overhead_ground_truth.mean_time(),
+            'bmiss': overhead_ground_truth.mean_bmiss(),
             'ctx': overhead_ground_truth.mean_ctx(),
             'overhead_time': 0,
+            'overhead_bmiss': 0,
             'overhead_ctx': 0
         }
 
@@ -616,6 +622,9 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
                 time_diff = profiler_overhead.config_wise_time_diff(
                     overhead_ground_truth
                 )
+                bmiss_diff = profiler_overhead.config_wise_bmiss_diff(
+                    overhead_ground_truth
+                )
                 ctx_diff = profiler_overhead.config_wise_ctx_diff(
                     overhead_ground_truth
                 )
@@ -623,11 +632,17 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
                 new_row['time'] = profiler_overhead.mean_time()
                 new_row['overhead_time'] = np.mean(list(time_diff.values()))
 
+                new_row['bmiss'] = profiler_overhead.mean_bmiss()
+                new_row['overhead_bmiss'] = np.mean(list(bmiss_diff.values()))
+
                 new_row['ctx'] = profiler_overhead.mean_ctx()
                 new_row['overhead_ctx'] = np.mean(list(ctx_diff.values()))
             else:
                 new_row['time'] = np.nan
                 new_row['overhead_time'] = np.nan
+
+                new_row['bmiss'] = np.nan
+                new_row['overhead_bmiss'] = np.nan
 
                 new_row['ctx'] = np.nan
                 new_row['overhead_ctx'] = np.nan
