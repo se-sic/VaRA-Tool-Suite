@@ -325,13 +325,22 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         print(f"{sorted_list=}")
         pareto_front = [sorted_list[0]]
         for pair in sorted_list[1:]:
-            print(f"{pair=}")
             if maxY:
                 if pair[1] >= pareto_front[-1][1]:
-                    pareto_front.append(pair)
+                    if pair[0] == pareto_front[-1][0]:
+                        # If both points, have the same x-values, we should
+                        # only keep the larger one
+                        pareto_front[-1][1] = pair[1]
+                    else:
+                        pareto_front.append(pair)
             else:
                 if pair[1] <= pareto_front[-1][1]:
-                    pareto_front.append(pair)
+                    if pair[0] == pareto_front[-1][0]:
+                        # If both points, have the same x-values, we should
+                        # only keep the smaller one
+                        pareto_front[-1][1] = pair[1]
+                    else:
+                        pareto_front.append(pair)
 
         return pareto_front
 
