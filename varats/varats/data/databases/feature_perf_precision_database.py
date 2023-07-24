@@ -454,7 +454,6 @@ class OverheadData:
         return float(np.mean(list(self.__mean_time.values())))
 
     def mean_bmiss(self) -> float:
-        print(f"----> here {float(np.mean(list(self.__mean_bmiss.values())))}")
         return float(np.mean(list(self.__mean_bmiss.values())))
 
     def mean_ctx(self) -> float:

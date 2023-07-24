@@ -256,7 +256,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             text_obj: Text
 
             text_obj.set_fontsize("small")
-            print(f"{text_obj=}")
             if text_obj.get_text() == "Profiler":
                 text_obj.set_text("Profilers")
                 text_obj.set_fontweight("bold")

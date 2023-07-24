@@ -48,15 +48,12 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
                 #     print(f"CMD: {line}")
 
                 if "time elapsed" in line:
-                    print("time line")
                     self.__elapsed_time = self.__parse_elapsed_time(line)
 
                 if "context-switches:u" in line:
-                    print("branchi line")
                     self.__ctx_switches = self.__parse_ctx_switches(line)
 
                 if "branch-misses:u" in line:
-                    print("branchi line")
                     self.__branch_misses = self.__parse_branch_misses(line)
 
             if self.__branch_misses == math.nan:
