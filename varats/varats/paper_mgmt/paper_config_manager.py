@@ -406,10 +406,10 @@ def package_paper_config(
         output_file, "w", compression=ZIP_DEFLATED, compresslevel=9
     ) as pc_zip:
         for file_path in files_to_store:
-            pc_zip.write(file_path.relative_to(vara_root))
+            pc_zip.write(file_path.resolve().relative_to(vara_root))
 
         for case_study_file in case_study_files_to_include:
-            pc_zip.write(case_study_file.relative_to(vara_root))
+            pc_zip.write(case_study_file.resolve().relative_to(vara_root))
 
 
 def _combine_tagged_revs_for_experiment(
