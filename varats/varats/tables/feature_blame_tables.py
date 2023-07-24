@@ -2,21 +2,9 @@ import typing as tp
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
-from varats.data.reports.feature_blame_report import (
-    StructuralFeatureBlameReport as SFBR,
-)
-from varats.data.reports.feature_blame_report import (
-    DataflowFeatureBlameReport as DFBR,
-)
 from varats.paper.case_study import CaseStudy
 from varats.plots.feature_blame_plots import get_dataflow_data_for_case_study
-from varats.report.report import ReportFilepath
-from varats.revision.revisions import (
-    get_processed_revisions_files,
-    get_failed_revisions_files,
-)
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
@@ -107,6 +95,51 @@ class DFBREvalTableGenerator(
         case_study: CaseStudy = self.table_kwargs.pop("case_study")
         return [
             DFBREvalTable(
+                self.table_config, case_study=case_study, **self.table_kwargs
+            )
+        ]
+    
+
+class DFBRInterestingCommitsTable(Table, table_name="dfbr_interesting_commits_table"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_study: CaseStudy = self.table_kwargs['case_study']
+
+        data = get_dataflow_data_for_case_study(case_study)
+
+        rows = []
+        
+        data_points_with_many_interactions = data.loc[data['num_interacting_features'] >= 5]
+
+        df = data_points_with_many_interactions
+        df.sort_values(by=['part_of_feature'])
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["caption"] = (
+                f"Evaluation of project {case_study.project_name}. "
+            )
+            kwargs['position'] = 't'
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
+
+
+class DFBRInterestingCommitsTableGenerator(
+    TableGenerator,
+    generator_name="dfbr-interesting-commits-table",
+    options=[REQUIRE_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List[Table]:
+        case_study: CaseStudy = self.table_kwargs.pop("case_study")
+        return [
+            DFBRInterestingCommitsTable(
                 self.table_config, case_study=case_study, **self.table_kwargs
             )
         ]
