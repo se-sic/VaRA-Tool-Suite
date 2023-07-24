@@ -216,8 +216,13 @@ class Patch:
 
         return str_representation
 
+    def __hash__(self):
+        return hash((self.shortname, str(self.path), self.tags))
+
 
 class PatchSet:
+    """A PatchSet is a storage container for project specific patches that can
+    easily be accessed via the tags of a patch."""
 
     def __init__(self, patches: tp.Set[Patch]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
@@ -231,25 +236,57 @@ class PatchSet:
     def __len__(self) -> int:
         return len(self.__patches)
 
-    def __getitem__(self, tag):
-        tag_set = set(tag)
-        return PatchSet({p for p in self.__patches if tag_set.issubset(p.tags)})
+    def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]):
+        """
+        Overrides the bracket operator of a PatchSet.
+
+        Returns a PatchSet, such that all patches include all the tags given
+        """
+        # TODO: Discuss if we really want this. Currently this is an "all_of" access
+        # We could consider to remove the bracket operator and only provide the all_of/any_of accessors as it
+        # would be clearer what the exact behaviour is
+
+        # Trick to handle correct set construction if just a single tag is given
+        if isinstance(tags, str):
+            tags = [tags]
+
+        tag_set = set(tags)
+        res_set = set()
+
+        for patch in self.__patches:
+            if patch.tags and tag_set.issubset(patch.tags):
+                res_set.add(patch)
+
+        return PatchSet(res_set)
 
     def __and__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
-
-        ret = {}
-        ...
-        return ret
+        return PatchSet(self.__patches.intersection(rhs.__patches))
 
     def __or__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
+        """Implementing the union of two sets."""
+        return PatchSet(self.__patches.union(rhs.__patches))
 
-        ret = {}
-        ...
-        return ret
+    def any_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+        """Returns a patch set with patches containing at least one of the given
+        tags."""
+        # Trick to handle just a single tag being passed
+        if isinstance(tags, str):
+            tags = [tags]
+
+        result = set()
+        for patch in self:
+            if patch.tags and any([tag in patch.tags for tag in tags]):
+                result.add(patch)
+
+        return PatchSet(result)
+
+    def all_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+        """
+        Returns a patch set with patches containing all the given tags.
+
+        Equivalent to bracket operator (__getitem__)
+        """
+        return self.__getitem__(tags)
 
     def __hash__(self) -> int:
         return hash(self.__patches)
