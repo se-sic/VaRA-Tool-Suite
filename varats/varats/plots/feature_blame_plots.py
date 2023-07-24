@@ -14,6 +14,7 @@ from varats.data.reports.feature_blame_report import (
     generate_feature_scfi_data,
     generate_commit_scfi_data,
     generate_commit_dcfi_data,
+    generate_feature_author_scfi_data,
 )
 from varats.jupyterhelper.file import (
     load_structural_feature_blame_report,
@@ -67,7 +68,6 @@ def get_structural_feature_data_for_case_study(
             data_frame = pd.concat([
                 data_frame, generate_feature_scfi_data(report)
             ])
-    print(data_frame)
     return data_frame
 
 
@@ -239,6 +239,82 @@ class FeatureDCFIPlotGenerator(
         case_study: CaseStudy = self.plot_kwargs.pop("case_study")
         return [
             FeatureDCFIPlot(
+                self.plot_config, case_study=case_study, **self.plot_kwargs
+            )
+        ]
+
+
+########## Author ###########
+
+
+def get_feature_author_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
+    report_files, failed_report_files = get_structural_report_files_for_project(
+        case_study.project_name
+    )
+    data_frame: pd.DataFrame = pd.DataFrame()
+    for RFP in report_files:
+        report = load_structural_feature_blame_report(RFP)
+        if data_frame.empty:
+            data_frame = generate_feature_author_scfi_data(report)
+        else:
+            data_frame = pd.concat([
+                data_frame, generate_feature_author_scfi_data(report)
+            ])
+    print(data_frame)
+    return data_frame
+
+
+class FeatureAuthorDisSCFIPlot(Plot, plot_name="feature_author_dis_scfi_plot"):
+
+    def plot(self, view_mode: bool) -> None:
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        data = get_feature_author_data_for_case_study(case_study)
+        ax = sns.displot(
+            data=data,
+            x='num_implementing_authors',
+            kde=True
+        )
+
+
+class FeatureAuthorDisSCFIPlotGenerator(
+    PlotGenerator,
+    generator_name="feature-author-dis-scfi-plot",
+    options=[REQUIRE_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        return [
+            FeatureAuthorDisSCFIPlot(
+                self.plot_config, case_study=case_study, **self.plot_kwargs
+            )
+        ]
+    
+
+class FeatureAuthorCorrSCFIPlot(Plot, plot_name="feature_author_corr_scfi_plot"):
+
+    def plot(self, view_mode: bool) -> None:
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        data = get_feature_author_data_for_case_study(case_study)
+        ax = sns.regplot(
+            data=data,
+            x='feature_scope', 
+            y='num_implementing_authors'
+        )
+
+
+class FeatureAuthorCorrSCFIPlotGenerator(
+    PlotGenerator,
+    generator_name="feature-author-corr-scfi-plot",
+    options=[REQUIRE_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        return [
+            FeatureAuthorCorrSCFIPlot(
                 self.plot_config, case_study=case_study, **self.plot_kwargs
             )
         ]

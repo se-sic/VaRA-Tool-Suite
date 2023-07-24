@@ -14,6 +14,8 @@ from varats.data.reports.feature_analysis_report import (
 from varats.report.report import BaseReport
 from varats.utils.git_util import CommitRepoPair, ShortCommitHash
 
+from git import Repo
+
 
 class StructuralCommitFeatureInteraction():
     """A StructuralCommitFeatureInteraction detailing the specific commit-hash
@@ -143,6 +145,37 @@ def generate_feature_scfi_data(
     )
 
 
+def generate_feature_author_scfi_data(
+    SFBR: StructuralFeatureBlameReport
+) -> pd.DataFrame:
+    # {feature: (authors, scope)}
+    features_cfi_author_data: tp.Dict[str, tp.Tuple(tp.Set[str], int)] = {}
+    for SCFI in SFBR.commit_feature_interactions:
+        author = get_author(SCFI.commit)
+        entry = features_cfi_author_data.get(SCFI.feature)
+        if not entry:
+            features_cfi_author_data.update({SCFI.feature: (set([author]), SCFI.num_instructions)})
+        else:
+            entry[0].add(author)
+            features_cfi_author_data.update({
+                SCFI.feature: (entry[0], entry[1] + SCFI.num_instructions)
+            })
+
+    rows = [[feature_data[0], len(feature_data[1][0]), feature_data[1][1]]
+            for feature_data in features_cfi_author_data.items()]
+    return pd.DataFrame(
+        rows, columns=["feature", "num_implementing_authors", "feature_scope"]
+    )
+
+
+def get_author(
+    commit_repo_pair: CommitRepoPair
+) -> str:
+    repo = Repo("/scratch/s8sisteu/VARA_ROOT/benchbuild/tmp/" + commit_repo_pair.repository_name)
+    # pygit2 libgit get
+    return repo.git.show("-s", "--format=Author: %an <%ae>", commit_repo_pair.commit_hash)
+
+
 def generate_commit_scfi_data(
     SFBR: StructuralFeatureBlameReport
 ) -> pd.DataFrame:
@@ -265,49 +298,33 @@ def generate_commit_dcfi_data(
             commits_structurally_interacting_with_features.add(
                 ShortCommitHash(SCFI.commit.commit_hash).hash
             )
-
-    dfi_commit_in_feature: tp.Dict[str, tp.Set[str]] = {}
-    dfi_commit_not_in_feature: tp.Dict[str, tp.Set[str]] = {}
+    # [hash, ([interacting_features], part_of_feature)]
+    dfi_commit: tp.Dict[str, tp.Tuple[tp.Set[str], int]] = {}
     for DFBR in DFBRs:
         for DCFI in DFBR.commit_feature_interactions:
             for commit in DCFI.commits:
                 sch: str = ShortCommitHash(commit.commit_hash).hash
-                if sch in commits_structurally_interacting_with_features:
-                    prev = dfi_commit_in_feature.get(sch)
-                    if prev:
-                        prev.add(DCFI.feature)
-                    else:
-                        prev = set([DCFI.feature])
-                    dfi_commit_in_feature.update({sch: prev})
+                prev = dfi_commit.get(sch)
+                if prev:
+                    prev[0].add(DCFI.feature)
                 else:
-                    prev = dfi_commit_not_in_feature.get(sch)
-                    if prev:
-                        prev.add(DCFI.feature)
-                    else:
-                        prev = set([DCFI.feature])
-                    dfi_commit_not_in_feature.update({sch: prev})
+                    part_of_feature = sch in commits_structurally_interacting_with_features
+                    new = (set([DCFI.feature]), part_of_feature)
+                    dfi_commit.update({sch: new})
     # value 0 in third column => not part of feature
     rows_commit_dfi = [
         [
-            commit_data_in_feature[0],
-            len(commit_data_in_feature[1]),
-            1  # part of feature
-        ] for commit_data_in_feature in dfi_commit_in_feature.items()
-    ]
-    rows_commit_dfi = rows_commit_dfi + [
-        [
-            commit_data_not_in_feature[0],
-            len(commit_data_not_in_feature[1]),
-            0  # not part of feature
-        ] for commit_data_not_in_feature in dfi_commit_not_in_feature.items()
+            commit_data[0],
+            len(commit_data[1][0]),
+            commit_data[1][1]
+        ] for commit_data in dfi_commit.items()
     ]
     counter = 0
     for _ in range(
-        0, num_commits - len(dfi_commit_in_feature) -
-        len(dfi_commit_not_in_feature)
+        0, num_commits - len(dfi_commit)
     ):
         rows_commit_dfi.append([f"fake_hash{counter}", 0, 0])
         counter += 1
 
-    columns = ["commits", "num_interacting_features", "part_of_feature"]
+    columns = ["commit", "num_interacting_features", "part_of_feature"]
     return pd.DataFrame(rows_commit_dfi, columns=columns)
