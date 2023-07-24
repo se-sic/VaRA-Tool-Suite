@@ -348,7 +348,7 @@ class PatchProvider(Provider):
         patches_source = bb.source.Git(
             remote=PatchProvider.patches_repository,
             local="patch-configurations",
-            refspec="origin/master",
+            refspec="origin/main",
             limit=None,
             shallow=False
         )
