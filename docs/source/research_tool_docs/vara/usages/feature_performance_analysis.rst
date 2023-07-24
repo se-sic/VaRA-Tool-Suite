@@ -36,7 +36,7 @@ The different instrumentation options can be found :ref:`here<Instrumentations>`
 
 .. note::
 
-    By default, regions smaller than 100 instructions are ignore. To manualy set the instruction threshold, add ``-vara-instruction-threshold=X`` as a ``C/CXX_FLAG``, where ``X`` defines amount of instruction that need to be contained in a region.
+    By default, regions smaller than 100 instructions are ignored. To manually set the instruction threshold, add ``-vara-instruction-threshold=X`` as a ``C/CXX_FLAG``, where ``X`` defines amount of instructions that need to be contained in a region.
 
 
 (Recommended) Configure your project to use link-time optimization (LTO) for more precise analysis results.
