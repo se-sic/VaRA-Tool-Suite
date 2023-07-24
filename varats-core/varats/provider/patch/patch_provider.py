@@ -112,13 +112,13 @@ class Patch:
     """A class for storing a single project-specific Patch."""
 
     def __init__(
-            self,
-            project_name: str,
-            shortname: str,
-            description: str,
-            path: Path,
-            valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
-            tags: tp.Optional[tp.Set[str]] = None
+        self,
+        project_name: str,
+        shortname: str,
+        description: str,
+        path: Path,
+        valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
+        tags: tp.Optional[tp.Set[str]] = None
     ):
         self.project_name: str = project_name
         self.shortname: str = shortname
@@ -190,7 +190,7 @@ class Patch:
             include_revisions = {
                 ShortCommitHash(h)
                 for h in main_repo_git('log', '--pretty=%H', '--first-parent'
-                                       ).strip().split()
+                                      ).strip().split()
             }
 
         if "exclude_revisions" in yaml_dict:
@@ -207,7 +207,7 @@ class Patch:
 
     def __str__(self) -> str:
         valid_revs = [str(r) for r in self.valid_revisions
-                      ] if self.valid_revisions else []
+                     ] if self.valid_revisions else []
         str_representation = f"""Patch(
     ProjectName: {self.project_name}
     Shortname: {self.shortname}
@@ -223,9 +223,8 @@ class Patch:
 
 
 class PatchSet:
-    """
-    A PatchSet is a storage container for project specific patches that can easily be accessed via the tags of a patch
-    """
+    """A PatchSet is a storage container for project specific patches that can
+    easily be accessed via the tags of a patch."""
 
     def __init__(self, patches: tp.Set[Patch]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
@@ -241,7 +240,7 @@ class PatchSet:
 
     def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]):
         """
-        Overrides the bracket operator of a PatchSet
+        Overrides the bracket operator of a PatchSet.
 
         Returns a PatchSet, such that all patches include all the tags given
         """
@@ -266,15 +265,12 @@ class PatchSet:
         return PatchSet(self.__patches.intersection(rhs.__patches))
 
     def __or__(self, rhs: "PatchSet") -> "PatchSet":
-        """
-        Implementing the union of two sets
-        """
+        """Implementing the union of two sets."""
         return PatchSet(self.__patches.union(rhs.__patches))
 
     def any_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
-        """
-        Returns a patch set with patches containing at least one of the given tags
-        """
+        """Returns a patch set with patches containing at least one of the given
+        tags."""
         # Trick to handle just a single tag being passed
         if isinstance(tags, str):
             tags = [tags]
@@ -286,9 +282,9 @@ class PatchSet:
 
         return PatchSet(result)
 
-    def all_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet" :
+    def all_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
         """
-        Returns a patch set with patches containing all the given tags
+        Returns a patch set with patches containing all the given tags.
 
         Equivalent to bracket operator (__getitem__)
         """
@@ -356,7 +352,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-            cls: tp.Type[ProviderType], project: tp.Type[Project]
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a provider instance for the given project if possible.
@@ -373,7 +369,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_default_provider(
-            cls: tp.Type[ProviderType], project: tp.Type[Project]
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
         Creates a default provider instance that can be used with any project.
