@@ -313,7 +313,9 @@ class PatchProvider(Provider):
         )
 
         if not patches_project_dir.is_dir():
-            warnings.warn(f"Could not find patches directory for project '{self.project.NAME}'.")
+            warnings.warn(
+                f"Could not find patches directory for project '{self.project.NAME}'."
+            )
 
         patches = set()
 
@@ -327,13 +329,16 @@ class PatchProvider(Provider):
                     current_patch = Patch.from_yaml(info_path)
                     patches.add(current_patch)
                 except YAMLError:
-                    warnings.warn(f"Unable to parse patch info in: '{filename}'")
+                    warnings.warn(
+                        f"Unable to parse patch info in: '{filename}'"
+                    )
 
         self.__patches: tp.Set[Patch] = patches
 
     def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
         """
         Returns a patch with a specific shortname, if such a patch exists.
+
         None otherwise
         """
         for patch in self.__patches:
@@ -343,9 +348,7 @@ class PatchProvider(Provider):
         return None
 
     def get_patches_for_revision(self, revision: CommitHash) -> PatchSet:
-        """
-        Returns all patches that are valid for the given revision.
-        """
+        """Returns all patches that are valid for the given revision."""
         return PatchSet({
             p for p in self.__patches if revision in p.valid_revisions
         })

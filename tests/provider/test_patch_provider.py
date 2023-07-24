@@ -63,7 +63,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
         }
 
     def __test_patch_revisions(
-            self, shortname: str, expected_revisions: set[ShortCommitHash]
+        self, shortname: str, expected_revisions: set[ShortCommitHash]
     ):
         patch = Patch.from_yaml(self.patch_base_path / f"{shortname}.info")
 
@@ -175,26 +175,69 @@ class TestPatchRevisionRanges(unittest.TestCase):
 
 
 class TestPatchSet(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls) -> None:
         patches = {
-            Patch("TEST", "Test-ABCD", "", path=Path("test.patch"), tags={"A", "B", "C", "D"}),
+            Patch(
+                "TEST",
+                "Test-ABCD",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "B", "C", "D"}
+            ),
             Patch("TEST", "Test-A", "", path=Path("test.patch"), tags={"A"}),
             Patch("TEST", "Test-B", "", path=Path("test.patch"), tags={"B"}),
             Patch("TEST", "Test-C", "", path=Path("test.patch"), tags={"C"}),
             Patch("TEST", "Test-D", "", path=Path("test.patch"), tags={"D"}),
-            Patch("TEST", "Test-AB", "", path=Path("test.patch"), tags={"A", "B"}),
-            Patch("TEST", "Test-AC", "", path=Path("test.patch"), tags={"A", "C"}),
-            Patch("TEST", "Test-AD", "", path=Path("test.patch"), tags={"A", "D"}),
-            Patch("TEST", "Test-BC", "", path=Path("test.patch"), tags={"B", "C"}),
-            Patch("TEST", "Test-BD", "", path=Path("test.patch"), tags={"B", "D"}),
-            Patch("TEST", "Test-CD", "", path=Path("test.patch"), tags={"C", "D"}),
-            Patch("TEST", "Test-ABC", "", path=Path("test.patch"), tags={"A", "B", "C"}),
-            Patch("TEST", "Test-ABD", "", path=Path("test.patch"), tags={"A", "B", "D"}),
-            Patch("TEST", "Test-ACD", "", path=Path("test.patch"), tags={"A", "C", "D"}),
-            Patch("TEST", "Test-BCD", "", path=Path("test.patch"), tags={"B", "C", "D"}),
+            Patch(
+                "TEST", "Test-AB", "", path=Path("test.patch"), tags={"A", "B"}
+            ),
+            Patch(
+                "TEST", "Test-AC", "", path=Path("test.patch"), tags={"A", "C"}
+            ),
+            Patch(
+                "TEST", "Test-AD", "", path=Path("test.patch"), tags={"A", "D"}
+            ),
+            Patch(
+                "TEST", "Test-BC", "", path=Path("test.patch"), tags={"B", "C"}
+            ),
+            Patch(
+                "TEST", "Test-BD", "", path=Path("test.patch"), tags={"B", "D"}
+            ),
+            Patch(
+                "TEST", "Test-CD", "", path=Path("test.patch"), tags={"C", "D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-ABC",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "B", "C"}
+            ),
+            Patch(
+                "TEST",
+                "Test-ABD",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "B", "D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-ACD",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "C", "D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-BCD",
+                "",
+                path=Path("test.patch"),
+                tags={"B", "C", "D"}
+            ),
         }
-        
+
         cls.patchSet = PatchSet(patches)
 
     def test_bracket_single_tag(self):
@@ -206,13 +249,11 @@ class TestPatchSet(unittest.TestCase):
                 self.assertIn(tag, patch.shortname)
 
     def test_bracket_multiple_tags(self):
-        tags_count = {
-            ["A", "B"]: 4,
-            ["C", "B"]: 4,
-            ["D", "B"]: 4,
-            ["A", "B", "C"]: 2,
-            ["A", "B", "C", "D"]: 1
-        }
+        tags_count = {["A", "B"]: 4,
+                      ["C", "B"]: 4,
+                      ["D", "B"]: 4,
+                      ["A", "B", "C"]: 2,
+                      ["A", "B", "C", "D"]: 1}
 
         for tags in tags_count:
             patches = self.patchSet[tags]
@@ -232,13 +273,11 @@ class TestPatchSet(unittest.TestCase):
                 self.assertIn(tag, patch.shortname)
 
     def test_all_of_multiple_tags(self):
-        tags_count = {
-            ["A", "B"]: 4,
-            ["C", "B"]: 4,
-            ["D", "B"]: 4,
-            ["A", "B", "C"]: 2,
-            ["A", "B", "C", "D"]: 1
-        }
+        tags_count = {["A", "B"]: 4,
+                      ["C", "B"]: 4,
+                      ["D", "B"]: 4,
+                      ["A", "B", "C"]: 2,
+                      ["A", "B", "C", "D"]: 1}
 
         for tags in tags_count:
             patches = self.patchSet.all_of(tags)
@@ -258,13 +297,11 @@ class TestPatchSet(unittest.TestCase):
                 self.assertIn(tag, patch.shortname)
 
     def test_any_of_multiple_tags(self):
-        tags_count = {
-            ["A", "B"]: 12,
-            ["C", "B"]: 12,
-            ["D", "B"]: 12,
-            ["A", "B", "C"]: 14,
-            ["A", "B", "C", "D"]: 15
-        }
+        tags_count = {["A", "B"]: 12,
+                      ["C", "B"]: 12,
+                      ["D", "B"]: 12,
+                      ["A", "B", "C"]: 14,
+                      ["A", "B", "C", "D"]: 15}
 
         for tags in tags_count:
             patches = self.patchSet.any_of(tags)
