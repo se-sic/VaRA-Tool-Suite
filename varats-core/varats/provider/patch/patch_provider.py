@@ -347,7 +347,7 @@ class PatchProvider(Provider):
         patches_source = bb.source.Git(
             remote=PatchProvider.patches_repository,
             local="patch-configurations",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
+            refspec="origin/master",
             limit=None,
             shallow=False
         )

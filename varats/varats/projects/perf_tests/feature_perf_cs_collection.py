@@ -171,7 +171,7 @@ class SynthSAFieldSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFieldSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFieldSensitivity")
@@ -201,9 +201,7 @@ class SynthSAFieldSensitivity(VProject):
             BinaryType.EXECUTABLE,
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
-            )
+            only_valid_in=RevisionRange("162db88346", "master")
         )
 
         return binary_map[revision]
@@ -233,7 +231,7 @@ class SynthSAFlowSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFlowSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFlowSensitivity")
@@ -263,9 +261,7 @@ class SynthSAFlowSensitivity(VProject):
             BinaryType.EXECUTABLE,
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
-            )
+            only_valid_in=RevisionRange("162db88346", "master")
         )
 
         return binary_map[revision]
@@ -295,7 +291,7 @@ class SynthSAContextSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAContextSensitivity",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
@@ -328,9 +324,7 @@ class SynthSAContextSensitivity(VProject):
             BinaryType.EXECUTABLE,
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
-            )
+            only_valid_in=RevisionRange("162db88346", "master")
         )
 
         return binary_map[revision]
@@ -360,7 +354,7 @@ class SynthSAWholeProgram(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAWholeProgram",
-            refspec="origin/f-StaticAnalysisMotivatedSynthBenchmarksImpl",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAWholeProgram")
@@ -390,9 +384,7 @@ class SynthSAWholeProgram(VProject):
             BinaryType.EXECUTABLE,
             # TODO: fix with commit after merge
             # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange(
-                "162db88346", "f-StaticAnalysisMotivatedSynthBenchmarksImpl"
-            )
+            only_valid_in=RevisionRange("162db88346", "master")
         )
 
         return binary_map[revision]
