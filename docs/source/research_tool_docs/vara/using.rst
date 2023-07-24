@@ -55,5 +55,6 @@ To enable this, specify a region detection strategy, enable the tracing code wit
    instrumentations/print_instr
    instrumentations/clock_instr.rst
    instrumentations/trace_event_instr.rst
+   instrumentations/perf_infl_trace.rst
    instrumentations/instr_verify.rst
    instrumentations/usdt.rst
