@@ -217,7 +217,10 @@ class Patch:
         return str_representation
 
     def __hash__(self):
-        return hash((self.shortname, str(self.path), tuple(self.tags)))
+        if self.tags:
+            return hash((self.shortname, str(self.path), tuple(self.tags)))
+
+        return hash((self.shortname, str(self.path)))
 
 
 class PatchSet:
