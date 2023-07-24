@@ -1,5 +1,6 @@
 """Project file for the feature performance case study collection."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
@@ -19,8 +20,33 @@ from varats.project.project_util import (
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
+from varats.utils.git_commands import init_all_submodules, update_all_submodules
 from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
+
+
+def _do_feature_perf_cs_collection_compile(
+    project: VProject, cmake_flag: str
+) -> None:
+    """Common compile function for FeaturePerfCSCollection projects."""
+    feature_perf_source = local.path(project.source_of(project.primary_source))
+
+    cc_compiler = bb.compiler.cc(project)
+    cxx_compiler = bb.compiler.cxx(project)
+
+    mkdir("-p", feature_perf_source / "build")
+
+    init_all_submodules(Path(feature_perf_source))
+    update_all_submodules(Path(feature_perf_source))
+
+    with local.cwd(feature_perf_source / "build"):
+        with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
+
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    with local.cwd(feature_perf_source):
+        verify_binaries(project)
 
 
 class FeaturePerfCSCollection(VProject):
@@ -120,18 +146,224 @@ class FeaturePerfCSCollection(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        feature_perf_source = local.path(self.source_of(self.primary_source))
+        _do_feature_perf_cs_collection_compile(self, "FPCSC_ENABLE_SRC")
 
-        cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
 
-        mkdir("-p", feature_perf_source / "build")
+class SynthSAFieldSensitivity(VProject):
+    """Synthetic case-study project for testing field sensitivity."""
 
-        with local.cwd(feature_perf_source / "build"):
-            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", "..")
+    NAME = 'SynthSAFieldSensitivity'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthSAFieldSensitivity",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthSAFieldSensitivity")
+        ),
+        FeatureSource()
+    ]
 
-        with local.cwd(feature_perf_source):
-            verify_binaries(self)
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthSAFieldSensitivity") / RSBinary("FieldSense"),
+                label="FieldSense-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthSAFieldSensitivity.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/FieldSense",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("0a9216d769", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
+        )
+
+
+class SynthSAFlowSensitivity(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthSAFlowSensitivity'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthSAFlowSensitivity",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthSAFlowSensitivity")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthSAFlowSensitivity") / RSBinary("FlowSense"),
+                label="FlowSense-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthSAFlowSensitivity.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/FlowSense",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("0a9216d769", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSAFLOWSENSITIVITY"
+        )
+
+
+class SynthSAContextSensitivity(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthSAContextSensitivity'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthSAContextSensitivity",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "SynthSAContextSensitivity"
+            )
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthSAContextSensitivity") /
+                RSBinary("ContextSense"),
+                label="ContextSense-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthSAContextSensitivity.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/ContextSense",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("0a9216d769", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSACONTEXTSENSITIVITY"
+        )
+
+
+class SynthSAInterProcedural(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthSAInterProcedural'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthSAInterProcedural",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthSAInterProcedural")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthSAInterProcedural") /
+                RSBinary("InterProcedural"),
+                label="ContextSense-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthSAInterProcedural.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/InterProcedural",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("0a9216d769", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSAINTERPROCEDURAL"
+        )
