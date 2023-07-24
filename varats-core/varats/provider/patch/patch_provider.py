@@ -173,12 +173,13 @@ class Patch:
                             )
                         )
                 else:
-                    res.update({
-                        ShortCommitHash(h) for h in _get_all_revisions_between(
+                    res.update(
+                        get_all_revisions_between(
                             rev_dict["revision_range"]["start"],
-                            rev_dict["revision_range"]["end"], main_repo_git
+                            rev_dict["revision_range"]["end"], ShortCommitHash,
+                            get_local_project_git_path(project_name)
                         )
-                    })
+                    )
 
             return res
 
