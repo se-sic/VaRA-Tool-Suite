@@ -134,7 +134,10 @@ def min_max_normalize(values: pd.Series) -> pd.Series:
     return tp.cast(pd.Series, (values - min_value) / (max_value - min_value))
 
 
-class ConfusionMatrix:
+T = tp.TypeVar("T")
+
+
+class ConfusionMatrix(tp.Generic[T]):
     """
     Helper class to automatically calculate classification results.
 
@@ -147,10 +150,10 @@ class ConfusionMatrix:
     """
 
     def __init__(
-        self, actual_positive_values: tp.List[tp.Any],
-        actual_negative_values: tp.List[tp.Any],
-        predicted_positive_values: tp.List[tp.Any],
-        predicted_negative_values: tp.List[tp.Any]
+        self, actual_positive_values: tp.List[T],
+        actual_negative_values: tp.List[T],
+        predicted_positive_values: tp.List[T],
+        predicted_negative_values: tp.List[T]
     ) -> None:
         self.__actual_positive_values = actual_positive_values
         self.__actual_negative_values = actual_negative_values
@@ -158,7 +161,7 @@ class ConfusionMatrix:
         self.__predicted_negative_values = predicted_negative_values
 
     ###################
-    # Base values
+    # Base metrics
 
     @property
     def P(self) -> int:  # pylint: disable=C0103
@@ -177,21 +180,15 @@ class ConfusionMatrix:
         return len(self.__predicted_negative_values)
 
     ###################
-    # Combined values
+    # Combined metrics
 
     @property
     def TP(self) -> int:  # pylint: disable=C0103
-        return len(
-            set(self.__actual_positive_values
-               ).intersection(self.__predicted_positive_values)
-        )
+        return len(self.getTPs())
 
     @property
     def TN(self) -> int:  # pylint: disable=C0103
-        return len(
-            set(self.__actual_negative_values
-               ).intersection(self.__predicted_negative_values)
-        )
+        return len(self.getTNs())
 
     @property
     def FP(self) -> int:  # pylint: disable=C0103
@@ -200,6 +197,25 @@ class ConfusionMatrix:
     @property
     def FN(self) -> int:  # pylint: disable=C0103
         return self.PN - self.TN
+
+    ###################
+    # Combined values
+
+    def getTPs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__actual_positive_values
+                  ).intersection(self.__predicted_positive_values)
+
+    def getTNs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__actual_negative_values
+                  ).intersection(self.__predicted_negative_values)
+
+    def getFPs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__predicted_positive_values
+                  ).intersection(self.__actual_negative_values)
+
+    def getFNs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__predicted_negative_values
+                  ).intersection(self.__actual_positive_values)
 
     ###################
     # Interpretations
@@ -251,3 +267,16 @@ class ConfusionMatrix:
             return float('nan')
 
         return numerator / denominator
+
+    ###################
+    # python underscore methods
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return f"""ConfM[TP={self.TP}, TN={self.TN}, FP={self.FP}, FN={self.FN}]
+  ├─ Precision: {self.precision()}
+  ├─ Recall:    {self.recall()}
+  ├─ Accuracy:  {self.accuracy()}
+  └─ F1_Score:  {self.f1_score()}
+"""
