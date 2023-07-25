@@ -246,6 +246,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
 class TestCaseStudyExtenders(unittest.TestCase):
 
+    @run_in_test_environment()
     def test_extend_with_revs_per_year(self) -> None:
         initialize_projects()
         random.seed(42)
@@ -260,12 +261,12 @@ class TestCaseStudyExtenders(unittest.TestCase):
         self.assertEqual(cs.num_stages, 17)
         self.assertEqual(len(cs.revisions), 31)
         self.assertEqual(
-            cs.get_stage_by_name('2022').revisions[0],
-            FullCommitHash("8fd225a2c149f30aeac377e68eb5abf6b28300ad")
+            FullCommitHash("f82294c8318a7a0990583d51ac5c7de682ad36ef"),
+            cs.get_stage_by_name("2022").revisions[0],
         )
         self.assertEqual(
-            cs.revisions[-1],
-            FullCommitHash("ec490da5228263b25bf786bb23d1008468f55b30")
+            FullCommitHash("320601b2c7b08fc7da9da18d5bf7c3c1a189b080"),
+            cs.revisions[-1]
         )
 
     @run_in_test_environment(
