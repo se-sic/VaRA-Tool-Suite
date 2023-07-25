@@ -599,6 +599,12 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                         )
                         if feature_node is not None:
                             feature_node.vara_instrs.append(vara_instr)
+                else:
+                    files = list(self.filename_function_mapping)
+                    print(
+                        "WARNING Ignoring VaRA instructions!:",
+                        f"'{source_file}' not in {files}"
+                    )
 
     def _import_functions(
         self, json_file: Path,
