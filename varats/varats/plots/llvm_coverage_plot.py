@@ -142,7 +142,7 @@ def _compute_confusion_matrix(
     feature_report: CoverageReport,
     feature_name_map: tp.Dict[str, str],
     threshold: float = 1.0
-) -> ConfusionMatrix:
+) -> ConfusionMatrix[ConfusionEntry]:
     coverage_feature_regions: tp.List[tp.Any] = []
     coverage_normal_regions: tp.List[tp.Any] = []
     vara_feature_regions: tp.List[tp.Any] = []
@@ -194,7 +194,7 @@ class CoverageReports:
         self,
         feature_name_map: tp.Dict[str, str],
         threshold: float = 1.0
-    ) -> tp.Dict[str, ConfusionMatrix]:
+    ) -> tp.Dict[str, ConfusionMatrix[ConfusionEntry]]:
         """Returns the confusion matrices."""
 
         report = self.feature_report()
