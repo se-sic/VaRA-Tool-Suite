@@ -30,7 +30,8 @@ from varats.data.reports.llvm_coverage_report import (
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 
-CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
+CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main",
+                                     ["test.txt"])
 
 
 class TestCodeRegion(unittest.TestCase):
@@ -42,26 +43,31 @@ class TestCodeRegion(unittest.TestCase):
             RegionEnd(line=17, column=2),
             count=4,
             kind=CodeRegionKind.CODE,
-            function="main"
+            function="main",
+            filename="test.txt"
         )
         self.CODE_REGION_2 = CodeRegion(
             RegionStart(line=9, column=80),
             RegionEnd(line=17, column=1),
             count=0,
             kind=CodeRegionKind.CODE,
-            function="main"
+            function="main",
+            filename="test.txt"
         )
         self.CODE_REGION_1.insert(self.CODE_REGION_2)
 
-        self.root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main")
-        self.left = CodeRegion.from_list([0, 1, 49, 100, 5, 0, 0, 0], "main")
-        self.right = CodeRegion.from_list([50, 0, 100, 99, 5, 0, 0, 0], "main")
+        self.root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main",
+                                         ["test.txt"])
+        self.left = CodeRegion.from_list([0, 1, 49, 100, 5, 0, 0, 0], "main",
+                                         ["test.txt"])
+        self.right = CodeRegion.from_list([50, 0, 100, 99, 5, 0, 0, 0], "main",
+                                          ["test.txt"])
         self.left_left = CodeRegion.from_list([30, 0, 40, 100, 3, 0, 0, 0],
-                                              "main")
+                                              "main", ["test.txt"])
         self.left_left_2 = CodeRegion.from_list([10, 0, 20, 100, 3, 0, 0, 0],
-                                                "main")
+                                                "main", ["test.txt"])
         self.right_right = CodeRegion.from_list([60, 0, 80, 100, 2, 0, 0, 0],
-                                                "main")
+                                                "main", ["test.txt"])
 
         self.root.insert(self.right)
         self.root.insert(self.left_left)
@@ -116,7 +122,7 @@ class TestCodeRegion(unittest.TestCase):
         self.CODE_REGION_1.start.line = 10
         self.CODE_REGION_2.end.column = 2
         self.assertFalse(self.CODE_REGION_1.is_subregion(self.CODE_REGION_2))
-        self.assertFalse(self.CODE_REGION_2.is_subregion(self.CODE_REGION_1))
+        self.assertTrue(self.CODE_REGION_2.is_subregion(self.CODE_REGION_1))
 
     def test_is_covered(self):
         self.assertTrue(self.CODE_REGION_1.is_covered())

@@ -12,7 +12,7 @@ from varats.base.configuration import (
     Configuration,
     PlainCommandlineConfiguration,
 )
-from varats.data.metrics import ConfusionMatrix as _ConfusionMatrix
+from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CoverageReport,
@@ -208,6 +208,18 @@ class CoverageReports:
         result["__all__"] = _compute_confusion_matrix(
             None, report, feature_name_map, threshold
         )
+
+        # Sanity checking all matrices have equal number of code regions
+        numbers = set()
+        for matrix in result.values():
+            total = 0
+            total += matrix.TP
+            total += matrix.TN
+            total += matrix.FP
+            total += matrix.FN
+            numbers.add(total)
+        assert len(numbers) == 1
+
         print(result)
         return result
 
@@ -222,43 +234,6 @@ class ConfusionEntry:
     start_column: int
     end_line: int
     end_column: int
-
-
-class ConfusionMatrix(_ConfusionMatrix):
-    """Replace when VaRA's confusion matrix supports this."""
-
-    def get_tp(self) -> tp.Set[tp.Any]:
-        return set(self.__actual_positive_values
-                  ).intersection(self.__predicted_positive_values)
-
-    def get_tn(self) -> tp.Set[tp.Any]:
-        return set(self.__actual_negative_values
-                  ).intersection(self.__predicted_negative_values)
-
-    def get_fp(self) -> tp.Set[tp.Any]:
-        return set(self.__predicted_positive_values).difference(self.get_tp())
-
-    def get_fn(self) -> tp.Set[tp.Any]:
-        return set(self.__predicted_negative_values).difference(self.get_tn())
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-    def __str__(self) -> str:
-        return f"""True Positives: {self.TP}
-{chr(10).join(str(x) for x in self.get_tp())}
-True Negatives: {self.TN}
-{chr(10).join(str(x) for x in self.get_tn())}
-False Positives: {self.FP}
-{chr(10).join(str(x) for x in self.get_fp())}
-False Negatives: {self.FN}
-{chr(10).join(str(x) for x in self.get_fn())}
-
-Accuracy: {self.accuracy()}
-Precision: {self.precision()}
-Recall: {self.recall()}
-Specifity: {self.specificity()}
-"""
 
 
 BinaryReportsMapping = tp.NewType(
@@ -400,8 +375,17 @@ def _plot_confusion_matrix(reports: CoverageReports, outdir: Path) -> None:
 
     for feature in matrix_dict:
         outfile = outdir / f"{feature}.matrix"
+        matrix = matrix_dict[feature]
         with outfile.open("w") as output:
-            output.write(str(matrix_dict[feature]))
+            output.write(f"{matrix}\n")
+            tps = [str(x) for x in matrix.getTPs()]
+            output.write(f"True Positives:\n{chr(10).join(tps)}\n")
+            tns = [str(x) for x in matrix.getTNs()]
+            output.write(f"True Negatives:\n{chr(10).join(tns)}\n")
+            fps = [str(x) for x in matrix.getFPs()]
+            output.write(f"False Positives:\n{chr(10).join(fps)}\n")
+            fns = [str(x) for x in matrix.getFNs()]
+            output.write(f"False Negatives:\n{chr(10).join(fns)}\n")
 
 
 class CoveragePlotGenerator(

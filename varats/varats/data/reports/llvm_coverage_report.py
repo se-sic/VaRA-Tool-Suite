@@ -26,6 +26,7 @@ from pyeda.inter import (  # type: ignore
 from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
 
+TAB_SIZE = 8
 CUTOFF_LENGTH = 80
 
 
@@ -81,6 +82,8 @@ class PresenceCondition:
 def simplify(conditions: tp.List[PresenceCondition]) -> Expression:
     """Build the DNF of all conditions and simplify it."""
     dnf = expr(False)
+    if not conditions:
+        return dnf
     for condition in conditions:
         expression = expr(True)
         for option in condition.configuration.options():
@@ -90,8 +93,8 @@ def simplify(conditions: tp.List[PresenceCondition]) -> Expression:
             else:
                 expression = expression & ~expr_var
         dnf = dnf | expression
-    if dnf.equivalent(expr(False)):
-        return dnf
+    if dnf.equivalent(expr(True)):
+        return expr(True)
     return espresso_exprs(dnf.to_dnf())[0]
 
 
@@ -159,6 +162,8 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     count: int
     kind: CodeRegionKind
     function: str
+    filename: str
+    expanded_from: tp.Optional[CodeRegion] = None
     parent: tp.Optional[CodeRegion] = None
     childs: tp.List[CodeRegion] = field(default_factory=list)
     presence_conditions: PresenceConditions = field(
@@ -167,18 +172,20 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     vara_instrs: tp.List[VaraInstr] = field(default_factory=list)
 
     @classmethod
-    def from_list(cls, region: tp.List[int], function: str) -> CodeRegion:
+    def from_list(
+        cls, region: tp.List[int], function: str, filenames: tp.List[str]
+    ) -> CodeRegion:
         """Instantiates a CodeRegion from a list."""
-        if len(region) > 5:
-            assert region[5:7] == [
-                0, 0
-            ]  # Not quite sure yet what the zeros stand for.
+
+        # expansion_id = region[6]
+
         return cls(
             start=RegionStart(line=region[0], column=region[1]),
             end=RegionEnd(line=region[2], column=region[3]),
             count=region[4],
             kind=CodeRegionKind(region[7]),
             function=function,
+            filename=filenames[region[5]]
         )
 
     def iter_breadth_first(self) -> tp.Iterator[CodeRegion]:
@@ -258,7 +265,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         if self.end.line > other.end.line:
             end_ok = True
         elif self.end.line == other.end.line:
-            end_ok = self.end.column > other.end.column
+            end_ok = self.end.column >= other.end.column
 
         return start_ok and end_ok
 
@@ -410,6 +417,12 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
 class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
     """Mapping from function names to CodeRegion objects."""
 
+    def sorted(self) -> FunctionCodeRegionMapping:
+        return FunctionCodeRegionMapping(
+            # Fix function order. Otherwise static functions come last.
+            sorted(self.items(), key=lambda item: item[1])
+        )
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FunctionCodeRegionMapping):
             return False
@@ -423,6 +436,12 @@ class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
 
 class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
     """Mapping from filenames to FunctionCodeRegions."""
+
+    def sorted(self) -> FilenameFunctionMapping:
+        return FilenameFunctionMapping(
+            FunctionCodeRegionMapping,
+            sorted((key, value.sorted()) for key, value in self.items())
+        )
 
 
 class FeatureKind(Enum):
@@ -603,56 +622,62 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         functions: tp.List[tp.Any] = data["functions"]
         totals: tp.Dict[str, tp.Any] = data["totals"]
 
+        # Print all filenames in functions
+        #for function in functions:
+        #    print(function["name"], function["filenames"][0])
+
         for function in functions:
             name: str = function["name"]
             # count: int = function["count"]
             # branches: list = function["branches"]
             filenames: tp.List[str] = function["filenames"]
-            assert len(filenames) == 1
-            filename: str = str(Path(filenames[0]).relative_to(absolute_path))
+            relative_filenames = []
+            for filename in filenames:
+                relative_filenames.append(
+                    str(Path(filename).relative_to(absolute_path))
+                )
+
             regions: tp.List[tp.List[int]] = function["regions"]
 
-            filename_function_mapping[filename] = FunctionCodeRegionMapping(
-                # Fix function order. Otherwise static functions come last.
-                sorted(
-                    self._import_code_regions(
-                        name, regions, filename_function_mapping[filename]
-                    ).items(),
-                    key=lambda item: item[1]
-                )
+            filename_function_mapping = self._import_code_regions(
+                name, relative_filenames, regions, filename_function_mapping
             )
-        filename_function_mapping = FilenameFunctionMapping(
-            FunctionCodeRegionMapping,
-            sorted(filename_function_mapping.items())
-        )
 
         # sanity checking
         self.__region_import_sanity_check(totals, filename_function_mapping)
 
-        return filename_function_mapping
+        return filename_function_mapping.sorted()
 
     def _import_code_regions(
-        self,
-        function: str,
+        self, function: str, filenames: tp.List[str],
         regions: tp.List[tp.List[int]],
-        function_region_mapping: FunctionCodeRegionMapping,
-    ) -> FunctionCodeRegionMapping:
-        code_region: CodeRegion = CodeRegion.from_list(regions[0], function)
-        for region in regions[1:]:
-            to_insert = CodeRegion.from_list(region, function)
-            code_region.insert(to_insert)
+        filename_function_mapping: FilenameFunctionMapping
+    ) -> FilenameFunctionMapping:
 
-        function_region_mapping[function] = code_region
-        return function_region_mapping
+        # Ignore location in function_name
+        function = function.split(":", 1)[-1]
+
+        root_region = CodeRegion.from_list(regions[0], function, filenames)
+        filename_function_mapping[root_region.filename][root_region.function
+                                                       ] = root_region
+        for region in regions[1:]:
+            if region[5] != 0:
+                # Region was expanded.
+                # Skip it since it resides not in our function.
+                continue
+            code_region = CodeRegion.from_list(region, function, filenames)
+            filename_function_mapping[code_region.filename][
+                code_region.function].insert(code_region)
+        return filename_function_mapping
 
     def __region_import_sanity_check(
         self, totals: tp.Dict[str, tp.Any],
         filename_function_mapping: FilenameFunctionMapping
     ) -> None:
         total_functions_count: int = totals["functions"]["count"]
-        total_regions_count: int = totals["regions"]["count"]
-        total_regions_covered: int = totals["regions"]["covered"]
-        total_regions_notcovered: int = totals["regions"]["notcovered"]
+        #total_regions_count: int = totals["regions"]["count"]
+        #total_regions_covered: int = totals["regions"]["covered"]
+        #total_regions_notcovered: int = totals["regions"]["notcovered"]
 
         counted_functions = 0
         counted_code_regions = 0
@@ -673,10 +698,10 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                             notcovered_regions += 1
 
         assert counted_functions == total_functions_count
-        assert counted_code_regions == total_regions_count
+        #assert counted_code_regions == total_regions_count
         assert counted_code_regions != 0
-        assert covered_regions == total_regions_covered
-        assert notcovered_regions == total_regions_notcovered
+        #assert covered_regions == total_regions_covered
+        #assert notcovered_regions == total_regions_notcovered
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CoverageReport):
@@ -842,7 +867,9 @@ def __table_to_text(
         if show_counts:
             line.append(f"|{entry.count:>7}")
 
-        text = entry.text.replace("\n", "", 1)
+        # Set tabs to size
+        text = entry.text.replace("\t", " " * TAB_SIZE)
+        text = text.replace("\n", "", 1)
         if not any([show_coverage_features, show_vara_features]):
             line.append(f"|{text}")
         else:

@@ -34,7 +34,8 @@ from varats.varats.plots.llvm_coverage_plot import (
     vara_found_features as _vara_found_features,
 )
 
-CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main")
+CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main",
+                                     ["test.txt"])
 
 
 def _confusion_matrix(
@@ -101,7 +102,7 @@ def setup_reports(config_name: str) -> CoverageReports:
     return CoverageReports(reports)
 
 
-class TestCodeRegion(unittest.TestCase):
+class TestCoveragePlot(unittest.TestCase):
 
     def test_coverage_found_features(self):
         region = create_autospec(CodeRegion)
@@ -123,7 +124,7 @@ class TestCodeRegion(unittest.TestCase):
             }
         )
 
-        region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test")
+        region = CodeRegion(1, 1, 1, CodeRegionKind.CODE, "test", "test.txt")
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -175,7 +176,8 @@ class TestCodeRegion(unittest.TestCase):
             )
 
         region = CodeRegion(
-            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test"
+            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
+            "test.txt"
         )
         region.coverage_features_set = lambda: {"A", "B"}
 
@@ -214,7 +216,8 @@ class TestCodeRegion(unittest.TestCase):
             )
 
         region = CodeRegion(
-            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test"
+            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
+            "test.txt"
         )
         region.coverage_features_set = lambda: {"a", "b"}
 

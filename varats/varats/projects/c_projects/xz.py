@@ -106,6 +106,17 @@ class Xz(VProject):
                 creates=["geo-maps/countries-land-250m.geo.json.xz"]
             )
         ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            Command(
+                SourceRoot("xz") / RSBinary("xz"),
+                "--threads=1",
+                "--format=xz",
+                "--compress",
+                "geo-maps/countries-land-250m.geo.json",
+                label="countries-land-250m",
+                creates=["geo-maps/countries-land-250m.geo.json.xz"]
+            )
+        ],
     }
 
     @staticmethod
