@@ -305,6 +305,14 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
                 region.parent = node
                 break
 
+    def merge(self, region: CodeRegion) -> None:
+        """Merges region into self by adding all counts of region to the counts
+        of self."""
+        for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
+            if x != y:
+                raise AssertionError("CodeRegions are not identical")
+            x.count += y.count
+
     def combine_features(self, region: CodeRegion) -> None:
         """Combines features of region with features of self."""
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
@@ -656,18 +664,21 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         # Ignore location in function_name
         function = function.split(":", 1)[-1]
+        filename = filenames[0]
 
         root_region = CodeRegion.from_list(regions[0], function, filenames)
-        filename_function_mapping[root_region.filename][root_region.function
-                                                       ] = root_region
         for region in regions[1:]:
             if region[5] != 0:
                 # Region was expanded.
                 # Skip it since it resides not in our function.
                 continue
             code_region = CodeRegion.from_list(region, function, filenames)
-            filename_function_mapping[code_region.filename][
-                code_region.function].insert(code_region)
+            root_region.insert(code_region)
+        if function in filename_function_mapping[filename]:
+            # Already exists. Merge instead
+            filename_function_mapping[filename][function].merge(root_region)
+        else:
+            filename_function_mapping[filename][function] = root_region
         return filename_function_mapping
 
     def __region_import_sanity_check(
