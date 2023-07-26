@@ -27,6 +27,7 @@ from varats.revision.revisions import (
 from varats.utils.git_util import (
     create_commit_lookup_helper,
     UNCOMMITTED_COMMIT_HASH,
+    CommitRepoPair,
 )
 
 
@@ -80,13 +81,15 @@ class AuthorInteractionsDatabase(
             repo_name = get_primary_project_source(project_name).local
             commit_lookup_helper = create_commit_lookup_helper(project_name)
             for base_pair in base_inter_c_repo_pair_mapping:
-                if base_pair.commit.repository_name != repo_name:
+                if not base_pair.commit.repository_name.startswith(repo_name):
                     # Skip interactions with submodules
                     continue
                 inter_pair_dict = base_inter_c_repo_pair_mapping[base_pair]
                 if base_pair.commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
                     continue
-                base_commit = commit_lookup_helper(base_pair.commit)
+                base_commit = commit_lookup_helper(
+                    CommitRepoPair(base_pair.commit.commit_hash, repo_name)
+                )
                 base_author = amap.get_author(
                     base_commit.author.name, base_commit.author.email
                 )
@@ -100,9 +103,15 @@ class AuthorInteractionsDatabase(
                 internal_interactions = 0
                 external_interactions = 0
                 for inter_pair, interactions in inter_pair_dict.items():
-                    if inter_pair.commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
+                    if inter_pair.commit.commit_hash == UNCOMMITTED_COMMIT_HASH or not inter_pair.commit.repository_name.startswith(
+                        repo_name
+                    ):
                         continue
-                    inter_commit = commit_lookup_helper(inter_pair.commit)
+                    inter_commit = commit_lookup_helper(
+                        CommitRepoPair(
+                            inter_pair.commit.commit_hash, repo_name
+                        )
+                    )
                     inter_author = amap.get_author(
                         inter_commit.author.name, inter_commit.author.email
                     )
