@@ -1162,7 +1162,7 @@ class RepositoryAtCommit:
         )
 
 
-def calc_surviving_lines(project_name: str, revision: CommitHash) -> \
+def calc_surviving_lines(project_name: str, revision: tp.Optional[FullCommitHash] = None) -> \
 tp.Dict[FullCommitHash, int]:
     """
     Get the surviving lines of older commits at a given revision.
@@ -1177,16 +1177,18 @@ tp.Dict[FullCommitHash, int]:
     file_pattern = re.compile(
         "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
     )
-    revision = revision.to_short_commit_hash()
+    if revision is not None:
+        hash = revision.hash
+    else:
+        hash = "HEAD"
     lines_per_revision: tp.Dict[FullCommitHash, int] = {}
     repo = pygit2.Repository(get_local_project_git_path(project_name))
 
     initial_head: pygit2.Reference = repo.head
     repo_folder = get_local_project_git_path(project_name)
-    git(__get_git_path_arg(repo_folder), "checkout", "-f", revision.hash)
+    git(__get_git_path_arg(repo_folder), "checkout", "-f", hash)
     files = git(
-        __get_git_path_arg(repo_folder), "ls-tree", "-r", "--name-only",
-        revision.hash
+        __get_git_path_arg(repo_folder), "ls-tree", "-r", "--name-only", hash
     ).splitlines()
 
     for file in files:
