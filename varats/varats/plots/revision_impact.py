@@ -119,7 +119,6 @@ def calc_missing_revisions_impact(
                 new_revs.add(new_rev)
             print()
         last_row = row
-    print(new_revs)
     return new_revs
 
 
@@ -156,16 +155,19 @@ class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
         data["project"] = data["project"].apply(lambda x: f"\\textsc{{{x}}}")
 
         plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
-        grid = multivariate_grid(
-            data,
-            "impacted_commits",
-            "line_change",
-            "project",
-        )
-        grid.set_axis_labels("Impact", "Changed Lines", fontsize=10)
-        plt.gcf().set_size_inches(10, 5)
-        ymax = data["line_change"].max()
-        plt.ylim(-0.001, ymax + 0.01)
+        with sns.color_palette("husl", 12):
+            grid = multivariate_grid(
+                data,
+                "impacted_commits",
+                "line_change",
+                "project",
+            )
+            grid.set_axis_labels(
+                "Impact", "RelativeChurn", fontsize=self.plot_config.font_size
+            )
+            plt.gcf().set_size_inches(10, 5)
+            ymax = data["line_change"].max()
+            plt.ylim(-0.001, ymax + 0.01)
 
 
 class RevisionImpactGenerator(
@@ -173,7 +175,13 @@ class RevisionImpactGenerator(
     generator_name="revision-impact",
     options=[
         REQUIRE_MULTI_CASE_STUDY,
-        make_cli_option("--individual", type=bool, default=False, is_flag=True)
+        make_cli_option(
+            "--individual",
+            help="Generate additional plots for each case study.",
+            type=bool,
+            default=False,
+            is_flag=True
+        )
     ]
 ):
     """Generates a plot that shows the impact of each revision of a list of
