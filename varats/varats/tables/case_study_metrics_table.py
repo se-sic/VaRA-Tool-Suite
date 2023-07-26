@@ -4,20 +4,35 @@ import typing as tp
 
 import pandas as pd
 
+from varats.data.databases.file_status_database import FileStatusDatabase
+from varats.mapping.author_map import generate_author_map
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
 )
+from varats.report.report import FileStatusExtension
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.artefact_util import (
+    ReportTypeConverter,
+    ExperimentTypeConverter,
+)
+from varats.ts_utils.cli_util import convert_value, make_cli_option
+from varats.ts_utils.click_param_types import (
+    create_report_type_choice,
+    create_experiment_type_choice,
+    REQUIRE_EXPERIMENT_TYPE,
+)
 from varats.utils.git_util import (
     calc_project_loc,
     num_project_commits,
     num_project_authors,
     calc_repo_loc,
+    num_commits,
+    num_authors,
 )
 
 LOG = logging.Logger(__name__)
@@ -64,7 +79,20 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
             }
             if revision:
                 cs_dict[project_name]["Revision"] = revision.short_hash
-
+            if self.table_kwargs["experiment_type"]:
+                cmap = get_commit_map(project_name)
+                file_data = FileStatusDatabase.get_data_for_project(
+                    project_name, ["revision", "file_status"],
+                    cmap,
+                    case_study,
+                    experiment_type=self.table_kwargs["experiment_type"],
+                    tag_blocked=False
+                )
+                cs_dict[project_name]["Analysed Revisions"] = len(
+                    file_data[file_data["file_status"] ==
+                              FileStatusExtension.SUCCESS.get_status_extension()
+                             ]
+                )
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
         df = pd.concat(cs_data).sort_index()
@@ -79,7 +107,17 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
 
 
 class CaseStudyMetricsTableGenerator(
-    TableGenerator, generator_name="cs-metrics-table", options=[]
+    TableGenerator,
+    generator_name="cs-metrics-table",
+    options=[
+        convert_value("experiment_type", ExperimentTypeConverter)(
+            make_cli_option(
+                "--experiment-type",
+                type=create_experiment_type_choice(),
+                help="The experiment type to use."
+            )
+        )
+    ]
 ):
     """Generates a cs-metrics table for the selected case study(ies)."""
 
