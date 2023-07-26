@@ -26,6 +26,7 @@ from varats.experiment.experiment_util import (
     get_current_config_id,
     wrap_unlimit_stack_size,
     ZippedExperimentSteps,
+    OutputFolderStep,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
@@ -52,7 +53,7 @@ BC_FILE_EXTENSIONS = [
 TIMEOUT = "1h"
 
 
-class GenerateCoverage(actions.ProjectStep):  # type: ignore
+class GenerateCoverage(OutputFolderStep):  # type: ignore
     """GenerateCoverage experiment."""
 
     NAME = "GenerateCoverage"
@@ -75,7 +76,7 @@ class GenerateCoverage(actions.ProjectStep):  # type: ignore
         self.__workload_cmds = workload_cmds
         self.__experiment_handle = _experiment_handle
 
-    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+    def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:

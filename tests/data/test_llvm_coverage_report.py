@@ -286,7 +286,7 @@ class TestCodeRegion(unittest.TestCase):
         report = CoverageReport.from_report(
             Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
             "GenCov-CovR-FeaturePerfCSCollection-SimpleFeatureInteraction-4300ea495e"
-            / "ecf322be-565c-4ff0-8ed7-ad8e008049c8_config-0_success.zip", None
+            / "ee663144-d5ed-469f-8caf-b211c61e9d41_config-0_success.zip", None
         )
 
         for func, code_region in report.filename_function_mapping[

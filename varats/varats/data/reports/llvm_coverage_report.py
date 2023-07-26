@@ -537,6 +537,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         self.filename_function_mapping = FilenameFunctionMapping(
             FunctionCodeRegionMapping
         )
+        self.absolute_path = ""
 
         self.configuration = configuration
 
@@ -591,6 +592,14 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     kind, Path(source_file), line, column, features,
                     instr_index, instr
                 )
+                # Convert absolute paths to relative paths when possible
+                try:
+                    relative_path = Path(source_file).relative_to(
+                        self.absolute_path
+                    )
+                    source_file = str(relative_path)
+                except ValueError:
+                    pass
                 if source_file in self.filename_function_mapping:
                     for _, code_region_tree in self.filename_function_mapping[
                         source_file].items():
@@ -631,6 +640,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             ) from err
 
         absolute_path = coverage_json["absolute_path"]
+        self.absolute_path = absolute_path
         data: tp.Dict[str, tp.Any] = coverage_json["data"][0]
         # files: tp.List = data["files"]
         functions: tp.List[tp.Any] = data["functions"]
