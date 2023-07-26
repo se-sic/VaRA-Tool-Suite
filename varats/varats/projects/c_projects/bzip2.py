@@ -106,7 +106,6 @@ class Bzip2(VProject):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Bzip2.NAME))
-
         binary_map.specify_binary(
             'build/bzip2',
             BinaryType.EXECUTABLE,

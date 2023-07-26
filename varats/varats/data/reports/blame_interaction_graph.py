@@ -29,6 +29,7 @@ from varats.utils.git_util import (
     ChurnConfig,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
+    CommitHash,
     get_submodule_head,
 )
 
@@ -82,6 +83,17 @@ class CAIGNodeAttrs(TypedDict):
 
 class CAIGEdgeAttrs(TypedDict):
     """Commit-author interaction graph edge attributes."""
+    amount: int
+
+
+class FIGNodeAttrs(TypedDict):
+    """Funition interaction graph node attributes."""
+    function: tp.Optional[str]
+    num_commits: int
+
+
+class FIGEdgeAttrs(TypedDict):
+    """Function interaction graph edge attributes."""
     amount: int
 
 
@@ -298,6 +310,64 @@ class InteractionGraph(abc.ABC):
                     caig[sink][commit_author_mapping[source]
                               ]["amount"] += data["amount"]
         return caig
+
+    def function_interaction_graph(self):
+        """
+        Return a digraph with functions as nodes and interactions as edges.
+
+        Nodes can be referenced via their function name.
+        The graph has the following attributes:
+        Nodes:
+          - function: name of the function
+          - num_commits: number of commits aggregated in this node
+        Edges:
+          - amount: how often an interaction between two functions was found
+
+        Returns:
+            the author interaction graph
+        """
+        interaction_graph = self._interaction_graph()
+
+        def partition(node_u: BIGNodeTy, node_v: BIGNodeTy):
+            return node_u.function_name == node_v.function_name
+
+        def edge_data(
+            partition_a: tp.Set[BIGNodeTy], partition_b: tp.Set[BIGNodeTy]
+        ) -> FIGEdgeAttrs:
+            amount = 0
+            interactions: tp.List[tp.Tuple[CommitRepoPair, CommitRepoPair]] = []
+            for source in partition_a:
+                for sink in partition_b:
+                    if interaction_graph.has_edge(source, sink):
+                        amount += int(interaction_graph[source][sink]["amount"])
+                        interactions.append((source.commit, sink.commit))
+
+            return {"amount": amount}
+
+        def node_data(nodes: tp.Set[BIGNodeTy]) -> FIGNodeAttrs:
+            functions = {
+                node.function_name if node.function_name else "Unknown"
+                for node in nodes
+            }
+            assert len(functions) == 1, "Some node has more then one function."
+            return {
+                "function": next(iter(functions)),
+                "num_commits": len(nodes)
+            }
+
+        fig = nx.quotient_graph(
+            interaction_graph,
+            partition=partition,
+            edge_data=edge_data,
+            node_data=node_data,
+            create_using=nx.DiGraph
+        )
+        relabel_dict: tp.Dict[tp.FrozenSet[BIGNodeTy], str] = {}
+        for node in fig.nodes:
+            relabel_dict[node] = tp.cast(AIGNodeAttrs,
+                                         fig.nodes[node])["function"]
+        nx.relabel_nodes(fig, relabel_dict, copy=False)
+        return fig
 
 
 class BlameInteractionGraph(InteractionGraph):
