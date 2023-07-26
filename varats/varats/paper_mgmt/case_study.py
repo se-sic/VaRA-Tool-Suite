@@ -514,7 +514,9 @@ def extend_with_revs_per_year(
         )
 
     new_rev_items = []  # new revisions that get added to case_study
-    for year, commits_in_year in commits.items():
+    for year, commits_in_year in sorted(
+        commits.items(), key=lambda entry: entry[0]
+    ):
         samples = min(len(commits_in_year), revs_per_year)
         sample_commit_indices = sorted(
             random.sample(range(len(commits_in_year)), samples)

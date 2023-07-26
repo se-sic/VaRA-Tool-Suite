@@ -134,7 +134,10 @@ def min_max_normalize(values: pd.Series) -> pd.Series:
     return tp.cast(pd.Series, (values - min_value) / (max_value - min_value))
 
 
-class ClassificationResults:
+T = tp.TypeVar("T")
+
+
+class ConfusionMatrix(tp.Generic[T]):
     """
     Helper class to automatically calculate classification results.
 
@@ -147,10 +150,10 @@ class ClassificationResults:
     """
 
     def __init__(
-        self, actual_positive_values: tp.List[tp.Any],
-        actual_negative_values: tp.List[tp.Any],
-        predicted_positive_values: tp.List[tp.Any],
-        predicted_negative_values: tp.List[tp.Any]
+        self, actual_positive_values: tp.List[T],
+        actual_negative_values: tp.List[T],
+        predicted_positive_values: tp.List[T],
+        predicted_negative_values: tp.List[T]
     ) -> None:
         self.__actual_positive_values = actual_positive_values
         self.__actual_negative_values = actual_negative_values
@@ -158,7 +161,7 @@ class ClassificationResults:
         self.__predicted_negative_values = predicted_negative_values
 
     ###################
-    # Base values
+    # Base metrics
 
     @property
     def P(self) -> int:  # pylint: disable=C0103
@@ -177,21 +180,15 @@ class ClassificationResults:
         return len(self.__predicted_negative_values)
 
     ###################
-    # Combined values
+    # Combined metrics
 
     @property
     def TP(self) -> int:  # pylint: disable=C0103
-        return len(
-            set(self.__actual_positive_values
-               ).intersection(self.__predicted_positive_values)
-        )
+        return len(self.getTPs())
 
     @property
     def TN(self) -> int:  # pylint: disable=C0103
-        return len(
-            set(self.__actual_negative_values
-               ).intersection(self.__predicted_negative_values)
-        )
+        return len(self.getTNs())
 
     @property
     def FP(self) -> int:  # pylint: disable=C0103
@@ -202,45 +199,52 @@ class ClassificationResults:
         return self.PN - self.TN
 
     ###################
+    # Combined values
+
+    def getTPs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__actual_positive_values
+                  ).intersection(self.__predicted_positive_values)
+
+    def getTNs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__actual_negative_values
+                  ).intersection(self.__predicted_negative_values)
+
+    def getFPs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__predicted_positive_values
+                  ).intersection(self.__actual_negative_values)
+
+    def getFNs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__predicted_negative_values
+                  ).intersection(self.__actual_positive_values)
+
+    ###################
     # Interpretations
 
     def precision(self) -> float:
         """Positive predictive value (PPV)"""
         if self.PP == 0:
-            if self.TP == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return self.TP / self.PP
 
     def recall(self) -> float:
         """True positive rate (TPR)"""
         if self.P == 0:
-            if self.TP == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return self.TP / self.P
 
     def specificity(self) -> float:
         """True negative rate (TNR)"""
         if self.N == 0:
-            if self.TN == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return self.TN / self.N
 
     def accuracy(self) -> float:
         """Accuracy (ACC)"""
         if (self.P + self.N) == 0:
-            if (self.TP + self.TN) == 0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return (self.TP + self.TN) / (self.P + self.N)
 
@@ -260,9 +264,19 @@ class ClassificationResults:
         numerator = 2 * self.TP
         denominator = 2 * self.TP + self.FP + self.FN
         if denominator == 0.0:
-            if numerator == 0.0:
-                return 1.0
-
-            return 0.0
+            return float('nan')
 
         return numerator / denominator
+
+    ###################
+    # python underscore methods
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return f"""ConfM[TP={self.TP}, TN={self.TN}, FP={self.FP}, FN={self.FN}]
+  ├─ Precision: {self.precision()}
+  ├─ Recall:    {self.recall()}
+  ├─ Accuracy:  {self.accuracy()}
+  └─ F1_Score:  {self.f1_score()}
+"""

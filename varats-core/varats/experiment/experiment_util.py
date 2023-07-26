@@ -510,7 +510,7 @@ class WrongStepCall(Exception):
     """Throw if the common step method was called."""
 
 
-class OutputFolderStep(ProjectStep):
+class OutputFolderStep(ProjectStep):  # type: ignore
     """Special step class that needs an output folder to write to."""
 
     def __call__(self) -> StepResult:

@@ -13,7 +13,12 @@ class ReCompile(ProjectStep):
 
     def __call__(self) -> StepResult:
         try:
-            self.project.recompile()
+            if hasattr(self.project, "recompile"):
+                self.project.recompile()
+            else:
+                raise NotImplementedError(
+                    f"{self.project} does not implement 'recompile'."
+                )
 
         except ProcessExecutionError:
             self.status = StepResult.ERROR

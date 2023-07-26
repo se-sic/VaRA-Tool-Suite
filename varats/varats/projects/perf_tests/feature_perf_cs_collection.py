@@ -171,7 +171,7 @@ class SynthSAFieldSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFieldSensitivity",
-            refspec="origin/master",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFieldSensitivity")
@@ -199,9 +199,7 @@ class SynthSAFieldSensitivity(VProject):
         binary_map.specify_binary(
             "build/bin/FieldSense",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange("162db88346", "master")
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
@@ -231,7 +229,7 @@ class SynthSAFlowSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAFlowSensitivity",
-            refspec="origin/master",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthSAFlowSensitivity")
@@ -259,9 +257,7 @@ class SynthSAFlowSensitivity(VProject):
         binary_map.specify_binary(
             "build/bin/FlowSense",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange("162db88346", "master")
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
@@ -291,7 +287,7 @@ class SynthSAContextSensitivity(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthSAContextSensitivity",
-            refspec="origin/master",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
@@ -322,9 +318,7 @@ class SynthSAContextSensitivity(VProject):
         binary_map.specify_binary(
             "build/bin/ContextSense",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange("162db88346", "master")
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
@@ -382,9 +376,7 @@ class SynthSAWholeProgram(VProject):
         binary_map.specify_binary(
             "build/bin/WholeProgram",
             BinaryType.EXECUTABLE,
-            # TODO: fix with commit after merge
-            # only_valid_in=RevisionRange("162db88346", "master")
-            only_valid_in=RevisionRange("162db88346", "master")
+            only_valid_in=RevisionRange("0a9216d769", "master")
         )
 
         return binary_map[revision]
