@@ -2,8 +2,6 @@
 import math
 import typing as tp
 
-import click
-from distinctipy import distinctipy
 from matplotlib import pyplot as plt
 from matplotlib import style
 from pandas import DataFrame
@@ -22,6 +20,7 @@ from varats.project.project_util import (
     get_primary_project_source,
     get_local_project_git_path,
 )
+from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     FullCommitHash,
@@ -169,7 +168,7 @@ class ContributionPlot(Plot, plot_name=None):
     def plot(self, view: bool) -> None:
         """Plots the contribution plot."""
         style.use(self.plot_config.get_dict())
-        _, axis = plt.subplots(1, 1)
+        _, axis = plt.subplots(len(self.data_column), 1, sharex="col")
         case_study = self.plot_kwargs['case_study']
         data = self.data_function(case_study, self.plot_kwargs["threshold"])
         data.sort_index(
@@ -180,10 +179,17 @@ class ContributionPlot(Plot, plot_name=None):
         )
         data.fillna(0, inplace=True)
         plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
-        data.T.plot.area(ax=axis, ylabel=self.data_column, stacked=True)
-        axis.set_ylabel(self.data_column.capitalize())
+        if len(self.data_column) > 1:
+            for i, column in enumerate(self.data_column):
+                plotdata = data.xs(column, level=1)
+                plotdata.T.plot.area(
+                    ax=axis[i], ylabel=column, stacked=True, xticks=[]
+                )
+                axis[i].set_ylabel(column.capitalize())
+                axis[i].get_legend().remove()
+        else:
+            data.T.plot.area(ax=axis, stacked=True)
         plt.xlabel("Revision")
-        plt.xticks([], [])
         plt.legend(fontsize=8, loc=2, bbox_to_anchor=(1, 2))
 
 
@@ -230,12 +236,11 @@ class AuthorContributionPlotGenerator(
     generator_name="author-contribution",
     options=[
         REQUIRE_MULTI_CASE_STUDY,
-        click.Option(
-            "threshold",
-            type=int,
-            help=
-            "Cut of threshold to group authors with smaller maximum contribution into others",
-            default=10
+        make_cli_option(
+            "--threshold",
+            default=10,
+            help="Threshold of contribution to group authors with less",
+            type=int
         )
     ]
 ):
