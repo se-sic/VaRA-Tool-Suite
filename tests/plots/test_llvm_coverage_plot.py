@@ -117,10 +117,10 @@ class TestCoveragePlot(unittest.TestCase):
     def test_vara_found_features(self):
         vara_found_features = lambda feature, region, threshold: _vara_found_features(
             feature, region, threshold, {
-                "a": "A",
-                "b": "B",
-                "c": "C",
-                "": ""
+                "a": {"A"},
+                "b": {"B"},
+                "c": {"C"},
+                "": {""}
             }
         )
 
@@ -168,10 +168,10 @@ class TestCoveragePlot(unittest.TestCase):
         ) -> ConfusionMatrix:
             return _confusion_matrix(
                 feature, tree, {
-                    "A": "A",
-                    "B": "B",
-                    "C": "C",
-                    "": ""
+                    "A": {"A"},
+                    "B": {"B"},
+                    "C": {"C"},
+                    "": {""}
                 }, threshold, "test"
             )
 
@@ -210,8 +210,10 @@ class TestCoveragePlot(unittest.TestCase):
         ) -> ConfusionMatrix:
             return _confusion_matrix(
                 None, tree, {
-                    "a": "A",
-                    "b": "B",
+                    "a": {"A"},
+                    "b": {"B"},
+                    "A": {"a"},
+                    "B": {"b"},
                 }, threshold, "test"
             )
 

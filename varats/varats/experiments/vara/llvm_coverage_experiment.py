@@ -69,12 +69,14 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
         project: Project,
         binary: ProjectBinaryWrapper,
         workload_cmds: tp.List[ProjectCommand],
+        feature_model: Path,
         _experiment_handle: ExperimentHandle,
     ):
         super().__init__(project=project)
         self.binary = binary
         self.__workload_cmds = workload_cmds
         self.__experiment_handle = _experiment_handle
+        self.__feature_model = feature_model
 
     def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
@@ -145,6 +147,12 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
                     self.project, self.binary, BC_FILE_EXTENSIONS
                 )
                 copy(bc_path, bc_name)
+
+                # Copy FeatureModel.xml
+                feature_model_name = tmp_dir / create_workload_specific_filename(
+                    "coverage_report", prj_command.command, file_suffix=".xml"
+                )
+                copy(self.__feature_model, feature_model_name)
 
                 opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
                                   "-vara-export-feature-dbg",
@@ -275,7 +283,8 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
                     result_filepath,
                     [
                         GenerateCoverage(
-                            project, binary, workload_cmds, self.get_handle()
+                            project, binary, workload_cmds, feature_model,
+                            self.get_handle()
                         )
                     ],
                 )

@@ -35,6 +35,8 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
+ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, str] = {}
+
 
 def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
     return map(lambda option: option.name, configuration.options())
@@ -78,7 +80,7 @@ def coverage_found_features(
 
 def vara_found_features(
     features: tp.Set[str], code_region: CodeRegion, threshold: float,
-    feature_name_map: tp.Dict[str, str]
+    feature_name_map: tp.Dict[str, tp.Set[str]]
 ) -> bool:
     """Are features found by VaRA?"""
     if not 0 <= threshold <= 1.0:
@@ -86,29 +88,28 @@ def vara_found_features(
     if not features:
         return False
 
-    vara_features = {feature_name_map[feature] for feature in features}
+    vara_features = set()
+    for feature in features:
+        vara_features.update(feature_name_map[feature])
     return 0 < code_region.features_threshold(vara_features) >= threshold
 
 
 def coverage_vara_features_combined(
-    region: CodeRegion, feature_name_map: tp.Dict[str, str], threshold: float
+    region: CodeRegion, feature_name_map: tp.Dict[str, tp.Set[str]],
+    threshold: float
 ) -> tp.Set[str]:
     """Features found by coverage data and VaRA combined."""
-    reverse_features = dict(
-        (item[1], item[0]) for item in feature_name_map.items()
-    )
-    found_vara_features = set(
-        reverse_features[feature]
-        for feature in region.vara_features()
-        if 0 < region.features_threshold([feature]) >= threshold
-    )
+    found_vara_features = set()
+    for feature in region.vara_features():
+        if 0 < region.features_threshold([feature]) >= threshold:
+            found_vara_features.update(feature_name_map[feature])
     return region.coverage_features_set().union(found_vara_features)
 
 
 def _matrix_analyze_code_region(
-    feature: tp.Optional[str], tree: CodeRegion, feature_name_map: tp.Dict[str,
-                                                                           str],
-    threshold: float, file: str, coverage_feature_regions: tp.List[tp.Any],
+    feature: tp.Optional[str], tree: CodeRegion,
+    feature_name_map: tp.Dict[str, tp.Set[str]], threshold: float, file: str,
+    coverage_feature_regions: tp.List[tp.Any],
     coverage_normal_regions: tp.List[tp.Any],
     vara_feature_regions: tp.List[tp.Any], vara_normal_regions: tp.List[tp.Any]
 ) -> None:
@@ -140,7 +141,7 @@ def _matrix_analyze_code_region(
 def _compute_confusion_matrix(
     feature: tp.Optional[str],
     feature_report: CoverageReport,
-    feature_name_map: tp.Dict[str, str],
+    feature_name_map: tp.Dict[str, tp.Set[str]],
     threshold: float = 1.0
 ) -> ConfusionMatrix[ConfusionEntry]:
     coverage_feature_regions: tp.List[tp.Any] = []
@@ -173,6 +174,43 @@ class CoverageReports:
         self._reports = reports
         self.available_features = frozenset(available_features(self._reports))
 
+    def __bidirectional_map(
+        self, mapping: tp.Dict[str, str]
+    ) -> tp.Dict[str, tp.Set[str]]:
+        result = defaultdict(set)
+        for key, value in list(mapping.items()):
+            if ";" in value:
+                for x in value.split(";"):
+                    result[key].add(x.lstrip("-"))
+                    result[x.lstrip("-")].add(key)
+            else:
+                result[key].add(value.lstrip("-"))
+                result[value.lstrip("-")].add(key)
+        print(result)
+        return result
+
+    def feature_option_mapping(
+        self,
+        additional_information: tp.Optional[tp.Dict[str, str]] = None
+    ) -> tp.Dict[str, tp.Set[str]]:
+        """Converts feature model mapping to biderectional mapping."""
+        # Check if all equal
+        tmp = set(
+            map(
+                lambda x: tuple(x.featue_option_mapping.items()), self._reports
+            )
+        )
+        if len(tmp) > 1:
+            raise ValueError(
+                "CoverageReports have used different feature models!"
+            )
+        mapping = {}
+        if additional_information:
+            mapping.update(additional_information)
+        if len(tmp) == 1:
+            mapping.update(self._reports[0].featue_option_mapping)
+        return self.__bidirectional_map(mapping)
+
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
 
@@ -192,7 +230,7 @@ class CoverageReports:
 
     def confusion_matrices(
         self,
-        feature_name_map: tp.Dict[str, str],
+        feature_name_map: tp.Dict[str, tp.Set[str]],
         threshold: float = 1.0
     ) -> tp.Dict[str, ConfusionMatrix[ConfusionEntry]]:
         """Returns the confusion matrices."""
@@ -368,10 +406,11 @@ def _plot_coverage_annotations(
 
 def _plot_confusion_matrix(reports: CoverageReports, outdir: Path) -> None:
 
-    matrix_dict = reports.confusion_matrices({
-        "enc": "Encryption",
-        "compress": "Compression"
-    })
+    feature_option_mapping = reports.feature_option_mapping(
+        ADDITIONAL_FEATURE_OPTION_MAPPING
+    )
+
+    matrix_dict = reports.confusion_matrices(feature_option_mapping)
 
     for feature in matrix_dict:
         outfile = outdir / f"{feature}.matrix"

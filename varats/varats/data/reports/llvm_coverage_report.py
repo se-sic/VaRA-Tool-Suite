@@ -13,7 +13,7 @@ from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from plumbum import colors
+from plumbum import colors, local
 from plumbum.colorlib.styles import Color
 from pyeda.boolalg.expr import Complement, Variable  # type: ignore
 from pyeda.inter import (  # type: ignore
@@ -507,6 +507,12 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         with TemporaryDirectory() as tmpdir:
             shutil.unpack_archive(report_file, tmpdir)
 
+            def xml_filter(y: Path) -> bool:
+                return y.name.endswith(".xml")
+
+            for xml_file in filter(xml_filter, Path(tmpdir).iterdir()):
+                c_r._extract_feature_option_mapping(xml_file)
+
             def json_filter(x: Path) -> bool:
                 return x.name.endswith(".json")
 
@@ -538,6 +544,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             FunctionCodeRegionMapping
         )
         self.absolute_path = ""
+        self.featue_option_mapping: tp.Dict[str, str] = {}
 
         self.configuration = configuration
 
@@ -568,6 +575,12 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             for function in self.filename_function_mapping[filename]:
                 code_region = self.filename_function_mapping[filename][function]
                 code_region.annotate_covered(configuration)
+
+    def _extract_feature_option_mapping(self, xml_file: Path) -> None:
+        with local.cwd(Path(__file__).parent.parent.parent.parent.parent):
+            output = local["feature_option_mapping.py"](xml_file)
+        self.featue_option_mapping = json.loads(output)
+        print(self.featue_option_mapping)
 
     def _parse_instrs(self, csv_file: Path) -> None:
         with csv_file.open() as file:
@@ -608,12 +621,12 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                         )
                         if feature_node is not None:
                             feature_node.vara_instrs.append(vara_instr)
-                else:
-                    files = list(self.filename_function_mapping)
-                    print(
-                        "WARNING Ignoring VaRA instructions!:",
-                        f"'{source_file}' not in {files}"
-                    )
+                #else:
+                #    files = list(self.filename_function_mapping)
+                #    print(
+                #        "WARNING Ignoring VaRA instructions!:",
+                #        f"'{source_file}' not in {files}"
+                #    )
 
     def _import_functions(
         self, json_file: Path,
