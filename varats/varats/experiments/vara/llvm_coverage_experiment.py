@@ -149,10 +149,10 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
                 copy(bc_path, bc_name)
 
                 # Copy FeatureModel.xml
-                feature_model_name = tmp_dir / create_workload_specific_filename(
+                model_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report", prj_command.command, file_suffix=".xml"
                 )
-                copy(self.__feature_model, feature_model_name)
+                copy(self.__feature_model, model_name)
 
                 opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
                                   "-vara-export-feature-dbg",
