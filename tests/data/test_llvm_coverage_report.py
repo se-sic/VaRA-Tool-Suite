@@ -226,6 +226,9 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(self.root.features_threshold(["A"]), 1.0)
         self.assertEqual(self.root.features_threshold(["B"]), 0.0)
 
+    @unittest.skipIf(
+        shutil.which("llvm-profdata") is None, "llvm-profdata not in PATH"
+    )
     def test_coverage_json_parsing(self):
         """Parse the json export obtained from the
         https://clang.llvm.org/docs/SourceBasedCodeCoverage.html code
@@ -279,7 +282,7 @@ int main() {
             with open(json_file, "w") as file:
                 json.dump(coverage, file)
 
-            report = CoverageReport.from_json(json_file, base_dir=tmpdir)
+            report = CoverageReport.from_json(json_file, base_dir=tmp_dir)
         code_region = report.tree["foo.cc"]
         for region in code_region.iter_preorder():
             print(region.count)
