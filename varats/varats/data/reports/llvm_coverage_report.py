@@ -212,7 +212,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             filename=path
         )
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.counts.append(self.count)
         self.instantiations.append(self.function)
 
