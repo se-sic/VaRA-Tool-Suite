@@ -1,3 +1,4 @@
+"""Project file for tig."""
 import typing as tp
 
 import benchbuild as bb
@@ -47,7 +48,7 @@ class Tig(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Tig.NAME))
 
-        binary_map.specify_binary("tig", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("src/tig", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -55,14 +56,13 @@ class Tig(VProject):
         pass
 
     def compile(self) -> None:
-        """Contains instructions on how to build the project."""
+        """Compile the project."""
         tig_version_source = local.path(self.source_of_primary)
 
-        clang = bb.compiler.cc(self)
+        c_compiler = bb.compiler.cc(self)
         with local.cwd(tig_version_source):
 
-            with local.env(CC=str(clang)):
+            with local.env(CC=str(c_compiler)):
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-                bb.watch(make)("install", "j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
