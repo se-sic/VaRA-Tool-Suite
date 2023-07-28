@@ -61,7 +61,7 @@ def _confusion_matrix(
     )
 
 
-def setup_reports(config_name: str) -> CoverageReports:
+def setup_reports(config_name: str, base_dir: str) -> CoverageReports:
     # setup config
     vara_cfg()['paper_config']['current_config'] = config_name
     load_paper_config()
@@ -92,7 +92,7 @@ def setup_reports(config_name: str) -> CoverageReports:
     )
 
     binary_reports_map = coverage_plot._get_binary_reports_map(
-        case_study, report_files
+        case_study, report_files, base_dir
     )
     assert binary_reports_map
 
@@ -285,28 +285,34 @@ class TestCoveragePlot(unittest.TestCase):
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_feature_report_interactions(self):
-        reports = setup_reports("test_coverage_SimpleFeatureInteraction")
-        report = reports.feature_report()
+        initialize_projects()
+        commit_hash = FullCommitHash("4300ea495e7f013f68e785fdde5c4ead81297999")
+        with RepositoryAtCommit(
+            "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
+        ) as base_dir:
 
-        # Only feature interactions should be annotated
-        for func, code_region in report.filename_function_mapping[
-            "src/SimpleFeatureInteraction/SFImain.cpp"].items():
-            print(func)
-            if func == "_Z10addPadding11PackageData":
-                for region in code_region.iter_preorder():
+            reports = setup_reports(
+                "test_coverage_SimpleFeatureInteraction", base_dir
+            )
+            report = reports.feature_report()
+
+            code_region = report.tree["src/SimpleFeatureInteraction/SFImain.cpp"
+                                     ]
+            # Only feature interactions should be annotated
+            for region in code_region.iter_preorder():
+                func = region.function
+                print(func)
+                if func == "_Z10addPadding11PackageData":
                     self.assertEqual(
                         region.coverage_features(), "+(enc & ~compress)"
                     )
-            elif func == "_Z8compress11PackageData":
-                for region in code_region.iter_preorder():
+                elif func == "_Z8compress11PackageData":
                     self.assertEqual(region.coverage_features(), "+compress")
-            elif func == "_Z7encrypt11PackageData":
-                for region in code_region.iter_preorder():
+                elif func == "_Z7encrypt11PackageData":
                     self.assertEqual(region.coverage_features(), "+enc")
-            elif func == "_Z18loadConfigFromArgviPPc":
-                pass
-            elif func == "_Z11sendPackage11PackageData":
-                for region in code_region.iter_preorder():
+                elif func == "_Z18loadConfigFromArgviPPc":
+                    pass
+                elif func == "_Z11sendPackage11PackageData":
                     if (region.start.line == 56 and
                         region.start.column == 28) or (
                             region.start.line == 56 and
@@ -315,8 +321,7 @@ class TestCoveragePlot(unittest.TestCase):
                         self.assertEqual(
                             region.coverage_features(), "+(enc & ~compress)"
                         )
-            else:
-                for region in code_region.iter_preorder():
+                else:
                     if region.coverage_features() != "":
                         pass
                     self.assertIn(region.coverage_features(), ["", "+True"])
@@ -326,12 +331,14 @@ class TestCoveragePlot(unittest.TestCase):
     )
     def test_line_feature_plot(self):
         self.maxDiff = None
-        reports = setup_reports("test_coverage_MultiSharedMultipleRegions")
         initialize_projects()
         commit_hash = FullCommitHash("27f17080376e409860405c40744887d81d6b3f34")
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
+            reports = setup_reports(
+                "test_coverage_MultiSharedMultipleRegions", base_dir
+            )
             self.assertEqual(
                 """include/fpcsc/perf_util/feature_cmd.h:
     1|#ifndef FPCSC_PERFUTIL_FEATURECMD_H                                             |

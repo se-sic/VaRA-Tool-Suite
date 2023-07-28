@@ -37,6 +37,7 @@ class CodeRegionKind(int, Enum):
     SKIPPED = 2
     GAP = 3
     BRANCH = 4
+    FILE_ROOT = -1
 
 
 @dataclass(frozen=True)
@@ -163,13 +164,15 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     kind: CodeRegionKind
     function: str
     filename: str
-    expanded_from: tp.Optional[CodeRegion] = None
+    #    expanded_from: tp.Optional[CodeRegion] = None
     parent: tp.Optional[CodeRegion] = None
     childs: tp.List[CodeRegion] = field(default_factory=list)
     presence_conditions: PresenceConditions = field(
         default_factory=lambda: PresenceConditions(list)
     )
     vara_instrs: tp.List[VaraInstr] = field(default_factory=list)
+    counts: tp.List[int] = field(default_factory=list)
+    instantiations: tp.List[str] = field(default_factory=list)
 
     @classmethod
     def from_list(
@@ -187,6 +190,35 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             function=function,
             filename=filenames[region[5]]
         )
+
+    @classmethod
+    def from_file(cls, path: str) -> CodeRegion:
+        """Instantiates a root code region from a file."""
+
+        start = RegionStart(1, 1)
+        # how long is the file?
+        with open(path) as source_code:
+            content = source_code.readlines()
+        end_line = len(content)
+        end_column = len(content[-1])
+        end = RegionEnd(end_line, end_column)
+
+        return cls(
+            start=start,
+            end=end,
+            count=0,
+            kind=CodeRegionKind.FILE_ROOT,
+            function="__no_function_I_AM_ROOT__",
+            filename=path
+        )
+
+    def __post_init__(self):
+        self.counts.append(self.count)
+        self.instantiations.append(self.function)
+
+    @property
+    def total_count(self) -> int:
+        return sum(self.counts)
 
     def iter_breadth_first(self) -> tp.Iterator[CodeRegion]:
         """Yields childs breadth_first."""
@@ -305,14 +337,6 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
                 region.parent = node
                 break
 
-    def merge(self, region: CodeRegion) -> None:
-        """Merges region into self by adding all counts of region to the counts
-        of self."""
-        for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
-            if x != y:
-                raise AssertionError("CodeRegions are not identical")
-            x.count += y.count
-
     def combine_features(self, region: CodeRegion) -> None:
         """Combines features of region with features of self."""
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
@@ -382,7 +406,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
 
         return True
 
-    # Compare regions only depending on their
+    # Compare regions only depending on their function, file
     # start lines and columns + their type
 
     def __eq__(self, other: object) -> bool:
@@ -393,7 +417,8 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             self.start.line == other.start.line and
             self.start.column == other.start.column and
             self.end.line == other.end.line and
-            self.end.column == other.end.column and self.kind == other.kind
+            self.end.column == other.end.column and self.kind == other.kind and
+            self.function == other.function and self.filename == other.filename
         )
 
     def __lt__(self, other: CodeRegion) -> bool:
@@ -422,17 +447,17 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         return False
 
 
-class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
+class FilenameRegionMapping(tp.Dict[str, CodeRegion]):
     """Mapping from function names to CodeRegion objects."""
 
-    def sorted(self) -> FunctionCodeRegionMapping:
-        return FunctionCodeRegionMapping(
+    def sorted(self) -> FilenameRegionMapping:
+        return FilenameRegionMapping(
             # Fix function order. Otherwise static functions come last.
-            sorted(self.items(), key=lambda item: item[1])
+            sorted(self.items())
         )
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, FunctionCodeRegionMapping):
+        if not isinstance(other, FilenameRegionMapping):
             return False
 
         for self_value, other_value in zip(self.values(), other.values()):
@@ -440,16 +465,6 @@ class FunctionCodeRegionMapping(tp.Dict[str, CodeRegion]):
                 return False
 
         return True
-
-
-class FilenameFunctionMapping(tp.DefaultDict[str, FunctionCodeRegionMapping]):
-    """Mapping from filenames to FunctionCodeRegions."""
-
-    def sorted(self) -> FilenameFunctionMapping:
-        return FilenameFunctionMapping(
-            FunctionCodeRegionMapping,
-            sorted((key, value.sorted()) for key, value in self.items())
-        )
 
 
 class FeatureKind(Enum):
@@ -489,18 +504,15 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     """Parses llvm-cov export json files and displays them."""
 
     @classmethod
-    def from_json(cls, json_file: Path) -> CoverageReport:
+    def from_json(cls, json_file: Path, base_dir: Path) -> CoverageReport:
         """CoverageReport from JSON file."""
         c_r = cls(json_file)
-        c_r.filename_function_mapping = c_r._import_functions(
-            json_file,
-            c_r.filename_function_mapping,
-        )
+        c_r.tree = c_r._import_functions(json_file, c_r.tree, base_dir)
         return c_r
 
     @classmethod
     def from_report(
-        cls, report_file: Path, configuration: Configuration
+        cls, report_file: Path, configuration: Configuration, base_dir: Path
     ) -> CoverageReport:
         """CoverageReport from report file."""
         c_r = cls(report_file, configuration)
@@ -517,10 +529,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 return x.name.endswith(".json")
 
             for json_file in filter(json_filter, Path(tmpdir).iterdir()):
-                c_r.filename_function_mapping = c_r._import_functions(
-                    json_file,
-                    c_r.filename_function_mapping,
-                )
+                c_r.tree = c_r._import_functions(json_file, c_r.tree, base_dir)
 
             def csv_filter(y: Path) -> bool:
                 return y.name.endswith(".csv") or y.name.endswith(".ptfdd")
@@ -540,9 +549,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     ) -> None:
         super().__init__(path)
 
-        self.filename_function_mapping = FilenameFunctionMapping(
-            FunctionCodeRegionMapping
-        )
+        self.tree = FilenameRegionMapping()
         self.absolute_path = ""
         self.featue_option_mapping: tp.Dict[str, str] = {}
 
@@ -550,31 +557,20 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
     def combine_features(self, report: CoverageReport) -> None:
         """Combine features of report with self."""
-        for filename_a, filename_b in zip(
-            self.filename_function_mapping, report.filename_function_mapping
-        ):
+        for filename_a, filename_b in zip(self.tree, report.tree):
             assert Path(filename_a).name == Path(filename_b).name
 
-            for function_a, function_b in zip(
-                self.filename_function_mapping[filename_a],
-                report.filename_function_mapping[filename_b]
-            ):
-                assert function_a == function_b
-                code_region_a = self.filename_function_mapping[filename_a][
-                    function_a]
-                code_region_b = report.filename_function_mapping[filename_b][
-                    function_b]
-                assert code_region_a == code_region_b
+            code_region_a = self.tree[filename_a]
+            code_region_b = report.tree[filename_b]
 
-                code_region_a.combine_features(code_region_b)
+            code_region_a.combine_features(code_region_b)
 
     def annotate_covered(self, configuration: Configuration) -> None:
         """Adds the presence condition to all covered code regions."""
 
-        for filename in self.filename_function_mapping:
-            for function in self.filename_function_mapping[filename]:
-                code_region = self.filename_function_mapping[filename][function]
-                code_region.annotate_covered(configuration)
+        for filename in self.tree:
+            code_region = self.tree[filename]
+            code_region.annotate_covered(configuration)
 
     def _extract_feature_option_mapping(self, xml_file: Path) -> None:
         with local.cwd(Path(__file__).parent.parent.parent.parent.parent):
@@ -613,25 +609,23 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     source_file = str(relative_path)
                 except ValueError:
                     pass
-                if source_file in self.filename_function_mapping:
-                    for _, code_region_tree in self.filename_function_mapping[
-                        source_file].items():
-                        feature_node = code_region_tree.find_code_region(
-                            location.line, location.column
-                        )
-                        if feature_node is not None:
-                            feature_node.vara_instrs.append(vara_instr)
+                if source_file in self.tree:
+                    code_region_tree = self.tree[source_file]
+                    feature_node = code_region_tree.find_code_region(
+                        location.line, location.column
+                    )
+                    if feature_node is not None:
+                        feature_node.vara_instrs.append(vara_instr)
                 #else:
-                #    files = list(self.filename_function_mapping)
+                #    files = list(self.tree)
                 #    print(
                 #        "WARNING Ignoring VaRA instructions!:",
                 #        f"'{source_file}' not in {files}"
                 #    )
 
     def _import_functions(
-        self, json_file: Path,
-        filename_function_mapping: FilenameFunctionMapping
-    ) -> FilenameFunctionMapping:
+        self, json_file: Path, tree: FilenameRegionMapping, base_dir: Path
+    ) -> FilenameRegionMapping:
         with json_file.open() as file:
             try:
                 coverage_json = json.load(file)
@@ -676,68 +670,65 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
             regions: tp.List[tp.List[int]] = function["regions"]
 
-            filename_function_mapping = self._import_code_regions(
-                name, relative_filenames, regions, filename_function_mapping
+            tree = self._import_code_regions(
+                name, relative_filenames, regions, tree, base_dir
             )
 
         # sanity checking
-        self.__region_import_sanity_check(totals, filename_function_mapping)
+        self.__region_import_sanity_check(totals, tree)
 
-        return filename_function_mapping.sorted()
+        return tree.sorted()
 
     def _import_code_regions(
         self, function: str, filenames: tp.List[str],
-        regions: tp.List[tp.List[int]],
-        filename_function_mapping: FilenameFunctionMapping
-    ) -> FilenameFunctionMapping:
+        regions: tp.List[tp.List[int]], tree: FilenameRegionMapping,
+        base_dir: Path
+    ) -> FilenameRegionMapping:
 
         # Ignore location in function_name
         function = function.split(":", 1)[-1]
         filename = filenames[0]
 
-        root_region = CodeRegion.from_list(regions[0], function, filenames)
-        for region in regions[1:]:
+        if filename not in tree:
+            print(f"Creating root region from '{filename}'")
+            tree[filename] = CodeRegion.from_file(str(base_dir / filename))
+        root_region = tree[filename]
+        for region in regions:
             if region[5] != 0:
                 # Region was expanded.
                 # Skip it since it resides not in our function.
                 continue
             code_region = CodeRegion.from_list(region, function, filenames)
             root_region.insert(code_region)
-        if function in filename_function_mapping[filename]:
-            # Already exists. Merge instead
-            filename_function_mapping[filename][function].merge(root_region)
-        else:
-            filename_function_mapping[filename][function] = root_region
-        return filename_function_mapping
+        return tree
 
     def __region_import_sanity_check(
-        self, totals: tp.Dict[str, tp.Any],
-        filename_function_mapping: FilenameFunctionMapping
+        self, totals: tp.Dict[str, tp.Any], tree: FilenameRegionMapping
     ) -> None:
-        total_functions_count: int = totals["functions"]["count"]
+        total_instantiations_count: int = totals["instantiations"]["count"]
         #total_regions_count: int = totals["regions"]["count"]
         #total_regions_covered: int = totals["regions"]["covered"]
         #total_regions_notcovered: int = totals["regions"]["notcovered"]
 
-        counted_functions = 0
         counted_code_regions = 0
         covered_regions = 0
         notcovered_regions = 0
 
-        for filename in filename_function_mapping:
-            function_region_mapping = filename_function_mapping[filename]
-            for function in function_region_mapping:
-                counted_functions += 1
-                code_region = function_region_mapping[function]
-                for region in code_region.iter_breadth_first():
-                    if region.kind == CodeRegionKind.CODE:
-                        counted_code_regions += 1
-                        if region.is_covered():
-                            covered_regions += 1
-                        else:
-                            notcovered_regions += 1
+        instantiations = set()
 
-        assert counted_functions == total_functions_count
+        for filename in tree:
+            code_region = tree[filename]
+            for region in code_region.iter_breadth_first():
+                if region.kind != CodeRegionKind.FILE_ROOT:
+                    instantiations.update(region.instantiations)
+                if region.kind == CodeRegionKind.CODE:
+                    counted_code_regions += 1
+                    if region.is_covered():
+                        covered_regions += 1
+                    else:
+                        notcovered_regions += 1
+
+        assert len(instantiations) == total_instantiations_count
         #assert counted_code_regions == total_regions_count
         assert counted_code_regions != 0
         #assert covered_regions == total_regions_covered
@@ -746,13 +737,9 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CoverageReport):
             return False
-        for filename_a, filename_b in zip(
-            self.filename_function_mapping, other.filename_function_mapping
-        ):
-            if (Path(filename_a).name == Path(filename_b).name) and (
-                self.filename_function_mapping[filename_a]
-                == other.filename_function_mapping[filename_b]
-            ):
+        for filename_a, filename_b in zip(self.tree, other.tree):
+            if (Path(filename_a).name == Path(filename_b).name
+               ) and (self.tree[filename_a] == other.tree[filename_b]):
                 continue
             return False
         return True
@@ -779,9 +766,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     return asdict(o)
                 return super().default(o)
 
-        return json.dumps(
-            self.filename_function_mapping, cls=EnhancedJSONEncoder
-        )
+        return json.dumps(self.tree, cls=EnhancedJSONEncoder)
 
 
 Count = tp.Optional[int]
@@ -800,12 +785,10 @@ def cov_segments(
 ) -> FileSegmentBufferMapping:
     """Returns the all segments for this report."""
     file_segments_mapping = {}
-    for file in list(report.filename_function_mapping):
-        function_region_mapping = report.filename_function_mapping[file]
+    for file in list(report.tree):
+        region = report.tree[file]
         path = Path(file)
-        file_segments_mapping[file] = _cov_segments_file(
-            path, base_dir, function_region_mapping
-        )
+        file_segments_mapping[file] = _cov_segments_file(path, base_dir, region)
 
     return file_segments_mapping
 
@@ -813,7 +796,7 @@ def cov_segments(
 def _cov_segments_file(
     rel_path: Path,
     base_dir: Path,
-    function_region_mapping: FunctionCodeRegionMapping,
+    region: CodeRegion,
 ) -> SegmentBuffer:
 
     lines: tp.Dict[int, str] = {}
@@ -826,9 +809,7 @@ def _cov_segments_file(
 
     # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
     segments_dict: SegmentBuffer = defaultdict(list)
-    for function in function_region_mapping:
-        region = function_region_mapping[function]
-        segments_dict = _cov_segments_function(region, lines, segments_dict)
+    segments_dict = _cov_segments_function(region, lines, segments_dict)
 
     # Add rest of file
     segments_dict = __cov_fill_buffer(
@@ -1003,20 +984,20 @@ def __feature_text(iterable: tp.Iterable[tp.Iterable[str]]) -> str:
 def _cov_segments_function(
     region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer
 ) -> SegmentBuffer:
-
-    # Add lines before region.
-    prev_line, prev_column = __get_previous_line_and_column(
-        region.start.line, region.start.column, lines
-    )
-    buffer = __cov_fill_buffer(
-        end_line=prev_line,
-        end_column=prev_column,
-        count=None,
-        cov_features=None,
-        vara_features=None,
-        lines=lines,
-        buffer=buffer
-    )
+    if not (region.start.line == 1 and region.start.column == 1):
+        # Add lines before region.
+        prev_line, prev_column = __get_previous_line_and_column(
+            region.start.line, region.start.column, lines
+        )
+        buffer = __cov_fill_buffer(
+            end_line=prev_line,
+            end_column=prev_column,
+            count=None,
+            cov_features=None,
+            vara_features=None,
+            lines=lines,
+            buffer=buffer
+        )
 
     buffer = _cov_segments_function_inner(region, lines, buffer)
 
@@ -1041,7 +1022,8 @@ def _cov_segments_function_inner(
             buffer = __cov_fill_buffer(
                 end_line=prev_line,
                 end_column=prev_column,
-                count=region.count,
+                count=region.count
+                if region.kind != CodeRegionKind.FILE_ROOT else None,
                 cov_features=region.coverage_features(),
                 vara_features=region.vara_features(),
                 lines=lines,
@@ -1062,7 +1044,7 @@ def _cov_segments_function_inner(
     buffer = __cov_fill_buffer(
         end_line=region.end.line,
         end_column=region.end.column,
-        count=region.count,
+        count=region.count if region.kind != CodeRegionKind.FILE_ROOT else None,
         cov_features=region.coverage_features(),
         vara_features=region.vara_features(),
         lines=lines,

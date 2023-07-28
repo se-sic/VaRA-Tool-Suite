@@ -1,10 +1,11 @@
+import json
 import shutil
 import unittest
 from collections import defaultdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from plumbum import colors
+from plumbum import colors, local
 
 from tests.helper_utils import (
     run_in_test_environment,
@@ -95,6 +96,14 @@ class TestCodeRegion(unittest.TestCase):
 
     def test_not_eq_4(self):
         self.CODE_REGION_1.kind = CodeRegionKind.GAP
+        self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
+
+    def test_not_eq_5(self):
+        self.CODE_REGION_1.function = "FooBar"
+        self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
+
+    def test_not_eq_6(self):
+        self.CODE_REGION_1.filename = "FooBar"
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_less_1(self):
@@ -217,44 +226,105 @@ class TestCodeRegion(unittest.TestCase):
         self.assertEqual(self.root.features_threshold(["A"]), 1.0)
         self.assertEqual(self.root.features_threshold(["B"]), 0.0)
 
+    def test_coverage_json_parsing(self):
+        """Parse the json export obtained from the
+        https://clang.llvm.org/docs/SourceBasedCodeCoverage.html code
+        example."""
+
+        with TemporaryDirectory() as tmpdir:
+            tmp_dir = Path(tmpdir)
+            json_file = tmp_dir / "coverage.json"
+            # create foo.cc file
+            with open(tmp_dir / "foo.cc", "w") as foo:
+                foo.write(
+                    """#define BAR(x) ((x) || (x))
+template <typename T> void foo(T x) {
+  for (unsigned I = 0; I < 10; ++I) { BAR(I); }
+}
+int main() {
+  foo<int>(0);
+  foo<float>(0);
+  return 0;
+}
+"""
+                )
+            # generate json export
+            with local.cwd(tmpdir):
+                local["clang++"](
+                    "-O0",
+                    "-g",
+                    "-fprofile-instr-generate",
+                    "-fcoverage-mapping",
+                    "foo.cc",
+                    "-o",
+                    "foo",
+                )
+                local["chmod"]("ugo+x", "foo")
+                run = local["./foo"]
+                run.with_env(LLVM_PROFILE_FILE="foo.profraw")()
+                local["llvm-profdata"](
+                    "merge", "foo.profraw", "-o", "foo.profdata"
+                )
+                export = local["llvm-cov"]
+                export = export["export", "./foo",
+                                "-instr-profile=foo.profdata"]
+                (export > str(json_file))()
+
+            # Add absolute path to json
+            with open(json_file) as file:
+                coverage = json.load(file)
+
+            coverage["absolute_path"] = str(tmp_dir.resolve())
+
+            with open(json_file, "w") as file:
+                json.dump(coverage, file)
+
+            report = CoverageReport.from_json(json_file, base_dir=tmpdir)
+        code_region = report.tree["foo.cc"]
+        for region in code_region.iter_preorder():
+            print(region.count)
+        pass
+
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_cov_show(self):
         self.maxDiff = None
-        with TemporaryDirectory() as tmpdir:
-            shutil.unpack_archive(
-                Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
-                "GenCov-CovR-FeaturePerfCSCollection-MultiSharedMultipleRegions-27f1708037"
-                / "2123fe9e-f47c-498e-9953-44b0fa9ad954_config-0_success.zip",
-                tmpdir
-            )
-
-            for file in Path(tmpdir).iterdir():
-                if file.suffix == ".json":
-                    json_file = file
-
-            assert json_file
-
-            slow_report = CoverageReport.from_json(json_file)
-
-        with open(
-            Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
-            "cov_show_slow.txt"
-        ) as tmp:
-            cov_show_slow_txt = tmp.read()
-
-        with open(
-            Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
-            "cov_show_slow_color.txt",
-        ) as tmp:
-            cov_show_slow_color_txt = tmp.read()
-
         initialize_projects()
         commit_hash = FullCommitHash("27f17080376e409860405c40744887d81d6b3f34")
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
+
+            with TemporaryDirectory() as tmpdir:
+                shutil.unpack_archive(
+                    Path(TEST_INPUTS_DIR) / "results" /
+                    "FeaturePerfCSCollection" /
+                    "GenCov-CovR-FeaturePerfCSCollection-MultiSharedMultipleRegions-27f1708037"
+                    /
+                    "2123fe9e-f47c-498e-9953-44b0fa9ad954_config-0_success.zip",
+                    tmpdir
+                )
+
+                for file in Path(tmpdir).iterdir():
+                    if file.suffix == ".json":
+                        json_file = file
+
+                assert json_file
+
+                slow_report = CoverageReport.from_json(json_file, base_dir)
+
+            with open(
+                Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+                "cov_show_slow.txt"
+            ) as tmp:
+                cov_show_slow_txt = tmp.read()
+
+            with open(
+                Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+                "cov_show_slow_color.txt",
+            ) as tmp:
+                cov_show_slow_color_txt = tmp.read()
 
             self.assertEqual(cov_show_slow_txt, cov_show(slow_report, base_dir))
             color_state = colors.use_color
@@ -283,17 +353,24 @@ class TestCodeRegion(unittest.TestCase):
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_vara_feature_export(self):
-        report = CoverageReport.from_report(
-            Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
-            "GenCov-CovR-FeaturePerfCSCollection-SimpleFeatureInteraction-4300ea495e"
-            / "ee663144-d5ed-469f-8caf-b211c61e9d41_config-0_success.zip", None
-        )
+        initialize_projects()
+        commit_hash = FullCommitHash("4300ea495e7f013f68e785fdde5c4ead81297999")
+        with RepositoryAtCommit(
+            "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
+        ) as base_dir:
 
-        for func, code_region in report.filename_function_mapping[
-            "src/SimpleFeatureInteraction/SFImain.cpp"].items():
-            print(func)
-            if func == "_Z11sendPackage11PackageData":
-                for region in code_region.iter_preorder():
+            report = CoverageReport.from_report(
+                Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
+                "GenCov-CovR-FeaturePerfCSCollection-SimpleFeatureInteraction-4300ea495e"
+                / "ee663144-d5ed-469f-8caf-b211c61e9d41_config-0_success.zip",
+                None, base_dir
+            )
+
+            code_region = report.tree["src/SimpleFeatureInteraction/SFImain.cpp"
+                                     ]
+            for region in code_region.iter_preorder():
+                func = region.function
+                if func == "_Z11sendPackage11PackageData":
                     if region.start.line == 51 and region.start.column == 36:
                         self.assertEqual(region.vara_features(), set())
                     elif region.start.line == 52 and region.start.column == 7:
@@ -348,8 +425,7 @@ class TestCodeRegion(unittest.TestCase):
                         self.assertEqual(region.vara_instrs, [])
                     else:
                         self.fail()
-            else:
-                for region in code_region.iter_preorder():
+                else:
                     self.assertTrue(
                         all(
                             map(

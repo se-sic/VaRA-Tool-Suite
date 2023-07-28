@@ -107,13 +107,13 @@ def coverage_vara_features_combined(
 
 
 def _matrix_analyze_code_region(
-    feature: tp.Optional[str], tree: CodeRegion,
+    feature: tp.Optional[str], code_region: CodeRegion,
     feature_name_map: tp.Dict[str, tp.Set[str]], threshold: float, file: str,
     coverage_feature_regions: tp.List[tp.Any],
     coverage_normal_regions: tp.List[tp.Any],
     vara_feature_regions: tp.List[tp.Any], vara_normal_regions: tp.List[tp.Any]
 ) -> None:
-    for region in tree.iter_breadth_first():
+    for region in code_region.iter_breadth_first():
         if feature is None:
             # Compare all coverage and all vara features with each other
             features = coverage_vara_features_combined(
@@ -149,13 +149,12 @@ def _compute_confusion_matrix(
     vara_feature_regions: tp.List[tp.Any] = []
     vara_normal_regions: tp.List[tp.Any] = []
 
-    for file, func_map in feature_report.filename_function_mapping.items():
-        for _, tree in func_map.items():
-            _matrix_analyze_code_region(
-                feature, tree, feature_name_map, threshold, file,
-                coverage_feature_regions, coverage_normal_regions,
-                vara_feature_regions, vara_normal_regions
-            )
+    for file, code_region in feature_report.tree.items():
+        _matrix_analyze_code_region(
+            feature, code_region, feature_name_map, threshold, file,
+            coverage_feature_regions, coverage_normal_regions,
+            vara_feature_regions, vara_normal_regions
+        )
 
     return ConfusionMatrix(
         actual_positive_values=coverage_feature_regions,
@@ -283,7 +282,8 @@ class CoveragePlot(Plot, plot_name="coverage"):
     """Plot to visualize coverage diffs."""
 
     def _get_binary_reports_map(
-        self, case_study: CaseStudy, report_files: tp.List[ReportFilepath]
+        self, case_study: CaseStudy, report_files: tp.List[ReportFilepath],
+        base_dir: Path
     ) -> tp.Optional[BinaryReportsMapping]:
         try:
             config_map = load_configuration_map_for_case_study(
@@ -311,7 +311,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
                     config.set_config_option(feature, False)
 
             coverage_report = CoverageReport.from_report(
-                report_filepath.full_path(), config
+                report_filepath.full_path(), config, base_dir
             )
             binary_reports_map[binary].append(coverage_report)
 
@@ -345,18 +345,18 @@ class CoveragePlot(Plot, plot_name="coverage"):
             revisions[revision].append(report_file)
 
         for revision in list(revisions):
-            binary_reports_map = self._get_binary_reports_map(
-                case_study, revisions[revision]
-            )
-
-            if not binary_reports_map:
-                raise ValueError(
-                    "Cannot load configs for case study '" +
-                    case_study.project_name + "'! " +
-                    "Have you set configs in your case study file?"
+            with RepositoryAtCommit(project_name, revision) as base_dir:
+                binary_reports_map = self._get_binary_reports_map(
+                    case_study, revisions[revision], base_dir
                 )
 
-            with RepositoryAtCommit(project_name, revision) as base_dir:
+                if not binary_reports_map:
+                    raise ValueError(
+                        "Cannot load configs for case study '" +
+                        case_study.project_name + "'! " +
+                        "Have you set configs in your case study file?"
+                    )
+
                 zip_file = plot_dir / self.plot_file_name("zip")
                 with ZippedReportFolder(zip_file) as tmpdir:
 
