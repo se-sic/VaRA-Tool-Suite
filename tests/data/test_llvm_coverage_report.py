@@ -100,10 +100,6 @@ class TestCodeRegion(unittest.TestCase):
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 
     def test_not_eq_5(self):
-        self.CODE_REGION_1.function = "FooBar"
-        self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
-
-    def test_not_eq_6(self):
         self.CODE_REGION_1.filename = "FooBar"
         self.assertNotEqual(self.CODE_REGION_1, CODE_REGION_1)
 

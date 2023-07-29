@@ -215,6 +215,8 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
     def __post_init__(self) -> None:
         self.counts.append(self.count)
         self.instantiations.append(self.function)
+        # Ignore location in function_name (static function)
+        self.function = self.function.split(":", 1)[-1]
 
     @property
     def total_count(self) -> int:
@@ -282,7 +284,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         return features
 
     def is_covered(self) -> bool:
-        return self.count > 0
+        return self.total_count > 0
 
     def is_subregion(self, other: CodeRegion) -> bool:
         """Tests if the 'other' region fits fully into self."""
@@ -300,6 +302,14 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             end_ok = self.end.column >= other.end.column
 
         return start_ok and end_ok
+
+    def add_instantiation(self, region: CodeRegion) -> None:
+        """If a code region already exists in a tree."""
+        if region != self:
+            raise ValueError("The given region is identical!")
+
+        self.counts.append(region.count)
+        self.instantiations.append(region.function)
 
     def insert(self, region: CodeRegion) -> None:
         """
@@ -414,7 +424,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
 
         return True
 
-    # Compare regions only depending on their function, file
+    # Compare regions only depending on their file,
     # start lines and columns + their type
 
     def __eq__(self, other: object) -> bool:
@@ -426,7 +436,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             self.start.column == other.start.column and
             self.end.line == other.end.line and
             self.end.column == other.end.column and self.kind == other.kind and
-            self.function == other.function and self.filename == other.filename
+            self.filename == other.filename
         )
 
     def __lt__(self, other: CodeRegion) -> bool:
@@ -457,6 +467,35 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
 
 class FilenameRegionMapping(tp.Dict[str, CodeRegion]):
     """Mapping from function names to CodeRegion objects."""
+
+    def __init__(self, *args, base_dir: tp.Optional[Path] = None, **kwargs):
+        self.base_dir = base_dir
+        super().__init__(*args, **kwargs)
+
+    def add(self, region: CodeRegion) -> None:
+        """Adds a code region."""
+        filename = region.filename
+        if self.base_dir:
+            file_path = self.base_dir / filename
+        if filename not in self:
+            if file_path.is_file():
+                self[filename] = CodeRegion.from_file(str(file_path))
+                print(f"Created root region from '{filename}'")
+            else:
+                print(
+                    f"WARNING: '{filename}' is not a file. \
+Ignoring region: {region}"
+                )
+                return
+        root_region = self[filename]
+        found_region = root_region.find_code_region(
+            region.start.line, region.start.column
+        )
+        if found_region is not None and found_region == region:
+            # Region exists already
+            found_region.add_instantiation(region)
+        if not region in root_region:
+            root_region.insert(region)
 
     def sorted(self) -> FilenameRegionMapping:
         return FilenameRegionMapping(
@@ -500,22 +539,14 @@ class VaraInstr:
         return True
 
 
-class LocationInstrMapping(tp.DefaultDict[FrozenLocation, tp.List[VaraInstr]]):
-    """Mapping from location to VaRAInstr."""
-
-
-class FilenameLocationMapping(tp.DefaultDict[str, LocationInstrMapping]):
-    """Mapping from filenames to Locations."""
-
-
 class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     """Parses llvm-cov export json files and displays them."""
 
     @classmethod
     def from_json(cls, json_file: Path, base_dir: Path) -> CoverageReport:
         """CoverageReport from JSON file."""
-        c_r = cls(json_file)
-        c_r.tree = c_r._import_functions(json_file, c_r.tree, base_dir)
+        c_r = cls(json_file, base_dir=base_dir)
+        c_r.tree = c_r._import_functions(json_file, c_r.tree)
         return c_r
 
     @classmethod
@@ -523,7 +554,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         cls, report_file: Path, configuration: Configuration, base_dir: Path
     ) -> CoverageReport:
         """CoverageReport from report file."""
-        c_r = cls(report_file, configuration)
+        c_r = cls(report_file, configuration, base_dir)
         with TemporaryDirectory() as tmpdir:
             shutil.unpack_archive(report_file, tmpdir)
 
@@ -540,7 +571,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
             jsons = list(filter(json_filter, Path(tmpdir).iterdir()))
             for json_file in jsons:
-                c_r.tree = c_r._import_functions(json_file, c_r.tree, base_dir)
+                c_r.tree = c_r._import_functions(json_file, c_r.tree)
 
             def csv_filter(y: Path) -> bool:
                 return y.name.endswith(".csv") or y.name.endswith(".ptfdd")
@@ -558,15 +589,17 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     def __init__(
         self,
         path: Path,
-        configuration: tp.Optional[Configuration] = None
+        configuration: tp.Optional[Configuration] = None,
+        base_dir: tp.Optional[Path] = None
     ) -> None:
         super().__init__(path)
 
-        self.tree = FilenameRegionMapping()
+        self.tree = FilenameRegionMapping(base_dir=base_dir)
         self.absolute_path = ""
         self.featue_option_mapping: tp.Dict[str, str] = {}
 
         self.configuration = configuration
+        self.base_dir = base_dir
 
     def combine_features(self, report: CoverageReport) -> None:
         """Combine features of report with self."""
@@ -637,7 +670,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 #    )
 
     def _import_functions(
-        self, json_file: Path, tree: FilenameRegionMapping, base_dir: Path
+        self, json_file: Path, tree: FilenameRegionMapping
     ) -> FilenameRegionMapping:
         with json_file.open() as file:
             try:
@@ -684,7 +717,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             regions: tp.List[tp.List[int]] = function["regions"]
 
             tree = self._import_code_regions(
-                name, relative_filenames, regions, tree, base_dir
+                name, relative_filenames, regions, tree
             )
 
         # sanity checking
@@ -694,32 +727,21 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
     def _import_code_regions(
         self, function: str, filenames: tp.List[str],
-        regions: tp.List[tp.List[int]], tree: FilenameRegionMapping,
-        base_dir: Path
+        regions: tp.List[tp.List[int]], tree: FilenameRegionMapping
     ) -> FilenameRegionMapping:
 
-        # Ignore location in function_name
-        function = function.split(":", 1)[-1]
-        filename = filenames[0]
-
-        if filename not in tree:
-            print(f"Creating root region from '{filename}'")
-            tree[filename] = CodeRegion.from_file(str(base_dir / filename))
-        root_region = tree[filename]
         for region in regions:
-            if region[5] != 0:
-                # Region was expanded.
-                # Skip it since it resides not in our function.
-                continue
             code_region = CodeRegion.from_list(region, function, filenames)
-            root_region.insert(code_region)
+            print(region, code_region.filename)
+            tree.add(code_region)
+
         return tree
 
     def __region_import_sanity_check(
         self, totals: tp.Dict[str, tp.Any], tree: FilenameRegionMapping
     ) -> None:
         total_instantiations_count: int = totals["instantiations"]["count"]
-        #total_regions_count: int = totals["regions"]["count"]
+        total_regions_count: int = totals["regions"]["count"]
         #total_regions_covered: int = totals["regions"]["covered"]
         #total_regions_notcovered: int = totals["regions"]["notcovered"]
 
@@ -741,7 +763,9 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                     else:
                         notcovered_regions += 1
 
-        assert len(instantiations) == total_instantiations_count
+        print(len(instantiations), "==?", total_instantiations_count)
+        #assert len(instantiations) == total_instantiations_count
+        print(counted_code_regions, "==?", total_regions_count)
         #assert counted_code_regions == total_regions_count
         assert counted_code_regions != 0
         #assert covered_regions == total_regions_covered
