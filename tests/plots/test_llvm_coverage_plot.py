@@ -313,11 +313,13 @@ class TestCoveragePlot(unittest.TestCase):
                 elif func == "_Z18loadConfigFromArgviPPc":
                     pass
                 elif func == "_Z11sendPackage11PackageData":
-                    if (region.start.line == 56 and
-                        region.start.column == 28) or (
-                            region.start.line == 56 and
-                            region.start.column == 29
-                        ):
+                    if region.kind == CodeRegionKind.GAP:
+                        # GAP Regions. Are covered, but don't have instructions associated.
+                        # Therefore we do not annotate presence conditions to them.
+                        self.assertEqual(len(region.vara_instrs), 0)
+                        self.assertEqual(len(region.presence_conditions), 0)
+
+                    if region.start.line == 56 and region.start.column == 29:
                         self.assertEqual(
                             region.coverage_features(), "+(enc & ~compress)"
                         )
@@ -504,3 +506,44 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                     show_coverage_features=True
                 )
             )
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_confusion_matrices(self):
+        initialize_projects()
+        commit_hash = FullCommitHash("4300ea495e7f013f68e785fdde5c4ead81297999")
+        with RepositoryAtCommit(
+            "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
+        ) as base_dir:
+
+            reports = setup_reports(
+                "test_coverage_SimpleFeatureInteraction", base_dir
+            )
+            feature_option_mapping = reports.feature_option_mapping()
+            result_1 = reports.confusion_matrices(
+                feature_option_mapping, threshold=1.0
+            )
+            result_0 = reports.confusion_matrices(
+                feature_option_mapping, threshold=0.0
+            )
+
+            for result in [result_1, result_0]:
+                print(result)
+                enc = result["enc"]
+                self.assertEqual(enc.TP, 3)
+                self.assertEqual(enc.TN, 38)
+                self.assertEqual(enc.FP, 0)
+                self.assertEqual(enc.FN, 9)
+
+                compress = result["compress"]
+                self.assertEqual(compress.TP, 2)
+                self.assertEqual(compress.TN, 39)
+                self.assertEqual(compress.FP, 0)
+                self.assertEqual(compress.FN, 9)
+
+                all = result["__all__"]
+                self.assertEqual(all.TP, 4)
+                self.assertEqual(all.TN, 35)
+                self.assertEqual(all.FP, 0)
+                self.assertEqual(all.FN, 11)

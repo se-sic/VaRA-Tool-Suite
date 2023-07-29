@@ -86,6 +86,13 @@ class FeaturePerfCSCollection(VProject):
                 label="SFI-no-input"
             )
         ],
+        WorkloadSet(WorkloadCategory.JAN_2): [
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("MultiSharedMultipleRegions"),
+                label="MSMR-no-input"
+            )
+        ],
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
                 SourceRoot("FeaturePerfCSCollection") /

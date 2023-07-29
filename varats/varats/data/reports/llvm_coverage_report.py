@@ -379,9 +379,17 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         return False
 
     def annotate_covered(self, configuration: Configuration) -> None:
-        """Adds the presence condition to all covered regions."""
+        """
+        Adds the presence condition to all covered regions.
+
+        Ignore GAP regions without VaRA instructions.
+        """
         kind = PresenceKind.BECOMES_ACTIVE
         for region in self.iter_breadth_first():
+            if region.kind == CodeRegionKind.GAP and len(
+                region.vara_instrs
+            ) == 0:
+                continue
             if region.is_covered():
                 region.presence_conditions[kind].append(
                     PresenceCondition(kind, configuration)
@@ -522,19 +530,24 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             def xml_filter(y: Path) -> bool:
                 return y.name.endswith(".xml")
 
-            for xml_file in filter(xml_filter, Path(tmpdir).iterdir()):
+            xmls = list(filter(xml_filter, Path(tmpdir).iterdir()))
+            assert len(xmls) == 1
+            for xml_file in xmls:
                 c_r._extract_feature_option_mapping(xml_file)
 
             def json_filter(x: Path) -> bool:
                 return x.name.endswith(".json")
 
-            for json_file in filter(json_filter, Path(tmpdir).iterdir()):
+            jsons = list(filter(json_filter, Path(tmpdir).iterdir()))
+            for json_file in jsons:
                 c_r.tree = c_r._import_functions(json_file, c_r.tree, base_dir)
 
             def csv_filter(y: Path) -> bool:
                 return y.name.endswith(".csv") or y.name.endswith(".ptfdd")
 
-            for csv_file in filter(csv_filter, Path(tmpdir).iterdir()):
+            csvs = list(filter(csv_filter, Path(tmpdir).iterdir()))
+            assert len(csvs) == 1
+            for csv_file in csvs:
                 c_r._parse_instrs(csv_file)
 
             if c_r.configuration is not None:

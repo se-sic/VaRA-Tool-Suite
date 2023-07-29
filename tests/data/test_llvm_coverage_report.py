@@ -305,7 +305,7 @@ int main() {
                     "FeaturePerfCSCollection" /
                     "GenCov-CovR-FeaturePerfCSCollection-MultiSharedMultipleRegions-27f1708037"
                     /
-                    "2123fe9e-f47c-498e-9953-44b0fa9ad954_config-0_success.zip",
+                    "31848b67-cf0a-45aa-baea-f40ed61f18b2_config-1_success.zip",
                     tmpdir
                 )
 
@@ -365,7 +365,7 @@ int main() {
             report = CoverageReport.from_report(
                 Path(TEST_INPUTS_DIR) / "results" / "FeaturePerfCSCollection" /
                 "GenCov-CovR-FeaturePerfCSCollection-SimpleFeatureInteraction-4300ea495e"
-                / "ee663144-d5ed-469f-8caf-b211c61e9d41_config-0_success.zip",
+                / "7e6bcdd3-5ea4-4e29-a47d-0a9d155f17b3_config-0_success.zip",
                 None, base_dir
             )
 
