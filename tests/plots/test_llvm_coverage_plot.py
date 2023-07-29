@@ -38,6 +38,15 @@ CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main",
                                      ["test.txt"])
 
 
+def module_exists(module_name: str) -> bool:
+    try:
+        __import__(module_name)
+    except ImportError:
+        return False
+    else:
+        return True
+
+
 def _confusion_matrix(
     feature: tp.Optional[str], tree: CodeRegion,
     feature_name_map: tp.Dict[str, str], threshold: float, file: str
@@ -281,6 +290,9 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
         self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
 
+    @unittest.skipIf(
+        not module_exists("vara_feature"), "vara_feature module not installed"
+    )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
@@ -328,6 +340,9 @@ class TestCoveragePlot(unittest.TestCase):
                         pass
                     self.assertIn(region.coverage_features(), ["", "+True"])
 
+    @unittest.skipIf(
+        not module_exists("vara_feature"), "vara_feature module not installed"
+    )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
@@ -507,6 +522,9 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 )
             )
 
+    @unittest.skipIf(
+        not module_exists("vara_feature"), "vara_feature module not installed"
+    )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )

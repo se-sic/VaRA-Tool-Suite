@@ -12,6 +12,7 @@ from tests.helper_utils import (
     UnitTestFixtures,
     TEST_INPUTS_DIR,
 )
+from tests.plots.test_llvm_coverage_plot import module_exists
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
@@ -352,6 +353,9 @@ int main() {
                                                ).replace("\x1b[41m\x1b[0m", "")
             self.assertEqual(cov_show_slow_color_txt, output)
 
+    @unittest.skipIf(
+        not module_exists("vara_feature"), "vara_feature module not installed"
+    )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
