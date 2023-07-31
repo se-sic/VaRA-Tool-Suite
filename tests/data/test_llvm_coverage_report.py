@@ -130,6 +130,15 @@ class TestCodeRegion(unittest.TestCase):
         self.assertFalse(self.CODE_REGION_1.is_subregion(self.CODE_REGION_2))
         self.assertTrue(self.CODE_REGION_2.is_subregion(self.CODE_REGION_1))
 
+        self.CODE_REGION_1.start.line = 9
+        self.CODE_REGION_2.start.column = 79
+        self.assertFalse(self.CODE_REGION_1.is_subregion(self.CODE_REGION_2))
+        self.assertFalse(self.CODE_REGION_2.is_subregion(self.CODE_REGION_1))
+
+        self.CODE_REGION_2.end.column = 1
+        self.assertTrue(self.CODE_REGION_1.is_subregion(self.CODE_REGION_2))
+        self.assertFalse(self.CODE_REGION_2.is_subregion(self.CODE_REGION_1))
+
     def test_is_covered(self):
         self.assertTrue(self.CODE_REGION_1.is_covered())
         self.assertFalse(self.CODE_REGION_2.is_covered())
@@ -189,6 +198,19 @@ class TestCodeRegion(unittest.TestCase):
         self.assertTrue(self.left_left.parent is self.left)
         self.assertTrue(self.left_left_2.parent is self.left)
         self.assertTrue(self.right_right.parent is self.right)
+
+    def test_insert_2(self):
+
+        root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main",
+                                    ["test.txt"])
+        left = CodeRegion.from_list([30, 26, 30, 44, 0, 0, 0, 0], "main",
+                                    ["test.txt"])
+        left_child = CodeRegion.from_list([30, 26, 30, 38, 0, 0, 0, 0], "main",
+                                          ["test.txt"])
+
+        root.insert(left)
+        root.insert(left_child)
+        self.assertIs(left.childs[0], left_child)
 
     def test_find_region(self):
         self.assertEqual(

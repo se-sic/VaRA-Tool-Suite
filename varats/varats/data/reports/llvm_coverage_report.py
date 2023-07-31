@@ -287,21 +287,30 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         return self.total_count > 0
 
     def is_subregion(self, other: CodeRegion) -> bool:
-        """Tests if the 'other' region fits fully into self."""
+        """
+        Tests if the 'other' region fits fully into self.
+
+        It fits if start equals but end is smaller or start is greater and end
+        equal
+        """
         start_ok = False
         end_ok = False
+        start_equal = False
+        end_equal = True
 
         if self.start.line < other.start.line:
             start_ok = True
         elif self.start.line == other.start.line:
-            start_ok = self.start.column < other.start.column
+            start_ok = self.start.column <= other.start.column
+            start_equal = self.start.column == other.start.column
 
         if self.end.line > other.end.line:
             end_ok = True
         elif self.end.line == other.end.line:
             end_ok = self.end.column >= other.end.column
+            end_equal = self.end.column == other.end.column
 
-        return start_ok and end_ok
+        return start_ok and end_ok and not (start_equal and end_equal)
 
     def add_instantiation(self, region: CodeRegion) -> None:
         """If a code region already exists in a tree."""
