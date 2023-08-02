@@ -418,13 +418,13 @@ def _plot_confusion_matrix(reports: CoverageReports, outdir: Path) -> None:
         with outfile.open("w") as output:
             output.write(f"{matrix}\n")
             tps = [str(x) for x in matrix.getTPs()]
-            output.write(f"True Positives:\n{chr(10).join(tps)}\n")
+            output.write(f"True Positives:\n{chr(10).join(sorted(tps))}\n")
             tns = [str(x) for x in matrix.getTNs()]
-            output.write(f"True Negatives:\n{chr(10).join(tns)}\n")
+            output.write(f"True Negatives:\n{chr(10).join(sorted(tns))}\n")
             fps = [str(x) for x in matrix.getFPs()]
-            output.write(f"False Positives:\n{chr(10).join(fps)}\n")
+            output.write(f"False Positives:\n{chr(10).join(sorted(fps))}\n")
             fns = [str(x) for x in matrix.getFNs()]
-            output.write(f"False Negatives:\n{chr(10).join(fns)}\n")
+            output.write(f"False Negatives:\n{chr(10).join(sorted(fns))}\n")
 
 
 class CoveragePlotGenerator(

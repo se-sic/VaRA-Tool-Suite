@@ -550,18 +550,18 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 print(result)
                 enc = result["enc"]
                 self.assertEqual(enc.TP, 3)
-                self.assertEqual(enc.TN, 38)
+                self.assertEqual(enc.TN, 39)
                 self.assertEqual(enc.FP, 0)
-                self.assertEqual(enc.FN, 9)
+                self.assertEqual(enc.FN, 8)
 
                 compress = result["compress"]
                 self.assertEqual(compress.TP, 2)
-                self.assertEqual(compress.TN, 39)
+                self.assertEqual(compress.TN, 40)
                 self.assertEqual(compress.FP, 0)
-                self.assertEqual(compress.FN, 9)
+                self.assertEqual(compress.FN, 8)
 
                 all = result["__all__"]
                 self.assertEqual(all.TP, 4)
-                self.assertEqual(all.TN, 35)
+                self.assertEqual(all.TN, 36)
                 self.assertEqual(all.FP, 0)
-                self.assertEqual(all.FN, 11)
+                self.assertEqual(all.FN, 10)

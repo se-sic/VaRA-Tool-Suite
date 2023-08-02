@@ -156,7 +156,7 @@ def expr_to_str(expression: Expression) -> str:
 
 
 @dataclass
-class CodeRegion:  # pylint: disable=too-many-instance-attributes
+class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Code region tree."""
     start: RegionStart
     end: RegionEnd
@@ -312,6 +312,23 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
 
         return start_ok and end_ok and not (start_equal and end_equal)
 
+    def overlaps(self, other: CodeRegion) -> bool:
+        """
+        Tests if regions overlap.
+
+        They overlaps if they are not subregions, but one location is inside of
+        the other.
+        """
+
+        if self.is_subregion(other) or other.is_subregion(self):
+            return False
+        if self.is_location_inside(
+            other.start.line, other.start.column
+        ) != other.is_location_inside(self.start.line, self.start.column):
+            return True
+
+        return False
+
     def add_instantiation(self, region: CodeRegion) -> None:
         """If a code region already exists in a tree."""
         if region != self:
@@ -351,6 +368,10 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
                         child.parent = region
                         node.childs.remove(child)
 
+                if any(child.overlaps(region) for child in node.childs):
+                    raise ValueError(
+                        "The given region overlaps with another region!"
+                    )
                 node.childs.append(region)
                 node.childs.sort()
                 region.parent = node
@@ -362,6 +383,13 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             if x != y:
                 raise AssertionError("CodeRegions are not identical")
             x.presence_conditions.extend(y.presence_conditions)
+
+    def get_code_region(self, element: CodeRegion) -> tp.Optional[CodeRegion]:
+        """Returns the code region if it exists already."""
+        for child in self.iter_breadth_first():
+            if child == element:
+                return child
+        return None
 
     def find_code_region(self, line: int,
                          column: int) -> tp.Optional[CodeRegion]:
@@ -386,13 +414,13 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
             # Location could be inside. Check cases.
             if self.start.line == line == self.end.line:
                 # Location in same line
-                return self.start.column <= column <= self.end.column
+                return self.start.column <= column < self.end.column
             if self.start.line == line:
                 # Location in start line
                 return self.start.column <= column
             if self.end.line == line:
                 # Location in end line
-                return column <= self.end.column
+                return column < self.end.column
             # Location neither in start line not in end line
             return self.start.line < line < self.end.line
         return False
@@ -405,9 +433,8 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes
         """
         kind = PresenceKind.BECOMES_ACTIVE
         for region in self.iter_breadth_first():
-            if region.kind == CodeRegionKind.GAP and len(
-                region.vara_instrs
-            ) == 0:
+            if region.kind == CodeRegionKind.GAP:
+                assert len(region.vara_instrs) == 0
                 continue
             if region.is_covered():
                 region.presence_conditions[kind].append(
@@ -497,13 +524,11 @@ Ignoring region: {region}"
                 )
                 return
         root_region = self[filename]
-        found_region = root_region.find_code_region(
-            region.start.line, region.start.column
-        )
-        if found_region is not None and found_region == region:
+        if (found_region := root_region.get_code_region(region)) is not None:
             # Region exists already
             found_region.add_instantiation(region)
-        if not region in root_region:
+        else:
+            # Region does not exist
             root_region.insert(region)
 
     def sorted(self) -> FilenameRegionMapping:

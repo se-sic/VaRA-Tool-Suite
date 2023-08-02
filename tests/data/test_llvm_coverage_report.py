@@ -60,7 +60,7 @@ class TestCodeRegion(unittest.TestCase):
 
         self.root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main",
                                          ["test.txt"])
-        self.left = CodeRegion.from_list([0, 1, 49, 100, 5, 0, 0, 0], "main",
+        self.left = CodeRegion.from_list([0, 1, 50, 0, 5, 0, 0, 0], "main",
                                          ["test.txt"])
         self.right = CodeRegion.from_list([50, 0, 100, 99, 5, 0, 0, 0], "main",
                                           ["test.txt"])
@@ -212,6 +212,34 @@ class TestCodeRegion(unittest.TestCase):
         root.insert(left_child)
         self.assertIs(left.childs[0], left_child)
 
+    def test_insert_3(self):
+
+        root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main",
+                                    ["test.txt"])
+        left = CodeRegion.from_list([0, 1, 50, 100, 5, 0, 0, 0], "main",
+                                    ["test.txt"])
+        right = CodeRegion.from_list([50, 0, 100, 100, 5, 0, 0, 0], "main",
+                                     ["test.txt"])
+        root.insert(right)
+        with self.assertRaises(ValueError):
+            root.insert(left)
+
+    def test_overlap(self):
+
+        root = CodeRegion.from_list([0, 0, 100, 100, 5, 0, 0, 0], "main",
+                                    ["test.txt"])
+        left = CodeRegion.from_list([0, 1, 50, 100, 5, 0, 0, 0], "main",
+                                    ["test.txt"])
+        right = CodeRegion.from_list([50, 0, 100, 100, 5, 0, 0, 0], "main",
+                                     ["test.txt"])
+
+        self.assertFalse(left.overlaps(root))
+        self.assertFalse(right.overlaps(root))
+        self.assertFalse(root.overlaps(left))
+        self.assertFalse(root.overlaps(right))
+        self.assertTrue(left.overlaps(right))
+        self.assertTrue(right.overlaps(left))
+
     def test_find_region(self):
         self.assertEqual(
             self.root.find_code_region(line=0, column=0), self.root
@@ -226,11 +254,9 @@ class TestCodeRegion(unittest.TestCase):
             self.root.find_code_region(line=50, column=0), self.right
         )
         self.assertEqual(
-            self.root.find_code_region(line=100, column=99), self.right
+            self.root.find_code_region(line=100, column=99), self.root
         )
-        self.assertEqual(
-            self.root.find_code_region(line=100, column=100), self.root
-        )
+        self.assertEqual(self.root.find_code_region(line=100, column=100), None)
         self.assertEqual(
             self.root.find_code_region(line=10, column=0), self.left_left_2
         )
@@ -303,9 +329,19 @@ int main() {
 
             report = CoverageReport.from_json(json_file, base_dir=tmp_dir)
         code_region = report.tree["foo.cc"]
-        for region in code_region.iter_preorder():
-            print(region.count)
-        pass
+        self.assertEqual(code_region.total_count, 0)
+        self.assertEqual(code_region.childs[0].total_count, 20)
+        self.assertEqual(code_region.childs[0].childs[0].total_count, 20)
+        self.assertEqual(code_region.childs[0].childs[1].total_count, 2)
+        self.assertEqual(code_region.childs[1].total_count, 2)
+        self.assertEqual(code_region.childs[1].childs[0].total_count, 22)
+        self.assertEqual(code_region.childs[1].childs[1].total_count, 20)
+        self.assertEqual(code_region.childs[1].childs[2].total_count, 20)
+        self.assertEqual(code_region.childs[1].childs[3].total_count, 20)
+        self.assertEqual(
+            code_region.childs[1].childs[3].childs[0].total_count, 20
+        )
+        self.assertEqual(code_region.childs[2].total_count, 1)
 
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
