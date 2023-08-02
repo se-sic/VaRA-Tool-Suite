@@ -227,6 +227,14 @@ class PatchProvider(Provider):
 
     patches_repository = "https://github.com/se-sic/vara-project-patches.git"
 
+    patches_source = bb.source.Git(
+        remote=patches_repository,
+        local="patch-configurations",
+        refspec="origin/HEAD",
+        limit=None,
+        shallow=False
+    )
+
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
 
@@ -307,16 +315,8 @@ class PatchProvider(Provider):
             "All usages should be covered by the project specific provider."
         )
 
-    @staticmethod
-    def _get_patches_repository_path() -> Path:
-        patches_source = bb.source.Git(
-            remote=PatchProvider.patches_repository,
-            local="patch-configurations",
-            refspec="origin/HEAD",
-            limit=None,
-            shallow=False
-        )
+    @classmethod
+    def _get_patches_repository_path(cls) -> Path:
+        cls.patches_source.fetch()
 
-        patches_source.fetch()
-
-        return Path(target_prefix()) / patches_source.local
+        return Path(target_prefix()) / cls.patches_source.local

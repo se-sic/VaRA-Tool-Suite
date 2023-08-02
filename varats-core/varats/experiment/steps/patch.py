@@ -24,12 +24,9 @@ class ApplyPatch(actions.ProjectStep):
         try:
             print(
                 f"Applying {self.__patch.shortname} to "
-                f"{self.project.source_of(self.project.primary_source)}"
+                f"{self.project.source_of_primary}"
             )
-            apply_patch(
-                Path(self.project.source_of(self.project.primary_source)),
-                self.__patch.path
-            )
+            apply_patch(Path(self.project.source_of_primary), self.__patch.path)
 
         except ProcessExecutionError:
             self.status = StepResult.ERROR
@@ -59,11 +56,10 @@ class RevertPatch(actions.ProjectStep):
         try:
             print(
                 f"Reverting {self.__patch.shortname} on "
-                f"{self.project.source_of(self.project.primary_source)}"
+                f"{self.project.source_of_primary}"
             )
             revert_patch(
-                Path(self.project.source_of(self.project.primary_source)),
-                self.__patch.path
+                Path(self.project.source_of_primary), self.__patch.path
             )
 
         except ProcessExecutionError:
