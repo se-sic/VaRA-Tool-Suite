@@ -4,6 +4,7 @@ import unittest
 from collections import defaultdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from plumbum import colors, local
 
@@ -407,8 +408,9 @@ int main() {
                                                ).replace("\x1b[41m\x1b[0m", "")
             self.assertEqual(cov_show_slow_color_txt, output)
 
-    @unittest.skipIf(
-        not module_exists("vara_feature"), "vara_feature module not installed"
+    @patch(
+        "varats.data.reports.llvm_coverage_report.CoverageReport._extract_feature_option_mapping",
+        lambda self, xml: None
     )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES

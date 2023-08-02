@@ -1,6 +1,6 @@
 import typing as tp
 import unittest
-from unittest.mock import create_autospec
+from unittest.mock import create_autospec, patch
 
 from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.llvm_coverage_report import (
@@ -290,9 +290,6 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
         self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
 
-    @unittest.skipIf(
-        not module_exists("vara_feature"), "vara_feature module not installed"
-    )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
@@ -303,9 +300,13 @@ class TestCoveragePlot(unittest.TestCase):
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
 
-            reports = setup_reports(
-                "test_coverage_SimpleFeatureInteraction", base_dir
-            )
+            with patch(
+                "varats.data.reports.llvm_coverage_report.CoverageReport._extract_feature_option_mapping",
+                lambda self, xml: None
+            ):
+                reports = setup_reports(
+                    "test_coverage_SimpleFeatureInteraction", base_dir
+                )
             report = reports.feature_report()
 
             code_region = report.tree["src/SimpleFeatureInteraction/SFImain.cpp"
@@ -340,9 +341,6 @@ class TestCoveragePlot(unittest.TestCase):
                         pass
                     self.assertIn(region.coverage_features(), ["", "+True"])
 
-    @unittest.skipIf(
-        not module_exists("vara_feature"), "vara_feature module not installed"
-    )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
@@ -522,9 +520,6 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 )
             )
 
-    @unittest.skipIf(
-        not module_exists("vara_feature"), "vara_feature module not installed"
-    )
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
@@ -534,10 +529,20 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-
-            reports = setup_reports(
-                "test_coverage_SimpleFeatureInteraction", base_dir
-            )
+            with patch(
+                "varats.data.reports.llvm_coverage_report.CoverageReport._extract_feature_option_mapping",
+                lambda self, xml: self.__setattr__(
+                    "featue_option_mapping", {
+                        "root": "",
+                        "Compression": "--compress",
+                        "Encryption": "--enc",
+                        "Slow": "--slow"
+                    }
+                )
+            ):
+                reports = setup_reports(
+                    "test_coverage_SimpleFeatureInteraction", base_dir
+                )
             feature_option_mapping = reports.feature_option_mapping()
             result_1 = reports.confusion_matrices(
                 feature_option_mapping, threshold=1.0
