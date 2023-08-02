@@ -32,12 +32,6 @@ from varats.utils.git_util import (
 )
 
 
-def __get_project_git(project: Project):
-    return _get_git_for_path(
-        local.path(project.source_of(project.primary_source))
-    )
-
-
 class ApplyPatch(actions.ProjectStep):
     """Apply a patch to a project."""
 
