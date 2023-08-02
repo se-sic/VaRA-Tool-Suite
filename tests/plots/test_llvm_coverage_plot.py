@@ -351,9 +351,14 @@ class TestCoveragePlot(unittest.TestCase):
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-            reports = setup_reports(
-                "test_coverage_MultiSharedMultipleRegions", base_dir
-            )
+            with patch(
+                "varats.data.reports.llvm_coverage_report.CoverageReport._extract_feature_option_mapping",
+                lambda self, xml: None
+            ):
+
+                reports = setup_reports(
+                    "test_coverage_MultiSharedMultipleRegions", base_dir
+                )
             self.assertEqual(
                 """include/fpcsc/perf_util/feature_cmd.h:
     1|#ifndef FPCSC_PERFUTIL_FEATURECMD_H                                             |
