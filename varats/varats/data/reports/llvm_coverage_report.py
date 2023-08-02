@@ -504,10 +504,8 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
 class FilenameRegionMapping(tp.Dict[str, CodeRegion]):
     """Mapping from function names to CodeRegion objects."""
 
-    def __init__(
-        self, *args, base_dir: tp.Optional[Path] = None, **kwargs
-    ) -> None:
-        self.base_dir = base_dir
+    def __init__(self, *args, base_dir: tp.Optional[Path] = None, **kwargs):
+        self.base_dir: tp.Optional[Path] = base_dir
         super().__init__(*args, **kwargs)
 
     def add(self, region: CodeRegion) -> None:
