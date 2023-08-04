@@ -19,6 +19,7 @@ from benchbuild.command import (
     Command,
 )
 
+from varats.experiment.experiment_util import get_extra_config_options
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import KeyedReportAggregate, ReportTy
@@ -94,8 +95,20 @@ def workload_commands(
         )
     ]
 
+    # Filter commands that have required args set.
+    options = set(get_extra_config_options(project))
+
+    def requires_filter(prj_cmd: ProjectCommand) -> bool:
+        if hasattr(prj_cmd.command, "requires") and prj_cmd.command.requires:
+            return bool(options.intersection(prj_cmd.command.requires))
+        return True
+
+    available_cmds = filter(requires_filter, project_cmds)
+
     return list(
-        filter(lambda prj_cmd: prj_cmd.path.name == binary.name, project_cmds)
+        filter(
+            lambda prj_cmd: prj_cmd.path.name == binary.name, available_cmds
+        )
     )
 
 

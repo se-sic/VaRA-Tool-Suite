@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
@@ -19,6 +19,7 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
+    Command,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     verify_binaries,
@@ -87,9 +88,25 @@ class Xz(VProject):
             Command(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
-                "geo-maps/countries-land-1km.geo.json",
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-1km",
                 creates=["geo-maps/countries-land-1km.geo.json.xz"]
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
+                "-9e",
+                "--compress",
+                "--threads=1",
+                "--format=xz",
+                "-vv",
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                label="countries-land-250m",
+                creates=["geo-maps/countries-land-250m.geo.json.xz"]
             )
         ],
         WorkloadSet(WorkloadCategory.JAN): [
