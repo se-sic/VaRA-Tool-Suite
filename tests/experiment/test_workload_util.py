@@ -1,5 +1,6 @@
 """Test VaRA workload utilities."""
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -55,7 +56,7 @@ class TestWorkloadCommands(unittest.TestCase):
 
     def test_workload_commands_requires(self) -> None:
         revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))
-        project = Xz(revision=revision)
+        project = deepcopy(Xz(revision=revision))
         binary = Xz.binaries_for_revision(ShortCommitHash("c5c7ceb08a"))[0]
 
         commands = next(
