@@ -521,7 +521,6 @@ class FilenameRegionMapping(tp.Dict[str, CodeRegion]):
         if filename not in self:
             if file_path.is_file():
                 self[filename] = CodeRegion.from_file(str(file_path))
-                print(f"Created root region from '{filename}'")
             else:
                 print(
                     f"WARNING: '{filename}' is not a file. \
@@ -771,7 +770,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         for region in regions:
             code_region = CodeRegion.from_list(region, function, filenames)
-            print(region, code_region.filename)
             tree.add(code_region)
 
         return tree

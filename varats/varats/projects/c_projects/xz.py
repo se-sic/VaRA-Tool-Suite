@@ -92,29 +92,26 @@ class Xz(VProject):
                 creates=["geo-maps/countries-land-1km.geo.json.xz"]
             )
         ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
-                SourceRoot("xz") / RSBinary("xz"),
-                "-k",
-                "-9e",
-                "--compress",
-                "--threads=1",
-                "--format=xz",
-                "-vv",
-                "geo-maps/countries-land-250m.geo.json",
-                label="countries-land-250m",
-                creates=["geo-maps/countries-land-250m.geo.json.xz"]
-            )
-        ],
         WorkloadSet(WorkloadCategory.JAN): [
             Command(
                 SourceRoot("xz") / RSBinary("xz"),
                 "--threads=1",
                 "--format=xz",
-                "--compress",
-                "geo-maps/countries-land-250m.geo.json",
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
-                creates=["geo-maps/countries-land-250m.geo.json.xz"]
+                creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                requires={"--compress"}
+            ),
+            Command(
+                SourceRoot("xz") / RSBinary("xz"),
+                "--threads=1",
+                "--format=xz",
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                label="countries-land-250m",
+                creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                requires={"--decompress", "--test", "--list"}
             )
         ],
     }

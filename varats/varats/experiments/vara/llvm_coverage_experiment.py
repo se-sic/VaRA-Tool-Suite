@@ -89,9 +89,11 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
                 # Fail because we don't get any coverage data
                 return actions.StepResult.ERROR
             for prj_command in self.__workload_cmds:
-                pb_cmd = prj_command.command.as_plumbum(project=self.project)
-
                 extra_args = get_extra_config_options(self.project)
+
+                cmd = prj_command.command[extra_args]
+                pb_cmd = cmd.as_plumbum(project=self.project)
+
                 profdata_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",
                     prj_command.command,
@@ -113,7 +115,7 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
                                     self.binary.path]
 
                 with cleanup(prj_command):
-                    run_cmd(*extra_args)
+                    run_cmd()
                     llvm_profdata(
                         "merge", profile_raw_name, "-o", profdata_name
                     )
