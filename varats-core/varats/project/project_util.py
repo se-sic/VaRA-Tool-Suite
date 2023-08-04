@@ -385,12 +385,12 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
 
 
-class Command(_Command):
+class Command(_Command):  # type: ignore [misc]
     """
     Wrapper around benchbuild's Command class.
 
-    Additional functionality:     requires attribute:         specify required
-    args that must be added before execution.
+    Attributes:
+    requires: specify required args that must be added before execution.
     """
 
     _requires: tp.Set[str]
