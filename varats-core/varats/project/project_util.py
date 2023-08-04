@@ -7,6 +7,7 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
+from benchbuild.command import Command as _Command
 from benchbuild.source import Git
 from benchbuild.utils.cmd import git
 from plumbum import local
@@ -382,3 +383,28 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         for name in dirs:
             if name == ".gitted":
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
+
+
+class Command(_Command):
+    """
+    Wrapper around benchbuild's Command class.
+
+    Additional functionality:     requires attribute:         specify required
+    args that must be added before execution.
+    """
+
+    _requires: tp.Set[str]
+
+    def __init__(
+        self,
+        *args: tp.Any,
+        requires: tp.Optional[tp.Set[str]] = None,
+        **kwargs: tp.Union[str, tp.List[str]],
+    ) -> None:
+
+        super().__init__(*args, **kwargs)
+        self._requires = requires if requires else set()
+
+    @property
+    def requires(self) -> tp.Set[str]:
+        return self._requires
