@@ -6,16 +6,65 @@
             "type": "python",
             "request": "launch",
             "program": "~/.local/bin/benchbuild",
-            "cwd": "${workspaceFolder}/../vara-root/benchbuild",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/benchbuild",
             "args": [
                 "run",
                 "-E",
-                "JustCompile",
-                "gzip"
+                "GenerateCoverage",
+                "FeaturePerfCSCollection"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "benchbuildXZ",
+            "type": "python",
+            "request": "launch",
+            "program": "~/.local/bin/benchbuild",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/benchbuild",
+            "args": [
+                "run",
+                "-E",
+                "GenerateCoverage",
+                "xz"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+
+        {
+            "name": "plot",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/mmustermann/Dokumente/VARA-root2/.venv/bin/vara-plot",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/",
+            "args": [
+                "coverage",
+                "--experiment-type",
+                "GenerateCoverage",
+                "--case-study",
+                "FeaturePerfCSCollection_0"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "plotXZ",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/mmustermann/Dokumente/VARA-root2/.venv/bin/vara-plot",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/",
+            "args": [
+                "coverage",
+                "--experiment-type",
+                "GenerateCoverage",
+                "--case-study",
+                "xz_0"
             ],
             "justMyCode": false,
             "console": "integratedTerminal"
         }
+
     ]
 }
 // This configuration needs vara-root next to VaRA-Tool-Suite.
