@@ -389,8 +389,8 @@ class Command(_Command):
     """
     Wrapper around benchbuild's Command class.
 
-    Additional functionality:     requires attribute:         specify required
-    args that must be added before execution.
+    Attributes:
+    requires: specify required args that must be added before execution.
     """
 
     _requires: tp.Set[str]
