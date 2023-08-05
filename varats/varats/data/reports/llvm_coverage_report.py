@@ -738,10 +738,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         functions: tp.List[tp.Any] = data["functions"]
         totals: tp.Dict[str, tp.Any] = data["totals"]
 
-        # Print all filenames in functions
-        #for function in functions:
-        #    print(function["name"], function["filenames"][0])
-
         for function in functions:
             name: str = function["name"]
             # count: int = function["count"]
@@ -779,31 +775,58 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         self, totals: tp.Dict[str, tp.Any], tree: FilenameRegionMapping
     ) -> None:
         total_instantiations_count: int = totals["instantiations"]["count"]
+        total_instantiations_covered: int = totals["instantiations"]["covered"]
         total_regions_count: int = totals["regions"]["count"]
-        #total_regions_covered: int = totals["regions"]["covered"]
-        #total_regions_notcovered: int = totals["regions"]["notcovered"]
+        total_regions_covered: int = totals["regions"]["covered"]
+        total_regions_notcovered: int = totals["regions"]["notcovered"]
 
         counted_code_regions = 0
         covered_regions = 0
         notcovered_regions = 0
 
         instantiations = set()
+        covered_instantiations = set()
 
         for filename in tree:
             code_region = tree[filename]
             for region in code_region.iter_breadth_first():
                 if region.kind != CodeRegionKind.FILE_ROOT:
                     instantiations.update(region.instantiations)
-                if region.kind == CodeRegionKind.CODE:
+                if region.kind == CodeRegionKind.CODE or region.kind == CodeRegionKind.EXPANSION:
                     counted_code_regions += 1
                     if region.is_covered():
                         covered_regions += 1
                     else:
                         notcovered_regions += 1
 
-        print(len(instantiations), "==?", total_instantiations_count)
+                    for count, instance in zip(
+                        region.counts, region.instantiations
+                    ):
+                        if count > 0:
+                            covered_instantiations.add(instance)
+
+        print(
+            "# Instantiations", len(instantiations), "==?",
+            total_instantiations_count
+        )
+        print(
+            "# covered Instantiations", len(covered_instantiations), "==?",
+            total_instantiations_covered
+        )
+        print(
+            "# counted Regions", counted_code_regions, "==?",
+            total_regions_count
+        )
+        print(
+            "# covered Regions", covered_regions, "==?", total_regions_covered
+        )
+        print(
+            "# not covered Regions", notcovered_regions, "==?",
+            total_regions_notcovered
+        )
+
         #assert len(instantiations) == total_instantiations_count
-        print(counted_code_regions, "==?", total_regions_count)
+        #assert len(covered_instantiations) == total_instantiations_covered
         #assert counted_code_regions == total_regions_count
         assert counted_code_regions != 0
         #assert covered_regions == total_regions_covered
