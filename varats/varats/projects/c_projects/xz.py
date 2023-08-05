@@ -75,6 +75,16 @@ class Xz(VProject):
             files=[
                 "countries-land-1km.geo.json", "countries-land-250m.geo.json"
             ]
+        ),
+        HTTPMultiple(
+            local="xz_files",
+            remote={
+                "1.0":
+                    "https://github.com/xz-mirror/xz/releases/download/v5.4.0"
+            },
+            files=[
+                "xz-5.4.0.tar.xz",
+            ]
         )
     ]
 
@@ -116,8 +126,9 @@ class Xz(VProject):
                 "--format=xz",
                 output_param=["{output}"],
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
-                label="countries-land-250m",
+                label="countries-land-250m-compress",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                consumes=["geo-maps/countries-land-250m.geo.json"],
                 requires={"--compress"}
             ),
             Command(
@@ -125,9 +136,10 @@ class Xz(VProject):
                 "--threads=1",
                 "--format=xz",
                 output_param=["{output}"],
-                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
-                label="countries-land-250m",
-                creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                output=SourceRoot("xz_files/xz-5.4.0.tar.xz"),
+                label="xz-files-compressed",
+                creates=["xz_files/xz-5.4.0.tar"],
+                consumes=["xz_files/xz-5.4.0.tar.xz"],
                 requires={"--decompress", "--test", "--list"}
             )
         ],
