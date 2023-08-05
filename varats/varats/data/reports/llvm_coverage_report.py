@@ -634,7 +634,8 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         self.tree = FilenameRegionMapping(base_dir=base_dir)
         self.absolute_path = ""
-        self.featue_option_mapping: tp.Dict[str, str] = {}
+        self.featue_option_mapping: tp.Dict[str, tp.Union[str,
+                                                          tp.List[str]]] = {}
 
         self.configuration = configuration
         self.base_dir = base_dir

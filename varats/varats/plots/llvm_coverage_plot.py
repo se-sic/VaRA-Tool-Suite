@@ -35,7 +35,8 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
-ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, str] = {}
+ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
+                                                         tp.List[str]]] = {}
 
 
 def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
@@ -174,12 +175,12 @@ class CoverageReports:
         self.available_features = frozenset(available_features(self._reports))
 
     def __bidirectional_map(
-        self, mapping: tp.Dict[str, str]
+        self, mapping: tp.Dict[str, tp.Union[str, tp.List[str]]]
     ) -> tp.Dict[str, tp.Set[str]]:
         result = defaultdict(set)
         for key, value in list(mapping.items()):
-            if ";" in value:
-                for x in value.split(";"):
+            if isinstance(value, list):
+                for x in value:
                     result[key].add(x.lstrip("-"))
                     result[x.lstrip("-")].add(key)
             else:
@@ -190,24 +191,22 @@ class CoverageReports:
 
     def feature_option_mapping(
         self,
-        additional_information: tp.Optional[tp.Dict[str, str]] = None
+        additional_information: tp.Optional[tp.Dict[str, tp.Union[str,
+                                                                  tp.List[str]]]
+                                           ] = None
     ) -> tp.Dict[str, tp.Set[str]]:
         """Converts feature model mapping to biderectional mapping."""
         # Check if all equal
-        tmp = set(
-            map(
-                lambda x: tuple(x.featue_option_mapping.items()), self._reports
-            )
-        )
-        if len(tmp) > 1:
-            raise ValueError(
-                "CoverageReports have used different feature models!"
-            )
+        tmp = self._reports[0].featue_option_mapping
+        for report in self._reports[1:]:
+            if tmp != report.featue_option_mapping:
+                raise ValueError(
+                    "CoverageReports have used different feature models!"
+                )
         mapping = {}
         if additional_information:
             mapping.update(additional_information)
-        if len(tmp) == 1:
-            mapping.update(self._reports[0].featue_option_mapping)
+        mapping.update(self._reports[0].featue_option_mapping)
         return self.__bidirectional_map(mapping)
 
     def feature_report(self) -> CoverageReport:
