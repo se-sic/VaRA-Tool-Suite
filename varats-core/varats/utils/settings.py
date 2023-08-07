@@ -238,6 +238,7 @@ def vara_cfg() -> s.Configuration:
             _CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE"
         )
         s.update_env(_CFG)
+        create_missing_folders()
     return _CFG
 
 
@@ -249,7 +250,7 @@ def add_vara_experiment_options(
         "outfile": {
             "default": "",
             "desc": "Path to store results of VaRA CFR analysis.",
-            "value": s.ConfigPath(str(varats_config["result_dir"]))
+            "value": str(varats_config["result_dir"])
         },
         "result": {
             "default":
@@ -257,11 +258,7 @@ def add_vara_experiment_options(
             "desc":
                 "Path to store already annotated projects.",
             "value":
-                s.ConfigPath(
-                    os.path.join(
-                        str(vara_cfg()["benchbuild_root"]), "BC_files"
-                    )
-                )
+                os.path.join(str(vara_cfg()["benchbuild_root"]), "BC_files")
         }
     }
 
@@ -288,6 +285,7 @@ def bb_cfg() -> s.Configuration:
                 BB_CFG.load(local.path(bb_cfg_path))
                 BB_CFG.init_from_env()
         _BB_CFG = BB_CFG
+        create_missing_bb_folders()
     return _BB_CFG
 
 
@@ -317,7 +315,6 @@ def create_missing_folders() -> None:
         config_node = local_cfg[cfg_varname]
         if config_node.has_value() and\
                 config_node.value is not None and\
-                not isinstance(config_node.value, s.ConfigPath) and\
                 not path.isdir(config_node.value):
             makedirs(config_node.value)
 
@@ -328,7 +325,32 @@ def create_missing_folders() -> None:
     create_missing_folder_for_cfg("plot_dir", vara_cfg()["plots"])
     create_missing_folder_for_cfg("table_dir", vara_cfg()["tables"])
     create_missing_folder_for_cfg("artefacts_dir", vara_cfg()["artefacts"])
+
+
+def create_missing_bb_folders() -> None:
+    """Create folders that do not exist but were set in the config."""
+
+    def create_missing_folder_for_cfg(
+        cfg_varname: str, local_cfg: s.Configuration = bb_cfg()
+    ) -> None:
+        """Create missing folders for a specific config path."""
+
+        config_node = local_cfg[cfg_varname]
+        if config_node.has_value() and\
+                config_node.value is not None and\
+                not path.isdir(config_node.value):
+            makedirs(config_node.value)
+
+    create_missing_folder_for_cfg("outfile", bb_cfg()["varats"])
     create_missing_folder_for_cfg("result", bb_cfg()["varats"])
+    #create_missing_folder_for_cfg("build_dir")
+    #create_missing_folder_for_cfg("tmp_dir")
+    #create_missing_folder_for_cfg("node_dir", bb_cfg()["slurm"])
+    #create_missing_folder_for_cfg("logs", bb_cfg()["slurm"])
+    #create_missing_folder_for_cfg("root", bb_cfg()["container"])
+    #create_missing_folder_for_cfg("runroot", bb_cfg()["container"])
+    #create_missing_folder_for_cfg("export", bb_cfg()["container"])
+    #create_missing_folder_for_cfg("import", bb_cfg()["container"])
 
 
 def save_config() -> None:
@@ -352,6 +374,7 @@ def save_bb_config(benchbuild_cfg: tp.Optional[s.Configuration] = None) -> None:
         str(vara_cfg()["benchbuild_root"])
     ) / ".benchbuild.yml"
     benchbuild_cfg["config_file"] = str(config_file)
+    create_missing_bb_folders()
     benchbuild_cfg.store(config_file)
 
 
