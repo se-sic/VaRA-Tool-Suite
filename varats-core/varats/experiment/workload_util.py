@@ -104,7 +104,9 @@ def workload_commands(
         ) and prj_cmd.command.executable:
             args = list(prj_cmd.command._args) + extra_options
             print("Returing: ", prj_cmd.command.executable(args))
-            return prj_cmd.command.executable(args)
+            return prj_cmd.command.executable(
+                args
+            )  # type: ignore[no-any-return]
         return True
 
     available_cmds = filter(executable_filter, project_cmds)

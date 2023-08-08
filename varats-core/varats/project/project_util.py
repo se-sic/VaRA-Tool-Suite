@@ -412,7 +412,7 @@ class Command(_Command):  # type: ignore [misc]
         return self._requires
 
     @property
-    def executable(self) -> tp.Callable[["Command"], bool]:
+    def executable(self) -> tp.Optional[tp.Callable[["Command"], bool]]:
         return self._executable
 
 
