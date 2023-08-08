@@ -5,6 +5,7 @@ import typing as tp
 from copy import deepcopy
 from pathlib import Path
 from shutil import copy
+from tempfile import TemporaryDirectory
 
 from benchbuild import Project
 from benchbuild.command import cleanup, ProjectCommand
@@ -27,13 +28,9 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     ZippedExperimentSteps,
     OutputFolderStep,
+    ProjectStep,
 )
-from varats.experiment.wllvm import (
-    RunWLLVM,
-    get_cached_bc_file_path,
-    BCFileExtensions,
-    Extract,
-)
+from varats.experiment.wllvm import RunWLLVM, BCFileExtensions, Extract
 from varats.experiment.workload_util import (
     workload_commands,
     WorkloadCategory,
@@ -53,6 +50,59 @@ BC_FILE_EXTENSIONS = [
 TIMEOUT = "1h"
 
 
+class SaveBCFiles(ProjectStep):  # type: ignore
+    """SaveBCFiles experiment."""
+
+    NAME = "SaveBCFiles"
+    DESCRIPTION = "Saves the BC files to a temporary directory."
+
+    project: VProject
+
+    def __init__(
+        self,
+        project: Project,
+        tmpdir: TemporaryDirectory,
+    ):
+        super().__init__(project=project)
+        self.tmpdir = tmpdir
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
+
+    def analyze(self) -> actions.StepResult:
+        """Saves the BC files to a temporary directory."""
+        for binary in self.project.binaries:
+            bc_path = Path(self.project.source_of_primary) / f"{binary.path}.bc"
+            copy(bc_path, self.tmpdir.name)
+
+        return actions.StepResult.OK
+
+
+class CleanupTmpdir(ProjectStep):  # type: ignore
+    """SaveBCFiles experiment."""
+
+    NAME = "CleanupTmpdir"
+    DESCRIPTION = "Calls cleanup on a tmpdir"
+
+    project: VProject
+
+    def __init__(
+        self,
+        project: Project,
+        tmpdir: TemporaryDirectory,
+    ):
+        super().__init__(project=project)
+        self.tmpdir = tmpdir
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
+
+    def analyze(self) -> actions.StepResult:
+        self.tmpdir.cleanup()
+
+        return actions.StepResult.OK
+
+
 class GenerateCoverage(OutputFolderStep):  # type: ignore
     """GenerateCoverage experiment."""
 
@@ -70,6 +120,7 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
         binary: ProjectBinaryWrapper,
         workload_cmds: tp.List[ProjectCommand],
         feature_model: Path,
+        bc_path: Path,
         _experiment_handle: ExperimentHandle,
     ):
         super().__init__(project=project)
@@ -77,6 +128,7 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
         self.__workload_cmds = workload_cmds
         self.__experiment_handle = _experiment_handle
         self.__feature_model = feature_model
+        self.__bc_path = bc_path
 
     def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
@@ -133,22 +185,17 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
                     with open(json_name, "w") as file:
                         json.dump(coverage, file)
 
-                # BC file handling
-                bc_name = tmp_dir / create_workload_specific_filename(
-                    "coverage_report",
-                    prj_command.command,
-                    file_suffix=f".{extra_args}.bc"
-                )
                 ptfdd_report_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",
                     prj_command.command,
                     file_suffix=".ptfdd"
                 )
-
-                bc_path = get_cached_bc_file_path(
-                    self.project, self.binary, BC_FILE_EXTENSIONS
+                bc_name = tmp_dir / create_workload_specific_filename(
+                    "coverage_report",
+                    prj_command.command,
+                    file_suffix=f".{extra_args}.bc"
                 )
-                copy(bc_path, bc_name)
+                copy(self.__bc_path, bc_name)
 
                 # Copy FeatureModel.xml
                 model_name = tmp_dir / create_workload_specific_filename(
@@ -160,7 +207,7 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore
                                   "-vara-export-feature-dbg",
                                   #"-vara-view-IRegions",
                                   f"-vara-report-outfile={ptfdd_report_name}",
-                                  "-S", bc_path]
+                                  "-S", self.__bc_path]
 
                 opt_command = wrap_unlimit_stack_size(opt_command)
                 opt_command = opt_command > f"{ptfdd_report_name}.log"
@@ -244,6 +291,8 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
             f"-fvara-fm-path={feature_model}",
         ]
 
+        tmpdir = TemporaryDirectory()  # pylint: disable=consider-using-with
+
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
@@ -257,11 +306,12 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
                 )
             )
         )
+        analysis_actions.append(SaveBCFiles(project, tmpdir))
         analysis_actions.append(actions.Clean(project))
-        analysis_actions.append(actions.MakeBuildDir(project))
-        analysis_actions.append(actions.ProjectEnvironment(project))
 
         project = project_coverage
+        analysis_actions.append(actions.MakeBuildDir(project))
+        analysis_actions.append(actions.ProjectEnvironment(project))
         analysis_actions.append(actions.Compile(project))
 
         # Only consider binaries with a workload
@@ -282,17 +332,19 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
             )
 
             analysis_actions.append(actions.Echo(result_filepath))
+            bc_path = Path(tmpdir.name) / f"{binary.name}.bc"
             analysis_actions.append(
                 ZippedExperimentSteps(
                     result_filepath,
                     [
                         GenerateCoverage(
                             project, binary, workload_cmds, feature_model,
-                            self.get_handle()
+                            bc_path, self.get_handle()
                         )
                     ],
                 )
             )
+        analysis_actions.append(CleanupTmpdir(project, tmpdir))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
