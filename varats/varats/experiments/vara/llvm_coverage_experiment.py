@@ -49,7 +49,7 @@ BC_FILE_EXTENSIONS = [
 TIMEOUT = "1h"
 
 
-class SaveBCFiles(actions.ProjectStep):
+class SaveBCFiles(actions.ProjectStep):  # type: ignore[misc]
     """SaveBCFiles experiment."""
 
     NAME = "SaveBCFiles"
@@ -77,7 +77,7 @@ class SaveBCFiles(actions.ProjectStep):
         return actions.StepResult.OK
 
 
-class CleanupTmpdir(actions.ProjectStep):
+class CleanupTmpdir(actions.ProjectStep):  # type: ignore[misc]
     """SaveBCFiles experiment."""
 
     NAME = "CleanupTmpdir"
@@ -102,7 +102,7 @@ class CleanupTmpdir(actions.ProjectStep):
         return actions.StepResult.OK
 
 
-class GenerateCoverage(OutputFolderStep):  # type: ignore
+class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
     """GenerateCoverage experiment."""
 
     NAME = "GenerateCoverage"
