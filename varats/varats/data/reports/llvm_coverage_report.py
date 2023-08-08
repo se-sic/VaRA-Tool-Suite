@@ -792,7 +792,9 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             for region in code_region.iter_breadth_first():
                 if region.kind != CodeRegionKind.FILE_ROOT:
                     instantiations.update(region.instantiations)
-                if region.kind == CodeRegionKind.CODE or region.kind == CodeRegionKind.EXPANSION:
+                if region.kind in [
+                    CodeRegionKind.CODE, CodeRegionKind.EXPANSION
+                ]:
                     counted_code_regions += 1
                     if region.is_covered():
                         covered_regions += 1

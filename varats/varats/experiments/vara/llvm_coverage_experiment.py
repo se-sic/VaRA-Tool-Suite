@@ -28,7 +28,6 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     ZippedExperimentSteps,
     OutputFolderStep,
-    ProjectStep,
 )
 from varats.experiment.wllvm import RunWLLVM, BCFileExtensions, Extract
 from varats.experiment.workload_util import (
@@ -50,7 +49,7 @@ BC_FILE_EXTENSIONS = [
 TIMEOUT = "1h"
 
 
-class SaveBCFiles(ProjectStep):  # type: ignore
+class SaveBCFiles(actions.ProjectStep):
     """SaveBCFiles experiment."""
 
     NAME = "SaveBCFiles"
@@ -61,7 +60,7 @@ class SaveBCFiles(ProjectStep):  # type: ignore
     def __init__(
         self,
         project: Project,
-        tmpdir: TemporaryDirectory,
+        tmpdir: TemporaryDirectory,  # type: ignore[type-arg]
     ):
         super().__init__(project=project)
         self.tmpdir = tmpdir
@@ -78,7 +77,7 @@ class SaveBCFiles(ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-class CleanupTmpdir(ProjectStep):  # type: ignore
+class CleanupTmpdir(actions.ProjectStep):
     """SaveBCFiles experiment."""
 
     NAME = "CleanupTmpdir"
@@ -89,7 +88,7 @@ class CleanupTmpdir(ProjectStep):  # type: ignore
     def __init__(
         self,
         project: Project,
-        tmpdir: TemporaryDirectory,
+        tmpdir: TemporaryDirectory,  # type: ignore[type-arg]
     ):
         super().__init__(project=project)
         self.tmpdir = tmpdir
