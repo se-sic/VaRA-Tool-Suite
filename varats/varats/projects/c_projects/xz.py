@@ -20,6 +20,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
     Command,
+    comes_after,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     verify_binaries,
@@ -129,7 +130,9 @@ class Xz(VProject):
                 label="countries-land-250m-compress",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
                 consumes=["geo-maps/countries-land-250m.geo.json"],
-                requires={"--compress"}
+                executable=lambda args: comes_after(
+                    args, {"--compress"}, {"--decompress", "--test", "--list"}
+                )
             ),
             Command(
                 SourceRoot("xz") / RSBinary("xz"),
@@ -140,8 +143,10 @@ class Xz(VProject):
                 label="xz-files-compressed",
                 creates=["xz_files/xz-5.4.0.tar"],
                 consumes=["xz_files/xz-5.4.0.tar.xz"],
-                requires={"--decompress", "--test", "--list"}
-            )
+                executable=lambda args: comes_after(
+                    args, {"--decompress", "--test", "--list"}, {"--compress"}
+                )
+            ),
         ],
     }
 

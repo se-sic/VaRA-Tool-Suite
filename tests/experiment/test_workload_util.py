@@ -64,7 +64,8 @@ class TestWorkloadCommands(unittest.TestCase):
                 wu.WorkloadSet(wu.WorkloadCategory.EXAMPLE), project.workloads
             )
         )
-        commands[0]._requires = {"--compress"}
+
+        commands[0]._executable = lambda args: "--compress" in args
         commands = wu.workload_commands(
             project, binary, [wu.WorkloadCategory.EXAMPLE]
         )

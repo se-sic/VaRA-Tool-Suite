@@ -399,12 +399,46 @@ class Command(_Command):  # type: ignore [misc]
         self,
         *args: tp.Any,
         requires: tp.Optional[tp.Set[str]] = None,
+        executable: tp.Callable[["Command"], bool] = None,
         **kwargs: tp.Union[str, tp.List[str]],
     ) -> None:
 
         super().__init__(*args, **kwargs)
         self._requires = requires if requires else set()
+        self._executable = executable if executable else lambda _: True
 
     @property
     def requires(self) -> tp.Set[str]:
         return self._requires
+
+    @property
+    def executable(self) -> tp.Callable[["Command"], bool]:
+        return self._executable
+
+
+def comes_after(
+    args: tp.List[str], after: tp.Set[str], before: tp.Set[str]
+) -> bool:
+    """
+    Returns true if every arg in after comes after every arg in before in
+    command args.
+
+    Returns false if arg in after is not in args.
+    """
+    same_args = after.intersection(before)
+    if len(same_args) > 0:
+        raise ValueError(f"{same_args} are set in after and before!")
+
+    if not args and (after or
+                     before) or (len(set(args).intersection(after)) == 0):
+        return False
+
+    previous_args = []
+    for arg in args:
+        if arg in after:
+            for before_arg in before:
+                if before_arg in args:
+                    if not before_arg in previous_args:
+                        return False
+        previous_args.append(arg)
+    return True

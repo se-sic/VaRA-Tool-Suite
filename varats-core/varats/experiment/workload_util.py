@@ -95,15 +95,17 @@ def workload_commands(
         )
     ]
 
-    # Filter commands that have required args set.
-    options = set(get_extra_config_options(project))
+    # Filter commands that are executable
+    extra_options = get_extra_config_options(project)
 
-    def requires_filter(prj_cmd: ProjectCommand) -> bool:
-        if hasattr(prj_cmd.command, "requires") and prj_cmd.command.requires:
-            return bool(options.intersection(prj_cmd.command.requires))
+    def executable_filter(prj_cmd: ProjectCommand) -> bool:
+        if hasattr(prj_cmd.command, "executable"):
+            args = list(prj_cmd.command._args) + extra_options
+            print("Returing: ", prj_cmd.command.executable(args))
+            return prj_cmd.command.executable(args)
         return True
 
-    available_cmds = filter(requires_filter, project_cmds)
+    available_cmds = filter(executable_filter, project_cmds)
 
     return list(
         filter(

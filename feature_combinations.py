@@ -3,26 +3,51 @@ from sys import argv
 
 from more_itertools import powerset
 
-available_options = argv[1:]
-id = 0
 
-output = {}
-for combination in powerset(available_options):
-    options = []
-    for option in combination:
-        options.append(f'"{option}"')
-    output[id] = f"""'[{', '.join(options)}]'"""
-    id += 1
+def parse():
+    actions = argv[1].split(";")
+    options = argv[2:]
 
-for id in output:
-    print(f"    - {id}")
+    return actions, options
 
-mapping = []
-for id, config in output.items():
-    mapping.append(f"{id}: {config}")
 
-print(f"""...
+def wrap_ticks(wrappee):
+    return map(lambda x: f'"{x}"', wrappee)
+
+
+def create_mapping(available_actions, available_options):
+    id = 0
+    mapping = {}
+
+    for actions in powerset(available_actions):
+        for options in powerset(available_options):
+            mapping[id] = f"""'[{', '.join(wrap_ticks(actions + options))}]'"""
+            id += 1
+
+    return mapping
+
+
+def formatted_print(mapping):
+    for id in mapping:
+        print(f"    - {id}")
+
+    tmp = []
+    for id, config in mapping.items():
+        tmp.append(f"{id}: {config}")
+
+    print(f"""version: 0
+...
 ---
-{chr(10).join(mapping)}
+{chr(10).join(tmp)}
 ...
 """)
+
+
+def main():
+    actions, options = parse()
+    mapping = create_mapping(actions, options)
+    formatted_print(mapping)
+
+
+if __name__ == "__main__":
+    main()
