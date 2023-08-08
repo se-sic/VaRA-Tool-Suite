@@ -399,13 +399,13 @@ class Command(_Command):  # type: ignore [misc]
         self,
         *args: tp.Any,
         requires: tp.Optional[tp.Set[str]] = None,
-        executable: tp.Callable[["Command"], bool] = None,
+        executable: tp.Optional[tp.Callable[["Command"], bool]] = None,
         **kwargs: tp.Union[str, tp.List[str]],
     ) -> None:
 
         super().__init__(*args, **kwargs)
         self._requires = requires if requires else set()
-        self._executable = executable if executable else lambda _: True
+        self._executable = executable
 
     @property
     def requires(self) -> tp.Set[str]:

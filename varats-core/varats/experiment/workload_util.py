@@ -99,7 +99,9 @@ def workload_commands(
     extra_options = get_extra_config_options(project)
 
     def executable_filter(prj_cmd: ProjectCommand) -> bool:
-        if hasattr(prj_cmd.command, "executable"):
+        if hasattr(
+            prj_cmd.command, "executable"
+        ) and prj_cmd.command.executable:
             args = list(prj_cmd.command._args) + extra_options
             print("Returing: ", prj_cmd.command.executable(args))
             return prj_cmd.command.executable(args)
