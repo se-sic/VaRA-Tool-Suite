@@ -338,19 +338,19 @@ def create_missing_bb_folders() -> None:
         config_node = local_cfg[cfg_varname]
         if config_node.has_value() and\
                 config_node.value is not None and\
-                not path.isdir(config_node.value):
-            makedirs(config_node.value)
+                not path.isdir(str(config_node.value)):
+            makedirs(str(config_node.value))
 
     create_missing_folder_for_cfg("outfile", bb_cfg()["varats"])
     create_missing_folder_for_cfg("result", bb_cfg()["varats"])
-    #create_missing_folder_for_cfg("build_dir")
-    #create_missing_folder_for_cfg("tmp_dir")
-    #create_missing_folder_for_cfg("node_dir", bb_cfg()["slurm"])
-    #create_missing_folder_for_cfg("logs", bb_cfg()["slurm"])
-    #create_missing_folder_for_cfg("root", bb_cfg()["container"])
-    #create_missing_folder_for_cfg("runroot", bb_cfg()["container"])
-    #create_missing_folder_for_cfg("export", bb_cfg()["container"])
-    #create_missing_folder_for_cfg("import", bb_cfg()["container"])
+    create_missing_folder_for_cfg("build_dir")
+    create_missing_folder_for_cfg("tmp_dir")
+    create_missing_folder_for_cfg("node_dir", bb_cfg()["slurm"])
+    create_missing_folder_for_cfg("logs", bb_cfg()["slurm"])
+    create_missing_folder_for_cfg("root", bb_cfg()["container"])
+    create_missing_folder_for_cfg("runroot", bb_cfg()["container"])
+    create_missing_folder_for_cfg("export", bb_cfg()["container"])
+    create_missing_folder_for_cfg("import", bb_cfg()["container"])
 
 
 def save_config() -> None:
