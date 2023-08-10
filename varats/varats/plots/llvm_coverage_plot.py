@@ -30,7 +30,8 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
-from varats.table.table_utils import dataframe_to_table, TableFormat
+from varats.table.table_utils import dataframe_to_table
+from varats.table.tables import TableFormat
 from varats.ts_utils.click_param_types import (
     REQUIRE_MULTI_EXPERIMENT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
@@ -417,8 +418,9 @@ def _plot_coverage_annotations(
         )
 
 
-def _get_matrix_fields(matrix: ConfusionMatrix,
-                       fields: tp.List[str]) -> tp.List[tp.Union[int, float]]:
+def _get_matrix_fields(
+    matrix: ConfusionMatrix[ConfusionEntry], fields: tp.List[str]
+) -> tp.List[tp.Union[int, float]]:
     result = []
     for field in fields:
         attribute = getattr(matrix, field)
@@ -474,8 +476,10 @@ def _plot_confusion_matrix(
     table = dataframe_to_table(
         df,
         table_format=TableFormat.LATEX_BOOKTABS,
+        style=df.style.format(thousands=r"\,"),
         wrap_table=False,
-        wrap_landscape=False
+        wrap_landscape=False,
+        hrules=True
     )
     outfile = outdir / "cofusion_matrix_table.tex"
     outfile.write_text(data=table, encoding="utf-8")
