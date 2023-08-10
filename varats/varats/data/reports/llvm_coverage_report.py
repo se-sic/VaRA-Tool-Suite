@@ -12,6 +12,7 @@ from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import TracebackType
 
 from plumbum import colors, local
 from plumbum.colorlib.styles import Color
@@ -1249,7 +1250,7 @@ def _color_str(a: str, color: Color) -> tp.Any:
     return a
 
 
-class DisableColor():
+class DisableColor:
     """Context manager to disable color temporarily."""
 
     def __init__(self) -> None:
@@ -1259,6 +1260,10 @@ class DisableColor():
         global ENABLE_COLOR  # pylint: disable=global-statement
         ENABLE_COLOR = False
 
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
         global ENABLE_COLOR  # pylint: disable=global-statement
         ENABLE_COLOR = self.color_state
