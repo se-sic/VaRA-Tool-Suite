@@ -1255,10 +1255,10 @@ class DisableColor():
     def __init__(self) -> None:
         self.color_state = ENABLE_COLOR
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         global ENABLE_COLOR  # pylint: disable=global-statement
         ENABLE_COLOR = False
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
         global ENABLE_COLOR  # pylint: disable=global-statement
         ENABLE_COLOR = self.color_state
