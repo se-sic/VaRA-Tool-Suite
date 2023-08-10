@@ -8,6 +8,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
+import pandas as pd
+
 from varats.base.configuration import (
     Configuration,
     PlainCommandlineConfiguration,
@@ -28,6 +30,7 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
+from varats.table.table_utils import dataframe_to_table, TableFormat
 from varats.ts_utils.click_param_types import (
     REQUIRE_MULTI_EXPERIMENT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
@@ -381,7 +384,17 @@ class CoveragePlot(Plot, plot_name="coverage"):
                             )
                         )
 
-                        _plot_confusion_matrix(reports, binary_dir)
+                        _plot_confusion_matrix(
+                            reports,
+                            binary_dir,
+                            columns={
+                                "precision": "Precision",
+                                "recall": "Recall",
+                                "accuracy": "Accuracy",
+                                "balanced_accuracy": "Balanced Accuracy",
+                                "f1_score": "F1 Score",
+                            }
+                        )
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -404,14 +417,38 @@ def _plot_coverage_annotations(
         )
 
 
-def _plot_confusion_matrix(reports: CoverageReports, outdir: Path) -> None:
+def _get_matrix_fields(matrix: ConfusionMatrix,
+                       fields: tp.List[str]) -> tp.List[tp.Union[int, float]]:
+    result = []
+    for field in fields:
+        attribute = getattr(matrix, field)
+        if hasattr(attribute, "__call__"):
+            result.append(attribute())
+        else:
+            result.append(attribute)
+    return result
+
+
+def _plot_confusion_matrix(
+    reports: CoverageReports,
+    outdir: Path,
+    columns: tp.Optional[tp.Dict[str, str]] = None
+) -> None:
 
     feature_option_mapping = reports.feature_option_mapping(
         ADDITIONAL_FEATURE_OPTION_MAPPING
     )
 
     matrix_dict = reports.confusion_matrices(feature_option_mapping)
+    if not columns:
+        columns = {
+            "TP": "True Positives (TP)",
+            "FN": "False Negatives (FN)",
+            "FP": "False Positives (FP)",
+            "TN": "True Negatives (TN)"
+        }
 
+    rows = []
     for feature in matrix_dict:
         outfile = outdir / f"{feature}.matrix"
         matrix = matrix_dict[feature]
@@ -425,6 +462,23 @@ def _plot_confusion_matrix(reports: CoverageReports, outdir: Path) -> None:
             output.write(f"False Positives:\n{chr(10).join(sorted(fps))}\n")
             fns = [str(x) for x in matrix.getFNs()]
             output.write(f"False Negatives:\n{chr(10).join(sorted(fns))}\n")
+
+        row: tp.List[tp.Union[str, int, float]] = [f"{feature}"]
+        row.extend(_get_matrix_fields(matrix, list(columns)))
+        rows.append(row)
+
+    df = pd.DataFrame(columns=["Feature"] + list(columns.values()), data=rows)
+    df.set_index("Feature", inplace=True)
+    df.sort_index(inplace=True)
+
+    table = dataframe_to_table(
+        df,
+        table_format=TableFormat.LATEX_BOOKTABS,
+        wrap_table=False,
+        wrap_landscape=False
+    )
+    outfile = outdir / "cofusion_matrix_table.tex"
+    outfile.write_text(data=table, encoding="utf-8")
 
 
 class CoveragePlotGenerator(
