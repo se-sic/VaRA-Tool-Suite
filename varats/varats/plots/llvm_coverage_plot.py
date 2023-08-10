@@ -398,7 +398,8 @@ def _plot_coverage_annotations(
                 reports.feature_segments(base_dir),
                 show_counts=False,
                 show_coverage_features=True,
-                show_vara_features=True
+                show_vara_features=True,
+                save_to_dir=outfile.with_name("feature_annotations")
             )
         )
 

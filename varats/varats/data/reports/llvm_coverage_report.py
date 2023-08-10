@@ -942,12 +942,13 @@ def cov_show_segment_buffer(
     show_counts: bool = True,
     show_coverage_features: bool = False,
     show_vara_features: bool = False,
+    save_to_dir: tp.Optional[Path] = None
 ) -> str:
     """Returns the coverage in text form."""
     result = []
     for file in file_segments_mapping:
-        tmp_value = [_color_str(f"{file}:\n", colors.cyan)]
-        tmp_value.append(
+        tmp_values = [_color_str(f"{file}:\n", colors.cyan)]
+        tmp_values.append(
             __table_to_text(
                 __segments_dict_to_table(
                     file_segments_mapping[file], color_counts=show_counts
@@ -958,11 +959,25 @@ def cov_show_segment_buffer(
             )
         )
 
-        if not tmp_value[-1].endswith("\n"):
+        if not tmp_values[-1].endswith("\n"):
             # Add newline if file does not end with one
-            tmp_value.append("\n")
+            tmp_values.append("\n")
 
-        result.append("".join(tmp_value))
+        tmp_value = "".join(tmp_values)
+        result.append(tmp_value)
+        if save_to_dir:
+            with DisableColor():
+                content = __table_to_text(
+                    __segments_dict_to_table(
+                        file_segments_mapping[file], color_counts=show_counts
+                    ),
+                    show_counts=show_counts,
+                    show_coverage_features=show_coverage_features,
+                    show_vara_features=show_vara_features,
+                    show_line_numbers=False,
+                )
+            (save_to_dir / file).parent.mkdir(parents=True, exist_ok=True)
+            (save_to_dir / file).write_text(content, encoding="utf-8")
 
     return "\n".join(result) + "\n"
 
@@ -980,27 +995,29 @@ def __table_to_text(
     show_counts: bool = True,
     show_coverage_features: bool = False,
     show_vara_features: bool = False,
+    show_line_numbers: bool = True
 ) -> str:
     output = []
     for line_number, entry in table.items():
         line = []
-        line.append(f"{line_number:>5}")
+        if show_line_numbers:
+            line.append(f"{line_number:>5}")
         if show_counts:
-            line.append(f"|{entry.count:>7}")
+            line.append(f"{entry.count:>7}")
 
         # Set tabs to size
         text = entry.text.replace("\t", " " * TAB_SIZE)
         text = text.replace("\n", "", 1)
         if not any([show_coverage_features, show_vara_features]):
-            line.append(f"|{text}")
+            line.append(f"{text}")
         else:
             text = text[:CUTOFF_LENGTH]
-            line.append(f"|{text:<{CUTOFF_LENGTH}}")
+            line.append(f"{text:<{CUTOFF_LENGTH}}")
         if show_coverage_features:
-            line.append(f"|{entry.coverage_features}")
+            line.append(f"{entry.coverage_features}")
         if show_vara_features:
-            line.append(f"|{entry.vara_features}")
-        output.append("".join(line))
+            line.append(f"{entry.vara_features}")
+        output.append("|".join(line))
     return "\n".join(output)
 
 
@@ -1222,6 +1239,26 @@ def __get_previous_line_and_column(
     return line, column - 1
 
 
+ENABLE_COLOR = True
+
+
 def _color_str(a: str, color: Color) -> tp.Any:
     """Wraps the string inside the color characters."""
-    return color | a
+    if ENABLE_COLOR:
+        return color | a
+    return a
+
+
+class DisableColor():
+    """Context manager to disable color temporarily."""
+
+    def __init__(self) -> None:
+        self.color_state = ENABLE_COLOR
+
+    def __enter__(self):
+        global ENABLE_COLOR  # pylint: disable=global-statement
+        ENABLE_COLOR = False
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        global ENABLE_COLOR  # pylint: disable=global-statement
+        ENABLE_COLOR = self.color_state
