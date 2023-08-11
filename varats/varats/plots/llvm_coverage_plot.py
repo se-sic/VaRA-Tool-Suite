@@ -244,7 +244,7 @@ class CoverageReports:
 
         result = {}
         # Iterate over feature_report and compare vara to coverage features
-        for feature in self.available_features:
+        for feature in sorted(self.available_features):
             result[feature] = _compute_confusion_matrix(
                 feature, report, feature_name_map, threshold
             )
@@ -285,9 +285,9 @@ BinaryReportsMapping = tp.NewType(
 
 
 def _process_report_file(
-    input: tp.Tuple[ConfigurationMap, ReportFilepath, Path]
+    args: tp.Tuple[ConfigurationMap, ReportFilepath, Path]
 ) -> tp.Tuple[str, CoverageReport]:
-    config_map, report_filepath, base_dir = input
+    config_map, report_filepath, base_dir = args
 
     binary = report_filepath.report_filename.binary_name
     config_id = report_filepath.report_filename.config_id
@@ -330,8 +330,10 @@ class CoveragePlot(Plot, plot_name="coverage"):
             (config_map, report_file, base_dir) for report_file in report_files
         ]
 
+        cpu_count = os.cpu_count()
+        assert cpu_count
         process_pool = ProcessPoolExecutor(
-            max_workers=min(len(to_process), os.cpu_count())
+            max_workers=min(len(to_process), cpu_count)
         )
         processed = process_pool.map(_process_report_file, to_process)
         for binary, coverage_report in processed:
