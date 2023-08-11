@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import os
 import typing as tp
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +25,7 @@ from varats.data.reports.llvm_coverage_report import (
     FileSegmentBufferMapping,
 )
 from varats.experiment.experiment_util import ZippedReportFolder
+from varats.mapping.configuration_map import ConfigurationMap
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -281,6 +284,29 @@ BinaryReportsMapping = tp.NewType(
 )
 
 
+def _process_report_file(
+    input: tp.Tuple[ConfigurationMap, ReportFilepath, Path]
+) -> tp.Tuple[str, CoverageReport]:
+    config_map, report_filepath, base_dir = input
+
+    binary = report_filepath.report_filename.binary_name
+    config_id = report_filepath.report_filename.config_id
+    assert config_id is not None
+
+    config = config_map.get_configuration(config_id)
+    assert config is not None
+
+    # Set not set features in configuration to false
+    for feature in available_features(config_map.configurations()):
+        if feature not in get_option_names(config):
+            config.set_config_option(feature, False)
+
+    coverage_report = CoverageReport.from_report(
+        report_filepath.full_path(), config, base_dir
+    )
+    return binary, coverage_report
+
+
 class CoveragePlot(Plot, plot_name="coverage"):
     """Plot to visualize coverage diffs."""
 
@@ -300,22 +326,15 @@ class CoveragePlot(Plot, plot_name="coverage"):
             defaultdict(list)
         )
 
-        for report_filepath in report_files:
-            binary = report_filepath.report_filename.binary_name
-            config_id = report_filepath.report_filename.config_id
-            assert config_id is not None
+        to_process = [
+            (config_map, report_file, base_dir) for report_file in report_files
+        ]
 
-            config = config_map.get_configuration(config_id)
-            assert config is not None
-
-            # Set not set features in configuration to false
-            for feature in available_features(config_map.configurations()):
-                if feature not in get_option_names(config):
-                    config.set_config_option(feature, False)
-
-            coverage_report = CoverageReport.from_report(
-                report_filepath.full_path(), config, base_dir
-            )
+        process_pool = ProcessPoolExecutor(
+            max_workers=min(len(to_process), os.cpu_count())
+        )
+        processed = process_pool.map(_process_report_file, to_process)
+        for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 
         return binary_reports_map
