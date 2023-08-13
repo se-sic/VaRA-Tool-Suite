@@ -590,7 +590,11 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
     @classmethod
     def from_report(
-        cls, report_file: Path, configuration: Configuration, base_dir: Path
+        cls,
+        report_file: Path,
+        configuration: Configuration,
+        base_dir: Path,
+        ignore_conditions: bool = True,
     ) -> CoverageReport:
         """CoverageReport from report file."""
         c_r = cls(report_file, configuration, base_dir)
@@ -618,7 +622,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             csvs = list(filter(csv_filter, Path(tmpdir).iterdir()))
             assert len(csvs) == 1
             for csv_file in csvs:
-                c_r._parse_instrs(csv_file)
+                c_r._parse_instrs(csv_file, ignore_conditions)
 
             if c_r.configuration is not None:
                 c_r.annotate_covered(c_r.configuration)
@@ -664,7 +668,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         self.featue_option_mapping = json.loads(output)
         print(self.featue_option_mapping)
 
-    def _parse_instrs(self, csv_file: Path) -> None:
+    def _parse_instrs(self, csv_file: Path, ignore_conditions: bool) -> None:
         with csv_file.open() as file:
             reader = csv.DictReader(file, quotechar="'", delimiter=";")
             for row in reader:
@@ -677,9 +681,11 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 # Don't consider features belonging to conditions a feature.
                 features = []
                 for feature in _features:
-                    if not feature.startswith(
-                        "__CONDITION__:"
-                    ) and feature != "":
+                    if feature.startswith("__CONDITION__:"):
+                        if ignore_conditions:
+                            continue
+                        feature = feature.replace("__CONDITION__:", "", 1)
+                    if feature != "":
                         features.append(feature)
                 instr_index = int(row["instr_index"])
                 instr = row["instr"]

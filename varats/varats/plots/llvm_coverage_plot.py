@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import typing as tp
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
@@ -30,7 +29,7 @@ from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotGenerator
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table_utils import dataframe_to_table
@@ -285,9 +284,9 @@ BinaryReportsMapping = tp.NewType(
 
 
 def _process_report_file(
-    args: tp.Tuple[ConfigurationMap, ReportFilepath, Path]
+    args: tp.Tuple[ConfigurationMap, ReportFilepath, Path, bool]
 ) -> tp.Tuple[str, CoverageReport]:
-    config_map, report_filepath, base_dir = args
+    config_map, report_filepath, base_dir, ignore_conditions = args
 
     binary = report_filepath.report_filename.binary_name
     config_id = report_filepath.report_filename.config_id
@@ -302,17 +301,63 @@ def _process_report_file(
             config.set_config_option(feature, False)
 
     coverage_report = CoverageReport.from_report(
-        report_filepath.full_path(), config, base_dir
+        report_filepath.full_path(), config, base_dir, ignore_conditions
     )
     return binary, coverage_report
+
+
+def _save_plot(
+    binary_reports_map: BinaryReportsMapping, tmp_dir: Path, base_dir: Path
+) -> None:
+    for binary in binary_reports_map:
+        reports = CoverageReports(binary_reports_map[binary])
+
+        binary_dir = tmp_dir / binary
+        binary_dir.mkdir(parents=True)
+
+        feature_annotations = \
+            binary_dir / "feature_annotations.txt"
+
+        _plot_coverage_annotations(reports, base_dir, feature_annotations)
+
+        print(
+            cov_show_segment_buffer(
+                reports.feature_segments(base_dir),
+                show_counts=False,
+                show_coverage_features=True,
+                show_vara_features=True
+            )
+        )
+
+        _plot_confusion_matrix(
+            reports,
+            binary_dir,
+            columns={
+                "precision": "Precision",
+                "recall": "Recall",
+                "accuracy": "Accuracy",
+                "balanced_accuracy": "Balanced Accuracy",
+                "f1_score": "F1 Score",
+            }
+        )
 
 
 class CoveragePlot(Plot, plot_name="coverage"):
     """Plot to visualize coverage diffs."""
 
+    def __init__(
+        self, plot_config: PlotConfig, *args: tp.List[tp.Any], **kwargs: tp.Any
+    ) -> None:
+        super().__init__(plot_config, *args, **kwargs)
+        self.process_pool = ProcessPoolExecutor()
+        self.workarounds = ["ignore_conditions"]
+
     def _get_binary_reports_map(
-        self, case_study: CaseStudy, report_files: tp.List[ReportFilepath],
-        base_dir: Path
+        self,
+        case_study: CaseStudy,
+        report_files: tp.List[ReportFilepath],
+        base_dir: Path,
+        ignore_conditions: bool = True
     ) -> tp.Optional[BinaryReportsMapping]:
         try:
             config_map = load_configuration_map_for_case_study(
@@ -326,16 +371,10 @@ class CoveragePlot(Plot, plot_name="coverage"):
             defaultdict(list)
         )
 
-        to_process = [
-            (config_map, report_file, base_dir) for report_file in report_files
-        ]
+        to_process = [(config_map, report_file, base_dir, ignore_conditions)
+                      for report_file in report_files]
 
-        cpu_count = os.cpu_count()
-        assert cpu_count
-        process_pool = ProcessPoolExecutor(
-            max_workers=min(len(to_process), cpu_count)
-        )
-        processed = process_pool.map(_process_report_file, to_process)
+        processed = self.process_pool.map(_process_report_file, to_process)
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 
@@ -369,54 +408,30 @@ class CoveragePlot(Plot, plot_name="coverage"):
             revisions[revision].append(report_file)
 
         for revision in list(revisions):
-            with RepositoryAtCommit(project_name, revision) as base_dir:
-                binary_reports_map = self._get_binary_reports_map(
-                    case_study, revisions[revision], base_dir
-                )
-
-                if not binary_reports_map:
-                    raise ValueError(
-                        "Cannot load configs for case study '" +
-                        case_study.project_name + "'! " +
-                        "Have you set configs in your case study file?"
+            zip_file = plot_dir / self.plot_file_name("zip")
+            with ZippedReportFolder(zip_file) as tmpdir:
+                with RepositoryAtCommit(project_name, revision) as base_dir:
+                    disabled_workarounds = dict(
+                        (workaround, False) for workaround in self.workarounds
                     )
-
-                zip_file = plot_dir / self.plot_file_name("zip")
-                with ZippedReportFolder(zip_file) as tmpdir:
-
-                    for binary in binary_reports_map:
-                        reports = CoverageReports(binary_reports_map[binary])
-
-                        binary_dir = Path(tmpdir) / binary
-                        binary_dir.mkdir()
-
-                        feature_annotations = \
-                            binary_dir / "feature_annotations.txt"
-
-                        _plot_coverage_annotations(
-                            reports, base_dir, feature_annotations
+                    for workaround in self.workarounds + [""]:
+                        binary_reports_map = self._get_binary_reports_map(
+                            case_study, revisions[revision], base_dir,
+                            **disabled_workarounds
                         )
 
-                        print(
-                            cov_show_segment_buffer(
-                                reports.feature_segments(base_dir),
-                                show_counts=False,
-                                show_coverage_features=True,
-                                show_vara_features=True
+                        if not binary_reports_map:
+                            raise ValueError(
+                                "Cannot load configs for case study '" +
+                                case_study.project_name + "'! " +
+                                "Have you set configs in your case study file?"
                             )
-                        )
-
-                        _plot_confusion_matrix(
-                            reports,
-                            binary_dir,
-                            columns={
-                                "precision": "Precision",
-                                "recall": "Recall",
-                                "accuracy": "Accuracy",
-                                "balanced_accuracy": "Balanced Accuracy",
-                                "f1_score": "F1 Score",
-                            }
-                        )
+                        tmp_dir = Path(
+                            tmpdir
+                        ) / f"{revision}" / f"{list(disabled_workarounds)}"
+                        _save_plot(binary_reports_map, tmp_dir, base_dir)
+                        if workaround:
+                            del disabled_workarounds[workaround]
 
     def calc_missing_revisions(
         self, boundary_gradient: float
