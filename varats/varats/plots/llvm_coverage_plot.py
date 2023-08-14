@@ -428,7 +428,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
                             )
                         tmp_dir = Path(
                             tmpdir
-                        ) / f"{revision}" / f"{list(disabled_workarounds)}"
+                        ) / f"{revision}" / f"disabled_workarounds: {', '.join(disabled_workarounds)}"
                         _save_plot(binary_reports_map, tmp_dir, base_dir)
                         if workaround:
                             del disabled_workarounds[workaround]
