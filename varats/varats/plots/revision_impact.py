@@ -123,99 +123,6 @@ def calc_missing_revisions_impact(
     return new_revs
 
 
-class RevisionImpactDistribution(
-    Plot, plot_name="revision_impact_distribution"
-):
-    """Plots the distribution of the impact of each revision of a single of
-    case_study."""
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        pass
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(plot_config, **kwargs)
-
-    def plot(self, view_mode: bool) -> None:
-        data = self.plot_kwargs["data"]
-        full_data = self.plot_kwargs["data"].copy()
-        full_data["project"] = "All"
-        data["project"] = data["project"].apply(lambda x: f"\\textsc{{{x}}}")
-        plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
-        grid = sns.JointGrid(
-            x="project",
-            y="impacted_commits",
-            data=data,
-        )
-
-        sns.violinplot(
-            ax=grid.ax_joint,
-            data=data,
-            y="impacted_commits",
-            x="project",
-            bw=0.15,
-            scale="width",
-            inner=None,
-            cut=0
-        )
-        sns.kdeplot(
-            ax=grid.ax_marg_y,
-            data=full_data,
-            y="impacted_commits",
-            bw=0.15,
-            cut=0,
-            fill=True,
-        )
-        grid.set_axis_labels("Projects", "Impact", fontsize=14)
-        plt.gcf().set_size_inches(10, 5)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
-
-
-class RevisionImpactDistributionAll(
-    Plot, plot_name="revision_impact_distribution_all"
-):
-    """Plots the distribution of the impact of each revision of a list of
-    case_studies."""
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        pass
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(plot_config, **kwargs)
-
-    def plot(self, view_mode: bool) -> None:
-        data = self.plot_kwargs["data"]
-        data.drop(columns=["project"], inplace=True)
-        sns.violinplot(data=data, y="impacted_commits", bw=0.15, cut=0)
-        plt.ylabel("Impact", fontsize=10)
-
-
-class RevisionImpactScatterInteractions(
-    Plot, plot_name="revision_impact_interactions"
-):
-    """Plots the impact of each revision compared to its interaction change of a
-    list of case_studies."""
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        return calc_missing_revisions_impact(
-            self.plot_kwargs["case_study"], boundary_gradient
-        )
-
-    def plot(self, view_mode: bool) -> None:
-        data = self.plot_kwargs["data"]
-        multivariate_grid(
-            data, "impacted_commits", "interaction_change", "project"
-        )
-        ymax = data["interaction_change"].max()
-        plt.ylim(-0.001, ymax + 0.01)
-
-
 class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
     """Plots the impact of each revision compared to its line change of a list
     of case_studies."""
@@ -286,11 +193,5 @@ class RevisionImpactGenerator(
 
         plots.append(
             RevisionImpactScatterLines(self.plot_config, **self.plot_kwargs)
-        )
-        plots.append(
-            RevisionImpactDistribution(self.plot_config, **self.plot_kwargs)
-        )
-        plots.append(
-            RevisionImpactDistributionAll(self.plot_config, **self.plot_kwargs)
         )
         return plots
