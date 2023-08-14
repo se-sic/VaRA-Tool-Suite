@@ -2,6 +2,7 @@
 import math
 import typing as tp
 
+import click
 from distinctipy import distinctipy
 from matplotlib import pyplot as plt
 from matplotlib import style
@@ -118,45 +119,15 @@ def author_interactions_normalized_per_revision(
         axis=1,
         result_type='broadcast'
     )
-    # data.loc[data['interactions'] < limit, 'author'] = Author(-1, "other", "")
-    # data = data.groupby(by=['revision', 'author'],
-    #                     sort=False).sum(min_count=1).reset_index()
-    return data
-
-
-def get_interactions_per_author_normalized_per_author(case_study: CaseStudy):
-    """Returns a DataFrame with the number of interactions per author per
-    revision normalized by the total number of interactions per author."""
-    data: DataFrame = get_interactions_per_author(case_study)
-    ref_data = data.groupby(by=['author'], sort=False).amount.max()
-    data = data.apply(
-        lambda x: [
-            x['revision'], x['author'],
-            (x['amount'] * 100 / ref_data[x['author']])
-            if not math.isnan(x['amount']) else math.nan
-        ],
-        axis=1,
-        result_type='broadcast'
-    )
-    return data.rename(columns={'amount': 'interactions'})
-
-
-def get_interactions_per_author_normalized_per_revision_wide(
-    case_study: CaseStudy, limit: int = 0
-):
-    """
-    Returns a DataFrame with the number of interactions per author per revision
-    normalized by the total number of interactions per revision.
-
-    In wide format.
-    """
-    data = author_interactions_normalized_per_revision(case_study, limit)
+    data.loc[data['interactions'] < limit, 'author'] = Author(-1, "other", "")
+    data = data.groupby(by=['revision', 'author'],
+                        sort=False).sum(min_count=1).reset_index()
     return data.pivot(
         index="author", columns='revision', values='interactions'
     ).astype(float)
 
 
-def get_lines_per_author_normalized_per_revision(
+def lines_per_author_normalized_per_revision(
     case_study: CaseStudy, min_lines: int = 0
 ):
     """Returns a DataFrame with the number of lines per author per revision
@@ -173,99 +144,11 @@ def get_lines_per_author_normalized_per_revision(
         axis=1,
         result_type='broadcast'
     )
-    # data.loc[data['lines'] < min_lines, 'author'] = Author(-1, "other", "")
-    #data = data.groupby(by=['revision', 'author'],
-    #                   sort=False).lines.sum(min_count=1).reset_index()
-    return data
-
-
-def get_lines_per_author_normalized_per_author(case_study: CaseStudy):
-    """Returns a DataFrame with the number of lines per author per revision
-    normalized by the maximum number of lines per author."""
-    data = get_lines_per_author(case_study)
-    ref_data = data.groupby(by=['author'], sort=False).lines.max()
-    cmap = get_commit_map(case_study.project_name)
-    data = data.apply(
-        lambda x: [
-            cmap.short_time_id(x['revision']), x['author'],
-            (x['lines'] * 100 / ref_data[x['author']])
-            if not math.isnan(x['lines']) else math.nan
-        ],
-        axis=1,
-        result_type='broadcast'
-    )
-    return data
-
-
-def get_author_lines_normalized_per_revision_wide(
-    case_study: CaseStudy, limit: int = 0
-) -> DataFrame:
-    """
-    Returns a DataFrame with the number of lines per author per revision
-    normalized by the total number of lines per revision.
-
-    In wide format.
-    """
-    data = get_lines_per_author_normalized_per_revision(case_study, limit)
+    data.loc[data['lines'] < min_lines, 'author'] = Author(-1, "other", "")
+    data = data.groupby(by=['revision', 'author'],
+                        sort=False).lines.sum(min_count=1).reset_index()
     return data.pivot(index="author", columns='revision',
                       values='lines').astype(float)
-
-
-def compare_lines_and_interactions_author_revision(
-    case_study: CaseStudy, limit: int
-):
-    """
-    Returns a DataFrame with the number of lines and interactions per author per
-    revision normalized by the total number of lines and interactions per
-    revision.
-
-    In wide format.
-    """
-    lines = get_lines_per_author_normalized_per_revision(case_study)
-    interactions = author_interactions_normalized_per_revision(case_study)
-    data = interactions.merge(lines, how='right', on=['author', 'revision'])
-    small_authors = data.groupby(by=['author'], sort=False).agg({
-        "lines": "max",
-        "interactions": "max"
-    })
-    small_authors.fillna(0, inplace=True)
-    small_authors = small_authors.loc[((small_authors['lines'] < limit) &
-                                       (small_authors['interactions'] < limit))]
-    print(small_authors)
-    data.loc[data['author'].isin(small_authors.index),
-             'author'] = Author(-1, "other", "")
-    data = data.groupby(by=['revision', 'author'], sort=False).agg({
-        "lines": "sum",
-        "interactions": "sum"
-    }).reset_index()
-    data = data.pivot(
-        index="author", columns="revision", values=["lines", "interactions"]
-    )
-    data = data.stack(level=0, dropna=True)
-    data.fillna(0, inplace=True)
-    return data
-
-
-def compare_lines_and_interactions_author_author(case_study: CaseStudy):
-    """Returns a DataFrame with the number of lines and interactions per author
-    per revision normalized by the total number of lines and interactions per
-    author."""
-    lines = get_lines_per_author_normalized_per_author(case_study)
-    interactions = get_interactions_per_author_normalized_per_author(case_study)
-    data = lines.merge(interactions, how='left', on=['author', 'revision'])
-    data.dropna(
-        axis=0, how='all', inplace=True, subset=["lines", "interactions"]
-    )
-    data.insert(3, "space", math.nan)
-    data = data.pivot(
-        index="author",
-        columns="revision",
-        values=["lines", "interactions", 'space']
-    )
-    data = data.stack(level=0, dropna=False)
-    cmap = get_commit_map(case_study.project_name)
-    data = data.sort_index(axis=1, key=lambda x: x.map(cmap.short_time_id))
-    return data.astype(float)
 
 
 class ContributionPlot(Plot, plot_name=None):
@@ -286,10 +169,9 @@ class ContributionPlot(Plot, plot_name=None):
     def plot(self, view: bool) -> None:
         """Plots the contribution plot."""
         style.use(self.plot_config.get_dict())
-        _, axis = plt.subplots(len(self.data_column), 1, sharex="col")
+        _, axis = plt.subplots(1, 1)
         case_study = self.plot_kwargs['case_study']
-        data = self.data_function(case_study, 3)
-        print(data)
+        data = self.data_function(case_study, self.plot_kwargs["threshold"])
         data.sort_index(
             axis=0,
             level=0,
@@ -297,20 +179,9 @@ class ContributionPlot(Plot, plot_name=None):
             key=lambda x: x.map(lambda y: y.author_id)
         )
         data.fillna(0, inplace=True)
-        colors = distinctipy.get_colors(
-            len(data.index.levels[0]), pastel_factor=0.5
-        )
         plt.rcParams.update({"text.usetex": True, "font.family": "Helvetica"})
-        for i, column in enumerate(self.data_column):
-            plotdata = data.xs(column, level=1)
-            plotdata.T.plot.area(
-                ax=axis[i],
-                ylabel=column,
-                stacked=True,
-                colormap=distinctipy.get_colormap(colors)
-            )
-            axis[i].set_ylabel(column.capitalize())
-            axis[i].get_legend().remove()
+        data.T.plot.area(ax=axis, ylabel=self.data_column, stacked=True)
+        axis.set_ylabel(self.data_column.capitalize())
         plt.xlabel("Revision")
         plt.xticks([], [])
         plt.legend(fontsize=8, loc=2, bbox_to_anchor=(1, 2))
@@ -330,9 +201,9 @@ class AuthorLineContribution(
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            plot_config, get_author_lines_normalized_per_revision_wide, **kwargs
+            plot_config, lines_per_author_normalized_per_revision, **kwargs
         )
-        self.data_column = ["lines"]
+        self.data_column = "lines"
 
 
 class AuthorInteractionsContribution(
@@ -349,56 +220,24 @@ class AuthorInteractionsContribution(
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            plot_config,
-            get_interactions_per_author_normalized_per_revision_wide, **kwargs
+            plot_config, author_interactions_normalized_per_revision, **kwargs
         )
-        self.data_column = ["interactions"]
-
-
-class AuthorContributionPlotRevision(
-    ContributionPlot, plot_name="author_contribution_plot_revision"
-):
-    """Heatmap Plot for lines and interactions of authors per revision."""
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        pass
-
-    Name = "author_contribution_plot_revision"
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(
-            plot_config, compare_lines_and_interactions_author_revision,
-            **kwargs
-        )
-        self.data_column = ["lines", "interactions"]
-        self.y_label = "Author Contribution Lines vs. Interactions"
-
-
-class AuthorContributionPlotAuthor(
-    HeatMapPlot, plot_name="author_contribution_plot_author"
-):
-    """Heatmap Plot for lines and interactions of authors per author."""
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        pass
-
-    Name = "author_contribution_plot_author"
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(
-            plot_config, compare_lines_and_interactions_author_author, **kwargs
-        )
-        self.yticklabels = 3
+        self.data_column = "interactions"
 
 
 class AuthorContributionPlotGenerator(
     PlotGenerator,
     generator_name="author-contribution",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    options=[
+        REQUIRE_MULTI_CASE_STUDY,
+        click.Option(
+            "threshold",
+            type=int,
+            help=
+            "Cut of threshold to group authors with smaller maximum contribution into others",
+            default=10
+        )
+    ]
 ):
     """Generates contribution plots."""
 
@@ -411,11 +250,8 @@ class AuthorContributionPlotGenerator(
         for case_study in case_studys:
             kwargs = self.plot_kwargs.copy()
             kwargs["case_study"] = case_study
-            #plots.append(AuthorLineContribution(self.plot_config, **kwargs))
-            # plots.append(
-            #     AuthorInteractionsContribution(self.plot_config, **kwargs)
-            # )
+            plots.append(AuthorLineContribution(self.plot_config, **kwargs))
             plots.append(
-                AuthorContributionPlotRevision(self.plot_config, **kwargs)
+                AuthorInteractionsContribution(self.plot_config, **kwargs)
             )
         return plots
