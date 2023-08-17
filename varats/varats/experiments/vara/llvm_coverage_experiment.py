@@ -12,6 +12,7 @@ from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
+from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import local
 
 from varats.data.reports.llvm_coverage_report import CoverageReport
@@ -245,6 +246,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
     NAME = "GenerateCoverage"
 
     REPORT_SPEC = ReportSpecification(CoverageReport)
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("20G")]
 
     def actions_for_project(
         self, project: Project
