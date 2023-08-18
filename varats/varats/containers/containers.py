@@ -154,6 +154,7 @@ def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
 
 
 def _create_stage_10_varats_layers(stage_builder: StageBuilder) -> None:
+    stage_builder.layers.run('pip3', 'install', '--user', '--upgrade', 'pip')
     stage_builder.layers.run('pip3', 'install', '--upgrade', 'pip')
     _add_varats_layers(stage_builder)
     if bb_cfg()['container']['from_source']:
