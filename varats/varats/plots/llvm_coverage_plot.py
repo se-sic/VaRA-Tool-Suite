@@ -411,13 +411,14 @@ class CoveragePlot(Plot, plot_name="coverage"):
             zip_file = plot_dir / self.plot_file_name("zip")
             with ZippedReportFolder(zip_file) as tmpdir:
                 with RepositoryAtCommit(project_name, revision) as base_dir:
-                    disabled_workarounds = dict(
+                    disabled = dict(
                         (workaround, False) for workaround in self.workarounds
                     )
+                    name = "disabled_workarounds"
                     for workaround in self.workarounds + [""]:
                         binary_reports_map = self._get_binary_reports_map(
                             case_study, revisions[revision], base_dir,
-                            **disabled_workarounds
+                            **disabled
                         )
 
                         if not binary_reports_map:
@@ -428,10 +429,10 @@ class CoveragePlot(Plot, plot_name="coverage"):
                             )
                         tmp_dir = Path(
                             tmpdir
-                        ) / f"{revision}" / f"disabled_workarounds: {', '.join(disabled_workarounds)}"
+                        ) / f"{revision}" / f"{name}: {', '.join(disabled)}"
                         _save_plot(binary_reports_map, tmp_dir, base_dir)
                         if workaround:
-                            del disabled_workarounds[workaround]
+                            del disabled[workaround]
 
     def calc_missing_revisions(
         self, boundary_gradient: float
