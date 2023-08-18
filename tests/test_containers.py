@@ -132,7 +132,7 @@ class TestContainerSupport(unittest.TestCase):
         self.assertIn(("mount", mounting_parameters),
                       varats_core_install_layer.kwargs)
 
-        varats_install_layer = self.check_layer_type(layers[5], RunLayer)
+        varats_install_layer = self.check_layer_type(layers[6], RunLayer)
         self.assertEqual("pip3", varats_install_layer.command)
         self.assertTupleEqual(("install", "/varats/varats"),
                               varats_install_layer.args)
