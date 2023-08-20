@@ -12,6 +12,7 @@ REGEX_MAX_VALUE = re.compile("maxValue: (\d+)")
 REGEX_VALUES = re.compile("values: [(.+)]")
 
 fm = FM.loadFeatureModel(argv[1])
+assert fm
 
 
 def get_min_value(s: str) -> tp.Optional[int]:
