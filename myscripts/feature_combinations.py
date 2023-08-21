@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
 from sys import argv
 
-import vara_feature.feature_model as FM
-from more_itertools import powerset
-from vara_feature.configuration import (
-    Configuration,
-    ConfigurationOption,
-    getAllConfigs,
-)
-
-
-def load_feature_model(path):
-    fm = FM.loadFeatureModel(path)
-    if fm is None:
-        raise ValueError("Feature Model could not be loaded!")
-    return fm
+from common import load_feature_model
+from feature_option_mapping import feature_option_mapping
+from vara_feature.configuration import getAllConfigs
 
 
 def getConfigs(fm):
@@ -33,17 +22,19 @@ def getConfigs(fm):
             else:
                 option[name] = value
         configs.append(options)
-    return configs
+    return reversed(configs)
 
 
-def config_to_options(config):
+def config_to_options(config, feature_to_options):
     options = []
     for key, value in config.items():
-        if isinstance(value, bool):
-            if value:
-                options.append(key)
-        else:
-            raise NotImplementedError()
+        option = feature_to_options[key]
+        if option:
+            if isinstance(value, bool):
+                if value:
+                    options.append(option)
+            else:
+                raise NotImplementedError()
     return options
 
 
@@ -51,12 +42,13 @@ def wrap_ticks(wrappee):
     return map(lambda x: f'"{x}"', wrappee)
 
 
-def create_mapping(configs):
+def create_mapping(configs, feature_to_options):
     mapping = {}
 
     for id, config in enumerate(configs):
-        mapping[id
-               ] = f"""'[{', '.join(wrap_ticks(config_to_options(config)))}]'"""
+        mapping[
+            id
+        ] = f"""'[{', '.join(wrap_ticks(config_to_options(config, feature_to_options)))}]'"""
 
     return mapping
 
@@ -79,8 +71,9 @@ def formatted_print(mapping):
 
 def main():
     fm = load_feature_model(argv[1])
+    feature_to_options = feature_option_mapping(fm)
     configs = getConfigs(fm)
-    mapping = create_mapping(configs)
+    mapping = create_mapping(configs, feature_to_options)
     formatted_print(mapping)
 
 

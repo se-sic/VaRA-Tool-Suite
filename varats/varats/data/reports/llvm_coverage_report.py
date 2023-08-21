@@ -664,7 +664,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
     def _extract_feature_option_mapping(self, xml_file: Path) -> None:
         with local.cwd(Path(__file__).parent.parent.parent.parent.parent):
-            output = local["feature_option_mapping.py"](xml_file)
+            output = local["myscripts/feature_option_mapping.py"](xml_file)
         self.featue_option_mapping = json.loads(output)
         print(self.featue_option_mapping)
 

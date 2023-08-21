@@ -4,15 +4,12 @@ import re
 import typing as tp
 from sys import argv
 
-import vara_feature.feature_model as FM
+from common import load_feature_model
 from vara_feature.feature import NumericFeature, Feature
 
 REGEX_MIN_VALUE = re.compile("minValue: (\d+)")
 REGEX_MAX_VALUE = re.compile("maxValue: (\d+)")
 REGEX_VALUES = re.compile("values: [(.+)]")
-
-fm = FM.loadFeatureModel(argv[1])
-assert fm
 
 
 def get_min_value(s: str) -> tp.Optional[int]:
@@ -45,14 +42,23 @@ def get_numeric_values(feature: Feature) -> tp.Optional[tp.List[int]]:
     return None
 
 
-output = {}
-for feature in fm:
-    name = feature.name.str()
-    option = feature.output_string.str()
-    numeric_values = get_numeric_values(feature)
-    if numeric_values:
-        output[name] = [f"{option}{i}" for i in numeric_values]
-    else:
-        output[name] = option
+def feature_option_mapping(fm):
+    output = {}
+    for feature in fm:
+        name = feature.name.str()
+        option = feature.output_string.str()
+        numeric_values = get_numeric_values(feature)
+        if numeric_values:
+            output[name] = [f"{option}{i}" for i in numeric_values]
+        else:
+            output[name] = option
+    return output
 
-print(json.dumps(output))
+
+def main():
+    fm = load_feature_model(argv[1])
+    print(json.dumps(feature_option_mapping(fm)))
+
+
+if __name__ == "__main__":
+    main()
