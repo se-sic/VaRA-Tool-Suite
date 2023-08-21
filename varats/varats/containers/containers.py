@@ -152,6 +152,8 @@ def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
     if (research_tool := _get_installable_research_tool()):
         research_tool.container_install_dependencies(stage_builder)
 
+    _setup_venv(stage_builder)
+
 
 def _create_stage_10_varats_layers(stage_builder: StageBuilder) -> None:
     stage_builder.layers.run('pip3', 'install', '--upgrade', 'pip')
@@ -308,6 +310,14 @@ def _set_varats_source_mount(image_context: StageBuilder, mnt_src: str) -> None:
         mnt_src, str(image_context.varats_source_mount_target)
     ]]
     save_bb_config()
+
+
+def _setup_venv(image_context: StageBuilder) -> None:
+    venv_path = "/venv"
+    image_context.layers.run("pip3", "install", "virtualenv")
+    image_context.layers.run("virtualenv", venv_path)
+    image_context.layers.env(VIRTUAL_ENV=venv_path)
+    image_context.layers.env(PATH=f"{venv_path}/bin:$PATH")
 
 
 def _add_varats_layers(image_context: StageBuilder) -> None:
