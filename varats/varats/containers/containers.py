@@ -149,6 +149,8 @@ class StageBuilder():
 
 def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
     _BASE_IMAGES[stage_builder.base](stage_builder)
+    _setup_venv(stage_builder)
+
     if (research_tool := _get_installable_research_tool()):
         research_tool.container_install_dependencies(stage_builder)
 
@@ -198,9 +200,8 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .from_("docker.io/library/debian:10")
             .run('apt', 'update')
             .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
-                 'software-properties-common', 'python3', 'python3-dev',
-                 'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
-                 'libffi-dev', 'libyaml-dev', 'graphviz-dev')
+                 'software-properties-common', 'musl-dev', 'git', 'gcc',
+                 'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev')
             # install python 3.10
             .run('apt', 'install', '-y', 'build-essential', 'gdb', 'lcov',
                  'pkg-config', 'libbz2-dev', 'libffi-dev', 'libgdbm-dev',
@@ -309,6 +310,14 @@ def _set_varats_source_mount(image_context: StageBuilder, mnt_src: str) -> None:
         mnt_src, str(image_context.varats_source_mount_target)
     ]]
     save_bb_config()
+
+
+def _setup_venv(image_context: StageBuilder) -> None:
+    venv_path = "/venv"
+    image_context.layers.run("pip3", "install", "virtualenv")
+    image_context.layers.run("virtualenv", venv_path)
+    image_context.layers.env(VIRTUAL_ENV=venv_path)
+    image_context.layers.env(PATH=f"{venv_path}/bin:$PATH")
 
 
 def _add_varats_layers(image_context: StageBuilder) -> None:
