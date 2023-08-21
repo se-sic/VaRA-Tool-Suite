@@ -149,10 +149,10 @@ class StageBuilder():
 
 def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
     _BASE_IMAGES[stage_builder.base](stage_builder)
+    _setup_venv(stage_builder)
+
     if (research_tool := _get_installable_research_tool()):
         research_tool.container_install_dependencies(stage_builder)
-
-    _setup_venv(stage_builder)
 
 
 def _create_stage_10_varats_layers(stage_builder: StageBuilder) -> None:
