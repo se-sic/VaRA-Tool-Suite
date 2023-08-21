@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
+from git import Repo
 
 from varats.base.version_header import VersionHeader
 from varats.data.reports.feature_analysis_report import (
@@ -13,8 +14,6 @@ from varats.data.reports.feature_analysis_report import (
 )
 from varats.report.report import BaseReport
 from varats.utils.git_util import CommitRepoPair, ShortCommitHash
-
-from git import Repo
 
 
 class StructuralCommitFeatureInteraction():
@@ -146,34 +145,36 @@ def generate_feature_scfi_data(
 
 
 def generate_feature_author_scfi_data(
-    SFBR: StructuralFeatureBlameReport
+    SFBR: StructuralFeatureBlameReport, path: Path
 ) -> pd.DataFrame:
-    # {feature: (authors, scope)}
+    # {feature: (authors, size)}
     features_cfi_author_data: tp.Dict[str, tp.Tuple(tp.Set[str], int)] = {}
     for SCFI in SFBR.commit_feature_interactions:
-        author = get_author(SCFI.commit)
+        commit_hash = SCFI.commit.commit_hash
+        author = get_author(commit_hash, path)
         entry = features_cfi_author_data.get(SCFI.feature)
         if not entry:
-            features_cfi_author_data.update({SCFI.feature: (set([author]), SCFI.num_instructions)})
+            features_cfi_author_data.update({
+                SCFI.feature: (set([author]), SCFI.num_instructions)
+            })
         else:
             entry[0].add(author)
             features_cfi_author_data.update({
                 SCFI.feature: (entry[0], entry[1] + SCFI.num_instructions)
             })
 
-    rows = [[feature_data[0], len(feature_data[1][0]), feature_data[1][1]]
+    rows = [[feature_data[0],
+             len(feature_data[1][0]), feature_data[1][1]]
             for feature_data in features_cfi_author_data.items()]
     return pd.DataFrame(
-        rows, columns=["feature", "num_implementing_authors", "feature_scope"]
+        rows, columns=["feature", "num_implementing_authors", "feature_size"]
     )
 
 
-def get_author(
-    commit_repo_pair: CommitRepoPair
-) -> str:
-    repo = Repo("/scratch/s8sisteu/VARA_ROOT/benchbuild/tmp/" + commit_repo_pair.repository_name)
+def get_author(commit_hash: any, path: Path) -> str:
+    repo = Repo(path)
     # pygit2 libgit get
-    return repo.git.show("-s", "--format=Author: %an <%ae>", commit_repo_pair.commit_hash)
+    return repo.git.show("-s", "--format=Author: %an <%ae>", commit_hash)
 
 
 def generate_commit_scfi_data(
@@ -312,17 +313,12 @@ def generate_commit_dcfi_data(
                     new = (set([DCFI.feature]), part_of_feature)
                     dfi_commit.update({sch: new})
     # value 0 in third column => not part of feature
-    rows_commit_dfi = [
-        [
-            commit_data[0],
-            len(commit_data[1][0]),
-            commit_data[1][1]
-        ] for commit_data in dfi_commit.items()
-    ]
+    rows_commit_dfi = [[
+        commit_data[0],
+        len(commit_data[1][0]), commit_data[1][1]
+    ] for commit_data in dfi_commit.items()]
     counter = 0
-    for _ in range(
-        0, num_commits - len(dfi_commit)
-    ):
+    for _ in range(0, num_commits - len(dfi_commit)):
         rows_commit_dfi.append([f"fake_hash{counter}", 0, 0])
         counter += 1
 
