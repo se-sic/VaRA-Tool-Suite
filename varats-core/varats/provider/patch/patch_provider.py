@@ -1,6 +1,7 @@
 import os
 import textwrap
 import typing as tp
+import warnings
 from pathlib import Path
 
 import benchbuild as bb
@@ -14,6 +15,7 @@ from benchbuild.utils.revision_ranges import (
     _get_git_for_path,
 )
 from plumbum import local, ProcessExecutionError
+from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_git_path
 from varats.project.varats_project import VProject
@@ -28,82 +30,6 @@ from varats.utils.git_util import (
     ShortCommitHash,
     get_all_revisions_between,
 )
-
-
-def __get_project_git(project: Project):
-    return _get_git_for_path(
-        local.path(project.source_of(project.primary_source))
-    )
-
-
-class ApplyPatch(actions.ProjectStep):
-    """Apply a patch to a project."""
-
-    NAME = "APPLY_PATCH"
-    DESCRIPTION = "Apply a Git patch to a project."
-
-    def __init__(self, project: VProject, patch: 'Patch') -> None:
-        super().__init__(project)
-        self.__patch = patch
-
-    def __call__(self) -> StepResult:
-        try:
-            print(
-                f"Applying {self.__patch.shortname} to "
-                f"{self.project.source_of(self.project.primary_source)}"
-            )
-            apply_patch(
-                Path(self.project.source_of(self.project.primary_source)),
-                self.__patch.path
-            )
-
-        except ProcessExecutionError:
-            self.status = StepResult.ERROR
-
-        self.status = StepResult.OK
-
-        return StepResult.OK
-
-    def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* {self.project.name}: Apply patch "
-            f"{self.__patch.shortname}", " " * indent
-        )
-
-
-class RevertPatch(actions.ProjectStep):
-    """Revert a patch from a project."""
-
-    NAME = "REVERT_PATCH"
-    DESCRIPTION = "Revert a Git patch from a project."
-
-    def __init__(self, project, patch):
-        super().__init__(project)
-        self.__patch = patch
-
-    def __call__(self) -> StepResult:
-        try:
-            print(
-                f"Reverting {self.__patch.shortname} on "
-                f"{self.project.source_of(self.project.primary_source)}"
-            )
-            revert_patch(
-                Path(self.project.source_of(self.project.primary_source)),
-                self.__patch.path
-            )
-
-        except ProcessExecutionError:
-            self.status = StepResult.ERROR
-
-        self.status = StepResult.OK
-
-        return StepResult.OK
-
-    def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* {self.project.name}: Revert patch "
-            f"{self.__patch.shortname}", " " * indent
-        )
 
 
 class Patch:
@@ -130,10 +56,6 @@ class Patch:
         """Creates a Patch from a YAML file."""
 
         yaml_dict = yaml.safe_load(yaml_path.read_text())
-
-        if not yaml_dict:
-            # TODO: Proper Error/warning
-            raise PatchesNotFoundError()
 
         project_name = yaml_dict["project_name"]
         shortname = yaml_dict["shortname"]
@@ -217,8 +139,16 @@ class Patch:
 
         return str_representation
 
+    def __hash__(self):
+        if self.tags:
+            return hash((self.shortname, str(self.path), tuple(self.tags)))
+
+        return hash((self.shortname, str(self.path)))
+
 
 class PatchSet:
+    """A PatchSet is a storage container for project specific patches that can
+    easily be accessed via the tags of a patch."""
 
     def __init__(self, patches: tp.Set[Patch]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
@@ -232,25 +162,57 @@ class PatchSet:
     def __len__(self) -> int:
         return len(self.__patches)
 
-    def __getitem__(self, tag):
-        tag_set = set(tag)
-        return PatchSet({p for p in self.__patches if tag_set.issubset(p.tags)})
+    def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]):
+        """
+        Overrides the bracket operator of a PatchSet.
+
+        Returns a PatchSet, such that all patches include all the tags given
+        """
+        # TODO: Discuss if we really want this. Currently this is an "all_of" access
+        # We could consider to remove the bracket operator and only provide the all_of/any_of accessors as it
+        # would be clearer what the exact behaviour is
+
+        # Trick to handle correct set construction if just a single tag is given
+        if isinstance(tags, str):
+            tags = [tags]
+
+        tag_set = set(tags)
+        res_set = set()
+
+        for patch in self.__patches:
+            if patch.tags and tag_set.issubset(patch.tags):
+                res_set.add(patch)
+
+        return PatchSet(res_set)
 
     def __and__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
-
-        ret = {}
-        ...
-        return ret
+        return PatchSet(self.__patches.intersection(rhs.__patches))
 
     def __or__(self, rhs: "PatchSet") -> "PatchSet":
-        lhs_t = self.__patches
-        rhs_t = rhs.__patches
+        """Implementing the union of two sets."""
+        return PatchSet(self.__patches.union(rhs.__patches))
 
-        ret = {}
-        ...
-        return ret
+    def any_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+        """Returns a patch set with patches containing at least one of the given
+        tags."""
+        # Trick to handle just a single tag being passed
+        if isinstance(tags, str):
+            tags = [tags]
+
+        result = set()
+        for patch in self:
+            if patch.tags and any([tag in patch.tags for tag in tags]):
+                result.add(patch)
+
+        return PatchSet(result)
+
+    def all_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+        """
+        Returns a patch set with patches containing all the given tags.
+
+        Equivalent to bracket operator (__getitem__)
+        """
+        return self.__getitem__(tags)
 
     def __hash__(self) -> int:
         return hash(self.__patches)
@@ -261,15 +223,18 @@ class PatchSet:
         return f"PatchSet({{{repr_str}}})"
 
 
-class PatchesNotFoundError(FileNotFoundError):
-    # TODO: Implement me
-    pass
-
-
 class PatchProvider(Provider):
     """A provider for getting patch files for a certain project."""
 
-    patches_repository = "git@github.com:se-sic/vara-project-patches.git"
+    patches_repository = "https://github.com/se-sic/vara-project-patches.git"
+
+    patches_source = bb.source.Git(
+        remote=patches_repository,
+        local="patch-configurations",
+        refspec="origin/HEAD",
+        limit=None,
+        shallow=False
+    )
 
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
@@ -282,8 +247,9 @@ class PatchProvider(Provider):
         )
 
         if not patches_project_dir.is_dir():
-            # TODO: Error handling/warning and None
-            raise PatchesNotFoundError()
+            warnings.warn(
+                f"Could not find patches directory for project '{self.project.NAME}'."
+            )
 
         patches = set()
 
@@ -293,13 +259,22 @@ class PatchProvider(Provider):
                     continue
 
                 info_path = Path(os.path.join(root, filename))
-                current_patch = Patch.from_yaml(info_path)
-
-                patches.add(current_patch)
+                try:
+                    current_patch = Patch.from_yaml(info_path)
+                    patches.add(current_patch)
+                except YAMLError:
+                    warnings.warn(
+                        f"Unable to parse patch info in: '{filename}'"
+                    )
 
         self.__patches: tp.Set[Patch] = patches
 
     def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
+        """
+        Returns a patch with a specific shortname, if such a patch exists.
+
+        None otherwise
+        """
         for patch in self.__patches:
             if patch.shortname == shortname:
                 return patch
@@ -317,17 +292,15 @@ class PatchProvider(Provider):
         cls: tp.Type[ProviderType], project: tp.Type[Project]
     ):
         """
-        Creates a provider instance for the given project if possible.
+        Creates a provider instance for the given project.
+
+        Note:
+            A provider may not contain any patches at all if there are no existing patches for a project
 
         Returns:
-            a provider instance for the given project if possible,
-            otherwise, ``None``
+            a provider instance for the given project
         """
-        try:
-            return PatchProvider(project)
-        except PatchesNotFoundError:
-            # TODO: Warnings
-            return None
+        return PatchProvider(project)
 
     @classmethod
     def create_default_provider(
@@ -343,16 +316,8 @@ class PatchProvider(Provider):
             "All usages should be covered by the project specific provider."
         )
 
-    @staticmethod
-    def _get_patches_repository_path() -> Path:
-        patches_source = bb.source.Git(
-            remote=PatchProvider.patches_repository,
-            local="patch-configurations",
-            refspec="origin/main",
-            limit=None,
-            shallow=False
-        )
+    @classmethod
+    def _get_patches_repository_path(cls) -> Path:
+        cls.patches_source.fetch()
 
-        patches_source.fetch()
-
-        return Path(target_prefix()) / patches_source.local
+        return Path(target_prefix()) / cls.patches_source.local

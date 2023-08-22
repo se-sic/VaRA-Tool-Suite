@@ -10,7 +10,7 @@ from tests.helper_utils import TEST_INPUTS_DIR
 from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,
 )
-from varats.provider.patch.patch_provider import PatchProvider, Patch
+from varats.provider.patch.patch_provider import PatchProvider, Patch, PatchSet
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -29,7 +29,7 @@ class TestPatchProvider(unittest.TestCase):
         )
         self.assertIsNotNone(provider)
 
-        patch = provider.get_by_shortname("patch-10")
+        patch = provider.get_by_shortname("compile-error")
         self.assertIsNotNone(patch)
 
         patch = provider.get_by_shortname("dummy-patch")
@@ -172,3 +172,163 @@ class TestPatchRevisionRanges(unittest.TestCase):
         self.__test_patch_revisions(
             "include-range-exclude-range", expected_revisions
         )
+
+
+class TestPatchSet(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        patches = {
+            Patch(
+                "TEST",
+                "Test-ABCD",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "B", "C", "D"}
+            ),
+            Patch("TEST", "Test-A", "", path=Path("test.patch"), tags={"A"}),
+            Patch("TEST", "Test-B", "", path=Path("test.patch"), tags={"B"}),
+            Patch("TEST", "Test-C", "", path=Path("test.patch"), tags={"C"}),
+            Patch("TEST", "Test-D", "", path=Path("test.patch"), tags={"D"}),
+            Patch(
+                "TEST", "Test-AB", "", path=Path("test.patch"), tags={"A", "B"}
+            ),
+            Patch(
+                "TEST", "Test-AC", "", path=Path("test.patch"), tags={"A", "C"}
+            ),
+            Patch(
+                "TEST", "Test-AD", "", path=Path("test.patch"), tags={"A", "D"}
+            ),
+            Patch(
+                "TEST", "Test-BC", "", path=Path("test.patch"), tags={"B", "C"}
+            ),
+            Patch(
+                "TEST", "Test-BD", "", path=Path("test.patch"), tags={"B", "D"}
+            ),
+            Patch(
+                "TEST", "Test-CD", "", path=Path("test.patch"), tags={"C", "D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-ABC",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "B", "C"}
+            ),
+            Patch(
+                "TEST",
+                "Test-ABD",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "B", "D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-ACD",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "C", "D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-BCD",
+                "",
+                path=Path("test.patch"),
+                tags={"B", "C", "D"}
+            ),
+        }
+
+        cls.patchSet = PatchSet(patches)
+
+    def test_bracket_single_tag(self):
+        for tag in {"A", "B", "C", "D"}:
+            patches = self.patchSet[tag]
+            self.assertEqual(8, len(patches))
+
+            for patch in patches:
+                self.assertIn(tag, patch.shortname)
+
+    def test_bracket_multiple_tags(self):
+        tags_count = {("A", "B"): 4,
+                      ("C", "B"): 4,
+                      ("D", "B"): 4,
+                      ("A", "B", "C"): 2,
+                      ("A", "B", "C", "D"): 1}
+
+        for tags in tags_count:
+            patches = self.patchSet[tags]
+
+            self.assertEqual(tags_count[tags], len(patches))
+
+            for patch in patches:
+                for tag in tags:
+                    self.assertIn(tag, patch.tags)
+
+    def test_all_of_single_tag(self):
+        for tag in {"A", "B", "C", "D"}:
+            patches = self.patchSet.all_of(tag)
+            self.assertEqual(8, len(patches))
+
+            for patch in patches:
+                self.assertIn(tag, patch.shortname)
+
+    def test_all_of_multiple_tags(self):
+        tags_count = {("A", "B"): 4,
+                      ("C", "B"): 4,
+                      ("D", "B"): 4,
+                      ("A", "B", "C"): 2,
+                      ("A", "B", "C", "D"): 1}
+
+        for tags in tags_count:
+            patches = self.patchSet.all_of(tags)
+
+            self.assertEqual(tags_count[tags], len(patches))
+
+            for patch in patches:
+                for tag in tags:
+                    self.assertIn(tag, patch.tags)
+
+    def test_any_of_single_tag(self):
+        for tag in {"A", "B", "C", "D"}:
+            patches = self.patchSet.any_of(tag)
+            self.assertEqual(8, len(patches))
+
+            for patch in patches:
+                self.assertIn(tag, patch.shortname)
+
+    def test_any_of_multiple_tags(self):
+        tags_count = {("A", "B"): 12,
+                      ("C", "B"): 12,
+                      ("D", "B"): 12,
+                      ("A", "B", "C"): 14,
+                      ("A", "B", "C", "D"): 15}
+
+        for tags in tags_count:
+            patches = self.patchSet.any_of(tags)
+
+            self.assertEqual(tags_count[tags], len(patches))
+
+            for patch in patches:
+                any([tag in patch.tags for tag in tags])
+
+    def test_patchset_intersection(self):
+        patches = self.patchSet["A"] & self.patchSet["B"]
+
+        self.assertEqual(4, len(patches))
+
+        patches = patches & self.patchSet["C"]
+        self.assertEqual(2, len(patches))
+
+        patches = patches & self.patchSet["D"]
+        self.assertEqual(1, len(patches))
+
+    def test_patchset_union(self):
+        patches = self.patchSet["A"] | self.patchSet["B"]
+
+        self.assertEqual(12, len(patches))
+
+        patches = patches | self.patchSet["C"]
+        self.assertEqual(14, len(patches))
+
+        patches = patches | self.patchSet["D"]
+        self.assertEqual(15, len(patches))
