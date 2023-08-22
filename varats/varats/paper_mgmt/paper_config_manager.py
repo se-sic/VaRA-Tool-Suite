@@ -377,10 +377,10 @@ def package_paper_config(
     result_dir = Path(str(vara_cfg()['result_dir']))
     report_types: tp.List[tp.Type[BaseReport]] = []
     if experiment_types:
-        report_types = list(BaseReport.REPORT_TYPES.values())
-    else:
         for experiment_type in experiment_types:
             report_types.extend(experiment_type.report_spec().report_types)
+    else:
+        report_types = list(BaseReport.REPORT_TYPES.values())
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():

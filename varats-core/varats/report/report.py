@@ -412,7 +412,7 @@ class ReportFilename():
             file_ext: file extension of the report file
 
         Returns:
-            name for the report file that can later be uniquly identified
+            name for the report file that can later be uniquely identified
         """
         status_ext = FileStatusExtension.get_status_extension(extension_type)
 
