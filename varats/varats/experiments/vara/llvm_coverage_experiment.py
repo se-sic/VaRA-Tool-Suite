@@ -61,7 +61,7 @@ class SaveBCFiles(actions.ProjectStep):  # type: ignore[misc]
     def __init__(
         self,
         project: Project,
-        tmpdir: TemporaryDirectory,  # type: ignore[type-arg]
+        tmpdir: TemporaryDirectory[str],
     ):
         super().__init__(project=project)
         self.tmpdir = tmpdir
@@ -89,7 +89,7 @@ class CleanupTmpdir(actions.ProjectStep):  # type: ignore[misc]
     def __init__(
         self,
         project: Project,
-        tmpdir: TemporaryDirectory,  # type: ignore[type-arg]
+        tmpdir: TemporaryDirectory[str],
     ):
         super().__init__(project=project)
         self.tmpdir = tmpdir

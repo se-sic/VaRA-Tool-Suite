@@ -608,6 +608,29 @@ class VaraInstr:
         return True
 
 
+class FeatureXMLWriter:
+    """Context manager to disable color temporarily."""
+
+    def __init__(self, feature_model_xml: str) -> None:
+        self.feature_model_xml = feature_model_xml
+        self.tmpdir: tp.Optional[TemporaryDirectory[str]] = None
+
+    def __enter__(self) -> Path:
+        self.tmpdir = TemporaryDirectory()
+        xml_file = Path(self.tmpdir.name) / "FeatureModel.xml"
+        xml_file.write_text(self.feature_model_xml, encoding="utf-8")
+        return xml_file
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        if self.tmpdir is not None:
+            self.tmpdir.cleanup()
+            self.tmpdir = None
+
+
 class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
     """Parses llvm-cov export json files and displays them."""
 
@@ -694,32 +717,10 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             code_region = self.tree[filename]
             code_region.annotate_covered(configuration)
 
-    def create_feature_xml(self):
+    def create_feature_xml(self) -> FeatureXMLWriter:
         """Writes feature model xml text to file."""
 
-        class FeatureXML:
-            """Context manager to disable color temporarily."""
-
-            def __init__(self, feature_model_xml: str) -> None:
-                self.feature_model_xml = feature_model_xml
-                self.tmpdir: tp.Optional[TemporaryDirectory] = None
-
-            def __enter__(self) -> Path:
-                self.tmpdir = TemporaryDirectory()
-                xml_file = Path(self.tmpdir.name) / "FeatureModel.xml"
-                xml_file.write_text(self.feature_model_xml, encoding="utf-8")
-                return xml_file
-
-            def __exit__(
-                self, exc_type: tp.Optional[tp.Type[BaseException]],
-                exc_value: tp.Optional[BaseException],
-                exc_traceback: tp.Optional[TracebackType]
-            ) -> None:
-                if self.tmpdir is not None:
-                    self.tmpdir.cleanup()
-                    self.tmpdir = None
-
-        return FeatureXML(self.feature_model_xml)
+        return FeatureXMLWriter(self.feature_model_xml)
 
     def _parse_instrs(self, csv_file: Path, ignore_conditions: bool) -> None:
         with csv_file.open() as file:
