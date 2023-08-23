@@ -1030,8 +1030,8 @@ class RevisionBinaryMap(tp.Container[str]):
 
     def __init__(self, repo_location: Path) -> None:
         self.__repo_location = repo_location
-        self.__revision_specific_mappings: tp.Dict['AbstractRevisionRange',
-                                                   ProjectBinaryWrapper] = {}
+        self.__revision_specific_mappings: tp.Dict[
+            'AbstractRevisionRange', tp.List[ProjectBinaryWrapper]] = {}
         self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
 
     def specify_binary(
@@ -1069,7 +1069,14 @@ class RevisionBinaryMap(tp.Container[str]):
         )
 
         if validity_range:
-            self.__revision_specific_mappings[validity_range] = wrapped_binary
+            if validity_range in self.__revision_specific_mappings:
+                self.__revision_specific_mappings[validity_range].append(
+                    wrapped_binary
+                )
+            else:
+                self.__revision_specific_mappings[validity_range] = [
+                    wrapped_binary
+                ]
         else:
             self.__always_valid_mappings.append(wrapped_binary)
 
@@ -1080,13 +1087,13 @@ class RevisionBinaryMap(tp.Container[str]):
         revision = revision.to_short_commit_hash()
         revision_specific_binaries = []
 
-        for validity_range, wrapped_binary \
+        for validity_range, wrapped_binaries \
                 in self.__revision_specific_mappings.items():
             if revision in get_all_revisions_between(
                 validity_range.id_start, validity_range.id_end, ShortCommitHash,
                 self.__repo_location
             ):
-                revision_specific_binaries.append(wrapped_binary)
+                revision_specific_binaries.extend(wrapped_binaries)
 
         revision_specific_binaries.extend(self.__always_valid_mappings)
 
@@ -1096,7 +1103,7 @@ class RevisionBinaryMap(tp.Container[str]):
         if isinstance(binary_name, str):
             for binary in chain(
                 self.__always_valid_mappings,
-                self.__revision_specific_mappings.values()
+                *self.__revision_specific_mappings.values()
             ):
                 if binary.name == binary_name:
                     return True
