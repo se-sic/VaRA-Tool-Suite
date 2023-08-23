@@ -181,9 +181,9 @@ def _extract_feature_option_mapping(
     with local.cwd(Path(__file__).parent.parent.parent.parent):
         try:
             output = local["myscripts/feature_option_mapping.py"](xml_file)
-        except ProcessExecutionError as e:
+        except ProcessExecutionError as err:
             # vara-feature probably not installed
-            print(e)
+            print(err)
             return {}
     return json.loads(output)  # type: ignore [no-any-return]
 

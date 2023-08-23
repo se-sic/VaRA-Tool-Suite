@@ -953,7 +953,7 @@ def cov_segments(
             path,
             base_dir,
             region,
-            feature_model=espresso_exprs(report.feature_model)[0]
+            feature_model=report.feature_model
             if report.feature_model is not None else None
         )
 
