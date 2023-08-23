@@ -11,7 +11,11 @@ from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import get_local_project_git_path, BinaryType, ProjectBinaryWrapper
+from varats.project.project_util import (
+    get_local_project_git_path,
+    BinaryType,
+    ProjectBinaryWrapper,
+)
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
@@ -40,11 +44,15 @@ class Dune(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot(NAME) / RSBinary('dune-performance-regressions'),
+                SourceRoot(NAME) /
+                "dune-performance-regressions/build-cmake/src" /
+                RSBinary('dune-performance-regressions'),
                 label='dune-helloworld'
             ),
             Command(
-                SourceRoot(NAME) / RSBinary('poisson-test'),
+                SourceRoot(NAME) /
+                "dune-performance-regressions/build-cmake/src" /
+                RSBinary('poisson-test'),
                 label='poisson-non-separated',
                 creates=[
                     'poisson_UG_Pk_2d.vtu', 'poisson-yasp-Q1-2d.vtu',
@@ -53,17 +61,23 @@ class Dune(VProject):
                 ]
             ),
             Command(
-                SourceRoot(NAME) / RSBinary('poisson-ug-pk-2d'),
+                SourceRoot(NAME) /
+                "dune-performance-regressions/build-cmake/src" /
+                RSBinary('poisson-ug-pk-2d'),
                 label='poisson-ug-pk-2d',
                 creates=['poisson-UG-Pk-2d.vtu']
             ),
             Command(
-                SourceRoot(NAME) / RSBinary('poisson-yasp-q1-2d'),
+                SourceRoot(NAME) /
+                "dune-performance-regressions/build-cmake/src" /
+                RSBinary('poisson-yasp-q1-2d'),
                 label='poisson-yasp-q1-2d',
                 creates=['poisson-yasp-q1-2d.vtu']
             ),
             Command(
-                SourceRoot(NAME) / RSBinary('poisson-yasp-q1-3d'),
+                SourceRoot(NAME) /
+                "dune-performance-regressions/build-cmake/src" /
+                RSBinary('poisson-yasp-q1-3d'),
                 label='poisson-yasp-q1-3d',
                 creates=['poisson-yasp-q1-3d.vtu']
             ),
@@ -73,7 +87,9 @@ class Dune(VProject):
                 creates=['poisson-yasp-q2-2d.vtu']
             ),
             Command(
-                SourceRoot(NAME) / RSBinary('poisson-yasp-q2-3d'),
+                SourceRoot(NAME) /
+                "dune-performance-regressions/build-cmake/src" /
+                RSBinary('poisson-yasp-q2-3d'),
                 label='poisson-yasp-q2-3d',
                 creates=['poisson-yasp-q2-3d.vtu']
             )
@@ -102,6 +118,7 @@ class Dune(VProject):
         separated_poisson_range = RevisionRange(
             '97fecde34910ba1f81c988ac2e1331aecddada06', 'main'
         )
+
         binary_map.specify_binary(
             'dune-performance-regressions/build-cmake/src/poisson-alberta',
             BinaryType.EXECUTABLE,
@@ -121,7 +138,7 @@ class Dune(VProject):
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-yasp-q1-3d',
+            'dune-performance-regressions/build-cmake/src/poisson-yasp-q2-3d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
@@ -133,7 +150,7 @@ class Dune(VProject):
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-yasp-q2-3d',
+            'dune-performance-regressions/build-cmake/src/poisson-yasp-q1-3d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
@@ -149,6 +166,16 @@ class Dune(VProject):
 
             bb.watch(dunecontrol
                     )('--module=dune-performance-regressions', 'all')
+
+    def recompile(self) -> None:
+        """Recompiles Dune after e.g. a Patch has been applied."""
+        version_source = local.path(self.source_of(self.primary_source))
+
+        with local.cwd(version_source):
+            dunecontrol = cmd['./dune-common/bin/dunecontrol']
+
+            bb.watch(dunecontrol
+                    )('--module=dune-performance-regressions', 'make')
 
     def run_tests(self) -> None:
         pass
