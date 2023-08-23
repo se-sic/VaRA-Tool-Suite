@@ -1,6 +1,6 @@
 import typing as tp
 import unittest
-from unittest.mock import create_autospec, patch
+from unittest.mock import create_autospec
 
 from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.llvm_coverage_report import (
@@ -299,14 +299,10 @@ class TestCoveragePlot(unittest.TestCase):
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-            with patch(
-                "varats.plots.llvm_coverage_plot._extract_feature_model_formula",
-                lambda xml: {}
-            ):
-                reports = setup_reports(
-                    "test_coverage_SimpleFeatureInteraction", base_dir
-                )
-                report = reports.feature_report()
+            reports = setup_reports(
+                "test_coverage_SimpleFeatureInteraction", base_dir
+            )
+            report = reports.feature_report()
 
             code_region = report.tree["src/SimpleFeatureInteraction/SFImain.cpp"
                                      ]
@@ -350,13 +346,9 @@ class TestCoveragePlot(unittest.TestCase):
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-            with patch(
-                "varats.plots.llvm_coverage_plot._extract_feature_option_mapping",
-                lambda xml: {}
-            ):
-                reports = setup_reports(
-                    "test_coverage_MultiSharedMultipleRegions", base_dir
-                )
+            reports = setup_reports(
+                "test_coverage_MultiSharedMultipleRegions", base_dir
+            )
             self.assertEqual(
                 """include/fpcsc/perf_util/feature_cmd.h:
     1|#ifndef FPCSC_PERFUTIL_FEATURECMD_H                                             |
