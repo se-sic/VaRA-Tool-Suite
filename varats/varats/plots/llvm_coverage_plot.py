@@ -194,9 +194,9 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
             output = local["myscripts/feature_model_formula.py"](
                 xml_file, timeout=180
             )
-        except ProcessExecutionError as e:
+        except ProcessExecutionError as err:
             # vara-feature probably not installed
-            print(e)
+            print(err)
             return expr(True)
 
     expression = expr(output)
