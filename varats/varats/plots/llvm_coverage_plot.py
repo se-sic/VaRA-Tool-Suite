@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import typing as tp
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
@@ -10,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+from plumbum import local
+from pyeda.inter import Expression, expr  # type: ignore
 
 from varats.base.configuration import (
     Configuration,
@@ -41,6 +44,7 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
+TIMEOUT_SECONDS = 5
 ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
 
@@ -171,14 +175,52 @@ def _compute_confusion_matrix(
     )
 
 
+def _extract_feature_option_mapping(
+    xml_file: Path
+) -> tp.Dict[str, tp.Union[str, tp.List[str]]]:
+    with local.cwd(Path(__file__).parent.parent.parent.parent):
+        output = local["myscripts/feature_option_mapping.py"](xml_file)
+    return json.loads(output)  # type: ignore [no-any-return]
+
+
+def _extract_feature_model_formula(xml_file: Path) -> Expression:
+    with local.cwd(Path(__file__).parent.parent.parent.parent):
+        output = local["myscripts/feature_model_formula.py"](
+            xml_file, timeout=180
+        )
+    expression = expr(output)
+    if not expression.is_dnf():
+        raise ValueError("Feature model is not in DNF!")
+    if expression.equivalent(expr(False)):
+        raise ValueError("Feature model equals false!")
+    print(output)
+    return expression
+
+
 class CoverageReports:
     """Helper class to work with a list of coverage reports."""
 
     def __init__(self, reports: tp.List[CoverageReport]) -> None:
         super().__init__()
 
+        # Check if all equal
+        if not reports:
+            raise ValueError("No reports given!")
+
         self._reports = reports
+
+        # Check all reports have same feature model
+        self._reference = self._reports[0]
+        for report in self._reports[1:]:
+            if self._reference.feature_model_xml != report.feature_model_xml:
+                raise ValueError(
+                    "CoverageReports have different feature models!"
+                )
+
         self.available_features = frozenset(available_features(self._reports))
+        self._feature_model: tp.Optional[Expression] = None
+        self._feature_option_mapping: tp.Optional[tp.Dict[str,
+                                                          tp.Set[str]]] = None
 
     def __bidirectional_map(
         self, mapping: tp.Dict[str, tp.Union[str, tp.List[str]]]
@@ -197,28 +239,40 @@ class CoverageReports:
 
     def feature_option_mapping(
         self,
-        additional_information: tp.Optional[tp.Dict[str, tp.Union[str,
-                                                                  tp.List[str]]]
-                                           ] = None
+        additional_info: tp.Optional[tp.Dict[str,
+                                             tp.Union[str,
+                                                      tp.List[str]]]] = None
     ) -> tp.Dict[str, tp.Set[str]]:
         """Converts feature model mapping to biderectional mapping."""
-        # Check if all equal
-        tmp = self._reports[0].featue_option_mapping
-        for report in self._reports[1:]:
-            if tmp != report.featue_option_mapping:
-                raise ValueError(
-                    "CoverageReports have used different feature models!"
-                )
+        if self._feature_option_mapping is not None and additional_info is None:
+            return self._feature_option_mapping
+
         mapping = {}
-        if additional_information:
-            mapping.update(additional_information)
-        mapping.update(self._reports[0].featue_option_mapping)
-        return self.__bidirectional_map(mapping)
+        if additional_info:
+            mapping.update(additional_info)
+
+        with self._reference.create_feature_xml() as xml_file:
+            feature_option_mapping = _extract_feature_option_mapping(xml_file)
+
+        mapping.update(feature_option_mapping)
+        self._feature_option_mapping = self.__bidirectional_map(mapping)
+        return self._feature_option_mapping
+
+    def feature_model(self) -> Expression:
+        """Returns feature model for coverage reports."""
+        if self._feature_model is not None:
+            return self._feature_model
+
+        with self._reference.create_feature_xml() as xml_file:
+            self._feature_model = _extract_feature_model_formula(xml_file)
+
+        return self._feature_model
 
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
 
-        result = deepcopy(self._reports[0])
+        result = deepcopy(self._reference)
+        result.feature_model = self.feature_model()
         for report in self._reports[1:]:
             result.combine_features(report)
 
@@ -229,6 +283,7 @@ class CoverageReports:
         combinations."""
 
         feature_report = self.feature_report()
+        assert feature_report.feature_model is not None
 
         return cov_segments(feature_report, base_dir)
 
@@ -374,7 +429,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
         to_process = [(config_map, report_file, base_dir, ignore_conditions)
                       for report_file in report_files]
 
-        processed = self.process_pool.map(_process_report_file, to_process)
+        processed = self.process_pool.map(
+            _process_report_file, to_process, timeout=TIMEOUT_SECONDS
+        )
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 

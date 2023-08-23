@@ -14,7 +14,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import TracebackType
 
-from plumbum import colors, local
+from plumbum import colors
 from plumbum.colorlib.styles import Color
 from pyeda.boolalg.expr import Complement, Variable  # type: ignore
 from pyeda.inter import (  # type: ignore
@@ -81,7 +81,10 @@ class PresenceCondition:
         return f"{self.kind.value}({self.configuration})"
 
 
-def simplify(conditions: tp.List[PresenceCondition]) -> Expression:
+def simplify(
+    conditions: tp.List[PresenceCondition],
+    feature_model: tp.Optional[Expression] = None
+) -> Expression:
     """Build the DNF of all conditions and simplify it."""
     dnf = expr(False)
     if not conditions:
@@ -95,9 +98,19 @@ def simplify(conditions: tp.List[PresenceCondition]) -> Expression:
             else:
                 expression = expression & ~expr_var
         dnf = dnf | expression
-    if dnf.equivalent(expr(True)):
+    return minimize(dnf, feature_model)
+
+
+def minimize(
+    expression: Expression,
+    feature_model: tp.Optional[Expression] = None
+) -> Expression:
+    """Minimize expression in context of feature model if given."""
+    if feature_model is not None:
+        expression = (feature_model >> expression).to_dnf()
+    if expression.equivalent(expr(True)):
         return expr(True)
-    return espresso_exprs(dnf.to_dnf())[0]
+    return espresso_exprs(expression.to_dnf())[0]
 
 
 class PresenceConditions(
@@ -109,7 +122,11 @@ class PresenceConditions(
         for kind, conditions in other.items():
             self[kind].extend(conditions)
 
-    def simplify(self, kind: tp.Optional[PresenceKind] = None) -> Expression:
+    def simplify(
+        self,
+        kind: tp.Optional[PresenceKind] = None,
+        feature_model: tp.Optional[Expression] = None
+    ) -> Expression:
         """Build the DNF of all conditions for kind and simplifies it."""
         if kind is None:
             conditions = []
@@ -117,26 +134,32 @@ class PresenceConditions(
                 conditions.extend(values)
         else:
             conditions = self[kind]
-        return simplify(conditions)
+        return simplify(conditions, feature_model)
 
-    def all_conditions(self) -> tp.Set[str]:
+    def all_conditions(self,
+                       feature_model: tp.Optional[Expression]) -> tp.Set[str]:
         """All conditions that are relevant."""
         output: tp.Set[str] = set()
         for presence_kind in self:
             if self[presence_kind]:
-                output.update(
-                    str(feature)
-                    for feature in self.simplify(presence_kind).support
-                )
+                features = [
+                    str(feature) for feature in
+                    self.simplify(presence_kind, feature_model).support
+                ]
+                output.update(features)
         return output
 
-    def __str__(self) -> str:
+    def to_string(self, feature_model: tp.Optional[Expression] = None) -> str:
+        """Returns PresenceConditions as string."""
         output = []
         for presence_kind in self:
             if self[presence_kind]:
-                expression = self.simplify(presence_kind)
+                expression = self.simplify(presence_kind, feature_model)
                 output.append(f"{presence_kind.value}{expr_to_str(expression)}")
         return ",".join(output)
+
+    def __str__(self) -> str:
+        return self.to_string()
 
 
 def expr_to_str(expression: Expression) -> str:
@@ -153,7 +176,9 @@ def expr_to_str(expression: Expression) -> str:
         return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
     if expression.ASTOP == "or":
         return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
-    raise NotImplementedError()
+    if expression.ASTOP == "impl":
+        return f"({' => '.join(sorted(map(expr_to_str, expression.xs)))})"
+    raise NotImplementedError(expression.ASTOP)
 
 
 @dataclass
@@ -259,6 +284,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
 
         for instr in self.vara_instrs:
             if instr.has_features(features):
+                assert instr.kind != FeatureKind.NORMAL_REGION
                 with_feature.append(instr)
             else:
                 wo_feature.append(instr)
@@ -268,13 +294,17 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
             return float("-inf")
         return len(with_feature) / denominator
 
-    def coverage_features(self) -> str:
+    def coverage_features(
+        self, feature_model: tp.Optional[Expression] = None
+    ) -> str:
         """Returns presence conditions."""
-        return str(self.presence_conditions)
+        return self.presence_conditions.to_string(feature_model)
 
-    def coverage_features_set(self) -> tp.Set[str]:
+    def coverage_features_set(
+        self, feature_model: tp.Optional[Expression] = None
+    ) -> tp.Set[str]:
         """Returns features affecting code region somehow."""
-        return self.presence_conditions.all_conditions()
+        return self.presence_conditions.all_conditions(feature_model)
 
     def vara_features(self) -> tp.Set[str]:
         """Returns all features from annotated vara instrs."""
@@ -607,7 +637,9 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             xmls = list(filter(xml_filter, Path(tmpdir).iterdir()))
             assert len(xmls) == 1
             for xml_file in xmls:
-                c_r._extract_feature_option_mapping(xml_file)
+                c_r.feature_model_xml = xml_file.read_text(encoding="utf-8")
+                #c_r._extract_feature_option_mapping(xml_file)
+                #c_r._extract_feature_model_formula(xml_file)
 
             def json_filter(x: Path) -> bool:
                 return x.name.endswith(".json")
@@ -639,8 +671,8 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         self.tree = FilenameRegionMapping(base_dir=base_dir)
         self.absolute_path = ""
-        self.featue_option_mapping: tp.Dict[str, tp.Union[str,
-                                                          tp.List[str]]] = {}
+        self.feature_model: tp.Optional[Expression] = None
+        self.feature_model_xml: str = ""
 
         self.configuration = configuration
         self.base_dir = base_dir
@@ -662,11 +694,32 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             code_region = self.tree[filename]
             code_region.annotate_covered(configuration)
 
-    def _extract_feature_option_mapping(self, xml_file: Path) -> None:
-        with local.cwd(Path(__file__).parent.parent.parent.parent.parent):
-            output = local["myscripts/feature_option_mapping.py"](xml_file)
-        self.featue_option_mapping = json.loads(output)
-        print(self.featue_option_mapping)
+    def create_feature_xml(self):
+        """Writes feature model xml text to file."""
+
+        class FeatureXML:
+            """Context manager to disable color temporarily."""
+
+            def __init__(self, feature_model_xml: str) -> None:
+                self.feature_model_xml = feature_model_xml
+                self.tmpdir: tp.Optional[TemporaryDirectory] = None
+
+            def __enter__(self) -> Path:
+                self.tmpdir = TemporaryDirectory()
+                xml_file = Path(self.tmpdir.name) / "FeatureModel.xml"
+                xml_file.write_text(self.feature_model_xml, encoding="utf-8")
+                return xml_file
+
+            def __exit__(
+                self, exc_type: tp.Optional[tp.Type[BaseException]],
+                exc_value: tp.Optional[BaseException],
+                exc_traceback: tp.Optional[TracebackType]
+            ) -> None:
+                if self.tmpdir is not None:
+                    self.tmpdir.cleanup()
+                    self.tmpdir = None
+
+        return FeatureXML(self.feature_model_xml)
 
     def _parse_instrs(self, csv_file: Path, ignore_conditions: bool) -> None:
         with csv_file.open() as file:
@@ -895,15 +948,20 @@ def cov_segments(
     for file in list(report.tree):
         region = report.tree[file]
         path = Path(file)
-        file_segments_mapping[file] = _cov_segments_file(path, base_dir, region)
+        file_segments_mapping[file] = _cov_segments_file(
+            path,
+            base_dir,
+            region,
+            feature_model=espresso_exprs(report.feature_model)[0]
+            if report.feature_model is not None else None
+        )
 
     return file_segments_mapping
 
 
 def _cov_segments_file(
-    rel_path: Path,
-    base_dir: Path,
-    region: CodeRegion,
+    rel_path: Path, base_dir: Path, region: CodeRegion,
+    feature_model: tp.Optional[Expression]
 ) -> SegmentBuffer:
 
     lines: tp.Dict[int, str] = {}
@@ -916,7 +974,9 @@ def _cov_segments_file(
 
     # {linenumber: [(count, line_part_1), (other count, line_part_2)]}
     segments_dict: SegmentBuffer = defaultdict(list)
-    segments_dict = _cov_segments_function(region, lines, segments_dict)
+    segments_dict = _cov_segments_function(
+        region, lines, segments_dict, feature_model
+    )
 
     # Add rest of file
     segments_dict = __cov_fill_buffer(
@@ -1106,7 +1166,8 @@ def __feature_text(iterable: tp.Iterable[tp.Iterable[str]]) -> str:
 
 
 def _cov_segments_function(
-    region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer
+    region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer,
+    feature_model: tp.Optional[Expression]
 ) -> SegmentBuffer:
     if not (region.start.line == 1 and region.start.column == 1):
         # Add lines before region.
@@ -1123,13 +1184,14 @@ def _cov_segments_function(
             buffer=buffer
         )
 
-    buffer = _cov_segments_function_inner(region, lines, buffer)
+    buffer = _cov_segments_function_inner(region, lines, buffer, feature_model)
 
     return buffer
 
 
 def _cov_segments_function_inner(
-    region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer
+    region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer,
+    feature_model: tp.Optional[Expression]
 ) -> SegmentBuffer:
 
     # Add childs
@@ -1148,19 +1210,25 @@ def _cov_segments_function_inner(
                 end_column=prev_column,
                 count=region.count
                 if region.kind != CodeRegionKind.FILE_ROOT else None,
-                cov_features=region.coverage_features(),
+                cov_features=region.coverage_features(feature_model),
                 vara_features=region.vara_features(),
                 lines=lines,
                 buffer=buffer
             )
         if child.kind in (CodeRegionKind.CODE, CodeRegionKind.EXPANSION):
-            buffer = _cov_segments_function_inner(child, lines, buffer)
+            buffer = _cov_segments_function_inner(
+                child, lines, buffer, feature_model
+            )
         elif child.kind == CodeRegionKind.GAP:
             #child.count = None  # type: ignore
-            buffer = _cov_segments_function_inner(child, lines, buffer)
+            buffer = _cov_segments_function_inner(
+                child, lines, buffer, feature_model
+            )
         elif child.kind == CodeRegionKind.SKIPPED:
             child.count = None  # type: ignore
-            buffer = _cov_segments_function_inner(child, lines, buffer)
+            buffer = _cov_segments_function_inner(
+                child, lines, buffer, feature_model
+            )
         else:
             raise NotImplementedError
 
@@ -1169,7 +1237,7 @@ def _cov_segments_function_inner(
         end_line=region.end.line,
         end_column=region.end.column,
         count=region.count if region.kind != CodeRegionKind.FILE_ROOT else None,
-        cov_features=region.coverage_features(),
+        cov_features=region.coverage_features(feature_model),
         vara_features=region.vara_features(),
         lines=lines,
         buffer=buffer

@@ -300,13 +300,9 @@ class TestCoveragePlot(unittest.TestCase):
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
 
-            with patch(
-                "varats.data.reports.llvm_coverage_report.CoverageReport._extract_feature_option_mapping",
-                lambda self, xml: None
-            ):
-                reports = setup_reports(
-                    "test_coverage_SimpleFeatureInteraction", base_dir
-                )
+            reports = setup_reports(
+                "test_coverage_SimpleFeatureInteraction", base_dir
+            )
             report = reports.feature_report()
 
             code_region = report.tree["src/SimpleFeatureInteraction/SFImain.cpp"
@@ -351,14 +347,9 @@ class TestCoveragePlot(unittest.TestCase):
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-            with patch(
-                "varats.data.reports.llvm_coverage_report.CoverageReport._extract_feature_option_mapping",
-                lambda self, xml: None
-            ):
-
-                reports = setup_reports(
-                    "test_coverage_MultiSharedMultipleRegions", base_dir
-                )
+            reports = setup_reports(
+                "test_coverage_MultiSharedMultipleRegions", base_dir
+            )
             self.assertEqual(
                 """include/fpcsc/perf_util/feature_cmd.h:
     1|#ifndef FPCSC_PERFUTIL_FEATURECMD_H                                             |
@@ -534,21 +525,19 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
+            reports = setup_reports(
+                "test_coverage_SimpleFeatureInteraction", base_dir
+            )
             with patch(
-                "varats.data.reports.llvm_coverage_report.CoverageReport._extract_feature_option_mapping",
-                lambda self, xml: self.__setattr__(
-                    "featue_option_mapping", {
-                        "root": "",
-                        "Compression": "--compress",
-                        "Encryption": "--enc",
-                        "Slow": "--slow"
-                    }
-                )
+                "varats.plots.llvm_coverage_plot._extract_feature_option_mapping",
+                lambda xml: {
+                    "root": "",
+                    "Compression": "--compress",
+                    "Encryption": "--enc",
+                    "Slow": "--slow"
+                }
             ):
-                reports = setup_reports(
-                    "test_coverage_SimpleFeatureInteraction", base_dir
-                )
-            feature_option_mapping = reports.feature_option_mapping()
+                feature_option_mapping = reports.feature_option_mapping()
             result_1 = reports.confusion_matrices(
                 feature_option_mapping, threshold=1.0
             )

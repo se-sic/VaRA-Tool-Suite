@@ -1,41 +1,8 @@
 #!/usr/bin/env python3
 from sys import argv
 
-from common import load_feature_model
+from common import load_feature_model, getConfigs, config_to_options
 from feature_option_mapping import feature_option_mapping
-from vara_feature.configuration import getAllConfigs
-
-
-def getConfigs(fm):
-    configs = []
-    for config in getAllConfigs(fm):
-        options = dict()
-        for option in config.getOptions():
-            name = option.name
-            value: str = option.value
-            if value == "true":
-                options[name] = True
-            elif value == "false":
-                options[name] = False
-            elif value.isdigit():
-                option[name] = int(value)
-            else:
-                option[name] = value
-        configs.append(options)
-    return reversed(configs)
-
-
-def config_to_options(config, feature_to_options):
-    options = []
-    for key, value in config.items():
-        option = feature_to_options[key]
-        if option:
-            if isinstance(value, bool):
-                if value:
-                    options.append(option)
-            else:
-                raise NotImplementedError()
-    return options
 
 
 def wrap_ticks(wrappee):
