@@ -525,9 +525,6 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
         with RepositoryAtCommit(
             "FeaturePerfCSCollection", commit_hash.to_short_commit_hash()
         ) as base_dir:
-            reports = setup_reports(
-                "test_coverage_SimpleFeatureInteraction", base_dir
-            )
             with patch(
                 "varats.plots.llvm_coverage_plot._extract_feature_option_mapping",
                 lambda xml: {
@@ -537,7 +534,10 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                     "Slow": "--slow"
                 }
             ):
-                feature_option_mapping = reports.feature_option_mapping()
+                reports = setup_reports(
+                    "test_coverage_SimpleFeatureInteraction", base_dir
+                )
+            feature_option_mapping = reports.feature_option_mapping()
             result_1 = reports.confusion_matrices(
                 feature_option_mapping, threshold=1.0
             )
