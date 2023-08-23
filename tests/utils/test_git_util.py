@@ -563,7 +563,7 @@ class TestRevisionBinaryMap(unittest.TestCase):
             only_valid_in=RevisionRange("162db88346", "master")
         )
 
-        self.assertEqual(self.rv_map[ShortCommitHash("162db88346")], 2)
+        self.assertEqual(len(self.rv_map[ShortCommitHash("162db88346")]), 2)
 
         self.assertIn("SingleLocalMultipleRegions", self.rv_map)
         self.assertIn("SingleLocalSimple", self.rv_map)
