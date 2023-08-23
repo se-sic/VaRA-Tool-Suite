@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 from pyeda.inter import Expression, expr  # type: ignore
 
 from varats.base.configuration import (
@@ -179,15 +179,26 @@ def _extract_feature_option_mapping(
     xml_file: Path
 ) -> tp.Dict[str, tp.Union[str, tp.List[str]]]:
     with local.cwd(Path(__file__).parent.parent.parent.parent):
-        output = local["myscripts/feature_option_mapping.py"](xml_file)
+        try:
+            output = local["myscripts/feature_option_mapping.py"](xml_file)
+        except ProcessExecutionError as e:
+            # vara-feature probably not installed
+            print(e)
+            return {}
     return json.loads(output)  # type: ignore [no-any-return]
 
 
 def _extract_feature_model_formula(xml_file: Path) -> Expression:
     with local.cwd(Path(__file__).parent.parent.parent.parent):
-        output = local["myscripts/feature_model_formula.py"](
-            xml_file, timeout=180
-        )
+        try:
+            output = local["myscripts/feature_model_formula.py"](
+                xml_file, timeout=180
+            )
+        except ProcessExecutionError as e:
+            # vara-feature probably not installed
+            print(e)
+            return expr(True)
+
     expression = expr(output)
     if not expression.is_dnf():
         raise ValueError("Feature model is not in DNF!")
