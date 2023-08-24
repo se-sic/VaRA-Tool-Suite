@@ -19,8 +19,7 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
-    Command,
-    comes_after,
+    WrappedCommand,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     verify_binaries,
@@ -96,7 +95,7 @@ class Xz(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            WrappedCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
                 output_param=["{output}"],
@@ -106,7 +105,7 @@ class Xz(VProject):
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
+            WrappedCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
                 "-9e",
@@ -117,11 +116,12 @@ class Xz(VProject):
                 output_param=["{output}"],
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
-                creates=["geo-maps/countries-land-250m.geo.json.xz"]
+                creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                requires={"--compress"}
             )
         ],
         WorkloadSet(WorkloadCategory.JAN): [
-            Command(
+            WrappedCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "--threads=1",
                 "--format=xz",
@@ -130,11 +130,9 @@ class Xz(VProject):
                 label="countries-land-250m-compress",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
                 consumes=["geo-maps/countries-land-250m.geo.json"],
-                executable=lambda args: comes_after(
-                    args, {"--compress"}, {"--decompress", "--test", "--list"}
-                )
+                requires={"--compress"}
             ),
-            Command(
+            WrappedCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "--threads=1",
                 "--format=xz",
@@ -143,9 +141,7 @@ class Xz(VProject):
                 label="xz-files-compressed",
                 creates=["xz_files/xz-5.4.0.tar"],
                 consumes=["xz_files/xz-5.4.0.tar.xz"],
-                executable=lambda args: comes_after(
-                    args, {"--decompress", "--test", "--list"}, {"--compress"}
-                )
+                requires={"--decompress", "--test", "--list"}
             ),
         ],
     }
