@@ -1096,8 +1096,7 @@ class RevisionBinaryMap(tp.Container[str]):
         revision_specific_binaries.extend(self.__always_valid_mappings)
 
         return sorted(
-            revision_specific_binaries,
-            key=attrgetter("binary_name", "path_to_binary")
+            revision_specific_binaries, key=attrgetter("name", "path")
         )
 
     def __contains__(self, binary_name: object) -> bool:
