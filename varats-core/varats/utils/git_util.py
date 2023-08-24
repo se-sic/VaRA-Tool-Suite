@@ -3,6 +3,7 @@ import abc
 import logging
 import re
 import typing as tp
+from collections import defaultdict
 from enum import Enum
 from itertools import chain
 from pathlib import Path
@@ -1031,7 +1032,8 @@ class RevisionBinaryMap(tp.Container[str]):
     def __init__(self, repo_location: Path) -> None:
         self.__repo_location = repo_location
         self.__revision_specific_mappings: tp.Dict[
-            'AbstractRevisionRange', tp.List[ProjectBinaryWrapper]] = {}
+            'AbstractRevisionRange',
+            tp.List[ProjectBinaryWrapper]] = defaultdict(list)
         self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
 
     def specify_binary(
@@ -1069,14 +1071,9 @@ class RevisionBinaryMap(tp.Container[str]):
         )
 
         if validity_range:
-            if validity_range in self.__revision_specific_mappings:
-                self.__revision_specific_mappings[validity_range].append(
-                    wrapped_binary
-                )
-            else:
-                self.__revision_specific_mappings[validity_range] = [
-                    wrapped_binary
-                ]
+            self.__revision_specific_mappings[validity_range].append(
+                wrapped_binary
+            )
         else:
             self.__always_valid_mappings.append(wrapped_binary)
 
