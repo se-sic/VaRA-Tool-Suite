@@ -18,7 +18,7 @@ from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    Command,
+    WrappedCommand,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     BinaryType,
@@ -85,7 +85,7 @@ class Xz(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            WrappedCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
                 output_param=["{output}"],
@@ -95,7 +95,7 @@ class Xz(VProject):
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
+            WrappedCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
                 "-9e",
@@ -106,7 +106,8 @@ class Xz(VProject):
                 output_param=["{output}"],
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
-                creates=["geo-maps/countries-land-250m.geo.json.xz"]
+                creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                requires={"--compress"}
             )
         ],
     }

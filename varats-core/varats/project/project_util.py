@@ -7,7 +7,7 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
-from benchbuild.command import Command as _Command
+from benchbuild.command import Command
 from benchbuild.source import Git
 from benchbuild.utils.cmd import git
 from plumbum import local
@@ -385,7 +385,7 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
 
 
-class Command(_Command):  # type: ignore [misc]
+class WrappedCommand(Command):  # type: ignore [misc]
     """
     Wrapper around benchbuild's Command class.
 
