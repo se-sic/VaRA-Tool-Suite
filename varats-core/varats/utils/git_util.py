@@ -1033,8 +1033,8 @@ class RevisionBinaryMap(tp.Container[str]):
         self.__repo_location = repo_location
         self.__revision_specific_mappings: tp.Dict[
             'AbstractRevisionRange',
-            tp.Set[ProjectBinaryWrapper]] = defaultdict(set)
-        self.__always_valid_mappings: tp.Set[ProjectBinaryWrapper] = []
+            tp.List[ProjectBinaryWrapper]] = defaultdict(list)
+        self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
 
     def specify_binary(
         self, location: str, binary_type: BinaryType, **kwargs: tp.Any
@@ -1071,11 +1071,11 @@ class RevisionBinaryMap(tp.Container[str]):
         )
 
         if validity_range:
-            self.__revision_specific_mappings[validity_range].add(
+            self.__revision_specific_mappings[validity_range].append(
                 wrapped_binary
             )
         else:
-            self.__always_valid_mappings.add(wrapped_binary)
+            self.__always_valid_mappings.append(wrapped_binary)
 
         return self
 
