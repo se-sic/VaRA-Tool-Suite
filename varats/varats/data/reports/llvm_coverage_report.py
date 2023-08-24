@@ -121,7 +121,7 @@ def minimize(
         return __minimize_cache[entry]
 
     if feature_model is not None:
-        expression = ((feature_model >> expression).to_dnf())
+        expression = (feature_model >> expression).to_dnf()
     if expression.equivalent(expr(True)):
         return expr(True)
     result = espresso_exprs(expression.to_dnf())[0]
