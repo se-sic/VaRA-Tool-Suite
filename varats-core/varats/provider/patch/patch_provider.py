@@ -43,7 +43,8 @@ class Patch:
         self.shortname: str = shortname
         self.description: str = description
         self.path: Path = path
-        self.valid_revisions: tp.Optional[tp.Set[CommitHash]] = valid_revisions
+        self.valid_revisions: tp.Set[
+            CommitHash] = valid_revisions if valid_revisions else set()
         self.tags: tp.Optional[tp.Set[str]] = tags
 
     @staticmethod
@@ -152,8 +153,8 @@ class PatchSet:
     def __iter__(self) -> tp.Iterator[Patch]:
         return self.__patches.__iter__()
 
-    def __contains__(self, v: tp.Any) -> bool:
-        return self.__patches.__contains__(v)
+    def __contains__(self, value: tp.Any) -> bool:
+        return self.__patches.__contains__(value)
 
     def __len__(self) -> int:
         return len(self.__patches)
@@ -209,7 +210,7 @@ class PatchSet:
 
         Equivalent to bracket operator (__getitem__)
         """
-        return self.__getitem__(tags)
+        return self[tags]
 
     def __hash__(self) -> int:
         return hash(self.__patches)
@@ -249,9 +250,9 @@ class PatchProvider(Provider):
                 f"'{self.project.NAME}'."
             )
 
-        patches = set()
+        self.__patches: tp.Set[Patch] = set()
 
-        for root, dirs, files in os.walk(patches_project_dir):
+        for root, _, files in os.walk(patches_project_dir):
             for filename in files:
                 if not filename.endswith(".info"):
                     continue
@@ -259,13 +260,11 @@ class PatchProvider(Provider):
                 info_path = Path(os.path.join(root, filename))
                 try:
                     current_patch = Patch.from_yaml(info_path)
-                    patches.add(current_patch)
+                    self.__patches.add(current_patch)
                 except YAMLError:
                     warnings.warn(
                         f"Unable to parse patch info in: '{filename}'"
                     )
-
-        self.__patches: tp.Set[Patch] = patches
 
     def get_by_shortname(self, shortname: str) -> tp.Optional[Patch]:
         """
