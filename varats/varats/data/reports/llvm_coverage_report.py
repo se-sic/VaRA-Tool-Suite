@@ -92,7 +92,11 @@ def simplify(
     for condition in conditions:
         expression = expr(True)
         for option in condition.configuration.options():
-            expr_var = exprvar(option.name)
+            name = option.name
+            if name.isnumeric():
+                # Workaround pyedas name requirements: Prefix numbers
+                name = f"___{name}"
+            expr_var = exprvar(name)
             if bool(option.value):
                 expression = expression & expr_var
             else:
@@ -101,16 +105,28 @@ def simplify(
     return minimize(dnf, feature_model)
 
 
+__minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
+
+
 def minimize(
     expression: Expression,
     feature_model: tp.Optional[Expression] = None
 ) -> Expression:
     """Minimize expression in context of feature model if given."""
+    entry = (
+        expr_to_str(expression),
+        expr_to_str(feature_model) if feature_model is not None else None
+    )
+    if entry in __minimize_cache:
+        return __minimize_cache[entry]
+
     if feature_model is not None:
-        expression = (feature_model >> expression).to_dnf()
+        expression = ((feature_model >> expression).to_dnf())
     if expression.equivalent(expr(True)):
         return expr(True)
-    return espresso_exprs(expression.to_dnf())[0]
+    result = espresso_exprs(expression.to_dnf())[0]
+    __minimize_cache[entry] = result
+    return result
 
 
 class PresenceConditions(
@@ -176,8 +192,8 @@ def expr_to_str(expression: Expression) -> str:
         return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
     if expression.ASTOP == "or":
         return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
-    if expression.ASTOP == "impl":
-        return f"({' => '.join(sorted(map(expr_to_str, expression.xs)))})"
+    #if expression.ASTOP == "impl":
+    #    return f"({' => '.join(sorted(map(expr_to_str, expression.xs)))})"
     raise NotImplementedError(expression.ASTOP)
 
 

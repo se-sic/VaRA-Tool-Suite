@@ -11,7 +11,6 @@ from feature_option_mapping import feature_option_mapping
 
 
 def options_to_formula(options):
-    print(options)
     output = []
     for option, value in options.items():
         if value is 0 or value:

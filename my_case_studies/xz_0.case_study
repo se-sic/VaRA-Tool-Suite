@@ -28,3 +28,4 @@ version: 0
 5: '["--compress", "-6"]'
 6: '["--compress", "-3"]'
 7: '["--compress", "-0"]'
+...

@@ -46,7 +46,7 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
-TIMEOUT_SECONDS = 5
+TIMEOUT_SECONDS = 10
 ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
 
