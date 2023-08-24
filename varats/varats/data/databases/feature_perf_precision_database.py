@@ -8,7 +8,7 @@ import pandas as pd
 from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
-from varats.data.metrics import ClassificationResults
+from varats.data.metrics import ConfusionMatrix
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -561,7 +561,7 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
                 )
 
                 if ground_truth and predicted:
-                    results = ClassificationResults(
+                    results = ConfusionMatrix(
                         map_to_positive_config_ids(ground_truth),
                         map_to_negative_config_ids(ground_truth),
                         map_to_positive_config_ids(predicted),

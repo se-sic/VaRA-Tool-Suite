@@ -27,6 +27,7 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     OutputFolderStep,
 )
+from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
 from varats.experiments.vara.feature_experiment import (
@@ -36,11 +37,7 @@ from varats.experiments.vara.feature_experiment import (
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import (
-    PatchProvider,
-    ApplyPatch,
-    RevertPatch,
-)
+from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.linux_perf_report import LinuxPerfReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
