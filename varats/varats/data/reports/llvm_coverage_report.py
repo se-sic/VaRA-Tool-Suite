@@ -661,8 +661,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             assert len(xmls) == 1
             for xml_file in xmls:
                 c_r.feature_model_xml = xml_file.read_text(encoding="utf-8")
-                #c_r._extract_feature_option_mapping(xml_file)
-                #c_r._extract_feature_model_formula(xml_file)
 
             def json_filter(x: Path) -> bool:
                 return x.name.endswith(".json")

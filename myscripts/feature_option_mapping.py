@@ -42,16 +42,43 @@ def get_numeric_values(feature: Feature) -> tp.Optional[tp.List[int]]:
     return None
 
 
-def feature_option_mapping(fm):
+def strip_prefix(dictionary, prefix_chars):
+    out = {}
+    for key, value in dictionary.items():
+        if isinstance(value, tuple):
+            out[key] = tuple(x.lstrip(prefix_chars) for x in value)
+        else:
+            out[key] = value.lstrip(prefix_chars)
+    return out
+
+
+def prefix_numeric(dictionary, prefix):
+    out = {}
+    for key, value in dictionary.items():
+        if isinstance(value, tuple):
+            out[key] = tuple(f"{prefix}{x}" for x in value if x.isnumeric())
+        else:
+            if value.isnumeric():
+                out[key] = f"{prefix}{value}"
+            else:
+                out[key] = value
+    return out
+
+
+def feature_option_mapping(fm, lstrip=None, numeric_prefix=None):
     output = {}
     for feature in fm:
         name = feature.name.str()
         option = feature.output_string.str()
         numeric_values = get_numeric_values(feature)
         if numeric_values:
-            output[name] = [f"{option}{i}" for i in numeric_values]
+            output[name] = tuple(f"{option}{i}" for i in numeric_values)
         else:
             output[name] = option
+    if lstrip is not None:
+        output = strip_prefix(output, lstrip)
+    if numeric_prefix is not None:
+        output = prefix_numeric(output, numeric_prefix)
     return output
 
 

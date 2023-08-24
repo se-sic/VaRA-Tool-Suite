@@ -34,19 +34,40 @@ def load_feature_model(path):
     return fm
 
 
-def config_to_options(config, feature_to_options):
-    options = []
+def remove_empty(dictionary):
+    return dict(filter(lambda item: item[0], dictionary.items()))
+
+
+def remove_false(dictionary):
+    return dict(
+        filter(
+            lambda item: item[1] or type(item[1]) is int, dictionary.items()
+        )
+    )
+
+
+def replace_feature_with_option(config, feature_to_options):
+    out = {}
     for key, value in config.items():
         option = feature_to_options[key]
-        print(key, value, option)
-        if option:
-            if isinstance(value, bool):
-                if value:
-                    options.append(option)
-            elif isinstance(value, int):
-                option = list(filter(lambda o: str(value) in o, option))
-                assert len(option) == 1
-                options.append(option[0])
-            else:
-                raise NotImplementedError()
-    return options
+        if isinstance(value, bool):
+            pass
+        elif isinstance(value, int):
+            tmp = list(filter(lambda o: str(value) in o, option))
+            assert len(tmp) == 1
+            option = tmp[0]
+        else:
+            raise NotImplementedError()
+
+        out[option] = value
+    return out
+
+
+def config_to_options(config, feature_to_options):
+    return list(
+        remove_empty(
+            remove_false(
+                replace_feature_with_option(config, feature_to_options)
+            )
+        )
+    )

@@ -26,6 +26,7 @@ from varats.data.reports.llvm_coverage_report import (
     cov_show_segment_buffer,
     FileSegmentBufferMapping,
     minimize,
+    expr_to_str,
 )
 from varats.experiment.experiment_util import ZippedReportFolder
 from varats.mapping.configuration_map import ConfigurationMap
@@ -206,7 +207,9 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
     if expression.equivalent(expr(False)):
         raise ValueError("Feature model equals false!")
     print(output)
-    return minimize(expression)
+    expression = minimize(expression)
+    print(expr_to_str(expression))
+    return expression
 
 
 class CoverageReports:
