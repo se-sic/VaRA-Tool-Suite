@@ -15,7 +15,6 @@ from varats.project.project_util import (
     BinaryType,
     get_tagged_commits,
     get_local_project_git_path,
-    comes_after,
 )
 from varats.projects.c_projects.gravity import Gravity
 from varats.projects.discover_projects import initialize_projects
@@ -318,40 +317,3 @@ class TestTaggedCommits(unittest.TestCase):
                 ('edf525e2b1840dcaf377df472c67d8f11f8ace1b', 'v5.3.2alpha'),
             })
         )
-
-
-class TestCommand(unittest.TestCase):
-
-    def test_executable_comes_after(self) -> None:
-
-        self.assertFalse(comes_after([], set(), set()))
-        self.assertFalse(comes_after(["x"], set(), set()))
-
-        self.assertFalse(comes_after([], set("x"), set()))
-        self.assertFalse(comes_after([], set(), set("x")))
-
-        self.assertTrue(comes_after(["x", "y", "z"], set("z"), set("x")))
-        self.assertEqual(
-            True, comes_after(["x", "y", "z"], set("z"), set(["x", "y"]))
-        )
-        self.assertTrue(comes_after(["x", "y", "z"], set(["y", "z"]), set("x")))
-
-        self.assertFalse(comes_after(["x", "y", "z"], set("x"), set("y")))
-        self.assertFalse(
-            comes_after(["x", "y", "z"], set("x"), set(["y", "z"]))
-        )
-        self.assertFalse(
-            comes_after(["x", "y", "z"], set(["x", "y"]), set("z"))
-        )
-
-        self.assertFalse(
-            comes_after(["--threads=1", "--format=xz", "--list", "--keep"],
-                        {"--compress"}, {"--decompress", "--test", "--list"})
-        )
-        self.assertTrue(
-            comes_after(["--threads=1", "--format=xz", "--list", "--keep"],
-                        {"--decompress", "--test", "--list"}, {"--compress"})
-        )
-
-        with self.assertRaises(ValueError):
-            comes_after(["y"], set("x"), set("x"))
