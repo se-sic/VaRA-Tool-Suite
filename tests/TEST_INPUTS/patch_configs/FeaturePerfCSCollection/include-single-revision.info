@@ -1,0 +1,6 @@
+description: Patch that is valid for a single revision
+include_revisions:
+  single_revision: 8ca5cc28e6746eef7340064b5d843631841bf31e
+path: bug.patch
+project_name: FeaturePerfCSCollection
+shortname: include-single-revision
