@@ -6,6 +6,7 @@ import typing as tp
 from collections import defaultdict
 from enum import Enum
 from itertools import chain
+from operator import attrgetter
 from pathlib import Path
 from types import TracebackType
 
@@ -1094,7 +1095,10 @@ class RevisionBinaryMap(tp.Container[str]):
 
         revision_specific_binaries.extend(self.__always_valid_mappings)
 
-        return revision_specific_binaries
+        return sorted(
+            revision_specific_binaries,
+            key=attrgetter("binary_name", "path_to_binary")
+        )
 
     def __contains__(self, binary_name: object) -> bool:
         if isinstance(binary_name, str):
