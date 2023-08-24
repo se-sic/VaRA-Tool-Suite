@@ -1,5 +1,11 @@
+"""
+Module for the :class:`PatchProvider`.
+
+The patch provider enables users to query patches for project, which can be
+applied during an experiment to alter the state of the project.
+"""
+
 import os
-import textwrap
 import typing as tp
 import warnings
 from pathlib import Path
@@ -8,27 +14,16 @@ import benchbuild as bb
 import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
-from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult
-from benchbuild.utils.revision_ranges import (
-    _get_all_revisions_between,
-    _get_git_for_path,
-)
-from plumbum import local, ProcessExecutionError
 from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_git_path
-from varats.project.varats_project import VProject
 from varats.provider.provider import Provider, ProviderType
-from varats.utils.git_commands import (
-    pull_current_branch,
-    apply_patch,
-    revert_patch,
-)
+from varats.utils.git_commands import pull_current_branch, fetch_repository
 from varats.utils.git_util import (
     CommitHash,
     ShortCommitHash,
     get_all_revisions_between,
+    get_initial_commit,
 )
 
 
@@ -69,9 +64,10 @@ class Patch:
         if "tags" in yaml_dict:
             tags = yaml_dict["tags"]
 
-        main_repo_git = _get_git_for_path(
-            get_local_project_git_path(project_name)
-        )
+        project_git_path = get_local_project_git_path(project_name)
+
+        # Update repository to have all upstream changes
+        fetch_repository(project_git_path)
 
         def parse_revisions(rev_dict: tp.Dict) -> tp.Set[CommitHash]:
             res: tp.Set[CommitHash] = set()
@@ -90,8 +86,7 @@ class Patch:
                         res.update(
                             get_all_revisions_between(
                                 rev_range["start"], rev_range["end"],
-                                ShortCommitHash,
-                                get_local_project_git_path(project_name)
+                                ShortCommitHash, project_git_path
                             )
                         )
                 else:
@@ -99,7 +94,7 @@ class Patch:
                         get_all_revisions_between(
                             rev_dict["revision_range"]["start"],
                             rev_dict["revision_range"]["end"], ShortCommitHash,
-                            get_local_project_git_path(project_name)
+                            project_git_path
                         )
                     )
 
@@ -108,11 +103,12 @@ class Patch:
         if "include_revisions" in yaml_dict:
             include_revisions = parse_revisions(yaml_dict["include_revisions"])
         else:
-            include_revisions = {
-                ShortCommitHash(h)
-                for h in main_repo_git('log', '--pretty=%H', '--first-parent'
-                                      ).strip().split()
-            }
+            include_revisions: tp.Set[CommitHash] = set(
+                get_all_revisions_between(
+                    get_initial_commit(project_git_path).hash, "",
+                    ShortCommitHash, project_git_path
+                )
+            )
 
         if "exclude_revisions" in yaml_dict:
             include_revisions.difference_update(
@@ -168,9 +164,10 @@ class PatchSet:
 
         Returns a PatchSet, such that all patches include all the tags given
         """
-        # TODO: Discuss if we really want this. Currently this is an "all_of" access
-        # We could consider to remove the bracket operator and only provide the all_of/any_of accessors as it
-        # would be clearer what the exact behaviour is
+        # TODO: Discuss if we really want this. Currently this is an "all_of"
+        # access We could consider to remove the bracket operator and only
+        # provide the all_of/any_of accessors as it would be clearer what the
+        # exact behavior is
 
         # Trick to handle correct set construction if just a single tag is given
         if isinstance(tags, str):
@@ -199,9 +196,9 @@ class PatchSet:
         if isinstance(tags, str):
             tags = [tags]
 
-        result = set()
+        result: tp.Set[Patch] = set()
         for patch in self:
-            if patch.tags and any([tag in patch.tags for tag in tags]):
+            if patch.tags and any(tag in patch.tags for tag in tags):
                 result.add(patch)
 
         return PatchSet(result)
@@ -248,7 +245,8 @@ class PatchProvider(Provider):
 
         if not patches_project_dir.is_dir():
             warnings.warn(
-                f"Could not find patches directory for project '{self.project.NAME}'."
+                "Could not find patches directory for project "
+                f"'{self.project.NAME}'."
             )
 
         patches = set()
@@ -295,7 +293,8 @@ class PatchProvider(Provider):
         Creates a provider instance for the given project.
 
         Note:
-            A provider may not contain any patches at all if there are no existing patches for a project
+            A provider may not contain any patches at all if there are no
+            existing patches for a project
 
         Returns:
             a provider instance for the given project
