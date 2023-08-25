@@ -377,10 +377,10 @@ def package_paper_config(
     result_dir = Path(str(vara_cfg()['result_dir']))
     report_types: tp.List[tp.Type[BaseReport]] = []
     if experiment_types:
-        report_types = list(BaseReport.REPORT_TYPES.values())
-    else:
         for experiment_type in experiment_types:
             report_types.extend(experiment_type.report_spec().report_types)
+    else:
+        report_types = list(BaseReport.REPORT_TYPES.values())
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
@@ -406,10 +406,10 @@ def package_paper_config(
         output_file, "w", compression=ZIP_DEFLATED, compresslevel=9
     ) as pc_zip:
         for file_path in files_to_store:
-            pc_zip.write(file_path.relative_to(vara_root))
+            pc_zip.write(file_path.resolve().relative_to(vara_root))
 
         for case_study_file in case_study_files_to_include:
-            pc_zip.write(case_study_file.relative_to(vara_root))
+            pc_zip.write(case_study_file.resolve().relative_to(vara_root))
 
 
 def _combine_tagged_revs_for_experiment(

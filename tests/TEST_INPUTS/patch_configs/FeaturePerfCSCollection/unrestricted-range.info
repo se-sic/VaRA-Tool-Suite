@@ -1,0 +1,5 @@
+description: Patch describing an unrestricted range of commits, meaning it should
+  include all commits
+path: bug.patch
+project_name: FeaturePerfCSCollection
+shortname: unrestricted-range
