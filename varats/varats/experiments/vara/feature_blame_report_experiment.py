@@ -234,7 +234,7 @@ class DataflowFeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
 
 
 class DataflowFeatureBlameReportExperiment(
-    VersionExperiment, shorthand="SFBRE"
+    VersionExperiment, shorthand="DFBRE"
 ):
     """Generates a dataflow feature blame report of the project(s) specified in
     the call."""
