@@ -109,7 +109,9 @@ def workload_commands(
             prj_cmd.command, "requires_all"
         ) and prj_cmd.command.requires_all:
             args = set(prj_cmd.command._args).union(extra_options)
-            return prj_cmd.command.requires_all.issubset(args)
+            return prj_cmd.command.requires_all.issubset(
+                args
+            )  # type: ignore [no-any-return]
         return True
 
     available_cmds = filter(
