@@ -28,7 +28,10 @@ from varats.revision.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
 )
-from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
+from varats.ts_utils.click_param_types import (
+    REQUIRE_CASE_STUDY,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.utils.git_util import (
     num_commits,
     num_active_commits,
@@ -82,7 +85,7 @@ def get_structural_commit_data_for_case_study(
     return data_frame
 
 
-class FeatureScopeCorrSFBRPlot(Plot, plot_name="feature_scope_corr_sfbr_plot"):
+class FeatureSizeCorrSFBRPlot(Plot, plot_name="feature_scope_corr_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
         case_study: CaseStudy = self.plot_kwargs["case_study"]
@@ -93,26 +96,22 @@ class FeatureScopeCorrSFBRPlot(Plot, plot_name="feature_scope_corr_sfbr_plot"):
         plt = sns.regplot(
             data=data, x='feature_scope', y='num_interacting_commits'
         )
-        plt.set_ylim(0, 50)
-        plt.set(
-            xlabel="Feature Size",
-            ylabel="Number Interacting Commits",
-            title="Correlation: Feature Size - Number Interacting Commits (XZ)"
-        )
+
+        plt.set(xlabel="Feature Size", ylabel="Number Interacting Commits")
 
 
-class FeatureScopeCorrSFBRPlotGenerator(
+class FeatureSizeCorrSFBRPlotGenerator(
     PlotGenerator,
-    generator_name="feature-scope-corr-sfbr-plot",
-    options=[REQUIRE_CASE_STUDY]
+    generator_name="feature-size-corr-sfbr-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureScopeCorrSFBRPlot(
+            FeatureSizeCorrSFBRPlot(
                 self.plot_config, case_study=case_study, **self.plot_kwargs
-            )
+            ) for case_study in case_studies
         ]
 
 
@@ -127,7 +126,7 @@ class FeatureDisSFBRPlot(Plot, plot_name="feature_dis_sfbr_plot"):
 
         plt.set(
             xlabel="Number Interacting Commits",
-            ylabel="XZ",
+            ylabel=case_study.project_name,
             title="Structural Interactions of Features"
         )
 
@@ -256,7 +255,7 @@ def get_dataflow_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
         for DRFP in dataflow_report_files
     ]
     number_active_commits = num_active_commits(
-        repo_path=get_local_project_git_path(case_study.project_name)
+        repo_folder=get_local_project_git_path(case_study.project_name)
     )
 
     data_frame = generate_commit_dcfi_data(SFBRs, DFBRs, number_active_commits)
@@ -314,25 +313,59 @@ def get_feature_author_data_for_case_study(
     return data_frame
 
 
+def get_stacked_author_data_for_case_studies(
+    case_studies: tp.List[CaseStudy]
+) -> pd.DataFrame:
+    rows = []
+    projects_data = [
+        get_feature_author_data_for_case_study(case_study
+                                              ).loc[:,
+                                                    "num_implementing_authors"]
+        for case_study in case_studies
+    ]
+    max_num_implementing_authors = max([
+        max(project_data) for project_data in projects_data
+    ])
+
+    for case_study, project_data in zip(case_studies, projects_data):
+        count: [int] = [0 for i in range(0, max_num_implementing_authors)]
+        for num_implementing_authors in project_data:
+            count[num_implementing_authors -
+                  1] = count[num_implementing_authors - 1] + 1
+
+        rows.append([case_study.project_name] + count)
+
+    return pd.DataFrame(
+        rows,
+        columns=['Project', '1 Author'] + [
+            str(i) + ' Authors'
+            for i in range(2, max_num_implementing_authors + 1)
+        ]
+    )
+
+
 class FeatureAuthorDisSCFIPlot(Plot, plot_name="feature_author_dis_scfi_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        data = get_feature_author_data_for_case_study(case_study)
-        ax = sns.displot(data=data, x='num_implementing_authors', kde=True)
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+
+        data = get_stacked_author_data_for_case_studies(case_studies)
+
+        data.set_index('Project').plot(kind='bar', stacked=True)
 
 
 class FeatureAuthorDisSCFIPlotGenerator(
     PlotGenerator,
     generator_name="feature-author-dis-scfi-plot",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
             FeatureAuthorDisSCFIPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
 
