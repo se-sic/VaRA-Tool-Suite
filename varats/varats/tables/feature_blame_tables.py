@@ -13,7 +13,6 @@ from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
-from varats.utils.git_util import num_commits, num_active_commits
 
 
 class SFBREvalTable(Table, table_name="sfbr_eval_table"):
