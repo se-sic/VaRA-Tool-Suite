@@ -85,16 +85,18 @@ def get_structural_commit_data_for_case_study(
     return data_frame
 
 
-class FeatureSizeCorrSFBRPlot(Plot, plot_name="feature_scope_corr_sfbr_plot"):
+class FeatureSizeCorrSFBRPlot(Plot, plot_name="feature_size_corr_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
-        df = get_structural_feature_data_for_case_study(case_study)
+        df = pd.concat([
+            get_structural_feature_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
 
-        data = df.sort_values(by=['feature_scope'])
         plt = sns.regplot(
-            data=data, x='feature_scope', y='num_interacting_commits'
+            data=df, x='feature_size', y='num_interacting_commits'
         )
 
         plt.set(xlabel="Feature Size", ylabel="Number Interacting Commits")
@@ -110,8 +112,8 @@ class FeatureSizeCorrSFBRPlotGenerator(
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             FeatureSizeCorrSFBRPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
-            ) for case_study in case_studies
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
         ]
 
 
@@ -153,10 +155,10 @@ class FeatureSizeDisSFBRPlot(Plot, plot_name="feature_size_dis_sfbr_plot"):
 
         df = get_structural_feature_data_for_case_study(case_study)
 
-        df = df.sort_values(by=['feature_scope'])
+        df = df.sort_values(by=['feature_size'])
         print(df)
         plt = sns.barplot(
-            data=df, x='feature', y='feature_scope', color='steelblue'
+            data=df, x='feature', y='feature_size', color='steelblue'
         )
         plt.set(xlabel="Feature", ylabel="Size", title="Feature Sizes in XZ")
 
