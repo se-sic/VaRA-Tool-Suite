@@ -122,7 +122,7 @@ class Xz(VProject):
             )
         ],
         WorkloadSet(WorkloadCategory.JAN): [
-            WrappedCommand(
+            VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "--threads=1",
                 "--format=xz",
@@ -131,9 +131,9 @@ class Xz(VProject):
                 label="countries-land-250m-compress",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
                 consumes=["geo-maps/countries-land-250m.geo.json"],
-                requires={"--compress"}
+                requires_any={"--compress"}
             ),
-            WrappedCommand(
+            VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "--threads=1",
                 "--format=xz",
@@ -142,7 +142,7 @@ class Xz(VProject):
                 label="xz-files-compressed",
                 creates=["xz_files/xz-5.4.0.tar"],
                 consumes=["xz_files/xz-5.4.0.tar.xz"],
-                requires={"--decompress", "--test", "--list"}
+                requires_any={"--decompress", "--test", "--list"}
             ),
         ],
     }
