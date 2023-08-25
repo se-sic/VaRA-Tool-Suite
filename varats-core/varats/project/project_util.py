@@ -385,12 +385,13 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
 
 
-class WrappedCommand(Command):  # type: ignore [misc]
+class VCommand(Command):  # type: ignore [misc]
     """
     Wrapper around benchbuild's Command class.
 
     Attributes:
-    requires: specify required args that must be added before execution.
+    requires_any: sufficient args that must be available for successful execution.
+    requires_all: all args that must be available for successful execution.
     """
 
     _requires: tp.Set[str]
@@ -398,13 +399,19 @@ class WrappedCommand(Command):  # type: ignore [misc]
     def __init__(
         self,
         *args: tp.Any,
-        requires: tp.Optional[tp.Set[str]] = None,
+        requires_any: tp.Optional[tp.Set[str]] = None,
+        requires_all: tp.Optional[tp.Set[str]] = None,
         **kwargs: tp.Union[str, tp.List[str]],
     ) -> None:
 
         super().__init__(*args, **kwargs)
-        self._requires = requires if requires else set()
+        self._requires_any = requires_any if requires_any else set()
+        self._requires_all = requires_all if requires_all else set()
 
     @property
-    def requires(self) -> tp.Set[str]:
-        return self._requires
+    def requires_any(self) -> tp.Set[str]:
+        return self._requires_any
+
+    @property
+    def requires_all(self) -> tp.Set[str]:
+        return self._requires_all

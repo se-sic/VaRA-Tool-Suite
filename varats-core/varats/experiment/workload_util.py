@@ -96,13 +96,25 @@ def workload_commands(
     # Filter commands that have required args set.
     extra_options = set(get_extra_config_options(project))
 
-    def requires_filter(prj_cmd: ProjectCommand) -> bool:
-        if hasattr(prj_cmd.command, "requires") and prj_cmd.command.requires:
+    def requires_any_filter(prj_cmd: ProjectCommand) -> bool:
+        if hasattr(
+            prj_cmd.command, "requires_any"
+        ) and prj_cmd.command.requires_any:
             args = set(prj_cmd.command._args).union(extra_options)
-            return bool(args.intersection(prj_cmd.command.requires))
+            return bool(args.intersection(prj_cmd.command.requires_any))
         return True
 
-    available_cmds = filter(requires_filter, project_cmds)
+    def requires_all_filter(prj_cmd: ProjectCommand) -> bool:
+        if hasattr(
+            prj_cmd.command, "requires_all"
+        ) and prj_cmd.command.requires_all:
+            args = set(prj_cmd.command._args).union(extra_options)
+            return prj_cmd.command.requires_all.issubset(args)
+        return True
+
+    available_cmds = filter(
+        requires_all_filter, filter(requires_any_filter, project_cmds)
+    )
 
     return list(
         filter(

@@ -55,7 +55,7 @@ class TestWorkloadCommands(unittest.TestCase):
 
     def test_workload_commands_requires(self) -> None:
         revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))
-        project = deepcopy(Xz(revision=revision))
+        project = Xz(revision=revision)
         binary = Xz.binaries_for_revision(ShortCommitHash("c5c7ceb08a"))[0]
 
         commands = wu.workload_commands(
