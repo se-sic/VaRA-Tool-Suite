@@ -140,7 +140,7 @@ def generate_feature_scfi_data(
     rows = [[feature_data[0], feature_data[1][0], feature_data[1][1]]
             for feature_data in features_cfi_data.items()]
     return pd.DataFrame(
-        rows, columns=["feature", "num_interacting_commits", "feature_scope"]
+        rows, columns=["feature", "num_interacting_commits", "feature_size"]
     )
 
 

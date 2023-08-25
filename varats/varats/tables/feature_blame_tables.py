@@ -61,7 +61,7 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
 
         feature_correlation_between_size_num_interacting_commits = np.corrcoef(
             data_features['num_interacting_commits'],
-            data_features['feature_scope']
+            data_features['feature_size']
         )
         rows.append([
             'feature_correlation_between_size_num_interacting_commits',
