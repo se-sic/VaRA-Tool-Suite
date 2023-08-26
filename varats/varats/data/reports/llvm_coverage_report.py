@@ -25,6 +25,7 @@ from pyeda.inter import (  # type: ignore
     espresso_tts,
     truthtable,
     ttvar,
+    TruthTable,
 )
 
 from varats.base.configuration import Configuration
@@ -134,8 +135,9 @@ def values_set(expr_point: tp.Dict[T, int], dc_point: tp.Dict[T, int]) -> bool:
 
 
 def expr2truthtable(
-    expression: Expression, dont_care: tp.Optional[Expression] = None
-):
+    expression: Expression,
+    dont_care: tp.Optional[Expression] = None
+) -> TruthTable:
     """Convert an expression into a truth table."""
     inputs = [ttvar(v.names, v.indices) for v in expression.inputs]
     if dont_care is None or dont_care.is_zero():

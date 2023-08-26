@@ -355,10 +355,10 @@ class TestCoveragePlot(unittest.TestCase):
             reports = setup_reports(
                 "test_coverage_MultiSharedMultipleRegions", base_dir
             )
-            feature_model = expr(
-                "(slow & header) | (~slow & header) | (slow & ~header) | (~slow & ~header)"
-            )
-            reports._feature_model = expr(True)
+            #feature_model = expr(
+            #    "(slow & header) | (~slow & header) | (slow & ~header) | (~slow & ~header)"
+            #)
+            #reports._feature_model = expr(True)
             #self.assertEqual(reports.feature_model(), feature_model)
 
             self.assertEqual(
