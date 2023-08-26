@@ -25,6 +25,10 @@ from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.utils.settings import save_config, vara_cfg
+from varats.varats.data.reports.llvm_coverage_report import (
+    minimize,
+    expr_to_str,
+)
 from varats.varats.plots.llvm_coverage_plot import (
     CoveragePlotGenerator,
     CoverageReports,
@@ -35,7 +39,6 @@ from varats.varats.plots.llvm_coverage_plot import (
 from varats.varats.plots.llvm_coverage_plot import (
     vara_found_features as _vara_found_features,
 )
-from varats.varats.plots.llvm_coverage_plot import minimize, expr_to_str
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main",
                                      ["test.txt"])

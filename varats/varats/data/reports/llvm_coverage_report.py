@@ -110,8 +110,11 @@ def simplify(
 
 __minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
 
+T = tp.TypeVar("T")
 
-def filter_true_points(domain, image):
+
+def filter_true_points(domain: tp.List[tp.Dict[T, int]],
+                       image: tp.List[int]) -> tp.List[tp.Dict[T, int]]:
     """Only output points where image is 1."""
     assert len(domain) == len(image)
     result = []
@@ -121,7 +124,7 @@ def filter_true_points(domain, image):
     return result
 
 
-def values_set(expr_point, dc_point) -> bool:
+def values_set(expr_point: tp.Dict[T, int], dc_point: tp.Dict[T, int]) -> bool:
     """Check if values of dc_point are set in expr_point."""
     for key, value in dc_point.items():
         if key in expr_point:
