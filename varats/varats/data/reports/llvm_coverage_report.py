@@ -22,6 +22,9 @@ from pyeda.inter import (  # type: ignore
     exprvar,
     expr,
     espresso_exprs,
+    espresso_tts,
+    truthtable,
+    ttvar,
 )
 
 from varats.base.configuration import Configuration
@@ -108,6 +111,57 @@ def simplify(
 __minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
 
 
+def filter_true_points(domain, image):
+    """Only output points where image is 1."""
+    assert len(domain) == len(image)
+    result = []
+    for point, value in zip(domain, image):
+        if value:
+            result.append(point)
+    return result
+
+
+def values_set(expr_point, dc_point) -> bool:
+    """Check if values of dc_point are set in expr_point."""
+    for key, value in dc_point.items():
+        if key in expr_point:
+            if expr_point[key] != value:
+                return False
+    return True
+
+
+def expr2truthtable(
+    expression: Expression, dont_care: tp.Optional[Expression] = None
+):
+    """Convert an expression into a truth table."""
+    inputs = [ttvar(v.names, v.indices) for v in expression.inputs]
+    if dont_care is None or dont_care.is_zero():
+        # Everything matters
+        return truthtable(inputs, expression.iter_image())
+    if dont_care.is_one():
+        # Don't care about anything
+        return truthtable(inputs, ["X"] * expression.cardinality)
+
+    # Set Don't Care bits
+    expr_image = list(expression.iter_image())
+    expr_domain = list(expression.iter_domain())
+    dc_image = list(dont_care.iter_image())
+    dc_domain = list(dont_care.iter_domain())
+    filtered_dc_domain = filter_true_points(dc_domain, dc_image)
+    output = []
+    for expr_i, expr_point in zip(expr_image, expr_domain):
+        dont_care = False
+        for dc_point in filtered_dc_domain:
+            if values_set(expr_point, dc_point):
+                dont_care = True
+                output.append("X")  # Do not care
+                break
+        if not dont_care:
+            output.append(expr_i)
+    assert len(output) == expression.cardinality
+    return truthtable(inputs, output)
+
+
 def minimize(
     expression: Expression,
     feature_model: tp.Optional[Expression] = None
@@ -120,11 +174,25 @@ def minimize(
     if entry in __minimize_cache:
         return __minimize_cache[entry]
 
-    if feature_model is not None:
-        expression = (feature_model >> expression).to_dnf()
     if expression.equivalent(expr(True)):
         return expr(True)
-    result = espresso_exprs(expression.to_dnf())[0]
+    if expression.equivalent(expr(False)):
+        return expr(False)
+
+    if feature_model is not None:
+        x = expr2truthtable(expression, ~feature_model)
+    else:
+        x = expr2truthtable(expression)
+    result = espresso_tts(x)[0]
+    if feature_model is not None:
+        # Check m => simp(p, m) <=> p
+        assert ((
+            feature_model >> ((result >> expression) & (expression >> result))
+        )).equivalent(
+            expr(True)
+        ), f"""{expr_to_str(result)} is not correctly simplified.
+Was {expr_to_str(espresso_exprs(expression.to_dnf())[0])}"""
+
     __minimize_cache[entry] = result
     return result
 

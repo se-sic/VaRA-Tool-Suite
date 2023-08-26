@@ -30,7 +30,7 @@ setup(
         "pandas>=1.5.3",
         "plotly>=5.13.1",
         "plumbum>=1.6",
-        "pyeda>=0.28.0",
+        "pyeda @ https://github.com/danjujan/pyeda/archive/main.zip",
         "pygit2>=1.10",
         "PyGithub>=1.47",
         "pygraphviz>=1.7",

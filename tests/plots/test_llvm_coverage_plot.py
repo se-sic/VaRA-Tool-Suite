@@ -2,6 +2,8 @@ import typing as tp
 import unittest
 from unittest.mock import create_autospec
 
+from pyeda.inter import expr
+
 from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
@@ -33,6 +35,7 @@ from varats.varats.plots.llvm_coverage_plot import (
 from varats.varats.plots.llvm_coverage_plot import (
     vara_found_features as _vara_found_features,
 )
+from varats.varats.plots.llvm_coverage_plot import minimize, expr_to_str
 
 CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main",
                                      ["test.txt"])
@@ -349,6 +352,12 @@ class TestCoveragePlot(unittest.TestCase):
             reports = setup_reports(
                 "test_coverage_MultiSharedMultipleRegions", base_dir
             )
+            feature_model = expr(
+                "(slow & header) | (~slow & header) | (slow & ~header) | (~slow & ~header)"
+            )
+            reports._feature_model = expr(True)
+            #self.assertEqual(reports.feature_model(), feature_model)
+
             self.assertEqual(
                 """include/fpcsc/perf_util/feature_cmd.h:
     1|#ifndef FPCSC_PERFUTIL_FEATURECMD_H                                             |
@@ -561,3 +570,121 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 self.assertEqual(all.TN, 36)
                 self.assertEqual(all.FP, 0)
                 self.assertEqual(all.FN, 10)
+
+    def test_presence_condition_simplification_1(self):
+        feature_model = expr(
+            "(~compress & enc) | (compress & ~enc) | (compress & enc)"
+        )
+        expression = expr(
+            "(~compress & enc) | (compress & ~enc) | (compress & enc)"
+        )
+        self.assertEqual(minimize(expression, feature_model), expr(True))
+        expression = expr("(compress & enc)")
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "(compress & enc)"
+        )
+
+    def test_presence_condition_simplification_2(self):
+        feature_model = expr(
+            "(~compress & ~enc) | (~compress & enc) | (compress & ~enc) | (compress & enc)"
+        )
+        expression = expr(
+            "(~compress & enc) | (compress & ~enc) | (compress & enc)"
+        )
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "(compress | enc)"
+        )
+        feature_model = expr(True)
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "(compress | enc)"
+        )
+
+    def test_presence_condition_simplification_3(self):
+        feature_model = expr(False)
+        expression = expr(
+            "(~compress & enc) | (compress & ~enc) | (compress & enc)"
+        )
+        self.assertEqual(minimize(expression, feature_model), expr(False))
+        expression = expr(False)
+        self.assertEqual(minimize(expression, feature_model), expr(False))
+        expression = expr(True)
+        self.assertEqual(minimize(expression, feature_model), expr(True))
+
+    def test_presence_condition_simplification_4(self):
+        feature_model = None
+        expression = expr(
+            "(~compress & enc) | (compress & ~enc) | (compress & enc)"
+        )
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "(compress | enc)"
+        )
+        expression = expr(False)
+        self.assertEqual(minimize(expression, feature_model), expr(False))
+        expression = expr(True)
+        self.assertEqual(minimize(expression, feature_model), expr(True))
+
+    def test_presence_condition_simplification_5(self):
+        feature_model = expr(
+            "((compress & enc) | (compress & ~enc) | (enc & ~compress) | (~compress & ~enc))"
+        )
+        expression = ((((expr(True) & expr("enc")) & expr("compress")) |
+                       expr(False)) |
+                      ((expr(True) & expr("compress") & expr("~enc"))))
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "compress"
+        )
+
+    def test_presence_condition_simplification_6(self):
+        feature_model = expr(
+            "(slow & header) | (~slow & header) | (slow & ~header) | (~slow & ~header)"
+        )
+        expression = expr("(slow & header) | (slow & ~header)")
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "slow"
+        )
+        feature_model = expr(True)
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "slow"
+        )
+        feature_model = expr(
+            "(header & slow) | (~header & slow) | (header & ~slow) | (~header & ~slow)"
+        )
+        expression = expr("(header & slow) | (~header & slow)")
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "slow"
+        )
+        feature_model = expr(True)
+        self.assertEqual(
+            expr_to_str(minimize(expression, feature_model)), "slow"
+        )
+
+    def test_pyeda(self):
+        from pyeda.inter import (
+            exprvar,
+            truthtable,
+            truthtable2expr,
+            espresso_tts,
+            expr2truthtable,
+        )
+
+        # Pyeda's espresso_tts implementation does not respect tt variable ordering
+        A, B, C, D = map(exprvar, 'ABCD')
+        f_tt = truthtable((A, B, C), '10110101')
+        f_ex = truthtable2expr(f_tt)
+        g_ex = espresso_tts(f_tt)[0]
+        self.assertTrue(f_ex.equivalent(g_ex))
+
+        f_tt = truthtable((C, B, A), '10110101')
+        f_ex = truthtable2expr(f_tt)
+        g_ex = espresso_tts(f_tt)[0]
+        self.assertTrue(f_ex.equivalent(g_ex))
+
+        f_tt = truthtable((B, A, C), '10110101')
+        f_ex = truthtable2expr(f_tt)
+        g_ex = espresso_tts(f_tt)[0]
+        self.assertTrue(f_ex.equivalent(g_ex))
+
+        f_tt = truthtable((D, C, B, A), '1011010110010100')
+        f_ex = truthtable2expr(f_tt)
+        g_ex = espresso_tts(f_tt)[0]
+        self.assertTrue(f_ex.equivalent(g_ex))
