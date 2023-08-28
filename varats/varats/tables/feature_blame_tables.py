@@ -7,7 +7,8 @@ from varats.paper.case_study import CaseStudy
 from varats.plots.feature_blame_plots import (
     get_structural_commit_data_for_case_study,
     get_structural_feature_data_for_case_study,
-    get_dataflow_data_for_case_study,
+    get_commit_dataflow_data_for_case_study,
+    get_feature_dataflow_data_for_case_study,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -106,7 +107,7 @@ class DFBREvalTable(Table, table_name="dfbr_eval_table"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_study: CaseStudy = self.table_kwargs['case_study']
 
-        data = get_dataflow_data_for_case_study(case_study)
+        data = get_commit_dataflow_data_for_case_study(case_study)
 
         rows = []
 

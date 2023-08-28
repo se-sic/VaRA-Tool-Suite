@@ -289,16 +289,24 @@ class DataflowFeatureBlameReport(
         return self.__commit_feature_interactions
 
 
-def generate_commit_dcfi_data(
-    SFBRs: tp.List[StructuralFeatureBlameReport],
-    DFBRs: tp.List[DataflowFeatureBlameReport], num_commits: int
-) -> pd.DataFrame:
+def commits_inside_features(
+    SFBRs: tp.List[StructuralFeatureBlameReport]
+) -> tp.Set[str]:
     commits_structurally_interacting_with_features: tp.Set[str] = set()
     for SFBR in SFBRs:
         for SCFI in SFBR.commit_feature_interactions:
             commits_structurally_interacting_with_features.add(
                 ShortCommitHash(SCFI.commit.commit_hash).hash
             )
+    return commits_structurally_interacting_with_features
+
+
+def generate_commit_dcfi_data(
+    SFBRs: tp.List[StructuralFeatureBlameReport],
+    DFBRs: tp.List[DataflowFeatureBlameReport], num_commits: int
+) -> pd.DataFrame:
+    commits_structurally_interacting_with_features: tp.Set[
+        str] = commits_inside_features(SFBRs)
     # [hash, ([interacting_features], part_of_feature)]
     dfi_commit: tp.Dict[str, tp.Tuple[tp.Set[str], int]] = {}
     for DFBR in DFBRs:
@@ -324,3 +332,44 @@ def generate_commit_dcfi_data(
 
     columns = ["commit", "num_interacting_features", "part_of_feature"]
     return pd.DataFrame(rows_commit_dfi, columns=columns)
+
+
+def generate_feature_dcfi_data(
+    SFBRs: tp.List[StructuralFeatureBlameReport],
+    DFBRs: tp.List[DataflowFeatureBlameReport]
+) -> pd.DataFrame:
+    commits_structurally_interacting_with_features: tp.Set[
+        str] = commits_inside_features(SFBRs)
+    # {feature, ([interacting_commits_outside], [interacting_commits_inside])}
+    dci_feature: tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str]]] = {}
+    for DFBR in DFBRs:
+        for DCFI in DFBR.commit_feature_interactions:
+            feature = DCFI.feature
+            entry = dci_feature.get(feature)
+            if entry is None:
+                entry = (set([]), set([]))
+            for commit in DCFI.commits:
+                sch: str = ShortCommitHash(commit.commit_hash).hash
+                if sch in commits_structurally_interacting_with_features:
+                    entry[1].add(sch)
+                else:
+                    entry[0].add(sch)
+            dci_feature.update({feature: entry})
+
+    feature_scfi_data = pd.concat([
+        generate_feature_scfi_data(SFBR) for SFBR in SFBRs
+    ])
+
+    rows_feature_dci = [[
+        feature_data[0],
+        feature_scfi_data.loc[feature_scfi_data["feature"] == feature_data[0]
+                             ]["feature_size"].to_numpy()[0],
+        len(feature_data[1][0]),
+        len(feature_data[1][1])
+    ] for feature_data in dci_feature.items()]
+
+    columns = [
+        "feature", "feature_size", "num_interacting_commits_outside",
+        "num_interacting_commits_inside"
+    ]
+    return pd.DataFrame(rows_feature_dci, columns=columns)

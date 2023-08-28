@@ -14,6 +14,7 @@ from varats.data.reports.feature_blame_report import (
     generate_feature_scfi_data,
     generate_commit_scfi_data,
     generate_commit_dcfi_data,
+    generate_feature_dcfi_data,
     generate_feature_author_scfi_data,
 )
 from varats.jupyterhelper.file import (
@@ -240,7 +241,9 @@ def get_dataflow_report_files_for_project(
     return report_files, failed_report_files
 
 
-def get_dataflow_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
+def get_both_reports_for_case_study(
+    case_study: CaseStudy
+) -> tp.Tuple[tp.List[SFBR], tp.List[DFBR]]:
     structural_report_files, structural_failed_report_files = get_structural_report_files_for_project(
         case_study.project_name
     )
@@ -256,43 +259,141 @@ def get_dataflow_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
         load_dataflow_feature_blame_report(DRFP)
         for DRFP in dataflow_report_files
     ]
+    return (SFBRs, DFBRs)
+
+
+def get_commit_dataflow_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
+
     number_active_commits = num_active_commits(
         repo_folder=get_local_project_git_path(case_study.project_name)
     )
-
+    SFBRs, DFBRs = get_both_reports_for_case_study(case_study)
     data_frame = generate_commit_dcfi_data(SFBRs, DFBRs, number_active_commits)
 
     return data_frame
 
 
-class FeatureDCFIPlot(Plot, plot_name="feature_dcfi_plot"):
+class FeatureInwardDataflowPlot(Plot, plot_name="feature_inward_dataflow_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        data = get_dataflow_data_for_case_study(case_study)
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        data = pd.concat([
+            get_commit_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
         data = data.loc[data['part_of_feature'] == 0]
         # data = data.loc[data['num_interacting_features'] > 0]
         plt = sns.histplot(
             data=data,
             x='num_interacting_features',
             #kde=True,
-            binwidth=1
+            binwidth=1,
         )
 
-        plt.set(xlabel="Number Interacting Features", ylabel="Commit Count")
+        plt.set(
+            xlabel="Number Interacting Features",
+            ylabel="Commit Count",
+            title='Dataflow from outside into features'
+            ' - projects: ' +
+            ",".join(case_study.project_name for case_study in case_studies)
+        )
 
 
-class FeatureDCFIPlotGenerator(
+class FeatureInwardDataflowPlotGenerator(
     PlotGenerator,
-    generator_name="feature-dcfi-plot",
-    options=[REQUIRE_CASE_STUDY]
+    generator_name="feature-inward-dataflow-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureDCFIPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
+            FeatureInwardDataflowPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
+        ]
+
+
+class FeatureExistingInwardDataflowPlot(
+    Plot, plot_name="feature_existing_inward_dataflow_plot"
+):
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        data = pd.concat([
+            get_commit_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
+        data = data.loc[data['part_of_feature'] == 0]
+        data = data.loc[data['num_interacting_features'] > 0]
+        plt = sns.histplot(
+            data=data,
+            x='num_interacting_features',
+            #kde=True,
+            binwidth=1,
+        )
+
+        plt.set(
+            xlabel="Number Interacting Features",
+            ylabel="Commit Count",
+            title='Dataflow from outside of features'
+            ' - projects: ' +
+            ",".join(case_study.project_name for case_study in case_studies)
+        )
+
+
+class FeatureExistingInwardDataflowPlotGenerator(
+    PlotGenerator,
+    generator_name="feature-existing-inward-dataflow-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        return [
+            FeatureExistingInwardDataflowPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
+        ]
+
+
+def get_feature_dataflow_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
+
+    SFBRs, DFBRs = get_both_reports_for_case_study(case_study)
+    data_frame = generate_feature_dcfi_data(SFBRs, DFBRs)
+
+    return data_frame
+
+
+class FeatureSizeCorrDFBRPlot(Plot, plot_name="feature_size_corr_dfbr_plot"):
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        data = pd.concat([
+            get_feature_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
+        print(data)
+        plt = sns.regplot(
+            data=data, x='feature_size', y='num_interacting_commits_outside'
+        )
+
+
+class FeatureSizeCorrDFBRPlotGenerator(
+    PlotGenerator,
+    generator_name="feature-size-corr-dfbr-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        return [
+            FeatureSizeCorrDFBRPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
 
