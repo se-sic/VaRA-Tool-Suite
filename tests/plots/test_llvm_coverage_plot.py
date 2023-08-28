@@ -44,15 +44,6 @@ CODE_REGION_1 = CodeRegion.from_list([9, 79, 17, 2, 4, 0, 0, 0], "main",
                                      ["test.txt"])
 
 
-def module_exists(module_name: str) -> bool:
-    try:
-        __import__(module_name)
-    except ImportError:
-        return False
-    else:
-        return True
-
-
 def _confusion_matrix(
     feature: tp.Optional[str], tree: CodeRegion,
     feature_name_map: tp.Dict[str, str], threshold: float, file: str
@@ -667,27 +658,26 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
             truthtable,
             truthtable2expr,
             espresso_tts,
-            expr2truthtable,
         )
 
         # Pyeda's espresso_tts implementation does not respect tt variable ordering
-        A, B, C, D = map(exprvar, 'ABCD')
-        f_tt = truthtable((A, B, C), '10110101')
+        a, b, c, d = map(exprvar, 'abcd')
+        f_tt = truthtable((a, b, c), '10110101')
         f_ex = truthtable2expr(f_tt)
         g_ex = espresso_tts(f_tt)[0]
         self.assertTrue(f_ex.equivalent(g_ex))
 
-        f_tt = truthtable((C, B, A), '10110101')
+        f_tt = truthtable((c, b, a), '10110101')
         f_ex = truthtable2expr(f_tt)
         g_ex = espresso_tts(f_tt)[0]
         self.assertTrue(f_ex.equivalent(g_ex))
 
-        f_tt = truthtable((B, A, C), '10110101')
+        f_tt = truthtable((b, a, c), '10110101')
         f_ex = truthtable2expr(f_tt)
         g_ex = espresso_tts(f_tt)[0]
         self.assertTrue(f_ex.equivalent(g_ex))
 
-        f_tt = truthtable((D, C, B, A), '1011010110010100')
+        f_tt = truthtable((d, c, b, a), '1011010110010100')
         f_ex = truthtable2expr(f_tt)
         g_ex = espresso_tts(f_tt)[0]
         self.assertTrue(f_ex.equivalent(g_ex))
