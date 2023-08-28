@@ -1,0 +1,31 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: xz
+stages:
+- revisions:
+  - commit_hash: 4773608554d1b684a05ff9c1d879cf5c42266d33
+    commit_id: 1684
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+version: 0
+...
+---
+0: '["--compress", "-9"]'
+1: '["--list", "-6"]'
+2: '["--test", "-6"]'
+3: '["--decompress", "-6"]'
+4: '["--test", "--decompress", "-6"]'
+5: '["--compress", "-6"]'
+6: '["--compress", "-3"]'
+7: '["--compress", "-0"]'
+...
