@@ -5615,4 +5615,3 @@ version: 0
 2799: '["--test", "--decompress", "-6", "--format=auto", "--keep", "--flush-timeout=0", "--no-adjust", "-vv", "--single-stream", "--suffix=.suffix"]'
 2800: '["--test", "--decompress", "-6", "--format=auto", "--keep", "--flush-timeout=0", "--no-adjust", "-vv", "--single-stream", "--suffix=.suffix"]'
 ...
-
