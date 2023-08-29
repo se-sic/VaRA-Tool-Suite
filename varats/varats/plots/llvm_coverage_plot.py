@@ -418,7 +418,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
         self, plot_config: PlotConfig, *args: tp.List[tp.Any], **kwargs: tp.Any
     ) -> None:
         super().__init__(plot_config, *args, **kwargs)
-        self.process_pool = ProcessPoolExecutor(initializer=lambda: gc.enable())
+        self.process_pool = ProcessPoolExecutor(initializer=gc.enable)
         self.workarounds = ["ignore_conditions"]
 
     def _get_binary_reports_map(
