@@ -17,9 +17,15 @@ from types import TracebackType
 from plumbum import colors
 from plumbum.colorlib.styles import Color
 from pyeda.boolalg.expr import Complement, Variable  # type: ignore
-from pyeda.inter import Expression, exprvar, expr, espresso_tts  # type: ignore
-from pyeda.inter import espresso_exprs as _expresso_exprs  # type: ignore
-from pyeda.inter import truthtable, ttvar, TruthTable  # type: ignore
+from pyeda.inter import (  # type: ignore
+    Expression,
+    exprvar,
+    expr,
+    espresso_tts,
+    truthtable,
+    ttvar,
+    TruthTable,
+)
 
 from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
@@ -99,7 +105,7 @@ def simplify(
             else:
                 expression = expression & ~expr_var
         dnf = dnf | expression
-    return minimize(espresso_expr(dnf), feature_model)
+    return minimize(simplify_expr(dnf), feature_model)
 
 
 __minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
@@ -160,7 +166,7 @@ def expr2truthtable(
     return truthtable(inputs, output)
 
 
-def espresso_expr(expression: Expression) -> Expression:
+def simplify_expr(expression: Expression) -> Expression:
     """Wrapper for espresso_exprs."""
 
     if expression.equivalent(expr(True)):
@@ -169,7 +175,7 @@ def espresso_expr(expression: Expression) -> Expression:
         return expr(False)
     expression = expression.simplify().to_dnf()
 
-    return _expresso_exprs(expression)[0]
+    return expression
 
 
 def minimize(
@@ -201,7 +207,7 @@ def minimize(
         )).equivalent(
             expr(True)
         ), f"""{expr_to_str(result)} is not correctly simplified.
-Was {expr_to_str(espresso_expr(expression))}"""
+Was {expr_to_str(simplify_expr(expression))}"""
 
     __minimize_cache[entry] = result
     return result

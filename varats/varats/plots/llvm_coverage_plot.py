@@ -61,13 +61,15 @@ def _init_process():
     from pyprctl import set_pdeathsig
 
     set_pdeathsig(SIGTERM)
-    #gc.enable()
+    gc.enable()
+
+
+__EXECUTOR: tp.Optional[Executor] = None
 
 
 def optimized_map(
     func: tp.Callable[[_IN], _OUT],
     iterable: tp.Iterable[tp.Any],
-    executer: tp.Optional[Executor] = None,
     count: int = os.cpu_count() or 1
 ) -> tp.Iterable[_OUT]:
     """Optimized map function."""
@@ -76,18 +78,19 @@ def optimized_map(
     todo_len = len(todo)
     if todo_len <= 1 or count == 1:
         return map(func, todo)
-    executer = executer if executer is not None else ProcessPoolExecutor(
-        max_workers=min(todo_len, count), initializer=_init_process
-    )
-    result = executer.map(
+
+    global __EXECUTOR
+    if __EXECUTOR is None:
+        __EXECUTOR = ProcessPoolExecutor(
+            max_workers=min(todo_len, count), initializer=_init_process
+        )
+    result = __EXECUTOR.map(
         func,
         todo,
-        timeout=TIMEOUT_SECONDS * todo_len,
+        timeout=TIMEOUT_SECONDS * (todo_len / count),
         chunksize=max(1,
-                      int(todo_len / count) + 1)
+                      int((todo_len / count) * 0.1) + 1)
     )
-    executer.shutdown(cancel_futures=True)
-    executer = None
     return result
 
 
