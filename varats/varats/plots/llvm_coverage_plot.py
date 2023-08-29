@@ -211,7 +211,9 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
     return expression
 
 
-def _annotate_covered(args: tp.Tuple[CoverageReport, frozenset[str]]):
+def _annotate_covered(
+    args: tp.Tuple[CoverageReport, frozenset[str]]
+) -> CoverageReport:
     report, all_features = args
     configuration = report.configuration
     assert configuration is not None
