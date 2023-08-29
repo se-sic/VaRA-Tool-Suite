@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import gc
 import json
+import os
 import typing as tp
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Executor, ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -49,6 +50,33 @@ from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 TIMEOUT_SECONDS = 30
 ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
+
+_IN = tp.TypeVar("_IN")
+_OUT = tp.TypeVar("_OUT")
+
+
+def optimized_map(
+    func: tp.Callable[[_IN], _OUT],
+    iterable: tp.Iterable[tp.Any],
+    executer: tp.Optional[Executor] = None,
+    count: int = os.cpu_count() or 1
+) -> tp.Iterable[_OUT]:
+    """Optimized map function."""
+
+    todo = list(iterable)
+    todo_len = len(todo)
+    if todo_len <= 1 or count == 1:
+        return map(func, todo)
+    executer = executer if executer is not None else ThreadPoolExecutor(
+        max_workers=min(todo_len, count)
+    )
+    return executer.map(
+        func,
+        todo,
+        timeout=TIMEOUT_SECONDS * todo_len,
+        chunksize=max(1,
+                      int(todo_len / count) + 1)
+    )
 
 
 def _init_process():
@@ -254,12 +282,10 @@ class CoverageReports:
 
         to_process = [(report, self.available_features) for report in reports]
 
-        pool = ProcessPoolExecutor(initializer=_init_process)
-        self._reports = list(
-            pool.map(_annotate_covered, to_process, chunksize=10)
-        )
-
-        pool.shutdown(wait=False)
+        self._reports = list(optimized_map(
+            _annotate_covered,
+            to_process,
+        ))
 
         # Check all reports have same feature model
         self._reference = self._reports[0]
@@ -472,17 +498,13 @@ class CoveragePlot(Plot, plot_name="coverage"):
         to_process = [(config_map, report_file, base_dir, ignore_conditions)
                       for report_file in report_files]
 
-        pool = ProcessPoolExecutor(initializer=_init_process)
-
-        processed = pool.map(
+        processed = optimized_map(
             _process_report_file,
             to_process,
-            timeout=TIMEOUT_SECONDS * len(to_process)
         )
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 
-        pool.shutdown(wait=False)
         return binary_reports_map
 
     def plot(self, view_mode: bool) -> None:
