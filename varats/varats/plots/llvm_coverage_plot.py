@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import json
 import typing as tp
 from collections import defaultdict
@@ -45,7 +46,7 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
-TIMEOUT_SECONDS = 30
+TIMEOUT_SECONDS = 180
 ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
 
@@ -193,7 +194,7 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
     with local.cwd(Path(__file__).parent.parent.parent.parent):
         try:
             output = local["myscripts/feature_model_formula.py"](
-                xml_file, timeout=180
+                xml_file, timeout=TIMEOUT_SECONDS
             )
         except ProcessExecutionError as err:
             # vara-feature probably not installed
@@ -417,7 +418,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
         self, plot_config: PlotConfig, *args: tp.List[tp.Any], **kwargs: tp.Any
     ) -> None:
         super().__init__(plot_config, *args, **kwargs)
-        self.process_pool = ProcessPoolExecutor()
+        self.process_pool = ProcessPoolExecutor(initializer=lambda: gc.enable())
         self.workarounds = ["ignore_conditions"]
 
     def _get_binary_reports_map(
@@ -443,7 +444,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
                       for report_file in report_files]
 
         processed = self.process_pool.map(
-            _process_report_file, to_process, timeout=TIMEOUT_SECONDS
+            _process_report_file, to_process
         )
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
@@ -486,6 +487,8 @@ class CoveragePlot(Plot, plot_name="coverage"):
                     )
                     name = "disabled_workarounds"
                     for workaround in self.workarounds + [""]:
+                        # Disable Python's GC to speed up plotting
+                        gc.disable()
                         binary_reports_map = self._get_binary_reports_map(
                             case_study, revisions[revision], base_dir,
                             **disabled
@@ -503,6 +506,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
                         _save_plot(binary_reports_map, tmp_dir, base_dir)
                         if workaround:
                             del disabled[workaround]
+                        # Allow binary_reports_map to be freed
+                        binary_reports_map = None
+                        gc.enable()
 
     def calc_missing_revisions(
         self, boundary_gradient: float
