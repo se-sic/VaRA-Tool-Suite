@@ -5455,4 +5455,3 @@ version: 0
 2719: '["--stdout", "--decompress", "-6", "--format=auto", "--keep", "--flush-timeout=0", "--no-adjust", "-vv", "--single-stream", "--suffix=.suffix"]'
 2720: '["--test", "--stdout", "--decompress", "-6", "--format=auto", "--keep", "--flush-timeout=0", "--no-adjust", "-vv", "--single-stream", "--suffix=.suffix"]'
 ...
-
