@@ -46,7 +46,7 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
-TIMEOUT_SECONDS = 180
+TIMEOUT_SECONDS = 30
 ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
 
@@ -244,7 +244,9 @@ class CoverageReports:
         to_process = [(report, self.available_features) for report in reports]
 
         pool = ProcessPoolExecutor(initializer=gc.enable)
-        self._reports = list(pool.map(_annotate_covered, to_process))
+        self._reports = list(
+            pool.map(_annotate_covered, to_process, chunksize=10)
+        )
 
         pool.shutdown(wait=False)
 
@@ -461,7 +463,11 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
         pool = ProcessPoolExecutor(initializer=gc.enable)
 
-        processed = pool.map(_process_report_file, to_process)
+        processed = pool.map(
+            _process_report_file,
+            to_process,
+            timeout=TIMEOUT_SECONDS * len(to_process)
+        )
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 
