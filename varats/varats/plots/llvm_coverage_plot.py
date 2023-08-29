@@ -443,9 +443,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
         to_process = [(config_map, report_file, base_dir, ignore_conditions)
                       for report_file in report_files]
 
-        processed = self.process_pool.map(
-            _process_report_file, to_process
-        )
+        processed = self.process_pool.map(_process_report_file, to_process)
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 
