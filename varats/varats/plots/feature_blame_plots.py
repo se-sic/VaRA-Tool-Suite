@@ -33,11 +33,7 @@ from varats.ts_utils.click_param_types import (
     REQUIRE_CASE_STUDY,
     REQUIRE_MULTI_CASE_STUDY,
 )
-from varats.utils.git_util import (
-    num_commits,
-    num_active_commits,
-    get_local_project_git_path,
-)
+from varats.utils.git_util import num_active_commits, get_local_project_git_path
 
 
 def get_structural_report_files_for_project(
