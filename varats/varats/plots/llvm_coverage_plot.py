@@ -7,7 +7,7 @@ import json
 import os
 import typing as tp
 from collections import defaultdict
-from concurrent.futures import Executor, ThreadPoolExecutor
+from concurrent.futures import Executor, ProcessPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -55,6 +55,15 @@ _IN = tp.TypeVar("_IN")
 _OUT = tp.TypeVar("_OUT")
 
 
+def _init_process():
+    from signal import SIGTERM
+
+    from pyprctl import set_pdeathsig
+
+    set_pdeathsig(SIGTERM)
+    #gc.enable()
+
+
 def optimized_map(
     func: tp.Callable[[_IN], _OUT],
     iterable: tp.Iterable[tp.Any],
@@ -67,25 +76,19 @@ def optimized_map(
     todo_len = len(todo)
     if todo_len <= 1 or count == 1:
         return map(func, todo)
-    executer = executer if executer is not None else ThreadPoolExecutor(
-        max_workers=min(todo_len, count)
+    executer = executer if executer is not None else ProcessPoolExecutor(
+        max_workers=min(todo_len, count), initializer=_init_process
     )
-    return executer.map(
+    result = executer.map(
         func,
         todo,
         timeout=TIMEOUT_SECONDS * todo_len,
         chunksize=max(1,
                       int(todo_len / count) + 1)
     )
-
-
-def _init_process():
-    from signal import SIGTERM
-
-    from pyprctl import set_pdeathsig
-
-    set_pdeathsig(SIGTERM)
-    gc.enable()
+    executer.shutdown(cancel_futures=True)
+    executer = None
+    return result
 
 
 def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
