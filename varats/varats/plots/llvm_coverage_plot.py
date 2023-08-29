@@ -51,6 +51,15 @@ ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
 
 
+def _init_process():
+    from signal import SIGTERM
+
+    from pyprctl import set_pdeathsig
+
+    set_pdeathsig(SIGTERM)
+    gc.enable()
+
+
 def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
     return map(lambda option: option.name, configuration.options())
 
@@ -245,7 +254,7 @@ class CoverageReports:
 
         to_process = [(report, self.available_features) for report in reports]
 
-        pool = ProcessPoolExecutor(initializer=gc.enable)
+        pool = ProcessPoolExecutor(initializer=_init_process)
         self._reports = list(
             pool.map(_annotate_covered, to_process, chunksize=10)
         )
@@ -463,7 +472,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
         to_process = [(config_map, report_file, base_dir, ignore_conditions)
                       for report_file in report_files]
 
-        pool = ProcessPoolExecutor(initializer=gc.enable)
+        pool = ProcessPoolExecutor(initializer=_init_process)
 
         processed = pool.map(
             _process_report_file,

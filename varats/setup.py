@@ -36,6 +36,7 @@ setup(
         "pygraphviz>=1.7",
         "pygtrie>=2.3",
         "pylatex>=1.4.1",
+        "pyprctl>=0.1.3",
         "PyQt5>=5.10.0",
         "PyQt5-stubs>=5.10.0",
         "PyYAML>=6.0",

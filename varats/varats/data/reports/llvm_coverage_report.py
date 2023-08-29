@@ -17,9 +17,9 @@ from types import TracebackType
 from plumbum import colors
 from plumbum.colorlib.styles import Color
 from pyeda.boolalg.expr import Complement, Variable  # type: ignore
-from pyeda.inter import Expression, exprvar, expr
+from pyeda.inter import Expression, exprvar, expr, espresso_tts  # type: ignore
 from pyeda.inter import espresso_exprs as _expresso_exprs  # type: ignore
-from pyeda.inter import espresso_tts, truthtable, ttvar, TruthTable
+from pyeda.inter import truthtable, ttvar, TruthTable  # type: ignore
 
 from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
