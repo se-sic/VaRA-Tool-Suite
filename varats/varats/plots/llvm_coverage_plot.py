@@ -211,6 +211,21 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
     return expression
 
 
+def _annotate_covered(args: tp.Tuple[CoverageReport, frozenset[str]]):
+    report, all_features = args
+    configuration = report.configuration
+    assert configuration is not None
+
+    # Set not set features in configuration to false
+    for feature in all_features:
+        if feature not in get_option_names(configuration):
+            configuration.set_config_option(feature, False)
+
+    report.annotate_covered(configuration)
+
+    return report
+
+
 class CoverageReports:
     """Helper class to work with a list of coverage reports."""
 
@@ -221,7 +236,17 @@ class CoverageReports:
         if not reports:
             raise ValueError("No reports given!")
 
-        self._reports = reports
+        self.available_features = frozenset(available_features(reports))
+        self._feature_model: tp.Optional[Expression] = None
+        self._feature_option_mapping: tp.Optional[tp.Dict[str,
+                                                          tp.Set[str]]] = None
+
+        to_process = [(report, self.available_features) for report in reports]
+
+        pool = ProcessPoolExecutor(initializer=gc.enable)
+        self._reports = list(pool.map(_annotate_covered, to_process))
+
+        pool.shutdown(wait=False)
 
         # Check all reports have same feature model
         self._reference = self._reports[0]
@@ -230,11 +255,6 @@ class CoverageReports:
                 raise ValueError(
                     "CoverageReports have different feature models!"
                 )
-
-        self.available_features = frozenset(available_features(self._reports))
-        self._feature_model: tp.Optional[Expression] = None
-        self._feature_option_mapping: tp.Optional[tp.Dict[str,
-                                                          tp.Set[str]]] = None
 
     def __bidirectional_map(
         self, mapping: tp.Dict[str, tp.Union[str, tp.List[str]]]
@@ -366,11 +386,6 @@ def _process_report_file(
     if config is None:
         raise ValueError("config is None!")
 
-    # Set not set features in configuration to false
-    for feature in available_features(config_map.configurations()):
-        if feature not in get_option_names(config):
-            config.set_config_option(feature, False)
-
     coverage_report = CoverageReport.from_report(
         report_filepath.full_path(), config, base_dir, ignore_conditions
     )
@@ -420,7 +435,6 @@ class CoveragePlot(Plot, plot_name="coverage"):
         self, plot_config: PlotConfig, *args: tp.List[tp.Any], **kwargs: tp.Any
     ) -> None:
         super().__init__(plot_config, *args, **kwargs)
-        self.process_pool = ProcessPoolExecutor(initializer=gc.enable)
         self.workarounds = ["ignore_conditions"]
 
     def _get_binary_reports_map(
@@ -445,12 +459,13 @@ class CoveragePlot(Plot, plot_name="coverage"):
         to_process = [(config_map, report_file, base_dir, ignore_conditions)
                       for report_file in report_files]
 
-        processed = self.process_pool.map(
-            _process_report_file, to_process, timeout=TIMEOUT_SECONDS
-        )
+        pool = ProcessPoolExecutor(initializer=gc.enable)
+
+        processed = pool.map(_process_report_file, to_process)
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 
+        pool.shutdown(wait=False)
         return binary_reports_map
 
     def plot(self, view_mode: bool) -> None:

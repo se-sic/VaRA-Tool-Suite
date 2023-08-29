@@ -768,9 +768,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             for csv_file in csvs:
                 c_r._parse_instrs(csv_file, ignore_conditions)
 
-            if c_r.configuration is not None:
-                c_r.annotate_covered(c_r.configuration)
-
         return c_r
 
     def __init__(
