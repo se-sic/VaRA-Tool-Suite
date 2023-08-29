@@ -121,15 +121,24 @@ class FeatureSizeCorrSFBRPlotGenerator(
 class FeatureDisSFBRPlot(Plot, plot_name="feature_dis_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        dfs = [
+            get_structural_feature_data_for_case_study(case_study)
+            for case_study in case_studies
+        ]
+        data = pd.concat([
+            df.assign(
+                project=[case_study.project_name for i in range(0, len(df))]
+            ) for case_study, df in zip(case_studies, dfs)
+        ])
 
-        df = get_structural_feature_data_for_case_study(case_study)
-
-        plt = sns.catplot(data=df, x='num_interacting_commits', kind="box")
+        plt = sns.catplot(
+            data=data, x='num_interacting_commits', y='project', kind="box"
+        )
 
         plt.set(
             xlabel="Number Interacting Commits",
-            ylabel=case_study.project_name,
+            ylabel="Project",
             title="Structural Interactions of Features"
         )
 
@@ -137,14 +146,14 @@ class FeatureDisSFBRPlot(Plot, plot_name="feature_dis_sfbr_plot"):
 class FeatureDisSFBRPlotGenerator(
     PlotGenerator,
     generator_name="feature-dis-sfbr-plot",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             FeatureDisSFBRPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
 
@@ -157,7 +166,7 @@ class FeatureSizeDisSFBRPlot(Plot, plot_name="feature_size_dis_sfbr_plot"):
         df = get_structural_feature_data_for_case_study(case_study)
 
         df = df.sort_values(by=['feature_size'])
-        print(df)
+
         plt = sns.barplot(
             data=df, x='feature', y='feature_size', color='steelblue'
         )
@@ -381,6 +390,10 @@ class FeatureSizeCorrDFBRPlot(Plot, plot_name="feature_size_corr_dfbr_plot"):
         plt = sns.regplot(
             data=data, x='feature_size', y='num_interacting_commits_outside'
         )
+        plt.set(
+            xlabel='Feature Size',
+            ylabel='Number of Interacting Commits not Part of Features'
+        )
 
 
 class FeatureSizeCorrDFBRPlotGenerator(
@@ -393,6 +406,49 @@ class FeatureSizeCorrDFBRPlotGenerator(
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             FeatureSizeCorrDFBRPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
+        ]
+
+
+class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        dfs = [
+            get_feature_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
+        ]
+        data = pd.concat([
+            df.assign(
+                project=[case_study.project_name for i in range(0, len(df))]
+            ) for case_study, df in zip(case_studies, dfs)
+        ])
+
+        plt = sns.catplot(
+            data=data,
+            x='num_interacting_commits_outside',
+            y='project',
+            kind="box"
+        )
+
+        plt.set(
+            xlabel="Number Interacting Commits Not Part of Features",
+            ylabel="Project",
+            title="Dataflow Interactions of Features"
+        )
+
+
+class FeatureDisDFBRPlotGenerator(
+    PlotGenerator,
+    generator_name="feature-dis-dfbr-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        return [
+            FeatureDisDFBRPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
