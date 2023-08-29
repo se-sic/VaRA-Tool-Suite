@@ -747,7 +747,8 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 return y.name.endswith(".xml")
 
             xmls = list(filter(xml_filter, Path(tmpdir).iterdir()))
-            assert len(xmls) == 1
+            if len(xmls) != 1:
+                raise ValueError("Multiple XMLs detected!")
             for xml_file in xmls:
                 c_r.feature_model_xml = xml_file.read_text(encoding="utf-8")
 
@@ -762,7 +763,8 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
                 return y.name.endswith(".csv") or y.name.endswith(".ptfdd")
 
             csvs = list(filter(csv_filter, Path(tmpdir).iterdir()))
-            assert len(csvs) == 1
+            if len(csvs) != 1:
+                raise ValueError("Multiple CSVs detected!")
             for csv_file in csvs:
                 c_r._parse_instrs(csv_file, ignore_conditions)
 

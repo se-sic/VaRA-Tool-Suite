@@ -359,10 +359,12 @@ def _process_report_file(
 
     binary = report_filepath.report_filename.binary_name
     config_id = report_filepath.report_filename.config_id
-    assert config_id is not None
+    if config_id is None:
+        raise ValueError("config_id is None!")
 
     config = config_map.get_configuration(config_id)
-    assert config is not None
+    if config is None:
+        raise ValueError("config is None!")
 
     # Set not set features in configuration to false
     for feature in available_features(config_map.configurations()):
@@ -443,7 +445,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
         to_process = [(config_map, report_file, base_dir, ignore_conditions)
                       for report_file in report_files]
 
-        processed = self.process_pool.map(_process_report_file, to_process)
+        processed = self.process_pool.map(
+            _process_report_file, to_process, timeout=TIMEOUT_SECONDS
+        )
         for binary, coverage_report in processed:
             binary_reports_map[binary].append(coverage_report)
 
