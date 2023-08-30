@@ -189,35 +189,59 @@ class FeatureSizeDisSFBRPlotGenerator(
         ]
 
 
+def get_stacked_commit_data_for_case_studies(
+    case_studies: tp.List[CaseStudy]
+) -> pd.DataFrame:
+    rows = []
+    projects_data = [
+        get_structural_commit_data_for_case_study(case_study).
+        loc[:, "num_interacting_features"] for case_study in case_studies
+    ]
+
+    max_num_interacting_features = max([
+        max(project_data) for project_data in projects_data
+    ])
+
+    rows = [[i, 0, 0, 0] for i in range(1, max_num_interacting_features + 1)]
+
+    for project_data, index in zip(
+        projects_data, range(1,
+                             len(case_studies) + 1)
+    ):
+
+        for num_interacting_features in project_data:
+            rows[num_interacting_features -
+                 1][index] = rows[num_interacting_features - 1][index] + 1
+
+    return pd.DataFrame(
+        rows,
+        columns=['Number of Interacting Features'] +
+        [case_study.project_name for case_study in case_studies]
+    )
+
+
 class CommitDisSFBRPlot(Plot, plot_name="commit_dis_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
 
-        df = get_structural_commit_data_for_case_study(case_study)
-
-        plt = sns.histplot(
-            data=df, x='num_interacting_features', binwidth=1, kde=True
-        )
-
-        plt.set(
-            xlabel="Number Interacting Features",
-            ylabel="Commit Count",
-            title="Structural Interactions of Commits"
-        )
+        data = get_stacked_commit_data_for_case_studies(case_studies)
+        print(data)
+        data.set_index('Number of Interacting Features'
+                      ).plot(kind='bar', stacked=True)
 
 
 class CommitDisSFBRPlotGenerator(
     PlotGenerator,
     generator_name="commit-dis-sfbr-plot",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             CommitDisSFBRPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
 
@@ -505,7 +529,7 @@ class FeatureAuthorDisSCFIPlot(Plot, plot_name="feature_author_dis_scfi_plot"):
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         data = get_stacked_author_data_for_case_studies(case_studies)
-
+        print(data)
         data.set_index('Project').plot(kind='bar', stacked=True)
 
 
