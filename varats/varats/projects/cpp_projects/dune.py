@@ -33,7 +33,7 @@ class Dune(VProject):
             project_name='Dune',
             remote='git@github.com:se-sic/dune-VaRA.git',
             local='dune-VaRA',
-            refspec='origin/HEAD',
+            refspec='origin/f-RefactorPoissonFeature',
             limit=None,
             shallow=False
         )
@@ -44,15 +44,15 @@ class Dune(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot(NAME) /
-                "dune-performance-regressions/build-cmake/src" /
-                RSBinary('dune-performance-regressions'),
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('dune-performance-regressions'),
                 label='dune-helloworld'
             ),
             Command(
-                SourceRoot(NAME) /
-                "dune-performance-regressions/build-cmake/src" /
-                RSBinary('poisson-test'),
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson-test'),
                 label='poisson-non-separated',
                 creates=[
                     'poisson_UG_Pk_2d.vtu', 'poisson-yasp-Q1-2d.vtu',
@@ -61,35 +61,37 @@ class Dune(VProject):
                 ]
             ),
             Command(
-                SourceRoot(NAME) /
-                "dune-performance-regressions/build-cmake/src" /
-                RSBinary('poisson-ug-pk-2d'),
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson-ug-pk-2d'),
                 label='poisson-ug-pk-2d',
                 creates=['poisson-UG-Pk-2d.vtu']
             ),
             Command(
-                SourceRoot(NAME) /
-                "dune-performance-regressions/build-cmake/src" /
-                RSBinary('poisson-yasp-q1-2d'),
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson-yasp-q1-2d'),
                 label='poisson-yasp-q1-2d',
                 creates=['poisson-yasp-q1-2d.vtu']
             ),
             Command(
-                SourceRoot(NAME) /
-                "dune-performance-regressions/build-cmake/src" /
-                RSBinary('poisson-yasp-q1-3d'),
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson-yasp-q1-3d'),
                 label='poisson-yasp-q1-3d',
                 creates=['poisson-yasp-q1-3d.vtu']
             ),
             Command(
-                SourceRoot(NAME) / RSBinary('poisson-yasp-q2-2d'),
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson-yasp-q2-2d'),
                 label='poisson-yasp-q2-2d',
                 creates=['poisson-yasp-q2-2d.vtu']
             ),
             Command(
-                SourceRoot(NAME) /
-                "dune-performance-regressions/build-cmake/src" /
-                RSBinary('poisson-yasp-q2-3d'),
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson-yasp-q2-3d'),
                 label='poisson-yasp-q2-3d',
                 creates=['poisson-yasp-q2-3d.vtu']
             )
@@ -103,12 +105,11 @@ class Dune(VProject):
         binary_map = RevisionBinaryMap(get_local_project_git_path(Dune.NAME))
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/dune-performance-regressions',
-            BinaryType.EXECUTABLE
+            'dune-performance-regressions', BinaryType.EXECUTABLE
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-test',
+            'poisson-test',
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 '0d02b7b9acddfc57c3a0c905d6374fabbcaa0f58', 'main'
@@ -120,37 +121,37 @@ class Dune(VProject):
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-alberta',
+            'poisson-alberta',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-ug-pk-2d',
+            'poisson-ug-pk-2d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-yasp-q1-2d',
+            'poisson-yasp-q1-2d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-yasp-q2-3d',
+            'poisson-yasp-q2-3d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-yasp-q2-2d',
+            'poisson-yasp-q2-2d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
 
         binary_map.specify_binary(
-            'dune-performance-regressions/build-cmake/src/poisson-yasp-q1-3d',
+            'poisson-yasp-q1-3d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
         )
