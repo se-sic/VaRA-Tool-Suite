@@ -55,7 +55,7 @@ _IN = tp.TypeVar("_IN")
 _OUT = tp.TypeVar("_OUT")
 
 
-def _init_process():
+def _init_process() -> None:
     from signal import SIGTERM
 
     from pyprctl import set_pdeathsig

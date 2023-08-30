@@ -153,7 +153,7 @@ def expr2truthtable(
     )
 
     # Set Don't Care bits
-    def generate_output():
+    def generate_output() -> tp.Iterator[tp.Union[int, str]]:
         for expr_i, dont_care_i in zip(
             expression.iter_image(), restricted_dont_care.iter_image()
         ):
