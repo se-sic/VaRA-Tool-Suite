@@ -190,28 +190,28 @@ class FeatureSizeDisSFBRPlotGenerator(
 
 
 def get_stacked_commit_data_for_case_studies(
-    case_studies: tp.List[CaseStudy], projects_data
+    case_studies: tp.List[CaseStudy]
 ) -> pd.DataFrame:
-    min_num_interacting_features = min([
-        min(project_data) for project_data in projects_data
-    ])
+    rows = []
+    projects_data = [
+        get_structural_commit_data_for_case_study(case_study).
+        loc[:, "num_interacting_features"] for case_study in case_studies
+    ]
+
     max_num_interacting_features = max([
         max(project_data) for project_data in projects_data
     ])
 
-    rows = [
-        [i] + [0 for i in range(0, len(case_studies))] for i in
-        range(min_num_interacting_features, max_num_interacting_features + 1)
-    ]
+    rows = [[i, 0, 0, 0] for i in range(1, max_num_interacting_features + 1)]
 
     for project_data, index in zip(
         projects_data, range(1,
                              len(case_studies) + 1)
     ):
+
         for num_interacting_features in project_data:
-            rows[num_interacting_features - min_num_interacting_features
-                ][index] = rows[num_interacting_features -
-                                min_num_interacting_features][index] + 1
+            rows[num_interacting_features -
+                 1][index] = rows[num_interacting_features - 1][index] + 1
 
     return pd.DataFrame(
         rows,
@@ -224,13 +224,8 @@ class CommitDisSFBRPlot(Plot, plot_name="commit_dis_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
-        projects_data = [
-            get_structural_commit_data_for_case_study(case_study).
-            loc[:, "num_interacting_features"] for case_study in case_studies
-        ]
-        data = get_stacked_commit_data_for_case_studies(
-            case_studies, projects_data
-        )
+
+        data = get_stacked_commit_data_for_case_studies(case_studies)
         print(data)
         data.set_index('Number of Interacting Features'
                       ).plot(kind='bar', stacked=True)
