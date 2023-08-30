@@ -23,6 +23,7 @@ from pyeda.inter import (  # type: ignore
     exprvar,
     expr,
     espresso_tts,
+    espresso_exprs,
     truthtable,
     ttvar,
     TruthTable,
@@ -109,8 +110,6 @@ def simplify(
     return minimize(simplify_expr(dnf), feature_model)
 
 
-__minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
-
 T = tp.TypeVar("T")
 
 
@@ -147,24 +146,20 @@ def expr2truthtable(
         # Don't care about anything
         return truthtable(inputs, ["X"] * expression.cardinality)
 
+    # Restrict dont_care to same variables as expression
+    to_restrict = dont_care.support.difference(expression.support)
+    restricted_dont_care = dont_care.restrict(
+        dict((var, 0) for var in to_restrict)
+    )
+
     # Set Don't Care bits
-    expr_image = list(expression.iter_image())
-    expr_domain = list(expression.iter_domain())
-    dc_image = list(dont_care.iter_image())
-    dc_domain = list(dont_care.iter_domain())
-    filtered_dc_domain = filter_true_points(dc_domain, dc_image)
-    output = []
-    for expr_i, expr_point in zip(expr_image, expr_domain):
-        dont_care = False
-        for dc_point in filtered_dc_domain:
-            if values_set(expr_point, dc_point):
-                dont_care = True
-                output.append("X")  # Do not care
-                break
-        if not dont_care:
-            output.append(expr_i)
-    assert len(output) == expression.cardinality
-    return truthtable(inputs, output)
+    def generate_output():
+        for expr_i, dont_care_i in zip(
+            expression.iter_image(), restricted_dont_care.iter_image()
+        ):
+            yield expr_i if not dont_care_i else "X"
+
+    return truthtable(inputs, generate_output())
 
 
 def simplify_expr(expression: Expression) -> Expression:
@@ -176,7 +171,19 @@ def simplify_expr(expression: Expression) -> Expression:
         return expr(False)
     expression = expression.simplify().to_dnf()
 
-    return expression
+    return espresso_exprs(expression)[0]
+
+
+__minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
+
+
+def _minimize_context_check(
+    result: Expression, expression: Expression, feature_model: Expression
+) -> Expression:
+    result_impl_expr = result >> expression
+    expr_impl_result = expression >> result
+    check = feature_model >> (result_impl_expr & expr_impl_result)
+    return check
 
 
 def minimize(
@@ -203,12 +210,12 @@ def minimize(
     result = espresso_tts(x)[0]
     if feature_model is not None:
         # Check m => simp(p, m) <=> p
-        assert ((
-            feature_model >> ((result >> expression) & (expression >> result))
-        )).equivalent(
+        assert _minimize_context_check(
+            result, expression, feature_model
+        ).equivalent(
             expr(True)
         ), f"""{expr_to_str(result)} is not correctly simplified.
-Was {expr_to_str(simplify_expr(expression))}"""
+Was {expr_to_str((expression))}"""
 
     __minimize_cache[entry] = result
     return result
@@ -265,7 +272,6 @@ class PresenceConditions(
 
 def expr_to_str(expression: Expression) -> str:
     """Converts expression back to str representation."""
-    print(f"Expr_TO_STR: {expression}")
     recursionlimit = sys.getrecursionlimit()
     try:
         sys.setrecursionlimit(2500)

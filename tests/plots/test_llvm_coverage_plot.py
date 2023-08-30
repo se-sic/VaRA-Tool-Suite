@@ -26,6 +26,7 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.utils.settings import save_config, vara_cfg
 from varats.varats.data.reports.llvm_coverage_report import (
+    _minimize_context_check,
     minimize,
     expr_to_str,
 )
@@ -663,6 +664,32 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
         feature_model = expr(True)
         self.assertEqual(
             expr_to_str(minimize(expression, feature_model)), "slow"
+        )
+
+    def test_presence_condition_simplification_7(self):
+        before = expr(
+            "((___6 & ~decompress & test & ~___0 & ~___3 & ~___9 & ~compress & ~list) | (___6 & decompress & ~___0 & ~___3 & ~___9 & ~compress & ~list & test))"
+        )
+        after = expr(
+            "(___6 & test & ~___0 & ~___3 & ~___9 & ~compress & ~list)"
+        )
+        self.assertTrue(before.equivalent(after))
+
+        self.assertTrue(minimize(before).equivalent(after))
+        feature_model = minimize(
+            expr(
+                "(~test & compress & ~decompress & ~list & ___9) | (~test & ~compress & ~decompress & list & ___6) | (test & ~compress & ~decompress & ~list & ___6) | (~test &~compress & decompress & ~list & ___6) | (test & ~compress & decompress & ~list & ___6) | (~test & compress & ~decompress & ~list & ___6) | (~test & compress & ~decompress & ~list & ___3) | (~test & compress & ~decompress & ~list & ___0)"
+            )
+        )
+        result = minimize(before, feature_model)
+        self.assertTrue(
+            _minimize_context_check(result, before,
+                                    feature_model).equivalent(expr(True))
+        )
+        result = minimize(after, feature_model)
+        self.assertTrue(
+            _minimize_context_check(result, after,
+                                    feature_model).equivalent(expr(True))
         )
 
     def test_pyeda(self):
