@@ -190,28 +190,28 @@ class FeatureSizeDisSFBRPlotGenerator(
 
 
 def get_stacked_commit_data_for_case_studies(
-    case_studies: tp.List[CaseStudy]
+    case_studies: tp.List[CaseStudy], projects_data
 ) -> pd.DataFrame:
-    rows = []
-    projects_data = [
-        get_structural_commit_data_for_case_study(case_study).
-        loc[:, "num_interacting_features"] for case_study in case_studies
-    ]
-
+    min_num_interacting_features = min([
+        min(project_data) for project_data in projects_data
+    ])
     max_num_interacting_features = max([
         max(project_data) for project_data in projects_data
     ])
 
-    rows = [[i, 0, 0, 0] for i in range(1, max_num_interacting_features + 1)]
+    rows = [
+        [i] + [0 for i in range(0, len(case_studies))] for i in
+        range(min_num_interacting_features, max_num_interacting_features + 1)
+    ]
 
     for project_data, index in zip(
         projects_data, range(1,
                              len(case_studies) + 1)
     ):
-
         for num_interacting_features in project_data:
-            rows[num_interacting_features -
-                 1][index] = rows[num_interacting_features - 1][index] + 1
+            rows[num_interacting_features - min_num_interacting_features
+                ][index] = rows[num_interacting_features -
+                                min_num_interacting_features][index] + 1
 
     return pd.DataFrame(
         rows,
@@ -224,8 +224,13 @@ class CommitDisSFBRPlot(Plot, plot_name="commit_dis_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
-
-        data = get_stacked_commit_data_for_case_studies(case_studies)
+        projects_data = [
+            get_structural_commit_data_for_case_study(case_study).
+            loc[:, "num_interacting_features"] for case_study in case_studies
+        ]
+        data = get_stacked_commit_data_for_case_studies(
+            case_studies, projects_data
+        )
         print(data)
         data.set_index('Number of Interacting Features'
                       ).plot(kind='bar', stacked=True)
@@ -307,27 +312,23 @@ def get_commit_dataflow_data_for_case_study(
 class FeatureInwardDataflowPlot(Plot, plot_name="feature_inward_dataflow_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        data = pd.concat([
+        case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
+        projects_data = [
             get_commit_dataflow_data_for_case_study(case_study)
             for case_study in case_studies
-        ])
-        data = data.loc[data['part_of_feature'] == 0]
-        # data = data.loc[data['num_interacting_features'] > 0]
-        plt = sns.histplot(
-            data=data,
-            x='num_interacting_features',
-            #kde=True,
-            binwidth=1,
-        )
+        ]
+        for i in range(0, len(projects_data)):
+            projects_data[i] = projects_data[i].loc[projects_data[i]
+                                                    ["part_of_feature"] == 0]
+            projects_data[i] = projects_data[i].loc[:,
+                                                    "num_interacting_features"]
 
-        plt.set(
-            xlabel="Number Interacting Features",
-            ylabel="Commit Count",
-            title='Dataflow from outside into features'
-            ' - projects: ' +
-            ",".join(case_study.project_name for case_study in case_studies)
+        data = get_stacked_commit_data_for_case_studies(
+            case_studies, projects_data
         )
+        print(data)
+        data.set_index('Number of Interacting Features'
+                      ).plot(kind='bar', stacked=True)
 
 
 class FeatureInwardDataflowPlotGenerator(
@@ -350,27 +351,24 @@ class FeatureExistingInwardDataflowPlot(
 ):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        data = pd.concat([
+        case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
+        projects_data = [
             get_commit_dataflow_data_for_case_study(case_study)
             for case_study in case_studies
-        ])
-        data = data.loc[data['part_of_feature'] == 0]
-        data = data.loc[data['num_interacting_features'] > 0]
-        plt = sns.histplot(
-            data=data,
-            x='num_interacting_features',
-            #kde=True,
-            binwidth=1,
+        ]
+        for i in range(0, len(projects_data)):
+            projects_data[i] = projects_data[i].loc[projects_data[i]
+                                                    ["part_of_feature"] == 0]
+            projects_data[i] = projects_data[i].loc[
+                projects_data[i]["num_interacting_features"] > 0]
+            projects_data[i] = projects_data[i].loc[:,
+                                                    "num_interacting_features"]
+        data = get_stacked_commit_data_for_case_studies(
+            case_studies, projects_data
         )
-
-        plt.set(
-            xlabel="Number Interacting Features",
-            ylabel="Commit Count",
-            title='Dataflow from outside of features'
-            ' - projects: ' +
-            ",".join(case_study.project_name for case_study in case_studies)
-        )
+        print(data)
+        data.set_index('Number of Interacting Features'
+                      ).plot(kind='bar', stacked=True)
 
 
 class FeatureExistingInwardDataflowPlotGenerator(
