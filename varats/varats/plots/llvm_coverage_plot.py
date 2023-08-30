@@ -569,7 +569,7 @@ class CoveragePlot(Plot, plot_name="coverage"):
                         if workaround:
                             del disabled[workaround]
                         # Allow binary_reports_map to be freed
-                        binary_reports_map = None
+                        del binary_reports_map
                         gc.enable()
 
     def calc_missing_revisions(

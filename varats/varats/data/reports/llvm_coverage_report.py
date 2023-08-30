@@ -6,6 +6,7 @@ import csv
 import json
 import shutil
 import string
+import sys
 import typing as tp
 from collections import deque, defaultdict
 from dataclasses import dataclass, field, asdict, is_dataclass
@@ -264,21 +265,27 @@ class PresenceConditions(
 
 def expr_to_str(expression: Expression) -> str:
     """Converts expression back to str representation."""
-    if expression.is_zero() or expression.is_one():
-        return str(bool(expression))
-    if expression.ASTOP == "lit":
-        if isinstance(expression, Complement):
-            return f"~{expr_to_str(~expression)}"
-        if isinstance(expression, Variable):
-            return str(expression)
-        raise NotImplementedError()
-    if expression.ASTOP == "and":
-        return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
-    if expression.ASTOP == "or":
-        return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
-    #if expression.ASTOP == "impl":
-    #    return f"({' => '.join(sorted(map(expr_to_str, expression.xs)))})"
-    raise NotImplementedError(expression.ASTOP)
+    print(f"Expr_TO_STR: {expression}")
+    recursionlimit = sys.getrecursionlimit()
+    try:
+        sys.setrecursionlimit(2500)
+        if expression.is_zero() or expression.is_one():
+            return str(bool(expression))
+        if expression.ASTOP == "lit":
+            if isinstance(expression, Complement):
+                return f"~{expr_to_str(~expression)}"
+            if isinstance(expression, Variable):
+                return str(expression)
+            raise NotImplementedError()
+        if expression.ASTOP == "and":
+            return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
+        if expression.ASTOP == "or":
+            return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
+        #if expression.ASTOP == "impl":
+        #    return f"({' => '.join(sorted(map(expr_to_str, expression.xs)))})"
+        raise NotImplementedError(expression.ASTOP)
+    finally:
+        sys.setrecursionlimit(recursionlimit)
 
 
 @dataclass

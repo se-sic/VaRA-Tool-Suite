@@ -565,6 +565,19 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 self.assertEqual(all.FP, 0)
                 self.assertEqual(all.FN, 10)
 
+    def test_expr_to_str(self):
+        self.assertEqual(expr_to_str(expr(True)), "True")
+        self.assertEqual(expr_to_str(expr(False)), "False")
+        self.assertEqual(expr_to_str(expr("A")), "A")
+        self.assertEqual(expr_to_str(expr("~A")), "~A")
+        self.assertEqual(
+            expr_to_str(
+                expr(
+                    "(~compress & enc) | (compress & ~enc) | (compress & enc)"
+                )
+            ), "((compress & enc) | (compress & ~enc) | (enc & ~compress))"
+        )
+
     def test_presence_condition_simplification_1(self):
         feature_model = expr(
             "(~compress & enc) | (compress & ~enc) | (compress & enc)"
