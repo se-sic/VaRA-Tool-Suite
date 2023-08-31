@@ -59,7 +59,6 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
 
-        print(f"{df['Profiler']=}")
         grid = multivariate_grid(
             df,
             'precision',

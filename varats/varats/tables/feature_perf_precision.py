@@ -17,7 +17,7 @@ from varats.data.databases.feature_perf_precision_database import (
     compute_profiler_predictions,
     OverheadData,
 )
-from varats.data.metrics import ClassificationResults
+from varats.data.metrics import ConfusionMatrix
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.table.table import Table
@@ -66,7 +66,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
                     )
 
                     if ground_truth and predicted:
-                        results = ClassificationResults(
+                        results = ConfusionMatrix(
                             map_to_positive_config_ids(ground_truth),
                             map_to_negative_config_ids(ground_truth),
                             map_to_positive_config_ids(predicted),
