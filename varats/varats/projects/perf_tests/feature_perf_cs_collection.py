@@ -395,24 +395,22 @@ class SynthSAWholeProgram(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
-class SynthDAVirtualInheritance(VProject):
+class SynthDADynamicDispatch(VProject):
     """Synthetic case-study project for testing detection of virtual
     inheritance."""
 
-    NAME = 'SynthDAVirtualInheritance'
+    NAME = 'SynthDADynamicDispatch'
     GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="SynthDAVirtualInheritance",
+            local="SynthDADynamicDispatch",
             refspec="origin/master",
             limit=None,
             shallow=False,
-            version_filter=project_filter_generator(
-                "SynthDAVirtualInheritance"
-            )
+            version_filter=project_filter_generator("SynthDADynamicDispatch")
         ),
         FeatureSource()
     ]
@@ -420,9 +418,9 @@ class SynthDAVirtualInheritance(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("SynthDAVirtualInheritance") /
-                RSBinary("VirtualInheritance"),
-                label="VirtualInheritance-no-input"
+                SourceRoot("SynthDADynamicDispatch") /
+                RSBinary("DynamicDispatch"),
+                label="DynamicDispatch-no-input"
             )
         ]
     }
@@ -432,11 +430,11 @@ class SynthDAVirtualInheritance(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthDAVirtualInheritance.NAME)
+            get_local_project_git_path(SynthDADynamicDispatch.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/VirtualInheritance",
+            "build/bin/DynamicDispatch",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("96848fadf1", "master")
         )
@@ -449,7 +447,7 @@ class SynthDAVirtualInheritance(VProject):
     def compile(self) -> None:
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_SYNTHDAVIRTUALINHERITANCE"
+            self, "FPCSC_ENABLE_PROJECT_SYNTHDADYNAMICDISPATCH"
         )
 
     def recompile(self) -> None:
