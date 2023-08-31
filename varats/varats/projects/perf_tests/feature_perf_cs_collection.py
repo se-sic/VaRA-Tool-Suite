@@ -393,3 +393,303 @@ class SynthSAWholeProgram(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthDAVirtualInheritance(VProject):
+    """Synthetic case-study project for testing detection of virtual
+    inheritance."""
+
+    NAME = 'SynthDAVirtualInheritance'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthDAVirtualInheritance",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "SynthDAVirtualInheritance"
+            )
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthDAVirtualInheritance") /
+                RSBinary("VirtualInheritance"),
+                label="VirtualInheritance-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthDAVirtualInheritance.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/VirtualInheritance",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHDAVIRTUALINHERITANCE"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthDARecursion(VProject):
+    """Synthetic case-study project for testing detection of recursion."""
+
+    NAME = 'SynthDARecursion'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthDARecursion",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthDARecursion")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthDARecursion") / RSBinary("Recursion"),
+                label="Recursion-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthDARecursion.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/Recursion",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHDARECURSION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthOVInsideLoop(VProject):
+    """Synthetic case-study project for testing detection of hot loop codes."""
+
+    NAME = 'SynthOVInsideLoop'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthOVInsideLoop",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthOVInsideLoop")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
+                label="InsideLoop-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthOVInsideLoop.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/InsideLoop",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHOVINSIDELOOP"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthFeatureInteraction(VProject):
+    """Synthetic case-study project for testing detection of feature
+    interactions."""
+
+    NAME = 'SynthFeatureInteraction'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthFeatureInteraction",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthFeatureInteraction")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthFeatureInteraction") /
+                RSBinary("FeatureInteraction"),
+                label="FeatureInteraction-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthFeatureInteraction.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/FeatureInteraction",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHFEATUREINTERACTION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthFeatureHigherOrderInteraction(VProject):
+    """Synthetic case-study project for testing detection of higher-order
+    feature interactions."""
+
+    NAME = 'SynthFeatureHigherOrderInteraction'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthFeatureHigherOrderInteraction",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "SynthFeatureHigherOrderInteraction"
+            )
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthFeatureHigherOrderInteraction") /
+                RSBinary("HigherOrderInteraction"),
+                label="HigherOrderInteraction-no-input"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthFeatureHigherOrderInteraction.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/HigherOrderInteraction",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("daf81de073", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHFEATUREHIGHERORDERINTERACTION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)

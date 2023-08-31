@@ -171,6 +171,10 @@ class VXray(Profiler):
                 new_acc_pim[feature].append(value)
 
         for feature, old_values in old_acc_pim.items():
+            if feature == "Base":
+                # The regression should be identified in actual feature code
+                continue
+
             if feature in new_acc_pim:
                 new_values = new_acc_pim[feature]
                 ttest_res = ttest_ind(old_values, new_values)
@@ -199,6 +203,24 @@ class PIMTracer(Profiler):
             fpp.MPRPIMAggregate
         )
 
+    @staticmethod
+    def __aggregate_pim_data(reports) -> tp.DefaultDict[str, tp.List[int]]:
+        acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for old_pim_report in reports:
+            per_report_acc_pim: tp.DefaultDict[str, int] = defaultdict(int)
+            for region_inter in old_pim_report.region_interaction_entries:
+                name = get_interactions_from_fr_string(
+                    old_pim_report._translate_interaction(
+                        region_inter.interaction
+                    )
+                )
+                per_report_acc_pim[name] += region_inter.time
+
+            for name, time_value in per_report_acc_pim.items():
+                acc_pim[name].append(time_value)
+
+        return acc_pim
+
     def is_regression(
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
@@ -209,35 +231,28 @@ class PIMTracer(Profiler):
             report_path.full_path(), fpp.PerfInfluenceTraceReportAggregate
         )
 
-        old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
-        for old_pim_report in multi_report.get_baseline_report().reports():
-            for region_inter in old_pim_report.region_interaction_entries:
-                name = get_interactions_from_fr_string(
-                    old_pim_report._translate_interaction(
-                        region_inter.interaction
-                    )
-                )
-                time = region_inter.time
-                old_acc_pim[name].append(time)
+        try:
+            old_acc_pim = self.__aggregate_pim_data(
+                multi_report.get_baseline_report().reports()
+            )
 
-        new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
-        opt_mr = multi_report.get_report_for_patch(patch_name)
-        if not opt_mr:
-            raise NotImplementedError()
+            opt_mr = multi_report.get_report_for_patch(patch_name)
+            if not opt_mr:
+                raise NotImplementedError()
 
-        for new_pim_report in opt_mr.reports():
-            for region_inter in new_pim_report.region_interaction_entries:
-                name = get_interactions_from_fr_string(
-                    new_pim_report._translate_interaction(
-                        region_inter.interaction
-                    )
-                )
-                time = region_inter.time
-                new_acc_pim[name].append(time)
+            new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
+        except Exception as e:
+            print(f"FAILURE: Report parsing failed: {report_path}")
+            print(e)
+            return False
 
         # TODO: same for TEF
         for feature, old_values in old_acc_pim.items():
             if feature in new_acc_pim:
+                if feature == "Base":
+                    # The regression should be identified in actual feature code
+                    continue
+
                 new_values = new_acc_pim[feature]
                 ttest_res = ttest_ind(old_values, new_values)
 
@@ -291,6 +306,10 @@ class EbpfTraceTEF(Profiler):
                 new_acc_pim[feature].append(value)
 
         for feature, old_values in old_acc_pim.items():
+            if feature == "Base":
+                # The regression should be identified in actual feature code
+                continue
+
             if feature in new_acc_pim:
                 new_values = new_acc_pim[feature]
                 ttest_res = ttest_ind(old_values, new_values)
@@ -432,9 +451,15 @@ def compute_profiler_predictions(
             )
             return None
 
-        result_dict[config_id] = profiler.is_regression(
-            report_files[0], patch_name
-        )
+        try:
+            result_dict[config_id] = profiler.is_regression(
+                report_files[0], patch_name
+            )
+        except Exception:
+            print(
+                f"FAILURE: Skipping {config_id=} of {project_name=}, "
+                f"profiler={profiler.name}"
+            )
 
     return result_dict
 
