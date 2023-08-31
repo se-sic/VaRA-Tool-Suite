@@ -52,22 +52,7 @@ def strip_prefix(dictionary, prefix_chars):
     return out
 
 
-def prefix_numeric(dictionary, prefix):
-    out = {}
-    for key, value in dictionary.items():
-        if isinstance(value, tuple):
-            out[key] = tuple(
-                f"{prefix}{x}" if x.isnumeric() else x for x in value
-            )
-        else:
-            if value.isnumeric():
-                out[key] = f"{prefix}{value}"
-            else:
-                out[key] = value
-    return out
-
-
-def feature_option_mapping(fm, lstrip=None, numeric_prefix=None):
+def feature_option_mapping(fm, lstrip=None):
     output = {}
     for feature in fm:
         name = feature.name.str()
@@ -79,8 +64,6 @@ def feature_option_mapping(fm, lstrip=None, numeric_prefix=None):
             output[name] = option
     if lstrip is not None:
         output = strip_prefix(output, lstrip)
-    if numeric_prefix is not None:
-        output = prefix_numeric(output, numeric_prefix)
     return output
 
 

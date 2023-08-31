@@ -1,10 +1,15 @@
 import typing as tp
 import unittest
+from pathlib import Path
 from unittest.mock import create_autospec
 
 from pyeda.inter import expr
 
-from tests.helper_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import (
+    run_in_test_environment,
+    UnitTestFixtures,
+    TEST_INPUTS_DIR,
+)
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
     CodeRegionKind,
@@ -36,6 +41,7 @@ from varats.varats.plots.llvm_coverage_plot import (
     coverage_found_features,
     ConfusionMatrix,
     _matrix_analyze_code_region,
+    _extract_feature_model_formula,
 )
 from varats.varats.plots.llvm_coverage_plot import (
     vara_found_features as _vara_found_features,
@@ -689,6 +695,14 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
             _minimize_context_check(result, after,
                                     feature_model).equivalent(expr(True))
         )
+
+    @run_in_test_environment(UnitTestFixtures.RESULT_FILES)
+    def test_presence_condition_simplification_performance(self):
+        feature_model_formula = Path(
+            TEST_INPUTS_DIR
+        ) / "results" / "xz" / "ReducedFeatureModel.xml"
+        feature_model = _extract_feature_model_formula(feature_model_formula)
+        print(feature_model)
 
     def test_pyeda(self):
         from pyeda.inter import (

@@ -26,6 +26,8 @@ from pyeda.inter import (  # type: ignore
     espresso_exprs,
     truthtable,
     ttvar,
+    Or,
+    And,
     TruthTable,
 )
 
@@ -91,23 +93,19 @@ def simplify(
     feature_model: tp.Optional[Expression] = None
 ) -> Expression:
     """Build the DNF of all conditions and simplify it."""
-    dnf = expr(False)
-    if not conditions:
-        return dnf
+    to_or = []
     for condition in conditions:
-        expression = expr(True)
+        to_and = []
         for option in condition.configuration.options():
             name = option.name
-            if name.isnumeric():
-                # Workaround pyedas name requirements: Prefix numbers
-                name = f"___{name}"
             expr_var = exprvar(name)
             if bool(option.value):
-                expression = expression & expr_var
+                to_and.append(expr_var)
             else:
-                expression = expression & ~expr_var
-        dnf = dnf | expression
-    return minimize(simplify_expr(dnf), feature_model)
+                to_and.append(~expr_var)
+        to_or.append(And(*to_and))
+    dnf = Or(*to_or)
+    return minimize(dnf, feature_model)
 
 
 T = tp.TypeVar("T")
@@ -165,10 +163,6 @@ def expr2truthtable(
 def simplify_expr(expression: Expression) -> Expression:
     """Wrapper for espresso_exprs."""
 
-    if expression.equivalent(expr(True)):
-        return expr(True)
-    if expression.equivalent(expr(False)):
-        return expr(False)
     expression = expression.simplify().to_dnf()
 
     return espresso_exprs(expression)[0]
@@ -197,10 +191,10 @@ def minimize(
     feature_model: tp.Optional[Expression] = None
 ) -> Expression:
     """Minimize expression in context of feature model if given."""
-    entry = (
-        expr_to_str(expression),
-        expr_to_str(feature_model) if feature_model is not None else None
-    )
+    feature_model_entry = expr_to_str(
+        feature_model
+    ) if feature_model is not None else None
+    entry = (expr_to_str(expression), feature_model_entry)
     if entry in __minimize_cache:
         return __minimize_cache[entry]
 
@@ -211,9 +205,9 @@ def minimize(
 
     if feature_model is not None:
         x = expr2truthtable(expression, ~feature_model)
+        result = espresso_tts(x)[0]
     else:
-        x = expr2truthtable(expression)
-    result = espresso_tts(x)[0]
+        result = simplify_expr(expression)
     if feature_model is not None:
         # Check m => simp(p, m) <=> p
         assert _minimize_context_check(
@@ -224,6 +218,7 @@ def minimize(
 Was {expr_to_str((expression))}"""
 
     __minimize_cache[entry] = result
+    __minimize_cache[(expr_to_str(result), feature_model_entry)] = result
     return result
 
 
@@ -293,8 +288,6 @@ def expr_to_str(expression: Expression) -> str:
             return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
         if expression.ASTOP == "or":
             return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
-        #if expression.ASTOP == "impl":
-        #    return f"({' => '.join(sorted(map(expr_to_str, expression.xs)))})"
         raise NotImplementedError(expression.ASTOP)
     finally:
         sys.setrecursionlimit(recursionlimit)

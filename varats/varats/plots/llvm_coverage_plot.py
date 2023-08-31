@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 from plumbum import local, ProcessExecutionError
-from pyeda.inter import Expression, expr  # type: ignore
+from pyeda.inter import Expression, expr, exprvar, And, Or  # type: ignore
 
 from varats.base.configuration import (
     Configuration,
@@ -233,6 +233,25 @@ def _extract_feature_option_mapping(
     return json.loads(output)  # type: ignore [no-any-return]
 
 
+def __parse_dnf_str_to_expr(dnf: str) -> Expression:
+    or_parts = dnf.split("|")
+    ands = []
+    for and_str in or_parts:
+        and_parts = and_str.strip().lstrip("(").rstrip(")").split("&")
+        and_expr = []
+        for var_str in and_parts:
+            var = var_str.strip().split("~")
+            if len(var) == 1:
+                and_expr.append(exprvar(var[0]))
+            elif len(var) == 2 and var[0] == "":
+                and_expr.append(~exprvar(var[1]))
+            else:
+                raise ValueError(f"Invalid variable: {var}")
+        ands.append(And(*and_expr))
+
+    return Or(*ands)
+
+
 def _extract_feature_model_formula(xml_file: Path) -> Expression:
     with local.cwd(Path(__file__).parent.parent.parent.parent):
         try:
@@ -244,12 +263,11 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
             print(err)
             return expr(True)
 
-    expression = expr(output)
+    expression = __parse_dnf_str_to_expr(output)
     if not expression.is_dnf():
         raise ValueError("Feature model is not in DNF!")
     if expression.equivalent(expr(False)):
         raise ValueError("Feature model equals false!")
-    print(output)
     expression = minimize(expression)
     return expression
 

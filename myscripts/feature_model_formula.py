@@ -33,9 +33,7 @@ def dnf_formula(configs, feature_to_options):
 
 def main():
     fm = load_feature_model(argv[1])
-    feature_to_options = feature_option_mapping(
-        fm, lstrip="-", numeric_prefix="___"
-    )
+    feature_to_options = feature_option_mapping(fm, lstrip="-")
     configs = getConfigs(fm)
     print(dnf_formula(configs, feature_to_options))
 
