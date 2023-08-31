@@ -56,7 +56,9 @@ def prefix_numeric(dictionary, prefix):
     out = {}
     for key, value in dictionary.items():
         if isinstance(value, tuple):
-            out[key] = tuple(f"{prefix}{x}" for x in value if x.isnumeric())
+            out[key] = tuple(
+                f"{prefix}{x}" if x.isnumeric() else x for x in value
+            )
         else:
             if value.isnumeric():
                 out[key] = f"{prefix}{value}"
