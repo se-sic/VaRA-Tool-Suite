@@ -668,11 +668,9 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
 
     def test_presence_condition_simplification_7(self):
         before = expr(
-            "((___6 & ~decompress & test & ~___0 & ~___3 & ~___9 & ~compress & ~list) | (___6 & decompress & ~___0 & ~___3 & ~___9 & ~compress & ~list & test))"
+            "((___6 & ~decompress & test & ~compress & ~list) | (___6 & decompress & ~compress & ~list & test))"
         )
-        after = expr(
-            "(___6 & test & ~___0 & ~___3 & ~___9 & ~compress & ~list)"
-        )
+        after = expr("(___6 & test & ~compress & ~list)")
         self.assertTrue(before.equivalent(after))
 
         self.assertTrue(minimize(before).equivalent(after))

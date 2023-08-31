@@ -255,16 +255,23 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
 
 
 def _annotate_covered(
-    args: tp.Tuple[CoverageReport, frozenset[str]]
+    args: tp.Tuple[CoverageReport, frozenset[str], tp.Dict[str, tp.Set[str]]]
 ) -> CoverageReport:
-    report, all_features = args
+    report, all_options, feature_option_mapping = args
     configuration = report.configuration
     assert configuration is not None
 
     # Set not set features in configuration to false
-    for feature in all_features:
-        if feature not in get_option_names(configuration):
-            configuration.set_config_option(feature, False)
+    for option in all_options:
+        if option not in get_option_names(configuration):
+            # Exclude options with other values already set
+            features = list(feature_option_mapping[option])
+            if features:
+                assert len(features) == 1
+                options = feature_option_mapping[features[0]]
+                if len(options) > 1:
+                    continue
+            configuration.set_config_option(option, False)
 
     report.annotate_covered(configuration)
 
@@ -286,20 +293,24 @@ class CoverageReports:
         self._feature_option_mapping: tp.Optional[tp.Dict[str,
                                                           tp.Set[str]]] = None
 
-        to_process = [(report, self.available_features) for report in reports]
-
-        self._reports = list(optimized_map(
-            _annotate_covered,
-            to_process,
-        ))
-
         # Check all reports have same feature model
+        self._reports = reports
         self._reference = self._reports[0]
         for report in self._reports[1:]:
             if self._reference.feature_model_xml != report.feature_model_xml:
                 raise ValueError(
                     "CoverageReports have different feature models!"
                 )
+
+        feature_option_mapping = self.feature_option_mapping()
+        to_process = [(report, self.available_features, feature_option_mapping)
+                      for report in reports]
+
+        self._reports = list(optimized_map(
+            _annotate_covered,
+            to_process,
+        ))
+        self._reference = self._reports[0]
 
     def __bidirectional_map(
         self, mapping: tp.Dict[str, tp.Union[str, tp.List[str]]]

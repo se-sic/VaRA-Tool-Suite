@@ -180,6 +180,12 @@ __minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
 def _minimize_context_check(
     result: Expression, expression: Expression, feature_model: Expression
 ) -> Expression:
+    # Restrict feature model to same values as expression
+    to_restrict = feature_model.support.difference(expression.support)
+    feature_model = feature_model.restrict(
+        dict((var, 0) for var in to_restrict)
+    )
+
     result_impl_expr = result >> expression
     expr_impl_result = expression >> result
     check = feature_model >> (result_impl_expr & expr_impl_result)
