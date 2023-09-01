@@ -5,6 +5,8 @@ on:
     branches: [ vara, vara-dev ]
   pull_request:
     branches: [ vara, vara-dev ]
+  merge_group:
+    branches: [ vara, vara-dev ]
 
 env:
   BB_TMP_DIR: $(pwd)/benchbuild/tmp
