@@ -20,17 +20,17 @@ from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
 
-class Dune(VProject):
+class DunePerfRegression(VProject):
     """Simulation framework for various applications in mathematics and
     physics."""
 
-    NAME = 'Dune'
+    NAME = 'DunePerfRegression'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.CPP_LIBRARY
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name='Dune',
+            project_name='DunePerfRegression',
             remote='git@github.com:se-sic/dune-VaRA.git',
             local='dune-VaRA',
             refspec='origin/f-RefactorPoissonFeature',
@@ -102,7 +102,9 @@ class Dune(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List['ProjectBinaryWrapper']:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Dune.NAME))
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(DunePerfRegression.NAME)
+        )
 
         binary_map.specify_binary(
             'dune-performance-regressions', BinaryType.EXECUTABLE
@@ -162,21 +164,43 @@ class Dune(VProject):
         """Compile the project using the in-built tooling from dune."""
         version_source = local.path(self.source_of(self.primary_source))
 
-        with local.cwd(version_source):
-            dunecontrol = cmd['./dune-common/bin/dunecontrol']
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
 
-            bb.watch(dunecontrol
-                    )('--module=dune-performance-regressions', 'all')
+        cflags = self.cflags
+        ldflags = self.ldflags
+
+        cflags.append("-mllvm --vara-disable-phasar")
+
+        print(cflags)
+        print(ldflags)
+
+        with local.cwd(version_source):
+            with local.env(
+                CC=c_compiler,
+                CXX=cxx_compiler,
+                CMAKE_CXX_FLAGS=cflags,
+                CMAKE_LDFLAGS=ldflags
+            ):
+                dunecontrol = cmd['./dune-common/bin/dunecontrol']
+
+                bb.watch(dunecontrol
+                        )('--module=dune-performance-regressions', 'all')
 
     def recompile(self) -> None:
         """Recompiles Dune after e.g. a Patch has been applied."""
         version_source = local.path(self.source_of(self.primary_source))
+        with local.env(
+            CC=bb.compiler.cc(self),
+            CXX=bb.compiler.cxx(self),
+            CMAKE_CXX_FLAGS=self.cflags,
+            CMAKE_LDFLAGS=self.ldflags
+        ):
+            with local.cwd(version_source):
+                dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
-        with local.cwd(version_source):
-            dunecontrol = cmd['./dune-common/bin/dunecontrol']
-
-            bb.watch(dunecontrol
-                    )('--module=dune-performance-regressions', 'make')
+                bb.watch(dunecontrol
+                        )('--module=dune-performance-regressions', 'make')
 
     def run_tests(self) -> None:
         pass
