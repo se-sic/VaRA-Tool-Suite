@@ -311,7 +311,7 @@ class ReportFilename():
             the experiment shorthand from a result file
         """
         if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
-            return match.group("experiment_shorthand")
+            return match.group("experiment_shorthand").split('/')[-1]
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
