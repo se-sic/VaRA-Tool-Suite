@@ -45,7 +45,7 @@ class TestPatchRevisionRanges(unittest.TestCase):
         )
 
         project_git_source = bb.source.Git(
-            remote="git@github.com:se-sic/FeaturePerfCSCollection.git",
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="FeaturePerfCSCollection",
             refspec="origin/HEAD",
             shallow=False,
