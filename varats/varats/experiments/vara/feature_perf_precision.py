@@ -1,5 +1,6 @@
 """Module for feature performance precision experiments that evaluate
 measurement support of vara."""
+import tempfile
 import textwrap
 import typing as tp
 from abc import abstractmethod
@@ -187,53 +188,72 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
             zip_tmp_dir = tmp_dir / self._file_name
-            with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
-                for rep in range(0, self._reps):
-                    for prj_command in workload_commands(
-                        self.project, self._binary, [WorkloadCategory.EXAMPLE]
-                    ):
-                        local_tracefile_path = Path(reps_tmp_dir) / (
-                            f"trace_{prj_command.command.label}_{rep}"
-                            f".{self._report_file_ending}"
-                        )
-
-                        with local.env(VARA_TRACE_FILE=local_tracefile_path):
-                            pb_cmd = prj_command.command.as_plumbum(
-                                project=self.project
-                            )
-                            print(
-                                f"Running example {prj_command.command.label}"
+            with tempfile.TemporaryDirectory() as non_nfs_tmp_dir:
+                with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
+                    for rep in range(0, self._reps):
+                        for prj_command in workload_commands(
+                            self.project, self._binary,
+                            [WorkloadCategory.EXAMPLE]
+                        ):
+                            local_tracefile_path = Path(reps_tmp_dir) / (
+                                f"trace_{prj_command.command.label}_{rep}"
+                                f".{self._report_file_ending}"
                             )
 
-                            extra_options = get_extra_config_options(
-                                self.project
-                            )
-
-                            bpf_runner = bpf_runner = self.attach_usdt_raw_tracing(
-                                local_tracefile_path,
-                                self.project.source_of_primary /
-                                self._binary.path
-                            )
-
-                            with cleanup(prj_command):
-                                pb_cmd(
-                                    *extra_options,
-                                    retcode=self._binary.valid_exit_codes
+                            with local.env(
+                                VARA_TRACE_FILE=local_tracefile_path
+                            ):
+                                pb_cmd = prj_command.command.as_plumbum(
+                                    project=self.project
+                                )
+                                print(
+                                    f"Running example {prj_command.command.label}"
                                 )
 
-                            # wait for bpf script to exit
-                            if bpf_runner:
-                                bpf_runner.wait()
+                                adapted_binary_location = Path(
+                                    non_nfs_tmp_dir
+                                ) / self._binary.name
+
+                                # Store binary in a local tmp dir that is not on nfs
+                                pb_cmd.executable = pb_cmd.executable.copy(
+                                    adapted_binary_location, override=True
+                                )
+
+                                extra_options = get_extra_config_options(
+                                    self.project
+                                )
+
+                                bpf_runner = bpf_runner = self.attach_usdt_raw_tracing(
+                                    local_tracefile_path,
+                                    adapted_binary_location,
+                                    Path(non_nfs_tmp_dir)
+                                )
+
+                                with cleanup(prj_command):
+                                    pb_cmd(
+                                        *extra_options,
+                                        retcode=self._binary.valid_exit_codes
+                                    )
+
+                                # wait for bpf script to exit
+                                if bpf_runner:
+                                    bpf_runner.wait()
 
         return StepResult.OK
 
     @staticmethod
-    def attach_usdt_raw_tracing(report_file: Path, binary: Path) -> Future:
+    def attach_usdt_raw_tracing(
+        report_file: Path, binary: Path, non_nfs_tmp_dir: Path
+    ) -> Future:
         """Attach bpftrace script to binary to activate raw USDT probes."""
-        bpftrace_script_location = Path(
+        orig_bpftrace_script_location = Path(
             VaRA.install_location(),
             "share/vara/perf_bpf_tracing/RawUsdtTefMarker.bt"
         )
+        # Store bpftrace script in a local tmp dir that is not on nfs
+        bpftrace_script_location = non_nfs_tmp_dir / "RawUsdtTefMarker.bt"
+        cp(orig_bpftrace_script_location, bpftrace_script_location)
+
         bpftrace_script = bpftrace["-o", report_file, "-q",
                                    bpftrace_script_location, binary]
         bpftrace_script = bpftrace_script.with_env(BPFTRACE_PERF_RB_PAGES=4096)
@@ -760,46 +780,59 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            for rep in range(0, self._reps):
-                for prj_command in workload_commands(
-                    self.project, self._binary, [WorkloadCategory.EXAMPLE]
-                ):
-                    base = Path("/tmp/")
-                    fake_tracefile_path = base / (
-                        f"trace_{prj_command.command.label}_{rep}"
-                        f".json"
-                    )
-
-                    time_report_file = tmp_dir / (
-                        f"overhead_{prj_command.command.label}_{rep}"
-                        f".{self._report_file_ending}"
-                    )
-
-                    with local.env(VARA_TRACE_FILE=fake_tracefile_path):
-                        pb_cmd = prj_command.command.as_plumbum(
-                            project=self.project
-                        )
-                        print(f"Running example {prj_command.command.label}")
-
-                        timed_pb_cmd = perf["stat", "-o", time_report_file,
-                                            "--", pb_cmd]
-
-                        extra_options = get_extra_config_options(self.project)
-
-                        bpf_runner = RunBPFTracedWorkloads.attach_usdt_raw_tracing(
-                            fake_tracefile_path,
-                            self.project.source_of_primary / self._binary.path
+            with tempfile.TemporaryDirectory() as non_nfs_tmp_dir:
+                for rep in range(0, self._reps):
+                    for prj_command in workload_commands(
+                        self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        base = Path("/tmp/")
+                        fake_tracefile_path = base / (
+                            f"trace_{prj_command.command.label}_{rep}"
+                            f".json"
                         )
 
-                        with cleanup(prj_command):
-                            timed_pb_cmd(
-                                *extra_options,
-                                retcode=self._binary.valid_exit_codes
+                        time_report_file = tmp_dir / (
+                            f"overhead_{prj_command.command.label}_{rep}"
+                            f".{self._report_file_ending}"
+                        )
+
+                        with local.env(VARA_TRACE_FILE=fake_tracefile_path):
+                            pb_cmd = prj_command.command.as_plumbum(
+                                project=self.project
+                            )
+                            print(
+                                f"Running example {prj_command.command.label}"
+                            )
+                            adapted_binary_location = Path(
+                                non_nfs_tmp_dir
+                            ) / self._binary.name
+
+                            # Store binary in a local tmp dir that is not on nfs
+                            pb_cmd.executable = pb_cmd.executable.copy(
+                                adapted_binary_location, override=True
                             )
 
-                        # wait for bpf script to exit
-                        if bpf_runner:
-                            bpf_runner.wait()
+                            timed_pb_cmd = perf["stat", "-o", time_report_file,
+                                                "--", pb_cmd]
+
+                            extra_options = get_extra_config_options(
+                                self.project
+                            )
+
+                            bpf_runner = RunBPFTracedWorkloads.attach_usdt_raw_tracing(
+                                fake_tracefile_path, adapted_binary_location,
+                                Path(non_nfs_tmp_dir)
+                            )
+
+                            with cleanup(prj_command):
+                                timed_pb_cmd(
+                                    *extra_options,
+                                    retcode=self._binary.valid_exit_codes
+                                )
+
+                            # wait for bpf script to exit
+                            if bpf_runner:
+                                bpf_runner.wait()
 
         return StepResult.OK
 
