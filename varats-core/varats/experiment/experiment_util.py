@@ -17,7 +17,7 @@ from benchbuild.experiment import Experiment
 from benchbuild.extensions import base
 from benchbuild.project import Project
 from benchbuild.source import enumerate_revisions
-from benchbuild.utils.actions import Step, MultiStep, StepResult
+from benchbuild.utils.actions import Step, MultiStep, StepResult, ProjectStep
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 from plumbum.commands.base import BoundCommand
@@ -506,20 +506,24 @@ class ZippedReportFolder(TempDir):
         super().__exit__(exc_type, exc_value, exc_traceback)
 
 
-@runtime_checkable
-class NeedsOutputFolder(Protocol):
-
-    def __call__(self, tmp_folder: Path) -> StepResult:
-        ...
+class WrongStepCall(Exception):
+    """Throw if the common step method was called."""
 
 
-def run_child_with_output_folder(
-    child: NeedsOutputFolder, tmp_folder: Path
-) -> StepResult:
-    return child(tmp_folder)
+class OutputFolderStep(ProjectStep):  # type: ignore
+    """Special step class that needs an output folder to write to."""
+
+    def __call__(self) -> StepResult:
+        raise WrongStepCall()
+
+    @abstractmethod
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+        """Actual call implementation that gets a path to tmp_folder."""
 
 
-class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
+class ZippedExperimentSteps(
+    MultiStep[tp.Union[OutputFolderStep, ProjectStep]]  # type: ignore
+):
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive."""
 
@@ -528,7 +532,7 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
 
     def __init__(
         self, output_filepath: ReportFilepath,
-        actions: tp.Optional[tp.List[NeedsOutputFolder]]
+        actions: tp.Optional[tp.List[tp.Union[OutputFolderStep, ProjectStep]]]
     ) -> None:
         super().__init__(actions)
         self.__output_filepath = output_filepath
@@ -537,22 +541,27 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
         results: tp.List[StepResult] = []
 
         for child in self.actions:
-            results.append(
-                run_child_with_output_folder(
-                    tp.cast(NeedsOutputFolder, child), tmp_folder
-                )
-            )
+            if isinstance(child, OutputFolderStep):
+                results.append(child.call_with_output_folder(tmp_folder))
+            else:
+                results.append(child())
 
         return results
 
     def __call__(self) -> StepResult:
         results: tp.List[StepResult] = []
 
+        exception_raised_during_exec = False
         with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
-            results = self.__run_children(Path(tmp_dir))
+            try:
+                results = self.__run_children(Path(tmp_dir))
+            except:  # noqa: E722
+                exception_raised_during_exec = True
+                raise
 
         overall_step_result = max(results) if results else StepResult.OK
-        if overall_step_result is not StepResult.OK:
+        if overall_step_result is not StepResult.OK \
+                or exception_raised_during_exec:
             error_filepath = self.__output_filepath.with_status(
                 FileStatusExtension.FAILED
             )

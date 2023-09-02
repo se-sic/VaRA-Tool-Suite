@@ -273,15 +273,15 @@ class TestChurnConfig(unittest.TestCase):
         c_style_config = ChurnConfig.create_c_style_languages_config()
         self.assertEqual(
             c_style_config.get_extensions_repr(),
-            ["c", "cpp", "cxx", "h", "hpp", "hxx"]
+            ["c", "cc", "cpp", "cxx", "h", "hpp", "hxx"]
         )
         self.assertEqual(
             c_style_config.get_extensions_repr(prefix="*."),
-            ["*.c", "*.cpp", "*.cxx", "*.h", "*.hpp", "*.hxx"]
+            ["*.c", "*.cc", "*.cpp", "*.cxx", "*.h", "*.hpp", "*.hxx"]
         )
         self.assertEqual(
             c_style_config.get_extensions_repr(suffix="|"),
-            ["c|", "cpp|", "cxx|", "h|", "hpp|", "hxx|"]
+            ["c|", "cc|", "cpp|", "cxx|", "h|", "hpp|", "hxx|"]
         )
 
 
@@ -548,6 +548,25 @@ class TestRevisionBinaryMap(unittest.TestCase):
         )
 
         self.assertIn("SingleLocalMultipleRegions", self.rv_map)
+
+    def test_specification_validity_range_multiple_binaries(self) -> None:
+        """Check if we can add binaries to the map that are only valid in a
+        specific range."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        self.assertEqual(len(self.rv_map[ShortCommitHash("162db88346")]), 2)
+
+        self.assertIn("SingleLocalMultipleRegions", self.rv_map)
+        self.assertIn("SingleLocalSimple", self.rv_map)
 
     def test_specification_binaries_with_special_name(self) -> None:
         """Check if we can add binaries that have a special name."""

@@ -20,6 +20,7 @@ creating plots, configuring the tool-suite itself and more.
 
     tools/vara-pc
     tools/vara-cs
+    tools/vara-cs-gui
     tools/vara-run
     tools/vara-plot
     tools/vara-table

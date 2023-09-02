@@ -27,6 +27,7 @@ def update_projects(
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         # yapf: disable
+        'varats.projects.c_projects.asterisk',
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
@@ -60,6 +61,7 @@ def update_projects(
         'varats.projects.c_projects.picosat',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
+        'varats.projects.c_projects.tig',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
@@ -68,6 +70,7 @@ def update_projects(
         'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
+        'varats.projects.cpp_projects.opencv',
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
         'varats.projects.cpp_projects.ect',
@@ -177,25 +180,19 @@ def create_new_bb_config(
 
     # Set paths to defaults
     bb_root = str(varats_cfg["benchbuild_root"])
-    new_bb_cfg["build_dir"] = s.ConfigPath(os.path.join(bb_root, "results"))
-    new_bb_cfg["tmp_dir"] = s.ConfigPath(os.path.join(bb_root, "tmp"))
-    new_bb_cfg["slurm"]["node_dir"] = s.ConfigPath(
-        os.path.join(bb_root, "results")
+    new_bb_cfg["build_dir"] = os.path.join(bb_root, "results")
+    new_bb_cfg["tmp_dir"] = os.path.join(bb_root, "tmp")
+    new_bb_cfg["slurm"]["node_dir"] = os.path.join(bb_root, "results")
+    new_bb_cfg["slurm"]["logs"] = os.path.join(bb_root, "slurm_logs")
+    new_bb_cfg["container"]["root"] = os.path.join(bb_root, "containers", "lib")
+    new_bb_cfg["container"]["runroot"] = os.path.join(
+        bb_root, "containers", "run"
     )
-    new_bb_cfg["slurm"]["logs"] = s.ConfigPath(
-        os.path.join(bb_root, "slurm_logs")
+    new_bb_cfg["container"]["export"] = os.path.join(
+        bb_root, "containers", "export"
     )
-    new_bb_cfg["container"]["root"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "lib")
-    )
-    new_bb_cfg["container"]["runroot"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "run")
-    )
-    new_bb_cfg["container"]["export"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "export")
-    )
-    new_bb_cfg["container"]["import"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "export")
+    new_bb_cfg["container"]["import"] = os.path.join(
+        bb_root, "containers", "export"
     )
     new_bb_cfg["container"]["source"] = None
 
