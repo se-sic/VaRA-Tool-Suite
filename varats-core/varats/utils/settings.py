@@ -316,7 +316,7 @@ def create_missing_folders() -> None:
         if config_node.has_value() and\
                 config_node.value is not None and\
                 not path.isdir(config_node.value):
-            makedirs(config_node.value)
+            makedirs(config_node.value, exist_ok=True)
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
@@ -339,7 +339,7 @@ def create_missing_bb_folders() -> None:
         if config_node.has_value() and\
                 config_node.value is not None and\
                 not path.isdir(str(config_node.value)):
-            makedirs(str(config_node.value))
+            makedirs(str(config_node.value), exist_ok=True)
 
     create_missing_folder_for_cfg("outfile", bb_cfg()["varats"])
     create_missing_folder_for_cfg("result", bb_cfg()["varats"])
