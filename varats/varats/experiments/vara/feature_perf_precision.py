@@ -785,7 +785,7 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                     for prj_command in workload_commands(
                         self.project, self._binary, [WorkloadCategory.EXAMPLE]
                     ):
-                        base = Path("/tmp/")
+                        base = Path(non_nfs_tmp_dir)
                         fake_tracefile_path = base / (
                             f"trace_{prj_command.command.label}_{rep}"
                             f".json"
