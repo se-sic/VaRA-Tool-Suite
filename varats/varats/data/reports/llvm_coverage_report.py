@@ -6,36 +6,97 @@ import csv
 import json
 import shutil
 import string
-import sys
 import typing as tp
 from collections import deque, defaultdict
 from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import Enum
+from functools import cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import TracebackType
 
+from dd.autoref import Function
+from dd.cudd import BDD, restrict
 from plumbum import colors
 from plumbum.colorlib.styles import Color
-from pyeda.boolalg.expr import Complement, Variable  # type: ignore
-from pyeda.inter import (  # type: ignore
-    Expression,
-    exprvar,
-    expr,
-    espresso_tts,
-    espresso_exprs,
-    truthtable,
-    ttvar,
-    Or,
-    And,
-    TruthTable,
-)
+from pyeda.boolalg.expr import Complement, Variable
+from pyeda.inter import And, Or, Expression, exprvar, espresso_exprs
 
 from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
 
 TAB_SIZE = 8
 CUTOFF_LENGTH = 80
+
+
+def expr_to_str(expression: Expression) -> str:
+    """Converts expression back to str representation."""
+    if expression.is_zero() or expression.is_one():
+        return str(bool(expression))
+    if expression.ASTOP == "lit":
+        if isinstance(expression, Complement):
+            return f"~{expr_to_str(~expression)}"
+        if isinstance(expression, Variable):
+            return str(expression)
+        raise NotImplementedError()
+    if expression.ASTOP == "and":
+        return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
+    if expression.ASTOP == "or":
+        return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
+    raise NotImplementedError(expression.ASTOP)
+
+
+def _func_to_expr(func: Function) -> Expression:
+    to_or = []
+    for point in func.bdd.pick_iter(func):
+        to_and = []
+        for name, value in point.items():
+            var = exprvar(name)
+            if value:
+                to_and.append(var)
+            else:
+                to_and.append(~var)
+        to_or.append(And(*to_and))
+    dnf = Or(*to_or)
+    return espresso_exprs(dnf)[0]
+
+
+@cache
+def create_bdd() -> BDD:
+    return BDD()
+
+
+@cache
+def func_to_str(func: Function) -> str:
+    """
+    Converts function to str.
+
+    Potentially expensive.
+    """
+    if func == func.bdd.true:
+        return "True"
+    if func == func.bdd.false:
+        return "False"
+    return expr_to_str(_func_to_expr(func))
+
+
+def _minimize_context_check(
+    result: Function, func: Function, feature_model: Function
+) -> Function:
+    # Restrict feature model to same values as expression
+    check = feature_model.implies(result.equiv(func))
+    return check
+
+
+def minimize(func: Function, care: Function) -> Function:
+    """Minimize function according to care set."""
+    if func in (func.bdd.true, func.bdd.false):
+        return func
+    result = restrict(func, care)
+    assert _minimize_context_check(
+        result, func, care
+    ) == func.bdd.true, "Presence Condition Simplification buggy!"
+    return result
 
 
 class CodeRegionKind(int, Enum):
@@ -68,231 +129,6 @@ class RegionEnd(Location):
     pass
 
 
-class PresenceKind(Enum):
-    """Code region kinds."""
-    BECOMES_ACTIVE = "+"
-    BECOMES_INACTIVE = "-"
-
-
-@dataclass
-class PresenceCondition:
-    """
-    Presence Condition.
-
-    Tells how the presence changed for this specific configuration.
-    """
-    kind: PresenceKind
-    configuration: Configuration
-
-    def __str__(self) -> str:
-        return f"{self.kind.value}({self.configuration})"
-
-
-def simplify(
-    conditions: tp.List[PresenceCondition],
-    feature_model: tp.Optional[Expression] = None
-) -> Expression:
-    """Build the DNF of all conditions and simplify it."""
-    to_or = []
-    for condition in conditions:
-        to_and = []
-        for option in condition.configuration.options():
-            name = option.name
-            expr_var = exprvar(name)
-            if bool(option.value):
-                to_and.append(expr_var)
-            else:
-                to_and.append(~expr_var)
-        to_or.append(And(*to_and))
-    dnf = Or(*to_or)
-    return minimize(dnf, feature_model)
-
-
-T = tp.TypeVar("T")
-
-
-def filter_true_points(domain: tp.List[tp.Dict[T, int]],
-                       image: tp.List[int]) -> tp.List[tp.Dict[T, int]]:
-    """Only output points where image is 1."""
-    assert len(domain) == len(image)
-    result = []
-    for point, value in zip(domain, image):
-        if value:
-            result.append(point)
-    return result
-
-
-def values_set(expr_point: tp.Dict[T, int], dc_point: tp.Dict[T, int]) -> bool:
-    """Check if values of dc_point are set in expr_point."""
-    for key, value in dc_point.items():
-        if key in expr_point:
-            if expr_point[key] != value:
-                return False
-    return True
-
-
-def expr2truthtable(
-    expression: Expression,
-    dont_care: tp.Optional[Expression] = None
-) -> TruthTable:
-    """Convert an expression into a truth table."""
-    inputs = [ttvar(v.names, v.indices) for v in expression.inputs]
-    if dont_care is None or dont_care.is_zero():
-        # Everything matters
-        return truthtable(inputs, expression.iter_image())
-    if dont_care.is_one():
-        # Don't care about anything
-        return truthtable(inputs, ["X"] * expression.cardinality)
-
-    # Restrict dont_care to same variables as expression
-    to_restrict = dont_care.support.difference(expression.support)
-    restricted_dont_care = dont_care.restrict(
-        dict((var, 0) for var in to_restrict)
-    )
-
-    # Set Don't Care bits
-    def generate_output() -> tp.Iterator[tp.Union[int, str]]:
-        for expr_i, dont_care_i in zip(
-            expression.iter_image(), restricted_dont_care.iter_image()
-        ):
-            yield expr_i if not dont_care_i else "X"
-
-    return truthtable(inputs, generate_output())
-
-
-def simplify_expr(expression: Expression) -> Expression:
-    """Wrapper for espresso_exprs."""
-
-    expression = expression.simplify().to_dnf()
-
-    return espresso_exprs(expression)[0]
-
-
-__minimize_cache: tp.Dict[tp.Tuple[str, tp.Union[str, None]], Expression] = {}
-
-
-def _minimize_context_check(
-    result: Expression, expression: Expression, feature_model: Expression
-) -> Expression:
-    # Restrict feature model to same values as expression
-    to_restrict = feature_model.support.difference(expression.support)
-    feature_model = feature_model.restrict(
-        dict((var, 0) for var in to_restrict)
-    )
-
-    result_impl_expr = result >> expression
-    expr_impl_result = expression >> result
-    check = feature_model >> (result_impl_expr & expr_impl_result)
-    return check
-
-
-def minimize(
-    expression: Expression,
-    feature_model: tp.Optional[Expression] = None
-) -> Expression:
-    """Minimize expression in context of feature model if given."""
-    feature_model_entry = expr_to_str(
-        feature_model
-    ) if feature_model is not None else None
-    entry = (expr_to_str(expression), feature_model_entry)
-    if entry in __minimize_cache:
-        return __minimize_cache[entry]
-
-    if expression.equivalent(expr(True)):
-        return expr(True)
-    if expression.equivalent(expr(False)):
-        return expr(False)
-
-    if feature_model is not None:
-        x = expr2truthtable(expression, ~feature_model)
-        result = espresso_tts(x)[0]
-    else:
-        result = simplify_expr(expression)
-    if feature_model is not None:
-        # Check m => simp(p, m) <=> p
-        assert _minimize_context_check(
-            result, expression, feature_model
-        ).equivalent(
-            expr(True)
-        ), f"""{expr_to_str(result)} is not correctly simplified.
-Was {expr_to_str((expression))}"""
-
-    __minimize_cache[entry] = result
-    __minimize_cache[(expr_to_str(result), feature_model_entry)] = result
-    return result
-
-
-class PresenceConditions(
-    tp.DefaultDict[PresenceKind, tp.List[PresenceCondition]]
-):
-    """Presence Conditions obtained from diffing coverage data."""
-
-    def extend(self, other: PresenceConditions) -> None:
-        for kind, conditions in other.items():
-            self[kind].extend(conditions)
-
-    def simplify(
-        self,
-        kind: tp.Optional[PresenceKind] = None,
-        feature_model: tp.Optional[Expression] = None
-    ) -> Expression:
-        """Build the DNF of all conditions for kind and simplifies it."""
-        if kind is None:
-            conditions = []
-            for values in self.values():
-                conditions.extend(values)
-        else:
-            conditions = self[kind]
-        return simplify(conditions, feature_model)
-
-    def all_conditions(self,
-                       feature_model: tp.Optional[Expression]) -> tp.Set[str]:
-        """All conditions that are relevant."""
-        output: tp.Set[str] = set()
-        for presence_kind in self:
-            if self[presence_kind]:
-                features = [
-                    str(feature) for feature in
-                    self.simplify(presence_kind, feature_model).support
-                ]
-                output.update(features)
-        return output
-
-    def to_string(self, feature_model: tp.Optional[Expression] = None) -> str:
-        """Returns PresenceConditions as string."""
-        output = []
-        for presence_kind in self:
-            if self[presence_kind]:
-                expression = self.simplify(presence_kind, feature_model)
-                output.append(f"{presence_kind.value}{expr_to_str(expression)}")
-        return ",".join(output)
-
-    def __str__(self) -> str:
-        return self.to_string()
-
-
-def expr_to_str(expression: Expression) -> str:
-    """Converts expression back to str representation."""
-    recursionlimit = sys.getrecursionlimit()
-    try:
-        sys.setrecursionlimit(2500)
-        if expression.is_zero() or expression.is_one():
-            return str(bool(expression))
-        if expression.ASTOP == "lit":
-            if isinstance(expression, Complement):
-                return f"~{expr_to_str(~expression)}"
-            if isinstance(expression, Variable):
-                return str(expression)
-            raise NotImplementedError()
-        if expression.ASTOP == "and":
-            return f"({' & '.join(sorted(map(expr_to_str, expression.xs)))})"
-        if expression.ASTOP == "or":
-            return f"({' | '.join(sorted(map(expr_to_str, expression.xs)))})"
-        raise NotImplementedError(expression.ASTOP)
-    finally:
-        sys.setrecursionlimit(recursionlimit)
-
-
 @dataclass
 class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Code region tree."""
@@ -305,9 +141,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
     #    expanded_from: tp.Optional[CodeRegion] = None
     parent: tp.Optional[CodeRegion] = None
     childs: tp.List[CodeRegion] = field(default_factory=list)
-    presence_conditions: PresenceConditions = field(
-        default_factory=lambda: PresenceConditions(list)
-    )
+    presence_condition: tp.Optional[Function] = None
     vara_instrs: tp.List[VaraInstr] = field(default_factory=list)
     counts: tp.List[int] = field(default_factory=list)
     instantiations: tp.List[str] = field(default_factory=list)
@@ -407,16 +241,25 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
         return len(with_feature) / denominator
 
     def coverage_features(
-        self, feature_model: tp.Optional[Expression] = None
+        self, feature_model: tp.Optional[Function] = None
     ) -> str:
         """Returns presence conditions."""
-        return self.presence_conditions.to_string(feature_model)
+        if self.presence_condition is None or self.presence_condition == self.presence_condition.bdd.false:
+            return ""
+        if feature_model is not None:
+            return "+" + func_to_str(
+                minimize(self.presence_condition, feature_model)
+            )
+        return "+" + func_to_str(self.presence_condition)
 
     def coverage_features_set(
-        self, feature_model: tp.Optional[Expression] = None
+        self, feature_model: tp.Optional[Function] = None
     ) -> tp.Set[str]:
         """Returns features affecting code region somehow."""
-        return self.presence_conditions.all_conditions(feature_model)
+        assert self.presence_condition is not None
+        if feature_model is not None:
+            return set(minimize(self.presence_condition, feature_model).support)
+        return set(self.presence_condition.support)
 
     def vara_features(self) -> tp.Set[str]:
         """Returns all features from annotated vara instrs."""
@@ -525,7 +368,9 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
         for x, y in zip(self.iter_breadth_first(), region.iter_breadth_first()):
             if x != y:
                 raise AssertionError("CodeRegions are not identical")
-            x.presence_conditions.extend(y.presence_conditions)
+            assert x.presence_condition is not None
+            assert y.presence_condition is not None
+            x.presence_condition |= y.presence_condition
 
     def get_code_region(self, element: CodeRegion) -> tp.Optional[CodeRegion]:
         """Returns the code region if it exists already."""
@@ -568,21 +413,21 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
             return self.start.line < line < self.end.line
         return False
 
-    def annotate_covered(self, configuration: Configuration) -> None:
+    def annotate_covered(self, func: Function) -> None:
         """
         Adds the presence condition to all covered regions.
 
         Ignore GAP regions without VaRA instructions.
         """
-        kind = PresenceKind.BECOMES_ACTIVE
         for region in self.iter_breadth_first():
             if region.kind == CodeRegionKind.GAP:
                 assert len(region.vara_instrs) == 0
+                region.presence_condition = func.bdd.false
                 continue
             if region.is_covered():
-                region.presence_conditions[kind].append(
-                    PresenceCondition(kind, configuration)
-                )
+                region.presence_condition = func
+            else:
+                region.presence_condition = func.bdd.false
 
     def is_identical(self, other: object) -> bool:
         """Is the code region equal and has the same coverage?"""
@@ -803,13 +648,13 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         self.tree = FilenameRegionMapping(base_dir=base_dir)
         self.absolute_path = ""
-        self.feature_model: tp.Optional[Expression] = None
+        self.feature_model: tp.Optional[Function] = None
         self.feature_model_xml: str = ""
 
         self.configuration = configuration
         self.base_dir = base_dir
 
-    def combine_features(self, report: CoverageReport) -> None:
+    def combine_features(self, report: CoverageReport) -> CoverageReport:
         """Combine features of report with self."""
         for filename_a, filename_b in zip(self.tree, report.tree):
             assert Path(filename_a).name == Path(filename_b).name
@@ -818,13 +663,14 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             code_region_b = report.tree[filename_b]
 
             code_region_a.combine_features(code_region_b)
+        return self
 
-    def annotate_covered(self, configuration: Configuration) -> None:
+    def annotate_covered(self, func: Function) -> None:
         """Adds the presence condition to all covered code regions."""
 
         for filename in self.tree:
             code_region = self.tree[filename]
-            code_region.annotate_covered(configuration)
+            code_region.annotate_covered(func)
 
     def create_feature_xml(self) -> FeatureXMLWriter:
         """Writes feature model xml text to file."""
@@ -1071,7 +917,7 @@ def cov_segments(
 
 def _cov_segments_file(
     rel_path: Path, base_dir: Path, region: CodeRegion,
-    feature_model: tp.Optional[Expression]
+    feature_model: tp.Optional[Function]
 ) -> SegmentBuffer:
 
     lines: tp.Dict[int, str] = {}
@@ -1277,7 +1123,7 @@ def __feature_text(iterable: tp.Iterable[tp.Iterable[str]]) -> str:
 
 def _cov_segments_function(
     region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer,
-    feature_model: tp.Optional[Expression]
+    feature_model: tp.Optional[Function]
 ) -> SegmentBuffer:
     if not (region.start.line == 1 and region.start.column == 1):
         # Add lines before region.
@@ -1301,7 +1147,7 @@ def _cov_segments_function(
 
 def _cov_segments_function_inner(
     region: CodeRegion, lines: tp.Dict[int, str], buffer: SegmentBuffer,
-    feature_model: tp.Optional[Expression]
+    feature_model: tp.Optional[Function]
 ) -> SegmentBuffer:
 
     # Add childs

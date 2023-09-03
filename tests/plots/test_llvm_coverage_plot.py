@@ -3,8 +3,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import create_autospec
 
-from pyeda.inter import expr
-
 from tests.helper_utils import (
     run_in_test_environment,
     UnitTestFixtures,
@@ -31,9 +29,10 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import RepositoryAtCommit, FullCommitHash
 from varats.utils.settings import save_config, vara_cfg
 from varats.varats.data.reports.llvm_coverage_report import (
-    _minimize_context_check,
+    func_to_str,
+    create_bdd,
     minimize,
-    expr_to_str,
+    _minimize_context_check,
 )
 from varats.varats.plots.llvm_coverage_plot import (
     CoveragePlotGenerator,
@@ -329,7 +328,10 @@ class TestCoveragePlot(unittest.TestCase):
                         # GAP Regions. Are covered, but don't have instructions associated.
                         # Therefore we do not annotate presence conditions to them.
                         self.assertEqual(len(region.vara_instrs), 0)
-                        self.assertEqual(len(region.presence_conditions), 0)
+                        self.assertEqual(
+                            region.presence_condition,
+                            region.presence_condition.bdd.false
+                        )
 
                     if region.start.line == 56 and region.start.column == 29:
                         self.assertEqual(
@@ -572,128 +574,130 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 self.assertEqual(all.FP, 0)
                 self.assertEqual(all.FN, 10)
 
-    def test_expr_to_str(self):
-        self.assertEqual(expr_to_str(expr(True)), "True")
-        self.assertEqual(expr_to_str(expr(False)), "False")
-        self.assertEqual(expr_to_str(expr("A")), "A")
-        self.assertEqual(expr_to_str(expr("~A")), "~A")
-        self.assertEqual(
-            expr_to_str(
-                expr(
-                    "(~compress & enc) | (compress & ~enc) | (compress & enc)"
-                )
-            ), "((compress & enc) | (compress & ~enc) | (enc & ~compress))"
+    def test_func_to_str(self):
+        bdd = create_bdd()
+        self.assertEqual(func_to_str(bdd.true), "True")
+        self.assertEqual(func_to_str(bdd.false), "False")
+        bdd.declare("A")
+        self.assertEqual(func_to_str(bdd.add_expr("A")), "A")
+        self.assertEqual(func_to_str(bdd.add_expr("~A")), "~A")
+        bdd.declare("compress", "enc")
+        expr = bdd.add_expr(
+            "(~compress & enc) | (compress & ~enc) | (compress & enc)"
         )
+        self.assertEqual(func_to_str(expr), "(compress | enc)")
 
     def test_presence_condition_simplification_1(self):
-        feature_model = expr(
+        bdd = create_bdd()
+        bdd.declare("compress", "enc")
+
+        feature_model = bdd.add_expr(
             "(~compress & enc) | (compress & ~enc) | (compress & enc)"
         )
-        expression = expr(
+        expression = bdd.add_expr(
             "(~compress & enc) | (compress & ~enc) | (compress & enc)"
         )
-        self.assertEqual(minimize(expression, feature_model), expr(True))
-        expression = expr("(compress & enc)")
+        self.assertEqual(minimize(expression, feature_model), bdd.true)
+        expression = bdd.add_expr("(compress & enc)")
         self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "(compress & enc)"
+            func_to_str(minimize(expression, feature_model)), "(compress & enc)"
         )
 
     def test_presence_condition_simplification_2(self):
-        feature_model = expr(
+        bdd = create_bdd()
+        bdd.declare("compress", "enc")
+        feature_model = bdd.add_expr(
             "(~compress & ~enc) | (~compress & enc) | (compress & ~enc) | (compress & enc)"
         )
-        expression = expr(
+        expression = bdd.add_expr(
             "(~compress & enc) | (compress & ~enc) | (compress & enc)"
         )
         self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "(compress | enc)"
+            func_to_str(minimize(expression, feature_model)), "(compress | enc)"
         )
-        feature_model = expr(True)
+        feature_model = bdd.add_expr("True")
         self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "(compress | enc)"
+            func_to_str(minimize(expression, feature_model)), "(compress | enc)"
         )
 
     def test_presence_condition_simplification_3(self):
-        feature_model = expr(False)
-        expression = expr(
+        bdd = create_bdd()
+        bdd.declare("compress", "enc")
+
+        feature_model = bdd.false
+        expression = bdd.add_expr(
             "(~compress & enc) | (compress & ~enc) | (compress & enc)"
         )
-        self.assertEqual(minimize(expression, feature_model), expr(False))
-        expression = expr(False)
-        self.assertEqual(minimize(expression, feature_model), expr(False))
-        expression = expr(True)
-        self.assertEqual(minimize(expression, feature_model), expr(True))
+        self.assertEqual(minimize(expression, feature_model), bdd.false)
+        expression = bdd.false
+        self.assertEqual(minimize(expression, feature_model), bdd.false)
+        expression = bdd.true
+        self.assertEqual(minimize(expression, feature_model), bdd.true)
 
     def test_presence_condition_simplification_4(self):
-        feature_model = None
-        expression = expr(
-            "(~compress & enc) | (compress & ~enc) | (compress & enc)"
-        )
-        self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "(compress | enc)"
-        )
-        expression = expr(False)
-        self.assertEqual(minimize(expression, feature_model), expr(False))
-        expression = expr(True)
-        self.assertEqual(minimize(expression, feature_model), expr(True))
+        bdd = create_bdd()
+        bdd.declare("compress", "enc")
 
-    def test_presence_condition_simplification_5(self):
-        feature_model = expr(
+        feature_model = bdd.add_expr(
             "((compress & enc) | (compress & ~enc) | (enc & ~compress) | (~compress & ~enc))"
         )
-        expression = ((((expr(True) & expr("enc")) & expr("compress")) |
-                       expr(False)) |
-                      ((expr(True) & expr("compress") & expr("~enc"))))
+        enc = bdd.var("enc")
+        compress = bdd.var("compress")
+        expression = ((((bdd.true & enc) & compress) | bdd.false) |
+                      ((bdd.true & compress & ~enc)))
         self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "compress"
+            func_to_str(minimize(expression, feature_model)), "compress"
+        )
+
+    def test_presence_condition_simplification_5(self):
+        bdd = create_bdd()
+        bdd.declare("slow", "header")
+
+        feature_model = bdd.add_expr(
+            "(slow & header) | (~slow & header) | (slow & ~header) | (~slow & ~header)"
+        )
+        expression = bdd.add_expr("(slow & header) | (slow & ~header)")
+        self.assertEqual(
+            func_to_str(minimize(expression, feature_model)), "slow"
+        )
+        feature_model = bdd.true
+        self.assertEqual(
+            func_to_str(minimize(expression, feature_model)), "slow"
+        )
+        feature_model = bdd.add_expr(
+            "(header & slow) | (~header & slow) | (header & ~slow) | (~header & ~slow)"
+        )
+        expression = bdd.add_expr("(header & slow) | (~header & slow)")
+        self.assertEqual(
+            func_to_str(minimize(expression, feature_model)), "slow"
+        )
+        feature_model = bdd.true
+        self.assertEqual(
+            func_to_str(minimize(expression, feature_model)), "slow"
         )
 
     def test_presence_condition_simplification_6(self):
-        feature_model = expr(
-            "(slow & header) | (~slow & header) | (slow & ~header) | (~slow & ~header)"
-        )
-        expression = expr("(slow & header) | (slow & ~header)")
-        self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "slow"
-        )
-        feature_model = expr(True)
-        self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "slow"
-        )
-        feature_model = expr(
-            "(header & slow) | (~header & slow) | (header & ~slow) | (~header & ~slow)"
-        )
-        expression = expr("(header & slow) | (~header & slow)")
-        self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "slow"
-        )
-        feature_model = expr(True)
-        self.assertEqual(
-            expr_to_str(minimize(expression, feature_model)), "slow"
+        bdd = create_bdd()
+        bdd.declare(
+            "decompress", "compress", "list", "test", "_6", "_9", "_3", "_0"
         )
 
-    def test_presence_condition_simplification_7(self):
-        before = expr(
-            "((___6 & ~decompress & test & ~compress & ~list) | (___6 & decompress & ~compress & ~list & test))"
+        before = bdd.add_expr(
+            "((_6 & ~decompress & test & ~compress & ~list) | (_6 & decompress & ~compress & ~list & test))"
         )
-        after = expr("(___6 & test & ~compress & ~list)")
-        self.assertTrue(before.equivalent(after))
+        after = bdd.add_expr("(_6 & test & ~compress & ~list)")
+        self.assertTrue(before.equiv(after))
 
-        self.assertTrue(minimize(before).equivalent(after))
-        feature_model = minimize(
-            expr(
-                "(~test & compress & ~decompress & ~list & ___9) | (~test & ~compress & ~decompress & list & ___6) | (test & ~compress & ~decompress & ~list & ___6) | (~test &~compress & decompress & ~list & ___6) | (test & ~compress & decompress & ~list & ___6) | (~test & compress & ~decompress & ~list & ___6) | (~test & compress & ~decompress & ~list & ___3) | (~test & compress & ~decompress & ~list & ___0)"
-            )
+        feature_model = bdd.add_expr(
+            "(~test & compress & ~decompress & ~list & _9) | (~test & ~compress & ~decompress & list & _6) | (test & ~compress & ~decompress & ~list & _6) | (~test &~compress & decompress & ~list & _6) | (test & ~compress & decompress & ~list & _6) | (~test & compress & ~decompress & ~list & _6) | (~test & compress & ~decompress & ~list & _3) | (~test & compress & ~decompress & ~list & _0)"
         )
         result = minimize(before, feature_model)
-        self.assertTrue(
-            _minimize_context_check(result, before,
-                                    feature_model).equivalent(expr(True))
+        self.assertEqual(
+            _minimize_context_check(result, before, feature_model), bdd.true
         )
         result = minimize(after, feature_model)
-        self.assertTrue(
-            _minimize_context_check(result, after,
-                                    feature_model).equivalent(expr(True))
+        self.assertEqual(
+            _minimize_context_check(result, after, feature_model), bdd.true
         )
 
     @run_in_test_environment(UnitTestFixtures.RESULT_FILES)
@@ -702,7 +706,77 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
             TEST_INPUTS_DIR
         ) / "results" / "xz" / "ReducedFeatureModel.xml"
         feature_model = _extract_feature_model_formula(feature_model_formula)
+
         print(feature_model)
+
+    def test_bdd(self):
+        from dd.autoref import BDD as AutoBDD
+        from dd.cudd import restrict, BDD
+        bdd = BDD()
+        a = bdd.true
+        b = a.bdd.add_expr("False")
+        self.assertTrue(a == a.bdd.add_expr("True"))
+        self.assertTrue(b == b.bdd.false)
+        self.assertEqual(a | b, a)
+        self.assertEqual(a & b, b)
+
+        bdd.declare("x1", "x2", "x3", "x4")
+        x1 = bdd.var("x1")
+        x2 = bdd.var("x2")
+        x3 = bdd.var("x3")
+        x4 = bdd.var("x4")
+        fc = x1 & x2
+        self.assertEqual(fc, x2 & x1)
+        result = restrict(fc, x1)
+        self.assertEqual(result, x2)
+        _f = (x2 & (x1.equiv(x3.implies(x4)
+                            ))) | ~(x2 | ((x4.implies(x1)) & (x1 | x3)))
+        _c = (x1 & ~x2 & x3 & x4) | (x2 & (x3.equiv(x4)))
+        f = bdd.add_expr(
+            "(x2 & (x1 <=> (x3 => x4))) | ~(x2 | ((x4 => x1) & (x1 | x3)))"
+        )
+        c = bdd.add_expr("(~x2 & x3 & x4 & x1) | (x2 & (x3 <=> x4))")
+        self.assertEqual(f, _f)
+        self.assertEqual(c, _c)
+        result = restrict(f, c)
+        auto = AutoBDD()
+        auto.declare(*bdd.vars)
+        x = bdd.copy(result, auto)
+        y = x.to_expr()
+        y = list(auto.pick_iter(x))
+        self.assertEqual(result, fc)
+
+    @unittest.skip("Not used")
+    def test_omega(self):
+        from omega.symbolic.fol import Context
+        bdd = Context()
+        a = bdd.true
+        b = a.bdd.add_expr("False")
+        self.assertTrue(a == a.bdd.add_expr("True"))
+        self.assertTrue(b == b.bdd.false)
+        self.assertEqual(a | b, a)
+        self.assertEqual(a & b, b)
+
+        bdd.declare(x1=(0, 1), x2=(0, 1), x3=(0, 1), x4=(0, 1))
+        """x1 = bdd.var("x1")
+        x2 = bdd.var("x2")
+        x3 = bdd.var("x3")
+        x4 = bdd.var("x4")
+        fc = x1 & x2
+        self.assertEqual(fc, x2 & x1)
+        result = restrict(fc, x1)
+        self.assertEqual(result, x2)
+        _f = (x2 & (x1.equiv(x3.implies(x4)
+                            ))) | ~(x2 | ((x4.implies(x1)) & (x1 | x3)))
+        _c = (x1 & ~x2 & x3 & x4) | (x2 & (x3.equiv(x4)))"""
+        f = bdd.add_expr(
+            "(x2=1 & (x1=1 <=> (x3=1 => x4=1))) | ~(x2=1 | ((x4=1 => x1=1) & (x1=1 | x3=1)))"
+        )
+        c = bdd.add_expr("(x2=0 & x3=1 & x4=1) | (x2=1 & (x3=1 <=> x4=1))")
+        #self.assertEqual(f, _f)
+        #self.assertEqual(c, _c)
+        result = bdd.to_expr(f, c, comment=False)
+        self.assertEqual(result, "fc")
 
     def test_pyeda(self):
         from pyeda.inter import (

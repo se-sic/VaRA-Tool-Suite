@@ -10,11 +10,13 @@ from collections import defaultdict
 from concurrent.futures import Executor, ProcessPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import reduce, cache
 from pathlib import Path
 
 import pandas as pd
+from dd.autoref import Function
+from dd.cudd import BDD
 from plumbum import local, ProcessExecutionError
-from pyeda.inter import Expression, expr, exprvar, And, Or  # type: ignore
 
 from varats.base.configuration import (
     Configuration,
@@ -26,8 +28,8 @@ from varats.data.reports.llvm_coverage_report import (
     CoverageReport,
     cov_segments,
     cov_show_segment_buffer,
+    create_bdd,
     FileSegmentBufferMapping,
-    minimize,
 )
 from varats.experiment.experiment_util import ZippedReportFolder
 from varats.mapping.configuration_map import ConfigurationMap
@@ -64,7 +66,9 @@ def _init_process() -> None:
     gc.enable()
 
 
-__EXECUTOR: tp.Optional[Executor] = None
+@cache
+def _process_executor() -> ProcessPoolExecutor:
+    return ProcessPoolExecutor(initializer=_init_process)
 
 
 def optimized_map(
@@ -79,17 +83,11 @@ def optimized_map(
     if todo_len <= 1 or count == 1:
         return map(func, todo)
 
-    global __EXECUTOR
-    if __EXECUTOR is None:
-        __EXECUTOR = ProcessPoolExecutor(
-            max_workers=min(todo_len, count), initializer=_init_process
-        )
-    result = __EXECUTOR.map(
+    executor = _process_executor()
+    result = executor.map(
         func,
         todo,
         timeout=TIMEOUT_SECONDS * (todo_len / count),
-        chunksize=max(1,
-                      int((todo_len / count) * 0.1) + 1)
     )
     return result
 
@@ -233,7 +231,7 @@ def _extract_feature_option_mapping(
     return json.loads(output)  # type: ignore [no-any-return]
 
 
-def __parse_dnf_str_to_expr(dnf: str) -> Expression:
+def __parse_dnf_str_to_func(dnf: str, bdd: BDD) -> Function:
     or_parts = dnf.split("|")
     ands = []
     for and_str in or_parts:
@@ -242,17 +240,22 @@ def __parse_dnf_str_to_expr(dnf: str) -> Expression:
         for var_str in and_parts:
             var = var_str.strip().split("~")
             if len(var) == 1:
-                and_expr.append(exprvar(var[0]))
+                bdd.declare(var[0])
+                variable = bdd.var(var[0])
+                and_expr.append(variable)
             elif len(var) == 2 and var[0] == "":
-                and_expr.append(~exprvar(var[1]))
+                bdd.declare(var[1])
+                variable = bdd.var(var[1])
+                and_expr.append(~variable)
             else:
                 raise ValueError(f"Invalid variable: {var}")
-        ands.append(And(*and_expr))
+        ands.append(reduce(lambda x, y: x & y, and_expr))
 
-    return Or(*ands)
+    return reduce(lambda x, y: x | y, ands)
 
 
-def _extract_feature_model_formula(xml_file: Path) -> Expression:
+def _extract_feature_model_formula(xml_file: Path) -> Function:
+    bdd = create_bdd()
     with local.cwd(Path(__file__).parent.parent.parent.parent):
         try:
             output = local["myscripts/feature_model_formula.py"](
@@ -261,15 +264,25 @@ def _extract_feature_model_formula(xml_file: Path) -> Expression:
         except ProcessExecutionError as err:
             # vara-feature probably not installed
             print(err)
-            return expr(True)
+            return bdd.true
 
-    expression = __parse_dnf_str_to_expr(output)
-    if not expression.is_dnf():
-        raise ValueError("Feature model is not in DNF!")
-    if expression.equivalent(expr(False)):
+    func = __parse_dnf_str_to_func(output, bdd)
+    if func == bdd.false:
         raise ValueError("Feature model equals false!")
-    expression = minimize(expression)
-    return expression
+    return func
+
+
+def _config_to_func(config: Configuration) -> Function:
+    bdd = create_bdd()
+    func = bdd.true
+    for option in config.options():
+        bdd.declare(option.name)
+        var = bdd.var(option.name)
+        if option.value:
+            func &= var
+        else:
+            func &= ~var
+    return func
 
 
 def _annotate_covered(
@@ -291,7 +304,7 @@ def _annotate_covered(
                     continue
             configuration.set_config_option(option, False)
 
-    report.annotate_covered(configuration)
+    report.annotate_covered(_config_to_func(configuration))
 
     return report
 
@@ -307,9 +320,10 @@ class CoverageReports:
             raise ValueError("No reports given!")
 
         self.available_features = frozenset(available_features(reports))
-        self._feature_model: tp.Optional[Expression] = None
+        self._feature_model: tp.Optional[Function] = None
         self._feature_option_mapping: tp.Optional[tp.Dict[str,
                                                           tp.Set[str]]] = None
+        self._feature_report: tp.Optional[CoverageReport] = None
 
         # Check all reports have same feature model
         self._reports = reports
@@ -324,7 +338,7 @@ class CoverageReports:
         to_process = [(report, self.available_features, feature_option_mapping)
                       for report in reports]
 
-        self._reports = list(optimized_map(
+        self._reports = list(map(
             _annotate_covered,
             to_process,
         ))
@@ -366,7 +380,7 @@ class CoverageReports:
         self._feature_option_mapping = self.__bidirectional_map(mapping)
         return self._feature_option_mapping
 
-    def feature_model(self) -> Expression:
+    def feature_model(self) -> Function:
         """Returns feature model for coverage reports."""
         if self._feature_model is not None:
             return self._feature_model
@@ -378,13 +392,18 @@ class CoverageReports:
 
     def feature_report(self) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
+        if self._feature_report is not None:
+            return self._feature_report
 
-        result = deepcopy(self._reference)
+        #result = self._reference
+        #result.feature_model = self.feature_model()
+        #for report in self._reports[1:]:
+        #    result.combine_features(report)
+
+        result = reduce(lambda x, y: x.combine_features(y), self._reports)
         result.feature_model = self.feature_model()
-        for report in self._reports[1:]:
-            result.combine_features(report)
-
-        return result
+        self._feature_report = result
+        return self._feature_report
 
     def feature_segments(self, base_dir: Path) -> FileSegmentBufferMapping:
         """Returns segments annotated with corresponding feature
