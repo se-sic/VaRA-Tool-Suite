@@ -1,6 +1,7 @@
 """Module for the FeaturePerfPrecision plots."""
 import random
 import typing as tp
+from itertools import chain
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -175,7 +176,10 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         # -- Configure plot --
         plot_metric = [("Time", "overhead_time_rel"),
                        ("Memory", "overhead_memory_rel"),
-                       ("Major Page Faults", "overhead_major_page_faults_rel")]
+                       ("Major Page Faults", "overhead_major_page_faults_rel"),
+                       ("Minor Page Faults", "overhead_minor_page_faults_rel"),
+                       ("Filesystem Inputs", "overhead_fs_inputs_rel"),
+                       ("Filesystem Outputs", "overhead_fs_outputs_rel")]
         target_row = "f1_score"
         # target_row = "precision"
 
@@ -211,6 +215,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                                                    np.nan,
                                                    inplace=True)
 
+        # Page faults
         overhead_df['overhead_major_page_faults_rel'
                    ] = overhead_df['major_page_faults'] / (
                        overhead_df['major_page_faults'] -
@@ -222,6 +227,32 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         # TODO: fix
         overhead_df["overhead_major_page_faults_rel"].fillna(100, inplace=True)
 
+        overhead_df['overhead_minor_page_faults_rel'
+                   ] = overhead_df['minor_page_faults'] / (
+                       overhead_df['minor_page_faults'] -
+                       overhead_df['overhead_minor_page_faults']
+                   ) * 100
+        overhead_df['overhead_minor_page_faults_rel'].replace([np.inf, -np.inf],
+                                                              np.nan,
+                                                              inplace=True)
+        # TODO: fix
+        overhead_df["overhead_minor_page_faults_rel"].fillna(100, inplace=True)
+
+        # Filesystem
+        overhead_df['overhead_fs_inputs_rel'] = overhead_df['fs_inputs'] / (
+            overhead_df['fs_inputs'] - overhead_df['overhead_fs_inputs']
+        ) * 100
+        overhead_df['overhead_fs_inputs_rel'].replace([np.inf, -np.inf],
+                                                      np.nan,
+                                                      inplace=True)
+
+        overhead_df['overhead_fs_outputs_rel'] = overhead_df['fs_outputs'] / (
+            overhead_df['fs_outputs'] - overhead_df['overhead_fs_outputs']
+        ) * 100
+        overhead_df['overhead_fs_outputs_rel'].replace([np.inf, -np.inf],
+                                                       np.nan,
+                                                       inplace=True)
+
         print(f"other_df=\n{overhead_df}")
 
         merged_df = pd.merge(
@@ -231,8 +262,9 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         # print(f"{self.plot_config.width()}")
 
+        rows = 3
         _, axes = plt.subplots(
-            ncols=len(plot_metric), nrows=1, figsize=(30, 10)
+            ncols=int(len(plot_metric) / rows), nrows=rows, figsize=(30, 10)
         )
 
         if len(plot_metric) == 1:
@@ -241,7 +273,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 axes
             )
         else:
-            for idx, ax in enumerate(axes):
+            for idx, ax in enumerate(list(chain.from_iterable(axes))):
                 self.do_single_plot(
                     plot_metric[idx][1], target_row, merged_df,
                     plot_metric[idx][0], ax
@@ -274,12 +306,25 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 text_obj.set_text("Subject Systems")
                 text_obj.set_fontweight("bold")
 
-        ax.set_xlabel(f"{plot_extra_name} Overhead in %")
+        ax.set_xlabel(f"Relative {plot_extra_name}")
         if target_row == "f1_score":
             ax.set_ylabel("F1-Score")
 
         ax.set_ylim(0.0, 1.02)
-        ax.set_xlim(np.max(merged_df[x_values]) + 20, 100)
+        # Sets the limit at least to 150 or otherwise to the largest non
+        # inf/nan value
+        x_limit = max(
+            np.max(
+                np.nan_to_num(
+                    merged_df[x_values],
+                    copy=True,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0
+                )
+            ) + 20, 120
+        )
+        ax.set_xlim(x_limit, 100)
         ax.xaxis.label.set_size(20)
         ax.yaxis.label.set_size(20)
         ax.tick_params(labelsize=15)

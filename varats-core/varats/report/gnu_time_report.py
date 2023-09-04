@@ -91,7 +91,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                     )
                     continue
 
-                if line.startswith("File system inputs"):
+                if line.startswith("File system outputs"):
                     self.__filesystem_io = (
                         self.__filesystem_io[0],
                         TimeReport._parse_filesystem_io(line)
@@ -335,6 +335,14 @@ class TimeReportAggregate(
     @property
     def major_page_faults(self) -> tp.List[int]:
         return [report.major_page_faults for report in self.reports()]
+
+    @property
+    def minor_page_faults(self) -> tp.List[int]:
+        return [report.minor_page_faults for report in self.reports()]
+
+    @property
+    def filesystem_io(self) -> tp.List[tp.Tuple[int, int]]:
+        return [report.filesystem_io for report in self.reports()]
 
     @property
     def summary(self) -> str:

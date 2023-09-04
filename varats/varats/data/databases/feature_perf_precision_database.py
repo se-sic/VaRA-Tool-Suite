@@ -467,12 +467,18 @@ class OverheadData:
 
     def __init__(
         self, profiler, mean_time: tp.Dict[int, float],
-        mean_memory: tp.Dict[int, float], major_page_faults: tp.Dict[int, float]
+        mean_memory: tp.Dict[int, float], major_page_faults: tp.Dict[int,
+                                                                     float],
+        minor_page_faults: tp.Dict[int, float], fs_inputs: tp.Dict[int, float],
+        fs_outputs: tp.Dict[int, float]
     ) -> None:
         self.__profiler = profiler
         self.__mean_time: tp.Dict[int, float] = mean_time
         self.__mean_memory: tp.Dict[int, float] = mean_memory
         self.__mean_major_page_faults: tp.Dict[int, float] = major_page_faults
+        self.__mean_minor_page_faults: tp.Dict[int, float] = minor_page_faults
+        self.__mean_fs_inputs: tp.Dict[int, float] = fs_inputs
+        self.__mean_fs_outputs: tp.Dict[int, float] = fs_outputs
 
     def mean_time(self) -> float:
         return float(np.mean(list(self.__mean_time.values())))
@@ -482,6 +488,15 @@ class OverheadData:
 
     def mean_major_page_faults(self) -> float:
         return float(np.mean(list(self.__mean_major_page_faults.values())))
+
+    def mean_minor_page_faults(self) -> float:
+        return float(np.mean(list(self.__mean_minor_page_faults.values())))
+
+    def mean_fs_inputs(self) -> float:
+        return float(np.mean(list(self.__mean_fs_inputs.values())))
+
+    def mean_fs_outputs(self) -> float:
+        return float(np.mean(list(self.__mean_fs_outputs.values())))
 
     def config_wise_time_diff(self,
                               other: 'OverheadData') -> tp.Dict[int, float]:
@@ -496,6 +511,25 @@ class OverheadData:
     ) -> tp.Dict[int, float]:
         return self.__config_wise(
             self.__mean_major_page_faults, other.__mean_major_page_faults
+        )
+
+    def config_wise_minor_page_faults_diff(
+        self, other: 'OverheadData'
+    ) -> tp.Dict[int, float]:
+        return self.__config_wise(
+            self.__mean_minor_page_faults, other.__mean_minor_page_faults
+        )
+
+    def config_wise_fs_inputs_diff(
+        self, other: 'OverheadData'
+    ) -> tp.Dict[int, float]:
+        return self.__config_wise(self.__mean_fs_inputs, other.__mean_fs_inputs)
+
+    def config_wise_fs_outputs_diff(
+        self, other: 'OverheadData'
+    ) -> tp.Dict[int, float]:
+        return self.__config_wise(
+            self.__mean_fs_outputs, other.__mean_fs_outputs
         )
 
     @staticmethod
@@ -519,6 +553,9 @@ class OverheadData:
         mean_time: tp.Dict[int, float] = {}
         mean_memory: tp.Dict[int, float] = {}
         mean_major_page_faults: tp.Dict[int, float] = {}
+        mean_minor_page_faults: tp.Dict[int, float] = {}
+        mean_fs_inputs: tp.Dict[int, float] = {}
+        mean_fs_outputs: tp.Dict[int, float] = {}
 
         for config_id in case_study.get_config_ids_for_revision(rev):
             report_files = get_processed_revisions_files(
@@ -548,6 +585,15 @@ class OverheadData:
             mean_major_page_faults[config_id] = float(
                 np.mean(time_report.major_page_faults)
             )
+            mean_minor_page_faults[config_id] = float(
+                np.mean(time_report.minor_page_faults)
+            )
+            mean_fs_inputs[config_id] = float(
+                np.mean([io[0] for io in time_report.filesystem_io])
+            )
+            mean_fs_outputs[config_id] = float(
+                np.mean([io[1] for io in time_report.filesystem_io])
+            )
         if not mean_time:
             print(
                 f"Case study for project {case_study.project_name} had "
@@ -557,7 +603,8 @@ class OverheadData:
 
         # print(f"{mean_time=}")
         return OverheadData(
-            profiler, mean_time, mean_memory, mean_major_page_faults
+            profiler, mean_time, mean_memory, mean_major_page_faults,
+            mean_minor_page_faults, mean_fs_inputs, mean_fs_outputs
         )
 
 
@@ -634,9 +681,15 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
             'time': overhead_ground_truth.mean_time(),
             'memory': overhead_ground_truth.mean_memory(),
             'major_page_faults': overhead_ground_truth.mean_major_page_faults(),
+            'minor_page_faults': overhead_ground_truth.mean_minor_page_faults(),
+            'fs_inputs': overhead_ground_truth.mean_fs_inputs(),
+            'fs_outputs': overhead_ground_truth.mean_fs_outputs(),
             'overhead_time': 0,
             'overhead_memory': 0,
-            'overhead_major_page_faults': 0
+            'overhead_major_page_faults': 0,
+            'overhead_minor_page_faults': 0,
+            'overhead_fs_inputs': 0,
+            'overhead_fs_outputs': 0
         }
 
         table_rows.append(new_row)
@@ -658,6 +711,15 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
                 major_page_faults_diff = profiler_overhead.config_wise_major_page_faults_diff(
                     overhead_ground_truth
                 )
+                minor_page_faults_diff = profiler_overhead.config_wise_minor_page_faults_diff(
+                    overhead_ground_truth
+                )
+                fs_inputs_diff = profiler_overhead.config_wise_fs_inputs_diff(
+                    overhead_ground_truth
+                )
+                fs_outputs_diff = profiler_overhead.config_wise_fs_outputs_diff(
+                    overhead_ground_truth
+                )
 
                 new_row['time'] = profiler_overhead.mean_time()
                 new_row['overhead_time'] = np.mean(list(time_diff.values()))
@@ -670,6 +732,22 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
                 new_row['overhead_major_page_faults'] = np.mean(
                     list(major_page_faults_diff.values())
                 )
+
+                new_row['minor_page_faults'
+                       ] = profiler_overhead.mean_minor_page_faults()
+                new_row['overhead_minor_page_faults'] = np.mean(
+                    list(minor_page_faults_diff.values())
+                )
+
+                new_row['fs_inputs'] = profiler_overhead.mean_fs_inputs()
+                new_row['overhead_fs_inputs'] = np.mean(
+                    list(fs_inputs_diff.values())
+                )
+
+                new_row['fs_outputs'] = profiler_overhead.mean_fs_outputs()
+                new_row['overhead_fs_outputs'] = np.mean(
+                    list(fs_outputs_diff.values())
+                )
             else:
                 new_row['time'] = np.nan
                 new_row['overhead_time'] = np.nan
@@ -679,6 +757,15 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
 
                 new_row['major_page_faults'] = np.nan
                 new_row['overhead_major_page_faults'] = np.nan
+
+                new_row['minor_page_faults'] = np.nan
+                new_row['overhead_minor_page_faults'] = np.nan
+
+                new_row['fs_inputs'] = np.nan
+                new_row['overhead_fs_inputs'] = np.nan
+
+                new_row['fs_outputs'] = np.nan
+                new_row['overhead_fs_outputs'] = np.nan
 
             table_rows.append(new_row)
 
