@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import csv
+import gc
 import json
+import os
 import shutil
 import string
 import typing as tp
 from collections import deque, defaultdict
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import Enum
 from functools import cache
@@ -27,6 +30,55 @@ from varats.report.report import BaseReport
 
 TAB_SIZE = 8
 CUTOFF_LENGTH = 80
+
+TIMEOUT_SECONDS = 30
+
+_IN = tp.TypeVar("_IN")
+_OUT = tp.TypeVar("_OUT")
+
+
+def _init_process() -> None:
+    from signal import SIGTERM  # pylint: disable=import-outside-toplevel
+
+    from pyprctl import set_pdeathsig  # pylint: disable=import-outside-toplevel
+
+    set_pdeathsig(SIGTERM)
+    gc.enable()
+
+
+@cache
+def _process_executor() -> ProcessPoolExecutor:
+    return ProcessPoolExecutor(initializer=_init_process)
+
+
+@cache
+def _thread_executor() -> ThreadPoolExecutor:
+    return ThreadPoolExecutor()
+
+
+def optimized_map(
+    func: tp.Callable[[_IN], _OUT],
+    iterable: tp.Iterable[tp.Any],
+    count: int = os.cpu_count() or 1,
+    threads: bool = False,
+) -> tp.Iterable[_OUT]:
+    """Optimized map function."""
+
+    todo = list(iterable)
+    todo_len = len(todo)
+    if todo_len <= 1 or count == 1:
+        return map(func, todo)
+
+    if threads:
+        executor = _thread_executor()
+    else:
+        executor = _process_executor()
+    result = executor.map(
+        func,
+        todo,
+        timeout=TIMEOUT_SECONDS * (todo_len / count),
+    )
+    return result
 
 
 def expr_to_str(expression: Expression) -> str:
@@ -244,7 +296,10 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
         self, feature_model: tp.Optional[Function] = None
     ) -> str:
         """Returns presence conditions."""
-        if self.presence_condition is None or self.presence_condition == self.presence_condition.bdd.false:
+        if (
+            self.presence_condition is None or
+            self.presence_condition == self.presence_condition.bdd.false
+        ):
             return ""
         if feature_model is not None:
             return "+" + func_to_str(
@@ -900,19 +955,30 @@ def cov_segments(
     base_dir: Path,
 ) -> FileSegmentBufferMapping:
     """Returns the all segments for this report."""
-    file_segments_mapping = {}
-    for file in list(report.tree):
+    files = list(report.tree)
+    to_process = []
+    for file in files:
         region = report.tree[file]
         path = Path(file)
-        file_segments_mapping[file] = _cov_segments_file(
-            path,
-            base_dir,
-            region,
-            feature_model=report.feature_model
-            if report.feature_model is not None else None
-        )
+        feature_model = report.feature_model
+        to_process.append((region, path, base_dir, feature_model))
+
+    processed = list(
+        optimized_map(_cov_segments_file_wrapper, to_process, threads=True)
+    )
+    assert len(files) == len(processed)
+
+    file_segments_mapping = {}
+
+    for file, segments in zip(files, processed):
+        file_segments_mapping[file] = segments
 
     return file_segments_mapping
+
+
+def _cov_segments_file_wrapper(args: tp.Any):
+    region, path, base_dir, feature_model = args
+    return _cov_segments_file(path, base_dir, region, feature_model)
 
 
 def _cov_segments_file(

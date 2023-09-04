@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import gc
 import json
-import os
 import typing as tp
 from collections import defaultdict
-from concurrent.futures import Executor, ProcessPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
-from functools import reduce, cache
+from functools import reduce
 from pathlib import Path
 
 import pandas as pd
@@ -30,6 +28,8 @@ from varats.data.reports.llvm_coverage_report import (
     cov_show_segment_buffer,
     create_bdd,
     FileSegmentBufferMapping,
+    optimized_map,
+    TIMEOUT_SECONDS,
 )
 from varats.experiment.experiment_util import ZippedReportFolder
 from varats.mapping.configuration_map import ConfigurationMap
@@ -49,47 +49,8 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
-TIMEOUT_SECONDS = 30
 ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
-
-_IN = tp.TypeVar("_IN")
-_OUT = tp.TypeVar("_OUT")
-
-
-def _init_process() -> None:
-    from signal import SIGTERM
-
-    from pyprctl import set_pdeathsig
-
-    set_pdeathsig(SIGTERM)
-    gc.enable()
-
-
-@cache
-def _process_executor() -> ProcessPoolExecutor:
-    return ProcessPoolExecutor(initializer=_init_process)
-
-
-def optimized_map(
-    func: tp.Callable[[_IN], _OUT],
-    iterable: tp.Iterable[tp.Any],
-    count: int = os.cpu_count() or 1
-) -> tp.Iterable[_OUT]:
-    """Optimized map function."""
-
-    todo = list(iterable)
-    todo_len = len(todo)
-    if todo_len <= 1 or count == 1:
-        return map(func, todo)
-
-    executor = _process_executor()
-    result = executor.map(
-        func,
-        todo,
-        timeout=TIMEOUT_SECONDS * (todo_len / count),
-    )
-    return result
 
 
 def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
