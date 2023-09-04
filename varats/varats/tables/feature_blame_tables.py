@@ -9,6 +9,7 @@ from varats.plots.feature_blame_plots import (
     get_structural_feature_data_for_case_study,
     get_commit_dataflow_data_for_case_study,
     get_feature_dataflow_data_for_case_study,
+    get_feature_author_data_for_case_study,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -32,6 +33,10 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
             get_structural_feature_data_for_case_study(case_study)
             for case_study in case_studies
         ]
+        projects_data_authors = [
+            get_feature_author_data_for_case_study(case_study)
+            for case_study in case_studies
+        ]
 
         rows = [[
             "Average Number of Features Changed for Commits"
@@ -41,18 +46,23 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
             "Fraction Commits Changing More Than One Feature"
         ], [
             "Correlation Between Feature Size and Number of Interacting Commits"
-        ]]
+        ],
+                [
+                    "Correlation Between Feature Size and Number of Implementing Authors"
+                ]]
 
-        for data_commits, data_features in zip(
-            projects_data_commits, projects_data_features
+        for data_commits, data_features, data_authors in zip(
+            projects_data_commits, projects_data_features, projects_data_authors
         ):
 
+            row_access_it = iter(range(0, len(rows)))
             data_commits_num_interacting_features = data_commits[
                 'num_interacting_features']
             commit_average_number_of_features_changed = np.mean(
                 data_commits_num_interacting_features
             )
-            rows[0].append(commit_average_number_of_features_changed)
+            rows[next(row_access_it)
+                ].append(commit_average_number_of_features_changed)
 
             # filtering outliers (3.5 * variance) times greater number of interacting features than the mean
             data_commits_outliers_filtered = data_commits_num_interacting_features[
@@ -63,7 +73,7 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
             commit_average_number_of_features_changed_outliers_filtered = np.mean(
                 data_commits_outliers_filtered
             )
-            rows[1].append(
+            rows[next(row_access_it)].append(
                 commit_average_number_of_features_changed_outliers_filtered
             )
 
@@ -71,25 +81,35 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
                 data_commits_num_interacting_features.loc[
                     data_commits_num_interacting_features > 1]
             ) / len(data_commits_num_interacting_features)
-            rows[2].append(fraction_commits_changing_more_than_one_feature)
+            rows[next(row_access_it)
+                ].append(fraction_commits_changing_more_than_one_feature)
 
             feature_correlation_between_size_num_interacting_commits = np.corrcoef(
                 data_features['num_interacting_commits'],
                 data_features['feature_size']
             )[0][1]
-            rows[3].append(
+            rows[next(row_access_it)].append(
                 feature_correlation_between_size_num_interacting_commits
             )
 
-        # calc overall mean for each row
+            feature_correlation_between_size_num_implementing_authors = np.corrcoef(
+                data_authors['num_implementing_authors'],
+                data_authors['feature_size']
+            )[0][1]
+            rows[next(row_access_it)].append(
+                feature_correlation_between_size_num_implementing_authors
+            )
+
+        # calc overall mean and variance for each row
         for i in range(0, len(rows)):
-            rows[i].append(np.mean(rows[i][1:]))
+            row = rows[i][1:]
+            rows[i].extend([np.mean(row), np.var(row)])
 
         df = pd.DataFrame(
             rows,
             columns=['Projects'] +
             [case_study.project_name for case_study in case_studies] +
-            ['Overall Mean']
+            ['Overall Mean', 'Variance']
         )
 
         kwargs: tp.Dict[str, tp.Any] = {}
@@ -165,13 +185,14 @@ class DFBREvalTable(Table, table_name="dfbr_eval_table"):
             projects_data_commits, projects_data_features
         ):
 
+            rows_access_it = iter(range(0, len(rows)))
             commits_not_part_of_feature = data_commits.loc[
                 data_commits['part_of_feature'] == 0]
 
             avg_not_part_of_feature = np.mean(
                 commits_not_part_of_feature['num_interacting_features']
             )
-            rows[0].append(avg_not_part_of_feature)
+            rows[next(rows_access_it)].append(avg_not_part_of_feature)
 
             commits_part_of_feature = data_commits.loc[
                 data_commits['part_of_feature'] == 1]
@@ -179,46 +200,50 @@ class DFBREvalTable(Table, table_name="dfbr_eval_table"):
             avg_part_of_feature = np.mean(
                 commits_part_of_feature['num_interacting_features']
             )
-            rows[1].append(avg_part_of_feature)
+            rows[next(rows_access_it)].append(avg_part_of_feature)
 
             fraction_all_commits = len(
                 data_commits.loc[data_commits['num_interacting_features'] > 0]
             ) / (len(data_commits))
-            rows[2].append(fraction_all_commits)
+            rows[next(rows_access_it)].append(fraction_all_commits)
 
             fraction_commits_part_of_feature = len(
                 commits_part_of_feature.loc[
                     commits_part_of_feature['num_interacting_features'] > 0]
             ) / len(commits_part_of_feature)
-            rows[3].append(fraction_commits_part_of_feature)
+            rows[next(rows_access_it)].append(fraction_commits_part_of_feature)
 
             fraction_commits_not_part_of_feature = len(
                 commits_not_part_of_feature.loc[
                     commits_not_part_of_feature['num_interacting_features'] > 0]
             ) / len(commits_not_part_of_feature)
-            rows[4].append(fraction_commits_not_part_of_feature)
+            rows[next(rows_access_it)
+                ].append(fraction_commits_not_part_of_feature)
 
             corr_feature_size_num_interacting_commits_outside = np.corrcoef(
                 data_features["num_interacting_commits_outside"],
                 data_features["feature_size"]
             )[0][1]
-            rows[5].append(corr_feature_size_num_interacting_commits_outside)
+            rows[next(rows_access_it)
+                ].append(corr_feature_size_num_interacting_commits_outside)
 
             corr_feature_size_num_interacting_commits_inside = np.corrcoef(
                 data_features["num_interacting_commits_inside"],
                 data_features["feature_size"]
             )[0][1]
-            rows[6].append(corr_feature_size_num_interacting_commits_inside)
+            rows[next(rows_access_it)
+                ].append(corr_feature_size_num_interacting_commits_inside)
 
-        # calc overall mean for each row
+        # calc overall mean and variance for each row
         for i in range(0, len(rows)):
-            rows[i].append(np.mean(rows[i][1:]))
+            row = rows[i][1:]
+            rows[i].extend([np.mean(row), np.var(row)])
 
         df = pd.DataFrame(
             rows,
-            columns=["Projects"] +
+            columns=['Projects'] +
             [case_study.project_name for case_study in case_studies] +
-            ['Overall Mean']
+            ['Overall Mean', 'Variance']
         )
 
         kwargs: tp.Dict[str, tp.Any] = {}
