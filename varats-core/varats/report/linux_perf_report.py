@@ -23,6 +23,8 @@ import math
 import typing as tp
 from pathlib import Path
 
+import numpy as np
+
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -69,6 +71,9 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
 
     @staticmethod
     def __parse_branch_misses(line: str) -> int:
+        # TODO: fix return type
+        if line.startswith("<not counted>"):
+            return np.NaN
         return int(line.split(" ")[0].replace(",", ""))
 
     @property
