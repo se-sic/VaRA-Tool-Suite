@@ -15,6 +15,7 @@ from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReportAggregate,
 )
@@ -493,6 +494,9 @@ class EbpfTraceTEFProfileRunner(FeatureExperiment, shorthand="ETEFp"):
     NAME = "RunEBPFTraceTEFProfiler"
 
     REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
         self, project: VProject
@@ -974,6 +978,9 @@ class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
 
     REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run('apt', 'install', '-y', 'perf')
+
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
@@ -995,6 +1002,9 @@ class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
     NAME = "RunPIMProfilerO"
 
     REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run('apt', 'install', '-y', 'perf')
 
     def actions_for_project(
         self, project: VProject
@@ -1019,6 +1029,9 @@ class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
 
     REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run('apt', 'install', '-y', 'bpftrace', 'perf')
+
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
@@ -1041,6 +1054,9 @@ class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
     NAME = "RunBCCTEFProfilerO"
 
     REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run('apt', 'install', '-y', 'perf')
 
     def actions_for_project(
         self, project: VProject
@@ -1123,6 +1139,9 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
     NAME = "GenBBBaselineO"
 
     REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run('apt', 'install', '-y', 'perf')
 
     def actions_for_project(
         self, project: VProject
