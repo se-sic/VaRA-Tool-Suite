@@ -445,8 +445,8 @@ def compute_profiler_predictions(
             raise AssertionError("Should only be one")
         if not report_files:
             print(
-                f"Could not find profiling data. {config_id=}, "
-                f"profiler={profiler.name}"
+                f"Could not find profiling data for {project_name=}"
+                f". {config_id=}, profiler={profiler.name}"
             )
             return None
 
