@@ -10,7 +10,7 @@ import shutil
 import string
 import typing as tp
 from collections import deque, defaultdict
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, Executor
 from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import Enum
 from functools import cache
@@ -47,12 +47,12 @@ def _init_process() -> None:
 
 
 @cache
-def _process_executor() -> ProcessPoolExecutor:
+def _process_executor() -> Executor:
     return ProcessPoolExecutor(initializer=_init_process)
 
 
 @cache
-def _thread_executor() -> ThreadPoolExecutor:
+def _thread_executor() -> Executor:
     return ThreadPoolExecutor()
 
 
@@ -61,6 +61,7 @@ def optimized_map(
     iterable: tp.Iterable[tp.Any],
     count: int = os.cpu_count() or 1,
     threads: bool = False,
+    timeout: tp.Optional[int] = TIMEOUT_SECONDS
 ) -> tp.Iterable[_OUT]:
     """Optimized map function."""
 
@@ -76,7 +77,7 @@ def optimized_map(
     result = executor.map(
         func,
         todo,
-        timeout=TIMEOUT_SECONDS * (todo_len / count),
+        timeout=timeout * (todo_len / count) if timeout is not None else None,
     )
     return result
 
@@ -964,7 +965,9 @@ def cov_segments(
         to_process.append((region, path, base_dir, feature_model))
 
     processed = list(
-        optimized_map(_cov_segments_file_wrapper, to_process, threads=True)
+        optimized_map(
+            _cov_segments_file_wrapper, to_process, threads=True, timeout=None
+        )
     )
     assert len(files) == len(processed)
 
