@@ -9,6 +9,7 @@ from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
@@ -108,6 +109,8 @@ class FeaturePerfCSCollection(VProject):
         ]
     }
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -188,6 +191,8 @@ class SynthSAFieldSensitivity(VProject):
         ]
     }
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -245,6 +250,8 @@ class SynthSAFlowSensitivity(VProject):
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -307,6 +314,8 @@ class SynthSAContextSensitivity(VProject):
         ]
     }
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -364,6 +373,8 @@ class SynthSAWholeProgram(VProject):
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -425,6 +436,8 @@ class SynthDADynamicDispatch(VProject):
         ]
     }
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -483,6 +496,8 @@ class SynthDARecursion(VProject):
         ]
     }
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -540,6 +555,8 @@ class SynthOVInsideLoop(VProject):
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -600,6 +617,8 @@ class SynthFeatureInteraction(VProject):
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -662,6 +681,8 @@ class SynthFeatureHigherOrderInteraction(VProject):
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
