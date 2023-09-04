@@ -18,7 +18,7 @@ GNU_TIME_OUTPUT_1 = """  Command being timed: "echo"
   Average total size (kbytes): 0
   Maximum resident set size (kbytes): 1804
   Average resident set size (kbytes): 0
-  Major (requiring I/O) page faults: 0
+  Major (requiring I/O) page faults: 2
   Minor (reclaiming a frame) page faults: 142
   Voluntary context switches: 1
   Involuntary context switches: 1
@@ -62,6 +62,12 @@ class TestGNUTimeReportParserFunctions(unittest.TestCase):
         line."""
         with self.assertRaises(WrongTimeReportFormat):
             TimeReport._parse_max_resident_size("  Something other timed:")
+
+    def test_major_page_faults(self):
+        """Test if we correctly parse the amount of major page faults from the
+        input line."""
+        with self.assertRaises(WrongTimeReportFormat):
+            TimeReport._parse_major_page_faults("  Something other timed:")
 
     def test_max_resident_size_byte_type(self):
         """Test if we correctly parse the max resident size from the input

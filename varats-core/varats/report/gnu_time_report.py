@@ -64,6 +64,11 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                         TimeReport._parse_wall_clock_time(line)
                     continue
 
+                if line.startswith("Major (requiring I/O) page faults"):
+                    self.__major_page_faults: timedelta = \
+                        TimeReport._parse_major_page_faults(line)
+                    continue
+
                 if line.startswith("Voluntary context switches"):
                     self.__voluntary_ctx_switches: int = \
                         TimeReport._parse_voluntary_ctx_switches(line)
@@ -100,6 +105,11 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
     def max_res_size(self) -> int:
         """Maximum resident size."""
         return self.__max_resident_size
+
+    @property
+    def major_page_faults(self) -> int:
+        """Major page faults (require I/O)."""
+        return self.__major_page_faults
 
     @property
     def voluntary_ctx_switches(self) -> int:
@@ -218,6 +228,15 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         )
 
     @staticmethod
+    def _parse_major_page_faults(line: str) -> int:
+        if line.startswith("Major (requiring I/O) page faults"):
+            return int(line.split(":")[1])
+
+        raise WrongTimeReportFormat(
+            "Could not parse voluntary context switches: ", line
+        )
+
+    @staticmethod
     def _parse_voluntary_ctx_switches(line: str) -> int:
         if line.startswith("Voluntary context switches"):
             return int(line.split(":")[1])
@@ -267,6 +286,10 @@ class TimeReportAggregate(
     @property
     def max_resident_sizes(self) -> tp.List[int]:
         return [report.max_res_size for report in self.reports()]
+
+    @property
+    def major_page_faults(self) -> tp.List[int]:
+        return [report.major_page_faults for report in self.reports()]
 
     @property
     def summary(self) -> str:

@@ -41,7 +41,6 @@ from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.gnu_time_report import TimeReportAggregate
-from varats.report.linux_perf_report import LinuxPerfReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReportAggregate
@@ -740,8 +739,8 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         )
                         print(f"Running example {prj_command.command.label}")
 
-                        timed_pb_cmd = perf["stat", "-o", time_report_file,
-                                            "--", pb_cmd]
+                        timed_pb_cmd = time["-v", "-o", time_report_file, "--",
+                                            pb_cmd]
 
                         extra_options = get_extra_config_options(self.project)
                         with cleanup(prj_command):
@@ -816,7 +815,7 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                                 adapted_binary_location, override=True
                             )
 
-                            timed_pb_cmd = perf["stat", "-o", time_report_file,
+                            timed_pb_cmd = time["-v", "-o", time_report_file,
                                                 "--", pb_cmd]
 
                             extra_options = get_extra_config_options(
@@ -891,8 +890,8 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         )
                         print(f"Running example {prj_command.command.label}")
 
-                        timed_pb_cmd = perf["stat", "-o", time_report_file,
-                                            "--", pb_cmd]
+                        timed_pb_cmd = time["-v", "-o", time_report_file, "--",
+                                            pb_cmd]
 
                         extra_options = get_extra_config_options(self.project)
 
@@ -976,10 +975,7 @@ class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
 
     NAME = "RunTEFProfilerO"
 
-    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
-
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12
-                              ).run('apt', 'install', '-y', 'perf')
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
         self, project: VProject
@@ -1001,10 +997,7 @@ class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
 
     NAME = "RunPIMProfilerO"
 
-    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
-
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12
-                              ).run('apt', 'install', '-y', 'perf')
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
         self, project: VProject
@@ -1027,10 +1020,10 @@ class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
 
     NAME = "RunEBPFTraceTEFProfilerO"
 
-    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12
-                              ).run('apt', 'install', '-y', 'bpftrace', 'perf')
+                              ).run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
         self, project: VProject
@@ -1053,10 +1046,7 @@ class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
 
     NAME = "RunBCCTEFProfilerO"
 
-    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
-
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12
-                              ).run('apt', 'install', '-y', 'perf')
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
         self, project: VProject
@@ -1119,7 +1109,7 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
                     print(f"Running example {prj_command.command.label}")
 
                     # timed_pb_cmd = time["-v", "-o", time_report_file, pb_cmd]
-                    timed_pb_cmd = perf["stat", "-o", time_report_file, "--",
+                    timed_pb_cmd = time["-v", "-o", time_report_file, "--",
                                         pb_cmd]
 
                     extra_options = get_extra_config_options(self.project)
@@ -1138,10 +1128,7 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
 
     NAME = "GenBBBaselineO"
 
-    REPORT_SPEC = ReportSpecification(LinuxPerfReportAggregate)
-
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12
-                              ).run('apt', 'install', '-y', 'perf')
+    REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
         self, project: VProject

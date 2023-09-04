@@ -174,8 +174,8 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
     def plot(self, view_mode: bool) -> None:
         # -- Configure plot --
         plot_metric = [("Time", "overhead_time_rel"),
-                       ("Branch Misses", "overhead_bmiss_rel"),
-                       ("Ctx", "overhead_ctx_rel")]
+                       ("Memory", "overhead_memory_rel"),
+                       ("Major Page Faults", "overhead_major_page_faults_rel")]
         target_row = "f1_score"
         # target_row = "precision"
 
@@ -199,18 +199,29 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         print(f"precision_df=\n{precision_df}")
 
         overhead_df = load_overhead_data(case_studies, profilers)
+        print(f"{overhead_df=}")
         overhead_df['overhead_time_rel'] = overhead_df['time'] / (
             overhead_df['time'] - overhead_df['overhead_time']
         ) * 100
 
-        overhead_df['overhead_ctx_rel'] = overhead_df['ctx'] / (
-            overhead_df['ctx'] - overhead_df['overhead_ctx']
+        overhead_df['overhead_memory_rel'] = overhead_df['memory'] / (
+            overhead_df['memory'] - overhead_df['overhead_memory']
         ) * 100
-        overhead_df["overhead_ctx_rel"].fillna(100, inplace=True)
+        overhead_df['overhead_memory_rel'].replace([np.inf, -np.inf],
+                                                   np.nan,
+                                                   inplace=True)
 
-        overhead_df['overhead_bmiss_rel'] = overhead_df['bmiss'] / (
-            overhead_df['bmiss'] - overhead_df['overhead_bmiss']
-        ) * 100
+        overhead_df['overhead_major_page_faults_rel'
+                   ] = overhead_df['major_page_faults'] / (
+                       overhead_df['major_page_faults'] -
+                       overhead_df['overhead_major_page_faults']
+                   ) * 100
+        overhead_df['overhead_major_page_faults_rel'].replace([np.inf, -np.inf],
+                                                              np.nan,
+                                                              inplace=True)
+        # TODO: fix
+        overhead_df["overhead_major_page_faults_rel"].fillna(100, inplace=True)
+
         print(f"other_df=\n{overhead_df}")
 
         merged_df = pd.merge(

@@ -12,8 +12,7 @@ from varats.data.metrics import ConfusionMatrix
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.gnu_time_report import TimeReportAggregate
-from varats.report.linux_perf_report import LinuxPerfReportAggregate
+from varats.report.gnu_time_report import TimeReportAggregate, TimeReport
 from varats.report.report import BaseReport, ReportFilepath
 from varats.report.tef_report import (
     TEFReport,
@@ -419,7 +418,7 @@ class Baseline(Profiler):
     def __init__(self) -> None:
         super().__init__(
             "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
-            fpp.LinuxPerfReportAggregate
+            fpp.TimeReportAggregate
         )
 
     def is_regression(self, report_path: ReportFilepath) -> bool:
@@ -468,34 +467,35 @@ class OverheadData:
 
     def __init__(
         self, profiler, mean_time: tp.Dict[int, float],
-        mean_bmiss: tp.Dict[int, float], ctx_switches: tp.Dict[int, float]
+        mean_memory: tp.Dict[int, float], major_page_faults: tp.Dict[int, float]
     ) -> None:
         self.__profiler = profiler
         self.__mean_time: tp.Dict[int, float] = mean_time
-        self.__mean_bmiss: tp.Dict[int, float] = mean_bmiss
-        self.__mean_ctx_switches: tp.Dict[int, float] = ctx_switches
+        self.__mean_memory: tp.Dict[int, float] = mean_memory
+        self.__mean_major_page_faults: tp.Dict[int, float] = major_page_faults
 
     def mean_time(self) -> float:
         return float(np.mean(list(self.__mean_time.values())))
 
-    def mean_bmiss(self) -> float:
-        return float(np.mean(list(self.__mean_bmiss.values())))
+    def mean_memory(self) -> float:
+        return float(np.mean(list(self.__mean_memory.values())))
 
-    def mean_ctx(self) -> float:
-        return float(np.mean(list(self.__mean_ctx_switches.values())))
+    def mean_major_page_faults(self) -> float:
+        return float(np.mean(list(self.__mean_major_page_faults.values())))
 
     def config_wise_time_diff(self,
                               other: 'OverheadData') -> tp.Dict[int, float]:
         return self.__config_wise(self.__mean_time, other.__mean_time)
 
-    def config_wise_bmiss_diff(self,
-                               other: 'OverheadData') -> tp.Dict[int, float]:
-        return self.__config_wise(self.__mean_bmiss, other.__mean_bmiss)
+    def config_wise_memory_diff(self,
+                                other: 'OverheadData') -> tp.Dict[int, float]:
+        return self.__config_wise(self.__mean_memory, other.__mean_memory)
 
-    def config_wise_ctx_diff(self,
-                             other: 'OverheadData') -> tp.Dict[int, float]:
+    def config_wise_major_page_faults_diff(
+        self, other: 'OverheadData'
+    ) -> tp.Dict[int, float]:
         return self.__config_wise(
-            self.__mean_ctx_switches, other.__mean_ctx_switches
+            self.__mean_major_page_faults, other.__mean_major_page_faults
         )
 
     @staticmethod
@@ -517,14 +517,14 @@ class OverheadData:
     ) -> tp.Optional['OverheadData']:
 
         mean_time: tp.Dict[int, float] = {}
-        mean_bmiss: tp.Dict[int, float] = {}
-        mean_cxt_switches: tp.Dict[int, float] = {}
+        mean_memory: tp.Dict[int, float] = {}
+        mean_major_page_faults: tp.Dict[int, float] = {}
 
         for config_id in case_study.get_config_ids_for_revision(rev):
             report_files = get_processed_revisions_files(
                 case_study.project_name,
                 profiler.overhead_experiment,
-                LinuxPerfReportAggregate,
+                TimeReportAggregate,
                 get_case_study_file_name_filter(case_study),
                 config_id=config_id
             )
@@ -538,11 +538,15 @@ class OverheadData:
                 )
                 return None
 
-            time_report = LinuxPerfReportAggregate(report_files[0].full_path())
-            mean_time[config_id] = float(np.mean(time_report.elapsed_time))
-            mean_bmiss[config_id] = float(np.mean(time_report.branch_misses))
-            mean_cxt_switches[config_id] = float(
-                np.mean(time_report.ctx_switches)
+            time_report = TimeReportAggregate(report_files[0].full_path())
+            mean_time[config_id] = float(
+                np.mean(time_report.measurements_wall_clock_time)
+            )
+            mean_memory[config_id] = float(
+                np.mean(time_report.max_resident_sizes)
+            )
+            mean_major_page_faults[config_id] = float(
+                np.mean(time_report.major_page_faults)
             )
         if not mean_time:
             print(
@@ -552,7 +556,9 @@ class OverheadData:
             return None
 
         # print(f"{mean_time=}")
-        return OverheadData(profiler, mean_time, mean_bmiss, mean_cxt_switches)
+        return OverheadData(
+            profiler, mean_time, mean_memory, mean_major_page_faults
+        )
 
 
 def load_precision_data(case_studies, profilers) -> pd.DataFrame:
@@ -626,11 +632,11 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
             'CaseStudy': project_name,
             'Profiler': "Base",
             'time': overhead_ground_truth.mean_time(),
-            'bmiss': overhead_ground_truth.mean_bmiss(),
-            'ctx': overhead_ground_truth.mean_ctx(),
+            'memory': overhead_ground_truth.mean_memory(),
+            'major_page_faults': overhead_ground_truth.mean_major_page_faults(),
             'overhead_time': 0,
-            'overhead_bmiss': 0,
-            'overhead_ctx': 0
+            'overhead_memory': 0,
+            'overhead_major_page_faults': 0
         }
 
         table_rows.append(new_row)
@@ -646,30 +652,33 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
                 time_diff = profiler_overhead.config_wise_time_diff(
                     overhead_ground_truth
                 )
-                bmiss_diff = profiler_overhead.config_wise_bmiss_diff(
+                memory_diff = profiler_overhead.config_wise_memory_diff(
                     overhead_ground_truth
                 )
-                ctx_diff = profiler_overhead.config_wise_ctx_diff(
+                major_page_faults_diff = profiler_overhead.config_wise_major_page_faults_diff(
                     overhead_ground_truth
                 )
 
                 new_row['time'] = profiler_overhead.mean_time()
                 new_row['overhead_time'] = np.mean(list(time_diff.values()))
 
-                new_row['bmiss'] = profiler_overhead.mean_bmiss()
-                new_row['overhead_bmiss'] = np.mean(list(bmiss_diff.values()))
+                new_row['memory'] = profiler_overhead.mean_memory()
+                new_row['overhead_memory'] = np.mean(list(memory_diff.values()))
 
-                new_row['ctx'] = profiler_overhead.mean_ctx()
-                new_row['overhead_ctx'] = np.mean(list(ctx_diff.values()))
+                new_row['major_page_faults'
+                       ] = profiler_overhead.mean_major_page_faults()
+                new_row['overhead_major_page_faults'] = np.mean(
+                    list(major_page_faults_diff.values())
+                )
             else:
                 new_row['time'] = np.nan
                 new_row['overhead_time'] = np.nan
 
-                new_row['bmiss'] = np.nan
-                new_row['overhead_bmiss'] = np.nan
+                new_row['memory'] = np.nan
+                new_row['overhead_memory'] = np.nan
 
-                new_row['ctx'] = np.nan
-                new_row['overhead_ctx'] = np.nan
+                new_row['major_page_faults'] = np.nan
+                new_row['overhead_major_page_faults'] = np.nan
 
             table_rows.append(new_row)
 
