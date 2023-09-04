@@ -37,7 +37,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-
+        self.__filesystem_io = (-1, -1)
         with open(self.path, 'r') as stream:
             for line in stream:
                 line = line.strip()
@@ -65,8 +65,13 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                     continue
 
                 if line.startswith("Major (requiring I/O) page faults"):
-                    self.__major_page_faults: timedelta = \
+                    self.__major_page_faults: int = \
                         TimeReport._parse_major_page_faults(line)
+                    continue
+
+                if line.startswith("Minor (reclaiming a frame) page faults"):
+                    self.__minor_page_faults: int = \
+                        TimeReport._parse_minor_page_faults(line)
                     continue
 
                 if line.startswith("Voluntary context switches"):
@@ -79,7 +84,19 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                         TimeReport._parse_involuntary_ctx_switches(line)
                     continue
 
-                # print("Not matched: ", line)
+                if line.startswith("File system inputs"):
+                    self.__filesystem_io = (
+                        TimeReport._parse_filesystem_io(line),
+                        self.__filesystem_io[1]
+                    )
+                    continue
+
+                if line.startswith("File system inputs"):
+                    self.__filesystem_io = (
+                        self.__filesystem_io[0],
+                        TimeReport._parse_filesystem_io(line)
+                    )
+                    continue
 
     @property
     def command_name(self) -> str:
@@ -110,6 +127,20 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
     def major_page_faults(self) -> int:
         """Major page faults (require I/O)."""
         return self.__major_page_faults
+
+    @property
+    def minor_page_faults(self) -> int:
+        """Minor page faults (reclaim a frame)."""
+        return self.__minor_page_faults
+
+    @property
+    def filesystem_io(self) -> tp.Tuple[int, int]:
+        """
+        Filesystem inputs/outputs.
+
+        Returns: a tuple of (#inputs, #outputs)
+        """
+        return self.__filesystem_io
 
     @property
     def voluntary_ctx_switches(self) -> int:
@@ -232,9 +263,14 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
         if line.startswith("Major (requiring I/O) page faults"):
             return int(line.split(":")[1])
 
-        raise WrongTimeReportFormat(
-            "Could not parse voluntary context switches: ", line
-        )
+        raise WrongTimeReportFormat("Could not parse major page faults: ", line)
+
+    @staticmethod
+    def _parse_minor_page_faults(line: str) -> int:
+        if line.startswith("Minor (reclaiming a frame) page faults"):
+            return int(line.split(":")[1])
+
+        raise WrongTimeReportFormat("Could not parse minor page faults: ", line)
 
     @staticmethod
     def _parse_voluntary_ctx_switches(line: str) -> int:
@@ -252,6 +288,15 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
 
         raise WrongTimeReportFormat(
             "Could not parse involuntary context switches: ", line
+        )
+
+    @staticmethod
+    def _parse_filesystem_io(line: str) -> int:
+        if line.startswith("File system "):
+            return int(line.split(":")[1])
+
+        raise WrongTimeReportFormat(
+            "Could not parse filesystem inputs/outputs: ", line
         )
 
 
