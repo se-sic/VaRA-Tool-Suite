@@ -1,6 +1,5 @@
 import typing as tp
 
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -124,7 +123,7 @@ class FeatureDisSFBRPlot(Plot, plot_name="feature_dis_sfbr_plot"):
         ]
         data = pd.concat([
             df.assign(
-                project=[case_study.project_name for i in range(0, len(df))]
+                project=[case_study.project_name for _ in range(0, len(df))]
             ) for case_study, df in zip(case_studies, dfs)
         ])
 
@@ -223,7 +222,7 @@ def get_stacked_commit_data_for_case_studies(
 class CommitDisSFBRPlot(Plot, plot_name="commit_dis_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         projects_data = [
             get_structural_commit_data_for_case_study(case_study).
@@ -313,7 +312,7 @@ def get_commit_dataflow_data_for_case_study(
 class FeatureInwardDataflowPlot(Plot, plot_name="feature_inward_dataflow_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         projects_data = [
             get_commit_dataflow_data_for_case_study(case_study)
             for case_study in case_studies
@@ -352,7 +351,7 @@ class FeatureExistingInwardDataflowPlot(
 ):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudies] = self.plot_kwargs["case_studies"]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         projects_data = [
             get_commit_dataflow_data_for_case_study(case_study)
             for case_study in case_studies
