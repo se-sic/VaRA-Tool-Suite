@@ -1,5 +1,7 @@
 import typing as tp
 
+import matplotlib.pyplot as pyplot
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -188,66 +190,71 @@ class FeatureSizeDisSFBRPlotGenerator(
         ]
 
 
-def get_stacked_commit_data_for_case_studies(
-    case_studies: tp.List[CaseStudy], projects_data
-) -> pd.DataFrame:
-    min_num_interacting_features = min([
-        min(project_data) for project_data in projects_data
-    ])
-    max_num_interacting_features = max([
-        max(project_data) for project_data in projects_data
-    ])
+def get_pie_data_for_commit_data(commit_data) -> (tp.List[int], tp.List[int]):
+    min_num_interacting_features = min(commit_data)
+    max_num_interacting_features = max(commit_data)
 
-    rows = [
-        [i] + [0 for i in range(0, len(case_studies))] for i in
+    data = [
+        0 for _ in
+        range(min_num_interacting_features, max_num_interacting_features + 1)
+    ]
+    add_s = lambda x: "" if x == 1 else "s"
+    labels = [
+        "Interacting with " + str(i) + " feature" + add_s(i) for i in
         range(min_num_interacting_features, max_num_interacting_features + 1)
     ]
 
-    for project_data, index in zip(
-        projects_data, range(1,
-                             len(case_studies) + 1)
+    for num_interacting_features in commit_data:
+        data[num_interacting_features - min_num_interacting_features] = data[
+            num_interacting_features - min_num_interacting_features] + 1
+
+    for i in range(
+        min_num_interacting_features, max_num_interacting_features + 1
     ):
-        for num_interacting_features in project_data:
-            rows[num_interacting_features - min_num_interacting_features
-                ][index] = rows[num_interacting_features -
-                                min_num_interacting_features][index] + 1
+        frac = data[i - min_num_interacting_features] / len(commit_data)
+        if frac < 0.1:
+            actual_num_interacting_features = i + min_num_interacting_features
+            labels[i] = "Interacting with >=" + str(
+                actual_num_interacting_features
+            ) + " feature" + add_s(actual_num_interacting_features)
+            labels = labels[:i + 1]
+            data[i] = np.sum(data[i:])
+            data = data[:i + 1]
+            break
 
-    return pd.DataFrame(
-        rows,
-        columns=['Number of Interacting Features'] +
-        [case_study.project_name for case_study in case_studies]
-    )
+    return (data, labels)
 
 
-class CommitDisSFBRPlot(Plot, plot_name="commit_dis_sfbr_plot"):
+class CommitSFBRPieChart(Plot, plot_name="commit_sfbr_pie_chart"):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
 
-        projects_data = [
-            get_structural_commit_data_for_case_study(case_study).
-            loc[:, "num_interacting_features"] for case_study in case_studies
-        ]
-        data = get_stacked_commit_data_for_case_studies(
-            case_studies, projects_data
-        )
-        print(data)
-        data.set_index('Number of Interacting Features'
-                      ).plot(kind='bar', stacked=True)
+        commit_data = get_structural_commit_data_for_case_study(
+            case_study
+        ).loc[:, "num_interacting_features"]
+        data, labels = get_pie_data_for_commit_data(commit_data)
+
+        def func(pct):
+            absolute = int(np.round(pct / 100. * len(commit_data)))
+            return f"{absolute:d}"
+
+        fig, ax = pyplot.subplots()
+        ax.pie(data, labels=labels, autopct=lambda pct: func(pct))
 
 
-class CommitDisSFBRPlotGenerator(
+class CommitSFBRPieChartGenerator(
     PlotGenerator,
-    generator_name="commit-dis-sfbr-plot",
+    generator_name="commit-sfbr-pie-chart",
     options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            CommitDisSFBRPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
-            )
+            CommitSFBRPieChart(
+                self.plot_config, case_study=case_study, **self.plot_kwargs
+            ) for case_study in case_studies
         ]
 
 
@@ -309,78 +316,110 @@ def get_commit_dataflow_data_for_case_study(
     return data_frame
 
 
-class FeatureInwardDataflowPlot(Plot, plot_name="feature_inward_dataflow_plot"):
+class CommitDFBRPieChart(Plot, plot_name="commit_dfbr_pie_chart"):
 
     def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        projects_data = [
-            get_commit_dataflow_data_for_case_study(case_study)
-            for case_study in case_studies
-        ]
-        for i in range(0, len(projects_data)):
-            projects_data[i] = projects_data[i].loc[projects_data[i]
-                                                    ["part_of_feature"] == 0]
-            projects_data[i] = projects_data[i].loc[:,
-                                                    "num_interacting_features"]
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        commit_data = get_commit_dataflow_data_for_case_study(case_study)
+        commit_data = commit_data.loc[commit_data["part_of_feature"] == 0]
+        # commit_data = commit_data.loc[
+        #    commit_data["num_interacting_features"] > 0]
+        commit_data = commit_data.loc[:, 'num_interacting_features']
 
-        data = get_stacked_commit_data_for_case_studies(
-            case_studies, projects_data
-        )
-        print(data)
-        data.set_index('Number of Interacting Features'
-                      ).plot(kind='bar', stacked=True)
+        data, labels = get_pie_data_for_commit_data(commit_data)
+
+        def func(pct):
+            absolute = int(np.round(pct / 100. * len(commit_data)))
+            return f"{absolute:d}"
+
+        fig, ax = pyplot.subplots()
+        ax.pie(data, labels=labels, autopct=lambda pct: func(pct))
 
 
-class FeatureInwardDataflowPlotGenerator(
+class CommitDFBRPieChartGenerator(
     PlotGenerator,
-    generator_name="feature-inward-dataflow-plot",
+    generator_name="commit-dfbr-pie-chart",
     options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureInwardDataflowPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
-            )
+            CommitDFBRPieChart(
+                self.plot_config, case_study=case_study, **self.plot_kwargs
+            ) for case_study in case_studies
         ]
 
 
-class FeatureExistingInwardDataflowPlot(
-    Plot, plot_name="feature_existing_inward_dataflow_plot"
+def get_stacked_proportional_feature_dataflow_data(
+    case_studies: tp.List[CaseStudy]
+) -> pd.DataFrame:
+    rows = []
+    for case_study in case_studies:
+        data_commits = get_commit_dataflow_data_for_case_study(case_study)
+        number_commits = len(data_commits)
+
+        commits_part_of_feature = data_commits.loc[
+            data_commits['part_of_feature'] == 1]
+        fraction_interacting_commits_part_of_feature = len(
+            commits_part_of_feature.loc[
+                commits_part_of_feature['num_interacting_features'] > 0]
+        ) / number_commits
+
+        commits_not_part_of_feature = data_commits.loc[
+            data_commits['part_of_feature'] == 0]
+        fraction_interacting_commits_not_part_of_feature = len(
+            commits_not_part_of_feature.loc[
+                commits_not_part_of_feature['num_interacting_features'] > 0]
+        ) / number_commits
+
+        fraction_not_interacting_commits = len(
+            data_commits.loc[data_commits['num_interacting_features'] == 0]
+        ) / number_commits
+
+        rows.append([
+            case_study.project_name,
+            fraction_interacting_commits_part_of_feature,
+            fraction_interacting_commits_not_part_of_feature,
+            fraction_not_interacting_commits
+        ])
+
+    return pd.DataFrame(
+        data=rows,
+        columns=[
+            "Projects", ">= 1 Interaction Not Part of Feature",
+            ">= 1 Interaction Part of Feature", "=0 Interactions"
+        ]
+    )
+
+
+class FeatureProportionalDataflowPlot(
+    Plot, plot_name="feature_proportional_dataflow_plot"
 ):
 
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        projects_data = [
-            get_commit_dataflow_data_for_case_study(case_study)
-            for case_study in case_studies
-        ]
-        for i in range(0, len(projects_data)):
-            projects_data[i] = projects_data[i].loc[projects_data[i]
-                                                    ["part_of_feature"] == 0]
-            projects_data[i] = projects_data[i].loc[
-                projects_data[i]["num_interacting_features"] > 0]
-            projects_data[i] = projects_data[i].loc[:,
-                                                    "num_interacting_features"]
-        data = get_stacked_commit_data_for_case_studies(
-            case_studies, projects_data
-        )
+        data = get_stacked_proportional_feature_dataflow_data(case_studies)
+        data = data.sort_values(by=['>= 1 Interaction Not Part of Feature'])
         print(data)
-        data.set_index('Number of Interacting Features'
-                      ).plot(kind='bar', stacked=True)
+        plt = data.set_index('Projects').plot(
+            kind='bar', stacked=True, ylabel="Proportional Commit Count"
+        )
+        plt.legend(
+            title="Commit Kind", loc='center left', bbox_to_anchor=(1, 0.5)
+        )
 
 
-class FeatureExistingInwardDataflowPlotGenerator(
+class FeatureProportionalDataflowPlotGenerator(
     PlotGenerator,
-    generator_name="feature-existing-inward-dataflow-plot",
+    generator_name="feature-proportional-dataflow-plot",
     options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureExistingInwardDataflowPlot(
+            FeatureProportionalDataflowPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
