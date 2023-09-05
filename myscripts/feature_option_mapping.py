@@ -9,7 +9,7 @@ from vara_feature.feature import NumericFeature, Feature
 
 REGEX_MIN_VALUE = re.compile("minValue: (\d+)")
 REGEX_MAX_VALUE = re.compile("maxValue: (\d+)")
-REGEX_VALUES = re.compile("values: [(.+)]")
+REGEX_VALUES = re.compile("values: \[(.+),\]")
 
 
 def get_min_value(s: str) -> tp.Optional[int]:
