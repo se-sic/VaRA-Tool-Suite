@@ -5,7 +5,6 @@ import typing as tp
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, Command, SourceRoot
 from benchbuild.source import HTTP
-from benchbuild.source.http import HTTPUntar
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -15,6 +14,7 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
+    VCommand,
     get_tagged_commits,
     ProjectBinaryWrapper,
     get_local_project_git_path,
@@ -53,45 +53,21 @@ class PicoSAT(VProject, ReleaseProviderHook):
         ),
         FeatureSource(),
         HTTP(
-            local="example.cnf",
+            local="aim-100-1_6-no-1.cnf",
             remote={
                 "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/example.cnf"
+                    "https://raw.githubusercontent.com/mitchellh/go-sat/"
+                    "fc0e735aff48989326f256121b5ed6fc585858c3/testdata/"
+                    "satlib/file-dimacs-aim/aim-100-1_6-no-1.cnf"
             }
         ),
-        HTTPUntar(
-            local="abw-N-bcsstk07.mtx-w44.cnf",
+        HTTP(
+            local="aim-100-1_6-yes1-1.cnf",
             remote={
                 "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/abw-N-bcsstk07.mtx-w44.cnf.tar.gz"
-            }
-        ),
-        HTTPUntar(
-            local="traffic_kkb_unknown.cnf",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
-            }
-        ),
-        HTTPUntar(
-            local="UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/"
-                    "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
-            }
-        ),
-        HTTPUntar(
-            local="UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/"
-                    "UNSAT_H_instances_childsnack_p12.hddl_1.cnf.tar.gz"
+                    "https://raw.githubusercontent.com/mitchellh/go-sat/"
+                    "fc0e735aff48989326f256121b5ed6fc585858c3/testdata/"
+                    "satlib/file-dimacs-aim/aim-100-1_6-yes1-1.cnf"
             }
         ),
     ]
@@ -136,6 +112,32 @@ class PicoSAT(VProject, ReleaseProviderHook):
                 "UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
                 label="UNSAT-H-instances-childsnack-p12.hddl-1.cnf",
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                output_param=["{output}"],
+                output=SourceRoot("aim-100-1_6-no-1.cnf"),
+                creates=[
+                    "coreFileName", "compactTraceFileName",
+                    "extendedTraceFileName", "varFileName", "outputFileName",
+                    "rupFileName"
+                ],
+                consumes=["aim-100-1_6-no-1.cnf"],
+                label="aim-100-1-6-no-1.cnf",
+            ),
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                output_param=["{output}"],
+                output=SourceRoot("aim-100-1_6-yes1-1.cnf"),
+                creates=[
+                    "coreFileName", "compactTraceFileName",
+                    "extendedTraceFileName", "varFileName", "outputFileName",
+                    "rupFileName"
+                ],
+                consumes=["aim-100-1_6-yes1-1.cnf"],
+                label="aim-100-1-6-yes1-1.cnf",
+            ),
         ],
     }
 

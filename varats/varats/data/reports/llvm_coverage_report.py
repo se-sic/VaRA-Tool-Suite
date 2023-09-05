@@ -31,7 +31,7 @@ from varats.report.report import BaseReport
 TAB_SIZE = 8
 CUTOFF_LENGTH = 80
 
-TIMEOUT_SECONDS = 30
+TIMEOUT_SECONDS = 60
 
 _IN = tp.TypeVar("_IN")
 _OUT = tp.TypeVar("_OUT")
@@ -77,7 +77,8 @@ def optimized_map(
     result = executor.map(
         func,
         todo,
-        timeout=timeout * (todo_len / count) if timeout is not None else None,
+        timeout=timeout *
+        (todo_len / min(count, todo_len)) if timeout is not None else None,
     )
     return result
 
@@ -145,7 +146,7 @@ def minimize(func: Function, care: Function) -> Function:
     """Minimize function according to care set."""
     if func in (func.bdd.true, func.bdd.false):
         return func
-    result = restrict(func, care)
+    result: Function = restrict(func, care)
     assert _minimize_context_check(
         result, func, care
     ) == func.bdd.true, "Presence Condition Simplification buggy!"
