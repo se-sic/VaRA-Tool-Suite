@@ -9,6 +9,7 @@ from time import sleep
 
 import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup
+from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Clean
 from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
@@ -494,8 +495,7 @@ class EbpfTraceTEFProfileRunner(FeatureExperiment, shorthand="ETEFp"):
 
     REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12
-                              ).run('apt', 'install', '-y', 'bpftrace')
+    CONTAINER = ContainerImage().run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
         self, project: VProject
@@ -1022,8 +1022,7 @@ class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
 
     REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12
-                              ).run('apt', 'install', '-y', 'bpftrace')
+    CONTAINER = ContainerImage().run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
         self, project: VProject
