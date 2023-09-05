@@ -163,6 +163,9 @@ class DunePerfRegression(VProject):
     def compile(self) -> None:
         """Compile the project using the in-built tooling from dune."""
         version_source = local.path(self.source_of(self.primary_source))
+
+        # Currently Phasar passes crash the compiler
+        # This limits us to analysing compile time variability
         self.cflags += ["-mllvm", "--vara-disable-phasar"]
 
         c_compiler = bb.compiler.cc(self)
@@ -178,6 +181,11 @@ class DunePerfRegression(VProject):
     def recompile(self) -> None:
         """Recompiles Dune after e.g. a Patch has been applied."""
         version_source = local.path(self.source_of(self.primary_source))
+
+        # Currently Phasar passes crash the compiler
+        # This limits us to analysing compile time variability
+        self.cflags += ["-mllvm", "--vara-disable-phasar"]
+
         with local.env(CC=bb.compiler.cc(self), CXX=bb.compiler.cxx(self)):
             with local.cwd(version_source):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
