@@ -190,10 +190,8 @@ class DunePerfRegression(VProject):
             with local.cwd(version_source):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
-                bb.watch(dunecontrol)(
-                    '--module=dune-performance-regressions', '--opts=vara.opts',
-                    'make'
-                )
+                bb.watch(dunecontrol
+                        )('--module=dune-performance-regressions', 'make')
 
     def run_tests(self) -> None:
         pass
