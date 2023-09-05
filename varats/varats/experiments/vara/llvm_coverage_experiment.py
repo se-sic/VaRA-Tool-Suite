@@ -133,95 +133,96 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
     def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
 
-    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:  # pylint: disable=too-many-locals
         """Runs project and export coverage information + bc files."""
         with local.cwd(self.project.builddir):
             if not self.__workload_cmds:
                 # No workload to execute.
                 # Fail because we don't get any coverage data
                 return actions.StepResult.ERROR
-            for prj_command in self.__workload_cmds:
-                extra_args = get_extra_config_options(self.project)
+            extra_args = get_extra_config_options(self.project)
 
-                cmd = prj_command.command[extra_args]
+            # Treat space in extra_args as seperate arguments
+            seperated_extra_args = []
+            for extra_arg in extra_args:
+                seperated_extra_args.extend(extra_arg.split(' ', 1))
+
+            profile_raw_names = []
+            for prj_command in self.__workload_cmds:
+                cmd = prj_command.command[seperated_extra_args]
                 pb_cmd = cmd.as_plumbum(project=self.project)
 
-                profdata_name = tmp_dir / create_workload_specific_filename(
+                profile_raw_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",
                     prj_command.command,
-                    file_suffix=f".{extra_args}.profdata"
+                    file_suffix=f".{extra_args}.profraw"
                 )
-                json_name = tmp_dir / create_workload_specific_filename(
-                    "coverage_report",
-                    prj_command.command,
-                    file_suffix=f".{extra_args}.json"
-                )
-
-                profile_raw_name = f"{prj_command.path.name}.profraw"
+                profile_raw_names.append(profile_raw_name)
                 run_cmd = pb_cmd.with_env(LLVM_PROFILE_FILE=profile_raw_name)
-                llvm_profdata = local["llvm-profdata"]
-                llvm_cov = local["llvm-cov"]
-                llvm_cov = llvm_cov["export",
-                                    f"--instr-profile={profdata_name}",
-                                    Path(self.project.source_of_primary) /
-                                    self.binary.path]
 
                 with cleanup(prj_command):
-                    run_cmd()
-                    llvm_profdata(
-                        "merge", profile_raw_name, "-o", profdata_name
-                    )
-                    (llvm_cov > str(json_name))()
+                    if self.binary.valid_exit_codes:
+                        # Expect correct return code
+                        run_cmd(retcode=self.binary.valid_exit_codes)
+                    else:
+                        run_cmd()
 
-                    # Add absolute path to json to compute
-                    # relative filenames later in the report
-                    with open(json_name) as file:
-                        coverage = json.load(file)
+            # Merge all profraws to profdata file
 
-                    coverage["absolute_path"] = str(
-                        Path(self.project.source_of_primary).resolve()
-                    )
+            profdata_name = (
+                tmp_dir / f"coverage_report-llvm-prof.{extra_args}.profdata"
+            )
+            json_name = tmp_dir / f"coverage_report-llvm-cov.{extra_args}.json"
 
-                    with open(json_name, "w") as file:
-                        json.dump(coverage, file)
+            llvm_profdata = local["llvm-profdata"]
+            llvm_cov = local["llvm-cov"]
+            llvm_cov = llvm_cov["export", f"--instr-profile={profdata_name}",
+                                Path(self.project.source_of_primary) /
+                                self.binary.path]
 
-                ptfdd_report_name = tmp_dir / create_workload_specific_filename(
-                    "coverage_report",
-                    prj_command.command,
-                    file_suffix=".ptfdd"
+            llvm_profdata("merge", *profile_raw_names, "-o", profdata_name)
+            (llvm_cov > str(json_name))()
+
+            # Add absolute path to json to compute
+            # relative filenames later in the report
+            with open(json_name) as file:
+                coverage = json.load(file)
+
+            coverage["absolute_path"] = str(
+                Path(self.project.source_of_primary).resolve()
+            )
+
+            with open(json_name, "w") as file:
+                json.dump(coverage, file)
+
+            # Run Vara for analyzing binary
+
+            ptfdd_report_name = tmp_dir / "coverage_report-vara_opt.ptfdd"
+            bc_name = tmp_dir / "coverage_report-vara_opt.bc"
+            copy(self.__bc_path, bc_name)
+
+            # Copy FeatureModel.xml
+            model_name = tmp_dir / "coverage_report-vara-feature_model.xml"
+            copy(self.__feature_model, model_name)
+
+            opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
+                              "-vara-export-feature-dbg",
+                              #"-vara-view-IRegions",
+                              f"-vara-report-outfile={ptfdd_report_name}", "-S",
+                              self.__bc_path]
+
+            opt_command = wrap_unlimit_stack_size(opt_command)
+            opt_command = opt_command > f"{ptfdd_report_name}.log"
+
+            exec_func_with_pe_error_handler(
+                opt_command,
+                create_default_analysis_failure_handler(
+                    self.__experiment_handle,
+                    self.project,
+                    CoverageReport,
+                    timeout_duration=TIMEOUT
                 )
-                bc_name = tmp_dir / create_workload_specific_filename(
-                    "coverage_report",
-                    prj_command.command,
-                    file_suffix=f".{extra_args}.bc"
-                )
-                copy(self.__bc_path, bc_name)
-
-                # Copy FeatureModel.xml
-                model_name = tmp_dir / create_workload_specific_filename(
-                    "coverage_report", prj_command.command, file_suffix=".xml"
-                )
-                copy(self.__feature_model, model_name)
-
-                opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
-                                  "-vara-export-feature-dbg",
-                                  #"-vara-view-IRegions",
-                                  f"-vara-report-outfile={ptfdd_report_name}",
-                                  "-S", self.__bc_path]
-
-                opt_command = wrap_unlimit_stack_size(opt_command)
-                opt_command = opt_command > f"{ptfdd_report_name}.log"
-
-                with cleanup(prj_command):
-                    exec_func_with_pe_error_handler(
-                        opt_command,
-                        create_default_analysis_failure_handler(
-                            self.__experiment_handle,
-                            self.project,
-                            CoverageReport,
-                            timeout_duration=TIMEOUT
-                        )
-                    )
+            )
 
         return actions.StepResult.OK
 
