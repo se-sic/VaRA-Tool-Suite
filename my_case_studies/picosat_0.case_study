@@ -1,0 +1,79 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: picosat
+stages:
+- revisions:
+  - commit_hash: 33c685e82213228726364980814f0183e435de78
+    commit_id: 12
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+version: 0
+...
+---
+0: '["-i 2", "--all"]'
+1: '["-i 2", "--all", "-c coreFileName"]'
+2: '["-o outputFileName", "-i 2", "--all"]'
+3: '["-o outputFileName", "-i 2", "--all", "-c coreFileName"]'
+4: '["-i 2", "--partial"]'
+5: '["-o outputFileName", "-i 2", "--partial", "-c coreFileName"]'
+6: '["-i 2", "--partial"]'
+7: '["-o outputFileName", "-i 2", "--partial"]'
+8: '["-t compactTraceFileName", "-i 2", "--partial"]'
+9: '["-o outputFileName", "-t compactTraceFileName", "-i 2", "--partial"]'
+10: '["-n", "-i 2", "--partial"]'
+11: '["-o outputFileName", "-n", "-t compactTraceFileName", "-i 2", "--partial"]'
+12: '["-o outputFileName", "-n", "-t compactTraceFileName", "-i 2", "--partial"]'
+13: '["-n", "-i 2", "--partial"]'
+14: '["-n", "-i 2", "--all"]'
+15: '["-n", "-t compactTraceFileName", "-i 2", "--all"]'
+16: '["-t compactTraceFileName", "-i 2", "--all", "-c coreFileName"]'
+17: '["-n", "-t compactTraceFileName", "-i 2", "--all", "-c coreFileName"]'
+18: '["-n", "-t compactTraceFileName", "-i 2", "--all", "-c coreFileName"]'
+19: '["-t compactTraceFileName", "-i 2", "--partial", "-c coreFileName"]'
+20: '["-n", "-t compactTraceFileName", "-i 2", "--partial", "-c coreFileName"]'
+21: '["-n", "-i 2", "--partial", "-c coreFileName"]'
+22: '["-o outputFileName", "-n", "-i 2", "--partial", "-c coreFileName"]'
+23: '["-o outputFileName", "-n", "-t compactTraceFileName", "-i 2", "--partial", "-c coreFileName"]'
+24: '["-o outputFileName", "-t compactTraceFileName", "-i 2", "--all", "-c coreFileName"]'
+25: '["-o outputFileName", "-n", "-t compactTraceFileName", "-i 2", "--all", "-c coreFileName"]'
+26: '["-o outputFileName", "-n", "-i 2", "--all", "-c coreFileName"]'
+27: '["-o outputFileName", "-n", "-t compactTraceFileName", "-i 2", "--all", "-c coreFileName"]'
+28: '["-o outputFileName", "-n", "-i 2", "--all", "-c coreFileName"]'
+29: '["-o outputFileName", "-t compactTraceFileName", "-i 2", "--partial", "-c coreFileName"]'
+30: '["-t compactTraceFileName", "-i 2", "--all"]'
+31: '["-o outputFileName", "-t compactTraceFileName", "-i 2", "--all"]'
+...
