@@ -163,25 +163,13 @@ class DunePerfRegression(VProject):
     def compile(self) -> None:
         """Compile the project using the in-built tooling from dune."""
         version_source = local.path(self.source_of(self.primary_source))
+        self.cflags += ["-mllvm", "--vara-disable-phasar"]
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        cflags = self.cflags
-        ldflags = self.ldflags
-
-        cflags.append("-mllvm --vara-disable-phasar")
-
-        print(cflags)
-        print(ldflags)
-
         with local.cwd(version_source):
-            with local.env(
-                CC=c_compiler,
-                CXX=cxx_compiler,
-                CMAKE_CXX_FLAGS=cflags,
-                CMAKE_LDFLAGS=ldflags
-            ):
+            with local.env(CC=c_compiler, CXX=cxx_compiler):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
                 bb.watch(dunecontrol
@@ -190,17 +178,14 @@ class DunePerfRegression(VProject):
     def recompile(self) -> None:
         """Recompiles Dune after e.g. a Patch has been applied."""
         version_source = local.path(self.source_of(self.primary_source))
-        with local.env(
-            CC=bb.compiler.cc(self),
-            CXX=bb.compiler.cxx(self),
-            CMAKE_CXX_FLAGS=self.cflags,
-            CMAKE_LDFLAGS=self.ldflags
-        ):
+        with local.env(CC=bb.compiler.cc(self), CXX=bb.compiler.cxx(self)):
             with local.cwd(version_source):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
-                bb.watch(dunecontrol
-                        )('--module=dune-performance-regressions', 'make')
+                bb.watch(dunecontrol)(
+                    '--module=dune-performance-regressions', '--opts=vara.opts',
+                    'make'
+                )
 
     def run_tests(self) -> None:
         pass
