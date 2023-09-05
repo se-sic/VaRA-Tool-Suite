@@ -208,21 +208,25 @@ def get_pie_data_for_commit_data(commit_data) -> (tp.List[int], tp.List[int]):
         data[num_interacting_features - min_num_interacting_features] = data[
             num_interacting_features - min_num_interacting_features] + 1
 
+    adj_labels, adj_data = ([], [])
     for i in range(
-        min_num_interacting_features, max_num_interacting_features + 1
+        0, max_num_interacting_features - min_num_interacting_features + 1
     ):
-        frac = data[i - min_num_interacting_features] / len(commit_data)
-        if frac < 0.1:
-            actual_num_interacting_features = i + min_num_interacting_features
-            labels[i] = "Interacting with >=" + str(
-                actual_num_interacting_features
-            ) + " feature" + add_s(actual_num_interacting_features)
-            labels = labels[:i + 1]
-            data[i] = np.sum(data[i:])
-            data = data[:i + 1]
+        if data[i] == 0:
+            continue
+        frac = data[i] / len(commit_data)
+        if frac < 0.05:
+            num_interacting_features = i + min_num_interacting_features
+            adj_labels.append(
+                "Interacting with >=" + str(num_interacting_features) +
+                " feature" + add_s(num_interacting_features)
+            )
+            adj_data.append(np.sum(data[i:]))
             break
+        adj_labels.append(labels[i])
+        adj_data.append(data[i])
 
-    return (data, labels)
+    return (adj_data, adj_labels)
 
 
 class CommitSFBRPieChart(Plot, plot_name="commit_sfbr_pie_chart"):
@@ -322,7 +326,7 @@ class CommitDFBRPieChart(Plot, plot_name="commit_dfbr_pie_chart"):
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         commit_data = get_commit_dataflow_data_for_case_study(case_study)
         commit_data = commit_data.loc[commit_data["part_of_feature"] == 0]
-        # commit_data = commit_data.loc[
+        #commit_data = commit_data.loc[
         #    commit_data["num_interacting_features"] > 0]
         commit_data = commit_data.loc[:, 'num_interacting_features']
 
