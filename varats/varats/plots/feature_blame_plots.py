@@ -326,8 +326,8 @@ class CommitDFBRPieChart(Plot, plot_name="commit_dfbr_pie_chart"):
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         commit_data = get_commit_dataflow_data_for_case_study(case_study)
         commit_data = commit_data.loc[commit_data["part_of_feature"] == 0]
-        #commit_data = commit_data.loc[
-        #    commit_data["num_interacting_features"] > 0]
+        commit_data = commit_data.loc[
+            commit_data["num_interacting_features"] > 0]
         commit_data = commit_data.loc[:, 'num_interacting_features']
 
         data, labels = get_pie_data_for_commit_data(commit_data)
@@ -391,8 +391,8 @@ def get_stacked_proportional_feature_dataflow_data(
     return pd.DataFrame(
         data=rows,
         columns=[
-            "Projects", ">= 1 Interaction Not Part of Feature",
-            ">= 1 Interaction Part of Feature", "=0 Interactions"
+            "Projects", ">= 1 Interaction, Not Part of Feature",
+            ">= 1 Interaction, Part of Feature", "=0 Interactions"
         ]
     )
 
@@ -404,7 +404,7 @@ class FeatureProportionalDataflowPlot(
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         data = get_stacked_proportional_feature_dataflow_data(case_studies)
-        data = data.sort_values(by=['>= 1 Interaction Not Part of Feature'])
+        data = data.sort_values(by=['>= 1 Interaction, Not Part of Feature'])
         print(data)
         plt = data.set_index('Projects').plot(
             kind='bar', stacked=True, ylabel="Proportional Commit Count"
@@ -548,35 +548,44 @@ def get_stacked_author_data_for_case_studies(
     ])
 
     for case_study, project_data in zip(case_studies, projects_data):
-        count: [int] = [0 for i in range(0, max_num_implementing_authors)]
+        count: [int] = [0 for _ in range(0, max_num_implementing_authors)]
         for num_implementing_authors in project_data:
             count[num_implementing_authors -
                   1] = count[num_implementing_authors - 1] + 1
 
         rows.append([case_study.project_name] + count)
 
-    return pd.DataFrame(
-        rows,
-        columns=['Project', '1 Author'] + [
-            str(i) + ' Authors'
-            for i in range(2, max_num_implementing_authors + 1)
-        ]
-    )
+    author_columns, adj_rows = ([], [
+        [case_study.project_name] for case_study in case_studies
+    ])
+    for i in range(1, max_num_implementing_authors + 1):
+        s = np.sum([int(rows[j][i]) for j in range(0, len(case_studies))])
+        if s > 0:
+            author_columns.append(str(i) + " Author" + ("s" if i > 1 else ""))
+            for j in range(0, len(case_studies)):
+                adj_rows[j].append(rows[j][i])
+    return pd.DataFrame(adj_rows, columns=['Project'] + author_columns)
 
 
-class FeatureAuthorDisSCFIPlot(Plot, plot_name="feature_author_dis_scfi_plot"):
+class FeatureAuthorDisPlot(Plot, plot_name="feature_author_dis_plot"):
 
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         data = get_stacked_author_data_for_case_studies(case_studies)
+
+        data = data.sort_values(by=['1 Author'])
         print(data)
-        data.set_index('Project').plot(kind='bar', stacked=True)
+        data.set_index('Project').plot(
+            kind='bar',
+            stacked=True,
+            ylabel='Number of Features Implemented by'
+        )
 
 
-class FeatureAuthorDisSCFIPlotGenerator(
+class FeatureAuthorDisPlotGenerator(
     PlotGenerator,
-    generator_name="feature-author-dis-scfi-plot",
+    generator_name="feature-author-dis-plot",
     options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
@@ -584,35 +593,39 @@ class FeatureAuthorDisSCFIPlotGenerator(
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
 
         return [
-            FeatureAuthorDisSCFIPlot(
+            FeatureAuthorDisPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
 
 
-class FeatureAuthorCorrSCFIPlot(
-    Plot, plot_name="feature_author_corr_scfi_plot"
+class FeatureSizeCorrAuthorPlot(
+    Plot, plot_name="feature_size_corr_author_plot"
 ):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        data = get_feature_author_data_for_case_study(case_study)
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        data = pd.concat([
+            get_feature_author_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
         print(data)
         ax = sns.regplot(
             data=data, x='feature_size', y='num_implementing_authors'
         )
+        ax.set(xlabel='Feature Size', ylabel='Number Implementing Authors')
 
 
-class FeatureAuthorCorrSCFIPlotGenerator(
+class FeatureSizeCorrAuthorPlotGenerator(
     PlotGenerator,
-    generator_name="feature-author-corr-scfi-plot",
-    options=[REQUIRE_CASE_STUDY]
+    generator_name="feature-size-corr-author-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureAuthorCorrSCFIPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
+            FeatureSizeCorrAuthorPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]

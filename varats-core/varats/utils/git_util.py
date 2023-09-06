@@ -406,6 +406,25 @@ def num_active_commits(
     ])
 
 
+def get_author(commit_hash: any, repo_folder: Path) -> tp.Optional[str]:
+    """
+    Get the author (name) of a commit with its respective hash.
+
+    Args:
+        commit_hash: hash of the commit
+        repo_folder: path to the git repo
+
+    Returns:
+        the name of the author
+    """
+    repo = pygit2.Repository(repo_folder)
+    commit: pygit2.Commit = repo.get(commit_hash)
+    if commit is None:
+        return None
+    author: str = commit.author.name
+    return author
+
+
 def num_authors(
     c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
 ) -> int:
