@@ -14,7 +14,7 @@ runs:
         pip install cython
         pip install dd  # to first install dependencies of `dd`
         pip uninstall -y dd
-        pip download --no-binary --no-deps dd
+        pip download --no-binary dd --no-deps dd
         tar -xzf dd-*.tar.gz
         pushd dd-*/
         python setup.py install --fetch --cudd
