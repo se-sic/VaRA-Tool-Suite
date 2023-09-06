@@ -88,6 +88,8 @@ class Xz(VProject):
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
+                # Use output_param to ensure input file
+                # gets appended after all arguments.
                 output_param=["{output}"],
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-1km",
@@ -103,6 +105,8 @@ class Xz(VProject):
                 "--threads=1",
                 "--format=xz",
                 "-vv",
+                # Use output_param to ensure input file
+                # gets appended after all arguments.
                 output_param=["{output}"],
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
