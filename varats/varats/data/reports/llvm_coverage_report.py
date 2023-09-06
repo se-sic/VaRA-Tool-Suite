@@ -31,7 +31,7 @@ from varats.report.report import BaseReport
 TAB_SIZE = 8
 CUTOFF_LENGTH = 80
 
-TIMEOUT_SECONDS = 60
+TIMEOUT_SECONDS = 120
 
 _IN = tp.TypeVar("_IN")
 _OUT = tp.TypeVar("_OUT")
@@ -44,16 +44,6 @@ def _init_process() -> None:
 
     set_pdeathsig(SIGTERM)
     gc.enable()
-
-
-@cache
-def _process_executor() -> Executor:
-    return ProcessPoolExecutor(initializer=_init_process)
-
-
-@cache
-def _thread_executor() -> Executor:
-    return ThreadPoolExecutor()
 
 
 def optimized_map(
@@ -70,16 +60,24 @@ def optimized_map(
     if todo_len <= 1 or count == 1:
         return map(func, todo)
 
+    cpu_count = os.cpu_count()
+    assert cpu_count
+    max_workers = min(cpu_count, todo_len)
+    executor: tp.Optional[Executor] = None
     if threads:
-        executor = _thread_executor()
+        executor = ThreadPoolExecutor(max_workers=max_workers)
     else:
-        executor = _process_executor()
+        executor = ProcessPoolExecutor(
+            max_workers=max_workers, initializer=_init_process
+        )
     result = executor.map(
         func,
         todo,
         timeout=timeout *
         (todo_len / min(count, todo_len)) if timeout is not None else None,
     )
+    executor.shutdown()
+    del executor
     return result
 
 
