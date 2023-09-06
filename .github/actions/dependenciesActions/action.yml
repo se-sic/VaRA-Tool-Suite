@@ -11,6 +11,7 @@ runs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install cython
         pip install dd  # to first install dependencies of `dd`
         pip uninstall -y dd
         pip download --no-deps dd
