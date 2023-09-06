@@ -70,11 +70,13 @@ def optimized_map(
         executor = ProcessPoolExecutor(
             max_workers=max_workers, initializer=_init_process
         )
-    result = executor.map(
-        func,
-        todo,
-        timeout=timeout *
-        (todo_len / min(count, todo_len)) if timeout is not None else None,
+    result = list(
+        executor.map(
+            func,
+            todo,
+            timeout=timeout *
+            (todo_len / min(count, todo_len)) if timeout is not None else None,
+        )
     )
     executor.shutdown()
     del executor
@@ -963,11 +965,12 @@ def cov_segments(
         feature_model = report.feature_model
         to_process.append((region, path, base_dir, feature_model))
 
-    processed = list(
-        optimized_map(
-            _cov_segments_file_wrapper, to_process, threads=True, timeout=None
-        )
-    )
+    #processed = list(
+    #    optimized_map(
+    #        _cov_segments_file_wrapper, to_process, threads=True, timeout=None
+    #    )
+    #)
+    processed = list(map(_cov_segments_file_wrapper, to_process))
     assert len(files) == len(processed)
 
     file_segments_mapping = {}
