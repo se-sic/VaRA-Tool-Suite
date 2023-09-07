@@ -650,11 +650,15 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
                     new_row['recall'] = results.recall()
                     new_row['f1_score'] = results.f1_score()
                     new_row['Profiler'] = profiler.name
+                    new_row['fp_ids'] = results.getFPs()
+                    new_row['fn_ids'] = results.getFNs()
                 else:
                     new_row['precision'] = np.nan
                     new_row['recall'] = np.nan
                     new_row['f1_score'] = np.nan
                     new_row['Profiler'] = profiler.name
+                    new_row['fp_ids'] = []
+                    new_row['fn_ids'] = []
 
                 table_rows_plot.append(new_row)
 
