@@ -1,5 +1,6 @@
 """Shared data aggregation function for analyzing feature performance."""
 import abc
+import traceback
 import typing as tp
 from collections import defaultdict
 
@@ -454,11 +455,13 @@ def compute_profiler_predictions(
             result_dict[config_id] = profiler.is_regression(
                 report_files[0], patch_name
             )
-        except Exception:
+        except Exception as exception:  # pylint: disable=W0718
             print(
                 f"FAILURE: Skipping {config_id=} of {project_name=}, "
                 f"profiler={profiler.name}"
             )
+            print(exception)
+            print(traceback.format_exc())
 
     return result_dict
 
