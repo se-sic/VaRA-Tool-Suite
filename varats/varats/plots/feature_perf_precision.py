@@ -94,80 +94,51 @@ class PerfPrecisionPlotGenerator(
         return [PerfPrecisionPlot(self.plot_config, **self.plot_kwargs)]
 
 
-def get_fake_overhead_rows():
-    fake_rows = []
-    fake_prof = [("WXray", 10), ("PIMTracer", 42)]
+class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
 
-    new_fake_row = {
-        'CaseStudy': "fake",
-        # 'Patch': "fpatch",
-        'WithoutProfiler_mean_time': 42,
-        'WithoutProfiler_mean_ctx': 2,
-    }
+    def plot(self, view_mode: bool) -> None:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
-    for prof, seed in fake_prof:
-        random.seed(seed)
-        # for _ in range(0, 3):
-        new_fake_row[f"{prof}_time_mean"] = random.randint(2, 230)
-        new_fake_row[f"{prof}_time_std"] = np.nan
-        new_fake_row[f"{prof}_time_max"] = np.nan
+        # Data aggregation
+        df = pd.DataFrame()
+        df = load_precision_data(case_studies, profilers)
+        # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows())])
+        df.sort_values(["CaseStudy"], inplace=True)
+        print(f"{df=}")
 
-        new_fake_row[f"{prof}_ctx_mean"] = random.randint(2, 1230)
-        new_fake_row[f"{prof}_ctx_std"] = np.nan
-        new_fake_row[f"{prof}_ctx_max"] = np.nan
+        grid = multivariate_grid(
+            df,
+            'precision',
+            'recall',
+            'Profiler',
+            global_kde=False,
+            alpha=0.7,
+            legend=False,
+            s=100
+        )
+        grid.ax_marg_x.set_xlim(0.0, 1.02)
+        grid.ax_marg_y.set_ylim(0.0, 1.02)
+        grid.ax_joint.legend([name for name, _ in df.groupby("Profiler")])
 
-    fake_rows.append(new_fake_row)
+        grid.ax_joint.set_xlabel("Precision")
+        grid.ax_joint.set_ylabel("Recall")
+        grid.ax_joint.xaxis.label.set_size(20)
+        grid.ax_joint.yaxis.label.set_size(20)
 
-    return fake_rows
-
-
-def get_fake_prec_rows_overhead() -> tp.List[tp.Any]:
-    fake_rows = []
-    fake_prof = [("WXray", 10), ("PIMTracer", 42)]
-    for prof, seed in fake_prof:
-        random.seed(seed)
-        for _ in range(0, 3):
-            n = -0.1 if prof == "PIMTracer" else 0.0
-            x = random.random()
-            y = random.random()
-            z = random.random()
-            new_fake_row = {
-                'CaseStudy': "fake",
-                'Patch': "fpatch",
-                'Configs': 42,
-                'RegressedConfigs': 21,
-                'precision': x - n,
-                'recall': y,
-                'f1_score': z,
-                'Profiler': prof
-            }
-            fake_rows.append(new_fake_row)
-
-    return fake_rows
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise UnsupportedOperation
 
 
-def get_fake_overhead_better_rows():
-    # case_study, profiler, overhead_time, overhead_ctx
-    fake_cs = ["SynthSAContextSensitivity", "fake"]
-    fake_prof = [("WXray", 10), ("PIMTracer", 12)]
-    fake_rows = []
+class PerfProfDistPlotGenerator(
+    PlotGenerator, generator_name="fperf-precision-dist", options=[]
+):
 
-    for prof, seed in fake_prof:
-        random.seed(seed)
+    def generate(self) -> tp.List[Plot]:
 
-        for cs in fake_cs:
-            # extra = 1 if prof == 'PIMTracer' else 0
-
-            new_fake_row = {
-                'CaseStudy': cs,
-                'Profiler': prof,
-                'overhead_time':
-                    (random.random() * 4) * 100,  # random.randint(2, 230),
-                'overhead_ctx': random.randint(2, 1230)
-            }
-            fake_rows.append(new_fake_row)
-
-    return fake_rows
+        return [PerfPrecisionDistPlot(self.plot_config, **self.plot_kwargs)]
 
 
 class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
