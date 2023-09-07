@@ -235,6 +235,46 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             ), []
         )
 
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_get_newest_result_files_for_case_study_with_config(self) -> None:
+        """Check that when we have two files, the newes one get's selected."""
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        config_0_file = ReportFilename(
+            "BBBase-CR-SynthSAContextSensitivity-ContextSense-06eac0edb6/"
+            "b24ee2c1-fc85-47ba-abbd-90c98e88a37c_config-0_success.zip"
+        )
+        config_1_file = ReportFilename(
+            "BBBase-CR-SynthSAContextSensitivity-ContextSense-06eac0edb6/"
+            "8380144f-9a25-44c6-8ce0-08d0a29c677b_config-1_success.zip"
+        )
+
+        now = datetime.now().timestamp()
+        file_path_0 = Path(
+            str(vara_cfg()['result_dir'])
+        ) / 'SynthSAContextSensitivity' / config_0_file.filename
+        os.utime(file_path_0, (now, now))
+
+        file_path_1 = Path(
+            str(vara_cfg()['result_dir'])
+        ) / 'SynthSAContextSensitivity' / config_1_file.filename
+        os.utime(file_path_1, (now, now))
+
+        newest_res_files = MCS.get_newest_result_files_for_case_study(
+            get_paper_config().get_case_studies('SynthSAContextSensitivity')[0],
+            Path(vara_cfg()['result_dir'].value), CR
+        )
+
+        newest_res_files.sort(reverse=True)
+        newest_res_filenames = [ReportFilename(x) for x in newest_res_files]
+
+        self.assertEqual(newest_res_filenames[0].config_id, 0)
+        self.assertEqual(newest_res_filenames[1].config_id, 1)
+        self.assertEqual(len(newest_res_filenames), 2)
+
     def test_get_case_study_file_name_filter_empty(self) -> None:
         """Check that we correctly handle  case study filter generation even if
         no case study was provided."""
@@ -246,6 +286,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
 class TestCaseStudyExtenders(unittest.TestCase):
 
+    @run_in_test_environment()
     def test_extend_with_revs_per_year(self) -> None:
         initialize_projects()
         random.seed(42)
@@ -260,12 +301,12 @@ class TestCaseStudyExtenders(unittest.TestCase):
         self.assertEqual(cs.num_stages, 17)
         self.assertEqual(len(cs.revisions), 31)
         self.assertEqual(
-            cs.get_stage_by_name('2022').revisions[0],
-            FullCommitHash("8fd225a2c149f30aeac377e68eb5abf6b28300ad")
+            FullCommitHash("f82294c8318a7a0990583d51ac5c7de682ad36ef"),
+            cs.get_stage_by_name("2022").revisions[0],
         )
         self.assertEqual(
-            cs.revisions[-1],
-            FullCommitHash("ec490da5228263b25bf786bb23d1008468f55b30")
+            FullCommitHash("320601b2c7b08fc7da9da18d5bf7c3c1a189b080"),
+            cs.revisions[-1]
         )
 
     @run_in_test_environment(

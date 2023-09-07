@@ -1,0 +1,10 @@
+description: Patch that excludes a certain range and individual commits (Otherwise
+  includes all)
+exclude_revisions:
+  revision_range:
+    end: 8ca5cc28e6746eef7340064b5d843631841bf31e
+    start: 01f9f1f07bef22d4248e8349aba4f0c1f204607e
+  single_revision: 27f17080376e409860405c40744887d81d6b3f34
+path: bug.patch
+project_name: FeaturePerfCSCollection
+shortname: exclude-single-and-revision-range

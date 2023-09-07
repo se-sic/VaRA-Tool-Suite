@@ -3,6 +3,8 @@ name: reviewdog
 on:
   pull_request:
     branches: [ vara, vara-dev ]
+  merge_group:
+    branches: [ vara, vara-dev ]
 
 jobs:
   reviewdog:
