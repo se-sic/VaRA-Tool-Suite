@@ -706,8 +706,8 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
             TEST_INPUTS_DIR
         ) / "results" / "xz" / "ReducedFeatureModel.xml"
         feature_model = _extract_feature_model_formula(feature_model_formula)
-
-        print(feature_model)
+        s = func_to_str(feature_model)
+        print(s)
 
     def test_bdd(self):
         from dd.autoref import BDD as AutoBDD

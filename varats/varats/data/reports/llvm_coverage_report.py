@@ -14,6 +14,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, Executor
 from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import Enum
 from functools import cache
+from multiprocessing import get_context
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import TracebackType
@@ -23,7 +24,14 @@ from dd.cudd import BDD, restrict
 from plumbum import colors
 from plumbum.colorlib.styles import Color
 from pyeda.boolalg.expr import Complement, Variable
-from pyeda.inter import And, Or, Expression, exprvar, espresso_exprs
+from pyeda.boolalg.minimization import (
+    set_config,
+    CONFIG,
+    _cover2exprs,
+    espresso,
+    FTYPE,
+)
+from pyeda.inter import And, Or, Expression, exprvar
 
 from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
@@ -68,7 +76,9 @@ def optimized_map(
         executor = ThreadPoolExecutor(max_workers=max_workers)
     else:
         executor = ProcessPoolExecutor(
-            max_workers=max_workers, initializer=_init_process
+            max_workers=max_workers,
+            initializer=_init_process,
+            mp_context=get_context("spawn")
         )
     result = list(
         executor.map(
@@ -100,6 +110,32 @@ def expr_to_str(expression: Expression) -> str:
     raise NotImplementedError(expression.ASTOP)
 
 
+def __espresso_expr(dnf: Expression) -> Expression:
+    f = dnf
+    support = f.support
+    inputs = sorted(support)
+
+    ninputs = len(inputs)
+    noutputs = 1
+
+    invec = [0] * ninputs
+    cover = set()
+    for cube in f.cover:
+        for i, v in enumerate(inputs):
+            if ~v in cube:
+                invec[i] = 1
+            elif v in cube:
+                invec[i] = 2
+            else:
+                invec[i] = 3
+        cover.add((tuple(invec), (1,)))
+
+    set_config(**CONFIG)
+
+    cover = espresso(ninputs, noutputs, cover, intype=FTYPE)
+    return _cover2exprs(inputs, noutputs, cover)[0]
+
+
 def _func_to_expr(func: Function) -> Expression:
     to_or = []
     for point in func.bdd.pick_iter(func):
@@ -112,7 +148,7 @@ def _func_to_expr(func: Function) -> Expression:
                 to_and.append(~var)
         to_or.append(And(*to_and))
     dnf = Or(*to_or)
-    return espresso_exprs(dnf)[0]
+    return __espresso_expr(dnf)
 
 
 @cache
