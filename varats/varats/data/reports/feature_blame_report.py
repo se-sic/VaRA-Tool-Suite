@@ -43,14 +43,6 @@ class StructuralCommitFeatureInteraction():
             num_instructions, feature, commit
         )
 
-    def print(self) -> None:
-        """'CommitFeatureInteraction' prints itself."""
-        print("    -COMMIT FEATURE INTERACTION")
-        print("      -NUM OF INSTRUCTIONS: " + str(self.__num_instructions))
-        print("      -FEATURE: " + self.__feature)
-        print("      -HASH: " + self.__commit.commit_hash.__str__())
-        print("      -REPO: " + self.__commit.repository_name)
-
     @property
     def num_instructions(self) -> int:
         """number of instructions the specified cfi occurs in."""
@@ -68,10 +60,10 @@ class StructuralCommitFeatureInteraction():
 
     def is_terminator(self) -> bool:
         br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
-        return br_regex.search(self.__num_instructions) is not None
+        return br_regex.search(self.__feature) is not None
 
 
-class StructuralFeatureBlameReportMetaData(FeatureAnalysisReportMetaData):
+class FeatureBlameReportMetaData(FeatureAnalysisReportMetaData):
     pass
 
 
@@ -90,7 +82,7 @@ class StructuralFeatureBlameReport(
             version_header.raise_if_not_type("StructuralFeatureBlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__meta_data = StructuralFeatureBlameReportMetaData \
+            self.__meta_data = FeatureBlameReportMetaData \
                 .create_feature_analysis_report_meta_data(next(documents))
 
             self.__commit_feature_interactions: tp.List[
@@ -104,14 +96,8 @@ class StructuralFeatureBlameReport(
                 )
                 self.__commit_feature_interactions.append(new_cfi)
 
-    def print(self) -> None:
-        """'FeatureBlameReport' prints itself."""
-        print("STRUCTURAL FEATURE BLAME REPORT")
-        for cfi in self.__commit_feature_interactions:
-            cfi.print()
-
     @property
-    def meta_data(self) -> StructuralFeatureBlameReportMetaData:
+    def meta_data(self) -> FeatureBlameReportMetaData:
         """Access the meta data that was gathered with the
         ``StructuralFeatureBlameReport``."""
         return self.__meta_data
@@ -119,8 +105,8 @@ class StructuralFeatureBlameReport(
     @property
     def commit_feature_interactions(
         self
-    ) -> tp.ValuesView[StructuralCommitFeatureInteraction]:
-        """Iterate over all cfis."""
+    ) -> tp.List[StructuralCommitFeatureInteraction]:
+        """Return all structural cfis."""
         return self.__commit_feature_interactions
 
 
@@ -147,15 +133,6 @@ class DataflowCommitFeatureInteraction():
             crps.append(CommitRepoPair(crp['commit'], crp['repository']))
         return DataflowCommitFeatureInteraction(feature, crps)
 
-    def print(self) -> None:
-        """'CommitFeatureInteraction' prints itself."""
-        print("    -COMMIT FEATURE INTERACTION")
-        print("      -FEATURE: " + self.__feature)
-        print("      -COMMITS: ")
-        for commit in self.__commits:
-            print("        -COMMIT: " + commit.commit_hash)
-            print("        -REPO: " + commit.repository_name)
-
     @property
     def feature(self) -> str:
         """The feature of this cfi."""
@@ -168,11 +145,7 @@ class DataflowCommitFeatureInteraction():
 
     def is_terminator(self) -> bool:
         br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
-        return br_regex.search(self.__commits) is not None
-
-
-class DataflowFeatureBlameReportMetaData(BlameReportMetaData):
-    pass
+        return br_regex.search(self.__feature) is not None
 
 
 class DataflowFeatureBlameReport(
@@ -190,7 +163,7 @@ class DataflowFeatureBlameReport(
             version_header.raise_if_not_type("DataflowFeatureBlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__meta_data = DataflowFeatureBlameReportMetaData \
+            self.__meta_data = FeatureBlameReportMetaData \
                 .create_blame_report_meta_data(next(documents))
 
             self.__commit_feature_interactions: tp.List[
@@ -204,14 +177,8 @@ class DataflowFeatureBlameReport(
                 )
                 self.__commit_feature_interactions.append(new_cfi)
 
-    def print(self) -> None:
-        """'DataflowFeatureBlameReport' prints itself."""
-        print("DATAFLOW FEATURE BLAME REPORT")
-        for cfi in self.__commit_feature_interactions:
-            cfi.print()
-
     @property
-    def meta_data(self) -> DataflowFeatureBlameReportMetaData:
+    def meta_data(self) -> FeatureBlameReportMetaData:
         """Access the meta data that was gathered with the
         ``DataflowFeatureBlameReport``."""
         return self.__meta_data
@@ -219,6 +186,6 @@ class DataflowFeatureBlameReport(
     @property
     def commit_feature_interactions(
         self
-    ) -> tp.ValuesView[DataflowCommitFeatureInteraction]:
-        """Iterate over all cfis."""
+    ) -> tp.List[DataflowCommitFeatureInteraction]:
+        """Return all dataflow-based cfis."""
         return self.__commit_feature_interactions

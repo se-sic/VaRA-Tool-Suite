@@ -12,7 +12,7 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
-import varats.experiments.vara.feature_blame_experiment as FBE
+import varats.experiments.vara.vara_experiments as FBE
 from varats.data.reports.feature_blame_report import (
     StructuralFeatureBlameReport as SFBR,
 )
@@ -97,10 +97,6 @@ class StructuralFeatureBlameReportGeneration(
                     self.__experiment_handle, self.project, SFBR
                 )
             )
-
-            test_fbr = SFBR(path=result_file.full_path())
-
-            test_fbr.print()
 
         return actions.StepResult.OK
 
@@ -192,7 +188,8 @@ class DataflowFeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
         This step performs the actual analysis with the correct command line
         flags. Flags used:
 
-        * -vara-DFBR: to run a commit feature interaction through dataflow report
+        * -vara-DFBR: to run a dataflow-based
+        commit feature interaction report
         * -yaml-report-outfile=<path>: specify the path to store the results
         """
         for binary in self.project.binaries:
@@ -226,15 +223,11 @@ class DataflowFeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
                 )
             )
 
-            test_fbr = DFBR(path=result_file.full_path())
-
-            test_fbr.print()
-
         return actions.StepResult.OK
 
 
 class DataflowFeatureBlameReportExperiment(
-    VersionExperiment, shorthand="SFBRE"
+    VersionExperiment, shorthand="DFBRE"
 ):
     """Generates a dataflow feature blame report of the project(s) specified in
     the call."""
