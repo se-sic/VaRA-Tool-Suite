@@ -1,8 +1,11 @@
 """Module for the FeaturePerfPrecision tables."""
+import re
 import typing as tp
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from plumbum import local, TF, RETCODE
 from pylatex import Document, Package
 
 from varats.data.databases.feature_perf_precision_database import (
@@ -13,16 +16,21 @@ from varats.data.databases.feature_perf_precision_database import (
     Profiler,
     VXray,
     PIMTracer,
+    EbpfTraceTEF,
     Baseline,
     compute_profiler_predictions,
     OverheadData,
+    load_precision_data,
 )
 from varats.data.metrics import ConfusionMatrix
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
+from varats.project.project_domain import ProjectDomains
+from varats.project.project_util import get_local_project_git_path
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.utils.git_util import calc_repo_loc, ChurnConfig, git
 
 
 class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
@@ -309,4 +317,95 @@ class FeaturePerfOverheadTableGenerator(
     def generate(self) -> tp.List[Table]:
         return [
             FeaturePerfOverheadTable(self.table_config, **self.table_kwargs)
+        ]
+
+
+class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
+    """Table showing some general information about feature performance case
+    studies."""
+
+    # TODO: refactor out
+    @staticmethod
+    def _calc_folder_locs(repo_path: Path, rev_range: str, folder: str) -> int:
+        churn_config = ChurnConfig.create_c_style_languages_config()
+        file_pattern = re.compile(
+            "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
+        )
+
+        loc: int = 0
+        with local.cwd(repo_path):
+            files = git(
+                "ls-tree",
+                "-r",
+                "--name-only",
+                rev_range,
+            ).splitlines()
+
+            for file in files:
+                if not file.startswith(folder):
+                    continue
+                if file_pattern.match(file):
+                    lines = git("show", f"{rev_range}:{file}").splitlines()
+                    loc += len([line for line in lines if line])
+
+        return loc
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
+
+        df_precision = load_precision_data(case_studies, profilers)
+
+        cs_data: tp.List[pd.DataFrame] = []
+        for case_study in case_studies:
+            project_name = case_study.project_name
+            rev = case_study.revisions[0]
+            project_git_path = get_local_project_git_path(project_name)
+
+            cs_precision_data = df_precision[df_precision['CaseStudy'] ==
+                                             project_name]
+            regressions = len(cs_precision_data['Patch'].unique())
+
+            locs: int
+            if case_study.project_cls.DOMAIN == ProjectDomains.TEST:
+                src_folder = f'projects/{project_name}'
+                locs = self._calc_folder_locs(
+                    project_git_path, rev.hash, src_folder
+                )
+            else:
+                locs = calc_repo_loc(project_git_path, rev.hash)
+
+            cs_dict = {
+                project_name: {
+                    "NumConfig":
+                        len(case_study.get_config_ids_for_revision(rev)),
+                    "Locs":
+                        locs,
+                    "Regressions":
+                        regressions,
+                }
+            }
+
+            cs_data.append(pd.DataFrame.from_dict(cs_dict, orient='index'))
+
+        df = pd.concat(cs_data).sort_index()
+
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            style.format(thousands=r"\,")
+        return dataframe_to_table(df, table_format, style, wrap_table, **kwargs)
+
+
+class FeaturePerfMetricsOverviewTableGenerator(
+    TableGenerator, generator_name="fperf-overview", options=[]
+):
+    """Generates a cs-metrics table for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            FeaturePerfMetricsOverviewTable(
+                self.table_config, **self.table_kwargs
+            )
         ]
