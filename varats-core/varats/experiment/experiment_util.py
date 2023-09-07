@@ -551,11 +551,17 @@ class ZippedExperimentSteps(
     def __call__(self) -> StepResult:
         results: tp.List[StepResult] = []
 
+        exception_raised_during_exec = False
         with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
-            results = self.__run_children(Path(tmp_dir))
+            try:
+                results = self.__run_children(Path(tmp_dir))
+            except:  # noqa: E722
+                exception_raised_during_exec = True
+                raise
 
         overall_step_result = max(results) if results else StepResult.OK
-        if overall_step_result is not StepResult.OK:
+        if overall_step_result is not StepResult.OK \
+                or exception_raised_during_exec:
             error_filepath = self.__output_filepath.with_status(
                 FileStatusExtension.FAILED
             )
