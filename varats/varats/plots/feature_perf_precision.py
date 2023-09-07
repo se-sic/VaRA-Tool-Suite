@@ -3,6 +3,7 @@ import random
 import typing as tp
 from itertools import chain
 
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -103,28 +104,64 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
         # Data aggregation
         df = pd.DataFrame()
         df = load_precision_data(case_studies, profilers)
-        # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows())])
         df.sort_values(["CaseStudy"], inplace=True)
-        print(f"{df=}")
-
-        grid = multivariate_grid(
-            df,
-            'precision',
-            'recall',
-            'Profiler',
-            global_kde=False,
-            alpha=0.7,
-            legend=False,
-            s=100
+        df = df.melt(
+            id_vars=['CaseStudy', 'Patch', 'Profiler'],
+            value_vars=['precision', 'recall'],
+            var_name='metric',
+            value_name="value"
         )
-        grid.ax_marg_x.set_xlim(0.0, 1.02)
-        grid.ax_marg_y.set_ylim(0.0, 1.02)
-        grid.ax_joint.legend([name for name, _ in df.groupby("Profiler")])
 
-        grid.ax_joint.set_xlabel("Precision")
-        grid.ax_joint.set_ylabel("Recall")
-        grid.ax_joint.xaxis.label.set_size(20)
-        grid.ax_joint.yaxis.label.set_size(20)
+        colors = sns.color_palette("Paired", len(case_studies) * 2)
+        _, axes = plt.subplots(ncols=len(profilers), nrows=1, sharey=True)
+
+        for idx, profiler in enumerate(profilers):
+            ax = axes[idx]
+            color_slice = colors[idx * 2:idx * 2 + 2]
+            data_slice = df[df['Profiler'] == profiler.name]
+
+            sns.violinplot(
+                data=data_slice,
+                x='Profiler',
+                y='value',
+                hue='metric',
+                inner='quartile',
+                cut=0,
+                split=True,
+                palette=color_slice,
+                alpha=.25,
+                linewidth=1,
+                ax=ax
+            )
+
+            sns.stripplot(
+                data=data_slice,
+                x="Profiler",
+                y="value",
+                hue="metric",
+                dodge=True,
+                palette=[
+                    mcolors.CSS4_COLORS['dimgrey'],
+                    mcolors.CSS4_COLORS['darkgrey']
+                ],
+                size=4,
+                ax=ax
+            )
+
+            ax.get_legend().remove()
+
+            ax.set_ylabel(None)
+            ax.set_xlabel(None)
+            ax.tick_params(axis='x', labelsize=10, pad=8, length=6, width=1)
+
+            if idx == 0:
+                ax.set_ylim(-0.1, 1.1)
+                ax.tick_params(axis='y', labelsize=10)
+                ax.tick_params(axis='y', width=1, length=3)
+            else:
+                ax.tick_params(left=False)
+
+        plt.subplots_adjust(wspace=.0)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
