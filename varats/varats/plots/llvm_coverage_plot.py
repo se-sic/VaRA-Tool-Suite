@@ -12,7 +12,7 @@ from functools import reduce
 from pathlib import Path
 
 import pandas as pd
-from dd.autoref import Function
+from dd.autoref import Function  # type: ignore [import]
 
 try:
     from dd.cudd import BDD  # type: ignore [import]

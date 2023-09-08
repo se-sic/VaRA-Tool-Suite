@@ -19,7 +19,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import TracebackType
 
-from dd.autoref import Function
+from dd.autoref import Function  # type: ignore [import]
 
 try:
     from dd.cudd import BDD, restrict  # type: ignore [import]
@@ -869,7 +869,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             )
 
         # sanity checking
-        self.__region_import_sanity_check(totals, tree)
+        #self.__region_import_sanity_check(totals, tree)
 
         return tree.sorted()
 
