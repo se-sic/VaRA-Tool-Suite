@@ -44,7 +44,7 @@ TAB_SIZE = 8
 CUTOFF_LENGTH = 80
 
 
-def eprint(*args, **kwargs):
+def eprint(*args: tp.Any, **kwargs: tp.Any) -> None:
     """Print to stderr."""
     print(*args, file=sys.stderr, **kwargs)
 
