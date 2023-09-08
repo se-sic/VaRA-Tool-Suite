@@ -3,20 +3,19 @@
 from __future__ import annotations
 
 import csv
-import gc
 import json
-import os
 import shutil
 import string
+import sys
 import typing as tp
 from collections import deque, defaultdict
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, Executor
 from dataclasses import dataclass, field, asdict, is_dataclass
+from datetime import timedelta
 from enum import Enum
 from functools import cache
-from multiprocessing import get_context
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from time import perf_counter_ns
 from types import TracebackType
 
 from dd.autoref import Function  # type: ignore [import]
@@ -44,58 +43,15 @@ from varats.report.report import BaseReport
 TAB_SIZE = 8
 CUTOFF_LENGTH = 80
 
-TIMEOUT_SECONDS = 120
 
-_IN = tp.TypeVar("_IN")
-_OUT = tp.TypeVar("_OUT")
-
-
-def _init_process() -> None:
-    from signal import SIGTERM  # pylint: disable=import-outside-toplevel
-
-    from pyprctl import set_pdeathsig  # pylint: disable=import-outside-toplevel
-
-    set_pdeathsig(SIGTERM)
-    gc.enable()
+def eprint(*args, **kwargs):
+    """Print to stderr."""
+    print(*args, file=sys.stderr, **kwargs)
 
 
-def optimized_map(
-    func: tp.Callable[[_IN], _OUT],
-    iterable: tp.Iterable[tp.Any],
-    count: int = os.cpu_count() or 1,
-    threads: bool = False,
-    timeout: tp.Optional[int] = TIMEOUT_SECONDS
-) -> tp.Iterable[_OUT]:
-    """Optimized map function."""
-
-    todo = list(iterable)
-    todo_len = len(todo)
-    if todo_len <= 1 or count == 1:
-        return map(func, todo)
-
-    cpu_count = os.cpu_count()
-    assert cpu_count
-    max_workers = min(cpu_count, todo_len)
-    executor: tp.Optional[Executor] = None
-    if threads:
-        executor = ThreadPoolExecutor(max_workers=max_workers)
-    else:
-        executor = ProcessPoolExecutor(
-            max_workers=max_workers,
-            initializer=_init_process,
-            mp_context=get_context("spawn")
-        )
-    result = list(
-        executor.map(
-            func,
-            todo,
-            timeout=timeout *
-            (todo_len / min(count, todo_len)) if timeout is not None else None,
-        )
-    )
-    executor.shutdown()
-    del executor
-    return result
+def time_diff(start: int, end: int) -> str:
+    """Difference between start and end timestamp."""
+    return str(timedelta(microseconds=(end - start) / 1000))
 
 
 def expr_to_str(expression: Expression) -> str:
@@ -1001,6 +957,8 @@ def cov_segments(
     for file in list(report.tree):
         region = report.tree[file]
         path = Path(file)
+        eprint(f"Building cov_segment for {file}...", end="")
+        start = perf_counter_ns()
         file_segments_mapping[file] = _cov_segments_file(
             path,
             base_dir,
@@ -1008,6 +966,8 @@ def cov_segments(
             feature_model=report.feature_model
             if report.feature_model is not None else None
         )
+        end = perf_counter_ns()
+        eprint(f"{time_diff(start, end)}")
 
     return file_segments_mapping
 

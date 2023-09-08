@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import gc
 import json
+import os
 import typing as tp
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import reduce
+from multiprocessing import get_context
 from pathlib import Path
+from time import perf_counter_ns
 
 import pandas as pd
 from dd.autoref import Function  # type: ignore [import]
@@ -32,9 +36,9 @@ from varats.data.reports.llvm_coverage_report import (
     cov_segments,
     cov_show_segment_buffer,
     create_bdd,
+    eprint,
+    time_diff,
     FileSegmentBufferMapping,
-    optimized_map,
-    TIMEOUT_SECONDS,
 )
 from varats.experiment.experiment_util import ZippedReportFolder
 from varats.mapping.configuration_map import ConfigurationMap
@@ -56,6 +60,54 @@ from varats.utils.git_util import FullCommitHash, RepositoryAtCommit
 
 ADDITIONAL_FEATURE_OPTION_MAPPING: tp.Dict[str, tp.Union[str,
                                                          tp.List[str]]] = {}
+
+TIMEOUT_SECONDS = 120
+
+_IN = tp.TypeVar("_IN")
+_OUT = tp.TypeVar("_OUT")
+
+
+def _init_process() -> None:
+    from signal import SIGTERM  # pylint: disable=import-outside-toplevel
+
+    from pyprctl import set_pdeathsig  # pylint: disable=import-outside-toplevel
+
+    set_pdeathsig(SIGTERM)
+    gc.enable()
+
+
+def optimized_map(
+    func: tp.Callable[[_IN], _OUT],
+    iterable: tp.Iterable[tp.Any],
+    count: int = os.cpu_count() or 1,
+    timeout: tp.Optional[int] = TIMEOUT_SECONDS
+) -> tp.Iterable[_OUT]:
+    """Optimized map function."""
+
+    todo = list(iterable)
+    todo_len = len(todo)
+    if todo_len <= 1 or count == 1:
+        return map(func, todo)
+
+    cpu_count = os.cpu_count()
+    assert cpu_count
+    max_workers = min(cpu_count, todo_len)
+    executor = ProcessPoolExecutor(
+        max_workers=max_workers,
+        initializer=_init_process,
+        mp_context=get_context("forkserver")
+    )
+    result = list(
+        executor.map(
+            func,
+            todo,
+            timeout=timeout *
+            (todo_len / min(count, todo_len)) if timeout is not None else None,
+        )
+    )
+    executor.shutdown()
+    del executor
+    return result
 
 
 def get_option_names(configuration: Configuration) -> tp.Iterable[str]:
@@ -322,7 +374,7 @@ class CoverageReports:
             else:
                 result[key].add(value.lstrip("-"))
                 result[value.lstrip("-")].add(key)
-        print(result)
+        print(f"Bidirectional FeatureOptionMapping: {result}")
         return result
 
     def feature_option_mapping(
@@ -339,8 +391,14 @@ class CoverageReports:
         if additional_info:
             mapping.update(additional_info)
 
+        eprint("Extracting FeatureOptionMapping...", end="")
+        start = perf_counter_ns()
+
         with self._reference.create_feature_xml() as xml_file:
             feature_option_mapping = _extract_feature_option_mapping(xml_file)
+
+        end = perf_counter_ns()
+        eprint(f"{time_diff(start, end)}")
 
         mapping.update(feature_option_mapping)
         self._feature_option_mapping = self.__bidirectional_map(mapping)
@@ -351,8 +409,14 @@ class CoverageReports:
         if self._feature_model is not None:
             return self._feature_model
 
+        eprint("Extracting FeatureModelFormula...", end="")
+        start = perf_counter_ns()
+
         with self._reference.create_feature_xml() as xml_file:
             self._feature_model = _extract_feature_model_formula(xml_file)
+
+        end = perf_counter_ns()
+        eprint(f"{time_diff(start, end)}")
 
         return self._feature_model
 
@@ -361,14 +425,14 @@ class CoverageReports:
         if self._feature_report is not None:
             return self._feature_report
 
-        #result = self._reference
-        #result.feature_model = self.feature_model()
-        #for report in self._reports[1:]:
-        #    result.combine_features(report)
+        eprint("Creating FeatureReport...", end="")
+        start = perf_counter_ns()
 
         result = reduce(lambda x, y: x.combine_features(y), self._reports)
         result.feature_model = self.feature_model()
         self._feature_report = result
+        end = perf_counter_ns()
+        eprint(f"{time_diff(start, end)}")
         return self._feature_report
 
     def feature_segments(self, base_dir: Path) -> FileSegmentBufferMapping:
@@ -441,6 +505,8 @@ def _process_report_file(
     if config_id is None:
         raise ValueError("config_id is None!")
 
+    eprint(f"Parsing Config(ID={config_id})")
+    start = perf_counter_ns()
     config = config_map.get_configuration(config_id)
     if config is None:
         raise ValueError("config is None!")
@@ -448,6 +514,8 @@ def _process_report_file(
     coverage_report = CoverageReport.from_report(
         report_filepath.full_path(), config, base_dir, ignore_conditions
     )
+    end = perf_counter_ns()
+    eprint(f"Parsed Config(ID={config_id} in {time_diff(start, end)}")
     return binary, coverage_report
 
 
