@@ -15,9 +15,9 @@ import pandas as pd
 from dd.autoref import Function
 
 try:
-    from dd.cudd import BDD
+    from dd.cudd import BDD  # type: ignore [import]
 except ModuleNotFoundError:
-    from dd.autoref import BDD
+    from dd.autoref import BDD  # type: ignore [import]
 
 from plumbum import local, ProcessExecutionError
 

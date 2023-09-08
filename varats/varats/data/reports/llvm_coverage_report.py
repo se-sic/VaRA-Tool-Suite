@@ -22,9 +22,9 @@ from types import TracebackType
 from dd.autoref import Function
 
 try:
-    from dd.cudd import BDD, restrict
+    from dd.cudd import BDD, restrict  # type: ignore [import]
 except ModuleNotFoundError:
-    from dd.autoref import BDD
+    from dd.autoref import BDD  # type: ignore [import]
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -997,33 +997,19 @@ def cov_segments(
     base_dir: Path,
 ) -> FileSegmentBufferMapping:
     """Returns the all segments for this report."""
-    files = list(report.tree)
-    to_process = []
-    for file in files:
+    file_segments_mapping = {}
+    for file in list(report.tree):
         region = report.tree[file]
         path = Path(file)
-        feature_model = report.feature_model
-        to_process.append((region, path, base_dir, feature_model))
-
-    #processed = list(
-    #    optimized_map(
-    #        _cov_segments_file_wrapper, to_process, threads=True, timeout=None
-    #    )
-    #)
-    processed = list(map(_cov_segments_file_wrapper, to_process))
-    assert len(files) == len(processed)
-
-    file_segments_mapping = {}
-
-    for file, segments in zip(files, processed):
-        file_segments_mapping[file] = segments
+        file_segments_mapping[file] = _cov_segments_file(
+            path,
+            base_dir,
+            region,
+            feature_model=report.feature_model
+            if report.feature_model is not None else None
+        )
 
     return file_segments_mapping
-
-
-def _cov_segments_file_wrapper(args: tp.Any):
-    region, path, base_dir, feature_model = args
-    return _cov_segments_file(path, base_dir, region, feature_model)
 
 
 def _cov_segments_file(
