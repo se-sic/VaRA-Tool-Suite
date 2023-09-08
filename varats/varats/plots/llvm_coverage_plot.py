@@ -13,7 +13,12 @@ from pathlib import Path
 
 import pandas as pd
 from dd.autoref import Function
-from dd.cudd import BDD
+
+try:
+    from dd.cudd import BDD
+except ModuleNotFoundError:
+    from dd.autoref import BDD
+
 from plumbum import local, ProcessExecutionError
 
 from varats.base.configuration import (

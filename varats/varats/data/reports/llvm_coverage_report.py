@@ -20,18 +20,23 @@ from tempfile import TemporaryDirectory
 from types import TracebackType
 
 from dd.autoref import Function
-from dd.cudd import BDD, restrict
+
+try:
+    from dd.cudd import BDD, restrict
+except ModuleNotFoundError:
+    from dd.autoref import BDD
+
 from plumbum import colors
 from plumbum.colorlib.styles import Color
-from pyeda.boolalg.expr import Complement, Variable
-from pyeda.boolalg.minimization import (
+from pyeda.boolalg.expr import Complement, Variable  # type: ignore [import]
+from pyeda.boolalg.minimization import (  # type: ignore [import]
     set_config,
     CONFIG,
     _cover2exprs,
     espresso,
     FTYPE,
 )
-from pyeda.inter import And, Or, Expression, exprvar
+from pyeda.inter import And, Or, Expression, exprvar  # type: ignore [import]
 
 from varats.base.configuration import Configuration
 from varats.report.report import BaseReport
@@ -111,8 +116,7 @@ def expr_to_str(expression: Expression) -> str:
 
 
 def __espresso_expr(dnf: Expression) -> Expression:
-    f = dnf
-    support = f.support
+    support = dnf.support
     inputs = sorted(support)
 
     ninputs = len(inputs)
@@ -120,11 +124,11 @@ def __espresso_expr(dnf: Expression) -> Expression:
 
     invec = [0] * ninputs
     cover = set()
-    for cube in f.cover:
-        for i, v in enumerate(inputs):
-            if ~v in cube:
+    for cube in dnf.cover:
+        for i, var in enumerate(inputs):
+            if ~var in cube:
                 invec[i] = 1
-            elif v in cube:
+            elif var in cube:
                 invec[i] = 2
             else:
                 invec[i] = 3

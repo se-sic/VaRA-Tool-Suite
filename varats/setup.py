@@ -19,6 +19,7 @@ setup(
     install_requires=[
         "benchbuild>=6.7",
         "click>=8.1.3",
+        "dd>=0.5.7",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
         "Jinja2>=3.1.2",
