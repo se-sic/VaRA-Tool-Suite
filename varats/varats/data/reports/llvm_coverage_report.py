@@ -54,6 +54,27 @@ def time_diff(start: int, end: int) -> str:
     return str(timedelta(microseconds=(end - start) / 1000))
 
 
+class MeasureTime:
+    """Context manager to disable color temporarily."""
+
+    def __init__(self, identifier: str, to_print: str) -> None:
+        self.identifier = identifier
+        self.to_print = to_print
+        self.start = 0
+
+    def __enter__(self) -> None:
+        eprint(f"{self.identifier}: {self.to_print}")
+        self.start = perf_counter_ns()
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        end = perf_counter_ns()
+        eprint(f"{self.identifier}: {time_diff(self.start, end)}")
+
+
 def expr_to_str(expression: Expression) -> str:
     """Converts expression back to str representation."""
     if expression.is_zero() or expression.is_one():
@@ -957,17 +978,14 @@ def cov_segments(
     for file in list(report.tree):
         region = report.tree[file]
         path = Path(file)
-        eprint(f"Building cov_segment for {file}...", end="")
-        start = perf_counter_ns()
-        file_segments_mapping[file] = _cov_segments_file(
-            path,
-            base_dir,
-            region,
-            feature_model=report.feature_model
-            if report.feature_model is not None else None
-        )
-        end = perf_counter_ns()
-        eprint(f"{time_diff(start, end)}")
+        with MeasureTime("cov_segment", f"Building file '{file}'..."):
+            file_segments_mapping[file] = _cov_segments_file(
+                path,
+                base_dir,
+                region,
+                feature_model=report.feature_model
+                if report.feature_model is not None else None
+            )
 
     return file_segments_mapping
 

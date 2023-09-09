@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from functools import reduce
 from multiprocessing import get_context
 from pathlib import Path
-from time import perf_counter_ns
 
 import pandas as pd
 from dd.autoref import Function  # type: ignore [import]
@@ -36,8 +35,7 @@ from varats.data.reports.llvm_coverage_report import (
     cov_segments,
     cov_show_segment_buffer,
     create_bdd,
-    eprint,
-    time_diff,
+    MeasureTime,
     FileSegmentBufferMapping,
 )
 from varats.experiment.experiment_util import ZippedReportFolder
@@ -391,14 +389,11 @@ class CoverageReports:
         if additional_info:
             mapping.update(additional_info)
 
-        eprint("Extracting FeatureOptionMapping...", end="")
-        start = perf_counter_ns()
-
-        with self._reference.create_feature_xml() as xml_file:
-            feature_option_mapping = _extract_feature_option_mapping(xml_file)
-
-        end = perf_counter_ns()
-        eprint(f"{time_diff(start, end)}")
+        with MeasureTime("FeatureOptionMapping", "Extracting..."):
+            with self._reference.create_feature_xml() as xml_file:
+                feature_option_mapping = _extract_feature_option_mapping(
+                    xml_file
+                )
 
         mapping.update(feature_option_mapping)
         self._feature_option_mapping = self.__bidirectional_map(mapping)
@@ -409,14 +404,9 @@ class CoverageReports:
         if self._feature_model is not None:
             return self._feature_model
 
-        eprint("Extracting FeatureModelFormula...", end="")
-        start = perf_counter_ns()
-
-        with self._reference.create_feature_xml() as xml_file:
-            self._feature_model = _extract_feature_model_formula(xml_file)
-
-        end = perf_counter_ns()
-        eprint(f"{time_diff(start, end)}")
+        with MeasureTime("FeatureModelFormula", "Extracting..."):
+            with self._reference.create_feature_xml() as xml_file:
+                self._feature_model = _extract_feature_model_formula(xml_file)
 
         return self._feature_model
 
@@ -425,14 +415,10 @@ class CoverageReports:
         if self._feature_report is not None:
             return self._feature_report
 
-        eprint("Creating FeatureReport...", end="")
-        start = perf_counter_ns()
-
-        result = reduce(lambda x, y: x.combine_features(y), self._reports)
+        with MeasureTime("FeatureReport", "Calculating..."):
+            result = reduce(lambda x, y: x.combine_features(y), self._reports)
         result.feature_model = self.feature_model()
         self._feature_report = result
-        end = perf_counter_ns()
-        eprint(f"{time_diff(start, end)}")
         return self._feature_report
 
     def feature_segments(self, base_dir: Path) -> FileSegmentBufferMapping:
@@ -505,17 +491,14 @@ def _process_report_file(
     if config_id is None:
         raise ValueError("config_id is None!")
 
-    eprint(f"Parsing Config(ID={config_id})")
-    start = perf_counter_ns()
-    config = config_map.get_configuration(config_id)
-    if config is None:
-        raise ValueError("config is None!")
+    with MeasureTime(f"Config ID {config_id}", "Parsing..."):
+        config = config_map.get_configuration(config_id)
+        if config is None:
+            raise ValueError("config is None!")
 
-    coverage_report = CoverageReport.from_report(
-        report_filepath.full_path(), config, base_dir, ignore_conditions
-    )
-    end = perf_counter_ns()
-    eprint(f"Parsed Config(ID={config_id} in {time_diff(start, end)}")
+        coverage_report = CoverageReport.from_report(
+            report_filepath.full_path(), config, base_dir, ignore_conditions
+        )
     return binary, coverage_report
 
 
