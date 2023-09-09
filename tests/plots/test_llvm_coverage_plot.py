@@ -778,7 +778,7 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
         result = bdd.to_expr(f, c, comment=False)
         self.assertEqual(result, "fc")
 
-    def test_pyeda(self):
+    def test_pyeda_espresso_tts(self):
         from pyeda.inter import (
             exprvar,
             truthtable,
@@ -807,3 +807,39 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
         f_ex = truthtable2expr(f_tt)
         g_ex = espresso_tts(f_tt)[0]
         self.assertTrue(f_ex.equivalent(g_ex))
+
+    def test_pyeda_espresso_exprs(self):
+        from pyeda.inter import (
+            exprvar,
+            truthtable,
+            truthtable2expr,
+            espresso_exprs,
+        )
+
+        a, b, c, d = map(exprvar, 'abcd')
+        f1_tt = truthtable((a, b, c), '10110101')
+        f1_ex = truthtable2expr(f1_tt).to_dnf()
+        g1_ex = espresso_exprs(f1_ex)[0]
+        self.assertTrue(f1_ex.equivalent(g1_ex))
+
+        f2_tt = truthtable((c, b, a), '10110101')
+        f2_ex = truthtable2expr(f2_tt).to_dnf()
+        g2_ex = espresso_exprs(f2_ex)[0]
+        self.assertTrue(f2_ex.equivalent(g2_ex))
+
+        f3_tt = truthtable((b, a, c), '10110101')
+        f3_ex = truthtable2expr(f3_tt).to_dnf()
+        g3_ex = espresso_exprs(f3_ex)[0]
+        self.assertTrue(f3_ex.equivalent(g3_ex))
+
+        f4_tt = truthtable((d, c, b, a), '1011010110010100')
+        f4_ex = truthtable2expr(f4_tt).to_dnf()
+        g4_ex = espresso_exprs(f4_ex)[0]
+        self.assertTrue(f4_ex.equivalent(g4_ex))
+
+        # All at once
+        g1_ex, g2_ex, g3_ex, g4_ex = espresso_exprs(f1_ex, f2_ex, f3_ex, f4_ex)
+        self.assertTrue(f1_ex.equivalent(g1_ex))
+        self.assertTrue(f2_ex.equivalent(g2_ex))
+        self.assertTrue(f3_ex.equivalent(g3_ex))
+        self.assertTrue(f4_ex.equivalent(g4_ex))
