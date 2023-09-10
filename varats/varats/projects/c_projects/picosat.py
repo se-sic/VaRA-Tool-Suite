@@ -153,7 +153,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(PicoSAT.NAME))
         binary_map.specify_binary(
-            'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]
+            'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[10, 20]
         )
 
         return binary_map[revision]
