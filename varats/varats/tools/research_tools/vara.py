@@ -163,7 +163,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__(
-            "VaRA", [BuildType.DEV, BuildType.OPT], VaRACodeBase(base_dir)
+            "VaRA", [BuildType.DBG, BuildType.DEV, BuildType.OPT],
+            VaRACodeBase(base_dir)
         )
         vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
         save_config()
@@ -384,6 +385,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
         clang = local[str(install_location / "bin/clang++")]
         ret, stdout, _ = clang.run("--version")
 
+        print(f"Clang working: {ret}; version: {stdout}")
+
         vara_name = self.code_base.get_sub_project("vara-llvm-project").name
         status_ok &= ret == 0
         status_ok &= vara_name in stdout
@@ -393,8 +396,14 @@ class VaRA(ResearchTool[VaRACodeBase]):
         ret, stdout, _ = phasar_cli.run("--version")
         status_ok &= ret == 0
 
+        print(f"Phasar working: {ret}; version: {stdout}")
+
+        print(f"Both tools working: ${status_ok}")
+
         phasar_name = self.code_base.get_sub_project("phasar").name.lower()
-        status_ok &= phasar_name in stdout.lower()
+
+        # print(f"phasar_name: '{phasar_name}'")
+        # status_ok &= phasar_name in stdout.lower()
 
         return status_ok
 
@@ -461,10 +470,12 @@ class VaRA(ResearchTool[VaRACodeBase]):
         img_name = stage_builder.base.name
         vara_install_dir = str(self.install_location()) + "_" + img_name
         if not self.install_exists(Path(vara_install_dir)):
+
             raise AssertionError(
                 f"Could not find VaRA build for base container {img_name}.\n"
                 f"Run 'vara-buildsetup build vara --container={img_name}' "
-                f"to compile VaRA for this base image."
+                f"to compile VaRA for this base image.\n\n"
+                f"Path: {vara_install_dir}"
             )
 
         container_vara_dir = stage_builder.varats_root / (

@@ -17,10 +17,13 @@ from benchbuild.utils.cmd import (
     timeout,
     mkdir,
     touch,
+    opt,
 )
 from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import RETCODE
 
+import varats.experiments.vara.blame_experiment as BE
+from varats.data.reports.blame_report import BlameTaintScope
 from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -36,7 +39,10 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
-from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.project_util import (
+    ProjectBinaryWrapper,
+    get_local_project_git_paths,
+)
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
@@ -81,6 +87,25 @@ class WorklistKind(Enum):
                 enabled_wl_kinds.append(wl_kind)
 
         return enabled_wl_kinds
+
+    def __str__(self) -> str:
+        return f"{self.value}"
+
+
+class IterIDEBRIIAKind(Enum):
+    value: str
+
+    JF1 = "vara-BR-JF1"
+    JF2 = "vara-BR-JF2"
+    JF2S = "vara-BR-JF2S"
+    Nested = "vara-BR-Nested"
+    Old = "vara-BR-Old"
+
+    JF1WithGC = "vara-BR-JF1-GC"
+    JF2WithGC = "vara-BR-JF2-GC"
+
+    JF1WithStats = "vara-BR-JF1-stats"
+    JF2WithStats = "vara-BR-JF2-stats"
 
     def __str__(self) -> str:
         return f"{self.value}"
@@ -137,6 +162,62 @@ def _run_phasar_analysis(phasar_cmd, result_file) -> actions.StepResult:
         return actions.StepResult.ERROR
 
     return actions.StepResult.OK
+
+
+class IterIDEBlameReportGeneration(actions.ProjectStep):  # type: ignore
+    """Analyse a project with VaRA and generate a BlameReport."""
+
+    NAME = "PhasarIterIDEBRIIAEx"
+    DESCRIPTION = "Analyses the bitcode with -vara-BR-* of VaRA."
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        blame_taint_scope: BlameTaintScope, solver_config: IterIDEBRIIAKind
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__blame_taint_scope = blame_taint_scope
+        self.__solver_config = solver_config
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        """
+        This step performs the actual analysis with the correct command line
+        flags.
+
+        Flags used:
+            * -vara-BR: to run a commit flow report
+            * -yaml-report-outfile=<path>: specify the path to store the results
+        """
+
+        analysis_kind_str = str(self.__solver_config)
+
+        tmp_dir /= f"new_iia_{analysis_kind_str}"
+        mkdir("-p", tmp_dir)
+
+        opt_params = [
+            "--enable-new-pm=0", "-vara-BD", "-" + analysis_kind_str,
+            "-vara-init-commits", "-vara-rewriteMD",
+            "-vara-git-mappings=" + ",".join([
+                f'{repo}:{path}' for repo, path in
+                get_local_project_git_paths(self.project.name).items()
+            ]), "-vara-use-phasar",
+            f"-vara-blame-taint-scope={self.__blame_taint_scope.name}",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        run_cmd = wrap_unlimit_stack_size(opt[opt_params])
+        result_file = tmp_dir / f"new_iia_{self.__num}.txt"
+
+        return _run_phasar_analysis(run_cmd, result_file)
 
 
 class IterIDETimeOld(actions.ProjectStep):  # type: ignore
@@ -307,6 +388,45 @@ class IterIDETimeNewJF1(actions.ProjectStep):  # type: ignore
         phasar_params = [
             "-D",
             str(self.__analysis_type), "--jf1", "-m",
+            get_cached_bc_file_path(
+                self.project, self.__binary,
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+            )
+        ]
+
+        phasar_cmd = wrap_unlimit_stack_size(iteridebenchmark[phasar_params])
+
+        result_file = tmp_dir / f"new_{self.__analysis_type}_{self.__num}.txt"
+
+        return _run_phasar_analysis(phasar_cmd, result_file)
+
+
+class IterIDETimeNewNested(actions.ProjectStep):  # type: ignore
+
+    NAME = "NewIDESolverNested"
+    DESCRIPTION = "Analyse new IDESolver with old jump functions representation"
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, num: int, binary: ProjectBinaryWrapper,
+        analysis_type: AnalysisType
+    ):
+        super().__init__(project=project)
+        self.__num = num
+        self.__binary = binary
+        self.__analysis_type = analysis_type
+
+    def __call__(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        tmp_dir /= f"new_{self.__analysis_type}_nested"
+        mkdir("-p", tmp_dir)
+
+        phasar_params = [
+            "-D",
+            str(self.__analysis_type), "--nested", "-m",
             get_cached_bc_file_path(
                 self.project, self.__binary,
                 [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
@@ -834,6 +954,8 @@ class IDELinearConstantAnalysisExperiment(
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
     CONTAINER = ContainerImage().run("apt", "install", "-y", "time")
 
+    BLAME_TAINT_SCOPE = BlameTaintScope.COMMIT
+
     def actions_for_project(
         self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
@@ -863,10 +985,21 @@ class IDELinearConstantAnalysisExperiment(
             BCFileExtensions.TBAA,
         ]
 
+        BE.setup_basic_blame_experiment(self, project, PhasarIterIDEStatsReport)
+
+        analysis_actions = BE.generate_basic_blame_experiment_actions(
+            project,
+            bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
+            )
+        )
+
         # Only consider the main/first binary
         print(f"{project.name}")
         if len(project.binaries) < 1:
             return []
+
         binary = project.binaries[0]
         result_file = create_new_success_result_filepath(
             self.get_handle(), self.REPORT_SPEC.main_report, project, binary
@@ -923,6 +1056,13 @@ class IDELinearConstantAnalysisExperiment(
                         for rep in reps
                     ],
                     *[
+                        IterIDETimeNewNested(
+                            project, rep, binary, analysis_type
+                        )
+                        for analysis_type in _get_enabled_analyses()
+                        for rep in reps
+                    ],
+                    *[
                         IterIDETimeNewGC(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
@@ -933,6 +1073,12 @@ class IDELinearConstantAnalysisExperiment(
                         )
                         for analysis_type in _get_enabled_analyses()
                         for rep in reps
+                    ],
+                    *[
+                        IterIDEBlameReportGeneration(
+                            project, rep, binary, self.BLAME_TAINT_SCOPE,
+                            solver_config
+                        ) for rep in reps for solver_config in IterIDEBRIIAKind
                     ],
                     # *[
                     #     IterIDETimeNewRec(

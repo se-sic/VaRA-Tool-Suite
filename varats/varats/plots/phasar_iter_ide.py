@@ -30,6 +30,7 @@ from varats.data.reports.phasar_iter_ide import (
 )
 from varats.experiments.phasar.iter_ide import (
     IDELinearConstantAnalysisExperiment,
+    IDELinearConstantAnalysisExperimentWL,
 )
 from varats.experiments.vara.blame_report_experiment import (
     BlameReportExperiment,
@@ -1226,6 +1227,231 @@ class PhasarIterIDEOldNewTimeViolinPlot(
         raise UnsupportedOperation
 
 
+class PhasarIterIDEWLSpeedupScatterPlot(
+    Plot, plot_name='phasar-iter-ide-speedup-target-scatter'
+):
+
+    YNAME = "Runtime with WorkLists"
+
+    TAINT = "Taint"
+    TYPESTATE = "Typestate"
+    LCA = "LCA"
+    IIA = "IIA"
+
+    JF1 = 0
+    JF2 = 1
+    JF3 = 2
+    OLD = 3
+
+    def _get_aggregates(self, report: PhasarIterIDEStatsReport,
+                        ana: str) -> tp.List[TimeReportAggregate]:
+        if ana == self.TAINT:
+            return [
+                report.new_taint_jf1, report.new_taint, report.new_taint_jf3,
+                report.old_taint
+            ]
+        elif ana == self.TYPESTATE:
+            return [
+                report.new_typestate_jf1, report.new_typestate,
+                report.new_typestate_jf3, report.old_typestate
+            ]
+        elif ana == self.LCA:
+            return [
+                report.new_lca_jf1, report.new_lca, report.new_lca_jf3,
+                report.old_lca
+            ]
+        elif ana == self.IIA:
+            return [
+                report.new_iia_jf1, report.new_iia, report.new_iia_jf3,
+                report.old_iia
+            ]
+        else:
+            raise "ERROR: Invalid analysis: " + ana
+
+    @staticmethod
+    def compute_speedups(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return list(
+            map(
+                lambda x: round(x[0] / x[1], 3),
+                itertools.product(old_measurements, new_measurements)
+            )
+        )
+
+    @staticmethod
+    def compute_mean_speedup(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return [
+            np.mean(
+                list(
+                    map(
+                        lambda x: round(x[0] / x[1], 3),
+                        itertools.product(old_measurements, new_measurements)
+                    )
+                )
+            )
+        ]
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            # print(f"Processing {ana} analysis results")
+            aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.OLD] is None:
+                print(f"Skip {ana}")
+                continue
+            for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    print(f"Skip {self._get_jf_name(jf)} for {ana}")
+                    continue
+                for s in speedup_computer(
+                    aggregates[self.OLD].measurements_wall_clock_time,
+                    aggregates[jf].measurements_wall_clock_time
+                ):
+                    # print(f"> {s}")
+                    nodes.append({
+                        self.YNAME:
+                            s,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Old":
+                            np.mean(
+                                aggregates[self.OLD
+                                          ].measurements_wall_clock_time
+                            ),
+                        "New":
+                            np.mean(
+                                aggregates[jf].measurements_wall_clock_time
+                            ),
+                        "Target":
+                            cs,
+                    })
+
+        return nodes
+
+    def _get_jf_name(self, jf: int) -> str:
+        if jf == self.JF1:
+            return "JF1"
+        elif jf == self.JF2:
+            return "JF4"
+        elif jf == self.JF3:
+            return "JF4S"
+        elif jf == self.OLD:
+            return "Old"
+        else:
+            raise "ERROR: Table Rep out-of-range: " + str(jf)
+
+    def make_dataframe(
+        self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
+                                            float]
+    ) -> pd.DataFrame:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        print("WL Make Dataframe: ")
+
+        timeouts = dict()
+        ooms = dict()
+        for case_study in case_studies:
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IDELinearConstantAnalysisExperimentWL,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+
+            assert len(
+                report_files
+            ) <= 1, f"Invalid length of report_files list: got {len(report_files)}, expected 1"
+
+            if (len(report_files) == 0):
+                print("No report files for ", case_study.project_name)
+                continue
+
+            print("Num Reports: ", len(report_files))
+
+            for report_file in report_files:
+                # print("Report: ", report_file)
+                report = load_phasar_iter_ide_stats_report(report_file)
+
+                local_timeouts = report.aggregate_timeouts()
+                merge_dict(timeouts, local_timeouts, lambda x, y: x + y)
+
+                local_ooms = report.aggregate_ooms()
+                merge_dict(ooms, local_ooms, lambda x, y: x + y)
+
+                nodes.extend(
+                    self._get_data_entries(
+                        report, case_study.project_name, speedup_computer
+                    )
+                )
+
+        print("Timeouts: ", timeouts)
+        print("OOMs: ", ooms)
+        df = pd.DataFrame(nodes)
+        print("WL DataFrame: ", df)
+        return df.sort_values(by=["Analysis", "JF"])
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        # print("Dataset: ", data.to_string())
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Runtime Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+    def plot(self, view_mode: bool) -> None:
+        ax = self.make_phasar_plot()
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise UnsupportedOperation
+
+    def get_argmaxmin(self, Args: tp.List[float]) -> tp.Tuple[int, int]:
+        Max = np.argmax(Args)
+        Min = np.argmin(Args)
+        return (Max, Min)
+
+
+##
+################################################################################
+##
+
+
 class CAIGViolinPlotGenerator(
     PlotGenerator, generator_name="phasar-iter-ide-jf1-jf2", options=[]
 ):
@@ -1286,6 +1512,9 @@ class CAIGScatterPlotGenerator(
                 self.plot_config, **self.plot_kwargs
             ),
             PhasarIterIDESpeedupGCScatterPlot(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDEWLSpeedupScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
         ]
