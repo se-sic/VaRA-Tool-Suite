@@ -38,8 +38,8 @@ from varats.report.report import ReportSpecification
 
 
 class StructuralFeatureBlameReportGeneration(
-    actions.ProjectStep
-):  # type: ignore
+    actions.ProjectStep  # type: ignore
+):
     """Analyse a project with VaRA and generate a
     StructuralFeatureBlameReport."""
 
@@ -247,11 +247,23 @@ class DataflowFeatureBlameReportExperiment(
         Args:
             project: to analyze
         """
+        # FeatureModelProvider
+        fm_provider = FeatureModelProvider.create_provider_for_project(project)
+        if fm_provider is None:
+            raise FeatureModelNotFound(project, None)
+
+        fm_path = fm_provider.get_feature_model_path(project)
+
+        if fm_path is None or not fm_path.exists():
+            raise FeatureModelNotFound(project, fm_path)
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
-        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        project.cflags += [
+            f"-fvara-fm-path={fm_path.absolute()}", "-O1", "-Xclang",
+            "-disable-llvm-optzns", "-g0"
+        ]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
             BCFileExtensions.BLAME, BCFileExtensions.FEATURE
