@@ -501,24 +501,28 @@ int main() {
             end_column=6,
             count=0,
             cov_features=None,
+            cov_features_set=None,
             vara_features=None,
             lines=lines,
             buffer=buffer
         )
-        self.assertEqual(buffer, {1: [(0, "Hello", None, None)]})
+        self.assertEqual(buffer, {1: [(0, "Hello", None, None, None)]})
         self.assertEqual((1, 6), get_next_line_and_column(lines, buffer))
         buffer = cov_fill_buffer(
             end_line=1,
             end_column=14,
             count=1,
             cov_features=None,
+            cov_features_set=None,
             vara_features=None,
             lines=lines,
             buffer=buffer
         )
         self.assertEqual(
-            buffer,
-            {1: [(0, "Hello", None, None), (1, " World!\n", None, None)]}
+            buffer, {
+                1: [(0, "Hello", None, None, None),
+                    (1, " World!\n", None, None, None)]
+            }
         )
         self.assertEqual((2, 1), get_next_line_and_column(lines, buffer))
         buffer = cov_fill_buffer(
@@ -526,14 +530,16 @@ int main() {
             end_column=10,
             count=42,
             cov_features=None,
+            cov_features_set=None,
             vara_features=None,
             lines=lines,
             buffer=buffer
         )
         self.assertEqual(
             buffer, {
-                1: [(0, "Hello", None, None), (1, " World!\n", None, None)],
-                2: [(42, "Goodbye;\n", None, None)]
+                1: [(0, "Hello", None, None, None),
+                    (1, " World!\n", None, None, None)],
+                2: [(42, "Goodbye;\n", None, None, None)]
             }
         )
         self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))
@@ -544,14 +550,15 @@ int main() {
             end_column=10,
             count=None,
             cov_features=["Foo"],
+            cov_features_set={"Foo"},
             vara_features={"Bar"},
             lines=lines,
             buffer=buffer
         )
         self.assertEqual(
             buffer, {
-                1: [(None, "Hello World!\n", ["Foo"], {"Bar"})],
-                2: [(None, "Goodbye;\n", ["Foo"], {"Bar"})]
+                1: [(None, "Hello World!\n", ["Foo"], {"Foo"}, {"Bar"})],
+                2: [(None, "Goodbye;\n", ["Foo"], {"Foo"}, {"Bar"})]
             }
         )
         self.assertEqual((2, 9), get_next_line_and_column(lines, buffer))

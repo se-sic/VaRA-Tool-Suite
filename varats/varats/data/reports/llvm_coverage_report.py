@@ -330,7 +330,12 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
         self, feature_model: tp.Optional[Function] = None
     ) -> tp.Set[str]:
         """Returns features affecting code region somehow."""
-        assert self.presence_condition is not None
+        if (
+            self.presence_condition is None or
+            self.presence_condition == self.presence_condition.bdd.false or
+            self.presence_condition == self.presence_condition.bdd.true
+        ):
+            return set()
         if feature_model is not None:
             return set(minimize(self.presence_condition, feature_model).support)
         return set(self.presence_condition.support)
@@ -962,8 +967,10 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 Count = tp.Optional[int]
 LinePart = str
 CoverageFeatures = tp.Optional[str]
+CoverageFeaturesSet = tp.Optional[tp.Set[str]]
 VaraFeatures = tp.Optional[tp.Set[str]]
-Segment = tp.Tuple[Count, LinePart, CoverageFeatures, VaraFeatures]
+Segment = tp.Tuple[Count, LinePart, CoverageFeatures, CoverageFeaturesSet,
+                   VaraFeatures]
 Segments = tp.List[Segment]
 SegmentBuffer = tp.DefaultDict[int, Segments]
 FileSegmentBufferMapping = tp.Mapping[str, SegmentBuffer]
@@ -1015,6 +1022,7 @@ def _cov_segments_file(
         end_column=len(lines[len(lines)]) + 1,
         count=None,
         cov_features=None,
+        cov_features_set=None,
         vara_features=None,
         lines=lines,
         buffer=segments_dict
@@ -1039,6 +1047,7 @@ def cov_show_segment_buffer(
     file_segments_mapping: FileSegmentBufferMapping,
     show_counts: bool = True,
     show_coverage_features: bool = False,
+    show_coverage_feature_set: bool = False,
     show_vara_features: bool = False,
     save_to_dir: tp.Optional[Path] = None
 ) -> str:
@@ -1051,9 +1060,10 @@ def cov_show_segment_buffer(
                 __segments_dict_to_table(
                     file_segments_mapping[file], color_counts=show_counts
                 ),
-                show_counts,
-                show_coverage_features,
-                show_vara_features,
+                show_counts=show_counts,
+                show_coverage_features=show_coverage_features,
+                show_coverage_feature_set=show_coverage_feature_set,
+                show_vara_features=show_vara_features,
             )
         )
 
@@ -1071,6 +1081,7 @@ def cov_show_segment_buffer(
                     ),
                     show_counts=show_counts,
                     show_coverage_features=show_coverage_features,
+                    show_coverage_feature_set=show_coverage_feature_set,
                     show_vara_features=show_vara_features,
                     show_line_numbers=False,
                 )
@@ -1085,6 +1096,7 @@ class TableEntry(tp.NamedTuple):
     count: tp.Union[int, str]  # type: ignore[assignment]
     text: str
     coverage_features: str
+    coverage_features_set: str
     vara_features: str
 
 
@@ -1092,8 +1104,9 @@ def __table_to_text(
     table: tp.Dict[int, TableEntry],
     show_counts: bool = True,
     show_coverage_features: bool = False,
+    show_coverage_feature_set: bool = False,
     show_vara_features: bool = False,
-    show_line_numbers: bool = True
+    show_line_numbers: bool = True,
 ) -> str:
     output = []
     for line_number, entry in table.items():
@@ -1113,6 +1126,8 @@ def __table_to_text(
             line.append(f"{text:<{CUTOFF_LENGTH}}")
         if show_coverage_features:
             line.append(f"{entry.coverage_features}")
+        if show_coverage_feature_set:
+            line.append(f"{entry.coverage_features_set}")
         if show_vara_features:
             line.append(f"{entry.vara_features}")
         output.append("|".join(line))
@@ -1129,7 +1144,7 @@ def __segments_dict_to_table( # pylint: disable=too-many-locals
         if len(segments) > 1:
             # Workaround: Ignore counts for last segment with whitespaces
             # and single ';' that ends with "\n"
-            segments[-1] = (None, segments[-1][1], None, None
+            segments[-1] = (None, segments[-1][1], None, None, None
                            ) if segments[-1][1].endswith("\n") and (
                                str.isspace(segments[-1][1].replace(";", "", 1))
                            ) else segments[-1]
@@ -1167,13 +1182,16 @@ def __segments_dict_to_table( # pylint: disable=too-many-locals
                 raise NotImplementedError
 
         coverage_features = filter_out_nones(segment[2] for segment in segments)
-        vara_features = filter_out_nones(segment[3] for segment in segments)
+        coverage_features_set = filter_out_nones(
+            segment[3] for segment in segments
+        )
+        vara_features = filter_out_nones(segment[4] for segment in segments)
 
         table[line_number] = TableEntry(
             count,
             "".join(colored_texts),
             __feature_text([coverage_features]),
-            #list(coverage_features),
+            __feature_text(coverage_features_set),
             __feature_text(vara_features),
         )
 
@@ -1210,6 +1228,7 @@ def _cov_segments_function(
             end_column=prev_column,
             count=None,
             cov_features=None,
+            cov_features_set=None,
             vara_features=None,
             lines=lines,
             buffer=buffer
@@ -1242,6 +1261,7 @@ def _cov_segments_function_inner(
                 count=region.count
                 if region.kind != CodeRegionKind.FILE_ROOT else None,
                 cov_features=region.coverage_features(feature_model),
+                cov_features_set=region.coverage_features_set(feature_model),
                 vara_features=region.vara_features(),
                 lines=lines,
                 buffer=buffer
@@ -1269,6 +1289,7 @@ def _cov_segments_function_inner(
         end_column=region.end.column,
         count=region.count if region.kind != CodeRegionKind.FILE_ROOT else None,
         cov_features=region.coverage_features(feature_model),
+        cov_features_set=region.coverage_features_set(feature_model),
         vara_features=region.vara_features(),
         lines=lines,
         buffer=buffer
@@ -1279,8 +1300,8 @@ def _cov_segments_function_inner(
 
 def __cov_fill_buffer(
     end_line: int, end_column: int, count: Count,
-    cov_features: CoverageFeatures, vara_features: VaraFeatures,
-    lines: tp.Dict[int, str], buffer: SegmentBuffer
+    cov_features: CoverageFeatures, cov_features_set: CoverageFeaturesSet,
+    vara_features: VaraFeatures, lines: tp.Dict[int, str], buffer: SegmentBuffer
 ) -> SegmentBuffer:
 
     start_line, start_column = __get_next_line_and_column(lines, buffer)
@@ -1304,7 +1325,9 @@ def __cov_fill_buffer(
         else:
             text = lines[line_number]
 
-        buffer[line_number].append((count, text, cov_features, vara_features))
+        buffer[line_number].append(
+            (count, text, cov_features, cov_features_set, vara_features)
+        )
 
     return buffer
 
