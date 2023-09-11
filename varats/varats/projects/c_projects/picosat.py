@@ -4,7 +4,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, Command, SourceRoot
-from benchbuild.source import HTTP
+from benchbuild.source import HTTP, HTTPUntar
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -69,6 +69,14 @@ class PicoSAT(VProject, ReleaseProviderHook):
                     "https://raw.githubusercontent.com/mitchellh/go-sat/"
                     "fc0e735aff48989326f256121b5ed6fc585858c3/testdata/"
                     "satlib/file-dimacs-aim/aim-100-1_6-yes1-1.cnf"
+            }
+        ),
+        HTTPUntar(
+            local="traffic_kkb_unknown.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
             }
         ),
     ]
@@ -144,6 +152,20 @@ class PicoSAT(VProject, ReleaseProviderHook):
                 consumes=["aim-100-1_6-yes1-1.cnf"],
                 label="aim-100-1-6-yes1-1.cnf",
             ),
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                output_param=["{output}"],
+                output=SourceRoot(
+                    "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf"
+                ),
+                creates=[
+                    "coreFileName", "compactTraceFileName",
+                    "extendedTraceFileName", "varFileName", "outputFileName",
+                    "rupFileName"
+                ],
+                consumes=["traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf"],
+                label="traffic-kkb-unknow.cnf",
+            ),
         ],
     }
 
@@ -153,7 +175,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(PicoSAT.NAME))
         binary_map.specify_binary(
-            'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[10, 20]
+            'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]
         )
 
         return binary_map[revision]
