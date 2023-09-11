@@ -7,7 +7,6 @@ from pathlib import Path
 import yaml
 
 from varats.base.version_header import VersionHeader
-from varats.data.reports.blame_report import BlameReportMetaData
 from varats.data.reports.feature_analysis_report import (
     FeatureAnalysisReportMetaData,
 )
@@ -97,7 +96,7 @@ class StructuralFeatureBlameReport(
                 self.__commit_feature_interactions.append(new_cfi)
 
     @property
-    def meta_data(self) -> FeatureBlameReportMetaData:
+    def meta_data(self) -> FeatureAnalysisReportMetaData:
         """Access the meta data that was gathered with the
         ``StructuralFeatureBlameReport``."""
         return self.__meta_data
@@ -164,7 +163,7 @@ class DataflowFeatureBlameReport(
             version_header.raise_if_version_is_less_than(1)
 
             self.__meta_data = FeatureBlameReportMetaData \
-                .create_blame_report_meta_data(next(documents))
+                .create_feature_analysis_report_meta_data(next(documents))
 
             self.__commit_feature_interactions: tp.List[
                 DataflowCommitFeatureInteraction] = []
@@ -178,7 +177,7 @@ class DataflowFeatureBlameReport(
                 self.__commit_feature_interactions.append(new_cfi)
 
     @property
-    def meta_data(self) -> FeatureBlameReportMetaData:
+    def meta_data(self) -> FeatureAnalysisReportMetaData:
         """Access the meta data that was gathered with the
         ``DataflowFeatureBlameReport``."""
         return self.__meta_data

@@ -2,7 +2,7 @@
 Implements the basic feature blame report experiment.
 
 The experiment analyses a project with VaRA's blame and feature analysis and
-generates a FeatureBlameReport.
+generates either a structural or dataflow-based FeatureBlameReport.
 """
 
 import typing as tp
