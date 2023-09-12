@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
@@ -18,6 +18,7 @@ from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
+    VCommand,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     BinaryType,
@@ -84,16 +85,19 @@ class Xz(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
-                "geo-maps/countries-land-1km.geo.json",
+                # Use output_param to ensure input file
+                # gets appended after all arguments.
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-1km",
                 creates=["geo-maps/countries-land-1km.geo.json.xz"]
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
+            VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
                 "-9e",
@@ -101,9 +105,13 @@ class Xz(VProject):
                 "--threads=1",
                 "--format=xz",
                 "-vv",
-                "geo-maps/countries-land-250m.geo.json",
+                # Use output_param to ensure input file
+                # gets appended after all arguments.
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
-                creates=["geo-maps/countries-land-250m.geo.json.xz"]
+                creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                requires_all={"--compress"},
             )
         ],
     }
