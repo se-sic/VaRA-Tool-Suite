@@ -2,10 +2,13 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.source import HTTP
 from benchbuild.utils.cmd import make, cmake, mkdir
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -13,6 +16,7 @@ from varats.project.project_util import (
     BinaryType,
     get_local_project_git_path,
     verify_binaries,
+    VCommand,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
@@ -32,17 +36,38 @@ class Ect(VProject):
     SOURCE = [
         PaperConfigSpecificGit(
             project_name="ect",
-            remote="https://github.com/fhanau/Efficient-Compression-Tool.git",
+            remote="https://github.com/danjujan/Efficient-Compression-Tool.git",
             local="ect",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        HTTP(
+            local="Archlinux-logo-standard-version.png",
+            remote={
+                "1.0":
+                    "https://upload.wikimedia.org/wikipedia/"
+                    "commons/e/e8/Archlinux-logo-standard-version.png"
+            }
+        ),
     ]
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
     ).run('apt', 'install', '-y', 'nasm', 'git', 'cmake', 'make')
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("ect") / RSBinary("ect"),
+                output_param=["{output}"],
+                output=SourceRoot("Archlinux-logo-standard-version.png"),
+                creates=["Archlinux-logo-standard-version.png"],
+                consumes=["Archlinux-logo-standard-version.png"],
+                label="png-only",
+            ),
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(

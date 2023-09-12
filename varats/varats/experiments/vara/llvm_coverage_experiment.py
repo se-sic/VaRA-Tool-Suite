@@ -1,13 +1,14 @@
 """"Coverage experiment."""
 
 import json
+import logging
 import typing as tp
 from copy import deepcopy
 from pathlib import Path
 from shutil import copy
 from tempfile import TemporaryDirectory
 
-from benchbuild import Project
+from benchbuild import Project, watch
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
@@ -158,7 +159,9 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
                     file_suffix=f".{extra_args}.profraw"
                 )
                 profile_raw_names.append(profile_raw_name)
-                run_cmd = pb_cmd.with_env(LLVM_PROFILE_FILE=profile_raw_name)
+                run_cmd = watch(
+                    pb_cmd.with_env(LLVM_PROFILE_FILE=profile_raw_name)
+                )
 
                 with cleanup(prj_command):
                     if self.binary.valid_exit_codes:

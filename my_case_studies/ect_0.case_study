@@ -1,0 +1,39 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: ect
+stages:
+- revisions:
+  - commit_hash: e98502a01ba807778df751b279e040432cafb844
+    commit_id: 670
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+version: 0
+...
+---
+0: '["-3"]'
+1: '["-zip", "-3"]'
+2: '["-3", "-gzip"]'
+3: '["-3", "--disable-jpg"]'
+4: '["-3", "--disable-png"]'
+5: '["-3", "--disable-png", "--disable-jpg"]'
+6: '["-3", "--disable-png", "-gzip"]'
+7: '["-3", "--disable-png", "-gzip"]'
+8: '["-3", "--disable-png", "--disable-jpg", "-gzip"]'
+9: '["-zip", "-3", "--disable-png"]'
+10: '["-zip", "-3", "--disable-jpg"]'
+11: '["-zip", "-3", "--disable-png", "--disable-jpg"]'
+...
