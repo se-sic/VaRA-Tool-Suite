@@ -4,6 +4,7 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
@@ -389,6 +390,231 @@ class SynthSAInterProcedural(VProject):
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAINTERPROCEDURAL"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthIPRuntime(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthIPRuntime'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthIPRuntime",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthIPRuntime")
+        ),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            Command(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1km",
+                creates=["geo-maps/countries-land-1km.geo.json.compressed"]
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            Command(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1m",
+                creates=["geo-maps/countries-land-1m.geo.json.compressed"]
+            )
+        ],
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return RevisionBinaryMap(
+            get_local_project_git_path(SynthIPRuntime.NAME)
+        ).specify_binary(
+            "build/bin/Runtime",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("4151c42ffe", "master")
+        )[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHIPRUNTIME"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthIPTemplate(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthIPTemplate'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthIPTemplate",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthIPTemplate")
+        ),
+        FeatureSource()
+    ]
+
+    # TODO
+    WORKLOADS = {}
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return RevisionBinaryMap(
+            get_local_project_git_path(SynthIPTemplate.NAME)
+        ).specify_binary(
+            "build/bin/Template",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("4151c42ffe", "master")
+        )[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHIPTEMPLATE"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthIPTemplate2(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthIPTemplate2'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthIPTemplate2",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthIPTemplate2")
+        ),
+        FeatureSource()
+    ]
+
+    # TODO
+    WORKLOADS = {}
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return RevisionBinaryMap(
+            get_local_project_git_path(SynthIPTemplate2.NAME)
+        ).specify_binary(
+            "build/bin/Template2",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("4151c42ffe", "master")
+        )[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHIPTEMPLATE2"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthIPCombined(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthIPCombined'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthIPCombined",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthIPCombined")
+        ),
+        FeatureSource()
+    ]
+
+    # TODO
+    WORKLOADS = {}
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return RevisionBinaryMap(
+            get_local_project_git_path(SynthIPCombined.NAME)
+        ).specify_binary(
+            "build/bin/Combined",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("4151c42ffe", "master")
+        )[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHIPCOMBINED"
         )
 
     def recompile(self) -> None:
