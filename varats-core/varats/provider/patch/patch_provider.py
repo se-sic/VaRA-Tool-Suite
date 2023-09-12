@@ -6,9 +6,12 @@ applied during an experiment to alter the state of the project.
 """
 
 import os
+import random
+import time
 import typing as tp
 import warnings
 from pathlib import Path
+from time import sleep
 
 import benchbuild as bb
 import yaml
@@ -237,12 +240,10 @@ class PatchProvider(Provider):
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
 
-        # BB only performs a fetch so our repo might be out of date
-        pull_current_branch(self._get_patches_repository_path())
+        self._update_local_patches_repo()
+        repo_path = self._get_patches_repository_path()
 
-        patches_project_dir = Path(
-            self._get_patches_repository_path() / self.project.NAME
-        )
+        patches_project_dir = Path(repo_path / self.project.NAME)
 
         if not patches_project_dir.is_dir():
             warnings.warn(
@@ -316,6 +317,38 @@ class PatchProvider(Provider):
 
     @classmethod
     def _get_patches_repository_path(cls) -> Path:
-        cls.patches_source.fetch()
-
         return Path(target_prefix()) / cls.patches_source.local
+
+    @classmethod
+    def _update_local_patches_repo(cls):
+        PULL_THRESHOLD = 300
+
+        repo_path = cls._get_patches_repository_path()
+
+        if not os.path.exists(repo_path):
+            cls.patches_source.fetch()
+
+        # We don't want to pull as long as index.lock exists
+
+        index_lock_path = repo_path / ".git" / "index.lock"
+
+        while os.path.exists(index_lock_path):
+            sleep(1)
+
+        # Add random wait to reduce possibility of concurrent pull afterwards?
+        sleep(random.uniform(2.0, 5.0))
+
+        last_pull_path = repo_path / ".last_pull"
+
+        if os.path.exists(last_pull_path):
+            last_pull_d = time.time() - os.path.getmtime(last_pull_path)
+        else:
+            # We want to ensure that we make the pull, so we set the time above the threshhold
+            last_pull_d = PULL_THRESHOLD
+
+        if last_pull_d < PULL_THRESHOLD:
+            return
+
+        last_pull_path.touch(exist_ok=True)
+
+        pull_current_branch(repo_path)
