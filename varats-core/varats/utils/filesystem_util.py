@@ -26,7 +26,7 @@ def lock_file(lock_path: Path, lock_mode: int = fcntl.LOCK_EX) -> tp.Generator:
     lock_fd = os.open(lock_path, open_mode)
     try:
         fcntl.flock(lock_fd, lock_mode)
-        yield lock_fd
+        yield
     finally:
         fcntl.flock(lock_fd, fcntl.LOCK_UN)
         os.close(lock_fd)
