@@ -17,6 +17,7 @@ import benchbuild as bb
 import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
+from utils.filesystem_util import lock_file
 from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_git_path
@@ -321,34 +322,8 @@ class PatchProvider(Provider):
 
     @classmethod
     def _update_local_patches_repo(cls):
-        PULL_THRESHOLD = 300
+        lock_path = Path(target_prefix()) / "patch_provider.lock"
 
-        repo_path = cls._get_patches_repository_path()
-
-        if not os.path.exists(repo_path):
+        with lock_file(lock_path):
             cls.patches_source.fetch()
-
-        # We don't want to pull as long as index.lock exists
-
-        index_lock_path = repo_path / ".git" / "index.lock"
-
-        while os.path.exists(index_lock_path):
-            sleep(1)
-
-        # Add random wait to reduce possibility of concurrent pull afterwards?
-        sleep(random.uniform(2.0, 5.0))
-
-        last_pull_path = repo_path / ".last_pull"
-
-        if os.path.exists(last_pull_path):
-            last_pull_d = time.time() - os.path.getmtime(last_pull_path)
-        else:
-            # We want to ensure that we make the pull, so we set the time above the threshhold
-            last_pull_d = PULL_THRESHOLD
-
-        if last_pull_d < PULL_THRESHOLD:
-            return
-
-        last_pull_path.touch(exist_ok=True)
-
-        pull_current_branch(repo_path)
+            pull_current_branch(cls._get_patches_repository_path())

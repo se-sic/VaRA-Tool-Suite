@@ -1,6 +1,8 @@
 """Utility functions for handling filesystem related tasks."""
-
+import fcntl
+import os.path
 import typing as tp
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -13,3 +15,18 @@ class FolderAlreadyPresentError(Exception):
             f"Folder: '{str(folder)}' should be created "
             "but was already present."
         )
+
+
+@contextmanager
+def lock_file(lock_path: Path, lock_mode=fcntl.LOCK_EX):
+    # Ensure that the lock exists
+    lock_path.touch(exist_ok=True)
+
+    open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
+    lock_fd = os.open(lock_path, open_mode)
+    try:
+        fcntl.flock(lock_fd, lock_mode)
+        yield lock_fd
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
