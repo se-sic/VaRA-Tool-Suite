@@ -18,6 +18,7 @@ from varats.project.project_util import (
     verify_binaries,
     VCommand,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
@@ -42,6 +43,7 @@ class Ect(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         HTTP(
             local="archlinux.png",
             remote={

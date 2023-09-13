@@ -1,7 +1,6 @@
 """"Coverage experiment."""
 
 import json
-import logging
 import typing as tp
 from copy import deepcopy
 from pathlib import Path
