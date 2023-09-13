@@ -17,11 +17,11 @@ import benchbuild as bb
 import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
-from utils.filesystem_util import lock_file
 from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_git_path
 from varats.provider.provider import Provider, ProviderType
+from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import pull_current_branch, fetch_repository
 from varats.utils.git_util import (
     CommitHash,
