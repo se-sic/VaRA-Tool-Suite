@@ -3,7 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
-from benchbuild.source import HTTP
+from benchbuild.source import HTTP, HTTPUntar
 from benchbuild.utils.cmd import make, cmake, mkdir
 from plumbum import local
 
@@ -43,11 +43,43 @@ class Ect(VProject):
             shallow=False
         ),
         HTTP(
-            local="Archlinux-logo-standard-version.png",
+            local="archlinux.png",
             remote={
                 "1.0":
                     "https://upload.wikimedia.org/wikipedia/"
                     "commons/e/e8/Archlinux-logo-standard-version.png"
+            }
+        ),
+        HTTP(
+            local="vara.jpg",
+            remote={
+                "1.0":
+                    "https://upload.wikimedia.org/wikipedia/"
+                    "commons/b/bc/VARA_speldje.JPG"
+            }
+        ),
+        HTTP(
+            local="ect.zip",
+            remote={
+                "1.0":
+                    "https://github.com/fhanau/Efficient-Compression-Tool/"
+                    "archive/refs/tags/v0.9.4.zip"
+            }
+        ),
+        HTTP(
+            local="ect.tar.gz",
+            remote={
+                "1.0":
+                    "https://github.com/fhanau/Efficient-Compression-Tool/"
+                    "archive/refs/tags/v0.9.4.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="ect_src",
+            remote={
+                "1.0":
+                    "https://github.com/fhanau/Efficient-Compression-Tool/"
+                    "archive/refs/tags/v0.9.4.tar.gz"
             }
         ),
     ]
@@ -61,10 +93,42 @@ class Ect(VProject):
             VCommand(
                 SourceRoot("ect") / RSBinary("ect"),
                 output_param=["{output}"],
-                output=SourceRoot("Archlinux-logo-standard-version.png"),
-                creates=["Archlinux-logo-standard-version.png"],
-                consumes=["Archlinux-logo-standard-version.png"],
+                output=SourceRoot("archlinux.png"),
+                creates=["archlinux.png"],
+                consumes=["archlinux.png"],
                 label="png-only",
+            ),
+            VCommand(
+                SourceRoot("ect") / RSBinary("ect"),
+                output_param=["{output}"],
+                output=SourceRoot("vara.jpg"),
+                creates=["vara.jpg"],
+                consumes=["vara.jpg"],
+                label="jpg-only",
+            ),
+            VCommand(
+                SourceRoot("ect") / RSBinary("ect"),
+                output_param=["{output}"],
+                output=SourceRoot("ect.zip"),
+                creates=["ect.zip"],
+                consumes=["ect.zip"],
+                label="zip-only",
+            ),
+            VCommand(
+                SourceRoot("ect") / RSBinary("ect"),
+                output_param=["{output}"],
+                output=SourceRoot("ect.tar.gz"),
+                creates=["ect.tar.gz"],
+                consumes=["ect.tar.gz"],
+                label="gzip-only",
+            ),
+            VCommand(
+                SourceRoot("ect") / RSBinary("ect"),
+                output_param=["{output}"],
+                output=SourceRoot("ect_src"),
+                creates=["ect_src.zip"],
+                #consumes=["ect_src"],
+                label="dir-only",
             ),
         ],
     }
