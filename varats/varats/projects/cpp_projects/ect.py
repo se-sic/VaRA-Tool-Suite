@@ -141,7 +141,9 @@ class Ect(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Ect.NAME))
 
-        binary_map.specify_binary("build/ect", BinaryType.EXECUTABLE)
+        binary_map.specify_binary(
+            "build/ect", BinaryType.EXECUTABLE, valid_exit_codes=[0, 1]
+        )
 
         return binary_map[revision]
 
