@@ -14,7 +14,8 @@ from varats.data.reports.feature_blame_report import (
 from varats.data.reports.feature_blame_report import (
     generate_feature_scfi_data,
     generate_commit_scfi_data,
-    generate_commit_dcfi_data,
+    generate_commit_specific_dcfi_data,
+    generate_general_commit_dcfi_data,
     generate_feature_dcfi_data,
     generate_feature_author_scfi_data,
 )
@@ -39,7 +40,7 @@ from varats.utils.git_util import num_active_commits, get_local_project_git_path
 
 def get_structural_report_files_for_project(
     project_name: str
-) -> tp.Tuple[tp.List[ReportFilepath], tp.List[ReportFilepath]]:
+) -> tp.List[ReportFilepath]:
     fnf = lambda x: "DFBR" in x
     report_files: tp.List[ReportFilepath] = get_processed_revisions_files(
         project_name=project_name,
@@ -48,24 +49,17 @@ def get_structural_report_files_for_project(
         only_newest=False
     )
 
-    failed_report_files: tp.List[ReportFilepath] = get_failed_revisions_files(
-        project_name=project_name,
-        report_type=SFBR,
-        file_name_filter=fnf,
-        only_newest=False
-    )
-
-    return report_files, failed_report_files
+    return report_files
 
 
 def get_structural_feature_data_for_case_study(
     case_study: CaseStudy
 ) -> pd.DataFrame:
-    report_files, failed_report_files = get_structural_report_files_for_project(
+    report_file = get_structural_report_files_for_project(
         case_study.project_name
-    )
+    )[0]
     data_frame: pd.DataFrame = pd.DataFrame()
-    report = load_structural_feature_blame_report(report_files[0])
+    report = load_structural_feature_blame_report(report_file)
     data_frame = generate_feature_scfi_data(report)
     return data_frame
 
@@ -73,11 +67,11 @@ def get_structural_feature_data_for_case_study(
 def get_structural_commit_data_for_case_study(
     case_study: CaseStudy
 ) -> pd.DataFrame:
-    report_files, failed_report_files = get_structural_report_files_for_project(
+    report_file = get_structural_report_files_for_project(
         case_study.project_name
-    )
+    )[0]
     data_frame: pd.DataFrame = pd.DataFrame()
-    report = load_structural_feature_blame_report(report_files[0])
+    report = load_structural_feature_blame_report(report_file)
     data_frame = generate_commit_scfi_data(report)
 
     return data_frame
@@ -158,34 +152,35 @@ class FeatureDisSFBRPlotGenerator(
 class FeatureSizeDisSFBRPlot(Plot, plot_name="feature_size_dis_sfbr_plot"):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
-        df = get_structural_feature_data_for_case_study(case_study)
+        df = pd.concat([
+            get_structural_feature_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
 
         df = df.sort_values(by=['feature_size'])
 
         plt = sns.barplot(
             data=df, x='feature', y='feature_size', color='steelblue'
         )
-        plt.set(xlabel="Feature", ylabel="Size", title="Feature Sizes in XZ")
+        plt.set(xlabel="Feature", ylabel="Size", title="")
 
-        xticklabels = [
-            df['feature'][i] if i % 2 == 1 else "" for i in range(0, len(df))
-        ]
+        xticklabels = [str(i) for i in range(0, len(df))]
         plt.set(xticklabels=xticklabels)
 
 
 class FeatureSizeDisSFBRPlotGenerator(
     PlotGenerator,
     generator_name="feature-size-dis-sfbr-plot",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        case_study: CaseStudy = self.plot_kwargs.pop("case_study")
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             FeatureSizeDisSFBRPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
 
@@ -267,7 +262,7 @@ class CommitSFBRPieChartGenerator(
 
 def get_dataflow_report_files_for_project(
     project_name: str
-) -> tp.Tuple[tp.List[ReportFilepath], tp.List[ReportFilepath]]:
+) -> tp.List[ReportFilepath]:
     fnf = lambda x: not "DFBR" in x
     report_files: tp.List[ReportFilepath] = get_processed_revisions_files(
         project_name=project_name,
@@ -276,46 +271,50 @@ def get_dataflow_report_files_for_project(
         only_newest=False
     )
 
-    failed_report_files: tp.List[ReportFilepath] = get_failed_revisions_files(
-        project_name=project_name,
-        report_type=DFBR,
-        file_name_filter=fnf,
-        only_newest=False
-    )
-
-    return report_files, failed_report_files
+    return report_files
 
 
 def get_both_reports_for_case_study(
     case_study: CaseStudy
-) -> tp.Tuple[tp.List[SFBR], tp.List[DFBR]]:
-    structural_report_files, structural_failed_report_files = get_structural_report_files_for_project(
+) -> tp.Tuple[SFBR, DFBR]:
+    structural_report_file = get_structural_report_files_for_project(
         case_study.project_name
-    )
-    dataflow_report_files, dataflow_failed_report_files = get_dataflow_report_files_for_project(
+    )[0]
+    dataflow_report_file = get_dataflow_report_files_for_project(
         case_study.project_name
-    )
+    )[0]
 
-    SFBRs: tp.List[SFBR] = [
-        load_structural_feature_blame_report(SRFP)
-        for SRFP in structural_report_files
-    ]
-    DFBRs: tp.List[DFBR] = [
-        load_dataflow_feature_blame_report(DRFP)
-        for DRFP in dataflow_report_files
-    ]
+    SFBRs: SFBR = load_structural_feature_blame_report(structural_report_file)
+    DFBRs: DFBR = load_dataflow_feature_blame_report(dataflow_report_file)
     return (SFBRs, DFBRs)
 
 
-def get_commit_dataflow_data_for_case_study(
+def get_general_commit_dataflow_data_for_case_study(
     case_study: CaseStudy
 ) -> pd.DataFrame:
 
     number_active_commits = num_active_commits(
         repo_folder=get_local_project_git_path(case_study.project_name)
     )
-    SFBRs, DFBRs = get_both_reports_for_case_study(case_study)
-    data_frame = generate_commit_dcfi_data(SFBRs, DFBRs, number_active_commits)
+    SFBR, DFBR = get_both_reports_for_case_study(case_study)
+    data_frame = generate_general_commit_dcfi_data(
+        SFBR, DFBR, number_active_commits
+    )
+
+    return data_frame
+
+
+def get_commit_specific_dataflow_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
+
+    number_active_commits = num_active_commits(
+        repo_folder=get_local_project_git_path(case_study.project_name)
+    )
+    SFBR, DFBR = get_both_reports_for_case_study(case_study)
+    data_frame = generate_commit_specific_dcfi_data(
+        SFBR, DFBR, number_active_commits
+    )
 
     return data_frame
 
@@ -521,11 +520,11 @@ class FeatureDisDFBRPlotGenerator(
 def get_feature_author_data_for_case_study(
     case_study: CaseStudy
 ) -> pd.DataFrame:
-    report_files, failed_report_files = get_structural_report_files_for_project(
+    report_file = get_structural_report_files_for_project(
         case_study.project_name
-    )
+    )[0]
     repo_path = get_local_project_git_path(case_study.project_name)
-    report = load_structural_feature_blame_report(report_files[0])
+    report = load_structural_feature_blame_report(report_file)
     data_frame: pd.DataFrame = generate_feature_author_scfi_data(
         report, repo_path
     )
