@@ -19,9 +19,6 @@ class FolderAlreadyPresentError(Exception):
 
 @contextmanager
 def lock_file(lock_path: Path, lock_mode: int = fcntl.LOCK_EX) -> tp.Generator:
-    # Ensure that the lock exists
-    lock_path.touch(exist_ok=True)
-
     open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
     lock_fd = os.open(lock_path, open_mode)
     try:
