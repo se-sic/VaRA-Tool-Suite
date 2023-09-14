@@ -7,7 +7,8 @@ from varats.paper.case_study import CaseStudy
 from varats.plots.feature_blame_plots import (
     get_structural_commit_data_for_case_study,
     get_structural_feature_data_for_case_study,
-    get_commit_dataflow_data_for_case_study,
+    get_commit_specific_dataflow_data_for_case_study,
+    get_general_commit_dataflow_data_for_case_study,
     get_feature_dataflow_data_for_case_study,
     get_feature_author_data_for_case_study,
 )
@@ -23,7 +24,7 @@ from varats.ts_utils.click_param_types import (
 class SFBREvalTable(Table, table_name="sfbr_eval_table"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_studies: tp.List[CaseStudy] = self.table_kwargs['case_studies']
+        case_studies: tp.List[CaseStudy] = self.table_kwargs["case_studies"]
 
         projects_data_commits = [
             get_structural_commit_data_for_case_study(case_study)
@@ -38,32 +39,25 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
             for case_study in case_studies
         ]
 
-        rows = [[
-            "Average Number of Features Changed for Commits"
-        ], [
-            "Average Number of Features Changed for Commits (Outliers Filtered)"
-        ], [
-            "Fraction Commits Changing More Than One Feature"
-        ], [
-            "Correlation Between Feature Size and Number of Interacting Commits"
-        ],
-                [
-                    "Correlation Between Feature Size and Number of Implementing Authors"
-                ]]
+        rows = [[case_study.project_name] for case_study in case_studies] + [
+            ["Mean"],
+            ["Variance"],
+        ]
 
-        for data_commits, data_features, data_authors in zip(
-            projects_data_commits, projects_data_features, projects_data_authors
+        for data_commits, data_features, data_authors, current_row in zip(
+            projects_data_commits,
+            projects_data_features,
+            projects_data_authors,
+            range(0, len(case_studies)),
         ):
-
-            row_access_it = iter(range(0, len(rows)))
             data_commits_num_interacting_features = data_commits[
-                'num_interacting_features']
+                "num_interacting_features"]
             commit_average_number_of_features_changed = np.mean(
                 data_commits_num_interacting_features
             )
-            rows[next(row_access_it)
-                ].append(commit_average_number_of_features_changed)
+            rows[current_row].append(commit_average_number_of_features_changed)
 
+            # TODO: filter large commits, not over variance
             # filtering outliers (3.5 * variance) times greater number of interacting features than the mean
             data_commits_outliers_filtered = data_commits_num_interacting_features[
                 abs(
@@ -73,7 +67,7 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
             commit_average_number_of_features_changed_outliers_filtered = np.mean(
                 data_commits_outliers_filtered
             )
-            rows[next(row_access_it)].append(
+            rows[current_row].append(
                 commit_average_number_of_features_changed_outliers_filtered
             )
 
@@ -81,35 +75,42 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
                 data_commits_num_interacting_features.loc[
                     data_commits_num_interacting_features > 1]
             ) / len(data_commits_num_interacting_features)
-            rows[next(row_access_it)
-                ].append(fraction_commits_changing_more_than_one_feature)
+            rows[current_row].append(
+                fraction_commits_changing_more_than_one_feature
+            )
 
             feature_correlation_between_size_num_interacting_commits = np.corrcoef(
-                data_features['num_interacting_commits'],
-                data_features['feature_size']
+                data_features["num_interacting_commits"],
+                data_features["feature_size"]
             )[0][1]
-            rows[next(row_access_it)].append(
+            rows[current_row].append(
                 feature_correlation_between_size_num_interacting_commits
             )
 
             feature_correlation_between_size_num_implementing_authors = np.corrcoef(
-                data_authors['num_implementing_authors'],
-                data_authors['feature_size']
+                data_authors["num_implementing_authors"],
+                data_authors["feature_size"]
             )[0][1]
-            rows[next(row_access_it)].append(
+            rows[current_row].append(
                 feature_correlation_between_size_num_implementing_authors
             )
 
-        # calc overall mean and variance for each row
-        for i in range(0, len(rows)):
-            row = rows[i][1:]
-            rows[i].extend([np.mean(row), np.var(row)])
+        # calc overall mean and variance for each column
+        for i in range(1, len(rows[0])):
+            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
+            rows[len(case_studies)].append(np.mean(list_vals))
+            rows[len(case_studies) + 1].append(np.var(list_vals))
 
         df = pd.DataFrame(
             rows,
-            columns=['Projects'] +
-            [case_study.project_name for case_study in case_studies] +
-            ['Overall Mean', 'Variance']
+            columns=[
+                "Projects",
+                "Avg Num Ftrs Chngd",
+                "Avg Num Ftrs Chngd (Lrg Cmmts Fltrd)",
+                "Frctn Cmmts Chngng >1 Ftr",
+                "Corr Ftr Size - Num Impl Cmmts",
+                "Corr Ftr Size - Num Impl Athrs",
+            ],
         )
 
         kwargs: tp.Dict[str, tp.Any] = {}
@@ -117,10 +118,10 @@ class SFBREvalTable(Table, table_name="sfbr_eval_table"):
             case_study.project_name for case_study in case_studies
         ])
         if table_format.is_latex():
-            kwargs["caption"] = (
-                f"Evaluation of structural CFIs for projects {projects_separated_by_comma}. "
-            )
-            kwargs['position'] = 't'
+            kwargs[
+                "caption"
+            ] = f"Evaluation of structural CFIs for projects {projects_separated_by_comma}. "
+            kwargs["position"] = "t"
 
         return dataframe_to_table(
             df,
@@ -148,102 +149,101 @@ class SFBREvalTableGenerator(
         ]
 
 
-class DFBREvalTable(Table, table_name="dfbr_eval_table"):
+class DFBRCommitEvalTable(Table, table_name="dfbr_commit_eval_table"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_studies: tp.List[CaseStudy] = self.table_kwargs['case_studies']
+        case_studies: tp.List[CaseStudy] = self.table_kwargs["case_studies"]
 
-        projects_data_commits = [
-            get_commit_dataflow_data_for_case_study(case_study)
+        projects_data_commits_specific = [
+            get_commit_specific_dataflow_data_for_case_study(case_study)
             for case_study in case_studies
         ]
-        projects_data_features = [
-            get_feature_dataflow_data_for_case_study(case_study)
+        projects_data_commits_general = [
+            get_general_commit_dataflow_data_for_case_study(case_study)
             for case_study in case_studies
         ]
 
-        rows = [
-            [
-                "Average Number of Interacting Features for Commits Not Part of Features"
-            ],
-            [
-                "Average Number of Interacting Features for Commits Part of Features"
-            ], ["Fraction of All Commits Interacting With Features"],
-            ["Fraction of Commits Part of Features Interacting With Features"],
-            [
-                "Fraction of Commits Not Part of Features Interacting With Features"
-            ],
-            [
-                "Correlation Feature Size Number of Interacting Commits Not Part of Feature"
-            ],
-            [
-                "Correlation Feature Size Number of Interacting Commits Part of Feature"
-            ]
+        rows = [[case_study.project_name] for case_study in case_studies] + [
+            ["Mean"],
+            ["Variance"],
         ]
 
-        for data_commits, data_features in zip(
-            projects_data_commits, projects_data_features
+        for data_commits, data_general, current_row in zip(
+            projects_data_commits_specific,
+            projects_data_commits_general,
+            range(0, len(case_studies)),
         ):
-
-            rows_access_it = iter(range(0, len(rows)))
-            commits_not_part_of_feature = data_commits.loc[
-                data_commits['part_of_feature'] == 0]
-
-            avg_not_part_of_feature = np.mean(
-                commits_not_part_of_feature['num_interacting_features']
+            avg_interacting_features = np.mean(
+                data_commits["num_interacting_features"]
             )
-            rows[next(rows_access_it)].append(avg_not_part_of_feature)
+            rows[current_row].append(avg_interacting_features)
 
-            commits_part_of_feature = data_commits.loc[
-                data_commits['part_of_feature'] == 1]
-
-            avg_part_of_feature = np.mean(
-                commits_part_of_feature['num_interacting_features']
+            avg_interacting_features_outside_df = np.mean(
+                data_commits["num_interacting_features_outside_df"]
             )
-            rows[next(rows_access_it)].append(avg_part_of_feature)
+            rows[current_row].append(avg_interacting_features_outside_df)
 
+            fraction_commits_with_structural_interactions = data_general[
+                "fraction_commits_structurally_interacting_with_features"][0]
+            rows[current_row].append(
+                fraction_commits_with_structural_interactions
+            )
+
+            num_commits = len(data_commits)
             fraction_all_commits = len(
-                data_commits.loc[data_commits['num_interacting_features'] > 0]
-            ) / (len(data_commits))
-            rows[next(rows_access_it)].append(fraction_all_commits)
+                data_commits.loc[data_commits["num_interacting_features"] > 0]
+            ) / num_commits
+            rows[current_row].append(fraction_all_commits)
 
-            fraction_commits_part_of_feature = len(
-                commits_part_of_feature.loc[
-                    commits_part_of_feature['num_interacting_features'] > 0]
-            ) / len(commits_part_of_feature)
-            rows[next(rows_access_it)].append(fraction_commits_part_of_feature)
+            commits_inside_df = data_commits.loc[
+                data_commits["num_interacting_features_inside_df"] > 0]
+            fraction_commits_inside_df = len(commits_inside_df) / num_commits
+            rows[current_row].append(fraction_commits_inside_df)
 
-            fraction_commits_not_part_of_feature = len(
-                commits_not_part_of_feature.loc[
-                    commits_not_part_of_feature['num_interacting_features'] > 0]
-            ) / len(commits_not_part_of_feature)
-            rows[next(rows_access_it)
-                ].append(fraction_commits_not_part_of_feature)
+            commits_outside_df = data_commits.loc[
+                data_commits["num_interacting_features_outside_df"] > 0]
+            fraction_commits_outside_df = len(commits_outside_df) / num_commits
+            rows[current_row].append(fraction_commits_outside_df)
 
-            corr_feature_size_num_interacting_commits_outside = np.corrcoef(
-                data_features["num_interacting_commits_outside"],
-                data_features["feature_size"]
-            )[0][1]
-            rows[next(rows_access_it)
-                ].append(corr_feature_size_num_interacting_commits_outside)
+            commits_only_inside_df = commits_inside_df.loc[
+                commits_inside_df["num_interacting_features_outside_df"] == 0]
+            fraction_commits_only_inside_df = len(
+                commits_only_inside_df
+            ) / num_commits
+            rows[current_row].append(fraction_commits_only_inside_df)
 
-            corr_feature_size_num_interacting_commits_inside = np.corrcoef(
-                data_features["num_interacting_commits_inside"],
-                data_features["feature_size"]
-            )[0][1]
-            rows[next(rows_access_it)
-                ].append(corr_feature_size_num_interacting_commits_inside)
+            commits_only_outside_df = commits_outside_df.loc[
+                commits_outside_df["num_interacting_features_inside_df"] == 0]
+            fraction_commits_only_outside_df = len(
+                commits_only_outside_df
+            ) / num_commits
+            rows[current_row].append(fraction_commits_only_outside_df)
 
-        # calc overall mean and variance for each row
-        for i in range(0, len(rows)):
-            row = rows[i][1:]
-            rows[i].extend([np.mean(row), np.var(row)])
+            likelihood_coincide_structural_dataflow = data_general[
+                "likelihood_dataflow_interaction_when_interacting_structurally"
+            ][0]
+            rows[current_row].append(likelihood_coincide_structural_dataflow)
+
+        # calc overall mean and variance for each column
+        for i in range(1, len(rows[0])):
+            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
+            rows[len(case_studies)].append(np.mean(list_vals))
+            rows[len(case_studies) + 1].append(np.var(list_vals))
 
         df = pd.DataFrame(
             rows,
-            columns=['Projects'] +
-            [case_study.project_name for case_study in case_studies] +
-            ['Overall Mean', 'Variance']
+            columns=[
+                "Projects",
+                "Avg Num Interacting Features",
+                "Avg Num Interacting Features Outside DF",
+                "Fraction Commits Structurally Interacting With Features",
+                "Fraction Commits Interacting With Features Through DF",
+                "Fraction Commits Interacting With Features Through Inside DF",
+                "Fraction Commits Interacting With Features Through Outside DF",
+                "Fraction Commits Interacting With Features Only Through Inside DF",
+                "Fraction Commits Interacting With Features Only Through Outside DF",
+                "Likelihood for Structural to Coincide With Dataflow Interaction",
+            ],
         )
 
         kwargs: tp.Dict[str, tp.Any] = {}
@@ -251,10 +251,10 @@ class DFBREvalTable(Table, table_name="dfbr_eval_table"):
             case_study.project_name for case_study in case_studies
         ])
         if table_format.is_latex():
-            kwargs["caption"] = (
-                f"Evaluation of dataflow-based CFIs for projects {projects_separated_by_comma}. "
-            )
-            kwargs['position'] = 't'
+            kwargs[
+                "caption"
+            ] = f"Evaluation of dataflow-based CFIs for projects {projects_separated_by_comma}. "
+            kwargs["position"] = "t"
 
         return dataframe_to_table(
             df,
@@ -265,16 +265,102 @@ class DFBREvalTable(Table, table_name="dfbr_eval_table"):
         )
 
 
-class DFBREvalTableGenerator(
+class DFBRCommitEvalTableGenerator(
     TableGenerator,
-    generator_name="dfbr-eval-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    generator_name="dfbr-commit-eval-table",
+    options=[REQUIRE_MULTI_CASE_STUDY],
 ):
 
     def generate(self) -> tp.List[Table]:
         case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
         return [
-            DFBREvalTable(
+            DFBRCommitEvalTable(
+                self.table_config,
+                case_studies=case_studies,
+                **self.table_kwargs
+            )
+        ]
+
+
+class DFBRFeatureEvalTable(Table, table_name="dfbr_feature_eval_table"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs["case_studies"]
+
+        projects_data_features = [
+            get_feature_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
+        ]
+
+        rows = [[case_study.project_name] for case_study in case_studies] + [
+            ["Mean"],
+            ["Variance"],
+        ]
+
+        for data_features, current_row in zip(
+            projects_data_features,
+            range(0, len(case_studies)),
+        ):
+            corr_feature_size_num_interacting_commits_outside = np.corrcoef(
+                data_features["num_interacting_commits_outside_df"],
+                data_features["feature_size"],
+            )[0][1]
+            rows[current_row].append(
+                corr_feature_size_num_interacting_commits_outside
+            )
+
+            corr_feature_size_num_interacting_commits_inside = np.corrcoef(
+                data_features["num_interacting_commits_inside_df"],
+                data_features["feature_size"],
+            )[0][1]
+            rows[current_row].append(
+                corr_feature_size_num_interacting_commits_inside
+            )
+
+        # calc overall mean and variance for each column
+        for i in range(1, len(rows[0])):
+            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
+            rows[len(case_studies)].append(np.mean(list_vals))
+            rows[len(case_studies) + 1].append(np.var(list_vals))
+
+        df = pd.DataFrame(
+            rows,
+            columns=[
+                "Projects",
+                "Corr Feature Size Num Interacting Commtis Outside DF",
+                "Corr Feature Size Num Interacting Commtis Inside DF",
+            ],
+        )
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+        projects_separated_by_comma = ",".join([
+            case_study.project_name for case_study in case_studies
+        ])
+        if table_format.is_latex():
+            kwargs[
+                "caption"
+            ] = f"Evaluation of dataflow-based CFIs for projects {projects_separated_by_comma}. "
+            kwargs["position"] = "t"
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
+
+
+class DFBRFeatureEvalTableGenerator(
+    TableGenerator,
+    generator_name="dfbr-feature-eval-table",
+    options=[REQUIRE_MULTI_CASE_STUDY],
+):
+
+    def generate(self) -> tp.List[Table]:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
+        return [
+            DFBRFeatureEvalTable(
                 self.table_config,
                 case_studies=case_studies,
                 **self.table_kwargs
@@ -287,24 +373,23 @@ class DFBRInterestingCommitsTable(
 ):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_study: CaseStudy = self.table_kwargs['case_study']
+        case_study: CaseStudy = self.table_kwargs["case_study"]
 
         data = get_dataflow_data_for_case_study(case_study)
 
         rows = []
 
         data_points_with_many_interactions = data.loc[
-            data['num_interacting_features'] >= 5]
+            data["num_interacting_features"] >= 5]
 
         df = data_points_with_many_interactions
-        df.sort_values(by=['part_of_feature'])
+        df.sort_values(by=["part_of_feature"])
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            kwargs["caption"] = (
-                f"Evaluation of project {case_study.project_name}. "
-            )
-            kwargs['position'] = 't'
+            kwargs["caption"
+                  ] = f"Evaluation of project {case_study.project_name}. "
+            kwargs["position"] = "t"
 
         return dataframe_to_table(
             df,
@@ -318,7 +403,7 @@ class DFBRInterestingCommitsTable(
 class DFBRInterestingCommitsTableGenerator(
     TableGenerator,
     generator_name="dfbr-interesting-commits-table",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_CASE_STUDY],
 ):
 
     def generate(self) -> tp.List[Table]:

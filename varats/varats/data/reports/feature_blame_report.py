@@ -15,7 +15,7 @@ from varats.report.report import BaseReport
 from varats.utils.git_util import CommitRepoPair, ShortCommitHash, get_author
 
 
-class StructuralCommitFeatureInteraction():
+class StructuralCommitFeatureInteraction:
     """A StructuralCommitFeatureInteraction detailing the specific commit-hash
     and repo and feature and the number of instructions this structural cfi
     occurs in."""
@@ -30,14 +30,14 @@ class StructuralCommitFeatureInteraction():
     @staticmethod
     def create_commit_feature_interaction(
         raw_inst_entry: tp.Dict[str, tp.Any]
-    ) -> 'StructuralCommitFeatureInteraction':
+    ) -> "StructuralCommitFeatureInteraction":
         """Creates a `StructuralCommitFeatureInteraction` entry from the
         corresponding yaml document section."""
-        num_instructions = int(raw_inst_entry['num-instructions'])
-        feature: str = str(raw_inst_entry['feature'])
+        num_instructions = int(raw_inst_entry["num-instructions"])
+        feature: str = str(raw_inst_entry["feature"])
         commit: CommitRepoPair = CommitRepoPair(
-            (raw_inst_entry['commit-repo-pair'])['commit'],
-            (raw_inst_entry['commit-repo-pair'])['repository']
+            (raw_inst_entry["commit-repo-pair"])["commit"],
+            (raw_inst_entry["commit-repo-pair"])["repository"],
         )
         return StructuralCommitFeatureInteraction(
             num_instructions, feature, commit
@@ -67,7 +67,7 @@ class StructuralCommitFeatureInteraction():
         return self.__commit
 
     def is_terminator(self) -> bool:
-        br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
+        br_regex = re.compile(r"(br( i1 | label ))|(switch i\d{1,} )")
         return br_regex.search(self.__num_instructions) is not None
 
 
@@ -84,23 +84,24 @@ class StructuralFeatureBlameReport(
     def __init__(self, path: Path) -> None:
         super().__init__(path)
 
-        with open(path, 'r') as stream:
+        with open(path, "r") as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("StructuralFeatureBlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__meta_data = FeatureBlameReportMetaData \
-                .create_feature_analysis_report_meta_data(next(documents))
+            self.__meta_data = (
+                FeatureBlameReportMetaData.
+                create_feature_analysis_report_meta_data(next(documents))
+            )
 
             self.__commit_feature_interactions: tp.List[
                 StructuralCommitFeatureInteraction] = []
             raw_feature_blame_report = next(documents)
             for cfi in raw_feature_blame_report[
-                'structural-commit-feature-interactions']:
-                new_cfi = (
-                    StructuralCommitFeatureInteraction.
-                    create_commit_feature_interaction(cfi)
+                "structural-commit-feature-interactions"]:
+                new_cfi = StructuralCommitFeatureInteraction.create_commit_feature_interaction(
+                    cfi
                 )
                 self.__commit_feature_interactions.append(new_cfi)
 
@@ -118,7 +119,7 @@ class StructuralFeatureBlameReport(
 
     @property
     def commit_feature_interactions(
-        self
+        self,
     ) -> tp.ValuesView[StructuralCommitFeatureInteraction]:
         """Iterate over all cfis."""
         return self.__commit_feature_interactions
@@ -190,7 +191,7 @@ def generate_commit_scfi_data(
 ##### DATAFLOW #####
 
 
-class DataflowCommitFeatureInteraction():
+class DataflowCommitFeatureInteraction:
     """A DataflowCommitFeatureInteraction detailing the specific commit-hash and
     repo and feature this dataflow-based cfi occurs in."""
 
@@ -201,13 +202,13 @@ class DataflowCommitFeatureInteraction():
     @staticmethod
     def create_commit_feature_interaction(
         raw_inst_entry: tp.Dict[str, tp.Any]
-    ) -> 'DataflowCommitFeatureInteraction':
+    ) -> "DataflowCommitFeatureInteraction":
         """Creates a `DataflowCommitFeatureInteraction` entry from the
         corresponding yaml document section."""
-        feature: str = str(raw_inst_entry['feature'])
+        feature: str = str(raw_inst_entry["feature"])
         crps: tp.List[CommitRepoPair] = []
-        for crp in raw_inst_entry['commit-repo-pairs']:
-            crps.append(CommitRepoPair(crp['commit'], crp['repository']))
+        for crp in raw_inst_entry["commit-repo-pairs"]:
+            crps.append(CommitRepoPair(crp["commit"], crp["repository"]))
         return DataflowCommitFeatureInteraction(feature, crps)
 
     def print(self) -> None:
@@ -230,7 +231,7 @@ class DataflowCommitFeatureInteraction():
         return self.__commits
 
     def is_terminator(self) -> bool:
-        br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
+        br_regex = re.compile(r"(br( i1 | label ))|(switch i\d{1,} )")
         return br_regex.search(self.__commits) is not None
 
 
@@ -243,20 +244,22 @@ class DataflowFeatureBlameReport(
     def __init__(self, path: Path) -> None:
         super().__init__(path)
 
-        with open(path, 'r') as stream:
+        with open(path, "r") as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("DataflowFeatureBlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__meta_data = FeatureBlameReportMetaData \
-                .create_feature_analysis_report_meta_data(next(documents))
+            self.__meta_data = (
+                FeatureBlameReportMetaData.
+                create_feature_analysis_report_meta_data(next(documents))
+            )
 
             self.__commit_feature_interactions: tp.List[
                 DataflowCommitFeatureInteraction] = []
             raw_feature_blame_report = next(documents)
             for cfi in raw_feature_blame_report[
-                'dataflow-commit-feature-interactions']:
+                "dataflow-commit-feature-interactions"]:
                 new_cfi = (
                     DataflowCommitFeatureInteraction.
                     create_commit_feature_interaction(cfi)
@@ -277,93 +280,179 @@ class DataflowFeatureBlameReport(
 
     @property
     def commit_feature_interactions(
-        self
+        self,
     ) -> tp.ValuesView[DataflowCommitFeatureInteraction]:
         """Iterate over all cfis."""
         return self.__commit_feature_interactions
 
 
-def commits_inside_features(
-    SFBRs: tp.List[StructuralFeatureBlameReport]
-) -> tp.Set[str]:
-    commits_structurally_interacting_with_features: tp.Set[str] = set()
-    for SFBR in SFBRs:
-        for SCFI in SFBR.commit_feature_interactions:
-            commits_structurally_interacting_with_features.add(
-                ShortCommitHash(SCFI.commit.commit_hash).hash
+def get_commits_structurally_interacting_features(
+    SFBR: StructuralFeatureBlameReport,
+) -> tp.Dict[str, tp.Set[str]]:
+    commits_structurally_interacting_features: tp.Dict[str, tp.Set[str]] = {}
+    for SCFI in SFBR.commit_feature_interactions:
+        hash = ShortCommitHash(SCFI.commit.commit_hash).hash
+        entry = commits_structurally_interacting_features.get(hash)
+        if not entry:
+            entry = set([])
+        entry.add(SCFI.feature)
+        commits_structurally_interacting_features.update({hash: entry})
+
+    return commits_structurally_interacting_features
+
+
+def get_commits_dataflow_interacting_features(
+    SFBR: StructuralFeatureBlameReport,
+    DFBR: DataflowFeatureBlameReport,
+) -> tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str], tp.Set[str]]]:
+    # [hash, ([all_interacting_features], [inside_df], [outside_df])]
+    dfi_commit: tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str],
+                                      tp.Set[str]]] = {}
+    commits_structurally_interacting_features: tp.Dict[
+        str, tp.Set[str]] = get_commits_structurally_interacting_features(SFBR)
+
+    for DCFI in DFBR.commit_feature_interactions:
+        feature = DCFI.feature
+        for commit in DCFI.commits:
+            sch: str = ShortCommitHash(commit.commit_hash).hash
+            entry = dfi_commit.get(sch)
+            structurally_interacting_features = (
+                commits_structurally_interacting_features.get(sch)
             )
-    return commits_structurally_interacting_with_features
+            if entry is None:
+                entry = (set([]), set([]), set([]))
+            entry[0].add(feature)
+            if structurally_interacting_features is None:
+                entry[2].add(feature)
+            elif feature in structurally_interacting_features:
+                entry[1].add(feature)
+            else:
+                entry[2].add(feature)
+            dfi_commit.update({sch: (entry)})
+
+    return dfi_commit
 
 
-def generate_commit_dcfi_data(
-    SFBRs: tp.List[StructuralFeatureBlameReport],
-    DFBRs: tp.List[DataflowFeatureBlameReport], num_commits: int
+def get_features_dataflow_affecting_commits(
+    SFBR: StructuralFeatureBlameReport, DFBR: DataflowFeatureBlameReport
+) -> tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str]]]:
+    # {feature, ([interacting_commits_outside], [interacting_commits_inside])}
+    dci_feature: tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str]]] = {}
+
+    commits_structurally_interacting_with_features: tp.Dict[
+        str, tp.Set[str]] = get_commits_structurally_interacting_features(SFBR)
+
+    for DCFI in DFBR.commit_feature_interactions:
+        feature = DCFI.feature
+        entry = dci_feature.get(feature)
+        if entry is None:
+            entry = (set([]), set([]))
+        for commit in DCFI.commits:
+            sch: str = ShortCommitHash(commit.commit_hash).hash
+            structurally_interacting_features = (
+                commits_structurally_interacting_with_features.get(sch)
+            )
+            if structurally_interacting_features is None or not (
+                feature in structurally_interacting_features
+            ):
+                entry[0].add(sch)
+            else:
+                entry[1].add(sch)
+        dci_feature.update({feature: entry})
+
+    return dci_feature
+
+
+def generate_commit_specific_dcfi_data(
+    SFBR: StructuralFeatureBlameReport,
+    DFBR: DataflowFeatureBlameReport,
+    num_commits: int,
 ) -> pd.DataFrame:
-    commits_structurally_interacting_with_features: tp.Set[
-        str] = commits_inside_features(SFBRs)
-    # [hash, ([interacting_features], part_of_feature)]
-    dfi_commit: tp.Dict[str, tp.Tuple[tp.Set[str], int]] = {}
-    for DFBR in DFBRs:
-        for DCFI in DFBR.commit_feature_interactions:
-            for commit in DCFI.commits:
-                sch: str = ShortCommitHash(commit.commit_hash).hash
-                prev = dfi_commit.get(sch)
-                if prev:
-                    prev[0].add(DCFI.feature)
-                else:
-                    part_of_feature = sch in commits_structurally_interacting_with_features
-                    new = (set([DCFI.feature]), part_of_feature)
-                    dfi_commit.update({sch: new})
-    # value 0 in third column => not part of feature
+    # [hash, ([all_interacting_features], [inside_df], [outside_df])]
+    dfi_commit = get_commits_dataflow_interacting_features(SFBR, DFBR)
+
     rows_commit_dfi = [[
         commit_data[0],
-        len(commit_data[1][0]), commit_data[1][1]
+        len(commit_data[1][0]),
+        len(commit_data[1][1]),
+        len(commit_data[1][2]),
     ] for commit_data in dfi_commit.items()]
     counter = 0
     for _ in range(0, num_commits - len(dfi_commit)):
-        rows_commit_dfi.append([f"fake_hash{counter}", 0, 0])
+        rows_commit_dfi.append([f"fake_hash{counter}", 0, 0, 0])
         counter += 1
 
-    columns = ["commit", "num_interacting_features", "part_of_feature"]
+    columns = [
+        "commit",
+        "num_interacting_features",
+        "num_interacting_features_inside_df",
+        "num_interacting_features_outside_df",
+    ]
     return pd.DataFrame(rows_commit_dfi, columns=columns)
 
 
-def generate_feature_dcfi_data(
-    SFBRs: tp.List[StructuralFeatureBlameReport],
-    DFBRs: tp.List[DataflowFeatureBlameReport]
+def generate_general_commit_dcfi_data(
+    SFBR: StructuralFeatureBlameReport,
+    DFBR: DataflowFeatureBlameReport,
+    num_commits: int,
 ) -> pd.DataFrame:
-    commits_structurally_interacting_with_features: tp.Set[
-        str] = commits_inside_features(SFBRs)
-    # {feature, ([interacting_commits_outside], [interacting_commits_inside])}
-    dci_feature: tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str]]] = {}
-    for DFBR in DFBRs:
-        for DCFI in DFBR.commit_feature_interactions:
-            feature = DCFI.feature
-            entry = dci_feature.get(feature)
-            if entry is None:
-                entry = (set([]), set([]))
-            for commit in DCFI.commits:
-                sch: str = ShortCommitHash(commit.commit_hash).hash
-                if sch in commits_structurally_interacting_with_features:
-                    entry[1].add(sch)
-                else:
-                    entry[0].add(sch)
-            dci_feature.update({feature: entry})
+    row = []
+    commits_structurally_interacting_features: tp.Dict[
+        str, tp.Set[str]] = get_commits_structurally_interacting_features(SFBR)
+    num_structurally_interacting_commits = len(
+        commits_structurally_interacting_features.values()
+    )
+    row.append(num_structurally_interacting_commits / num_commits)
 
-    feature_scfi_data = pd.concat([
-        generate_feature_scfi_data(SFBR) for SFBR in SFBRs
-    ])
+    commits_dataflow_interacting_features = get_commits_dataflow_interacting_features(
+        SFBR, DFBR
+    )
+    interacting_structurally_and_through_dataflow = 0
+    interacting_structurally_and_not_through_dataflow = 0
+    for sch, features in commits_structurally_interacting_features.items():
+        entry = commits_dataflow_interacting_features.get(sch)
+        if entry is None:
+            interacting_structurally_and_not_through_dataflow += 1
+            continue
+        for feature in features:
+            if feature in entry[0]:
+                interacting_structurally_and_through_dataflow += 1
+            else:
+                interacting_structurally_and_not_through_dataflow += 1
+    row.append(
+        interacting_structurally_and_through_dataflow / (
+            interacting_structurally_and_through_dataflow +
+            interacting_structurally_and_not_through_dataflow
+        )
+    )
+
+    columns = [
+        "fraction_commits_structurally_interacting_with_features",
+        "likelihood_dataflow_interaction_when_interacting_structurally",
+    ]
+    return pd.DataFrame([row], columns=columns)
+
+
+def generate_feature_dcfi_data(
+    SFBR: StructuralFeatureBlameReport,
+    DFBR: DataflowFeatureBlameReport,
+) -> pd.DataFrame:
+    dci_feature = get_features_dataflow_affecting_commits(SFBR, DFBR)
+
+    feature_scfi_data = generate_feature_scfi_data(SFBR)
 
     rows_feature_dci = [[
         feature_data[0],
-        feature_scfi_data.loc[feature_scfi_data["feature"] == feature_data[0]
-                             ]["feature_size"].to_numpy()[0],
+        feature_scfi_data.loc[feature_scfi_data["feature"] == feature_data[0]]
+        ["feature_size"].to_numpy()[0],
         len(feature_data[1][0]),
-        len(feature_data[1][1])
+        len(feature_data[1][1]),
     ] for feature_data in dci_feature.items()]
 
     columns = [
-        "feature", "feature_size", "num_interacting_commits_outside",
-        "num_interacting_commits_inside"
+        "feature",
+        "feature_size",
+        "num_interacting_commits_outside_df",
+        "num_interacting_commits_inside_df",
     ]
     return pd.DataFrame(rows_feature_dci, columns=columns)
