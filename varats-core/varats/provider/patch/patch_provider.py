@@ -241,7 +241,7 @@ class PatchProvider(Provider):
         self._update_local_patches_repo()
         repo_path = self._get_patches_repository_path()
 
-        patches_project_dir = Path(repo_path / self.project.NAME)
+        patches_project_dir = repo_path / self.project.NAME
 
         if not patches_project_dir.is_dir():
             warnings.warn(
