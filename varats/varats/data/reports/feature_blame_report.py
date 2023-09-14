@@ -57,10 +57,6 @@ class StructuralCommitFeatureInteraction():
         """commit of this cfi."""
         return self.__commit
 
-    def is_terminator(self) -> bool:
-        br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
-        return br_regex.search(self.__feature) is not None
-
 
 class FeatureBlameReportMetaData(FeatureAnalysisReportMetaData):
     pass
@@ -141,10 +137,6 @@ class DataflowCommitFeatureInteraction():
     def commit(self) -> tp.List[CommitRepoPair]:
         """commit of this cfi."""
         return self.__commits
-
-    def is_terminator(self) -> bool:
-        br_regex = re.compile(r'(br( i1 | label ))|(switch i\d{1,} )')
-        return br_regex.search(self.__feature) is not None
 
 
 class DataflowFeatureBlameReport(

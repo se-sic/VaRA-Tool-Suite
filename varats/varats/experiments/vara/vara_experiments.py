@@ -78,8 +78,8 @@ def setup_basic_feature_blame_experiment(
         experiment.get_handle(), project, report_type
     )
 
-    # This c-flag is provided by VaRA and it suggests to use the git-blame
-    # annotation.
+    # These flags are provided by VaRA and suggest to use git-blame
+    # and feature annotations.
     project.cflags += ["-fvara-GB", "-fvara-feature"]
 
 
@@ -90,28 +90,6 @@ def generate_basic_blame_experiment_actions(
 ) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
-
-    - handle caching of BC files
-    - compile project, if needed
-
-    Args:
-        project: reference to the BB project
-        bc_file_extensions: list of bitcode file extensions (e.g. opt, no opt)
-        extraction_error_handler: handler to manage errors during the
-                                  extraction process
-    """
-    return get_bc_cache_actions(
-        project, bc_file_extensions, extraction_error_handler
-    )
-
-
-def generate_basic_feature_blame_experiment_actions(
-    project: Project,
-    bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
-    extraction_error_handler: tp.Optional[PEErrorHandler] = None
-) -> tp.List[actions.Step]:
-    """
-    Generate the basic actions for a feature blame experiment.
 
     - handle caching of BC files
     - compile project, if needed

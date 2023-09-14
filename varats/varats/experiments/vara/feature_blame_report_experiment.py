@@ -146,7 +146,7 @@ class StructuralFeatureBlameReportExperiment(
 
         FBE.setup_basic_feature_blame_experiment(self, project, SFBR)
 
-        analysis_actions = FBE.generate_basic_feature_blame_experiment_actions(
+        analysis_actions = FBE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
@@ -271,7 +271,7 @@ class DataflowFeatureBlameReportExperiment(
 
         FBE.setup_basic_feature_blame_experiment(self, project, DFBR)
 
-        analysis_actions = FBE.generate_basic_feature_blame_experiment_actions(
+        analysis_actions = FBE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
