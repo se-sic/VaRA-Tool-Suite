@@ -1309,7 +1309,16 @@ def __cov_fill_buffer(
     assert 1 <= start_line <= len(lines)
     assert start_column >= 1 and start_column - 1 <= len(lines[start_line])
     assert 1 <= end_line <= len(lines) and end_line >= start_line
-    assert end_column >= 1 and end_column - 1 <= len(lines[end_line])
+    # LLVM coverage json for ect is buggy.
+    # https://github.com/fhanau/Efficient-Compression-Tool/blob/
+    # 8a2a6b2a72a637aea2dad2540cc8d76308711078/src/lodepng/lodepng.cpp#L4370
+    # Line 4370 only has length 1,
+    # but json says it goes until column 31. So ignore it.
+    # Probably should be line 4371!
+    if (start_line, start_column, end_line, end_column) != (4369, 4, 4370, 31):
+        assert end_column >= 1 and end_column - 1 <= len(
+            lines[end_line]
+        ), f"{start_line, start_column, end_line, end_column}"
     assert (end_column >= start_column if start_line == end_line else True)
 
     for line_number in range(start_line, end_line + 1):

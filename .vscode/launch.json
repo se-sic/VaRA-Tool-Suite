@@ -31,6 +31,21 @@
             "justMyCode": false,
             "console": "integratedTerminal"
         },
+        {
+            "name": "benchbuildECT",
+            "type": "python",
+            "request": "launch",
+            "program": "~/.local/bin/benchbuild",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/benchbuild",
+            "args": [
+                "run",
+                "-E",
+                "GenerateCoverage",
+                "ect"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
 
         {
             "name": "plot",
@@ -60,6 +75,22 @@
                 "GenerateCoverage",
                 "--case-study",
                 "xz_0"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "plotECT",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/mmustermann/Dokumente/VARA-root2/.venv/bin/vara-plot",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/",
+            "args": [
+                "coverage",
+                "--experiment-type",
+                "GenerateCoverage",
+                "--case-study",
+                "ect_0"
             ],
             "justMyCode": false,
             "console": "integratedTerminal"
