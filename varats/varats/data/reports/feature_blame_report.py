@@ -5,6 +5,7 @@ import typing as tp
 from pathlib import Path
 
 import pandas as pd
+import pygit2
 import yaml
 
 from varats.base.version_header import VersionHeader
@@ -145,13 +146,15 @@ def generate_feature_scfi_data(
 
 
 def generate_feature_author_scfi_data(
-    SFBR: StructuralFeatureBlameReport, path: Path
+    SFBR: StructuralFeatureBlameReport, project_gits: tp.Dict[str,
+                                                              pygit2.Repository]
 ) -> pd.DataFrame:
     # {feature: (authors, size)}
     features_cfi_author_data: tp.Dict[str, tp.Tuple(tp.Set[str], int)] = {}
     for SCFI in SFBR.commit_feature_interactions:
         commit_hash = SCFI.commit.commit_hash
-        author = get_author(commit_hash, path)
+        repo = SCFI.commit.repository_name
+        author = get_author(commit_hash, project_gits.get(repo))
         if author is None:
             continue
         entry = features_cfi_author_data.get(SCFI.feature)

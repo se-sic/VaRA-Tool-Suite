@@ -406,7 +406,7 @@ def num_active_commits(
     ])
 
 
-def get_author(commit_hash: any, repo_folder: Path) -> tp.Optional[str]:
+def get_author(commit_hash: any, repo: pygit2.Repository) -> tp.Optional[str]:
     """
     Get the author (name) of a commit with its respective hash.
 
@@ -417,7 +417,6 @@ def get_author(commit_hash: any, repo_folder: Path) -> tp.Optional[str]:
     Returns:
         the name of the author
     """
-    repo = pygit2.Repository(repo_folder)
     commit: pygit2.Commit = repo.get(commit_hash)
     if commit is None:
         return None

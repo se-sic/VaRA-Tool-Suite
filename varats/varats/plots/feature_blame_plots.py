@@ -26,6 +26,7 @@ from varats.jupyterhelper.file import (
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
+from varats.project.project_util import get_local_project_gits
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.click_param_types import (
@@ -528,10 +529,10 @@ def get_feature_author_data_for_case_study(
     report_file = get_structural_report_files_for_project(
         case_study.project_name
     )[0]
-    repo_path = get_local_project_git_path(case_study.project_name)
+    project_gits = get_local_project_gits(case_study.project_name)
     report = load_structural_feature_blame_report(report_file)
     data_frame: pd.DataFrame = generate_feature_author_scfi_data(
-        report, repo_path
+        report, project_gits
     )
 
     return data_frame
