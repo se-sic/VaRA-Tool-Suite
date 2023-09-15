@@ -2,11 +2,12 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake, mkdir
+from benchbuild.utils.revision_ranges import SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_git_path, BinaryType
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
@@ -37,7 +38,15 @@ class HyTeg(VProject):
     ) -> tp.List['ProjectBinaryWrapper']:
         binaries = RevisionBinaryMap(get_local_project_git_path(HyTeg.NAME))
 
-        return binaries
+        binaries.specify_binary(
+            "build/apps/profiling/ProfilingApp",
+            BinaryType.EXECUTABLE,
+            only_valid_in=SingleRevision(
+                "f4711dadc3f61386e6ccdc704baa783253332db2"
+            )
+        )
+
+        return binaries[revision]
 
     def compile(self) -> None:
         hyteg_source = local.path(self.source_of(self.primary_source))
@@ -53,6 +62,9 @@ class HyTeg(VProject):
 
                 with local.cwd(hyteg_source / "build" / "apps"):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def recompile(self) -> None:
+        pass
 
     def run_tests(self) -> None:
         pass
