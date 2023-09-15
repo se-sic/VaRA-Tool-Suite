@@ -256,6 +256,64 @@ class CommitSFBRPieChartGenerator(
         ]
 
 
+def get_stacked_proportional_commit_structural_data(
+    case_studies: tp.List[CaseStudy],
+) -> pd.DataFrame:
+    rows = []
+    for case_study in case_studies:
+        data_commits = get_general_commit_dataflow_data_for_case_study(
+            case_study
+        )
+        fraction_commits_implementing_features = data_commits[
+            "fraction_commits_structurally_interacting_with_features"][0]
+
+        rows.append([
+            case_study.project_name, fraction_commits_implementing_features,
+            1 - fraction_commits_implementing_features
+        ])
+
+    return pd.DataFrame(
+        data=rows,
+        columns=[
+            "Projects",
+            "Implementing Features",
+            "Not Implementing Features",
+        ],
+    )
+
+
+class CommitProportionalStructuralPlot(
+    Plot, plot_name="commit_proportional_structural_plot"
+):
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        data = get_stacked_proportional_commit_structural_data(case_studies)
+        data = data.sort_values(by=["Implementing Features"], ascending=True)
+        print(data)
+        plt = data.set_index("Projects").plot(
+            kind="bar", stacked=True, ylabel="Proportional Commit Count"
+        )
+        plt.legend(
+            title="Commit Kind", loc="center left", bbox_to_anchor=(1, 0.5)
+        )
+
+
+class CommitProportionalStructuralPlotGenerator(
+    PlotGenerator,
+    generator_name="commit-proportional-structural-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY],
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        return [
+            CommitProportionalStructuralPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
+        ]
+
+
 ######## DATAFLOW #########
 
 
@@ -351,7 +409,7 @@ class CommitDFBRPieChartGenerator(
         ]
 
 
-def get_stacked_proportional_feature_dataflow_data(
+def get_specific_stacked_proportional_commit_dataflow_data(
     case_studies: tp.List[CaseStudy],
 ) -> pd.DataFrame:
     rows = []
@@ -359,58 +417,56 @@ def get_stacked_proportional_feature_dataflow_data(
         data_commits = get_commit_specific_dataflow_data_for_case_study(
             case_study
         )
-        num_commits = len(data_commits)
 
-        fraction_all_commits = (
-            len(data_commits.loc[data_commits["num_interacting_features"] > 0])
-            / num_commits
+        num_commits_with_df_int = len(
+            data_commits.loc[data_commits["num_interacting_features"] > 0]
         )
 
         commits_inside_df = data_commits.loc[
             data_commits["num_interacting_features_inside_df"] > 0]
         commits_only_inside_df = commits_inside_df.loc[
             commits_inside_df["num_interacting_features_outside_df"] == 0]
-        fraction_commits_only_inside_df = len(
-            commits_only_inside_df
-        ) / num_commits
+        fraction_commits_only_inside_df = (
+            len(commits_only_inside_df) / num_commits_with_df_int
+        )
 
         commits_outside_df = data_commits.loc[
             data_commits["num_interacting_features_outside_df"] > 0]
         commits_only_outside_df = commits_outside_df.loc[
             commits_outside_df["num_interacting_features_inside_df"] == 0]
-        fraction_commits_only_outside_df = len(
-            commits_only_outside_df
-        ) / num_commits
+        fraction_commits_only_outside_df = (
+            len(commits_only_outside_df) / num_commits_with_df_int
+        )
 
         rows.append([
             case_study.project_name,
             fraction_commits_only_outside_df,
             fraction_commits_only_inside_df,
-            fraction_all_commits - fraction_commits_only_outside_df -
+            1 - fraction_commits_only_outside_df -
             fraction_commits_only_inside_df,
-            1 - fraction_all_commits,
         ])
 
     return pd.DataFrame(
         data=rows,
         columns=[
             "Projects",
-            ">= 1 Interaction, Only Outside DF",
-            ">= 1 Interaction, Only Inside DF",
-            ">= 1 Interaction, Inside and Outside DF",
-            "=0 Interactions",
+            "Only Outside DF",
+            "Only Inside DF",
+            "Inside and Outside DF",
         ],
     )
 
 
-class FeatureProportionalDataflowPlot(
-    Plot, plot_name="feature_proportional_dataflow_plot"
+class SpecificCommitProportionalDataflowPlot(
+    Plot, plot_name="specific_commit_proportional_dataflow_plot"
 ):
 
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        data = get_stacked_proportional_feature_dataflow_data(case_studies)
-        data = data.sort_values(by=["=0 Interactions"], ascending=False)
+        data = get_specific_stacked_proportional_commit_dataflow_data(
+            case_studies
+        )
+        data = data.sort_values(by=["Inside and Outside DF"], ascending=True)
         print(data)
         plt = data.set_index("Projects").plot(
             kind="bar", stacked=True, ylabel="Proportional Commit Count"
@@ -420,16 +476,83 @@ class FeatureProportionalDataflowPlot(
         )
 
 
-class FeatureProportionalDataflowPlotGenerator(
+class SpecificProportionalDataflowPlotGenerator(
     PlotGenerator,
-    generator_name="feature-proportional-dataflow-plot",
+    generator_name="specific-commit-proportional-dataflow-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
 
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureProportionalDataflowPlot(
+            SpecificCommitProportionalDataflowPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
+        ]
+
+
+def get_general_stacked_proportional_commit_dataflow_data(
+    case_studies: tp.List[CaseStudy],
+) -> pd.DataFrame:
+    rows = []
+    for case_study in case_studies:
+        data_commits = get_commit_specific_dataflow_data_for_case_study(
+            case_study
+        )
+        num_commits = len(data_commits)
+
+        fraction_commits_with_df_int = len(
+            data_commits.loc[data_commits["num_interacting_features"] > 0]
+        ) / num_commits
+
+        rows.append([
+            case_study.project_name, fraction_commits_with_df_int,
+            1 - fraction_commits_with_df_int
+        ])
+
+    return pd.DataFrame(
+        data=rows,
+        columns=[
+            "Projects", "Commits With DF Interactions",
+            "Commits Without DF Interactions"
+        ],
+    )
+
+
+class GeneralCommitProportionalDataflowPlot(
+    Plot, plot_name="general_commit_proportional_dataflow_plot"
+):
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        data = get_general_stacked_proportional_commit_dataflow_data(
+            case_studies
+        )
+        data = data.sort_values(
+            by=["Commits With DF Interactions"], ascending=True
+        )
+        print(data)
+        plt = data.set_index("Projects").plot(
+            kind="bar",
+            stacked=True,
+            ylabel="Proportional Commit Count",
+            color=['red', 'blue']
+        )
+        plt.legend(
+            title="Commit Kind", loc="center left", bbox_to_anchor=(1, 0.5)
+        )
+
+
+class GeneralProportionalDataflowPlotGenerator(
+    PlotGenerator,
+    generator_name="general-commit-proportional-dataflow-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY],
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        return [
+            GeneralCommitProportionalDataflowPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
