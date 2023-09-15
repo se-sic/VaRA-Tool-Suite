@@ -185,12 +185,14 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
     def plot(self, view_mode: bool) -> None:
         # -- Configure plot --
-        plot_metric = [("Time", "overhead_time_rel"),
-                       ("Memory", "overhead_memory_rel"),
-                       ("Major Page Faults", "overhead_major_page_faults_rel"),
-                       ("Minor Page Faults", "overhead_minor_page_faults_rel"),
-                       ("Filesystem Inputs", "overhead_fs_inputs_rel"),
-                       ("Filesystem Outputs", "overhead_fs_outputs_rel")]
+        plot_metric = [
+            ("Time", "overhead_time_rel"),
+            ("Memory", "overhead_memory_rel"),
+            #("Major Page Faults", "overhead_major_page_faults_rel"),
+            #("Minor Page Faults", "overhead_minor_page_faults_rel"),
+            #("Filesystem Inputs", "overhead_fs_inputs_rel"),
+            #("Filesystem Outputs", "overhead_fs_outputs_rel"),
+        ]
         target_row = "f1_score"
         # target_row = "precision"
 
@@ -273,7 +275,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         # print(f"{self.plot_config.width()}")
 
-        rows = 3
+        rows = 1
         _, axes = plt.subplots(
             ncols=int(len(plot_metric) / rows), nrows=rows, figsize=(30, 10)
         )
@@ -284,7 +286,13 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 axes
             )
         else:
-            for idx, ax in enumerate(list(chain.from_iterable(axes))):
+            print(f"{axes=}")
+            if rows == 1:
+                axes_list = list(axes)
+            else:
+                axes_list = list(chain.from_iterable(axes))
+
+            for idx, ax in enumerate(axes_list):
                 self.do_single_plot(
                     plot_metric[idx][1], target_row, merged_df,
                     plot_metric[idx][0], ax
@@ -301,14 +309,14 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             hue="Profiler",
             style='CaseStudy',
             alpha=0.5,
-            s=100,
+            s=300,
             ax=ax
         )
 
         for text_obj in ax.legend().get_texts():
             text_obj: Text
 
-            text_obj.set_fontsize("small")
+            text_obj.set_fontsize("xx-large")
             if text_obj.get_text() == "Profiler":
                 text_obj.set_text("Profilers")
                 text_obj.set_fontweight("bold")
@@ -336,9 +344,11 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             ) + 20, 120
         )
         ax.set_xlim(x_limit, 100)
-        ax.xaxis.label.set_size(20)
-        ax.yaxis.label.set_size(20)
-        ax.tick_params(labelsize=15)
+        ax.tick_params(labelsize=20, pad=10)
+        ax.xaxis.label.set_size(25)
+        ax.yaxis.label.set_size(25)
+        ax.yaxis.labelpad = 10
+        ax.xaxis.labelpad = 20
 
         prof_df = merged_df[['Profiler', 'precision', x_values, 'f1_score'
                             ]].groupby('Profiler').agg(['mean', 'std'])
@@ -377,7 +387,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             hue="Profiler",
             ax=ax,
             legend=False,
-            s=100,
+            s=300,
             zorder=2
         )
 
@@ -387,7 +397,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             ax=ax,
             color='firebrick',
             legend=False,
-            linewidth=2.5,
+            linewidth=3.5,
             zorder=1
         )
 
