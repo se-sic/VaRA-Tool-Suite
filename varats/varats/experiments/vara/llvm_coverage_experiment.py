@@ -277,7 +277,7 @@ class GenerateCoverageExperiment(VersionExperiment, shorthand="GenCov"):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         #project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
-        project.cflags += ["-O0", "-g", "-fno-exceptions"],
+        project.cflags += ["-O0", "-g", "-fno-exceptions"]
         # Fix xz compiling in debian 10
         project.cflags += ["-fuse-ld=lld"]
         # Fix ect compiling in debian 10
