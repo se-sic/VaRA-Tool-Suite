@@ -26,7 +26,7 @@ from varats.utils.settings import bb_cfg
 
 
 def _do_feature_perf_cs_collection_compile(
-    project: VProject, cmake_flag: str
+        project: VProject, cmake_flag: str
 ) -> None:
     """Common compile function for FeaturePerfCSCollection projects."""
     feature_perf_source = local.path(project.source_of(project.primary_source))
@@ -100,9 +100,9 @@ class FeaturePerfCSCollection(VProject):
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("SimpleBusyLoop"),
                 "--iterations",
-                str(10**7),
+                str(10 ** 7),
                 "--count_to",
-                str(5 * 10**3),
+                str(5 * 10 ** 3),
                 label="SBL-iterations-10M-count-to-5K"
             )
         ]
@@ -110,7 +110,7 @@ class FeaturePerfCSCollection(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+            revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
             get_local_project_git_path(FeaturePerfCSCollection.NAME)
@@ -190,7 +190,7 @@ class SynthSAFieldSensitivity(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+            revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
             get_local_project_git_path(SynthSAFieldSensitivity.NAME)
@@ -248,7 +248,7 @@ class SynthSAFlowSensitivity(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+            revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
             get_local_project_git_path(SynthSAFlowSensitivity.NAME)
@@ -309,7 +309,7 @@ class SynthSAContextSensitivity(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+            revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
             get_local_project_git_path(SynthSAContextSensitivity.NAME)
@@ -368,7 +368,7 @@ class SynthSAInterProcedural(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+            revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
             get_local_project_git_path(SynthSAInterProcedural.NAME)
@@ -394,6 +394,7 @@ class SynthSAInterProcedural(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
+
 
 class SynthCTTraitBased(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
@@ -453,3 +454,61 @@ class SynthCTTraitBased(VProject):
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
 
+
+class SynthCTPolicies(VProject):
+    """Synthetic case-study project for compile time variability using policies."""
+
+    NAME = 'SynthCTPolicies'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthCTPolicies",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthCTPolicies")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("SynthCTPolicies") /
+                RSBinary("CTPolicies"),
+                label="CompileTime-Policies"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+            revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthSAInterProcedural.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTPolicies",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("0768d712a2aa9b7bb3c414b742930a5e8d9ef3a7", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTPOLICIES"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
