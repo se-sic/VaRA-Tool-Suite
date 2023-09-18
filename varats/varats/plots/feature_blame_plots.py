@@ -33,7 +33,12 @@ from varats.ts_utils.click_param_types import (
     REQUIRE_CASE_STUDY,
     REQUIRE_MULTI_CASE_STUDY,
 )
-from varats.utils.git_util import num_active_commits, get_local_project_git_path
+from varats.utils.git_util import (
+    num_active_commits,
+    get_local_project_git_path,
+    calc_repo_code_churn,
+    ChurnConfig,
+)
 
 
 def get_structural_report_files_for_project(
@@ -65,12 +70,21 @@ def get_structural_feature_data_for_case_study(
 def get_structural_commit_data_for_case_study(
     case_study: CaseStudy
 ) -> pd.DataFrame:
-    report_file = get_structural_report_files_for_project(
-        case_study.project_name
-    )[0]
-    data_frame: pd.DataFrame = pd.DataFrame()
+    project_name = case_study.project_name
+
+    report_file = get_structural_report_files_for_project(project_name)[0]
+
     report = load_structural_feature_blame_report(report_file)
-    data_frame = generate_commit_scfi_data(report)
+    repo_lookup = get_local_project_gits(project_name)
+
+    code_churn_lookup = {
+        repo_name: calc_repo_code_churn(
+            get_local_project_git_path(project_name, repo_name),
+            ChurnConfig.create_c_style_languages_config()
+        ) for repo_name, _ in repo_lookup.items()
+    }
+
+    data_frame = generate_commit_scfi_data(report, code_churn_lookup)
 
     return data_frame
 

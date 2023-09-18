@@ -13,7 +13,12 @@ from varats.data.reports.feature_analysis_report import (
     FeatureAnalysisReportMetaData,
 )
 from varats.report.report import BaseReport
-from varats.utils.git_util import CommitRepoPair, ShortCommitHash, get_author
+from varats.utils.git_util import (
+    CommitRepoPair,
+    ShortCommitHash,
+    get_author,
+    FullCommitHash,
+)
 
 
 class StructuralCommitFeatureInteraction:
@@ -176,19 +181,27 @@ def generate_feature_author_scfi_data(
 
 
 def generate_commit_scfi_data(
-    SFBR: StructuralFeatureBlameReport
+    SFBR: StructuralFeatureBlameReport, code_churn_lookup
 ) -> pd.DataFrame:
-    commit_cfi_data: tp.Dict[str, int] = {}
+    commit_cfi_data: tp.Dict[str, tp.Tuple[int, int]] = {}
     for SCFI in SFBR.commit_feature_interactions:
-        commit: str = SCFI.commit.commit_hash
-        entry = commit_cfi_data.get(commit)
+        commit_hash = SCFI.commit.commit_hash
+        repository_name = SCFI.commit.repository_name
+        entry = commit_cfi_data.get(commit_hash)
         if not entry:
-            commit_cfi_data.update({commit: 1})
+            repo_lookup = code_churn_lookup[repository_name]
+            commit_lookup = repo_lookup.get(FullCommitHash(commit_hash))
+            if commit_lookup is None:
+                continue
+            _, insertions, _ = commit_lookup
+            commit_cfi_data.update({commit_hash: (1, insertions)})
         else:
-            commit_cfi_data.update({commit: entry + 1})
-    rows = [[commit_data[0], commit_data[1]]
+            commit_cfi_data.update({commit_hash: (entry[0] + 1, entry[1])})
+    rows = [[commit_data[0], commit_data[1][0], commit_data[1][1]]
             for commit_data in commit_cfi_data.items()]
-    return pd.DataFrame(rows, columns=["commit", "num_interacting_features"])
+    return pd.DataFrame(
+        rows, columns=["commit", "num_interacting_features", "commit_size"]
+    )
 
 
 ##### DATAFLOW #####
