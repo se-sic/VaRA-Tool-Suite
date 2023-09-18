@@ -66,28 +66,10 @@ class SFBRFeatureEvalTable(Table, table_name="sfbr_feature_eval_table"):
             )
 
         # calc overall mean and variance for each column
-        for i in range(1, len(rows[0])):
-            # column with ranges, need different computation
-            if type(rows[0][i]) is tuple:
-                list_vals_min = [
-                    rows[j][i][0] for j in range(0, len(case_studies))
-                ]
-                list_vals_max = [
-                    rows[j][i][1] for j in range(0, len(case_studies))
-                ]
-                rows[len(case_studies)].append(
-                    (np.mean(list_vals_min), np.mean(list_vals_max))
-                )
-                rows[len(case_studies) + 1].append(
-                    (np.var(list_vals_min), np.var(list_vals_max))
-                )
-                continue
-            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
-            rows[len(case_studies)].append(np.mean(list_vals))
-            rows[len(case_studies) + 1].append(np.var(list_vals))
+        add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            rows,
+            round_rows(rows),
             columns=[
                 "Projects",
                 "Avg Num Impl Cmmts",
@@ -188,13 +170,10 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
             )
 
         # calc overall mean and variance for each column
-        for i in range(1, len(rows[0])):
-            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
-            rows[len(case_studies)].append(np.mean(list_vals))
-            rows[len(case_studies) + 1].append(np.var(list_vals))
+        add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            rows,
+            round_rows(rows),
             columns=[
                 "Projects",
                 "Avg Num Ftrs Chngd",
@@ -267,7 +246,8 @@ class SFBRAuthorEvalTable(Table, table_name="sfbr_author_eval_table"):
             rows[current_row].append(var_num_impl_authors)
 
             range_num_impl_authors = (
-                min(data_num_impl_authors), max(data_num_impl_authors)
+                min(data_num_impl_authors),
+                max(data_num_impl_authors),
             )
             rows[current_row].append(range_num_impl_authors)
 
@@ -280,27 +260,10 @@ class SFBRAuthorEvalTable(Table, table_name="sfbr_author_eval_table"):
             )
 
         # calc overall mean and variance for each column
-        for i in range(1, len(rows[0])):
-            if type(rows[0][i]) is tuple:
-                list_vals_min = [
-                    rows[j][i][0] for j in range(0, len(case_studies))
-                ]
-                list_vals_max = [
-                    rows[j][i][1] for j in range(0, len(case_studies))
-                ]
-                rows[len(case_studies)].append(
-                    (np.mean(list_vals_min), np.mean(list_vals_max))
-                )
-                rows[len(case_studies) + 1].append(
-                    (np.var(list_vals_min), np.var(list_vals_max))
-                )
-                continue
-            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
-            rows[len(case_studies)].append(np.mean(list_vals))
-            rows[len(case_studies) + 1].append(np.var(list_vals))
+        add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            rows,
+            round_rows(rows),
             columns=[
                 "Projects",
                 "Avg Num Impl Authors",
@@ -332,7 +295,7 @@ class SFBRAuthorEvalTable(Table, table_name="sfbr_author_eval_table"):
 class SFBRAuthorEvalTableGenerator(
     TableGenerator,
     generator_name="sfbr-author-eval-table",
-    options=[REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY],
 ):
 
     def generate(self) -> tp.List[Table]:
@@ -425,13 +388,10 @@ class DFBRCommitEvalTable(Table, table_name="dfbr_commit_eval_table"):
             rows[current_row].append(likelihood_coincide_structural_dataflow)
 
         # calc overall mean and variance for each column
-        for i in range(1, len(rows[0])):
-            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
-            rows[len(case_studies)].append(np.mean(list_vals))
-            rows[len(case_studies) + 1].append(np.var(list_vals))
+        add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            rows,
+            round_rows(rows),
             columns=[
                 "Projects",
                 "Avg Num Interacting Features",
@@ -518,13 +478,10 @@ class DFBRFeatureEvalTable(Table, table_name="dfbr_feature_eval_table"):
             )
 
         # calc overall mean and variance for each column
-        for i in range(1, len(rows[0])):
-            list_vals = [rows[j][i] for j in range(0, len(case_studies))]
-            rows[len(case_studies)].append(np.mean(list_vals))
-            rows[len(case_studies) + 1].append(np.var(list_vals))
+        add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            rows,
+            round_rows(rows),
             columns=[
                 "Projects",
                 "Corr Feature Size Num Interacting Commtis Outside DF",
@@ -613,3 +570,31 @@ class DFBRInterestingCommitsTableGenerator(
                 self.table_config, case_study=case_study, **self.table_kwargs
             )
         ]
+
+
+def round_rows(rows) -> []:
+    return [[
+        entry if type(entry) is str else
+        ((round(entry[0], 2),
+          round(entry[1], 2)) if type(entry) is tuple else round(entry, 2))
+        for entry in row
+    ]
+            for row in rows]
+
+
+def add_mean_and_variance(rows, num_case_studies) -> None:
+    for i in range(1, len(rows[0])):
+        # column with ranges, need different computation
+        if type(rows[0][i]) is tuple:
+            list_vals_min = [rows[j][i][0] for j in range(0, num_case_studies)]
+            list_vals_max = [rows[j][i][1] for j in range(0, num_case_studies)]
+            rows[num_case_studies].append(
+                (np.mean(list_vals_min), np.mean(list_vals_max))
+            )
+            rows[num_case_studies + 1].append(
+                (np.var(list_vals_min), np.var(list_vals_max))
+            )
+            continue
+        list_vals = [rows[j][i] for j in range(0, num_case_studies)]
+        rows[num_case_studies].append(np.mean(list_vals))
+        rows[num_case_studies + 1].append(np.var(list_vals))
