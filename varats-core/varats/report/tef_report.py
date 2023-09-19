@@ -1,6 +1,7 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
 
+import logging
 import re
 import typing as tp
 from enum import Enum
@@ -10,6 +11,8 @@ import ijson
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
+
+LOG = logging.getLogger(__name__)
 
 
 class TraceEventType(Enum):
@@ -63,6 +66,14 @@ class TraceEvent():
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
 
+        if "UUID" in json_trace_event:
+            self.__uuid: int = int(json_trace_event["UUID"])
+        elif "ID" in json_trace_event:
+            self.__uuid: int = int(json_trace_event["ID"])
+        else:
+            LOG.critical("Could not parse UUID/ID from trace event")
+            self.__uuid: int = 0
+
     @property
     def name(self) -> str:
         return self.__name_id_mapper.infer_name(self.__name_id)
@@ -87,9 +98,14 @@ class TraceEvent():
     def tid(self) -> int:
         return self.__tid
 
+    @property
+    def uuid(self) -> int:
+        return self.__uuid
+
     def __str__(self) -> str:
         return f"""{{
     name: {self.name}
+    uuid: {self.uuid}
     cat: {self.category}
     ph: {self.event_type}
     ts: {self.timestamp}
@@ -99,7 +115,7 @@ class TraceEvent():
 """
 
     def __repr__(self) -> str:
-        return str(self)
+        return f"{{ name={self.name}, uuid={self.uuid} }}"
 
 
 class TEFReport(BaseReport, shorthand="TEF", file_type="json"):

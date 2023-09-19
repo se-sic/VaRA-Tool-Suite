@@ -1,5 +1,6 @@
 """Shared data aggregation function for analyzing feature performance."""
 import abc
+import logging
 import traceback
 import typing as tp
 from collections import defaultdict
@@ -23,6 +24,8 @@ from varats.report.tef_report import (
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import FullCommitHash
+
+LOG = logging.getLogger(__name__)
 
 
 def get_interactions_from_fr_string(interactions: str) -> str:
@@ -52,12 +55,31 @@ def get_feature_performance_from_tef_report(
 
     feature_performances: tp.Dict[str, int] = {}
 
+    def get_matching_event(
+        open_events: tp.List[TraceEvent], closing_event: TraceEvent
+    ):
+        for event in open_events:
+            # TODO: needs PID/TID checking
+            if event.uuid == closing_event.uuid:
+                open_events.remove(event)
+                return event
+
+        LOG.error(
+            f"Could not find matching start for Event {repr(closing_event)}."
+        )
+
+        return None
+
     for trace_event in tef_report.trace_events:
         if trace_event.category == "Feature":
-            if (trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN):
-                open_events.append(trace_event)
-            elif (trace_event.event_type == TraceEventType.DURATION_EVENT_END):
-                opening_event = open_events.pop()
+            if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
+                # open_events.append(trace_event)
+                # insert event at the top of the list
+                open_events.insert(0, trace_event)
+            elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
+                opening_event = get_matching_event(open_events, trace_event)
+                if not opening_event:
+                    continue
 
                 end_timestamp = trace_event.timestamp
                 begin_timestamp = opening_event.timestamp
@@ -91,6 +113,9 @@ def get_feature_performance_from_tef_report(
                 feature_performances[interaction_string] = (
                     current_performance + end_timestamp - begin_timestamp
                 )
+
+    if open_events:
+        LOG.error(f"Not all events have been closed: {open_events}.")
 
     return feature_performances
 
