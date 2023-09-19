@@ -424,22 +424,16 @@ def generate_general_commit_dcfi_data(
         SFBR, DFBR
     )
     interacting_structurally_and_through_dataflow = 0
-    interacting_structurally_and_not_through_dataflow = 0
-    for sch, features in commits_structurally_interacting_features.items():
-        entry = commits_dataflow_interacting_features.get(sch)
-        if entry is None:
-            interacting_structurally_and_not_through_dataflow += 1
-            continue
-        for feature in features:
-            if feature in entry[0]:
-                interacting_structurally_and_through_dataflow += 1
-            else:
-                interacting_structurally_and_not_through_dataflow += 1
+    # check for every structural CFI, if its respective commit and feature also interact through dataflow
+    for SCFI in SFBR.commit_feature_interactions:
+        commit_hash: str = ShortCommitHash(SCFI.commit.commit_hash).hash
+        entry = commits_dataflow_interacting_features.get(commit_hash)
+        if (not (entry is None)) and SCFI.feature in entry[0]:
+            interacting_structurally_and_through_dataflow += 1
+
     row.append(
-        interacting_structurally_and_through_dataflow / (
-            interacting_structurally_and_through_dataflow +
-            interacting_structurally_and_not_through_dataflow
-        )
+        interacting_structurally_and_through_dataflow /
+        len(SFBR.commit_feature_interactions)
     )
 
     columns = [
