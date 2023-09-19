@@ -2,6 +2,7 @@ import typing as tp
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 from varats.data.metrics import apply_tukeys_fence
 from varats.paper.case_study import CaseStudy
@@ -57,25 +58,26 @@ class SFBRFeatureEvalTable(Table, table_name="sfbr_feature_eval_table"):
             )
             rows[current_row].append(range_num_impl_commits)
 
-            feature_correlation_between_size_num_interacting_commits = np.corrcoef(
+            corr_feature_size_num_interacting_commits, p_value = stats.pearsonr(
                 data_features["num_interacting_commits"],
                 data_features["feature_size"]
-            )[0][1]
-            rows[current_row].append(
-                feature_correlation_between_size_num_interacting_commits
             )
+            rows[current_row].extend([
+                corr_feature_size_num_interacting_commits, p_value
+            ])
 
         # calc overall mean and variance for each column
         add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            round_rows(rows),
+            round_rows(rows, 2),
             columns=[
                 "Projects",
                 "Avg Num Impl Cmmts",
                 "Var Num Impl Cmmts",
                 "Rng Num Impl Cmmts",
                 "Corr Ftr Size - Num Impl Cmmts",
+                "P-Value",
             ],
         )
 
@@ -173,7 +175,7 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
         add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            round_rows(rows),
+            round_rows(rows, 2),
             columns=[
                 "Projects",
                 "Avg Num Ftrs Chngd",
@@ -251,25 +253,26 @@ class SFBRAuthorEvalTable(Table, table_name="sfbr_author_eval_table"):
             )
             rows[current_row].append(range_num_impl_authors)
 
-            feature_correlation_between_size_num_implementing_authors = np.corrcoef(
+            corre_feature_size_num_implementing_authors, p_value = stats.pearsonr(
                 data_authors["num_implementing_authors"],
                 data_authors["feature_size"]
-            )[0][1]
-            rows[current_row].append(
-                feature_correlation_between_size_num_implementing_authors
             )
+            rows[current_row].extend([
+                corre_feature_size_num_implementing_authors, p_value
+            ])
 
         # calc overall mean and variance for each column
         add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            round_rows(rows),
+            round_rows(rows, 2),
             columns=[
                 "Projects",
                 "Avg Num Impl Authors",
                 "Var Num Impl Authors",
                 "Range Num Impl Authors",
                 "Corr Ftr Size - Num Impl Authors",
+                "P-Value",
             ],
         )
 
@@ -391,7 +394,7 @@ class DFBRCommitEvalTable(Table, table_name="dfbr_commit_eval_table"):
         add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            round_rows(rows),
+            round_rows(rows, 2),
             columns=[
                 "Projects",
                 "Avg Num Interacting Features",
@@ -461,31 +464,33 @@ class DFBRFeatureEvalTable(Table, table_name="dfbr_feature_eval_table"):
             projects_data_features,
             range(0, len(case_studies)),
         ):
-            corr_feature_size_num_interacting_commits_outside = np.corrcoef(
+            corr_feature_size_num_interacting_commits_outside, p_value = stats.pearsonr(
                 data_features["num_interacting_commits_outside_df"],
                 data_features["feature_size"],
-            )[0][1]
-            rows[current_row].append(
-                corr_feature_size_num_interacting_commits_outside
             )
+            rows[current_row].extend([
+                corr_feature_size_num_interacting_commits_outside, p_value
+            ])
 
-            corr_feature_size_num_interacting_commits_inside = np.corrcoef(
+            corr_feature_size_num_interacting_commits_inside, p_value = stats.pearsonr(
                 data_features["num_interacting_commits_inside_df"],
                 data_features["feature_size"],
-            )[0][1]
-            rows[current_row].append(
-                corr_feature_size_num_interacting_commits_inside
             )
+            rows[current_row].extend([
+                corr_feature_size_num_interacting_commits_inside, p_value
+            ])
 
         # calc overall mean and variance for each column
         add_mean_and_variance(rows, len(case_studies))
 
         df = pd.DataFrame(
-            round_rows(rows),
+            round_rows(rows, 3),
             columns=[
                 "Projects",
                 "Corr Feature Size Num Interacting Commtis Outside DF",
+                "P-Value",
                 "Corr Feature Size Num Interacting Commtis Inside DF",
+                "P-Value",
             ],
         )
 
@@ -572,14 +577,12 @@ class DFBRInterestingCommitsTableGenerator(
         ]
 
 
-def round_rows(rows) -> []:
+def round_rows(rows, digits) -> []:
     return [[
         entry if type(entry) is str else
-        ((round(entry[0], 2),
-          round(entry[1], 2)) if type(entry) is tuple else round(entry, 2))
-        for entry in row
-    ]
-            for row in rows]
+        ((round(entry[0], digits), round(entry[1], digits))
+         if type(entry) is tuple else round(entry, digits)) for entry in row
+    ] for row in rows]
 
 
 def add_mean_and_variance(rows, num_case_studies) -> None:
