@@ -80,13 +80,16 @@ def get_structural_commit_data_for_case_study(
     code_churn_lookup = {
         repo_name: calc_repo_code_churn(
             get_local_project_git_path(project_name, repo_name),
-            ChurnConfig.create_c_style_languages_config()
+            ChurnConfig.create_c_style_languages_config(),
         ) for repo_name, _ in repo_lookup.items()
     }
 
     data_frame = generate_commit_scfi_data(report, code_churn_lookup)
 
     return data_frame
+
+
+######## FEATURES #########
 
 
 class FeatureSizeCorrSFBRPlot(Plot, plot_name="feature_size_corr_sfbr_plot"):
@@ -135,10 +138,18 @@ class FeatureDisSFBRPlot(Plot, plot_name="feature_dis_sfbr_plot"):
             ) for case_study, df in zip(case_studies, dfs)
         ])
 
-        plt = sns.catplot(
-            data=data, x="num_interacting_commits", y="project", kind="box"
+        plt = sns.boxplot(
+            data=data,
+            x="num_interacting_commits",
+            y="project",
         )
-
+        ticks = 5
+        start = min(data["num_interacting_commits"])
+        stop = max(data["num_interacting_commits"])
+        step = round((stop - start) / ticks)
+        plt.set_xticks(
+            range(start, stop + step, step), range(start, stop + step, step)
+        )
         plt.set(
             xlabel="Number Interacting Commits",
             ylabel="Project",
@@ -197,6 +208,9 @@ class FeatureSizeDisSFBRPlotGenerator(
         ]
 
 
+######## COMMITS #########
+
+
 def get_pie_data_for_commit_data(commit_data) -> (tp.List[int], tp.List[int]):
     min_num_interacting_features = min(commit_data)
     max_num_interacting_features = max(commit_data)
@@ -207,7 +221,7 @@ def get_pie_data_for_commit_data(commit_data) -> (tp.List[int], tp.List[int]):
     ]
     add_s = lambda x: "" if x == 1 else "s"
     labels = [
-        "Interacting with " + str(i) + " feature" + add_s(i) for i in
+        "Impl. " + str(i) + " feature" + add_s(i) for i in
         range(min_num_interacting_features, max_num_interacting_features + 1)
     ]
 
@@ -226,8 +240,8 @@ def get_pie_data_for_commit_data(commit_data) -> (tp.List[int], tp.List[int]):
         if frac < 0.05:
             num_interacting_features = i + min_num_interacting_features
             adj_labels.append(
-                "Interacting with >=" + str(num_interacting_features) +
-                " feature" + add_s(num_interacting_features)
+                "Impl. >=" + str(num_interacting_features) + " feature" +
+                add_s(num_interacting_features)
             )
             adj_data.append(np.sum(data[i:]))
             break
@@ -240,19 +254,30 @@ def get_pie_data_for_commit_data(commit_data) -> (tp.List[int], tp.List[int]):
 class CommitSFBRPieChart(Plot, plot_name="commit_sfbr_pie_chart"):
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-
-        commit_data = get_structural_commit_data_for_case_study(
-            case_study
-        ).loc[:, "num_interacting_features"]
-        data, labels = get_pie_data_for_commit_data(commit_data)
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         def func(pct):
             absolute = int(np.round(pct / 100.0 * len(commit_data)))
             return f"{absolute:d}"
 
-        fig, ax = pyplot.subplots()
-        ax.pie(data, labels=labels, autopct=lambda pct: func(pct))
+        fig, naxs = pyplot.subplots(2, 2, figsize=(15, 15))
+        case_study_counter = 0
+        for axs in naxs:
+            for ax in axs:
+                case_study = case_studies[case_study_counter]
+                commit_data = get_structural_commit_data_for_case_study(
+                    case_study
+                ).loc[:, "num_interacting_features"]
+                data, labels = get_pie_data_for_commit_data(commit_data)
+                explode = [0.1] + [0 for _ in range(1, len(data))]
+                ax.pie(
+                    data,
+                    labels=labels,
+                    explode=explode,
+                    autopct=lambda pct: func(pct)
+                )
+                ax.set_title(case_study.project_name)
+                case_study_counter += 1
 
 
 class CommitSFBRPieChartGenerator(
@@ -265,8 +290,8 @@ class CommitSFBRPieChartGenerator(
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             CommitSFBRPieChart(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
-            ) for case_study in case_studies
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
         ]
 
 
@@ -282,8 +307,9 @@ def get_stacked_proportional_commit_structural_data(
             "fraction_commits_structurally_interacting_with_features"][0]
 
         rows.append([
-            case_study.project_name, fraction_commits_implementing_features,
-            1 - fraction_commits_implementing_features
+            case_study.project_name,
+            fraction_commits_implementing_features,
+            1 - fraction_commits_implementing_features,
         ])
 
     return pd.DataFrame(
@@ -392,7 +418,9 @@ class CommitDFBRPieChart(Plot, plot_name="commit_dfbr_pie_chart"):
 
     def plot(self, view_mode: bool) -> None:
         case_study: CaseStudy = self.plot_kwargs["case_study"]
-        commit_data = get_commit_dataflow_data_for_case_study(case_study)
+        commit_data = get_specific_stacked_proportional_commit_dataflow_data(
+            case_study
+        )
         commit_data = commit_data.loc[commit_data["part_of_feature"] == 0]
         commit_data = commit_data.loc[
             commit_data["num_interacting_features"] > 0]
@@ -515,20 +543,23 @@ def get_general_stacked_proportional_commit_dataflow_data(
         )
         num_commits = len(data_commits)
 
-        fraction_commits_with_df_int = len(
-            data_commits.loc[data_commits["num_interacting_features"] > 0]
-        ) / num_commits
+        fraction_commits_with_df_int = (
+            len(data_commits.loc[data_commits["num_interacting_features"] > 0])
+            / num_commits
+        )
 
         rows.append([
-            case_study.project_name, fraction_commits_with_df_int,
-            1 - fraction_commits_with_df_int
+            case_study.project_name,
+            fraction_commits_with_df_int,
+            1 - fraction_commits_with_df_int,
         ])
 
     return pd.DataFrame(
         data=rows,
         columns=[
-            "Projects", "Commits With DF Interactions",
-            "Commits Without DF Interactions"
+            "Projects",
+            "Commits With DF Interactions",
+            "Commits Without DF Interactions",
         ],
     )
 
@@ -550,7 +581,7 @@ class GeneralCommitProportionalDataflowPlot(
             kind="bar",
             stacked=True,
             ylabel="Proportional Commit Count",
-            color=['red', 'blue']
+            color=["red", "blue"],
         )
         plt.legend(
             title="Commit Kind", loc="center left", bbox_to_anchor=(1, 0.5)
@@ -591,7 +622,7 @@ class FeatureSizeCorrDFBRPlot(Plot, plot_name="feature_size_corr_dfbr_plot"):
         ])
         print(data)
         plt = sns.regplot(
-            data=data, x="feature_size", y="num_interacting_commits_outside"
+            data=data, x="feature_size", y="num_interacting_commits_outside_df"
         )
         plt.set(
             xlabel="Feature Size",
@@ -628,17 +659,34 @@ class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
             ) for case_study, df in zip(case_studies, dfs)
         ])
 
-        plt = sns.catplot(
-            data=data,
-            x="num_interacting_commits_outside",
-            y="project",
-            kind="box"
-        )
+        fig, naxs = pyplot.subplots(2, 2, figsize=(22, 22))
+        case_study_counter = 0
+        for axs in naxs:
+            for ax in axs:
+                case_study = case_studies[case_study_counter]
+                df = get_feature_dataflow_data_for_case_study(case_study)
+                df = df.sort_values(by=["num_interacting_commits_outside_df"])
+                print(df)
+                sns.barplot(
+                    data=df,
+                    x="feature",
+                    y="num_interacting_commits_outside_df",
+                    ax=ax,
+                    color="blue",
+                    palette=["tab:blue"]
+                )
+                ax.set_xlabel("Feature", size="16")
+                ax.set_ylabel(
+                    "Number of Interacting Outside Commits", size="16"
+                )
+                ax.set_title(case_study.project_name, size="22")
+                case_study_counter += 1
 
-        plt.set(
-            xlabel="Number Interacting Commits Not Part of Features",
-            ylabel="Project",
-            title="Dataflow Interactions of Features",
+        fig.suptitle(
+            "Dataflow Interactions from Outside of Features" +
+            " for Projects " +
+            ",".join([case_study.project_name for case_study in case_studies]),
+            size="26"
         )
 
 
