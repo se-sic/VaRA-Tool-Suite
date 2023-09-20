@@ -525,7 +525,7 @@ class SynthCTCRTP(VProject):
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="SynthCTPolicies",
+            local=NAME,
             refspec="origin/HEAD",
             limit=None,
             shallow=False,
