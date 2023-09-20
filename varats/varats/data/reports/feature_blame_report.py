@@ -1,6 +1,5 @@
 """Module for StructuralFeatureBlameReport and DataflowFeatureBlameReport."""
 
-import re
 import typing as tp
 from pathlib import Path
 
