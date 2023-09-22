@@ -1063,7 +1063,9 @@ class RevisionBinaryMap(tp.Container[str]):
         override_entry_point = kwargs.get("override_entry_point", None)
         if override_entry_point:
             override_entry_point = Path(override_entry_point)
-        validity_range = kwargs.get("only_valid_in", None)
+        validity_range: AbstractRevisionRange = kwargs.get(
+            "only_valid_in", None
+        )
         valid_exit_codes = kwargs.get("valid_exit_codes", None)
 
         wrapped_binary = ProjectBinaryWrapper(
@@ -1072,6 +1074,7 @@ class RevisionBinaryMap(tp.Container[str]):
         )
 
         if validity_range:
+            validity_range.init_cache(self.__repo_location)
             self.__revision_specific_mappings[validity_range].append(
                 wrapped_binary
             )
@@ -1087,10 +1090,7 @@ class RevisionBinaryMap(tp.Container[str]):
 
         for validity_range, wrapped_binaries \
                 in self.__revision_specific_mappings.items():
-            if revision in get_all_revisions_between(
-                validity_range.id_start, validity_range.id_end, ShortCommitHash,
-                self.__repo_location
-            ):
+            if revision in map(ShortCommitHash, validity_range):
                 revision_specific_binaries.extend(wrapped_binaries)
 
         revision_specific_binaries.extend(self.__always_valid_mappings)
