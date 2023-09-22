@@ -10,6 +10,7 @@ The gui is started by::
 
 The gui provides 3 Strategies to generate case studies:
     - Manual revision selection: Select revision from the revision history of a project. Multiple revisions can be selected by holding `ctrl` and ranges by holding `shift`. Revisions which are blocked because of bugs in the compilation of the project are marked blue.
+
     .. figure:: vara-cs-gui-manual.png
 
     - Random Sampling: Sample a number of revisions using a random a Normal or HalfNormal Distribution.
