@@ -28,7 +28,7 @@ def gini_coefficient(distribution: pd.Series) -> float:
     Calculates the Gini coefficient of the data.
 
     For more information see online
-    `gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_.
+    `Gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_.
 
     Args:
         distribution: sorted series to calculate the Gini coefficient for
@@ -141,10 +141,12 @@ class ConfusionMatrix(tp.Generic[T]):
     """
     Helper class to automatically calculate classification results.
 
-                        |  Predicted Positive (PP)  |  Predicted Negative (PN)
-    --------------------|---------------------------|--------------------------
-    Actual Positive (P) |  True Positive      (TP)  |  False Negative     (FN)
-    Actual Negative (N) |  False Positive     (FP)  |  True Negative      (TN)
+    +---------------------+-------------------------+-------------------------+
+    |                     | Predicted Positive (PP) | Predicted Negative (PN) |
+    +---------------------+-------------------------+-------------------------+
+    | Actual Positive (P) | True Positive      (TP) | False Negative     (FN) |
+    | Actual Negative (N) | False Positive     (FP) | True Negative      (TN) |
+    +---------------------+-------------------------+-------------------------+
 
     Reference: https://en.wikipedia.org/wiki/Precision_and_recall
     """
