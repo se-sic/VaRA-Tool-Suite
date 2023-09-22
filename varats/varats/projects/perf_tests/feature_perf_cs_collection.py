@@ -407,7 +407,7 @@ class SynthCTTraitBased(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthCTTraitBased",
-            refspec="origin/HEAD",
+            refspec="origin/f-SynthCompileTimeCS",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthCTTraitBased")
@@ -429,7 +429,7 @@ class SynthCTTraitBased(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAInterProcedural.NAME)
+            get_local_project_git_path(SynthCTTraitBased.NAME)
         )
 
         binary_map.specify_binary(
@@ -466,7 +466,7 @@ class SynthCTPolicies(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthCTPolicies",
-            refspec="origin/HEAD",
+            refspec="origin/f-SynthCompileTimeCS",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthCTPolicies")
@@ -488,7 +488,7 @@ class SynthCTPolicies(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAInterProcedural.NAME)
+            get_local_project_git_path(SynthCTPolicies.NAME)
         )
 
         binary_map.specify_binary(
@@ -526,7 +526,7 @@ class SynthCTCRTP(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local=NAME,
-            refspec="origin/HEAD",
+            refspec="origin/f-SynthCompileTimeCS",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(NAME)
@@ -548,11 +548,11 @@ class SynthCTCRTP(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAInterProcedural.NAME)
+            get_local_project_git_path(SynthCTCRTP.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/CTCRTP",
+            "build/bin/CT-CRTP",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "8c976a890eef105d22defbf28f8a5430abec2131", "master"
@@ -587,7 +587,7 @@ class SynthCTTemplateSpecialization(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local=NAME,
-            refspec="origin/HEAD",
+            refspec="origin/f-SynthCompileTimeCS",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(NAME)
@@ -609,11 +609,11 @@ class SynthCTTemplateSpecialization(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAInterProcedural.NAME)
+            get_local_project_git_path(SynthCTTemplateSpecialization.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/CTCRTP",
+            "build/bin/CT-TemplateSpecialization",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "81ddd858bfc3507367453c3c3ef7a1f44bb20861", "master"
@@ -628,7 +628,7 @@ class SynthCTTemplateSpecialization(VProject):
     def compile(self) -> None:
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_SYNTHCTTEMPLATYESPECIALIZATION"
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTSPECIALIZATION"
         )
 
     def recompile(self) -> None:
