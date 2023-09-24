@@ -38,7 +38,8 @@ class Patch:
         description: str,
         path: Path,
         valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
-        tags: tp.Optional[tp.Set[str]] = None
+        tags: tp.Optional[tp.Set[str]] = None,
+        feature_tags: tp.Optional[tp.Set[str]] = None
     ):
         self.project_name: str = project_name
         self.shortname: str = shortname
@@ -47,6 +48,7 @@ class Patch:
         self.valid_revisions: tp.Set[
             CommitHash] = valid_revisions if valid_revisions else set()
         self.tags: tp.Optional[tp.Set[str]] = tags
+        self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
 
     @staticmethod
     def from_yaml(yaml_path: Path) -> 'Patch':
@@ -62,9 +64,8 @@ class Patch:
         # the yaml info file.
         path = yaml_path.parent / path
 
-        tags = None
-        if "tags" in yaml_dict:
-            tags = yaml_dict["tags"]
+        tags = yaml_dict.get("tags")
+        feature_tags = yaml_dict.get("feature_tags")
 
         project_git_path = get_local_project_git_path(project_name)
 
@@ -121,7 +122,8 @@ class Patch:
             )
 
         return Patch(
-            project_name, shortname, description, path, include_revisions, tags
+            project_name, shortname, description, path, include_revisions, tags,
+            feature_tags
         )
 
     def __repr__(self) -> str:
@@ -141,10 +143,13 @@ class Patch:
         return str_representation
 
     def __hash__(self) -> int:
+        hash_args = [self.shortname, self.path]
         if self.tags:
-            return hash((self.shortname, str(self.path), tuple(self.tags)))
+            hash_args += tuple(self.tags)
+        if self.feature_tags:
+            hash_args += tuple(self.feature_tags)
 
-        return hash((self.shortname, str(self.path)))
+        return hash(tuple(hash_args))
 
 
 class PatchSet:
@@ -215,6 +220,30 @@ class PatchSet:
         Equivalent to bracket operator (__getitem__)
         """
         return self[tags]
+
+    def any_of_features(self, feature_tags: tp.Iterable[str]) -> "PatchSet":
+        """Returns a patch set with patches containing at least one of the given
+        feature tags."""
+        tag_set = set(feature_tags)
+        result: tp.Set[Patch] = set()
+        for patch in self:
+            if patch.feature_tags and patch.feature_tags.intersection(tag_set):
+                result.add(patch)
+
+        return PatchSet(result)
+
+    def all_of_features(
+        self, feature_tags: tp.Union[str, tp.Iterable[str]]
+    ) -> "PatchSet":
+        """Returns a patch set with patches containing all the given feature
+        tags."""
+        tag_set = set(feature_tags)
+        result: tp.Set[Patch] = set()
+        for patch in self:
+            if patch.feature_tags and tag_set.issubset(patch.feature_tags):
+                result.add(patch)
+
+        return PatchSet(result)
 
     def __hash__(self) -> int:
         return hash(self.__patches)
