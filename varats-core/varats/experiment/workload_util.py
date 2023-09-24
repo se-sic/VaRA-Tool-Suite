@@ -19,7 +19,10 @@ from benchbuild.command import (
     Command,
 )
 
-from varats.experiment.experiment_util import get_extra_config_options
+from varats.experiment.experiment_util import (
+    get_extra_config_options,
+    get_config_patches,
+)
 from varats.project.project_util import ProjectBinaryWrapper, VCommand
 from varats.project.varats_project import VProject
 from varats.report.report import KeyedReportAggregate, ReportTy
@@ -93,13 +96,13 @@ def workload_commands(
         )
     ]
 
-    # Filter commands that have required args set.
+    # Filter commands that have required args and patches set.
     extra_options = set(get_extra_config_options(project))
+    patches = get_config_patches(project)
 
     def filter_by_config(prj_cmd: ProjectCommand) -> bool:
-        # TODO: pass applied patches
         if isinstance(prj_cmd.command, VCommand):
-            return prj_cmd.command.can_be_executed_by(extra_options, set())
+            return prj_cmd.command.can_be_executed_by(extra_options, patches)
         return True
 
     return [

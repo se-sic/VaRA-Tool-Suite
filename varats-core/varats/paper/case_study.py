@@ -6,7 +6,11 @@ from pathlib import Path
 
 import benchbuild as bb
 
-from varats.base.configuration import Configuration
+from varats.base.configuration import (
+    Configuration,
+    PlainCommandlineConfiguration,
+    PatchConfiguration,
+)
 from varats.base.sampling_method import (
     NormalSamplingMethod,
     SamplingMethodBase,
@@ -213,6 +217,11 @@ class CaseStudy():
      - name of the related benchbuild.project
      - a set of revisions
     """
+
+    CONFIG_FILE_INDICES: tp.Dict[tp.Type[Configuration], int] = {
+        PlainCommandlineConfiguration: 1,
+        PatchConfiguration: 2
+    }
 
     def __init__(
         self,
@@ -580,7 +589,9 @@ def load_configuration_map_from_case_study_file(
     version_header.raise_if_not_type("CaseStudy")
     version_header.raise_if_version_is_less_than(1)
 
-    next(documents)  # Skip case study yaml-doc
+    config_index = CaseStudy.CONFIG_FILE_INDICES[concrete_config_type]
+    for _ in range(config_index):
+        next(documents)
 
     return create_configuration_map_from_yaml_doc(
         next(documents), concrete_config_type

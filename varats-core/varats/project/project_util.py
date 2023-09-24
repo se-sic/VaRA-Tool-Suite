@@ -16,7 +16,7 @@ from plumbum.commands.base import BoundCommand
 from varats.utils.settings import bb_cfg
 
 if tp.TYPE_CHECKING:
-    from varats.provider.patch.patch_provider import Patch
+    from varats.provider.patch.patch_provider import Patch, PatchSet
 
 LOG = logging.getLogger(__name__)
 
@@ -438,11 +438,24 @@ class VCommand(Command):  # type: ignore [misc]
         return self._requires_all_patch
 
     def can_be_executed_by(
-        self, extra_args: tp.Set[str], applied_patches: tp.Set['Patch']
+        self, extra_args: tp.Set[str], applied_patches: 'PatchSet'
     ) -> bool:
+        """
+        Checks whether this command can be executed with the give configuration.
+
+        Args:
+            extra_args: additional command line arguments that will be passed to
+                        the command
+            applied_patches: patches that were applied to create the executable
+
+        Returns:
+            whether this command can be executed
+        """
         all_args = set(self._args).union(extra_args)
-        # TODO: extract tags from patches
-        all_patch_tags = {"" for patch in applied_patches}
+        all_patch_tags: tp.Set[str] = set()
+        for patch in applied_patches:
+            if patch.feature_tags:
+                all_patch_tags.update(patch.feature_tags)
 
         return bool((
             not self.requires_any_args or
