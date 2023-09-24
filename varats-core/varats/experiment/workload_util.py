@@ -23,7 +23,8 @@ from varats.experiment.experiment_util import (
     get_extra_config_options,
     get_config_patches,
 )
-from varats.project.project_util import ProjectBinaryWrapper, VCommand
+from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.report.report import KeyedReportAggregate, ReportTy
 from varats.utils.exceptions import auto_unwrap
