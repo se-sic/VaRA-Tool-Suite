@@ -59,8 +59,11 @@ def get_feature_performance_from_tef_report(
         open_events: tp.List[TraceEvent], closing_event: TraceEvent
     ):
         for event in open_events:
-            # TODO: needs PID/TID checking
-            if event.uuid == closing_event.uuid:
+            if (
+                event.uuid == closing_event.uuid and
+                event.pid == closing_event.pid and
+                event.tid == closing_event.tid
+            ):
                 open_events.remove(event)
                 return event
 
