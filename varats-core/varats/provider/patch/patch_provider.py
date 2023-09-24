@@ -49,7 +49,7 @@ class Patch:
         self.tags: tp.Optional[tp.Set[str]] = tags
 
     @staticmethod
-    def from_yaml(yaml_path: Path):
+    def from_yaml(yaml_path: Path) -> 'Patch':
         """Creates a Patch from a YAML file."""
 
         yaml_dict = yaml.safe_load(yaml_path.read_text())
@@ -71,7 +71,9 @@ class Patch:
         # Update repository to have all upstream changes
         fetch_repository(project_git_path)
 
-        def parse_revisions(rev_dict: tp.Dict) -> tp.Set[CommitHash]:
+        def parse_revisions(
+            rev_dict: tp.Dict[str, tp.Any]
+        ) -> tp.Set[CommitHash]:
             res: tp.Set[CommitHash] = set()
 
             if "single_revision" in rev_dict:
@@ -102,10 +104,11 @@ class Patch:
 
             return res
 
+        include_revisions: tp.Set[CommitHash]
         if "include_revisions" in yaml_dict:
             include_revisions = parse_revisions(yaml_dict["include_revisions"])
         else:
-            include_revisions: tp.Set[CommitHash] = set(
+            include_revisions = set(
                 get_all_revisions_between(
                     get_initial_commit(project_git_path).hash, "",
                     ShortCommitHash, project_git_path
@@ -137,7 +140,7 @@ class Patch:
 
         return str_representation
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         if self.tags:
             return hash((self.shortname, str(self.path), tuple(self.tags)))
 
@@ -148,7 +151,7 @@ class PatchSet:
     """A PatchSet is a storage container for project specific patches that can
     easily be accessed via the tags of a patch."""
 
-    def __init__(self, patches: tp.Set[Patch]):
+    def __init__(self, patches: tp.Union[tp.Set[Patch], tp.FrozenSet[Patch]]):
         self.__patches: tp.FrozenSet[Patch] = frozenset(patches)
 
     def __iter__(self) -> tp.Iterator[Patch]:
@@ -160,7 +163,7 @@ class PatchSet:
     def __len__(self) -> int:
         return len(self.__patches)
 
-    def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]):
+    def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]) -> 'PatchSet':
         """
         Overrides the bracket operator of a PatchSet.
 
@@ -286,7 +289,7 @@ class PatchProvider(Provider):
     @classmethod
     def create_provider_for_project(
         cls: tp.Type[ProviderType], project: tp.Type[Project]
-    ):
+    ) -> 'PatchProvider':
         """
         Creates a provider instance for the given project.
 
@@ -302,7 +305,7 @@ class PatchProvider(Provider):
     @classmethod
     def create_default_provider(
         cls: tp.Type[ProviderType], project: tp.Type[Project]
-    ):
+    ) -> 'PatchProvider':
         """
         Creates a default provider instance that can be used with any project.
 
@@ -315,10 +318,11 @@ class PatchProvider(Provider):
 
     @classmethod
     def _get_patches_repository_path(cls) -> Path:
-        return Path(target_prefix()) / cls.patches_source.local
+        # pathlib doesn't have type annotations for '/'
+        return tp.cast(Path, Path(target_prefix()) / cls.patches_source.local)
 
     @classmethod
-    def _update_local_patches_repo(cls):
+    def _update_local_patches_repo(cls) -> None:
         lock_path = Path(target_prefix()) / "patch_provider.lock"
 
         with lock_file(lock_path):

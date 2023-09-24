@@ -18,7 +18,8 @@ class FolderAlreadyPresentError(Exception):
 
 
 @contextmanager
-def lock_file(lock_path: Path, lock_mode: int = fcntl.LOCK_EX) -> tp.Generator:
+def lock_file(lock_path: Path,
+              lock_mode: int = fcntl.LOCK_EX) -> tp.Generator[None, None, None]:
     open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
     lock_fd = os.open(lock_path, open_mode)
     try:
