@@ -20,7 +20,7 @@ from benchbuild.command import (
 )
 
 from varats.experiment.experiment_util import get_extra_config_options
-from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.project_util import ProjectBinaryWrapper, VCommand
 from varats.project.varats_project import VProject
 from varats.report.report import KeyedReportAggregate, ReportTy
 from varats.utils.exceptions import auto_unwrap
@@ -96,31 +96,16 @@ def workload_commands(
     # Filter commands that have required args set.
     extra_options = set(get_extra_config_options(project))
 
-    def requires_any_filter(prj_cmd: ProjectCommand) -> bool:
-        if hasattr(
-            prj_cmd.command, "requires_any"
-        ) and prj_cmd.command.requires_any:
-            args = set(prj_cmd.command._args).union(extra_options)
-            return bool(args.intersection(prj_cmd.command.requires_any))
+    def filter_by_config(prj_cmd: ProjectCommand) -> bool:
+        # TODO: pass applied patches
+        if isinstance(prj_cmd.command, VCommand):
+            return prj_cmd.command.can_be_executed_by(extra_options, set())
         return True
 
-    def requires_all_filter(prj_cmd: ProjectCommand) -> bool:
-        if hasattr(
-            prj_cmd.command, "requires_all"
-        ) and prj_cmd.command.requires_all:
-            args = set(prj_cmd.command._args).union(extra_options)
-            return bool(prj_cmd.command.requires_all.issubset(args))
-        return True
-
-    available_cmds = filter(
-        requires_all_filter, filter(requires_any_filter, project_cmds)
-    )
-
-    return list(
-        filter(
-            lambda prj_cmd: prj_cmd.path.name == binary.name, available_cmds
-        )
-    )
+    return [
+        cmd for cmd in project_cmds
+        if cmd.path.name == binary.name and filter_by_config(cmd)
+    ]
 
 
 def create_workload_specific_filename(

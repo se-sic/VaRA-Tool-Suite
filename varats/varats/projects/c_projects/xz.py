@@ -111,7 +111,7 @@ class Xz(VProject):
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
-                requires_all={"--compress"},
+                requires_all_args={"--compress"},
             )
         ],
     }

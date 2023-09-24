@@ -15,6 +15,9 @@ from plumbum.commands.base import BoundCommand
 
 from varats.utils.settings import bb_cfg
 
+if tp.TYPE_CHECKING:
+    from varats.provider.patch.patch_provider import Patch
+
 LOG = logging.getLogger(__name__)
 
 
@@ -390,8 +393,14 @@ class VCommand(Command):  # type: ignore [misc]
     Wrapper around benchbuild's Command class.
 
     Attributes:
-    requires_any: sufficient args that must be available for successful execution.
-    requires_all: all args that must be available for successful execution.
+    requires_any_args: any of these command line args must be available for
+                       successful execution.
+    requires_all_args: all of these command line args must be available for
+                       successful execution.
+    requires_any_patch: any of these patch feature-tags must be available for
+                       successful execution.
+    requires_all_patch: all of these patch feature-tags must be available for
+                       successful execution.
     """
 
     _requires: tp.Set[str]
@@ -399,19 +408,52 @@ class VCommand(Command):  # type: ignore [misc]
     def __init__(
         self,
         *args: tp.Any,
-        requires_any: tp.Optional[tp.Set[str]] = None,
-        requires_all: tp.Optional[tp.Set[str]] = None,
+        requires_any_args: tp.Optional[tp.Set[str]] = None,
+        requires_all_args: tp.Optional[tp.Set[str]] = None,
+        requires_any_patch: tp.Optional[tp.Set[str]] = None,
+        requires_all_patch: tp.Optional[tp.Set[str]] = None,
         **kwargs: tp.Union[str, tp.List[str]],
     ) -> None:
 
         super().__init__(*args, **kwargs)
-        self._requires_any = requires_any if requires_any else set()
-        self._requires_all = requires_all if requires_all else set()
+        self._requires_any_args = requires_any_args or set()
+        self._requires_all_args = requires_all_args or set()
+        self._requires_any_patch = requires_any_patch or set()
+        self._requires_all_patch = requires_all_patch or set()
 
     @property
-    def requires_any(self) -> tp.Set[str]:
-        return self._requires_any
+    def requires_any_args(self) -> tp.Set[str]:
+        return self._requires_any_args
 
     @property
-    def requires_all(self) -> tp.Set[str]:
-        return self._requires_all
+    def requires_all_args(self) -> tp.Set[str]:
+        return self._requires_all_args
+
+    @property
+    def requires_any_patch(self) -> tp.Set[str]:
+        return self._requires_any_patch
+
+    @property
+    def requires_all_patch(self) -> tp.Set[str]:
+        return self._requires_all_patch
+
+    def can_be_executed_by(
+        self, extra_args: tp.Set[str], applied_patches: tp.Set['Patch']
+    ) -> bool:
+        all_args = set(self._args).union(extra_args)
+        # TODO: extract tags from patches
+        all_patch_tags = {"" for patch in applied_patches}
+
+        return bool((
+            not self.requires_any_args or
+            all_args.intersection(self.requires_any_args)
+        ) and (
+            not self.requires_all_args or
+            self.requires_all_args.issubset(all_args)
+        ) and (
+            not self.requires_any_patch or
+            all_patch_tags.intersection(self.requires_any_patch)
+        ) and (
+            not self.requires_all_patch or
+            self.requires_all_patch.issubset(all_patch_tags)
+        ))
