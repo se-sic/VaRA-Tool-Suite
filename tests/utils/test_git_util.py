@@ -2,7 +2,7 @@
 import unittest
 from pathlib import Path
 
-from benchbuild.utils.revision_ranges import RevisionRange
+from benchbuild.utils.revision_ranges import RevisionRange, SingleRevision
 
 from varats.project.project_util import (
     get_local_project_git,
@@ -545,6 +545,36 @@ class TestRevisionBinaryMap(unittest.TestCase):
             "build/bin/SingleLocalMultipleRegions",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        self.assertIn("SingleLocalMultipleRegions", self.rv_map)
+
+    def test_specification_validity_range_multiple_binaries(self) -> None:
+        """Check if we can add binaries to the map that are only valid in a
+        specific range."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        self.assertEqual(len(self.rv_map[ShortCommitHash("162db88346")]), 2)
+
+        self.assertIn("SingleLocalMultipleRegions", self.rv_map)
+        self.assertIn("SingleLocalSimple", self.rv_map)
+
+    def test_specification_single_revision(self) -> None:
+        """Check if we can add binaries that are only valid with a single
+        revision."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=SingleRevision("162db88346")
         )
 
         self.assertIn("SingleLocalMultipleRegions", self.rv_map)

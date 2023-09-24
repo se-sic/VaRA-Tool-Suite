@@ -52,6 +52,20 @@ class TestWorkloadCommands(unittest.TestCase):
         )
         self.assertEqual(len(commands), 1)
 
+    def test_workload_commands_requires(self) -> None:
+        revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))
+        project = Xz(revision=revision)
+        binary = Xz.binaries_for_revision(ShortCommitHash("c5c7ceb08a"))[0]
+
+        commands = wu.workload_commands(
+            project, binary, [wu.WorkloadCategory.EXAMPLE]
+        )
+        self.assertEqual(len(commands), 1)
+        commands = wu.workload_commands(
+            project, binary, [wu.WorkloadCategory.MEDIUM]
+        )
+        self.assertEqual(len(commands), 1)
+
 
 class TestWorkloadFilenames(unittest.TestCase):
 

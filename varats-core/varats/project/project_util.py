@@ -7,6 +7,7 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
+from benchbuild.command import Command
 from benchbuild.source import Git
 from benchbuild.utils.cmd import git
 from plumbum import local
@@ -382,3 +383,35 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         for name in dirs:
             if name == ".gitted":
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
+
+
+class VCommand(Command):  # type: ignore [misc]
+    """
+    Wrapper around benchbuild's Command class.
+
+    Attributes:
+    requires_any: sufficient args that must be available for successful execution.
+    requires_all: all args that must be available for successful execution.
+    """
+
+    _requires: tp.Set[str]
+
+    def __init__(
+        self,
+        *args: tp.Any,
+        requires_any: tp.Optional[tp.Set[str]] = None,
+        requires_all: tp.Optional[tp.Set[str]] = None,
+        **kwargs: tp.Union[str, tp.List[str]],
+    ) -> None:
+
+        super().__init__(*args, **kwargs)
+        self._requires_any = requires_any if requires_any else set()
+        self._requires_all = requires_all if requires_all else set()
+
+    @property
+    def requires_any(self) -> tp.Set[str]:
+        return self._requires_any
+
+    @property
+    def requires_all(self) -> tp.Set[str]:
+        return self._requires_all
