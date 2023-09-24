@@ -21,6 +21,7 @@ One just needs to extend the case-study file of a project with a yaml document t
 .. code-block:: yaml
 
   ---
+  config_type: PlainCommandlineConfiguration
   0: '["--foo", "--bar"]'
   1: '["--foo"]'
   ...
