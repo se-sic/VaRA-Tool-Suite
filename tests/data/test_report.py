@@ -156,6 +156,14 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(self.report_filename.uuid, self.correct_UUID)
         self.assertRaises(ValueError, lambda: self.broken_report_filename.uuid)
 
+    def test_experiment_shorthand_parsing_with_path_in_name(self) -> None:
+        """Checks that we correctly parse the experiment shorthand also in cases
+        where we have a path as part of the filename."""
+        prefixed = ReportFilename(
+            "/tmp/foobar/" + self.report_filename.filename
+        )
+        self.assertEqual(prefixed.experiment_shorthand, "CRE")
+
 
 class TestConfigReportFilename(unittest.TestCase):
     """Test configuration specific ReportFilename functionality."""
