@@ -50,7 +50,7 @@ class StructuralCommitFeatureInteraction:
         return self.__num_instructions
 
     @property
-    def features(self) -> str:
+    def features(self) -> tp.List[str]:
         """The features of this cfi."""
         return self.__features
 
