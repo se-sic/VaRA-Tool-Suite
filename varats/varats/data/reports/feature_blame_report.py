@@ -166,24 +166,53 @@ def generate_feature_author_scfi_data(
 def generate_commit_scfi_data(
     SFBR: StructuralFeatureBlameReport, code_churn_lookup
 ) -> pd.DataFrame:
-    commit_cfi_data: tp.Dict[str, tp.Tuple[int, int]] = {}
+    commit_cfi_data: tp.Dict[str, tp.Tuple[tp.List[tp.Set[str]], int]] = {}
+
+    max_index: int = 0
     for SCFI in SFBR.commit_feature_interactions:
-        commit_hash = SCFI.commit.commit_hash
+        features = SCFI.features
+        full_commit_hash = SCFI.commit.commit_hash
+        commit_hash = ShortCommitHash(SCFI.commit.commit_hash).hash
         repository_name = SCFI.commit.repository_name
         entry = commit_cfi_data.get(commit_hash)
+
         if not entry:
             repo_lookup = code_churn_lookup[repository_name]
-            commit_lookup = repo_lookup.get(FullCommitHash(commit_hash))
+            commit_lookup = repo_lookup.get(FullCommitHash(full_commit_hash))
             if commit_lookup is None:
                 continue
             _, insertions, _ = commit_lookup
-            commit_cfi_data.update({commit_hash: (1, insertions)})
-        else:
-            commit_cfi_data.update({commit_hash: (entry[0] + 1, entry[1])})
-    rows = [[commit_data[0], commit_data[1][0], commit_data[1][1]]
-            for commit_data in commit_cfi_data.items()]
+            entry = ([], insertions)
+
+        index = len(SCFI.features) - 1
+        max_index = max(max_index, index)
+        if index >= len(entry[0]):
+            # add empty sets until index reached
+            for _ in range(index - len(entry[0]) + 1):
+                entry[0].append(set([]))
+
+        entry[0][index].update(features)
+
+        commit_cfi_data.update({commit_hash: entry})
+
+    rows = []
+    for key in commit_cfi_data.keys():
+        val = commit_cfi_data.get(key)
+        row = [key, val[1]]
+        num_interacting_features_nesting_degree = [len(val[0][0])]
+        features_at_lower_levels = val[0][0]
+        for i in range(1, len(val[0])):
+            val[0][i] = val[0][i].difference(features_at_lower_levels)
+            num_interacting_features_nesting_degree.append(len(val[0][i]))
+            features_at_lower_levels.update(val[0][i])
+        for _ in range(max_index - len(val[0]) + 1):
+            num_interacting_features_nesting_degree.append(0)
+        row.append(num_interacting_features_nesting_degree)
+        rows.append(row)
+
     return pd.DataFrame(
-        rows, columns=["commit", "num_interacting_features", "commit_size"]
+        rows,
+        columns=["commit", "commit_size", "num_interacting_features"],
     )
 
 
@@ -273,7 +302,7 @@ def get_commits_structurally_interacting_features(
         entry = commits_structurally_interacting_features.get(hash)
         if not entry:
             entry = set([])
-        entry.add(SCFI.feature)
+        entry.update(SCFI.features)
         commits_structurally_interacting_features.update({hash: entry})
 
     return commits_structurally_interacting_features
@@ -432,8 +461,9 @@ def generate_feature_dcfi_data(
 
 
 def generate_feature_author_dcfi_data(
-    SFBR: StructuralFeatureBlameReport, DFBR: DataflowFeatureBlameReport,
-    project_gits: tp.Dict[str, pygit2.Repository]
+    SFBR: StructuralFeatureBlameReport,
+    DFBR: DataflowFeatureBlameReport,
+    project_gits: tp.Dict[str, pygit2.Repository],
 ) -> pd.DataFrame:
     dci_feature = get_features_dataflow_affecting_commits(SFBR, DFBR)
 
