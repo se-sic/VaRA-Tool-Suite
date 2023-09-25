@@ -20,6 +20,7 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import init_all_submodules, update_all_submodules
 from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
@@ -427,7 +428,7 @@ class SynthIPRuntime(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
-            Command(
+            VCommand(
                 SourceRoot("SynthIPTemplate") / RSBinary("Template"),
                 "-c",
                 "<",
@@ -435,11 +436,12 @@ class SynthIPRuntime(VProject):
                 ">",
                 "geo-maps/countries-land-1km.geo.json.compressed",
                 label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"]
+                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
+                requires_all_args={"-c"}
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
+            VCommand(
                 SourceRoot("SynthIPTemplate") / RSBinary("Template"),
                 "-c",
                 "<",
@@ -447,7 +449,8 @@ class SynthIPRuntime(VProject):
                 ">",
                 "geo-maps/countries-land-1km.geo.json.compressed",
                 label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"]
+                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
+                requires_all_args={"-c"}
             )
         ],
     }
@@ -497,8 +500,34 @@ class SynthIPTemplate(VProject):
         FeatureSource()
     ]
 
-    # TODO
-    WORKLOADS = {}
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1km",
+                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
+                requires_all_patch={"Compress"}
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1m",
+                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
+                requires_all_args={"Compress"}
+            )
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -545,8 +574,34 @@ class SynthIPTemplate2(VProject):
         FeatureSource()
     ]
 
-    # TODO
-    WORKLOADS = {}
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1km",
+                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
+                requires_all_patch={"Compress"}
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1m",
+                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
+                requires_all_args={"Compress"}
+            )
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -593,8 +648,34 @@ class SynthIPCombined(VProject):
         FeatureSource()
     ]
 
-    # TODO
-    WORKLOADS = {}
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1km",
+                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
+                requires_all_args={"-c"}
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                "-c",
+                "<",
+                "geo-maps/countries-land-1km.geo.json",
+                ">",
+                "geo-maps/countries-land-1km.geo.json.compressed",
+                label="countries-land-1m",
+                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
+                requires_all_args={"-c"}
+            )
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(
