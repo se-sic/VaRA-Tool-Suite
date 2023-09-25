@@ -724,11 +724,6 @@ def get_config(
 
     config = config_map.get_configuration(config_id)
 
-    if config is None:
-        raise AssertionError(
-            "Requested config id was not in the map, but should be"
-        )
-
     return config
 
 
