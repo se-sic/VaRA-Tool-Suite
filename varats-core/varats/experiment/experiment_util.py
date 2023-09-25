@@ -10,7 +10,6 @@ from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
-from typing import Protocol, runtime_checkable
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
@@ -23,11 +22,16 @@ from plumbum.commands import ProcessExecutionError
 from plumbum.commands.base import BoundCommand
 
 import varats.revision.revisions as revs
-from varats.base.configuration import PlainCommandlineConfiguration
+from varats.base.configuration import (
+    PlainCommandlineConfiguration,
+    PatchConfiguration,
+    Configuration,
+)
 from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
+from varats.provider.patch.patch_provider import PatchSet, PatchProvider
 from varats.report.report import (
     BaseReport,
     FileStatusExtension,
@@ -696,20 +700,12 @@ def get_current_config_id(project: VProject) -> tp.Optional[int]:
     return None
 
 
-def get_extra_config_options(project: VProject) -> tp.List[str]:
-    """
-    Get extra program options that were specified in the particular
-    configuration of \a Project.
-
-    Args:
-        project: to get the extra options for
-
-    Returns:
-        list of command line options as string
-    """
+def get_config(
+    project: VProject, config_type: tp.Type[Configuration]
+) -> tp.Optional[Configuration]:
     config_id = get_current_config_id(project)
     if config_id is None:
-        return []
+        return None
 
     paper_config = get_paper_config()
     case_studies = paper_config.get_case_studies(cs_name=project.name)
@@ -722,7 +718,7 @@ def get_extra_config_options(project: VProject) -> tp.List[str]:
     case_study = case_studies[0]
 
     config_map = load_configuration_map_for_case_study(
-        paper_config, case_study, PlainCommandlineConfiguration
+        paper_config, case_study, config_type
     )
 
     config = config_map.get_configuration(config_id)
@@ -732,4 +728,45 @@ def get_extra_config_options(project: VProject) -> tp.List[str]:
             "Requested config id was not in the map, but should be"
         )
 
+    return config
+
+
+def get_extra_config_options(project: VProject) -> tp.List[str]:
+    """
+    Get extra program options that were specified in the particular
+    configuration of \a Project.
+
+    Args:
+        project: to get the extra options for
+
+    Returns:
+        list of command line options as string
+    """
+    config = get_config(project, PlainCommandlineConfiguration)
+    if not config:
+        return []
     return list(map(lambda option: option.value, config.options()))
+
+
+def get_config_patches(project: VProject) -> PatchSet:
+    """
+    Get required patches for the particular configuration of \a Project.
+
+    Args:
+        project: to get the patches for
+
+    Returns:
+        list of patches
+    """
+    config = get_config(project, PatchConfiguration)
+    if not config:
+        return PatchSet(set())
+
+    patch_provider = PatchProvider.create_provider_for_project(project)
+    revision = ShortCommitHash(project.revision.primary.version)
+    feature_tags = {opt.value for opt in config.options()}
+    patches = patch_provider.get_patches_for_revision(revision).all_of_features(
+        feature_tags
+    )
+
+    return patches

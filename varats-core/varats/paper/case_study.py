@@ -169,7 +169,7 @@ class CSStage():
         Returns a list of all configuration IDs specified for this revision.
 
         Args:
-            revision: i.e., a commit hash registed in this ``CSStage``
+            revision: i.e., a commit hash registered in this ``CSStage``
 
         Returns: list of config IDs
         """
@@ -580,10 +580,17 @@ def load_configuration_map_from_case_study_file(
     version_header.raise_if_not_type("CaseStudy")
     version_header.raise_if_version_is_less_than(1)
 
-    next(documents)  # Skip case study yaml-doc
+    next(documents)  # skip case study document
+    while True:
+        document = next(documents)
+        if not document:
+            raise AssertionError("Configuration missing from case study file.")
+
+        if document["config_type"] == concrete_config_type.__name__:
+            break
 
     return create_configuration_map_from_yaml_doc(
-        next(documents), concrete_config_type
+        document, concrete_config_type
     )
 
 
