@@ -27,6 +27,7 @@ from varats.base.configuration import (
     PatchConfiguration,
     Configuration,
 )
+from varats.experiment.steps.patch import ApplyPatch
 from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.sources import FeatureSource
@@ -770,3 +771,21 @@ def get_config_patches(project: VProject) -> PatchSet:
     )
 
     return patches
+
+
+def get_config_patch_steps(project: VProject) -> tp.MutableSequence[Step]:
+    """
+    Get a list of actions that apply all configuration patches to the project.
+
+    Args:
+        project: the project to be configured
+
+    Returns:
+        the actions that configure the project
+    """
+    return list(
+        map(
+            lambda patch: ApplyPatch(project, patch),
+            get_config_patches(project)
+        )
+    )
