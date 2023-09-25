@@ -74,8 +74,7 @@ def update_projects(
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
         'varats.projects.cpp_projects.ect',
-        'varats.projects.cpp_projects.lepton',
-        'varats.projects.cpp_projects.commit_feature_interactions_test_repo'
+        'varats.projects.cpp_projects.lepton'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'

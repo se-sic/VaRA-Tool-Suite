@@ -2,7 +2,7 @@
 Implements the basic feature blame report experiment.
 
 The experiment analyses a project with VaRA's blame and feature analysis and
-generates a FeatureBlameReport.
+generates either a structural or dataflow-based FeatureBlameReport.
 """
 
 import typing as tp
@@ -12,7 +12,7 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
-import varats.experiments.vara.feature_blame_experiment as FBE
+import varats.experiments.vara.vara_experiments as FBE
 from varats.data.reports.feature_blame_report import (
     StructuralFeatureBlameReport as SFBR,
 )
@@ -38,8 +38,8 @@ from varats.report.report import ReportSpecification
 
 
 class StructuralFeatureBlameReportGeneration(
-    actions.ProjectStep
-):  # type: ignore
+    actions.ProjectStep  # type: ignore
+):
     """Analyse a project with VaRA and generate a
     StructuralFeatureBlameReport."""
 
@@ -98,10 +98,6 @@ class StructuralFeatureBlameReportGeneration(
                 )
             )
 
-            test_fbr = SFBR(path=result_file.full_path())
-
-            test_fbr.print()
-
         return actions.StepResult.OK
 
 
@@ -150,7 +146,7 @@ class StructuralFeatureBlameReportExperiment(
 
         FBE.setup_basic_feature_blame_experiment(self, project, SFBR)
 
-        analysis_actions = FBE.generate_basic_feature_blame_experiment_actions(
+        analysis_actions = FBE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
@@ -192,7 +188,8 @@ class DataflowFeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
         This step performs the actual analysis with the correct command line
         flags. Flags used:
 
-        * -vara-DFBR: to run a commit feature interaction through dataflow report
+        * -vara-DFBR: to run a dataflow-based
+        commit feature interaction report
         * -yaml-report-outfile=<path>: specify the path to store the results
         """
         for binary in self.project.binaries:
@@ -225,10 +222,6 @@ class DataflowFeatureBlameReportGeneration(actions.ProjectStep):  # type: ignore
                     self.__experiment_handle, self.project, DFBR
                 )
             )
-
-            test_fbr = DFBR(path=result_file.full_path())
-
-            test_fbr.print()
 
         return actions.StepResult.OK
 
@@ -278,7 +271,7 @@ class DataflowFeatureBlameReportExperiment(
 
         FBE.setup_basic_feature_blame_experiment(self, project, DFBR)
 
-        analysis_actions = FBE.generate_basic_feature_blame_experiment_actions(
+        analysis_actions = FBE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
