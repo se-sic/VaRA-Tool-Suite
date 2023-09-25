@@ -127,7 +127,7 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
             get_structural_commit_data_for_case_study(case_study)
             for case_study in case_studies
         ]
-
+        print(projects_data_commits[0])
         rows = [[case_study.project_name] for case_study in case_studies] + [
             ["Mean"],
             ["Variance"],
@@ -139,10 +139,20 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
         ):
             data_commits_num_interacting_features = data_commits[
                 "num_interacting_features"]
-            commit_average_number_of_features_changed = np.mean(
-                data_commits_num_interacting_features
-            )
+
+            commit_average_number_of_features_changed = np.mean([
+                sum(data_commits_num_interacting_features[i])
+                for i in range(len(data_commits))
+            ])
             rows[current_row].append(commit_average_number_of_features_changed)
+
+            commit_average_number_of_features_changed_nd1 = np.mean([
+                data_commits_num_interacting_features[i][0]
+                for i in range(len(data_commits))
+            ])
+            rows[current_row].append(
+                commit_average_number_of_features_changed_nd1
+            )
 
             # filter large commits
             data_commits_num_interacting_features_outliers_filtered = (
@@ -150,27 +160,63 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
                                    1.5)["num_interacting_features"]
             )
             commit_average_number_of_features_changed_outliers_filtered = np.mean(
-                data_commits_num_interacting_features_outliers_filtered
+                [
+                    sum(
+                        data_commits_num_interacting_features_outliers_filtered[
+                            index]
+                    ) for index in
+                    data_commits_num_interacting_features_outliers_filtered.
+                    head().index
+                ]
             )
             rows[current_row].append(
                 commit_average_number_of_features_changed_outliers_filtered
             )
 
+            commit_average_number_of_features_changed_outliers_filtered_nd1 = np.mean(
+                [
+                    data_commits_num_interacting_features_outliers_filtered[
+                        index][0] for index in
+                    data_commits_num_interacting_features_outliers_filtered.
+                    head().index
+                ]
+            )
+            rows[current_row].append(
+                commit_average_number_of_features_changed_outliers_filtered_nd1
+            )
+            """
             fraction_commits_changing_more_than_one_feature = len(
                 data_commits_num_interacting_features.loc[
-                    data_commits_num_interacting_features > 1]
+                    sum(data_commits_num_interacting_features) > 1
+                ]
             ) / len(data_commits_num_interacting_features)
-            rows[current_row].append(
-                fraction_commits_changing_more_than_one_feature
-            )
+            rows[current_row].append(fraction_commits_changing_more_than_one_feature)
+
+            fraction_commits_changing_more_than_one_feature_nd1 = len(
+                data_commits_num_interacting_features.loc[
+                    data_commits_num_interacting_features[0] > 1
+                ]
+            ) / len(data_commits_num_interacting_features)
+            rows[current_row].append(fraction_commits_changing_more_than_one_feature_nd1)
 
             fraction_commits_changing_more_than_one_feature_outliers_filtered = len(
                 data_commits_num_interacting_features_outliers_filtered.loc[
-                    data_commits_num_interacting_features_outliers_filtered > 1]
+                    sum(data_commits_num_interacting_features_outliers_filtered) > 1
+                ]
             ) / len(data_commits_num_interacting_features_outliers_filtered)
             rows[current_row].append(
                 fraction_commits_changing_more_than_one_feature_outliers_filtered
             )
+
+            fraction_commits_changing_more_than_one_feature_outliers_filtered_nd1 = len(
+                data_commits_num_interacting_features_outliers_filtered.loc[
+                    data_commits_num_interacting_features_outliers_filtered[0] > 1
+                ]
+            ) / len(data_commits_num_interacting_features_outliers_filtered)
+            rows[current_row].append(
+                fraction_commits_changing_more_than_one_feature_outliers_filtered_nd1
+            )
+            """
 
         # calc overall mean and variance for each column
         add_mean_and_variance(rows, len(case_studies))
@@ -180,9 +226,13 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
             columns=[
                 "Projects",
                 "Avg Num Ftrs Chngd",
+                "Avg Num Ftrs Chngd ND1",
                 "Avg Num Ftrs Chngd (Lrg Cmmts Fltrd)",
-                "Frctn Cmmts Chngng >1 Ftr",
-                "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd)",
+                "Avg Num Ftrs Chngd (Lrg Cmmts Fltrd) ND1",
+                # "Frctn Cmmts Chngng >1 Ftr",
+                #"Frctn Cmmts Chngng >1 Ftr ND1",
+                # "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd)",
+                # "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd) ND1",
             ],
         )
 
@@ -639,7 +689,7 @@ class DFBRAuthorEvalTable(Table, table_name="dfbr_author_eval_table"):
             print(data_authors)
             corre_feature_size_num_interacting_authors, p_value = stats.pearsonr(
                 data_authors["interacting_authors_outside"],
-                data_authors["feature_size"]
+                data_authors["feature_size"],
             )
             rows[current_row].extend([
                 corre_feature_size_num_interacting_authors, p_value
