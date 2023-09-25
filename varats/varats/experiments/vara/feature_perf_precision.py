@@ -29,6 +29,7 @@ from varats.experiment.experiment_util import (
     get_extra_config_options,
     ZippedExperimentSteps,
     OutputFolderStep,
+    get_config_patch_steps,
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
@@ -571,7 +572,7 @@ class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self.__reps):
                     for prj_command in workload_commands(
-                        self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                        self.project, self.__binary, []
                     ):
                         time_report_file = Path(reps_tmp_dir) / (
                             f"baseline_{prj_command.command.label}_{rep}"
@@ -650,6 +651,10 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
 
         patch_steps = []
         for patch in patches:
+            # skip configuration patches
+            if patch.feature_tags:
+                continue
+
             print(f"Got patch with path: {patch.path}")
             patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
@@ -664,7 +669,8 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             )
             patch_steps.append(RevertPatch(project, patch))
 
-        analysis_actions = []
+        # configuration patches should always be applied
+        analysis_actions = get_config_patch_steps(project)
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
