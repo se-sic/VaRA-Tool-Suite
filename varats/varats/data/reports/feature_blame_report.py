@@ -351,9 +351,10 @@ def get_commits_dataflow_interacting_features(
 
 def get_features_dataflow_affecting_commits(
     SFBR: StructuralFeatureBlameReport, DFBR: DataflowFeatureBlameReport
-) -> tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str]]]:
+) -> tp.Dict[str, tp.Tuple[tp.Set[CommitRepoPair], tp.Set[CommitRepoPair]]]:
     # {feature, ([interacting_commits_outside], [interacting_commits_inside])}
-    dci_feature: tp.Dict[str, tp.Tuple[tp.Set[str], tp.Set[str]]] = {}
+    dci_feature: tp.Dict[str, tp.Tuple[tp.Set[CommitRepoPair],
+                                       tp.Set[CommitRepoPair]]] = {}
 
     commits_structurally_interacting_with_features: tp.Dict[
         str, tp.Set[str]] = get_commits_structurally_interacting_features(SFBR)
@@ -371,9 +372,9 @@ def get_features_dataflow_affecting_commits(
             if structurally_interacting_features is None or not (
                 feature in structurally_interacting_features
             ):
-                entry[0].add(sch)
+                entry[0].add(commit)
             else:
-                entry[1].add(sch)
+                entry[1].add(commit)
         dci_feature.update({feature: entry})
 
     return dci_feature
@@ -466,3 +467,55 @@ def generate_feature_dcfi_data(
         "num_interacting_commits_inside_df",
     ]
     return pd.DataFrame(rows_feature_dci, columns=columns)
+
+
+def generate_feature_author_dcfi_data(
+    SFBR: StructuralFeatureBlameReport, DFBR: DataflowFeatureBlameReport,
+    project_gits: tp.Dict[str, pygit2.Repository]
+) -> pd.DataFrame:
+    dci_feature = get_features_dataflow_affecting_commits(SFBR, DFBR)
+
+    # {feature, ([interacting_authors_outside], [interacting_authors_inside])}
+    rows_feature_author_dci = []
+
+    feature_scfi_data = generate_feature_scfi_data(SFBR)
+
+    for feature_data in dci_feature.items():
+        feature = feature_data[0]
+        interacting_commits_outside = feature_data[1][0]
+        interacting_authors_outside: tp.Set[str] = set([])
+        for commit in interacting_commits_outside:
+            commit_hash = commit.commit_hash
+            repo = commit.repository_name
+            author = get_author(commit_hash, project_gits.get(repo))
+            if author is None:
+                continue
+            interacting_authors_outside.add(author)
+
+        interacting_commits_inside = feature_data[1][1]
+        interacting_authors_inside: tp.Set[str] = set([])
+        for commit in interacting_commits_inside:
+            commit_hash = commit.commit_hash
+            repo = commit.repository_name
+            author = get_author(commit_hash, project_gits.get(repo))
+            if author is None:
+                continue
+            interacting_authors_inside.add(author)
+
+        rows_feature_author_dci.append([
+            feature,
+            feature_scfi_data.loc[feature_scfi_data["feature"] ==
+                                  feature_data[0]]["feature_size"].to_numpy()
+            [0],
+            len(interacting_authors_outside),
+            len(interacting_authors_inside),
+        ])
+
+    columns = [
+        "feature",
+        "feature_size",
+        "interacting_authors_outside",
+        "interacting_authors_inside",
+    ]
+
+    return pd.DataFrame(rows_feature_author_dci, columns=columns)

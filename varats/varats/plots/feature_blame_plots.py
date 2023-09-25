@@ -18,6 +18,7 @@ from varats.data.reports.feature_blame_report import (
     generate_general_commit_dcfi_data,
     generate_feature_dcfi_data,
     generate_feature_author_scfi_data,
+    generate_feature_author_dcfi_data,
 )
 from varats.jupyterhelper.file import (
     load_structural_feature_blame_report,
@@ -654,10 +655,24 @@ class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
             for case_study in case_studies
         ]
         data = pd.concat([
-            df.assign(
-                project=[case_study.project_name for i in range(0, len(df))]
-            ) for case_study, df in zip(case_studies, dfs)
+            get_feature_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
         ])
+        data = data.sort_values(by=["num_interacting_commits_outside_df"])
+        pyplot.figure(figsize=(10.3, 6))
+        ax = sns.barplot(
+            data=data,
+            x="feature",
+            y="num_interacting_commits_outside_df",
+            color="blue",
+            palette=["tab:blue"],
+        )
+        ax.set_xlabel("Feature", size="11")
+        ax.set_ylabel("Number of Interacting Outside Commits", size="12")
+        ax.set_title(
+            "Feature Commit Dataflow Interactions from Outisde", size="14"
+        )
+        return None
 
         fig, naxs = pyplot.subplots(2, 2, figsize=(22, 22))
         case_study_counter = 0
@@ -673,7 +688,7 @@ class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
                     y="num_interacting_commits_outside_df",
                     ax=ax,
                     color="blue",
-                    palette=["tab:blue"]
+                    palette=["tab:blue"],
                 )
                 ax.set_xlabel("Feature", size="16")
                 ax.set_ylabel(
@@ -686,7 +701,7 @@ class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
             "Dataflow Interactions from Outside of Features" +
             " for Projects " +
             ",".join([case_study.project_name for case_study in case_studies]),
-            size="26"
+            size="26",
         )
 
 
@@ -708,8 +723,8 @@ class FeatureDisDFBRPlotGenerator(
 ########## Author ###########
 
 
-def get_feature_author_data_for_case_study(
-    case_study: CaseStudy
+def get_structural_feature_author_data_for_case_study(
+    case_study: CaseStudy,
 ) -> pd.DataFrame:
     report_file = get_structural_report_files_for_project(
         case_study.project_name
@@ -723,25 +738,42 @@ def get_feature_author_data_for_case_study(
     return data_frame
 
 
+def get_dataflow_feature_author_data_for_case_study(
+    case_study: CaseStudy,
+) -> pd.DataFrame:
+    structural_report_file = get_structural_report_files_for_project(
+        case_study.project_name
+    )[0]
+    dataflow_report_file = get_dataflow_report_files_for_project(
+        case_study.project_name
+    )[0]
+    project_gits = get_local_project_gits(case_study.project_name)
+    structural_report = load_structural_feature_blame_report(
+        structural_report_file
+    )
+    dataflow_report = load_dataflow_feature_blame_report(dataflow_report_file)
+    data_frame: pd.DataFrame = generate_feature_author_dcfi_data(
+        structural_report, dataflow_report, project_gits
+    )
+
+    return data_frame
+
+
 def get_stacked_author_data_for_case_studies(
     case_studies: tp.List[CaseStudy],
+    projects_data,
 ) -> pd.DataFrame:
     rows = []
-    projects_data = [
-        get_feature_author_data_for_case_study(case_study
-                                              ).loc[:,
-                                                    "num_implementing_authors"]
-        for case_study in case_studies
-    ]
-    max_num_implementing_authors = max([
+
+    max_num_interacting_authors = max([
         max(project_data) for project_data in projects_data
     ])
 
     for case_study, project_data in zip(case_studies, projects_data):
-        count: [int] = [0 for _ in range(0, max_num_implementing_authors)]
-        for num_implementing_authors in project_data:
-            count[num_implementing_authors -
-                  1] = (count[num_implementing_authors - 1] + 1)
+        count: [int] = [0 for _ in range(0, max_num_interacting_authors)]
+        for num_interacting_authors in project_data:
+            count[num_interacting_authors -
+                  1] = count[num_interacting_authors - 1] + 1
 
         rows.append([case_study.project_name] + count)
 
@@ -749,7 +781,7 @@ def get_stacked_author_data_for_case_studies(
         [],
         [[case_study.project_name] for case_study in case_studies],
     )
-    for i in range(1, max_num_implementing_authors + 1):
+    for i in range(1, max_num_interacting_authors + 1):
         s = np.sum([int(rows[j][i]) for j in range(0, len(case_studies))])
         if s > 0:
             author_columns.append(str(i) + " Author" + ("s" if i > 1 else ""))
@@ -758,12 +790,19 @@ def get_stacked_author_data_for_case_studies(
     return pd.DataFrame(adj_rows, columns=["Project"] + author_columns)
 
 
-class FeatureAuthorDisPlot(Plot, plot_name="feature_author_dis_plot"):
+class FeatureAuthorStructDisPlot(
+    Plot, plot_name="feature_author_struct_dis_plot"
+):
 
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-
-        data = get_stacked_author_data_for_case_studies(case_studies)
+        projects_data = [
+            get_structural_feature_author_data_for_case_study(case_study).
+            loc[:, "num_implementing_authors"] for case_study in case_studies
+        ]
+        data = get_stacked_author_data_for_case_studies(
+            case_studies, projects_data
+        )
 
         data = data.sort_values(by=["1 Author"])
         print(data)
@@ -774,9 +813,9 @@ class FeatureAuthorDisPlot(Plot, plot_name="feature_author_dis_plot"):
         )
 
 
-class FeatureAuthorDisPlotGenerator(
+class FeatureAuthorStructDisPlotGenerator(
     PlotGenerator,
-    generator_name="feature-author-dis-plot",
+    generator_name="feature-author-struct-dis-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
 
@@ -784,9 +823,111 @@ class FeatureAuthorDisPlotGenerator(
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
 
         return [
-            FeatureAuthorDisPlot(
+            FeatureAuthorStructDisPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
+        ]
+
+
+class FeatureAuthorDataflowDisPlot(
+    Plot, plot_name="feature_author_dataflow_dis_plot"
+):
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        projects_data = [
+            get_dataflow_feature_author_data_for_case_study(case_study).
+            loc[:, "interacting_authors_outside"] for case_study in case_studies
+        ]
+        data = get_stacked_author_data_for_case_studies(
+            case_studies, projects_data
+        )
+
+        data = data.sort_values(by=["1 Author"])
+        print(data)
+        data.set_index("Project").plot(
+            kind="bar",
+            stacked=True,
+            ylabel="Number of Features Affected Through Outside Dataflow by",
+        )
+
+
+class FeatureAuthorDataflowDisPlotGenerator(
+    PlotGenerator,
+    generator_name="feature-author-dataflow-dis-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY],
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            FeatureAuthorDataflowDisPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
+        ]
+
+
+def get_combined_author_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
+    structural_data = get_structural_feature_author_data_for_case_study(
+        case_study
+    )
+    dataflow_data = get_dataflow_feature_author_data_for_case_study(case_study)
+
+    combined_rows = []
+    for i in range(len(structural_data)):
+        feature = structural_data.loc[i, "feature"]
+        num_implementing_authors = structural_data.loc[
+            i, "num_implementing_authors"]
+        for _ in range(num_implementing_authors):
+            combined_rows.append([
+                feature,
+                "Implementing Authors",  # type
+            ])
+    for i in range(len(dataflow_data)):
+        feature = dataflow_data.loc[i, "feature"]
+        interacting_authors_outside = dataflow_data.loc[
+            i, "interacting_authors_outside"]
+        for _ in range(interacting_authors_outside):
+            combined_rows.append([
+                feature,
+                "Interacting Authors Through Outside Dataflow",  # type
+            ])
+
+    columns = ["feature", "interaction_type"]
+
+    return pd.DataFrame(combined_rows, columns=columns)
+
+
+class FeatureCombinedAuthorPlot(Plot, plot_name="feature_combined_author_plot"):
+
+    def plot(self, view_mode: bool) -> None:
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        data = get_combined_author_data_for_case_study(case_study)
+        pyplot.figure(figsize=(13, 8))
+        sns.histplot(
+            data=data,
+            x="feature",
+            hue="interaction_type",
+            multiple="dodge",
+            shrink=0.8
+        )
+
+
+class FeatureCombinedAuthorPlotGenerator(
+    PlotGenerator,
+    generator_name="feature-combined-author-plot",
+    options=[REQUIRE_MULTI_CASE_STUDY],
+):
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        return [
+            FeatureCombinedAuthorPlot(
+                self.plot_config, case_study=case_study, **self.plot_kwargs
+            ) for case_study in case_studies
         ]
 
 
@@ -797,7 +938,7 @@ class FeatureSizeCorrAuthorPlot(
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         data = pd.concat([
-            get_feature_author_data_for_case_study(case_study)
+            get_structural_feature_author_data_for_case_study(case_study)
             for case_study in case_studies
         ])
         print(data)

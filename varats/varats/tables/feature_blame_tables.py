@@ -12,7 +12,8 @@ from varats.plots.feature_blame_plots import (
     get_commit_specific_dataflow_data_for_case_study,
     get_general_commit_dataflow_data_for_case_study,
     get_feature_dataflow_data_for_case_study,
-    get_feature_author_data_for_case_study,
+    get_structural_feature_author_data_for_case_study,
+    get_dataflow_feature_author_data_for_case_study,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -227,7 +228,7 @@ class SFBRAuthorEvalTable(Table, table_name="sfbr_author_eval_table"):
         case_studies: tp.List[CaseStudy] = self.table_kwargs["case_studies"]
 
         projects_data_authors = [
-            get_feature_author_data_for_case_study(case_study)
+            get_structural_feature_author_data_for_case_study(case_study)
             for case_study in case_studies
         ]
 
@@ -601,3 +602,95 @@ def add_mean_and_variance(rows, num_case_studies) -> None:
         list_vals = [rows[j][i] for j in range(0, num_case_studies)]
         rows[num_case_studies].append(np.mean(list_vals))
         rows[num_case_studies + 1].append(np.var(list_vals))
+
+
+class DFBRAuthorEvalTable(Table, table_name="dfbr_author_eval_table"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs["case_studies"]
+
+        projects_data_authors = [
+            get_dataflow_feature_author_data_for_case_study(case_study)
+            for case_study in case_studies
+        ]
+
+        rows = [[case_study.project_name] for case_study in case_studies] + [
+            ["Mean"],
+            ["Variance"],
+        ]
+
+        for data_authors, current_row in zip(
+            projects_data_authors,
+            range(0, len(case_studies)),
+        ):
+            data_num_interacting_authors = data_authors[
+                "interacting_authors_outside"]
+            avg_num_interacting_authors = np.mean(data_num_interacting_authors)
+            rows[current_row].append(avg_num_interacting_authors)
+
+            var_num_interacting_authors = np.var(data_num_interacting_authors)
+            rows[current_row].append(var_num_interacting_authors)
+
+            range_num_interacting_authors = (
+                min(data_num_interacting_authors),
+                max(data_num_interacting_authors),
+            )
+            rows[current_row].append(range_num_interacting_authors)
+            print(data_authors)
+            corre_feature_size_num_interacting_authors, p_value = stats.pearsonr(
+                data_authors["interacting_authors_outside"],
+                data_authors["feature_size"]
+            )
+            rows[current_row].extend([
+                corre_feature_size_num_interacting_authors, p_value
+            ])
+
+        # calc overall mean and variance for each column
+        add_mean_and_variance(rows, len(case_studies))
+
+        df = pd.DataFrame(
+            round_rows(rows, 2),
+            columns=[
+                "Projects",
+                "Avg Num Interacting Authors",
+                "Var Num Interacting Authors",
+                "Range Num Interacting Authors",
+                "Corr Ftr Size - Num Interacting Authors",
+                "P-Value",
+            ],
+        )
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+        projects_separated_by_comma = ",".join([
+            case_study.project_name for case_study in case_studies
+        ])
+        if table_format.is_latex():
+            kwargs[
+                "caption"
+            ] = f"Evaluation of structural CFIs for projects {projects_separated_by_comma}. "
+            kwargs["position"] = "t"
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
+
+
+class DFBRAuthorEvalTableGenerator(
+    TableGenerator,
+    generator_name="dfbr-author-eval-table",
+    options=[REQUIRE_MULTI_CASE_STUDY],
+):
+
+    def generate(self) -> tp.List[Table]:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
+        return [
+            DFBRAuthorEvalTable(
+                self.table_config,
+                case_studies=case_studies,
+                **self.table_kwargs
+            )
+        ]
