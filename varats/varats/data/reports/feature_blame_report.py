@@ -13,32 +13,35 @@ from varats.report.report import BaseReport
 from varats.utils.git_util import CommitRepoPair
 
 
-class StructuralCommitFeatureInteraction():
+class StructuralCommitFeatureInteraction:
     """A StructuralCommitFeatureInteraction detailing the specific commit-hash
     and repo and feature and the number of instructions this structural cfi
     occurs in."""
 
     def __init__(
-        self, num_instructions: int, feature: str, commit: CommitRepoPair
+        self, num_instructions: int, features: tp.List[str],
+        commit: CommitRepoPair
     ) -> None:
         self.__num_instructions = num_instructions
-        self.__feature = feature
+        self.__features = features
         self.__commit = commit
 
     @staticmethod
     def create_commit_feature_interaction(
         raw_inst_entry: tp.Dict[str, tp.Any]
-    ) -> 'StructuralCommitFeatureInteraction':
+    ) -> "StructuralCommitFeatureInteraction":
         """Creates a `StructuralCommitFeatureInteraction` entry from the
         corresponding yaml document section."""
-        num_instructions = int(raw_inst_entry['num-instructions'])
-        feature: str = str(raw_inst_entry['feature'])
+        num_instructions = int(raw_inst_entry["num-instructions"])
+        features: tp.List[str] = [
+            str(feature) for feature in raw_inst_entry["features"]
+        ]
         commit: CommitRepoPair = CommitRepoPair(
-            (raw_inst_entry['commit-repo-pair'])['commit'],
-            (raw_inst_entry['commit-repo-pair'])['repository']
+            (raw_inst_entry["commit-repo-pair"])["commit"],
+            (raw_inst_entry["commit-repo-pair"])["repository"],
         )
         return StructuralCommitFeatureInteraction(
-            num_instructions, feature, commit
+            num_instructions, features, commit
         )
 
     @property
@@ -47,9 +50,9 @@ class StructuralCommitFeatureInteraction():
         return self.__num_instructions
 
     @property
-    def feature(self) -> str:
-        """The feature of this cfi."""
-        return self.__feature
+    def features(self) -> str:
+        """The features of this cfi."""
+        return self.__features
 
     @property
     def commit(self) -> CommitRepoPair:
@@ -70,25 +73,25 @@ class StructuralFeatureBlameReport(
     def __init__(self, path: Path) -> None:
         super().__init__(path)
 
-        with open(path, 'r') as stream:
+        with open(path, "r") as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("StructuralFeatureBlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__meta_data = FeatureBlameReportMetaData \
-                .create_feature_analysis_report_meta_data(next(documents))
+            self.__meta_data = (
+                FeatureBlameReportMetaData.
+                create_feature_analysis_report_meta_data(next(documents))
+            )
 
-            self.__commit_feature_interactions: tp.List[
-                StructuralCommitFeatureInteraction] = []
             raw_feature_blame_report = next(documents)
-            for cfi in raw_feature_blame_report[
-                'structural-commit-feature-interactions']:
-                new_cfi = (
-                    StructuralCommitFeatureInteraction.
-                    create_commit_feature_interaction(cfi)
-                )
-                self.__commit_feature_interactions.append(new_cfi)
+
+            self.__commit_feature_interactions = [
+                StructuralCommitFeatureInteraction.
+                create_commit_feature_interaction(cfi)
+                for cfi in raw_feature_blame_report[
+                    "structural-commit-feature-interactions"]
+            ]
 
     @property
     def meta_data(self) -> FeatureAnalysisReportMetaData:
@@ -98,7 +101,7 @@ class StructuralFeatureBlameReport(
 
     @property
     def commit_feature_interactions(
-        self
+        self,
     ) -> tp.List[StructuralCommitFeatureInteraction]:
         """Return all structural cfis."""
         return self.__commit_feature_interactions
@@ -107,7 +110,7 @@ class StructuralFeatureBlameReport(
 ##### DATAFLOW #####
 
 
-class DataflowCommitFeatureInteraction():
+class DataflowCommitFeatureInteraction:
     """A DataflowCommitFeatureInteraction detailing the specific commit-hash and
     repo and feature this dataflow-based cfi occurs in."""
 
@@ -118,13 +121,14 @@ class DataflowCommitFeatureInteraction():
     @staticmethod
     def create_commit_feature_interaction(
         raw_inst_entry: tp.Dict[str, tp.Any]
-    ) -> 'DataflowCommitFeatureInteraction':
+    ) -> "DataflowCommitFeatureInteraction":
         """Creates a `DataflowCommitFeatureInteraction` entry from the
         corresponding yaml document section."""
-        feature: str = str(raw_inst_entry['feature'])
-        crps: tp.List[CommitRepoPair] = []
-        for crp in raw_inst_entry['commit-repo-pairs']:
-            crps.append(CommitRepoPair(crp['commit'], crp['repository']))
+        feature: str = str(raw_inst_entry["feature"])
+        crps: tp.List[CommitRepoPair] = [
+            CommitRepoPair(crp["commit"], crp["repository"])
+            for crp in raw_inst_entry["commit-repo-pairs"]
+        ]
         return DataflowCommitFeatureInteraction(feature, crps)
 
     @property
@@ -147,25 +151,24 @@ class DataflowFeatureBlameReport(
     def __init__(self, path: Path) -> None:
         super().__init__(path)
 
-        with open(path, 'r') as stream:
+        with open(path, "r") as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("DataflowFeatureBlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__meta_data = FeatureBlameReportMetaData \
-                .create_feature_analysis_report_meta_data(next(documents))
+            self.__meta_data = (
+                FeatureBlameReportMetaData.
+                create_feature_analysis_report_meta_data(next(documents))
+            )
 
-            self.__commit_feature_interactions: tp.List[
-                DataflowCommitFeatureInteraction] = []
             raw_feature_blame_report = next(documents)
-            for cfi in raw_feature_blame_report[
-                'dataflow-commit-feature-interactions']:
-                new_cfi = (
-                    DataflowCommitFeatureInteraction.
-                    create_commit_feature_interaction(cfi)
-                )
-                self.__commit_feature_interactions.append(new_cfi)
+
+            self.__commit_feature_interactions = [
+                DataflowCommitFeatureInteraction.
+                create_commit_feature_interaction(cfi) for cfi in
+                raw_feature_blame_report["dataflow-commit-feature-interactions"]
+            ]
 
     @property
     def meta_data(self) -> FeatureAnalysisReportMetaData:
