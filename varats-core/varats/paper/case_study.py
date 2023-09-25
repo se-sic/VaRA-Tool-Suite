@@ -581,17 +581,18 @@ def load_configuration_map_from_case_study_file(
     version_header.raise_if_version_is_less_than(1)
 
     next(documents)  # skip case study document
-    while True:
-        document = next(documents)
-        if not document:
-            raise AssertionError("Configuration missing from case study file.")
+    try:
+        while True:
+            document = next(documents)
 
-        if document["config_type"] == concrete_config_type.__name__:
-            break
+            if document["config_type"] == concrete_config_type.__name__:
+                break
 
-    return create_configuration_map_from_yaml_doc(
-        document, concrete_config_type
-    )
+        return create_configuration_map_from_yaml_doc(
+            document, concrete_config_type
+        )
+    except StopIteration:
+        return ConfigurationMap()
 
 
 def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:

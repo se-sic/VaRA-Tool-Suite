@@ -747,7 +747,7 @@ class SynthIPRuntime(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
                 "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
@@ -760,7 +760,7 @@ class SynthIPRuntime(VProject):
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
                 "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
@@ -895,7 +895,7 @@ class SynthIPTemplate2(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
                 "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
@@ -908,7 +908,7 @@ class SynthIPTemplate2(VProject):
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
                 "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
@@ -969,7 +969,7 @@ class SynthIPCombined(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                SourceRoot("SynthIPCombined") / RSBinary("Combined"),
                 "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
@@ -982,7 +982,7 @@ class SynthIPCombined(VProject):
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
+                SourceRoot("SynthIPCombined") / RSBinary("Combined"),
                 "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
