@@ -17,6 +17,7 @@ from benchbuild.utils.actions import (
     Compile,
     Clean,
 )
+from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import local
 
 from varats.experiment.experiment_util import (
@@ -72,6 +73,8 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
     NAME = "FeatureExperiment"
 
     REPORT_SPEC = ReportSpecification()
+
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
     @abstractmethod
     def actions_for_project(self,
@@ -231,7 +234,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: Run instrumentation verifier", indent * " "
+            f"* {self.project.name}: Run instrumented code", indent * " "
         )
 
     def run_traced_code(self) -> StepResult:

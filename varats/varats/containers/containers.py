@@ -37,10 +37,12 @@ LOG = logging.getLogger(__name__)
 
 class ImageBase(Enum):
     """Container image bases that can be used by projects."""
-    DEBIAN_10 = Distro.DEBIAN
+    DEBIAN_10 = (Distro.DEBIAN, 10)
+    DEBIAN_12 = (Distro.DEBIAN, 12)
 
-    def __init__(self, distro: Distro):
+    def __init__(self, distro: Distro, version_number: int):
         self.__distro = distro
+        self.__version_number = version_number
 
     @property
     def distro(self) -> Distro:
@@ -156,7 +158,7 @@ def _create_stage_00_base_layers(stage_builder: StageBuilder) -> None:
 
 
 def _create_stage_10_varats_layers(stage_builder: StageBuilder) -> None:
-    stage_builder.layers.run('pip3', 'install', '--upgrade', 'pip')
+    stage_builder.layers.run('pip', 'install', '--upgrade', 'pip')
     _add_varats_layers(stage_builder)
     if bb_cfg()['container']['from_source']:
         add_benchbuild_layers(stage_builder.layers)
@@ -215,13 +217,22 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .run('make', '-j', str(get_number_of_jobs(bb_cfg())))
             .run('make', 'install')
             .workingdir('/')
-            # install llvm 13
+            # install llvm 14
             .run('wget', 'https://apt.llvm.org/llvm.sh')
             .run('chmod', '+x', './llvm.sh')
             .run('./llvm.sh', '14', 'all')
             .run('ln', '-s', '/usr/bin/clang-14', '/usr/bin/clang')
             .run('ln', '-s', '/usr/bin/clang++-14', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-14', '/usr/bin/lld'))
+            .run('ln', '-s', '/usr/bin/lld-14', '/usr/bin/lld')),
+    ImageBase.DEBIAN_12:
+        _create_layers_helper(lambda ctx: ctx.layers
+            .from_("docker.io/library/debian:12")
+            .run('apt', 'update')
+            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+                 'software-properties-common', 'musl-dev', 'git', 'gcc',
+                 'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev',
+                 'python3', 'python3-pip', 'python3-virtualenv', 'clang',
+                 'lld', 'time'))
 }
 
 _STAGE_LAYERS: tp.Dict[ImageStage,
@@ -313,7 +324,9 @@ def _set_varats_source_mount(image_context: StageBuilder, mnt_src: str) -> None:
 
 def _setup_venv(image_context: StageBuilder) -> None:
     venv_path = "/venv"
-    image_context.layers.run("pip3", "install", "virtualenv")
+    if image_context.base == ImageBase.DEBIAN_10:
+        image_context.layers.run("pip3", "install", "virtualenv")
+
     image_context.layers.run("virtualenv", venv_path)
     image_context.layers.env(VIRTUAL_ENV=venv_path)
     image_context.layers.env(PATH=f"{venv_path}/bin:$PATH")
@@ -331,9 +344,9 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         tgt_dir = image_context.varats_source_mount_target
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
-        image.run('pip3', 'install', 'setuptools', runtime=crun)
+        image.run('pip', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip3', 'install']
+        pip_args = ['pip', 'install']
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
@@ -348,7 +361,7 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
     def from_pip(image: ContainerImage) -> None:
         LOG.debug("installing varats from pip release.")
         image.run(
-            'pip3',
+            'pip',
             'install',
             '--ignore-installed',
             'varats-core',

@@ -18,13 +18,13 @@ GNU_TIME_OUTPUT_1 = """  Command being timed: "echo"
   Average total size (kbytes): 0
   Maximum resident set size (kbytes): 1804
   Average resident set size (kbytes): 0
-  Major (requiring I/O) page faults: 0
+  Major (requiring I/O) page faults: 2
   Minor (reclaiming a frame) page faults: 142
   Voluntary context switches: 1
   Involuntary context switches: 1
   Swaps: 0
-  File system inputs: 0
-  File system outputs: 0
+  File system inputs: 1
+  File system outputs: 2
   Socket messages sent: 0
   Socket messages received: 0
   Signals delivered: 0
@@ -63,6 +63,12 @@ class TestGNUTimeReportParserFunctions(unittest.TestCase):
         with self.assertRaises(WrongTimeReportFormat):
             TimeReport._parse_max_resident_size("  Something other timed:")
 
+    def test_major_page_faults(self):
+        """Test if we correctly parse the amount of major page faults from the
+        input line."""
+        with self.assertRaises(WrongTimeReportFormat):
+            TimeReport._parse_major_page_faults("  Something other timed:")
+
     def test_max_resident_size_byte_type(self):
         """Test if we correctly parse the max resident size from the input
         line."""
@@ -96,6 +102,30 @@ class TestGNUTimeReport(unittest.TestCase):
     def test_system_time(self):
         """Test if we can extract the system time from the parsed file."""
         self.assertEqual(self.report.system_time, timedelta(seconds=3))
+
+    def test_wall_clock_time(self):
+        """Test if we can extract the wall clock time from the parsed file."""
+        self.assertEqual(self.report.wall_clock_time, timedelta(seconds=42))
+
+    def test_max_resident_size(self) -> None:
+        """Test if we can extract the max resident size from the parsed file."""
+        self.assertEqual(self.report.max_res_size, 1804)
+
+    def test_major_page_faults(self) -> None:
+        """Test if we can extract the number of major page faults from the
+        parsed file."""
+        self.assertEqual(self.report.major_page_faults, 2)
+
+    def test_minor_page_faults(self) -> None:
+        """Test if we can extract the number of minor page faults from the
+        parsed file."""
+        self.assertEqual(self.report.minor_page_faults, 142)
+
+    def test_filesystem_io(self) -> None:
+        """Test if we can extract the number of filesystem inputs/outputs from
+        the parsed file."""
+        self.assertEqual(self.report.filesystem_io[0], 1)
+        self.assertEqual(self.report.filesystem_io[1], 2)
 
     def test_repr_str(self):
         """Test string representation of TimeReports."""
