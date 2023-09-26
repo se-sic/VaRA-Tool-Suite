@@ -6,6 +6,7 @@ from benchbuild.utils.revision_ranges import SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path, BinaryType
 from varats.project.sources import FeatureSource
@@ -20,7 +21,8 @@ class HyTeg(VProject):
     DOMAIN = ProjectDomains.CPP_LIBRARY
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="HyTeg",
             remote="git@github.com:se-sic/hyteg-VaRA.git",
             local="HyTeg",
             refspec="origin/HEAD",
@@ -52,6 +54,10 @@ class HyTeg(VProject):
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         mkdir("-p", hyteg_source / "build")
+
+        # Currently Phasar passes crash the compiler
+        # This limits us to analysing compile time variability
+        self.cflags += ["-mllvm", "--vara-disable-phasar"]
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
