@@ -166,7 +166,7 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
                             index]
                     ) for index in
                     data_commits_num_interacting_features_outliers_filtered.
-                    head().index
+                    index
                 ]
             )
             rows[current_row].append(
@@ -178,45 +178,54 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
                     data_commits_num_interacting_features_outliers_filtered[
                         index][0] for index in
                     data_commits_num_interacting_features_outliers_filtered.
-                    head().index
+                    index
                 ]
             )
             rows[current_row].append(
                 commit_average_number_of_features_changed_outliers_filtered_nd1
             )
-            """
-            fraction_commits_changing_more_than_one_feature = len(
-                data_commits_num_interacting_features.loc[
-                    sum(data_commits_num_interacting_features) > 1
-                ]
-            ) / len(data_commits_num_interacting_features)
-            rows[current_row].append(fraction_commits_changing_more_than_one_feature)
 
-            fraction_commits_changing_more_than_one_feature_nd1 = len(
-                data_commits_num_interacting_features.loc[
-                    data_commits_num_interacting_features[0] > 1
-                ]
-            ) / len(data_commits_num_interacting_features)
-            rows[current_row].append(fraction_commits_changing_more_than_one_feature_nd1)
+            fraction_commits_changing_more_than_one_feature = sum([
+                sum(data_commits_num_interacting_features[index]) > 1
+                for index in data_commits_num_interacting_features.index
+            ]) / len(data_commits_num_interacting_features)
+            rows[current_row].append(
+                fraction_commits_changing_more_than_one_feature
+            )
 
-            fraction_commits_changing_more_than_one_feature_outliers_filtered = len(
-                data_commits_num_interacting_features_outliers_filtered.loc[
-                    sum(data_commits_num_interacting_features_outliers_filtered) > 1
+            fraction_commits_changing_more_than_one_feature_nd1 = sum([
+                data_commits_num_interacting_features[index][0] > 1
+                for index in data_commits_num_interacting_features.index
+            ]) / len(data_commits_num_interacting_features)
+            rows[current_row].append(
+                fraction_commits_changing_more_than_one_feature_nd1
+            )
+
+            fraction_commits_changing_more_than_one_feature_outliers_filtered = sum(
+                [
+                    sum(
+                        data_commits_num_interacting_features_outliers_filtered[
+                            index]
+                    ) > 1 for index in
+                    data_commits_num_interacting_features_outliers_filtered.
+                    index
                 ]
             ) / len(data_commits_num_interacting_features_outliers_filtered)
             rows[current_row].append(
                 fraction_commits_changing_more_than_one_feature_outliers_filtered
             )
 
-            fraction_commits_changing_more_than_one_feature_outliers_filtered_nd1 = len(
-                data_commits_num_interacting_features_outliers_filtered.loc[
-                    data_commits_num_interacting_features_outliers_filtered[0] > 1
+            fraction_commits_changing_more_than_one_feature_outliers_filtered_nd1 = sum(
+                [
+                    data_commits_num_interacting_features_outliers_filtered[
+                        index][0] > 1 for index in
+                    data_commits_num_interacting_features_outliers_filtered.
+                    index
                 ]
             ) / len(data_commits_num_interacting_features_outliers_filtered)
             rows[current_row].append(
                 fraction_commits_changing_more_than_one_feature_outliers_filtered_nd1
             )
-            """
 
         # calc overall mean and variance for each column
         add_mean_and_variance(rows, len(case_studies))
@@ -229,10 +238,10 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
                 "Avg Num Ftrs Chngd ND1",
                 "Avg Num Ftrs Chngd (Lrg Cmmts Fltrd)",
                 "Avg Num Ftrs Chngd (Lrg Cmmts Fltrd) ND1",
-                # "Frctn Cmmts Chngng >1 Ftr",
-                #"Frctn Cmmts Chngng >1 Ftr ND1",
-                # "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd)",
-                # "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd) ND1",
+                "Frctn Cmmts Chngng >1 Ftr",
+                "Frctn Cmmts Chngng >1 Ftr ND1",
+                "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd)",
+                "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd) ND1",
             ],
         )
 
