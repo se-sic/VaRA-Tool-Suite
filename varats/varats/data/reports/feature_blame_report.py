@@ -117,16 +117,22 @@ class StructuralFeatureBlameReport(
 def generate_feature_scfi_data(
     SFBR: StructuralFeatureBlameReport
 ) -> pd.DataFrame:
-    features_cfi_data: tp.Dict[str, tp.Tuple(int, int)] = {}
+    features_cfi_data: tp.Dict[str, tp.Tuple(tp.Set[str], int)] = {}
     for SCFI in SFBR.commit_feature_interactions:
-        entry = features_cfi_data.get(SCFI.feature)
-        if not entry:
-            features_cfi_data.update({SCFI.feature: (1, SCFI.num_instructions)})
-        else:
-            features_cfi_data.update({
-                SCFI.feature: (entry[0] + 1, entry[1] + SCFI.num_instructions)
-            })
-    rows = [[feature_data[0], feature_data[1][0], feature_data[1][1]]
+        commit_hash = ShortCommitHash(SCFI.commit.commit_hash).hash
+        for feature in SCFI.features:
+            entry = features_cfi_data.get(feature)
+            if not entry:
+                features_cfi_data.update({
+                    feature: (set([commit_hash]), SCFI.num_instructions)
+                })
+            else:
+                entry[0].add(commit_hash)
+                features_cfi_data.update({
+                    feature: (entry[0], entry[1] + SCFI.num_instructions)
+                })
+    rows = [[feature_data[0],
+             len(feature_data[1][0]), feature_data[1][1]]
             for feature_data in features_cfi_data.items()]
     return pd.DataFrame(
         rows, columns=["feature", "num_interacting_commits", "feature_size"]
@@ -140,21 +146,22 @@ def generate_feature_author_scfi_data(
     # {feature: (authors, size)}
     features_cfi_author_data: tp.Dict[str, tp.Tuple(tp.Set[str], int)] = {}
     for SCFI in SFBR.commit_feature_interactions:
-        commit_hash = SCFI.commit.commit_hash
+        commit_hash = ShortCommitHash(SCFI.commit.commit_hash).hash
         repo = SCFI.commit.repository_name
         author = get_author(commit_hash, project_gits.get(repo))
         if author is None:
             continue
-        entry = features_cfi_author_data.get(SCFI.feature)
-        if not entry:
-            features_cfi_author_data.update({
-                SCFI.feature: (set([author]), SCFI.num_instructions)
-            })
-        else:
-            entry[0].add(author)
-            features_cfi_author_data.update({
-                SCFI.feature: (entry[0], entry[1] + SCFI.num_instructions)
-            })
+        for feature in SCFI.features:
+            entry = features_cfi_author_data.get(feature)
+            if not entry:
+                features_cfi_author_data.update({
+                    feature: (set([author]), SCFI.num_instructions)
+                })
+            else:
+                entry[0].add(author)
+                features_cfi_author_data.update({
+                    feature: (entry[0], entry[1] + SCFI.num_instructions)
+                })
     rows = [[feature_data[0],
              len(feature_data[1][0]), feature_data[1][1]]
             for feature_data in features_cfi_author_data.items()]
