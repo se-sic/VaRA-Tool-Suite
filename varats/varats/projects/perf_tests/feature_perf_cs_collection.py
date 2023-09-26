@@ -477,7 +477,7 @@ class SynthCTPolicies(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("SynthCTPolicies") / RSBinary("CTPolicies"),
+                SourceRoot("SynthCTPolicies") / RSBinary("CT-Policies"),
                 label="CompileTime-Policies"
             )
         ]
@@ -492,7 +492,7 @@ class SynthCTPolicies(VProject):
         )
 
         binary_map.specify_binary(
-            "build/bin/CTPolicies",
+            "build/bin/CT-Policies",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange(
                 "0768d712a2aa9b7bb3c414b742930a5e8d9ef3a7", "master"
