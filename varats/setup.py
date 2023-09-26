@@ -44,6 +44,7 @@ setup(
         "tabulate>=0.9",
         "varats-core>=13.0.5",
         "wllvm>=1.3.1",
+        "cliffs-delta>=1.0.0",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",

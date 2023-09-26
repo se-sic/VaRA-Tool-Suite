@@ -7,6 +7,7 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+from cliffs_delta import cliffs_delta
 from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
@@ -123,6 +124,107 @@ def get_feature_performance_from_tef_report(
     return feature_performances
 
 
+def precise_pim_regression_check(
+    baseline_pim: tp.DefaultDict[str, tp.List[int]],
+    current_pim: tp.DefaultDict[str, tp.List[int]]
+) -> bool:
+    is_regression = False
+
+    for feature, old_values in baseline_pim.items():
+        if feature in current_pim:
+            if feature == "Base":
+                # The regression should be identified in actual feature code
+                continue
+
+            new_values = current_pim[feature]
+            ttest_res = ttest_ind(old_values, new_values)
+
+            # TODO: check, maybe we need a "very small value cut off"
+            if ttest_res.pvalue < 0.05:
+                # print(
+                #     f"{self.name} found regression for feature {feature}."
+                # )
+                is_regression = True
+        else:
+            print(f"Could not find feature {feature} in new trace.")
+            # TODO: how to handle this?
+            raise NotImplementedError()
+            is_regression = True
+
+    return is_regression
+
+
+def cliffs_delta_pim_regression_check(
+    baseline_pim: tp.DefaultDict[str, tp.List[int]],
+    current_pim: tp.DefaultDict[str, tp.List[int]]
+) -> bool:
+    is_regression = False
+
+    for feature, old_values in baseline_pim.items():
+        if feature in current_pim:
+            if feature == "Base":
+                # The regression should be identified in actual feature code
+                continue
+
+            new_values = current_pim[feature]
+            d, res = cliffs_delta(old_values, new_values)
+
+            # print(f"{d=}, {res=}")
+
+            # if d > 0.70 or d < -0.7:
+            if res == "large":
+                # print(
+                #     f"{self.name} found regression for feature {feature}."
+                # )
+                is_regression = True
+        else:
+            print(f"Could not find feature {feature} in new trace.")
+            # TODO: how to handle this?
+            raise NotImplementedError()
+            is_regression = True
+
+    return is_regression
+
+
+def sum_pim_regression_check(
+    baseline_pim: tp.DefaultDict[str, tp.List[int]],
+    current_pim: tp.DefaultDict[str, tp.List[int]]
+) -> bool:
+    # TODO: add some tests
+    baseline_pim_totals: tp.List[tp.List[int]] = [
+        old_values for feature, old_values in baseline_pim.items()
+        if feature != "Base"
+    ]
+    print(f"{baseline_pim_totals=}")
+    current_pim_totals: tp.List[tp.List[int]] = [
+        current_values for feature, current_values in current_pim.items()
+        if feature != "Base"
+    ]
+    print(f"{current_pim_totals=}")
+
+    baseline_pim_total: tp.List[int] = [
+        sum(values) for values in zip(*baseline_pim_totals)
+    ]
+    print(f"{baseline_pim_total=}")
+    current_pim_total: tp.List[int] = [
+        sum(values) for values in zip(*current_pim_totals)
+    ]
+    print(f"{current_pim_total=}")
+
+    # TODO: does not work for large numbers
+    return ttest_ind(baseline_pim_total, current_pim_total).pvalue < 0.05
+
+
+def pim_regression_check(
+    baseline_pim: tp.DefaultDict[str, tp.List[int]],
+    current_pim: tp.DefaultDict[str, tp.List[int]]
+) -> bool:
+    """Compares two pims and determines if there was a regression between the
+    baseline and current."""
+    # return cliffs_delta_pim_regression_check(baseline_pim, current_pim)
+    return precise_pim_regression_check(baseline_pim, current_pim)
+
+
 class Profiler():
     """Profiler interface to add different profilers to the evaluation."""
 
@@ -176,8 +278,6 @@ class VXray(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        is_regression = False
-
         multi_report = fpp.MultiPatchReport(
             report_path.full_path(), TEFReportAggregate
         )
@@ -198,27 +298,7 @@ class VXray(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        for feature, old_values in old_acc_pim.items():
-            if feature == "Base":
-                # The regression should be identified in actual feature code
-                continue
-
-            if feature in new_acc_pim:
-                new_values = new_acc_pim[feature]
-                ttest_res = ttest_ind(old_values, new_values)
-
-                # TODO: check, maybe we need a "very small value cut off"
-                if ttest_res.pvalue < 0.05:
-                    # print(
-                    #     f"{self.name} found regression for feature {feature}."
-                    # )
-                    is_regression = True
-            else:
-                print(f"Could not find feature {feature} in new trace.")
-                # TODO: how to handle this?
-                is_regression = True
-
-        return is_regression
+        return pim_regression_check(old_acc_pim, new_acc_pim)
 
 
 class PIMTracer(Profiler):
@@ -253,8 +333,6 @@ class PIMTracer(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        is_regression = False
-
         multi_report = fpp.MultiPatchReport(
             report_path.full_path(), fpp.PerfInfluenceTraceReportAggregate
         )
@@ -274,28 +352,7 @@ class PIMTracer(Profiler):
             print(e)
             return False
 
-        # TODO: same for TEF
-        for feature, old_values in old_acc_pim.items():
-            if feature in new_acc_pim:
-                if feature == "Base":
-                    # The regression should be identified in actual feature code
-                    continue
-
-                new_values = new_acc_pim[feature]
-                ttest_res = ttest_ind(old_values, new_values)
-
-                # TODO: check, maybe we need a "very small value cut off"
-                if ttest_res.pvalue < 0.05:
-                    # print(
-                    #     f"{self.name} found regression for feature {feature}."
-                    # )
-                    is_regression = True
-            else:
-                print(f"Could not find feature {feature} in new trace.")
-                # TODO: how to handle this?
-                is_regression = True
-
-        return is_regression
+        return pim_regression_check(old_acc_pim, new_acc_pim)
 
 
 class EbpfTraceTEF(Profiler):
@@ -311,8 +368,6 @@ class EbpfTraceTEF(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        is_regression = False
-
         multi_report = fpp.MultiPatchReport(
             report_path.full_path(), TEFReportAggregate
         )
@@ -333,27 +388,7 @@ class EbpfTraceTEF(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        for feature, old_values in old_acc_pim.items():
-            if feature == "Base":
-                # The regression should be identified in actual feature code
-                continue
-
-            if feature in new_acc_pim:
-                new_values = new_acc_pim[feature]
-                ttest_res = ttest_ind(old_values, new_values)
-
-                # TODO: check, maybe we need a "very small value cut off"
-                if ttest_res.pvalue < 0.05:
-                    # print(
-                    #     f"{self.name} found regression for feature {feature}."
-                    # )
-                    is_regression = True
-            else:
-                print(f"Could not find feature {feature} in new trace.")
-                # TODO: how to handle this?
-                is_regression = True
-
-        return is_regression
+        return pim_regression_check(old_acc_pim, new_acc_pim)
 
 
 def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
