@@ -18,6 +18,7 @@ from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_git_path
 from varats.provider.provider import Provider, ProviderType
+from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import pull_current_branch, fetch_repository
 from varats.utils.git_util import (
     CommitHash,
@@ -237,12 +238,10 @@ class PatchProvider(Provider):
     def __init__(self, project: tp.Type[Project]):
         super().__init__(project)
 
-        # BB only performs a fetch so our repo might be out of date
-        pull_current_branch(self._get_patches_repository_path())
+        self._update_local_patches_repo()
+        repo_path = self._get_patches_repository_path()
 
-        patches_project_dir = Path(
-            self._get_patches_repository_path() / self.project.NAME
-        )
+        patches_project_dir = repo_path / self.project.NAME
 
         if not patches_project_dir.is_dir():
             warnings.warn(
@@ -316,6 +315,12 @@ class PatchProvider(Provider):
 
     @classmethod
     def _get_patches_repository_path(cls) -> Path:
-        cls.patches_source.fetch()
-
         return Path(target_prefix()) / cls.patches_source.local
+
+    @classmethod
+    def _update_local_patches_repo(cls):
+        lock_path = Path(target_prefix()) / "patch_provider.lock"
+
+        with lock_file(lock_path):
+            cls.patches_source.fetch()
+            pull_current_branch(cls._get_patches_repository_path())
