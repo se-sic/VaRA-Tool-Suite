@@ -637,32 +637,6 @@ class DFBRInterestingCommitsTableGenerator(
         ]
 
 
-def round_rows(rows, digits) -> []:
-    return [[
-        entry if type(entry) is str else
-        ((round(entry[0], digits), round(entry[1], digits))
-         if type(entry) is tuple else round(entry, digits)) for entry in row
-    ] for row in rows]
-
-
-def add_mean_and_variance(rows, num_case_studies) -> None:
-    for i in range(1, len(rows[0])):
-        # column with ranges, need different computation
-        if type(rows[0][i]) is tuple:
-            list_vals_min = [rows[j][i][0] for j in range(0, num_case_studies)]
-            list_vals_max = [rows[j][i][1] for j in range(0, num_case_studies)]
-            rows[num_case_studies].append(
-                (np.mean(list_vals_min), np.mean(list_vals_max))
-            )
-            rows[num_case_studies + 1].append(
-                (np.var(list_vals_min), np.var(list_vals_max))
-            )
-            continue
-        list_vals = [rows[j][i] for j in range(0, num_case_studies)]
-        rows[num_case_studies].append(np.mean(list_vals))
-        rows[num_case_studies + 1].append(np.var(list_vals))
-
-
 class DFBRAuthorEvalTable(Table, table_name="dfbr_author_eval_table"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
@@ -753,3 +727,29 @@ class DFBRAuthorEvalTableGenerator(
                 **self.table_kwargs
             )
         ]
+
+
+def round_rows(rows, digits) -> []:
+    return [[
+        entry if type(entry) is str else
+        ((round(entry[0], digits), round(entry[1], digits))
+         if type(entry) is tuple else round(entry, digits)) for entry in row
+    ] for row in rows]
+
+
+def add_mean_and_variance(rows, num_case_studies) -> None:
+    for i in range(1, len(rows[0])):
+        # column with ranges, need different computation
+        if type(rows[0][i]) is tuple:
+            list_vals_min = [rows[j][i][0] for j in range(0, num_case_studies)]
+            list_vals_max = [rows[j][i][1] for j in range(0, num_case_studies)]
+            rows[num_case_studies].append(
+                (np.mean(list_vals_min), np.mean(list_vals_max))
+            )
+            rows[num_case_studies + 1].append(
+                (np.var(list_vals_min), np.var(list_vals_max))
+            )
+            continue
+        list_vals = [rows[j][i] for j in range(0, num_case_studies)]
+        rows[num_case_studies].append(np.mean(list_vals))
+        rows[num_case_studies + 1].append(np.var(list_vals))
