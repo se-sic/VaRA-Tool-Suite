@@ -441,12 +441,11 @@ class PatchConfiguration(Configuration):
         self.add_config_option(ConfigurationOptionImpl(option_name, value))
 
     def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
-        return any(
-            filter(
-                lambda option: option.name == option_name,
-                self.__patch_feature_tags
-            )
+        filtered_options = filter(
+            lambda option: (option.name == option_name),
+            self.__patch_feature_tags
         )
+        return any(filtered_options)
 
     def options(self) -> tp.List[ConfigurationOption]:
         return list(self.__patch_feature_tags)
