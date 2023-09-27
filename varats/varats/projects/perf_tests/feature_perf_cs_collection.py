@@ -524,7 +524,7 @@ class SynthIPTemplate(VProject):
                 "geo-maps/countries-land-1km.geo.json.compressed",
                 label="countries-land-1m",
                 creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_args={"Compress"}
+                requires_all_patch={"Compress"}
             )
         ],
     }
@@ -598,7 +598,7 @@ class SynthIPTemplate2(VProject):
                 "geo-maps/countries-land-1km.geo.json.compressed",
                 label="countries-land-1m",
                 creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_args={"Compress"}
+                requires_all_patch={"Compress"}
             )
         ],
     }
