@@ -24,6 +24,9 @@ from varats.paper.paper_config import load_paper_config
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.projects.c_projects.xz import Xz
+from varats.projects.perf_tests.feature_perf_cs_collection import (
+    SynthIPTemplate,
+)
 from varats.report.gnu_time_report import TimeReport
 from varats.report.report import FileStatusExtension, ReportSpecification
 from varats.utils.git_util import ShortCommitHash
@@ -419,3 +422,20 @@ class TestConfigID(unittest.TestCase):
         )
         project = Xz(revision=revision)
         self.assertEqual(EU.get_extra_config_options(project), ["--foo"])
+
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
+    def test_get_config_patches(self) -> None:
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        revision = Revision(
+            SynthIPTemplate, Variant(SynthIPTemplate.SOURCE[0], "7930350628"),
+            Variant(SynthIPTemplate.SOURCE[1], "4")
+        )
+        project = SynthIPTemplate(revision=revision)
+        patches = EU.get_config_patches(project)
+        self.assertEqual(len(patches), 1)
+        self.assertEqual(
+            list(patches)[0].feature_tags,
+            ["Compress", "fastmode", "smallmode"]
+        )
