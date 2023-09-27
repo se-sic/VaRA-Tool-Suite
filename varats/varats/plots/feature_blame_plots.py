@@ -298,14 +298,16 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
                     "num_interacting_features"
                 ]
 
-                interacting_with_nd1 = [commit_data[index][0] for index in commit_data.index]
+                interacting_with_nd1 = [
+                    commit_data[index][0] for index in commit_data.index
+                ]
                 interacting_with_at_leat_nd2 = [
                     sum(commit_data[index][1:]) for index in commit_data.index
                 ]
                 stacked_commit_data = pd.DataFrame(
                     {
-                    "Min Nesting Degree 1": interacting_with_nd1,
-                    "Min Nesting Degree >=2": interacting_with_at_leat_nd2,
+                        "Min Nesting Degree 1": interacting_with_nd1,
+                        "Min Nesting Degree >=2": interacting_with_at_leat_nd2,
                     },
                     index=commit_data.index,
                 )
@@ -315,7 +317,10 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
                 nth_ax.set_xlabel("Commits")
                 nth_ax.set_ylabel("Num Interacting Features")
                 step = round(len(commit_data) / 6)
-                nth_ax.set_xticks(ticks=[i*step for i in range(6)], labels=[str(i*step) for i in range(6)])
+                nth_ax.set_xticks(
+                    ticks=[i * step for i in range(6)],
+                    labels=[str(i * step) for i in range(6)],
+                )
                 nth_ax.set_title(case_study.project_name)
                 case_study_counter += 1
 
@@ -798,19 +803,32 @@ def get_stacked_author_data_for_case_studies(
 class FeatureAuthorStructDisPlot(Plot, plot_name="feature_author_struct_dis_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        projects_data = [
-            get_structural_feature_author_data_for_case_study(case_study).loc[
-                :, "num_implementing_authors"
-            ]
-            for case_study in case_studies
-        ]
-        data = get_stacked_author_data_for_case_studies(case_studies, projects_data)
 
-        data = data.sort_values(by=["1 Author"])
-        print(data)
-        data.set_index("Project").plot(
-            kind="bar", stacked=True, ylabel="Number of Features Implemented by"
-        )
+        fig, axs = pyplot.subplots(ncols=len(case_studies), figsize=(15, 3))
+        counter = 0
+        for ax, case_study in zip(axs, case_studies):
+            author_data = get_structural_feature_author_data_for_case_study(case_study)
+            author_data = author_data.sort_values(by=["num_implementing_authors"])
+            sns.barplot(
+                data=author_data,
+                x="feature",
+                y="num_implementing_authors",
+                color="tab:blue",
+                ax=ax,
+            )
+            if counter == 0:
+                ax.set_xlabel("Features")
+                ax.set_ylabel("Num Implementing Authors")
+            else:
+                ax.set_xlabel("")
+                ax.set_ylabel("")
+            x_rng = range(0, len(author_data), 2)
+            ax.set_xticks(ticks=x_rng, labels=[str(i) for i in x_rng])
+            max_impl_authors = max(author_data["num_implementing_authors"])
+            y_rng = range(1, max_impl_authors + 1)
+            ax.set_yticks(ticks=y_rng, labels=[str(i) for i in y_rng])
+            ax.set_title(case_study.project_name)
+            counter += 1
 
 
 class FeatureAuthorStructDisPlotGenerator(
