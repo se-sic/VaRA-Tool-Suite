@@ -874,10 +874,11 @@ def get_combined_author_data_for_case_study(
     structural_data = get_structural_feature_author_data_for_case_study(
         case_study
     )
+    structural_data = structural_data.sort_values(by=["num_implementing_authors"])
     dataflow_data = get_dataflow_feature_author_data_for_case_study(case_study)
 
     combined_rows = []
-    for i in range(len(structural_data)):
+    for i in structural_data.index:
         feature = structural_data.loc[i, "feature"]
         num_implementing_authors = structural_data.loc[
             i, "num_implementing_authors"]
@@ -886,7 +887,7 @@ def get_combined_author_data_for_case_study(
                 feature,
                 "Implementing Authors",  # type
             ])
-    for i in range(len(dataflow_data)):
+    for i in dataflow_data.index:
         feature = dataflow_data.loc[i, "feature"]
         interacting_authors_outside = dataflow_data.loc[
             i, "interacting_authors_outside"]
@@ -906,13 +907,14 @@ class FeatureCombinedAuthorPlot(Plot, plot_name="feature_combined_author_plot"):
     def plot(self, view_mode: bool) -> None:
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         data = get_combined_author_data_for_case_study(case_study)
+        print(data)
         pyplot.figure(figsize=(13, 8))
         sns.histplot(
             data=data,
             x="feature",
             hue="interaction_type",
             multiple="dodge",
-            shrink=0.8
+            shrink=0.8,
         )
 
 
