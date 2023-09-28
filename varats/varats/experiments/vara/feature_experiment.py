@@ -338,6 +338,10 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                 flush=True
                             )
                             with cleanup(prj_command):
+                                pb_cmd = pb_cmd[get_extra_config_options(
+                                    self.project
+                                )]
+                                print(f"{pb_cmd=}")
                                 _, _, err = pb_cmd.run()
                             xray = re.findall(
                                 r"XRay: Log file in '(.+?)'",
