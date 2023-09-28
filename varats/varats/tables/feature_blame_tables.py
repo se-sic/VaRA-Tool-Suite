@@ -118,7 +118,7 @@ class SFBRFeatureEvalTableGenerator(
         ]
 
 
-class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
+class SFBRCommitAvgEvalTable(Table, table_name="sfbr_commit_avg_eval_table"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies: tp.List[CaseStudy] = self.table_kwargs["case_studies"]
@@ -185,6 +185,82 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
                 commit_average_number_of_features_changed_outliers_filtered_nd1
             )
 
+        # calc overall mean and variance for each column
+        add_mean_and_variance(rows, len(case_studies))
+
+        df = pd.DataFrame(
+            round_rows(rows, 2),
+            columns=[
+                "Projects",
+                "Avg Num Ftrs Chngd",
+                "Only ND1",
+                "Lrg Cmmts Fltrd",
+                "Only ND1 + Lrg Cmmts Fltrd",
+            ],
+        )
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+        projects_separated_by_comma = ",".join([
+            case_study.project_name for case_study in case_studies
+        ])
+        if table_format.is_latex():
+            kwargs[
+                "caption"
+            ] = f"Evaluation of structural CFIs for projects {projects_separated_by_comma}. "
+            kwargs["position"] = "t"
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
+
+
+class SFBRCommitAvgEvalTableGenerator(
+    TableGenerator,
+    generator_name="sfbr-commit-avg-eval-table",
+    options=[REQUIRE_MULTI_CASE_STUDY],
+):
+
+    def generate(self) -> tp.List[Table]:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
+        return [
+            SFBRCommitAvgEvalTable(
+                self.table_config,
+                case_studies=case_studies,
+                **self.table_kwargs
+            )
+        ]
+    
+
+class SFBRCommitFracEvalTable(Table, table_name="sfbr_commit_frac_eval_table"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies: tp.List[CaseStudy] = self.table_kwargs["case_studies"]
+
+        projects_data_commits = [
+            get_structural_commit_data_for_case_study(case_study)
+            for case_study in case_studies
+        ]
+        print(projects_data_commits[0])
+        rows = [[case_study.project_name] for case_study in case_studies] + [
+            ["Mean"],
+            ["Variance"],
+        ]
+
+        for data_commits, current_row in zip(
+            projects_data_commits,
+            range(0, len(case_studies)),
+        ):
+            data_commits_num_interacting_features = data_commits["num_interacting_features"]
+            # filter large commits
+            data_commits_num_interacting_features_outliers_filtered = (
+                apply_tukeys_fence(data_commits, "commit_size",
+                                   1.5)["num_interacting_features"]
+            )
+
             fraction_commits_changing_more_than_one_feature = sum([
                 sum(data_commits_num_interacting_features[index]) > 1
                 for index in data_commits_num_interacting_features.index
@@ -234,14 +310,10 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
             round_rows(rows, 2),
             columns=[
                 "Projects",
-                "Avg Num Ftrs Chngd",
-                "Avg Num Ftrs Chngd ND1",
-                "Avg Num Ftrs Chngd (Lrg Cmmts Fltrd)",
-                "Avg Num Ftrs Chngd (Lrg Cmmts Fltrd) ND1",
-                "Frctn Cmmts Chngng >1 Ftr",
-                "Frctn Cmmts Chngng >1 Ftr ND1",
-                "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd)",
-                "Frctn Cmmts Chngng >1 Ftr (Lrg Cmmts Fltrd) ND1",
+                "Frac Cmmts Interacting with >1 Feature",
+                "Only ND1",
+                "Lrg Cmmts Fltrd",
+                "Only ND1 + Lrg Cmmts Fltrd",
             ],
         )
 
@@ -264,16 +336,16 @@ class SFBRCommitEvalTable(Table, table_name="sfbr_commit_eval_table"):
         )
 
 
-class SFBRCommitEvalTableGenerator(
+class SFBRCommitFracEvalTableGenerator(
     TableGenerator,
-    generator_name="sfbr-commit-eval-table",
+    generator_name="sfbr-commit-frac-eval-table",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
 
     def generate(self) -> tp.List[Table]:
         case_studies: tp.List[CaseStudy] = self.table_kwargs.pop("case_study")
         return [
-            SFBRCommitEvalTable(
+            SFBRCommitFracEvalTable(
                 self.table_config,
                 case_studies=case_studies,
                 **self.table_kwargs

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from varats.data.metrics import apply_tukeys_fence
 from varats.data.reports.feature_blame_report import (
     StructuralFeatureBlameReport as SFBR,
 )
@@ -91,194 +92,80 @@ def get_structural_commit_data_for_case_study(case_study: CaseStudy) -> pd.DataF
 ######## FEATURES #########
 
 
-class FeatureSizeCorrSFBRPlot(Plot, plot_name="feature_size_corr_sfbr_plot"):
+class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
-        df = pd.concat(
-            [
-                get_structural_feature_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
+        fig, naxs = pyplot.subplots(len(case_studies), 3, figsize=(18, 18))
+        fig.suptitle("Structural Interactions of Features")
+        first: bool = True
+        for axs, case_study in zip(naxs, case_studies):
+            data = get_structural_feature_data_for_case_study(case_study)
 
-        plt = sns.regplot(data=df, x="feature_size", y="num_interacting_commits")
+            data = data.sort_values(by=["num_interacting_commits_nd1"])
+            index = ["" for _ in range(len(data))]
 
-        plt.set(xlabel="Feature Size", ylabel="Number Interacting Commits")
-
-
-class FeatureSizeCorrSFBRPlotGenerator(
-    PlotGenerator,
-    generator_name="feature-size-corr-sfbr-plot",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-        return [
-            FeatureSizeCorrSFBRPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            stacked_feature_data = pd.DataFrame(
+                {
+                    "Interacting with ND1": data["num_interacting_commits_nd1"].values,
+                    "Interacting with ND>1": data[
+                        "num_interacting_commits_nd>1"
+                    ].values,
+                },
+                index=index,
             )
-        ]
 
+            stacked_feature_data.plot.bar(stacked=True, width=0.95, ax=axs[0])
+            axs[0].set_xlabel("Features" if first else "", size="13")
+            axs[0].set_ylabel("Num Interacting Commits" if first else "", size="13")
+            axs[0].set_title(case_study.project_name, size="16")
 
-class FeatureDisSFBRPlot(Plot, plot_name="feature_dis_sfbr_plot"):
-    def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        dfs = [
-            get_structural_feature_data_for_case_study(case_study)
-            for case_study in case_studies
-        ]
-        data = pd.concat(
-            [
-                df.assign(project=[case_study.project_name for _ in range(0, len(df))])
-                for case_study, df in zip(case_studies, dfs)
-            ]
-        )
+            data = data.sort_values(by=["def_feature_size"])
 
-        plt = sns.boxplot(
-            data=data,
-            x="num_interacting_commits",
-            y="project",
-        )
-        ticks = 5
-        start = min(data["num_interacting_commits"])
-        stop = max(data["num_interacting_commits"])
-        step = round((stop - start) / ticks)
-        plt.set_xticks(range(start, stop + step, step), range(start, stop + step, step))
-        plt.set(
-            xlabel="Number Interacting Commits",
-            ylabel="Project",
-            title="Structural Interactions of Features",
-        )
-
-
-class FeatureDisSFBRPlotGenerator(
-    PlotGenerator,
-    generator_name="feature-dis-sfbr-plot",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-        return [
-            FeatureDisSFBRPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            stacked_feature_size_data = pd.DataFrame(
+                {
+                    "Definite Feature Size": data["def_feature_size"].values,
+                    "Potential Feature Size": data["pot_feature_size"].values
+                    - data["def_feature_size"].values,
+                },
+                index=index,
             )
-        ]
+
+            stacked_feature_size_data.plot.bar(stacked=True, width=0.95, ax=axs[1])
+            axs[1].set_xlabel("")
+            axs[1].set_ylabel("Feature Size" if first else "", size="13")
+
+            sns.regplot(
+                data=data,
+                x="def_feature_size",
+                y="num_interacting_commits_nd1",
+                ax=axs[2],
+            )
+            sns.regplot(
+                data=data, x="pot_feature_size", y="num_interacting_commits", ax=axs[2]
+            )
+
+            axs[2].set_xlabel("Feature Size" if first else "", size="13")
+            axs[2].set_ylabel("Num Interacting Commits" if first else "", size="13")
+
+            first = False
 
 
-class FeatureSizeDisSFBRPlot(Plot, plot_name="feature_size_dis_sfbr_plot"):
-    def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-
-        df = pd.concat(
-            [
-                get_structural_feature_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
-
-        df = df.sort_values(by=["feature_size"])
-
-        plt = sns.barplot(data=df, x="feature", y="feature_size", color="steelblue")
-        plt.set(xlabel="Feature", ylabel="Size", title="")
-
-        xticklabels = [str(i) for i in range(0, len(df))]
-        plt.set(xticklabels=xticklabels)
-
-
-class FeatureSizeDisSFBRPlotGenerator(
+class FeatureSFBRPlotGenerator(
     PlotGenerator,
-    generator_name="feature-size-dis-sfbr-plot",
+    generator_name="feature-sfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureSizeDisSFBRPlot(
+            FeatureSFBRPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
 
 
 ######## COMMITS #########
-
-
-def get_pie_data_for_commit_data(commit_data) -> (tp.List[int], tp.List[int]):
-    min_num_interacting_features = min(commit_data)
-    max_num_interacting_features = max(commit_data)
-
-    data = [
-        0 for _ in range(min_num_interacting_features, max_num_interacting_features + 1)
-    ]
-    add_s = lambda x: "" if x == 1 else "s"
-    labels = [
-        "Impl. " + str(i) + " feature" + add_s(i)
-        for i in range(min_num_interacting_features, max_num_interacting_features + 1)
-    ]
-
-    for num_interacting_features in commit_data:
-        data[num_interacting_features - min_num_interacting_features] = (
-            data[num_interacting_features - min_num_interacting_features] + 1
-        )
-
-    adj_labels, adj_data = ([], [])
-    for i in range(0, max_num_interacting_features - min_num_interacting_features + 1):
-        if data[i] == 0:
-            continue
-        frac = data[i] / len(commit_data)
-        if frac < 0.05:
-            num_interacting_features = i + min_num_interacting_features
-            adj_labels.append(
-                "Impl. >="
-                + str(num_interacting_features)
-                + " feature"
-                + add_s(num_interacting_features)
-            )
-            adj_data.append(np.sum(data[i:]))
-            break
-        adj_labels.append(labels[i])
-        adj_data.append(data[i])
-
-    return (adj_data, adj_labels)
-
-
-class CommitSFBRPieChart(Plot, plot_name="commit_sfbr_pie_chart"):
-    def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-
-        def func(pct):
-            absolute = int(np.round(pct / 100.0 * len(commit_data)))
-            return f"{absolute:d}"
-
-        fig, naxs = pyplot.subplots(2, 2, figsize=(15, 15))
-        case_study_counter = 0
-        for axs in naxs:
-            for ax in axs:
-                case_study = case_studies[case_study_counter]
-                commit_data = get_structural_commit_data_for_case_study(case_study).loc[
-                    :, "num_interacting_features"
-                ]
-                data, labels = get_pie_data_for_commit_data(commit_data)
-                explode = [0.1] + [0 for _ in range(1, len(data))]
-                ax.pie(
-                    data, labels=labels, explode=explode, autopct=lambda pct: func(pct)
-                )
-                ax.set_title(case_study.project_name)
-                case_study_counter += 1
-
-
-class CommitSFBRPieChartGenerator(
-    PlotGenerator,
-    generator_name="commit-sfbr-pie-chart",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-        return [
-            CommitSFBRPieChart(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
-            )
-        ]
 
 
 class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
@@ -288,40 +175,65 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
         fig, naxs = pyplot.subplots(2, 2, figsize=(15, 15))
         case_study_counter = 0
         for axs in naxs:
-            for nth_ax in axs:
+            for ax in axs:
                 if case_study_counter == len(case_studies):
                     continue
                 case_study = case_studies[case_study_counter]
 
                 commit_data = get_structural_commit_data_for_case_study(case_study)
-                commit_data = commit_data.sort_values(by=["num_interacting_features"])[
-                    "num_interacting_features"
-                ]
+                commit_data = commit_data.sort_values(by=["num_interacting_features"])
 
-                interacting_with_nd1 = [
-                    commit_data[index][0] for index in commit_data.index
-                ]
-                interacting_with_at_leat_nd2 = [
-                    sum(commit_data[index][1:]) for index in commit_data.index
-                ]
-                stacked_commit_data = pd.DataFrame(
-                    {
-                        "Min Nesting Degree 1": interacting_with_nd1,
-                        "Min Nesting Degree >=2": interacting_with_at_leat_nd2,
-                    },
-                    index=commit_data.index,
+                filter_lrg_commits = apply_tukeys_fence(
+                    commit_data, column="commit_size", k=1.5
                 )
 
-                stacked_commit_data.plot.bar(stacked=True, width=0.95, ax=nth_ax)
+                commit_data = commit_data["num_interacting_features"]
 
-                nth_ax.set_xlabel("Commits")
-                nth_ax.set_ylabel("Num Interacting Features")
+                interacting_with_nd1 = [
+                    commit_data[index][0] if index in filter_lrg_commits.index else 0
+                    for index in commit_data.index
+                ]
+                interacting_with_at_least_nd2 = [
+                    sum(commit_data[index][1:])
+                    if index in filter_lrg_commits.index
+                    else 0
+                    for index in commit_data.index
+                ]
+                interacting_with_nd1_lrg_commit = [
+                    0 if index in filter_lrg_commits.index else commit_data[index][0]
+                    for index in commit_data.index
+                ]
+                interacting_with_at_least_nd2_lrg_commit = [
+                    0
+                    if index in filter_lrg_commits.index
+                    else sum(commit_data[index][1:])
+                    for index in commit_data.index
+                ]
+
+                rng = range(len(commit_data))
+                ax.bar(rng, interacting_with_nd1)
+                ax.bar(
+                    rng,
+                    interacting_with_at_least_nd2,
+                    bottom=interacting_with_nd1,
+                )
+                ax.bar(rng, interacting_with_nd1_lrg_commit, alpha=0.65, color="tab:blue")
+                ax.bar(
+                    rng,
+                    interacting_with_at_least_nd2_lrg_commit,
+                    bottom=interacting_with_nd1_lrg_commit,
+                    alpha=0.65,
+                    color="tab:orange",
+                )
+                ax.set_xlabel("Commits")
+                ax.set_ylabel("Num Interacting Features")
                 step = round(len(commit_data) / 6)
-                nth_ax.set_xticks(
+                ax.set_xticks(
                     ticks=[i * step for i in range(6)],
                     labels=[str(i * step) for i in range(6)],
                 )
-                nth_ax.set_title(case_study.project_name)
+                ax.set_title(case_study.project_name)
+                ax.legend(["Interacting with ND1", "Interacting with ND>1", "ND1, Large Commit", "ND>1, Large Commit"])
                 case_study_counter += 1
 
 
@@ -822,7 +734,7 @@ class FeatureAuthorStructDisPlot(Plot, plot_name="feature_author_struct_dis_plot
             else:
                 ax.set_xlabel("")
                 ax.set_ylabel("")
-            x_rng = range(0, len(author_data), 2)
+            x_rng = range(1, len(author_data) + 1, 2)
             ax.set_xticks(ticks=x_rng, labels=[str(i) for i in x_rng])
             max_impl_authors = max(author_data["num_implementing_authors"])
             y_rng = range(1, max_impl_authors + 1)
