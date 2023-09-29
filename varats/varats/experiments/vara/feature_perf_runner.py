@@ -83,7 +83,9 @@ class FeaturePerfXRayRunner(FeatureExperiment, shorthand="FXR"):
     ) -> tp.MutableSequence[actions.Step]:
         project.cflags += self.get_vara_feature_cflags(project)
 
-        project.cflags += self.get_vara_tracing_cflags(FeatureInstrType.TEF)
+        project.cflags += self.get_vara_tracing_cflags(
+            FeatureInstrType.TEF, instruction_threshold=1
+        )
 
         project.cflags += [
             "-fxray-instrument",

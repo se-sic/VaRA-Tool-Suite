@@ -3,6 +3,8 @@ import re
 import typing as tp
 from pathlib import Path
 
+import matplotlib.colors as colors
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from plumbum import local, TF, RETCODE
@@ -21,6 +23,7 @@ from varats.data.databases.feature_perf_precision_database import (
     compute_profiler_predictions,
     OverheadData,
     load_precision_data,
+    load_overhead_data,
 )
 from varats.data.metrics import ConfusionMatrix
 from varats.paper.case_study import CaseStudy
@@ -31,6 +34,41 @@ from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc, ChurnConfig, git
+
+
+def cmap_map(function, cmap):
+    """
+    Applies function (which should operate on vectors of shape 3: [r, g, b]), on
+    colormap cmap.
+
+    This routine will break any discontinuous points in a colormap.
+    """
+    cdict = cmap._segmentdata
+    step_dict = {}
+    # Firt get the list of points where the segments start or end
+    for key in ('red', 'green', 'blue'):
+        step_dict[key] = list(map(lambda x: x[0], cdict[key]))
+    step_list = sum(step_dict.values(), [])
+    step_list = np.array(list(set(step_list)))
+    # Then compute the LUT, and apply the function to the LUT
+    reduced_cmap = lambda step: np.array(cmap(step)[0:3])
+    old_LUT = np.array(list(map(reduced_cmap, step_list)))
+    new_LUT = np.array(list(map(function, old_LUT)))
+    # Now try to make a minimal segment definition of the new LUT
+    cdict = {}
+    for i, key in enumerate(['red', 'green', 'blue']):
+        this_cdict = {}
+        for j, step in enumerate(step_list):
+            if step in step_dict[key]:
+                this_cdict[step] = new_LUT[j, i]
+            elif new_LUT[j, i] != old_LUT[j, i]:
+                this_cdict[step] = new_LUT[j, i]
+        colorvector = list(map(lambda x: x + (x[1],), this_cdict.items()))
+        colorvector.sort()
+        cdict[key] = colorvector
+
+    import matplotlib
+    return matplotlib.colors.LinearSegmentedColormap('colormap', cdict, 1024)
 
 
 class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
@@ -317,6 +355,177 @@ class FeaturePerfOverheadTableGenerator(
     def generate(self) -> tp.List[Table]:
         return [
             FeaturePerfOverheadTable(self.table_config, **self.table_kwargs)
+        ]
+
+
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    new_cmap = colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n))
+    )
+    return new_cmap
+
+
+class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
+    """Table that compares overhead of different feature performance measurement
+    approaches."""
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
+
+        # Data aggregation
+        full_precision_df = load_precision_data(case_studies, profilers)
+        full_precision_df.sort_values(["CaseStudy"], inplace=True)
+
+        precision_df = full_precision_df[[
+            "CaseStudy", "precision", "recall", "Profiler", "f1_score"
+        ]]
+        # aggregate multiple revisions
+        precision_df = precision_df.groupby(['CaseStudy', "Profiler"],
+                                            as_index=False).agg({
+                                                'precision': 'mean',
+                                                'recall': 'mean',
+                                                'f1_score': 'mean'
+                                            })
+        print(f"precision_df=\n{precision_df}")
+
+        overhead_df = load_overhead_data(case_studies, profilers)
+        overhead_df = overhead_df[[
+            "CaseStudy", "Profiler", "time", "memory", "overhead_time",
+            "overhead_memory"
+        ]]
+        # print(f"{overhead_df=}")
+        # TODO: double check and refactor
+        overhead_df['overhead_time_rel'] = overhead_df['time'] / (
+            overhead_df['time'] - overhead_df['overhead_time']
+        ) * 100 - 100
+
+        overhead_df['overhead_memory_rel'] = overhead_df['memory'] / (
+            overhead_df['memory'] - overhead_df['overhead_memory']
+        ) * 100 - 100
+        overhead_df['overhead_memory_rel'].replace([np.inf, -np.inf],
+                                                   np.nan,
+                                                   inplace=True)
+        print(f"{overhead_df=}")
+
+        # Merge with precision data
+        merged_df = pd.merge(
+            precision_df, overhead_df, on=["CaseStudy", "Profiler"]
+        )
+        print(f"merged_df=\n{merged_df}")
+
+        pivot_df = merged_df.pivot(
+            index='CaseStudy',
+            columns='Profiler',
+            values=[
+                'precision', 'recall', 'overhead_time_rel',
+                'overhead_memory_rel'
+            ]
+        )
+
+        # print(f"pivot_df=\n{pivot_df}")
+        # print(f"{pivot_df.columns=}")
+        pivot_df = pivot_df.swaplevel(0, 1, 1).sort_index(axis=1)
+
+        # print(f"pivot_df=\n{pivot_df}")
+        columns = [
+            'precision', 'recall', 'overhead_time_rel', 'overhead_memory_rel'
+        ]
+        pivot_df = pivot_df.reindex([
+            (prof.name, c) for prof in profilers for c in columns
+        ],
+                                    axis=1)
+        print(f"pivot_df=\n{pivot_df}")
+
+        # print(f"{pivot_df.columns=}")
+
+        pivot_df.loc["Total"] = pivot_df.mean()
+        print(f"pivot_df=\n{pivot_df}")
+
+        # Rename columns
+        overhead_time_c_name = "$\Delta$ Time $(\%)$"
+        overhead_memory_c_name = "$\Delta$ Mem $(\%)$"
+        pivot_df = pivot_df.rename(
+            columns={
+                "precision": "Precision",
+                "recall": "Recall",
+                "overhead_time_rel": overhead_time_c_name,
+                "overhead_memory_rel": overhead_memory_c_name,
+            }
+        )
+
+        style: pd.io.formats.style.Styler = pivot_df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amsmath"))
+            doc.packages.append(Package("amssymb"))
+
+        if table_format.is_latex():
+            style.format(precision=2)
+
+            ryg_map = plt.get_cmap('RdYlGn')
+            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
+
+            style.background_gradient(
+                cmap=ryg_map,
+                subset=[(prof.name, 'Precision') for prof in profilers],
+                vmin=0.0,
+                vmax=1.0,
+            )
+            style.background_gradient(
+                cmap=ryg_map,
+                subset=[(prof.name, 'Recall') for prof in profilers],
+                vmin=0.0,
+                vmax=1.0,
+            )
+
+            gray_map = plt.get_cmap('binary')
+            gray_map = truncate_colormap(gray_map, 0, 0.6, 200)
+            style.background_gradient(
+                cmap=gray_map,
+                subset=[(prof.name, overhead_time_c_name) for prof in profilers
+                       ],
+                vmin=0.0,
+                vmax=100.0,
+            )
+
+            style.background_gradient(
+                cmap=gray_map,
+                subset=[
+                    (prof.name, overhead_memory_c_name) for prof in profilers
+                ],
+                vmin=0.0,
+                vmax=100.0,
+            )
+
+            kwargs["convert_css"] = True
+            kwargs["column_format"] = "l" + "".join(["rrrr" for _ in profilers])
+            kwargs["hrules"] = True
+            kwargs["multicol_align"] = "c"
+
+        return dataframe_to_table(
+            data=pivot_df,
+            table_format=table_format,
+            style=style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            document_decorator=add_extras,
+            **kwargs
+        )
+
+
+class FeaturePerfOverheadComparisionTableGenerator(
+    TableGenerator, generator_name="fperf-overhead-comp", options=[]
+):
+    """Generator for `FeaturePerfOverheadTable`."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            FeaturePerfOverheadComparisionTable(
+                self.table_config, **self.table_kwargs
+            )
         ]
 
 
