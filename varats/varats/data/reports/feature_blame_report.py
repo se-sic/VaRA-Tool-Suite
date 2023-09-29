@@ -379,6 +379,9 @@ def get_features_dataflow_affecting_commits(
 
     for DCFI in DFBR.commit_feature_interactions:
         feature = DCFI.feature
+        # z_suffix,force doesn't exist in new sfbr
+        if feature == "z_suffix,force":
+            continue
         entry = dci_feature.get(feature)
         if entry is None:
             entry = (set([]), set([]))
@@ -447,17 +450,23 @@ def generate_general_commit_dcfi_data(
         SFBR, DFBR
     )
     interacting_structurally_and_through_dataflow = 0
+    num_structural_interactions = 0
     # check for every structural CFI, if its respective commit and feature also interact through dataflow
-    for SCFI in SFBR.commit_feature_interactions:
-        commit_hash: str = ShortCommitHash(SCFI.commit.commit_hash).hash
+    for commit_hash, features in commits_structurally_interacting_features.items():
+        commit_hash: str = ShortCommitHash(commit_hash).hash
         entry = commits_dataflow_interacting_features.get(commit_hash)
-        if (not (entry is None)) and SCFI.feature in entry[0]:
-            interacting_structurally_and_through_dataflow += 1
+        num_structural_interactions += len(features)
+        for feature in features:
+            if (not (entry is None)) and feature in entry[0]:
+                interacting_structurally_and_through_dataflow += 1
 
     row.append(
         interacting_structurally_and_through_dataflow
-        / len(SFBR.commit_feature_interactions)
+        / num_structural_interactions
     )
+    print("likelihood_dataflow_interaction_when_interacting_structurally")
+    print(interacting_structurally_and_through_dataflow / num_structural_interactions)
+    print("")
 
     columns = [
         "fraction_commits_structurally_interacting_with_features",
@@ -478,7 +487,7 @@ def generate_feature_dcfi_data(
         [
             feature_data[0],
             feature_scfi_data.loc[feature_scfi_data["feature"] == feature_data[0]][
-                "feature_size"
+                "pot_feature_size"
             ].to_numpy()[0],
             len(feature_data[1][0]),
             len(feature_data[1][1]),
