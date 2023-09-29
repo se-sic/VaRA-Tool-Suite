@@ -57,15 +57,21 @@ def get_structural_report_files_for_project(
     return report_files
 
 
-def get_structural_feature_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
-    report_file = get_structural_report_files_for_project(case_study.project_name)[0]
+def get_structural_feature_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
+    report_file = get_structural_report_files_for_project(
+        case_study.project_name
+    )[0]
     data_frame: pd.DataFrame = pd.DataFrame()
     report = load_structural_feature_blame_report(report_file)
     data_frame = generate_feature_scfi_data(report)
     return data_frame
 
 
-def get_structural_commit_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
+def get_structural_commit_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
     project_name = case_study.project_name
 
     report_file = get_structural_report_files_for_project(project_name)[0]
@@ -77,8 +83,7 @@ def get_structural_commit_data_for_case_study(case_study: CaseStudy) -> pd.DataF
         repo_name: calc_repo_code_churn(
             get_local_project_git_path(project_name, repo_name),
             ChurnConfig.create_c_style_languages_config(),
-        )
-        for repo_name, _ in repo_lookup.items()
+        ) for repo_name, _ in repo_lookup.items()
     }
 
     data_frame = generate_commit_scfi_data(report, code_churn_lookup)
@@ -88,11 +93,11 @@ def get_structural_commit_data_for_case_study(case_study: CaseStudy) -> pd.DataF
 
 ######## STRUCTURAL #########
 
-
 ######## FEATURES #########
 
 
 class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
@@ -107,31 +112,37 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
 
             stacked_feature_data = pd.DataFrame(
                 {
-                    "Interacting with ND1": data["num_interacting_commits_nd1"].values,
-                    "Interacting with ND>1": data[
-                        "num_interacting_commits_nd>1"
-                    ].values,
+                    "Interacting with ND1":
+                        data["num_interacting_commits_nd1"].values,
+                    "Interacting with ND>1":
+                        data["num_interacting_commits_nd>1"].values,
                 },
                 index=index,
             )
 
             stacked_feature_data.plot.bar(stacked=True, width=0.95, ax=axs[0])
             axs[0].set_xlabel("Features" if first else "", size="13")
-            axs[0].set_ylabel("Num Interacting Commits" if first else "", size="13")
+            axs[0].set_ylabel(
+                "Num Interacting Commits" if first else "", size="13"
+            )
             axs[0].set_title(case_study.project_name, size="16")
 
             data = data.sort_values(by=["def_feature_size"])
 
             stacked_feature_size_data = pd.DataFrame(
                 {
-                    "Definite Feature Size": data["def_feature_size"].values,
-                    "Potential Feature Size": data["pot_feature_size"].values
-                    - data["def_feature_size"].values,
+                    "Definite Feature Size":
+                        data["def_feature_size"].values,
+                    "Potential Feature Size":
+                        data["pot_feature_size"].values -
+                        data["def_feature_size"].values,
                 },
                 index=index,
             )
 
-            stacked_feature_size_data.plot.bar(stacked=True, width=0.95, ax=axs[1])
+            stacked_feature_size_data.plot.bar(
+                stacked=True, width=0.95, ax=axs[1]
+            )
             axs[1].set_xlabel("")
             axs[1].set_ylabel("Feature Size" if first else "", size="13")
 
@@ -142,11 +153,16 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
                 ax=axs[2],
             )
             sns.regplot(
-                data=data, x="pot_feature_size", y="num_interacting_commits", ax=axs[2]
+                data=data,
+                x="pot_feature_size",
+                y="num_interacting_commits",
+                ax=axs[2]
             )
 
             axs[2].set_xlabel("Feature Size" if first else "", size="13")
-            axs[2].set_ylabel("Num Interacting Commits" if first else "", size="13")
+            axs[2].set_ylabel(
+                "Num Interacting Commits" if first else "", size="13"
+            )
 
             first = False
 
@@ -156,6 +172,7 @@ class FeatureSFBRPlotGenerator(
     generator_name="feature-sfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
@@ -169,6 +186,7 @@ class FeatureSFBRPlotGenerator(
 
 
 class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
@@ -180,8 +198,12 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
                     continue
                 case_study = case_studies[case_study_counter]
 
-                commit_data = get_structural_commit_data_for_case_study(case_study)
-                commit_data = commit_data.sort_values(by=["num_interacting_features"])
+                commit_data = get_structural_commit_data_for_case_study(
+                    case_study
+                )
+                commit_data = commit_data.sort_values(
+                    by=["num_interacting_features"]
+                )
 
                 filter_lrg_commits = apply_tukeys_fence(
                     commit_data, column="commit_size", k=1.5
@@ -190,24 +212,22 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
                 commit_data = commit_data["num_interacting_features"]
 
                 interacting_with_nd1 = [
-                    commit_data[index][0] if index in filter_lrg_commits.index else 0
+                    commit_data[index][0]
+                    if index in filter_lrg_commits.index else 0
                     for index in commit_data.index
                 ]
                 interacting_with_at_least_nd2 = [
                     sum(commit_data[index][1:])
-                    if index in filter_lrg_commits.index
-                    else 0
+                    if index in filter_lrg_commits.index else 0
                     for index in commit_data.index
                 ]
                 interacting_with_nd1_lrg_commit = [
-                    0 if index in filter_lrg_commits.index else commit_data[index][0]
-                    for index in commit_data.index
+                    0 if index in filter_lrg_commits.index else
+                    commit_data[index][0] for index in commit_data.index
                 ]
                 interacting_with_at_least_nd2_lrg_commit = [
-                    0
-                    if index in filter_lrg_commits.index
-                    else sum(commit_data[index][1:])
-                    for index in commit_data.index
+                    0 if index in filter_lrg_commits.index else
+                    sum(commit_data[index][1:]) for index in commit_data.index
                 ]
 
                 rng = range(len(commit_data))
@@ -218,7 +238,10 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
                     bottom=interacting_with_nd1,
                 )
                 ax.bar(
-                    rng, interacting_with_nd1_lrg_commit, alpha=0.65, color="tab:blue"
+                    rng,
+                    interacting_with_nd1_lrg_commit,
+                    alpha=0.65,
+                    color="tab:blue"
                 )
                 ax.bar(
                     rng,
@@ -235,14 +258,12 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
                     labels=[str(i * step) for i in range(6)],
                 )
                 ax.set_title(case_study.project_name)
-                ax.legend(
-                    [
-                        "Interacting with ND1",
-                        "Interacting with ND>1",
-                        "ND1, Large Commit",
-                        "ND>1, Large Commit",
-                    ]
-                )
+                ax.legend([
+                    "Interacting with ND1",
+                    "Interacting with ND>1",
+                    "ND1, Large Commit",
+                    "ND>1, Large Commit",
+                ])
                 case_study_counter += 1
 
 
@@ -251,6 +272,7 @@ class CommitSpecificSFBRPlotGenerator(
     generator_name="commit-specific-sfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
@@ -265,21 +287,20 @@ def get_stacked_proportional_commit_structural_data(
 ) -> pd.DataFrame:
     rows = []
     for case_study in case_studies:
-        number_active_commits = num_active_commits_cs.get(case_study.project_name)
+        number_active_commits = num_active_commits_cs.get(
+            case_study.project_name
+        )
         data_commits = get_general_commit_dataflow_data_for_case_study(
             case_study, number_active_commits
         )
         fraction_commits_implementing_features = data_commits[
-            "fraction_commits_structurally_interacting_with_features"
-        ][0]
+            "fraction_commits_structurally_interacting_with_features"][0]
 
-        rows.append(
-            [
-                case_study.project_name,
-                fraction_commits_implementing_features,
-                1 - fraction_commits_implementing_features,
-            ]
-        )
+        rows.append([
+            case_study.project_name,
+            fraction_commits_implementing_features,
+            1 - fraction_commits_implementing_features,
+        ])
 
     return pd.DataFrame(
         data=rows,
@@ -294,6 +315,7 @@ def get_stacked_proportional_commit_structural_data(
 class CommitProportionalStructuralPlot(
     Plot, plot_name="commit_proportional_structural_plot"
 ):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
@@ -303,6 +325,7 @@ class CommitProportionalStructuralPlotGenerator(
     generator_name="commit-proportional-structural-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
@@ -315,7 +338,9 @@ class CommitProportionalStructuralPlotGenerator(
 ######## DATAFLOW #########
 
 
-def get_dataflow_report_files_for_project(project_name: str) -> tp.List[ReportFilepath]:
+def get_dataflow_report_files_for_project(
+    project_name: str
+) -> tp.List[ReportFilepath]:
     fnf = lambda x: not "DFBR" in x
     report_files: tp.List[ReportFilepath] = get_processed_revisions_files(
         project_name=project_name,
@@ -327,7 +352,9 @@ def get_dataflow_report_files_for_project(project_name: str) -> tp.List[ReportFi
     return report_files
 
 
-def get_both_reports_for_case_study(case_study: CaseStudy) -> tp.Tuple[SFBR, DFBR]:
+def get_both_reports_for_case_study(
+    case_study: CaseStudy
+) -> tp.Tuple[SFBR, DFBR]:
     structural_report_file = get_structural_report_files_for_project(
         case_study.project_name
     )[0]
@@ -344,7 +371,9 @@ def get_general_commit_dataflow_data_for_case_study(
     case_study: CaseStudy, number_active_commits
 ) -> pd.DataFrame:
     SFBR, DFBR = get_both_reports_for_case_study(case_study)
-    data_frame = generate_general_commit_dcfi_data(SFBR, DFBR, number_active_commits)
+    data_frame = generate_general_commit_dcfi_data(
+        SFBR, DFBR, number_active_commits
+    )
 
     return data_frame
 
@@ -354,7 +383,9 @@ def get_commit_specific_dataflow_data_for_case_study(
     number_active_commits: int,
 ) -> pd.DataFrame:
     SFBR, DFBR = get_both_reports_for_case_study(case_study)
-    data_frame = generate_commit_specific_dcfi_data(SFBR, DFBR, number_active_commits)
+    data_frame = generate_commit_specific_dcfi_data(
+        SFBR, DFBR, number_active_commits
+    )
 
     return data_frame
 
@@ -368,7 +399,9 @@ def get_combined_stacked_proportional_commit_dataflow_data(
 ) -> pd.DataFrame:
     rows = []
     for case_study in case_studies:
-        number_active_commits = num_active_commits_cs.get(case_study.project_name)
+        number_active_commits = num_active_commits_cs.get(
+            case_study.project_name
+        )
         dataflow_data = get_commit_specific_dataflow_data_for_case_study(
             case_study, number_active_commits
         )
@@ -385,20 +418,18 @@ def get_combined_stacked_proportional_commit_dataflow_data(
             num_struct_int_commits / number_active_commits
         )
 
-        rows.extend(
+        rows.extend([
             [
-                [
-                    case_study.project_name,
-                    fraction_commits_with_df_int * 100,
-                    "Dataflow",
-                ],
-                [
-                    case_study.project_name,
-                    fraction_commits_with_struct_int * 100,
-                    "Structural",
-                ],
-            ]
-        )
+                case_study.project_name,
+                fraction_commits_with_df_int * 100,
+                "Dataflow",
+            ],
+            [
+                case_study.project_name,
+                fraction_commits_with_struct_int * 100,
+                "Structural",
+            ],
+        ])
 
     return pd.DataFrame(
         data=rows,
@@ -416,7 +447,9 @@ def get_specific_stacked_proportional_commit_dataflow_data(
 ) -> pd.DataFrame:
     rows = []
     for case_study in case_studies:
-        number_active_commits = num_active_commits_cs.get(case_study.project_name)
+        number_active_commits = num_active_commits_cs.get(
+            case_study.project_name
+        )
         data_commits = get_commit_specific_dataflow_data_for_case_study(
             case_study, number_active_commits
         )
@@ -426,38 +459,30 @@ def get_specific_stacked_proportional_commit_dataflow_data(
         )
 
         commits_inside_df = data_commits.loc[
-            data_commits["num_interacting_features_inside_df"] > 0
-        ]
+            data_commits["num_interacting_features_inside_df"] > 0]
         commits_only_inside_df = commits_inside_df.loc[
-            commits_inside_df["num_interacting_features_outside_df"] == 0
-        ]
+            commits_inside_df["num_interacting_features_outside_df"] == 0]
         fraction_commits_only_inside_df = (
             len(commits_only_inside_df) / num_commits_with_df_int
         )
 
         commits_outside_df = data_commits.loc[
-            data_commits["num_interacting_features_outside_df"] > 0
-        ]
+            data_commits["num_interacting_features_outside_df"] > 0]
         commits_only_outside_df = commits_outside_df.loc[
-            commits_outside_df["num_interacting_features_inside_df"] == 0
-        ]
+            commits_outside_df["num_interacting_features_inside_df"] == 0]
         fraction_commits_only_outside_df = (
             len(commits_only_outside_df) / num_commits_with_df_int
         )
 
-        rows.append(
-            [
-                case_study.project_name,
-                fraction_commits_only_outside_df * 100,
-                fraction_commits_only_inside_df * 100,
-                100
-                * (
-                    1
-                    - fraction_commits_only_outside_df
-                    - fraction_commits_only_inside_df
-                ),
-            ]
-        )
+        rows.append([
+            case_study.project_name,
+            fraction_commits_only_outside_df * 100,
+            fraction_commits_only_inside_df * 100,
+            100 * (
+                1 - fraction_commits_only_outside_df -
+                fraction_commits_only_inside_df
+            ),
+        ])
 
     return pd.DataFrame(
         data=rows,
@@ -470,7 +495,10 @@ def get_specific_stacked_proportional_commit_dataflow_data(
     )
 
 
-class ProportionalCommitDFBRPlot(Plot, plot_name="proportional_commit_dfbr_plot"):
+class ProportionalCommitDFBRPlot(
+    Plot, plot_name="proportional_commit_dfbr_plot"
+):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         num_active_commits_cs: tp.Dict[str, int] = {
@@ -517,7 +545,9 @@ class ProportionalCommitDFBRPlot(Plot, plot_name="proportional_commit_dfbr_plot"
         plt = data.set_index("Projects").plot(
             kind="bar", stacked=True, ylabel="Proportion (%)", ax=ax_1
         )
-        plt.legend(title="Dataflow Origin", loc="center left", bbox_to_anchor=(1, 0.5))
+        plt.legend(
+            title="Dataflow Origin", loc="center left", bbox_to_anchor=(1, 0.5)
+        )
         ax_1.bar_label(ax_1.containers[0], fmt="%.1f%%")
         ax_1.bar_label(ax_1.containers[1], fmt="%.1f%%")
         ax_1.set_title("Dataflow Origin for Commits")
@@ -528,6 +558,7 @@ class ProportionalCommitDFBRPlotGenerator(
     generator_name="proportional-commit-dfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[case_studies] = self.plot_kwargs["case_study"]
         return [
@@ -540,7 +571,9 @@ class ProportionalCommitDFBRPlotGenerator(
 ######## FEATURES #########
 
 
-def get_feature_dataflow_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
+def get_feature_dataflow_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
     SFBRs, DFBRs = get_both_reports_for_case_study(case_study)
     data_frame = generate_feature_dcfi_data(SFBRs, DFBRs)
 
@@ -548,31 +581,32 @@ def get_feature_dataflow_data_for_case_study(case_study: CaseStudy) -> pd.DataFr
 
 
 class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=2, figsize=(15, 15))
+        fig, naxs = pyplot.subplots(
+            nrows=len(case_studies), ncols=2, figsize=(15, 15)
+        )
         fig.tight_layout(pad=6.5)
-        first:bool = True
+        first: bool = True
         for axs, case_study in zip(naxs, case_studies):
             data = get_feature_dataflow_data_for_case_study(case_study)
             data = data.sort_values(by=["num_interacting_commits_outside_df"])
             rows = []
             for index in data.index:
                 feature = data.at[index, "feature"]
-                rows.extend(
+                rows.extend([
                     [
-                        [
-                            feature,
-                            data.at[index, "num_interacting_commits_outside_df"],
-                            "Outside Commits",
-                        ],
-                        [
-                            feature,
-                            data.at[index, "num_interacting_commits_inside_df"],
-                            "Inside Commits",
-                        ],
-                    ]
-                )
+                        feature,
+                        data.at[index, "num_interacting_commits_outside_df"],
+                        "Outside Commits",
+                    ],
+                    [
+                        feature,
+                        data.at[index, "num_interacting_commits_inside_df"],
+                        "Inside Commits",
+                    ],
+                ])
             df = pd.DataFrame(
                 data=rows,
                 columns=["Feature", "Num Interacting Commits", "Commit Kind"],
@@ -586,9 +620,14 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
             )
             axs[0].set_title(case_study.project_name, size=15)
             axs[0].set_xlabel("Features" if first else "", size=13)
-            axs[0].set_ylabel("Num Interacting Commits" if first else "", size=13)
-            axs[0].set_xticklabels(labels=data["feature"].values, rotation= (22.5))
-            if not first: axs[0].legend_.remove()
+            axs[0].set_ylabel(
+                "Num Interacting Commits" if first else "", size=13
+            )
+            axs[0].set_xticklabels(
+                labels=data["feature"].values, rotation=(22.5)
+            )
+            if not first:
+                axs[0].legend_.remove()
 
             sns.regplot(
                 data=data,
@@ -613,7 +652,9 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 label="Inside Commits",
             )
             axs[1].set_xlabel("Feature Size" if first else "", size=13)
-            axs[1].set_ylabel("Num Interacting Commits" if first else "", size=13)
+            axs[1].set_ylabel(
+                "Num Interacting Commits" if first else "", size=13
+            )
             pyplot.legend(fontsize=10)
             first = False
 
@@ -623,6 +664,7 @@ class FeatureDFBRPlotGenerator(
     generator_name="feature-dfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
@@ -633,14 +675,13 @@ class FeatureDFBRPlotGenerator(
 
 
 class FeatureSizeCorrDFBRPlot(Plot, plot_name="feature_size_corr_dfbr_plot"):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        data = pd.concat(
-            [
-                get_feature_dataflow_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
+        data = pd.concat([
+            get_feature_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
         print(data)
         plt = sns.regplot(
             data=data, x="feature_size", y="num_interacting_commits_outside_df"
@@ -656,6 +697,7 @@ class FeatureSizeCorrDFBRPlotGenerator(
     generator_name="feature-size-corr-dfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
@@ -666,18 +708,17 @@ class FeatureSizeCorrDFBRPlotGenerator(
 
 
 class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         dfs = [
             get_feature_dataflow_data_for_case_study(case_study)
             for case_study in case_studies
         ]
-        data = pd.concat(
-            [
-                get_feature_dataflow_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
+        data = pd.concat([
+            get_feature_dataflow_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
         data = data.sort_values(by=["num_interacting_commits_outside_df"])
         pyplot.figure(figsize=(10.3, 6))
         ax = sns.barplot(
@@ -689,7 +730,9 @@ class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
         )
         ax.set_xlabel("Feature", size="11")
         ax.set_ylabel("Number of Interacting Outside Commits", size="12")
-        ax.set_title("Feature Commit Dataflow Interactions from Outisde", size="14")
+        ax.set_title(
+            "Feature Commit Dataflow Interactions from Outisde", size="14"
+        )
         return None
 
         fig, naxs = pyplot.subplots(2, 2, figsize=(22, 22))
@@ -709,14 +752,16 @@ class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
                     palette=["tab:blue"],
                 )
                 ax.set_xlabel("Feature", size="16")
-                ax.set_ylabel("Number of Interacting Outside Commits", size="16")
+                ax.set_ylabel(
+                    "Number of Interacting Outside Commits", size="16"
+                )
                 ax.set_title(case_study.project_name, size="22")
                 case_study_counter += 1
 
         fig.suptitle(
-            "Dataflow Interactions from Outside of Features"
-            + " for Projects "
-            + ",".join([case_study.project_name for case_study in case_studies]),
+            "Dataflow Interactions from Outside of Features" +
+            " for Projects " +
+            ",".join([case_study.project_name for case_study in case_studies]),
             size="26",
         )
 
@@ -726,6 +771,7 @@ class FeatureDisDFBRPlotGenerator(
     generator_name="feature-dis-dfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
@@ -741,10 +787,14 @@ class FeatureDisDFBRPlotGenerator(
 def get_structural_feature_author_data_for_case_study(
     case_study: CaseStudy,
 ) -> pd.DataFrame:
-    report_file = get_structural_report_files_for_project(case_study.project_name)[0]
+    report_file = get_structural_report_files_for_project(
+        case_study.project_name
+    )[0]
     project_gits = get_local_project_gits(case_study.project_name)
     report = load_structural_feature_blame_report(report_file)
-    data_frame: pd.DataFrame = generate_feature_author_scfi_data(report, project_gits)
+    data_frame: pd.DataFrame = generate_feature_author_scfi_data(
+        report, project_gits
+    )
 
     return data_frame
 
@@ -759,7 +809,9 @@ def get_dataflow_feature_author_data_for_case_study(
         case_study.project_name
     )[0]
     project_gits = get_local_project_gits(case_study.project_name)
-    structural_report = load_structural_feature_blame_report(structural_report_file)
+    structural_report = load_structural_feature_blame_report(
+        structural_report_file
+    )
     dataflow_report = load_dataflow_feature_blame_report(dataflow_report_file)
     data_frame: pd.DataFrame = generate_feature_author_dcfi_data(
         structural_report, dataflow_report, project_gits
@@ -774,14 +826,15 @@ def get_stacked_author_data_for_case_studies(
 ) -> pd.DataFrame:
     rows = []
 
-    max_num_interacting_authors = max(
-        [max(project_data) for project_data in projects_data]
-    )
+    max_num_interacting_authors = max([
+        max(project_data) for project_data in projects_data
+    ])
 
     for case_study, project_data in zip(case_studies, projects_data):
         count: [int] = [0 for _ in range(0, max_num_interacting_authors)]
         for num_interacting_authors in project_data:
-            count[num_interacting_authors - 1] = count[num_interacting_authors - 1] + 1
+            count[num_interacting_authors -
+                  1] = count[num_interacting_authors - 1] + 1
 
         rows.append([case_study.project_name] + count)
 
@@ -798,15 +851,22 @@ def get_stacked_author_data_for_case_studies(
     return pd.DataFrame(adj_rows, columns=["Project"] + author_columns)
 
 
-class FeatureAuthorStructDisPlot(Plot, plot_name="feature_author_struct_dis_plot"):
+class FeatureAuthorStructDisPlot(
+    Plot, plot_name="feature_author_struct_dis_plot"
+):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         fig, axs = pyplot.subplots(ncols=len(case_studies), figsize=(15, 3))
         counter = 0
         for ax, case_study in zip(axs, case_studies):
-            author_data = get_structural_feature_author_data_for_case_study(case_study)
-            author_data = author_data.sort_values(by=["num_implementing_authors"])
+            author_data = get_structural_feature_author_data_for_case_study(
+                case_study
+            )
+            author_data = author_data.sort_values(
+                by=["num_implementing_authors"]
+            )
             sns.barplot(
                 data=author_data,
                 x="feature",
@@ -834,6 +894,7 @@ class FeatureAuthorStructDisPlotGenerator(
     generator_name="feature-author-struct-dis-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
 
@@ -844,16 +905,19 @@ class FeatureAuthorStructDisPlotGenerator(
         ]
 
 
-class FeatureAuthorDataflowDisPlot(Plot, plot_name="feature_author_dataflow_dis_plot"):
+class FeatureAuthorDataflowDisPlot(
+    Plot, plot_name="feature_author_dataflow_dis_plot"
+):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         projects_data = [
-            get_dataflow_feature_author_data_for_case_study(case_study).loc[
-                :, "interacting_authors_outside"
-            ]
-            for case_study in case_studies
+            get_dataflow_feature_author_data_for_case_study(case_study).
+            loc[:, "interacting_authors_outside"] for case_study in case_studies
         ]
-        data = get_stacked_author_data_for_case_studies(case_studies, projects_data)
+        data = get_stacked_author_data_for_case_studies(
+            case_studies, projects_data
+        )
 
         data = data.sort_values(by=["1 Author"])
         print(data)
@@ -869,6 +933,7 @@ class FeatureAuthorDataflowDisPlotGenerator(
     generator_name="feature-author-dataflow-dis-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
 
@@ -879,34 +944,36 @@ class FeatureAuthorDataflowDisPlotGenerator(
         ]
 
 
-def get_combined_author_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
-    structural_data = get_structural_feature_author_data_for_case_study(case_study)
-    structural_data = structural_data.sort_values(by=["num_implementing_authors"])
+def get_combined_author_data_for_case_study(
+    case_study: CaseStudy
+) -> pd.DataFrame:
+    structural_data = get_structural_feature_author_data_for_case_study(
+        case_study
+    )
+    structural_data = structural_data.sort_values(
+        by=["num_implementing_authors"]
+    )
     dataflow_data = get_dataflow_feature_author_data_for_case_study(case_study)
 
     combined_rows = []
     for i in structural_data.index:
         feature = structural_data.loc[i, "feature"]
-        num_implementing_authors = structural_data.loc[i, "num_implementing_authors"]
+        num_implementing_authors = structural_data.loc[
+            i, "num_implementing_authors"]
         for _ in range(num_implementing_authors):
-            combined_rows.append(
-                [
-                    feature,
-                    "Implementing Authors",  # type
-                ]
-            )
+            combined_rows.append([
+                feature,
+                "Implementing Authors",  # type
+            ])
     for i in dataflow_data.index:
         feature = dataflow_data.loc[i, "feature"]
         interacting_authors_outside = dataflow_data.loc[
-            i, "interacting_authors_outside"
-        ]
+            i, "interacting_authors_outside"]
         for _ in range(interacting_authors_outside):
-            combined_rows.append(
-                [
-                    feature,
-                    "Interacting Authors Through Outside Dataflow",  # type
-                ]
-            )
+            combined_rows.append([
+                feature,
+                "Interacting Authors Through Outside Dataflow",  # type
+            ])
 
     columns = ["feature", "interaction_type"]
 
@@ -914,6 +981,7 @@ def get_combined_author_data_for_case_study(case_study: CaseStudy) -> pd.DataFra
 
 
 class FeatureCombinedAuthorPlot(Plot, plot_name="feature_combined_author_plot"):
+
     def plot(self, view_mode: bool) -> None:
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         data = get_combined_author_data_for_case_study(case_study)
@@ -933,27 +1001,30 @@ class FeatureCombinedAuthorPlotGenerator(
     generator_name="feature-combined-author-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             FeatureCombinedAuthorPlot(
                 self.plot_config, case_study=case_study, **self.plot_kwargs
-            )
-            for case_study in case_studies
+            ) for case_study in case_studies
         ]
 
 
-class FeatureSizeCorrAuthorPlot(Plot, plot_name="feature_size_corr_author_plot"):
+class FeatureSizeCorrAuthorPlot(
+    Plot, plot_name="feature_size_corr_author_plot"
+):
+
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        data = pd.concat(
-            [
-                get_structural_feature_author_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
+        data = pd.concat([
+            get_structural_feature_author_data_for_case_study(case_study)
+            for case_study in case_studies
+        ])
         print(data)
-        ax = sns.regplot(data=data, x="feature_size", y="num_implementing_authors")
+        ax = sns.regplot(
+            data=data, x="feature_size", y="num_implementing_authors"
+        )
         ax.set(xlabel="Feature Size", ylabel="Number Implementing Authors")
 
 
@@ -962,6 +1033,7 @@ class FeatureSizeCorrAuthorPlotGenerator(
     generator_name="feature-size-corr-author-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
+
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
