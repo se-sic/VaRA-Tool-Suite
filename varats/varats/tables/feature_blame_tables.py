@@ -35,49 +35,40 @@ class SFBRFeatureEvalTable(Table, table_name="sfbr_feature_eval_table"):
         ]
 
         rows = [[case_study.project_name] for case_study in case_studies] + [
-            ["Mean"],
-            ["Variance"],
+            ["Mean"], ["Variance"]
         ]
 
         for data_features, current_row in zip(
             projects_data_features,
             range(0, len(case_studies)),
         ):
-            avg_num_impl_commits = np.mean(
-                data_features["num_interacting_commits"]
-            )
-            rows[current_row].append(avg_num_impl_commits)
-
-            var_num_impl_commits = np.var(
-                data_features["num_interacting_commits"]
-            )
-            rows[current_row].append(var_num_impl_commits)
-
-            range_num_impl_commits = (
-                min(data_features["num_interacting_commits"]),
-                max(data_features["num_interacting_commits"]),
-            )
-            rows[current_row].append(range_num_impl_commits)
-
-            corr_feature_size_num_interacting_commits, p_value = stats.pearsonr(
-                data_features["num_interacting_commits"],
-                data_features["feature_size"]
+            corr_def_feature_size_num_interacting_commits_nd1, p_value = stats.pearsonr(
+                data_features["num_interacting_commits_nd1"].values,
+                data_features["def_feature_size"].values
             )
             rows[current_row].extend([
-                corr_feature_size_num_interacting_commits, p_value
+                corr_def_feature_size_num_interacting_commits_nd1, p_value
+            ])
+            corr_pot_feature_size_num_interacting_commits, p_value = stats.pearsonr(
+                data_features["num_interacting_commits_nd>1"].values +
+                data_features["num_interacting_commits_nd1"].values,
+                data_features["pot_feature_size"]
+            )
+            rows[current_row].extend([
+                corr_pot_feature_size_num_interacting_commits, p_value
             ])
 
         # calc overall mean and variance for each column
         add_mean_and_variance(rows, len(case_studies))
+        rows.pop()
 
         df = pd.DataFrame(
             round_rows(rows, 2),
             columns=[
                 "Projects",
-                "Avg Num Impl Cmmts",
-                "Var Num Impl Cmmts",
-                "Rng Num Impl Cmmts",
-                "Corr Ftr Size - Num Impl Cmmts",
+                "Corr Def Ftr Size - Cmmts ND1",
+                "P-Value",
+                "Corr Pot Ftr Size - Any Cmmts",
                 "P-Value",
             ],
         )
