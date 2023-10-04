@@ -597,10 +597,23 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 hue="Commit Kind",
                 ax=axs[0],
             )
+            axs[0].axhline(
+                y=np.mean(data["num_interacting_commits_outside_df"].values),
+                color="tab:blue",
+                linestyle="--",
+                linewidth=2,
+            )
+            axs[0].axhline(
+                y=np.mean(data["num_interacting_commits_inside_df"].values),
+                color="tab:orange",
+                linestyle="--",
+                linewidth=2,
+            )
             axs[0].set_title(case_study.project_name, size=15)
             axs[0].set_xlabel("Features" if first else "", size=13)
-            axs[0].set_ylabel("Num Interacting Commits" if first else "", size=13)
+            axs[0].set_ylabel("Num Interacting Commits", size=13)
             axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5))
+
             if not first:
                 axs[0].legend_.remove()
 
@@ -626,9 +639,9 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 truncate=False,
                 label="Inside Commits",
             )
-            axs[1].set_xlabel("Feature Size" if first else "", size=13)
-            axs[1].set_ylabel("Num Interacting Commits" if first else "", size=13)
-            pyplot.legend(fontsize=10)
+            axs[1].set_xlabel("Feature Size", size=13)
+            axs[1].set_ylabel("Num Interacting Commits", size=13)
+            if first: axs[1].legend(ncol=1)
             first = False
 
 
@@ -641,109 +654,6 @@ class FeatureDFBRPlotGenerator(
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
             FeatureDFBRPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
-            )
-        ]
-
-
-class FeatureSizeCorrDFBRPlot(Plot, plot_name="feature_size_corr_dfbr_plot"):
-    def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        data = pd.concat(
-            [
-                get_feature_dataflow_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
-        print(data)
-        plt = sns.regplot(
-            data=data, x="feature_size", y="num_interacting_commits_outside_df"
-        )
-        plt.set(
-            xlabel="Feature Size",
-            ylabel="Number of Interacting Commits not Part of Features",
-        )
-
-
-class FeatureSizeCorrDFBRPlotGenerator(
-    PlotGenerator,
-    generator_name="feature-size-corr-dfbr-plot",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-        return [
-            FeatureSizeCorrDFBRPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
-            )
-        ]
-
-
-class FeatureDisDFBRPlot(Plot, plot_name="feature_dis_dfbr_plot"):
-    def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        dfs = [
-            get_feature_dataflow_data_for_case_study(case_study)
-            for case_study in case_studies
-        ]
-        data = pd.concat(
-            [
-                get_feature_dataflow_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
-        data = data.sort_values(by=["num_interacting_commits_outside_df"])
-        pyplot.figure(figsize=(10.3, 6))
-        ax = sns.barplot(
-            data=data,
-            x="feature",
-            y="num_interacting_commits_outside_df",
-            color="blue",
-            palette=["tab:blue"],
-        )
-        ax.set_xlabel("Feature", size="11")
-        ax.set_ylabel("Number of Interacting Outside Commits", size="12")
-        ax.set_title("Feature Commit Dataflow Interactions from Outisde", size="14")
-        return None
-
-        fig, naxs = pyplot.subplots(2, 2, figsize=(22, 22))
-        case_study_counter = 0
-        for axs in naxs:
-            for ax in axs:
-                case_study = case_studies[case_study_counter]
-                df = get_feature_dataflow_data_for_case_study(case_study)
-                df = df.sort_values(by=["num_interacting_commits_outside_df"])
-                print(df)
-                sns.barplot(
-                    data=df,
-                    x="feature",
-                    y="num_interacting_commits_outside_df",
-                    ax=ax,
-                    color="blue",
-                    palette=["tab:blue"],
-                )
-                ax.set_xlabel("Feature", size="16")
-                ax.set_ylabel("Number of Interacting Outside Commits", size="16")
-                ax.set_title(case_study.project_name, size="22")
-                case_study_counter += 1
-
-        fig.suptitle(
-            "Dataflow Interactions from Outside of Features"
-            + " for Projects "
-            + ",".join([case_study.project_name for case_study in case_studies]),
-            size="26",
-        )
-
-
-class FeatureDisDFBRPlotGenerator(
-    PlotGenerator,
-    generator_name="feature-dis-dfbr-plot",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-        return [
-            FeatureDisDFBRPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
