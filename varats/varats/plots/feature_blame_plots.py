@@ -515,6 +515,7 @@ class ProportionalCommitDFBRPlot(Plot, plot_name="proportional_commit_dfbr_plot"
             x="Projects",
             y="Proportion",
             hue="Interaction Type",
+            palette=["tab:gray", "tab:red"],
             ax=ax_0,
         )
         for container in ax_0.containers:
@@ -522,10 +523,11 @@ class ProportionalCommitDFBRPlot(Plot, plot_name="proportional_commit_dfbr_plot"
         ax_0.set_title("Active Commits Interacting With Features")
         ax_0.set_ylabel("Proportion (%)")
 
+        case_studies = [case_studies[3],case_studies[0],case_studies[2],case_studies[1]]
         data = get_specific_stacked_proportional_commit_dataflow_data(
             case_studies, num_active_commits_cs
         )
-        data = data.sort_values(by=["Only Outside DF"], ascending=False)
+        # data = data.sort_values(by=["Only Outside DF"], ascending=False)
         print(data)
         plt = data.set_index("Projects").plot(
             kind="bar", stacked=True, ylabel="Proportion (%)", ax=ax_1
@@ -533,6 +535,7 @@ class ProportionalCommitDFBRPlot(Plot, plot_name="proportional_commit_dfbr_plot"
         plt.legend(title="Dataflow Origin", loc="center left", bbox_to_anchor=(1, 0.5))
         ax_1.bar_label(ax_1.containers[0], fmt="%.1f%%")
         ax_1.bar_label(ax_1.containers[1], fmt="%.1f%%")
+        ax_1.set_xticklabels(data["Projects"].values, rotation=(0))
         ax_1.set_title("Dataflow Origin for Commits")
 
 
@@ -641,7 +644,8 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
             )
             axs[1].set_xlabel("Feature Size", size=13)
             axs[1].set_ylabel("Num Interacting Commits", size=13)
-            if first: axs[1].legend(ncol=1)
+            if first:
+                axs[1].legend(ncol=1)
             first = False
 
 
