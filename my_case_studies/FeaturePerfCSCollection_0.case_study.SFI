@@ -1,0 +1,23 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: FeaturePerfCSCollection
+stages:
+- revisions:
+  - commit_hash: 4300ea495e7f013f68e785fdde5c4ead81297999
+    commit_id: 36
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+version: 0
+...
+---
+0: '[]'
+1: '["--enc"]'
+2: '["--compress"]'
+3: '["--enc", "--compress"]'
+...
