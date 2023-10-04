@@ -184,57 +184,120 @@ class TestPatchSet(unittest.TestCase):
                 "Test-ABCD",
                 "",
                 path=Path("test.patch"),
-                tags={"A", "B", "C", "D"}
-            ),
-            Patch("TEST", "Test-A", "", path=Path("test.patch"), tags={"A"}),
-            Patch("TEST", "Test-B", "", path=Path("test.patch"), tags={"B"}),
-            Patch("TEST", "Test-C", "", path=Path("test.patch"), tags={"C"}),
-            Patch("TEST", "Test-D", "", path=Path("test.patch"), tags={"D"}),
-            Patch(
-                "TEST", "Test-AB", "", path=Path("test.patch"), tags={"A", "B"}
+                tags={"A", "B", "C", "D"},
+                feature_tags={"F_A", "F_B", "F_C", "F_D"}
             ),
             Patch(
-                "TEST", "Test-AC", "", path=Path("test.patch"), tags={"A", "C"}
+                "TEST",
+                "Test-A",
+                "",
+                path=Path("test.patch"),
+                tags={"A"},
+                feature_tags={"F_A"}
             ),
             Patch(
-                "TEST", "Test-AD", "", path=Path("test.patch"), tags={"A", "D"}
+                "TEST",
+                "Test-B",
+                "",
+                path=Path("test.patch"),
+                tags={"B"},
+                feature_tags={"F_B"}
             ),
             Patch(
-                "TEST", "Test-BC", "", path=Path("test.patch"), tags={"B", "C"}
+                "TEST",
+                "Test-C",
+                "",
+                path=Path("test.patch"),
+                tags={"C"},
+                feature_tags={"F_C"}
             ),
             Patch(
-                "TEST", "Test-BD", "", path=Path("test.patch"), tags={"B", "D"}
+                "TEST",
+                "Test-D",
+                "",
+                path=Path("test.patch"),
+                tags={"D"},
+                feature_tags={"F_D"}
             ),
             Patch(
-                "TEST", "Test-CD", "", path=Path("test.patch"), tags={"C", "D"}
+                "TEST",
+                "Test-AB",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "B"},
+                feature_tags={"F_A", "F_B"}
+            ),
+            Patch(
+                "TEST",
+                "Test-AC",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "C"},
+                feature_tags={"F_A", "F_C"}
+            ),
+            Patch(
+                "TEST",
+                "Test-AD",
+                "",
+                path=Path("test.patch"),
+                tags={"A", "D"},
+                feature_tags={"F_A", "F_D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-BC",
+                "",
+                path=Path("test.patch"),
+                tags={"B", "C"},
+                feature_tags={"F_B", "F_C"}
+            ),
+            Patch(
+                "TEST",
+                "Test-BD",
+                "",
+                path=Path("test.patch"),
+                tags={"B", "D"},
+                feature_tags={"F_B", "F_D"}
+            ),
+            Patch(
+                "TEST",
+                "Test-CD",
+                "",
+                path=Path("test.patch"),
+                tags={"C", "D"},
+                feature_tags={"F_C", "F_D"}
             ),
             Patch(
                 "TEST",
                 "Test-ABC",
                 "",
                 path=Path("test.patch"),
-                tags={"A", "B", "C"}
+                tags={"A", "B", "C"},
+                feature_tags={"F_A", "F_B", "F_C"}
             ),
             Patch(
                 "TEST",
                 "Test-ABD",
                 "",
                 path=Path("test.patch"),
-                tags={"A", "B", "D"}
+                tags={"A", "B", "D"},
+                feature_tags={"F_A", "F_B", "F_D"}
             ),
             Patch(
                 "TEST",
                 "Test-ACD",
                 "",
                 path=Path("test.patch"),
-                tags={"A", "C", "D"}
+                tags={"A", "C", "D"},
+                feature_tags={"F_A", "F_C", "F_D"}
             ),
             Patch(
                 "TEST",
                 "Test-BCD",
                 "",
                 path=Path("test.patch"),
-                tags={"B", "C", "D"}
+                tags={"B", "C", "D"},
+                feature_tags={"F_B", "F_C", "F_D"}
             ),
         }
 
@@ -310,6 +373,38 @@ class TestPatchSet(unittest.TestCase):
 
             for patch in patches:
                 any([tag in patch.tags for tag in tags])
+
+    def test_all_of_single_feature_tag(self):
+        for tag in {"F_A", "F_B", "F_C", "F_D"}:
+            patches = self.patchSet.all_of_features([tag])
+            self.assertEqual(8, len(patches))
+
+    def test_all_of_multiple_feature_tags(self):
+        tags_count = {("F_A", "F_B"): 4,
+                      ("F_C", "F_B"): 4,
+                      ("F_D", "F_B"): 4,
+                      ("F_A", "F_B", "F_C"): 2,
+                      ("F_A", "F_B", "F_C", "F_D"): 1}
+
+        for tags in tags_count:
+            patches = self.patchSet.all_of_features(tags)
+            self.assertEqual(tags_count[tags], len(patches))
+
+    def test_any_of_single_feature_tag(self):
+        for tag in {"F_A", "F_B", "F_C", "F_D"}:
+            patches = self.patchSet.any_of_features([tag])
+            self.assertEqual(8, len(patches))
+
+    def test_any_of_multiple_feature_tags(self):
+        tags_count = {("F_A", "F_B"): 12,
+                      ("F_C", "F_B"): 12,
+                      ("F_D", "F_B"): 12,
+                      ("F_A", "F_B", "F_C"): 14,
+                      ("F_A", "F_B", "F_C", "F_D"): 15}
+
+        for tags in tags_count:
+            patches = self.patchSet.any_of_features(tags)
+            self.assertEqual(tags_count[tags], len(patches))
 
     def test_patchset_intersection(self):
         patches = self.patchSet["A"] & self.patchSet["B"]

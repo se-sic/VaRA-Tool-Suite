@@ -14,6 +14,7 @@ stages:
 version: 0
 ...
 ---
+config_type: PlainCommandlineConfiguration
 0: '["--compress", "--mem", "10", "8"]'
 1: '["--compress", "--mem", "300", "8"]'
 ...

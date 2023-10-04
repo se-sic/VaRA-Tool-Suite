@@ -25,6 +25,7 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     RevisionBinaryMap,
@@ -121,7 +122,7 @@ class Xz(VProject):
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
-                requires_all={"--compress"},
+                requires_all_args={"--compress"},
             )
         ],
         WorkloadSet(WorkloadCategory.JAN): [
