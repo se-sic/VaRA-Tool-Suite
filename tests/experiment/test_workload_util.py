@@ -1,6 +1,5 @@
 """Test VaRA workload utilities."""
 import unittest
-from copy import deepcopy
 from pathlib import Path
 
 from benchbuild.command import Command, PathToken, RootRenderer

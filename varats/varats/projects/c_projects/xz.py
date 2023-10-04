@@ -19,7 +19,6 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
-    VCommand,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     verify_binaries,
