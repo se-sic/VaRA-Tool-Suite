@@ -6,8 +6,14 @@ from benchbuild.command import Command, PathToken, RootRenderer
 from benchbuild.source.base import Revision, Variant
 
 import varats.experiment.workload_util as wu
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
+from varats.paper.paper_config import load_paper_config
 from varats.projects.c_projects.xz import Xz
+from varats.projects.perf_tests.feature_perf_cs_collection import (
+    SynthIPTemplate,
+)
 from varats.utils.git_util import ShortCommitHash
+from varats.utils.settings import vara_cfg
 
 TT = PathToken.make_token(RootRenderer())
 
@@ -65,6 +71,37 @@ class TestWorkloadCommands(unittest.TestCase):
             project, binary, [wu.WorkloadCategory.MEDIUM]
         )
         self.assertEqual(len(commands), 1)
+
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
+    def test_workload_commands_requires_patch(self) -> None:
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        revision = Revision(
+            SynthIPTemplate, Variant(SynthIPTemplate.SOURCE[0], "7930350628"),
+            Variant(SynthIPTemplate.SOURCE[1], "1")
+        )
+        project = SynthIPTemplate(revision=revision)
+        binary = SynthIPTemplate.binaries_for_revision(
+            ShortCommitHash("7930350628")
+        )[0]
+        workloads = wu.workload_commands(project, binary, [])
+        self.assertEqual(len(workloads), 2)
+
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
+    def test_workload_commands_requires_patch2(self) -> None:
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        revision = Revision(
+            SynthIPTemplate, Variant(SynthIPTemplate.SOURCE[0], "7930350628"),
+            Variant(SynthIPTemplate.SOURCE[1], "0")
+        )
+        project = SynthIPTemplate(revision=revision)
+        binary = SynthIPTemplate \
+            .binaries_for_revision(ShortCommitHash("7930350628"))[0]
+        workloads = wu.workload_commands(project, binary, [])
+        self.assertEqual(len(workloads), 0)
 
 
 class TestWorkloadFilenames(unittest.TestCase):
