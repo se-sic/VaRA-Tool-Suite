@@ -64,7 +64,7 @@ class HyTeg(VProject):
 
         with local.cwd(hyteg_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("..")
+                bb.watch(cmake)("..", "-DWALBERLA_BUILD_WITH_MPI=OFF")
 
                 with local.cwd(hyteg_source / "build" / "apps"):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
