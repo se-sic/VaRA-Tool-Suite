@@ -10,5 +10,6 @@ stages:
     config_ids: [1]
 version: 0
 ---
+config_type: PlainCommandlineConfiguration
 0: '["--foo", "--bar"]'
 1: '["--foo"]'
