@@ -46,6 +46,19 @@ class FeaturePerfCSCollection(VProject):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SimpleBusyLoop"),
+                "--iterations",
+                str(10**4),
+                "--count_to",
+                str(5 * 10**3),
+                label="SBL-iterations-10K-count-to-5K"
+            ),
+            # Command(
+            #     SourceRoot("FeaturePerfCSCollection") / RSBinary("LoopBubble"),
+            #     label="LB-no-input"
+            # ),
+            Command(
+                SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("SingleLocalSimple"),
                 label="SLS-no-input"
             ),
@@ -54,15 +67,6 @@ class FeaturePerfCSCollection(VProject):
                 RSBinary("MultiSharedMultipleRegions"),
                 label="MSMR-no-input"
             ),
-            # Command(
-            #     SourceRoot("FeaturePerfCSCollection") /
-            #     RSBinary("SimpleSleepLoop"),
-            #     "--iterations",
-            #     "10000",
-            #     "--sleepns",
-            #     "10000",
-            #     label="SSL-10K-10K"
-            # ),
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("SimpleFeatureInteraction"),
@@ -71,17 +75,17 @@ class FeaturePerfCSCollection(VProject):
                 label="SFI-enc-compress"
             )
         ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
-                SourceRoot("FeaturePerfCSCollection") /
-                RSBinary("SimpleBusyLoop"),
-                "--iterations",
-                str(10**7),
-                "--count_to",
-                str(5 * 10**3),
-                label="SBL-iterations-10M-count-to-5K"
-            )
-        ]
+        # WorkloadSet(WorkloadCategory.SMALL): [
+        #     Command(
+        #         SourceRoot("FeaturePerfCSCollection") /
+        #         RSBinary("SimpleBusyLoop"),
+        #         "--iterations",
+        #         str(10**7),
+        #         "--count_to",
+        #         str(5 * 10**3),
+        #         label="SBL-iterations-10M-count-to-5K"
+        #     )
+        # ]
     }
 
     @staticmethod
@@ -100,13 +104,6 @@ class FeaturePerfCSCollection(VProject):
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("162db88346", "master")
         )
-        # binary_map.specify_binary(
-        #     "build/bin/SimpleSleepLoop",
-        #     BinaryType.EXECUTABLE,
-        #     only_valid_in=RevisionRange(
-        #         "c77bca4c6888970fb721069c82455137943ccf49", "master"
-        #     )
-        # )
         binary_map.specify_binary(
             "build/bin/SimpleBusyLoop",
             BinaryType.EXECUTABLE,

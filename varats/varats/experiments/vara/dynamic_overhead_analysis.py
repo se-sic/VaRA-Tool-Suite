@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import MutableSequence
 from varats.experiment.experiment_util import Step
-from varats.experiments.vara.feature_experiment import Flags
 
 from varats.project.varats_project import VProject
 
@@ -20,7 +19,10 @@ class RunInstrVerifierNaive(
     NAME = "RunInstrVerifierNaive"
 
     def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
-        project.cflags += ["-mllvm", f"-vara-optimizer-policy=naive"]
+        project.cflags += [
+            "-mllvm", "-vara-optimizer-policy=naive", "-vara-optimizer-starting-budget=0", "-mllvm",
+            "-debug-only=OPT,IRT,InstrMark"
+        ]
         return super().actions_for_project(project)
 
 
@@ -30,27 +32,43 @@ class RunInstrVerifierAlternating(
     NAME = "RunInstrVerifierAlternating"
 
     def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
-        project.cflags += ["-mllvm", f"-vara-optimizer-policy=alternating"]
+        project.cflags += [
+            "-mllvm", "-vara-optimizer-policy=alternating", "-mllvm",
+            "-debug-only=OPT,IRT,InstrMark"
+        ]
         return super().actions_for_project(project)
 
+class RunInstrVerifierLoopExtract(
+    RunInstrVerifier, shorthand=RunInstrVerifier.SHORTHAND + "L"
+):
+    NAME = "RunInstrVerifierLoopExtract"
+
+    def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
+        project.cflags += [
+            "-mllvm", "-vara-optimizer-policy=loop_extract", "-mllvm",
+            "-debug-only=OPT,IRT,InstrMark"
+        ]
+        return super().actions_for_project(project)
 
 class RunInstrVerifierNaiveBudget(
-    RunInstrVerifierBudget, shorthand=RunInstrVerifier.SHORTHAND + "NB"
+    RunInstrVerifierBudget, shorthand=RunInstrVerifierBudget.SHORTHAND + "N"
 ):
     NAME = "RunInstrVerifierNaiveBudget"
 
-    def actions_for_project(self, project: VProject,
-                            flags: Flags) -> MutableSequence[Step]:
-        project.cflags += ["-mllvm", f"-vara-optimizer-policy=naive"]
-        return super().actions_for_project(project, flags)
+    def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
+        project.cflags += [
+            "-mllvm", "-vara-optimizer-policy=naive", "-mllvm",
+            "-debug-only=OPT,IRT,InstrMark"
+        ]
+        return super().actions_for_project(project)
 
 
 class RunInstrVerifierAlternatingBudget(
-    RunInstrVerifierBudget, shorthand=RunInstrVerifier.SHORTHAND + "AB"
+    RunInstrVerifierBudget, shorthand=RunInstrVerifierBudget.SHORTHAND + "A"
 ):
     NAME = "RunInstrVerifierAlternatingBudget"
 
-    def actions_for_project(self, project: VProject,
-                            flags: Flags) -> MutableSequence[Step]:
-        project.cflags += ["-mllvm", f"-vara-optimizer-policy=alternating"]
-        return super().actions_for_project(project, flags)
+    def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
+        project.cflags += ["-mllvm", "-vara-optimizer-policy=alternating"]
+        return super().actions_for_project(project)
+

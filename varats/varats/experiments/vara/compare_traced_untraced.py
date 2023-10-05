@@ -19,7 +19,8 @@ from varats.experiments.vara.dynamic_overhead_analysis import OptimizerPolicyTyp
 from varats.experiments.vara.feature_experiment import FeatureExperiment, FeatureInstrType
 from varats.experiments.vara.multi_compile_experiment import VaryingStartingBudgetExperiment
 
-MEASUREMENT_REPS = 10
+MEASUREMENT_REPS = 20
+
 
 class RunUntraced(FeatureExperiment, shorthand="RU"):
     """Build and run the untraced version of the binary"""
@@ -57,6 +58,7 @@ class RunUntraced(FeatureExperiment, shorthand="RU"):
             project, FeatureInstrType.NONE, actions, save_temps=True
         )
 
+
 class RunTraced(FeatureExperiment, shorthand="RT"):
     """Build and run the traced version of the binary"""
 
@@ -73,8 +75,8 @@ class RunTraced(FeatureExperiment, shorthand="RT"):
     ) -> tp.MutableSequence[actions.Step]:
 
         project.cflags += [
-            "-mllvm",
-            f"-vara-optimizer-policy={self.optimizer_policy.value}",
+            "-mllvm", f"-vara-optimizer-policy={self.optimizer_policy.value}",
+            "-mllvm", "-debug-only=OPT,InstrMark,IRT"
         ]
 
         actions = []
@@ -102,6 +104,7 @@ class RunTraced(FeatureExperiment, shorthand="RT"):
             project, FeatureInstrType.TEF, actions, save_temps=True
         )
 
+
 class RunTracedNaive(RunTraced, shorthand=RunTraced.SHORTHAND + "N"):
     """Build and run the traced version of the binary"""
 
@@ -112,6 +115,7 @@ class RunTracedNaive(RunTraced, shorthand=RunTraced.SHORTHAND + "N"):
     def optimizer_policy(self) -> OptimizerPolicyType:
         return OptimizerPolicyType.NAIVE
 
+
 class RunTracedAlternating(RunTraced, shorthand=RunTraced.SHORTHAND + "A"):
     """Build and run the traced version of the binary"""
 
@@ -121,6 +125,7 @@ class RunTracedAlternating(RunTraced, shorthand=RunTraced.SHORTHAND + "A"):
     @abstractmethod
     def optimizer_policy(self) -> OptimizerPolicyType:
         return OptimizerPolicyType.ALTERNATING
+
 
 class RunTracedBudget(VaryingStartingBudgetExperiment, shorthand="RTB"):
     """Build and run the traced version of the binary"""
@@ -167,20 +172,26 @@ class RunTracedBudget(VaryingStartingBudgetExperiment, shorthand="RTB"):
             project, FeatureInstrType.TEF, actions, save_temps=True
         )
 
-class RunTracedNaiveBudget(RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "N"):
+
+class RunTracedNaiveBudget(
+    RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "N"
+):
     """Build and run the traced version of the binary"""
 
-    NAME = "RunTracedNaive"
+    NAME = "RunTracedNaiveBudget"
 
     @property
     @abstractmethod
     def optimizer_policy(self) -> OptimizerPolicyType:
         return OptimizerPolicyType.NAIVE
 
-class RunTracedAlternatingBudget(RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "A"):
+
+class RunTracedAlternatingBudget(
+    RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "A"
+):
     """Build and run the traced version of the binary"""
 
-    NAME = "RunTracedAlternating"
+    NAME = "RunTracedAlternatingBudget"
 
     @property
     @abstractmethod

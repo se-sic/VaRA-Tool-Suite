@@ -4,8 +4,8 @@ experiment state for all case studies in the paper config."""
 import typing as tp
 
 import matplotlib.pyplot as plt
-from matplotlib import ticker
 import numpy as np
+import pandas as pd
 
 import varats.paper.paper_config as PC
 from varats.data.reports.instrumentation_verifier_report import (
@@ -18,7 +18,6 @@ from varats.revision.revisions import get_all_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
-import itertools
 
 
 class InstrumentationOverviewCompareExperimentsPlot(
@@ -43,21 +42,13 @@ class InstrumentationOverviewCompareExperimentsPlot(
     def _generate_plot(**kwargs: tp.Any) -> None:
         case_study = kwargs['case_study']
 
-        width = 0.25
-        multiplicator = 0
-
-        minor_labels = []
-        minor_ticks = []
-
-        _, ax = plt.subplots()
+        rows = []
 
         for experiment in kwargs["experiment_type"]:
 
             revisions_files: tp.List[ReportFilepath] = get_all_revisions_files(
                 case_study.project_name, experiment, only_newest=False
             )
-
-            labels: tp.List[str] = []
 
             reports: tp.List[InstrVerifierReport] = [
                 InstrVerifierReport(rev_file.full_path())
@@ -67,84 +58,76 @@ class InstrumentationOverviewCompareExperimentsPlot(
             if len(reports) == 0:
                 raise PlotDataEmpty()
 
-            num_enters: tp.List[int] = []
-            num_leaves: tp.List[int] = []
-            num_unclosed_enters: tp.List[int] = []
-            num_unentered_leaves: tp.List[int] = []
-
             for report in reports:
                 for binary in report.binaries():
-                    print(binary)
-                    labels.append(f"{binary}")
-                    num_enters.append(report.num_enters(binary),)
-                    num_leaves.append(report.num_leaves(binary),)
-                    num_unclosed_enters.append(
-                        report.num_unclosed_enters(binary),
-                    )
-                    num_unentered_leaves.append(
-                        report.num_unentered_leaves(binary),
-                    )
+                    rows.append({
+                        "experiment": experiment.NAME,
+                        "binary": binary,
+                        "enters": report.num_enters(binary),
+                        "leaves": report.num_leaves(binary),
+                        "unclosed_enters": report.num_unclosed_enters(binary),
+                        "unentered_leaves": report.num_unentered_leaves(binary)
+                    })
 
-            minor_labels.extend([
-                x + "-" + y
-                for x, y in zip(labels, itertools.repeat(experiment.NAME))
-            ])
-            ind = np.arange(len(num_enters))
-            offset = width * multiplicator
+        df = pd.DataFrame(rows)
+        binaries = df["binary"].unique()
+        experiments = df["experiment"].unique()
+        fig, axs = plt.subplots((1 + len(binaries)) // 2, 2 - len(binaries) % 2)
+
+        for i, binary in enumerate(binaries):
+            if len(binaries) == 1:
+                ax = axs
+            elif len(binaries) == 2:
+                ax = axs[i % 2]
+            else:
+                ax = axs[*divmod(i, 2)]
+
+            d = df[df["binary"] == binary]
+
+            num_enters = np.array(d["enters"])
+            num_leaves = np.array(d["leaves"])
+            num_unclosed_enters = np.array(d["unclosed_enters"])
+            num_unentered_leaves = np.array(d["unentered_leaves"])
+
+            # num_enters = num_enters - num_unclosed_enters
+            # num_leaves = num_leaves - num_unentered_leaves
 
             ax.bar(
-                ind + offset,
-                num_enters,
-                width,
-                color="tab:blue",
-                edgecolor="black"
+                experiments,
+                num_enters
             )
             ax.bar(
-                ind + offset,
+                experiments,
                 num_leaves,
-                width,
-                color="tab:orange",
                 bottom=num_enters,
-                edgecolor="black"
             )
             ax.bar(
-                ind + offset,
+                experiments,
                 num_unclosed_enters,
-                width,
-                color="tab:cyan",
-                edgecolor="black",
-                bottom=[a + b for a, b in zip(num_enters, num_leaves)]
+                bottom=num_enters + num_leaves
             )
             ax.bar(
-                ind + offset,
+                experiments,
                 num_unentered_leaves,
-                width,
-                color="tab:olive",
-                edgecolor="black",
-                bottom=[
-                    a + b + c for a, b, c in
-                    zip(num_enters, num_leaves, num_unclosed_enters)
-                ]
+                bottom=num_enters + num_leaves + num_unclosed_enters
             )
 
-            minor_ticks.extend(ind + offset)
-            multiplicator += 1
 
-        ax.set_ylabel("Number of events")
-        ax.set_title(
+            ax.set_ylabel("Number of events")
+            ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha='right')
+            ax.set_title(binary)
+            # ax.set_xticks(
+            #     minor_ticks,
+            #     labels=minor_labels,
+            #     rotation=30,
+            #     ha="right",
+            # )
+
+        fig.suptitle(
             f"Instrumentation Verifier "
             f"Overview for {case_study.project_name}"
         )
-        ax.legend()
-        # ax.set_xticks(ind + width, labels=labels, rotation=30, ha="right")
-
-        ax.set_xticks(
-            minor_ticks,
-            labels=minor_labels,
-            rotation=30,
-            ha="right",
-        )
-
+        fig.legend(labels=["Enters", "Leaves", "Unclosed enters", "Unentered leaves"])
         plt.subplots_adjust(bottom=0.25)
 
 

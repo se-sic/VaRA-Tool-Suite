@@ -64,7 +64,9 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                         unclosed_enter_begin = content.index(
                             'Unclosed Region-ID(s):'
                         ) + 1
-                        wrong_leaves = content[wrong_leaves_begin:-1]
+                        failure_begin = content.index("Finalization: Failure")
+                        wrong_leaves = content[
+                            wrong_leaves_begin:failure_begin - 1]
                         unclosed_regions = content[
                             unclosed_enter_begin:wrong_leaves_begin - 1]
 
