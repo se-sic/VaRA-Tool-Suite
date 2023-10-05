@@ -106,17 +106,10 @@ def workload_commands(
             return prj_cmd.command.can_be_executed_by(extra_options, patches)
         return True
 
-    workloads = [
+    return [
         cmd for cmd in project_cmds
         if cmd.path.name == binary.name and filter_by_config(cmd)
     ]
-
-    if not workloads:
-        LOG.debug(
-            f"Could not find any workloads for {project.name}."
-            f"Tags[{requested_workload_tags}]"
-        )
-    return workloads
 
 
 def create_workload_specific_filename(
