@@ -3,10 +3,12 @@
 import abc
 import logging
 import typing as tp
+from functools import reduce
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+import varats.paper.case_study
 from varats.plot.plots import PlotConfig
 from varats.utils.git_util import FullCommitHash
 
@@ -149,10 +151,13 @@ class Plot:
         """
         plot_ident = ''
         if 'case_study' in self.plot_kwargs:
-            case_study: tp.Union[tp.List['CaseStudy'],
-                                 'CaseStudy'] = self.plot_kwargs['case_study']
-            if not isinstance(case_study, list):
+            case_study = self.plot_kwargs['case_study']
+            if isinstance(case_study, varats.paper.case_study.CaseStudy):
                 plot_ident = f"{case_study.project_name}_{case_study.version}_"
+            else:
+                plot_ident = reduce(
+                    lambda x, y: f'{x}{y.project_name}_', case_study, ''
+                )
         elif 'project' in self.plot_kwargs:
             plot_ident = f"{self.plot_kwargs['project']}_"
 

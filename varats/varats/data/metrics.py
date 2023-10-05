@@ -28,7 +28,7 @@ def gini_coefficient(distribution: pd.Series) -> float:
     Calculates the Gini coefficient of the data.
 
     For more information see online
-    `gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_.
+    `Gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_.
 
     Args:
         distribution: sorted series to calculate the Gini coefficient for
@@ -132,3 +132,153 @@ def min_max_normalize(values: pd.Series) -> pd.Series:
     max_value = values.max()
     min_value = values.min()
     return tp.cast(pd.Series, (values - min_value) / (max_value - min_value))
+
+
+T = tp.TypeVar("T")
+
+
+class ConfusionMatrix(tp.Generic[T]):
+    """
+    Helper class to automatically calculate classification results.
+
+    +---------------------+-------------------------+-------------------------+
+    |                     | Predicted Positive (PP) | Predicted Negative (PN) |
+    +---------------------+-------------------------+-------------------------+
+    | Actual Positive (P) | True Positive      (TP) | False Negative     (FN) |
+    | Actual Negative (N) | False Positive     (FP) | True Negative      (TN) |
+    +---------------------+-------------------------+-------------------------+
+
+    Reference: https://en.wikipedia.org/wiki/Precision_and_recall
+    """
+
+    def __init__(
+        self, actual_positive_values: tp.List[T],
+        actual_negative_values: tp.List[T],
+        predicted_positive_values: tp.List[T],
+        predicted_negative_values: tp.List[T]
+    ) -> None:
+        self.__actual_positive_values = actual_positive_values
+        self.__actual_negative_values = actual_negative_values
+        self.__predicted_positive_values = predicted_positive_values
+        self.__predicted_negative_values = predicted_negative_values
+
+    ###################
+    # Base metrics
+
+    @property
+    def P(self) -> int:  # pylint: disable=C0103
+        return len(self.__actual_positive_values)
+
+    @property
+    def N(self) -> int:  # pylint: disable=C0103
+        return len(self.__actual_negative_values)
+
+    @property
+    def PP(self) -> int:  # pylint: disable=C0103
+        return len(self.__predicted_positive_values)
+
+    @property
+    def PN(self) -> int:  # pylint: disable=C0103
+        return len(self.__predicted_negative_values)
+
+    ###################
+    # Combined metrics
+
+    @property
+    def TP(self) -> int:  # pylint: disable=C0103
+        return len(self.getTPs())
+
+    @property
+    def TN(self) -> int:  # pylint: disable=C0103
+        return len(self.getTNs())
+
+    @property
+    def FP(self) -> int:  # pylint: disable=C0103
+        return self.PP - self.TP
+
+    @property
+    def FN(self) -> int:  # pylint: disable=C0103
+        return self.PN - self.TN
+
+    ###################
+    # Combined values
+
+    def getTPs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__actual_positive_values
+                  ).intersection(self.__predicted_positive_values)
+
+    def getTNs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__actual_negative_values
+                  ).intersection(self.__predicted_negative_values)
+
+    def getFPs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__predicted_positive_values
+                  ).intersection(self.__actual_negative_values)
+
+    def getFNs(self) -> tp.Set[T]:  # pylint: disable=C0103
+        return set(self.__predicted_negative_values
+                  ).intersection(self.__actual_positive_values)
+
+    ###################
+    # Interpretations
+
+    def precision(self) -> float:
+        """Positive predictive value (PPV)"""
+        if self.PP == 0:
+            return float('nan')
+
+        return self.TP / self.PP
+
+    def recall(self) -> float:
+        """True positive rate (TPR)"""
+        if self.P == 0:
+            return float('nan')
+
+        return self.TP / self.P
+
+    def specificity(self) -> float:
+        """True negative rate (TNR)"""
+        if self.N == 0:
+            return float('nan')
+
+        return self.TN / self.N
+
+    def accuracy(self) -> float:
+        """Accuracy (ACC)"""
+        if (self.P + self.N) == 0:
+            return float('nan')
+
+        return (self.TP + self.TN) / (self.P + self.N)
+
+    def balanced_accuracy(self) -> float:
+        """
+        Balanced accuracy (BA)/(bACC)
+
+        Balanced accuracy can serve as an overall performance metric for a
+        model, whether or not the true labels are imbalanced in the data,
+        assuming the cost of FN is the same as FP.
+        """
+        return (self.recall() + self.specificity()) / 2
+
+    def f1_score(self) -> float:
+        """In statistical analysis of binary classification, the F-score or
+        F-measure is a measure of a test's accuracy."""
+        numerator = 2 * self.TP
+        denominator = 2 * self.TP + self.FP + self.FN
+        if denominator == 0.0:
+            return float('nan')
+
+        return numerator / denominator
+
+    ###################
+    # python underscore methods
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return f"""ConfM[TP={self.TP}, TN={self.TN}, FP={self.FP}, FN={self.FN}]
+  ├─ Precision: {self.precision()}
+  ├─ Recall:    {self.recall()}
+  ├─ Accuracy:  {self.accuracy()}
+  └─ F1_Score:  {self.f1_score()}
+"""

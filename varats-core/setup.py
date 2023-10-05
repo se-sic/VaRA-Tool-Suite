@@ -3,7 +3,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name='varats-core',
-    version='13.0.4',
+    version='13.0.5',
     url='https://github.com/se-sic/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],

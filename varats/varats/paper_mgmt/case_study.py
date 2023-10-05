@@ -301,26 +301,41 @@ def get_newest_result_files_for_case_study(
     Returns:
         list of result file paths
     """
-    files_to_store: tp.Dict[ShortCommitHash, Path] = {}
+    files_to_store: tp.Dict[tp.Tuple[ShortCommitHash, str, tp.Optional[int]],
+                            Path] = {}
 
     result_dir /= case_study.project_name
     if not result_dir.exists():
         return []
 
-    for opt_res_file in result_dir.iterdir():
-        report_file = ReportFilename(opt_res_file.name)
+    for opt_res_file in result_dir.rglob("*"):
+        report_file = ReportFilename.construct(opt_res_file, result_dir)
         if report_type.is_correct_report_type(report_file.filename):
             commit_hash = report_file.commit_hash
-            if case_study.has_revision(commit_hash):
-                current_file = files_to_store.get(commit_hash, None)
+            config_id = report_file.config_id
+            config_id_matches = (
+                config_id is None or config_id
+                in case_study.get_config_ids_for_revision(commit_hash)
+            )
+
+            if case_study.has_revision(commit_hash) and config_id_matches:
+                current_file = files_to_store.get(
+                    (commit_hash, report_file.experiment_shorthand, config_id),
+                    None
+                )
                 if current_file is None:
-                    files_to_store[commit_hash] = opt_res_file
+                    files_to_store[(
+                        commit_hash, report_file.experiment_shorthand, config_id
+                    )] = opt_res_file
                 else:
                     if (
                         current_file.stat().st_mtime <
                         opt_res_file.stat().st_mtime
                     ):
-                        files_to_store[commit_hash] = opt_res_file
+                        files_to_store[(
+                            commit_hash, report_file.experiment_shorthand,
+                            config_id
+                        )] = opt_res_file
 
     return list(files_to_store.values())
 
@@ -506,7 +521,9 @@ def extend_with_revs_per_year(
         )
 
     new_rev_items = []  # new revisions that get added to case_study
-    for year, commits_in_year in commits.items():
+    for year, commits_in_year in sorted(
+        commits.items(), key=lambda entry: entry[0]
+    ):
         samples = min(len(commits_in_year), revs_per_year)
         sample_commit_indices = sorted(
             random.sample(range(len(commits_in_year)), samples)

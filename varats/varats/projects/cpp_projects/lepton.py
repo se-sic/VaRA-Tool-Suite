@@ -59,9 +59,10 @@ class Lepton(VProject):
         lepton_source = local.path(self.source_of_primary)
 
         cpp_compiler = bb.compiler.cxx(self)
+        c_compiler = bb.compiler.cc(self)
         mkdir("-p", lepton_source / "build")
         with local.cwd(lepton_source / "build"):
-            with local.env(CXX=str(cpp_compiler)):
+            with local.env(CC=str(c_compiler), CXX=str(cpp_compiler)):
                 bb.watch(cmake)("..")
 
             bb.watch(make)("-j8")

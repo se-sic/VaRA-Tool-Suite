@@ -89,7 +89,8 @@ class PicoSAT(VProject, ReleaseProviderHook):
             remote={
                 "1.0":
                     "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/UNSAT_H_instances_childsnack_p12.hddl_1.cnf.tar.gz"
+                    "download/picoSAT-965/"
+                    "UNSAT_H_instances_childsnack_p12.hddl_1.cnf.tar.gz"
             }
         ),
     ]
@@ -125,12 +126,14 @@ class PicoSAT(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.LARGE): [
             Command(
                 SourceRoot("picosat") / RSBinary("picosat"),
-                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf/UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
+                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf/"
+                "UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
                 label="UNSAT-H-instances-childsnack-p11.hddl-1.cnf",
             ),
             Command(
                 SourceRoot("picosat") / RSBinary("picosat"),
-                "UNSAT_H_instances_childsnack_p12.hddl_1.cnf/UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
+                "UNSAT_H_instances_childsnack_p12.hddl_1.cnf/"
+                "UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
                 label="UNSAT-H-instances-childsnack-p12.hddl-1.cnf",
             )
         ],
