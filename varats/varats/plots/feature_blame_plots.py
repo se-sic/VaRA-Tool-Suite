@@ -20,8 +20,7 @@ from varats.data.reports.feature_blame_report import (
     generate_commit_specific_dcfi_data,
     generate_general_commit_dcfi_data,
     generate_feature_dcfi_data,
-    generate_feature_author_scfi_data,
-    generate_feature_author_dcfi_data,
+    generate_feature_author_data,
 )
 from varats.jupyterhelper.file import (
     load_structural_feature_blame_report,
@@ -703,18 +702,7 @@ class FeatureDFBRPlotGenerator(
 ########## AUTHORS ###########
 
 
-def get_structural_feature_author_data_for_case_study(
-    case_study: CaseStudy,
-) -> pd.DataFrame:
-    report_file = get_structural_report_files_for_project(case_study.project_name)[0]
-    project_gits = get_local_project_gits(case_study.project_name)
-    report = load_structural_feature_blame_report(report_file)
-    data_frame: pd.DataFrame = generate_feature_author_scfi_data(report, project_gits)
-
-    return data_frame
-
-
-def get_dataflow_feature_author_data_for_case_study(
+def get_feature_author_data_for_case_study(
     case_study: CaseStudy,
 ) -> pd.DataFrame:
     structural_report_file = get_structural_report_files_for_project(
@@ -726,211 +714,118 @@ def get_dataflow_feature_author_data_for_case_study(
     project_gits = get_local_project_gits(case_study.project_name)
     structural_report = load_structural_feature_blame_report(structural_report_file)
     dataflow_report = load_dataflow_feature_blame_report(dataflow_report_file)
-    data_frame: pd.DataFrame = generate_feature_author_dcfi_data(
+    data_frame: pd.DataFrame = generate_feature_author_data(
         structural_report, dataflow_report, project_gits
     )
 
     return data_frame
 
 
-def get_stacked_author_data_for_case_studies(
-    case_studies: tp.List[CaseStudy],
-    projects_data,
-) -> pd.DataFrame:
-    rows = []
-
-    max_num_interacting_authors = max(
-        [max(project_data) for project_data in projects_data]
-    )
-
-    for case_study, project_data in zip(case_studies, projects_data):
-        count: [int] = [0 for _ in range(0, max_num_interacting_authors)]
-        for num_interacting_authors in project_data:
-            count[num_interacting_authors - 1] = count[num_interacting_authors - 1] + 1
-
-        rows.append([case_study.project_name] + count)
-
-    author_columns, adj_rows = (
-        [],
-        [[case_study.project_name] for case_study in case_studies],
-    )
-    for i in range(1, max_num_interacting_authors + 1):
-        s = np.sum([int(rows[j][i]) for j in range(0, len(case_studies))])
-        if s > 0:
-            author_columns.append(str(i) + " Author" + ("s" if i > 1 else ""))
-            for j in range(0, len(case_studies)):
-                adj_rows[j].append(rows[j][i])
-    return pd.DataFrame(adj_rows, columns=["Project"] + author_columns)
-
-
-class FeatureAuthorStructDisPlot(Plot, plot_name="feature_author_struct_dis_plot"):
+class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=2, figsize=(15, 15))
+        grid = pyplot.GridSpec(len(case_studies), 2)
+        fig.tight_layout(pad=6.5)
+        row: int = 1
+        corr_x_pos = [0, 600, 20, 15]
+        corr_y_pos = [(1.9, 1.83), (1.8, 1.2), (2.5, 2.35), (5.6, 5.2)]
+        for axs, case_study in zip(naxs, case_studies):
+            create_subtitle(fig, grid[row - 1, ::], case_study.project_name)
+            data = get_feature_author_data_for_case_study(case_study)
+            data = data.sort_values(by=["feature_size"])
 
-        fig, axs = pyplot.subplots(ncols=len(case_studies), figsize=(15, 3))
-        counter = 0
-        for ax, case_study in zip(axs, case_studies):
-            author_data = get_structural_feature_author_data_for_case_study(case_study)
-            author_data = author_data.sort_values(by=["num_implementing_authors"])
+            rows = []
+            for index in data.index:
+                feature = data.at[index, "feature"]
+                rows.extend(
+                    [
+                        [
+                            feature,
+                            data.at[index, "struct_authors"],
+                            "Structurally",
+                        ],
+                        [
+                            feature,
+                            data.at[index, "df_authors"],
+                            "Through Outside DF",
+                        ],
+                        [
+                            feature,
+                            data.at[index, "unique_df_authors"],
+                            "Only Through DF",
+                        ],
+                    ]
+                )
+            df = pd.DataFrame(
+                data=rows,
+                columns=["Feature", "Num Interacting Authors", "Interaction Type"],
+            )
+            print(df)
             sns.barplot(
-                data=author_data,
-                x="feature",
-                y="num_implementing_authors",
+                data=df,
+                x="Feature",
+                y="Num Interacting Authors",
+                hue="Interaction Type",
+                ax=axs[0],
+            )
+            axs[0].set_xlabel("Features (sorted by size)" if row == 1 else "", size=13)
+            axs[0].set_ylabel("Num Interacting Authors", size=13)
+            axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5))
+
+            sns.regplot(
+                data=data,
+                x="feature_size",
+                y="struct_authors",
+                ci=None,
+                ax=axs[1],
+                label="Structural Interactions",
+            )
+            sns.regplot(
+                data=data,
+                x="feature_size",
+                y="df_authors",
+                ci=None,
+                ax=axs[1],
+                label="(Outside) Dataflow Interactions",
+            )
+            axs[1].set_xlabel("Feature Size", size=13)
+            axs[1].set_ylabel("Num Interacting Authors", size=13)
+            axs[1].legend(ncol=1)
+            
+            corr, p_value = stats.pearsonr(
+                data["struct_authors"].values,
+                data["feature_size"].values,
+            )
+            axs[1].text(
+                corr_x_pos[row-1],
+                corr_y_pos[row-1][0],
+                "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
                 color="tab:blue",
-                ax=ax,
             )
-            if counter == 0:
-                ax.set_xlabel("Features")
-                ax.set_ylabel("Num Implementing Authors")
-            else:
-                ax.set_xlabel("")
-                ax.set_ylabel("")
-            x_rng = range(1, len(author_data) + 1, 2)
-            ax.set_xticks(ticks=x_rng, labels=[str(i) for i in x_rng])
-            max_impl_authors = max(author_data["num_implementing_authors"])
-            y_rng = range(1, max_impl_authors + 1)
-            ax.set_yticks(ticks=y_rng, labels=[str(i) for i in y_rng])
-            ax.set_title(case_study.project_name)
-            counter += 1
+            corr, p_value = stats.pearsonr(
+                data["df_authors"].values,
+                data["feature_size"].values,
+            )
+            axs[1].text(
+                corr_x_pos[row-1],
+                corr_y_pos[row-1][1],
+                "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
+                color="tab:orange",
+            )
+
+            row += 1
 
 
-class FeatureAuthorStructDisPlotGenerator(
+class AuthorCFIPlotGenerator(
     PlotGenerator,
-    generator_name="feature-author-struct-dis-plot",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-
-        return [
-            FeatureAuthorStructDisPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
-            )
-        ]
-
-
-class FeatureAuthorDataflowDisPlot(Plot, plot_name="feature_author_dataflow_dis_plot"):
-    def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        projects_data = [
-            get_dataflow_feature_author_data_for_case_study(case_study).loc[
-                :, "interacting_authors_outside"
-            ]
-            for case_study in case_studies
-        ]
-        data = get_stacked_author_data_for_case_studies(case_studies, projects_data)
-
-        data = data.sort_values(by=["1 Author"])
-        print(data)
-        data.set_index("Project").plot(
-            kind="bar",
-            stacked=True,
-            ylabel="Number of Features Affected Through Outside Dataflow by",
-        )
-
-
-class FeatureAuthorDataflowDisPlotGenerator(
-    PlotGenerator,
-    generator_name="feature-author-dataflow-dis-plot",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-
-        return [
-            FeatureAuthorDataflowDisPlot(
-                self.plot_config, case_studies=case_studies, **self.plot_kwargs
-            )
-        ]
-
-
-def get_combined_author_data_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
-    structural_data = get_structural_feature_author_data_for_case_study(case_study)
-    structural_data = structural_data.sort_values(by=["num_implementing_authors"])
-    dataflow_data = get_dataflow_feature_author_data_for_case_study(case_study)
-
-    combined_rows = []
-    for i in structural_data.index:
-        feature = structural_data.loc[i, "feature"]
-        num_implementing_authors = structural_data.loc[i, "num_implementing_authors"]
-        for _ in range(num_implementing_authors):
-            combined_rows.append(
-                [
-                    feature,
-                    "Implementing Authors",  # type
-                ]
-            )
-    for i in dataflow_data.index:
-        feature = dataflow_data.loc[i, "feature"]
-        interacting_authors_outside = dataflow_data.loc[
-            i, "interacting_authors_outside"
-        ]
-        for _ in range(interacting_authors_outside):
-            combined_rows.append(
-                [
-                    feature,
-                    "Interacting Authors Through Outside Dataflow",  # type
-                ]
-            )
-
-    columns = ["feature", "interaction_type"]
-
-    return pd.DataFrame(combined_rows, columns=columns)
-
-
-class FeatureCombinedAuthorPlot(Plot, plot_name="feature_combined_author_plot"):
-    def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        data = get_combined_author_data_for_case_study(case_study)
-        print(data)
-        pyplot.figure(figsize=(13, 8))
-        sns.histplot(
-            data=data,
-            x="feature",
-            hue="interaction_type",
-            multiple="dodge",
-            shrink=0.8,
-        )
-
-
-class FeatureCombinedAuthorPlotGenerator(
-    PlotGenerator,
-    generator_name="feature-combined-author-plot",
+    generator_name="author-cfi-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            FeatureCombinedAuthorPlot(
-                self.plot_config, case_study=case_study, **self.plot_kwargs
-            )
-            for case_study in case_studies
-        ]
-
-
-class FeatureSizeCorrAuthorPlot(Plot, plot_name="feature_size_corr_author_plot"):
-    def plot(self, view_mode: bool) -> None:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        data = pd.concat(
-            [
-                get_structural_feature_author_data_for_case_study(case_study)
-                for case_study in case_studies
-            ]
-        )
-        print(data)
-        ax = sns.regplot(data=data, x="feature_size", y="num_implementing_authors")
-        ax.set(xlabel="Feature Size", ylabel="Number Implementing Authors")
-
-
-class FeatureSizeCorrAuthorPlotGenerator(
-    PlotGenerator,
-    generator_name="feature-size-corr-author-plot",
-    options=[REQUIRE_MULTI_CASE_STUDY],
-):
-    def generate(self) -> tp.List[Plot]:
-        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
-        return [
-            FeatureSizeCorrAuthorPlot(
+            AuthorCFIPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]

@@ -12,8 +12,6 @@ from varats.plots.feature_blame_plots import (
     get_commit_specific_dataflow_data_for_case_study,
     get_general_commit_dataflow_data_for_case_study,
     get_feature_dataflow_data_for_case_study,
-    get_structural_feature_author_data_for_case_study,
-    get_dataflow_feature_author_data_for_case_study,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
