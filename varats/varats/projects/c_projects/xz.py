@@ -18,13 +18,13 @@ from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    VCommand,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     BinaryType,
     verify_binaries,
 )
 from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
@@ -111,7 +111,7 @@ class Xz(VProject):
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
-                requires_all={"--compress"},
+                requires_all_args={"--compress"},
             )
         ],
     }
