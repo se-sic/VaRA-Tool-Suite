@@ -402,9 +402,11 @@ def setup_actions_for_vara_experiment(
     )
 
     patch_provider = PatchProvider.get_provider_for_project(project)
-    patches = patch_provider.get_patches_for_revision(
-        ShortCommitHash(project.version_of_primary)
-    )
+    patches = [
+        p for p in patch_provider.
+        get_patches_for_revision(ShortCommitHash(project.version_of_primary))
+        if 'perf_prec' in p.tags
+    ]
     print(f"{patches=}")
 
     patch_steps = []
@@ -643,9 +645,11 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         )
 
         patch_provider = PatchProvider.get_provider_for_project(project)
-        patches = patch_provider.get_patches_for_revision(
-            ShortCommitHash(project.version_of_primary)
-        )
+        patches = [
+            p for p in patch_provider.get_patches_for_revision(
+                ShortCommitHash(project.version_of_primary)
+            ) if 'perf_prec' in p.tags
+        ]
         print(f"{patches=}")
 
         patch_steps = []
