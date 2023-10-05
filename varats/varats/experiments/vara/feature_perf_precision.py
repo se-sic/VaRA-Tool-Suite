@@ -50,6 +50,8 @@ from varats.utils.git_util import ShortCommitHash
 
 REPS = 3
 
+IDENTIFIER_PATCH_TAG = 'perf_prec'
+
 
 def perf_prec_workload_commands(
     project: VProject, binary: ProjectBinaryWrapper
@@ -411,11 +413,9 @@ def setup_actions_for_vara_experiment(
     )
 
     patch_provider = PatchProvider.get_provider_for_project(project)
-    patches = [
-        p for p in patch_provider.
-        get_patches_for_revision(ShortCommitHash(project.version_of_primary))
-        if 'perf_prec' in p.tags
-    ]
+    patches = patch_provider.get_patches_for_revision(
+        ShortCommitHash(project.version_of_primary)
+    )[IDENTIFIER_PATCH_TAG]
     print(f"{patches=}")
 
     patch_steps = []
@@ -654,11 +654,9 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         )
 
         patch_provider = PatchProvider.get_provider_for_project(project)
-        patches = [
-            p for p in patch_provider.get_patches_for_revision(
-                ShortCommitHash(project.version_of_primary)
-            ) if 'perf_prec' in p.tags
-        ]
+        patches = patch_provider.get_patches_for_revision(
+            ShortCommitHash(project.version_of_primary)
+        )[IDENTIFIER_PATCH_TAG]
         print(f"{patches=}")
 
         patch_steps = []
