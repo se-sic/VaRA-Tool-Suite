@@ -1,6 +1,8 @@
 import typing as tp
 
 import matplotlib.pyplot as pyplot
+import matplotlib.gridspec as SubplotSpec
+from scipy import stats
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -91,21 +93,29 @@ def get_structural_commit_data_for_case_study(case_study: CaseStudy) -> pd.DataF
 ######## FEATURES #########
 
 
+def create_subtitle(fig: pyplot.Figure, grid: pyplot.SubplotSpec, title: str):
+    "Sign sets of subplots with title"
+    row = fig.add_subplot(grid)
+    # the '\n' is important
+    row.set_title(f"{title}\n", fontweight="semibold", fontsize="15")
+    # hide subplot
+    row.set_frame_on(False)
+    row.axis("off")
+
+
 class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         fig, naxs = pyplot.subplots(len(case_studies), 3, figsize=(18, 18))
-        fig.tight_layout(pad=4)
-        first: bool = True
+        grid = pyplot.GridSpec(len(case_studies), 3)
+        fig.tight_layout(pad=7)
+        row: int = 1
         for axs, case_study in zip(naxs, case_studies):
+            create_subtitle(fig, grid[row - 1, ::], case_study.project_name)
             data = get_structural_feature_data_for_case_study(case_study)
 
             data = data.sort_values(by=["num_interacting_commits_nd1"])
-            feature_labels = [
-                data["feature"].values[i] if i % 2 == 0 else ""
-                for i in range(len(data))
-            ]
 
             stacked_feature_data = pd.DataFrame(
                 {
@@ -118,21 +128,11 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
             )
 
             stacked_feature_data.plot.bar(stacked=True, width=0.95, ax=axs[0])
-            axs[0].axhline(
-                y=np.mean(
-                    data["num_interacting_commits_nd1"].values
-                    + data["num_interacting_commits_nd>1"].values
-                ),
-                color="tab:green",
-                linestyle="--",
-                linewidth=2,
-                label="Mean",
-            )
-            axs[0].set_xlabel("Features", size="13")
+
+            axs[0].set_xlabel("Features" if row == 1 else "", size="13")
             axs[0].set_ylabel("Num Interacting Commits", size="13")
-            axs[0].set_xticklabels(feature_labels, rotation=(0))
-            axs[0].set_title(case_study.project_name, size="16")
-            if not first:
+            axs[0].set_xticklabels(data["feature"].values, rotation=(36))
+            if row > 1:
                 axs[0].legend_.remove()
 
             data = data.sort_values(by=["def_feature_size"])
@@ -147,17 +147,10 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
             )
 
             stacked_feature_size_data.plot.bar(stacked=True, width=0.95, ax=axs[1])
-            axs[1].axhline(
-                y=np.mean(data["pot_feature_size"].values),
-                color="tab:green",
-                linestyle="--",
-                linewidth=2,
-                label="Mean",
-            )
-            axs[1].set_xlabel("Features", size="13")
+
             axs[1].set_ylabel("Feature Size", size="13")
-            axs[1].set_xticklabels(feature_labels, rotation=(0))
-            if not first:
+            axs[1].set_xticklabels(data["feature"].values, rotation=(36))
+            if row > 1:
                 axs[1].legend_.remove()
 
             sns.regplot(
@@ -174,15 +167,38 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
                 y="num_interacting_commits",
                 ax=axs[2],
                 ci=None,
+                color="#997B59",
                 label="Any commit, Pot Ftr Size",
             )
-            if first:
+            if row == 1:
                 axs[2].legend(ncol=1)
 
             axs[2].set_xlabel("Feature Size", size="13")
             axs[2].set_ylabel("Num Interacting Commits", size="13")
+            max_ftr_size = max(data["pot_feature_size"].values)
+            max_int_cmmts = max(data["num_interacting_commits"].values)
+            corr, p_value = stats.pearsonr(
+                data["num_interacting_commits_nd1"].values,
+                data["def_feature_size"].values,
+            )
+            axs[2].text(
+                max_ftr_size * 0.5,
+                max_int_cmmts * 0.11,
+                "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
+                color="tab:blue",
+            )
+            corr, p_value = stats.pearsonr(
+                data["num_interacting_commits"].values,
+                data["pot_feature_size"].values,
+            )
+            axs[2].text(
+                max_ftr_size * 0.5,
+                max_int_cmmts * 0.02,
+                "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
+                color="#997B59",
+            )
 
-            first = False
+            row += 1
 
 
 class FeatureSFBRPlotGenerator(
@@ -202,10 +218,25 @@ class FeatureSFBRPlotGenerator(
 ######## COMMITS #########
 
 
-class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
+class CommitSFBRPlot(Plot, plot_name="commit_sfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
+        rows = []
+        for case_study in case_studies:
+            commit_data = get_structural_commit_data_for_case_study(case_study)
+            project_name = case_study.project_name
+            for index in commit_data.index:
+                rows.append(
+                    [
+                        project_name,
+                        sum(commit_data.at[index, "num_interacting_features"]),
+                    ]
+                )
+        df = pd.DataFrame(data=rows, columns=["Projects", "Num Interacting Features"])
+        sns.violinplot(data=df, x="Projects", y="Num Interacting Features", cut=1)
+
+        """
         fig, naxs = pyplot.subplots(2, 2, figsize=(15, 15))
         case_study_counter = 0
         for axs in naxs:
@@ -278,17 +309,18 @@ class CommitSpecificSFBRPlot(Plot, plot_name="commit_specific_sfbr_plot"):
                     ]
                 )
                 case_study_counter += 1
+        """
 
 
-class CommitSpecificSFBRPlotGenerator(
+class CommitSFBRPlotGenerator(
     PlotGenerator,
-    generator_name="commit-specific-sfbr-plot",
+    generator_name="commit-sfbr-plot",
     options=[REQUIRE_MULTI_CASE_STUDY],
 ):
     def generate(self) -> tp.List[Plot]:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            CommitSpecificSFBRPlot(
+            CommitSFBRPlot(
                 self.plot_config, case_studies=case_studies, **self.plot_kwargs
             )
         ]
@@ -523,7 +555,12 @@ class ProportionalCommitDFBRPlot(Plot, plot_name="proportional_commit_dfbr_plot"
         ax_0.set_title("Active Commits Interacting With Features")
         ax_0.set_ylabel("Proportion (%)")
 
-        case_studies = [case_studies[3],case_studies[0],case_studies[2],case_studies[1]]
+        case_studies = [
+            case_studies[3],
+            case_studies[0],
+            case_studies[2],
+            case_studies[1],
+        ]
         data = get_specific_stacked_proportional_commit_dataflow_data(
             case_studies, num_active_commits_cs
         )
