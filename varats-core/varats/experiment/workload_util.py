@@ -112,7 +112,7 @@ def workload_commands(
     ]
 
     if not workloads:
-        print(
+        LOG.debug(
             f"Could not find any workloads for {project.name}."
             f"Tags[{requested_workload_tags}]"
         )

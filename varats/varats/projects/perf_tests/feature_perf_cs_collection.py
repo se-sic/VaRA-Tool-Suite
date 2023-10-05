@@ -745,19 +745,6 @@ class SynthIPRuntime(VProject):
     ]
 
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
-            VCommand(
-                SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
-                label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_args={"-c"}
-            )
-        ],
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),

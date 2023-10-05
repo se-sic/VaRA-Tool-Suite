@@ -416,7 +416,7 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
 
 def get_regressing_config_ids_gt(
     project_name: str, case_study: CaseStudy, rev: FullCommitHash,
-    report_name: str
+    patch_name: str
 ) -> tp.Optional[tp.Dict[int, bool]]:
     """Computes the baseline data, i.e., the config ids where a regression was
     identified."""
@@ -445,7 +445,7 @@ def get_regressing_config_ids_gt(
 
         old_time = time_reports.get_baseline_report()
         # new_time = time_reports.get_new_report()
-        new_time = time_reports.get_report_for_patch(report_name)
+        new_time = time_reports.get_report_for_patch(patch_name)
         if not new_time:
             return None
 
@@ -453,6 +453,8 @@ def get_regressing_config_ids_gt(
                   ) == np.mean(new_time.measurements_wall_clock_time):
             gt[config_id] = False
         else:
+            # TODO: fix to use same check as profilers
+
             # TODO: double check ttest handling
             ttest_res = ttest_ind(
                 old_time.measurements_wall_clock_time,

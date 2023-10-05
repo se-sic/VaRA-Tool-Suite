@@ -8,7 +8,7 @@ from pathlib import Path
 from time import sleep
 
 import benchbuild.extensions as bb_ext
-from benchbuild.command import cleanup
+from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Clean
@@ -49,6 +49,16 @@ from varats.tools.research_tools.vara import VaRA
 from varats.utils.git_util import ShortCommitHash
 
 REPS = 3
+
+
+def perf_prec_workload_commands(
+    project: VProject, binary: ProjectBinaryWrapper
+) -> tp.List[ProjectCommand]:
+    return workload_commands(project, binary, [
+        WorkloadCategory.EXAMPLE
+    ]) + workload_commands(project, binary, [
+        WorkloadCategory.SMALL
+    ]) + workload_commands(project, binary, [WorkloadCategory.MEDIUM])
 
 
 class AnalysisProjectStepBase(OutputFolderStep):
@@ -132,8 +142,8 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
             zip_tmp_dir = tmp_dir / self._file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
-                    for prj_command in workload_commands(
-                        self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                    for prj_command in perf_prec_workload_commands(
+                        self.project, self._binary
                     ):
                         local_tracefile_path = Path(reps_tmp_dir) / (
                             f"trace_{prj_command.command.label}_{rep}"
@@ -192,9 +202,8 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
             with tempfile.TemporaryDirectory() as non_nfs_tmp_dir:
                 with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                     for rep in range(0, self._reps):
-                        for prj_command in workload_commands(
-                            self.project, self._binary,
-                            [WorkloadCategory.EXAMPLE]
+                        for prj_command in perf_prec_workload_commands(
+                            self.project, self._binary
                         ):
                             local_tracefile_path = Path(reps_tmp_dir) / (
                                 f"trace_{prj_command.command.label}_{rep}"
@@ -302,8 +311,8 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
             zip_tmp_dir = tmp_dir / self._file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
-                    for prj_command in workload_commands(
-                        self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                    for prj_command in perf_prec_workload_commands(
+                        self.project, self._binary
                     ):
                         local_tracefile_path = Path(reps_tmp_dir) / (
                             f"trace_{prj_command.command.label}_{rep}"
@@ -572,8 +581,8 @@ class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
             zip_tmp_dir = tmp_dir / self.__file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self.__reps):
-                    for prj_command in workload_commands(
-                        self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                    for prj_command in perf_prec_workload_commands(
+                        self.project, self.__binary
                     ):
                         time_report_file = Path(reps_tmp_dir) / (
                             f"baseline_{prj_command.command.label}_{rep}"
@@ -723,8 +732,8 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
             for rep in range(0, self._reps):
-                for prj_command in workload_commands(
-                    self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                for prj_command in perf_prec_workload_commands(
+                    self.project, self._binary
                 ):
                     base = Path("/tmp/")
                     fake_tracefile_path = base / (
@@ -789,8 +798,8 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         with local.cwd(local.path(self.project.builddir)):
             with tempfile.TemporaryDirectory() as non_nfs_tmp_dir:
                 for rep in range(0, self._reps):
-                    for prj_command in workload_commands(
-                        self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                    for prj_command in perf_prec_workload_commands(
+                        self.project, self._binary
                     ):
                         base = Path(non_nfs_tmp_dir)
                         fake_tracefile_path = base / (
@@ -874,8 +883,8 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
             for rep in range(0, self._reps):
-                for prj_command in workload_commands(
-                    self.project, self._binary, [WorkloadCategory.EXAMPLE]
+                for prj_command in perf_prec_workload_commands(
+                    self.project, self._binary
                 ):
                     base = Path("/tmp/")
                     fake_tracefile_path = base / (
@@ -1098,8 +1107,8 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
             for rep in range(0, self.__reps):
-                for prj_command in workload_commands(
-                    self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                for prj_command in perf_prec_workload_commands(
+                    self.project, self.__binary
                 ):
                     time_report_file = tmp_dir / (
                         f"overhead_{prj_command.command.label}_{rep}"
