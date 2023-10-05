@@ -29,6 +29,7 @@ from varats.experiment.experiment_util import (
     get_extra_config_options,
     ZippedExperimentSteps,
     OutputFolderStep,
+    get_config_patch_steps,
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
@@ -434,7 +435,7 @@ def setup_actions_for_vara_experiment(
         )
         patch_steps.append(RevertPatch(project, patch))
 
-    analysis_actions = []
+    analysis_actions = get_config_patch_steps(project)
 
     analysis_actions.append(actions.Compile(project))
     analysis_actions.append(
@@ -675,7 +676,7 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             )
             patch_steps.append(RevertPatch(project, patch))
 
-        analysis_actions = []
+        analysis_actions = get_config_patch_steps(project)
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
@@ -963,7 +964,7 @@ def setup_actions_for_vara_overhead_experiment(
         get_current_config_id(project)
     )
 
-    analysis_actions = []
+    analysis_actions = get_config_patch_steps(project)
 
     analysis_actions.append(actions.Compile(project))
     analysis_actions.append(
@@ -1179,7 +1180,7 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
             get_current_config_id(project)
         )
 
-        analysis_actions = []
+        analysis_actions = get_config_patch_steps(project)
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
