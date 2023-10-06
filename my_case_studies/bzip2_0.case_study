@@ -1,0 +1,14 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: bzip2
+stages:
+- revisions:
+  - commit_hash: 1ea1ac188ad4b9cb662e3f8314673c63df95a589
+    commit_id: 193
+    config_ids:
+    - -1
+version: 0
+...

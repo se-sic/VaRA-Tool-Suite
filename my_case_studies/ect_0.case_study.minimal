@@ -24,6 +24,7 @@ stages:
 version: 0
 ...
 ---
+config_type: PlainCommandlineConfiguration
 0: '["-3"]'
 1: '["-zip", "-3"]'
 2: '["-3", "-gzip"]'

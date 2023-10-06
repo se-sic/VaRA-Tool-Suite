@@ -1036,6 +1036,7 @@ stages:
 version: 0
 ...
 ---
+config_type: PlainCommandlineConfiguration
 0: '["--partial", "-i 2"]'
 1: '["--partial", "-i 0"]'
 2: '["--partial", "-t compactTraceFileName", "-i 0"]'

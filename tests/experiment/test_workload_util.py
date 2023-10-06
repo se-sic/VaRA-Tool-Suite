@@ -46,7 +46,7 @@ class TestWorkloadCommands(unittest.TestCase):
         binary = Xz.binaries_for_revision(ShortCommitHash("c5c7ceb08a"))[0]
 
         commands = wu.workload_commands(project, binary, [])
-        self.assertEqual(len(commands), 2)
+        self.assertEqual(len(commands), 4)
 
     def test_workload_commands_tags_selected(self) -> None:
         revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))

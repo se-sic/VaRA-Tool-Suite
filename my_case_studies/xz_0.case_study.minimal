@@ -20,6 +20,7 @@ stages:
 version: 0
 ...
 ---
+config_type: PlainCommandlineConfiguration
 0: '["--compress", "-9"]'
 1: '["--list", "-6"]'
 2: '["--test", "-6"]'
