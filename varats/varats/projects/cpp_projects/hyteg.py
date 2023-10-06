@@ -1,9 +1,11 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, Command, SourceRoot
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
+from experiment.workload_util import WorkloadCategory, RSBinary
 from plumbum import local
 
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -18,7 +20,7 @@ from varats.utils.settings import bb_cfg
 class HyTeg(VProject):
     NAME = 'HyTeg'
     GROUP = 'cpp_projects'
-    DOMAIN = ProjectDomains.CPP_LIBRARY
+    DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
         PaperConfigSpecificGit(
@@ -32,7 +34,15 @@ class HyTeg(VProject):
         FeatureSource()
     ]
 
-    WORKLOADS = {}
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("HyTeG/build/apps/profiling") /
+                RSBinary('ProfilingApp'),
+                label='ProfilingApp'
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -69,7 +79,7 @@ class HyTeg(VProject):
                     "-DHYTEG_BUILD_DOC=OFF"
                 )
 
-                with local.cwd(hyteg_source / "build" / "apps"):
+                with local.cwd(hyteg_source / "build" / "apps" / "profiling"):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def recompile(self) -> None:
