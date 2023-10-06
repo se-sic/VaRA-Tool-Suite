@@ -94,6 +94,58 @@ class DunePerfRegression(VProject):
                 ) / RSBinary('poisson-yasp-q2-3d'),
                 label='poisson-yasp-q2-3d',
                 creates=['poisson-yasp-q2-3d.vtu']
+            ),
+            Command(
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('dune_performance_regressions'),
+                label='dune_helloworld'
+            ),
+            Command(
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson_test'),
+                label='poisson_non_separated',
+                creates=[
+                    'poisson_UG_Pk_2d.vtu', 'poisson-yasp-Q1-2d.vtu',
+                    'poisson-yasp-Q1-3d.vtu', 'poisson-yasp-Q2-2d.vtu',
+                    'poisson-yasp-Q2-3d.vtu'
+                ]
+            ),
+            Command(
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson_ug_pk_2d'),
+                label='poisson_ug_pk_2d',
+                creates=['poisson-UG-Pk-2d.vtu']
+            ),
+            Command(
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson_yasp_q1_2d'),
+                label='poisson_yasp_q1_2d',
+                creates=['poisson-yasp-q1-2d.vtu']
+            ),
+            Command(
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson_yasp_q1_3d'),
+                label='poisson_yasp_q1_3d',
+                creates=['poisson-yasp-q1-3d.vtu']
+            ),
+            Command(
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson_yasp_q2_2d'),
+                label='poisson_yasp_q2_2d',
+                creates=['poisson-yasp-q2-2d.vtu']
+            ),
+            Command(
+                SourceRoot(
+                    "dune-VaRA/dune-performance-regressions/build-cmake/src"
+                ) / RSBinary('poisson_yasp_q2_3d'),
+                label='poisson_yasp_q2_3d',
+                creates=['poisson-yasp-q2-3d.vtu']
             )
         ]
     }
@@ -156,6 +208,58 @@ class DunePerfRegression(VProject):
             'poisson-yasp-q1-3d',
             BinaryType.EXECUTABLE,
             only_valid_in=separated_poisson_range
+        )
+
+        new_binary_naming_range = RevisionRange(
+            '332a9af0b7e3336dd72c4f4b74e09df525b6db0d', 'main'
+        )
+
+        binary_map.specify_binary(
+            'dune_performance_regressions',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
+        )
+
+        binary_map.specify_binary(
+            'poisson_test',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
+        )
+
+        binary_map.specify_binary(
+            'poisson_alberta',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
+        )
+
+        binary_map.specify_binary(
+            'poisson_ug_pk_2d',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
+        )
+
+        binary_map.specify_binary(
+            'poisson_yasp_q1_2d',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
+        )
+
+        binary_map.specify_binary(
+            'poisson_yasp_q2_3d',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
+        )
+
+        binary_map.specify_binary(
+            'poisson_yasp_q2_2d',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
+        )
+
+        binary_map.specify_binary(
+            'poisson_yasp_q1_3d',
+            BinaryType.EXECUTABLE,
+            only_valid_in=new_binary_naming_range
         )
 
         return binary_map[revision]
