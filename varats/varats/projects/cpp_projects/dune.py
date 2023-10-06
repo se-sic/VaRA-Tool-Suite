@@ -283,7 +283,11 @@ class DunePerfRegression(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         with local.cwd(version_source):
-            with local.env(CC=c_compiler, CXX=cxx_compiler):
+            with local.env(
+                CC=c_compiler,
+                CXX=cxx_compiler,
+                CMAKE_FLAGS="-DDUNE_ENABLE_PYTHONBINDINGS=OFF"
+            ):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
                 bb.watch(dunecontrol

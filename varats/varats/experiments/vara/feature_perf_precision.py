@@ -57,11 +57,31 @@ IDENTIFIER_PATCH_TAG = 'perf_prec'
 def perf_prec_workload_commands(
     project: VProject, binary: ProjectBinaryWrapper
 ) -> tp.List[ProjectCommand]:
+    """Uniformly select the workloads that should be processed."""
     return workload_commands(project, binary, [
         WorkloadCategory.EXAMPLE
     ]) + workload_commands(project, binary, [
         WorkloadCategory.SMALL
     ]) + workload_commands(project, binary, [WorkloadCategory.MEDIUM])
+
+
+def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
+    """Uniformly select the binaries that should be analyzed."""
+    if project.name == "DunePerfRegression":
+        return [
+            binary for binary in project.binaries
+            if binary.name == "poisson_yasp_q2_3d"
+        ]
+
+    return [project.binaries[0]]
+
+
+def get_extra_cflags(project: VProject) -> tp.List[str]:
+    if project.name == "DunePerfRegression":
+        # Disable phasar for dune as the analysis cannot handle dunes size
+        return ["-mllvm", "--vara-disable-phasar"]
+
+    return []
 
 
 class AnalysisProjectStepBase(OutputFolderStep):
@@ -386,6 +406,8 @@ def setup_actions_for_vara_experiment(
         instr_type, project=project, instruction_threshold=threshold
     )
 
+    project.cflags += get_extra_cflags(project)
+
     project.ldflags += experiment.get_vara_tracing_ldflags()
 
     # Add the required runtime extensions to the project(s).
@@ -403,7 +425,8 @@ def setup_actions_for_vara_experiment(
         experiment.get_handle(), project, experiment.REPORT_SPEC.main_report
     )
 
-    binary = project.binaries[0]
+    # TODO: change to multiple binaries
+    binary = select_project_binaries(project)[0]
     if binary.type != BinaryType.EXECUTABLE:
         raise AssertionError("Experiment only works with executables.")
 
@@ -627,6 +650,8 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         """
         project.cflags += ["-flto", "-fuse-ld=lld", "-fno-omit-frame-pointer"]
 
+        project.cflags += get_extra_cflags(project)
+
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
@@ -644,7 +669,8 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
-        binary = project.binaries[0]
+        # TODO: change to multiple binaries
+        binary = select_project_binaries(project)[0]
         if binary.type != BinaryType.EXECUTABLE:
             raise AssertionError("Experiment only works with executables.")
 
@@ -937,6 +963,8 @@ def setup_actions_for_vara_overhead_experiment(
         instr_type, project=project, instruction_threshold=threshold
     )
 
+    project.cflags += get_extra_cflags(project)
+
     project.ldflags += experiment.get_vara_tracing_ldflags()
 
     # Add the required runtime extensions to the project(s).
@@ -954,7 +982,8 @@ def setup_actions_for_vara_overhead_experiment(
         experiment.get_handle(), project, experiment.REPORT_SPEC.main_report
     )
 
-    binary = project.binaries[0]
+    # TODO: change to multiple binaries
+    binary = select_project_binaries(project)[0]
     if binary.type != BinaryType.EXECUTABLE:
         raise AssertionError("Experiment only works with executables.")
 
@@ -1153,6 +1182,8 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
         """
         project.cflags += ["-flto", "-fuse-ld=lld", "-fno-omit-frame-pointer"]
 
+        project.cflags += get_extra_cflags(project)
+
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
@@ -1170,7 +1201,8 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
-        binary = project.binaries[0]
+        # TODO: change to multiple binaries
+        binary = select_project_binaries(project)[0]
         if binary.type != BinaryType.EXECUTABLE:
             raise AssertionError("Experiment only works with executables.")
 
