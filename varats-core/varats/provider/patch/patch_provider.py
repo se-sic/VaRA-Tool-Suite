@@ -86,19 +86,17 @@ class Patch:
                     ])
 
             if "revision_range" in rev_dict:
-                if isinstance(rev_dict["revision_range"], list):
-                    for rev_range in rev_dict["revision_range"]:
-                        res.update(
-                            get_all_revisions_between(
-                                rev_range["start"], rev_range["end"],
-                                ShortCommitHash, project_git_path
-                            )
-                        )
-                else:
+                rev_ranges = rev_dict["revision_range"]
+                if not isinstance(rev_ranges, list):
+                    rev_ranges = [rev_ranges]
+                for rev_range in rev_ranges:
+                    if "end" in rev_range:
+                        end_rev = rev_range["end"]
+                    else:
+                        end_rev = ""
                     res.update(
                         get_all_revisions_between(
-                            rev_dict["revision_range"]["start"],
-                            rev_dict["revision_range"]["end"], ShortCommitHash,
+                            rev_range["start"], end_rev, ShortCommitHash,
                             project_git_path
                         )
                     )
