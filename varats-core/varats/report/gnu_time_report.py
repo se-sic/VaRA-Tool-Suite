@@ -284,7 +284,7 @@ class TimeReportAggregate(
 
 class WLTimeReportAggregate(
     WorkloadSpecificReportAggregate[TimeReport],
-    shorthand=TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    shorthand="WL" + TimeReport.SHORTHAND + ReportAggregate.SHORTHAND,
     file_type=ReportAggregate.FILE_TYPE
 ):
     """Context Manager for parsing multiple time reports stored inside a zip
