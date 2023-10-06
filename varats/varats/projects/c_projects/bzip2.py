@@ -3,7 +3,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import cmake, make
 from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
@@ -20,6 +20,8 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
@@ -56,7 +58,8 @@ class Bzip2(VProject):
                 "countries-land-1m.geo.json", "countries-land-10m.geo.json",
                 "countries-land-100m.geo.json"
             ]
-        )
+        ),
+        FeatureSource()
     ]
     _AUTOTOOLS_VERSIONS = GoodBadSubgraph([
         "8cfd87aed5ba8843af50569fb440489b1ca74259"
@@ -80,11 +83,11 @@ class Bzip2(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
+            VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
                 "--compress",
-                "--best",
-                "-vvv",
+                # "--best",
+                # "-vvv",
                 "--keep",
                 # bzip2 compresses very fast even on the best setting, so we
                 # need the three input files to get approximately 30 seconds
@@ -92,11 +95,13 @@ class Bzip2(VProject):
                 "geo-maps/countries-land-1m.geo.json",
                 "geo-maps/countries-land-10m.geo.json",
                 "geo-maps/countries-land-100m.geo.json",
+                label="med_geo",
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.bz2",
                     "geo-maps/countries-land-10m.geo.json.bz2",
                     "geo-maps/countries-land-100m.geo.json.bz2"
-                ]
+                ],
+                requires_all_args={"--compress"}
             )
         ],
     }
