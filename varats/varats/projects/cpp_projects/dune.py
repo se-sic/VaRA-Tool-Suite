@@ -21,8 +21,19 @@ from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
 
 class DunePerfRegression(VProject):
-    """Simulation framework for various applications in mathematics and
-    physics."""
+    """
+    Simulation framework for various applications in mathematics and physics.
+
+    Note:
+        Currently Dune CANNOT be compiled with the Phasar passes activated
+        in vara.
+        Trying to do so will crash the compiler
+
+        If you use Dune with an experiment that uses the vara compiler,
+         add `-mllvm --vara-disable-phasar` to the projects `cflags` to disable phasar
+         passes.
+         This will still allow to analyse compile-time variability.
+    """
 
     NAME = 'DunePerfRegression'
     GROUP = 'cpp_projects'
@@ -33,7 +44,7 @@ class DunePerfRegression(VProject):
             project_name='DunePerfRegression',
             remote='git@github.com:se-sic/dune-VaRA.git',
             local='dune-VaRA',
-            refspec='origin/f-RefactorPoissonFeature',
+            refspec='origin/HEAD',
             limit=None,
             shallow=False
         )
@@ -267,10 +278,6 @@ class DunePerfRegression(VProject):
     def compile(self) -> None:
         """Compile the project using the in-built tooling from dune."""
         version_source = local.path(self.source_of(self.primary_source))
-
-        # Currently Phasar passes crash the compiler
-        # This limits us to analysing compile time variability
-        self.cflags += ["-mllvm", "--vara-disable-phasar"]
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
