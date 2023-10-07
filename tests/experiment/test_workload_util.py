@@ -11,6 +11,7 @@ from varats.paper.paper_config import load_paper_config
 from varats.projects.c_projects.xz import Xz
 from varats.projects.perf_tests.feature_perf_cs_collection import (
     SynthIPTemplate,
+    SynthIPRuntime,
 )
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
@@ -71,6 +72,35 @@ class TestWorkloadCommands(unittest.TestCase):
             project, binary, [wu.WorkloadCategory.MEDIUM]
         )
         self.assertEqual(len(commands), 1)
+
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
+    def test_workload_config_param_token(self) -> None:
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        revision = Revision(
+            SynthIPRuntime, Variant(SynthIPRuntime.SOURCE[0], "7930350628"),
+            Variant(SynthIPRuntime.SOURCE[1], "1")
+        )
+        project = SynthIPRuntime(revision=revision)
+        binary = SynthIPRuntime.binaries_for_revision(
+            ShortCommitHash("7930350628")
+        )[0]
+
+        commands = wu.workload_commands(
+            project, binary, [wu.WorkloadCategory.SMALL]
+        )
+        self.assertEqual(len(commands), 1)
+        command = commands[0]
+        command.path.parent.mkdir(parents=True, exist_ok=True)
+        command.path.touch()  # as_plumbum asserts the path exists
+        plumbum_command = command.command.as_plumbum(project=project)
+        self.assertEquals(
+            plumbum_command.args, [
+                "-c", "<", "geo-maps/countries-land-1km.geo.json", ">",
+                "geo-maps/countries-land-1km.geo.json.compressed"
+            ]
+        )
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_workload_commands_requires_patch(self) -> None:

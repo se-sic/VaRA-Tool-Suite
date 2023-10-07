@@ -11,6 +11,7 @@ from enum import Enum
 from pathlib import Path
 
 from benchbuild.command import (
+    ArgsToken,
     PathToken,
     ProjectCommand,
     unwrap,
@@ -69,6 +70,22 @@ def specify_binary(binary_name: str) -> PathToken:
 
 
 RSBinary = specify_binary
+
+
+class ConfigurationParameterRenderer:
+
+    def unrendered(self) -> str:
+        return f"<params>"
+
+    def rendered(self, project: VProject, **kwargs: tp.Any) -> tp.Tuple[str]:
+        return tuple(get_extra_config_options(project))
+
+
+def specify_configuration_parameters() -> ArgsToken:
+    return ArgsToken.make_token(ConfigurationParameterRenderer())
+
+
+ConfigParams = specify_configuration_parameters
 
 
 def workload_commands(
