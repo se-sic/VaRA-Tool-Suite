@@ -77,7 +77,8 @@ class ConfigurationParameterRenderer:
     def unrendered(self) -> str:
         return f"<params>"
 
-    def rendered(self, project: VProject, **kwargs: tp.Any) -> tp.Tuple[str]:
+    def rendered(self, project: VProject,
+                 **kwargs: tp.Any) -> tp.Tuple[str, ...]:
         return tuple(get_extra_config_options(project))
 
 
