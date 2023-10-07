@@ -11,7 +11,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -732,6 +736,7 @@ class SynthIPRuntime(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPRuntime")
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -740,15 +745,14 @@ class SynthIPRuntime(VProject):
                     "download/v0.6.0"
             },
             files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
-        ),
-        FeatureSource()
+        )
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                "-c",
+                ConfigParams(),
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
                 ">",
@@ -761,7 +765,7 @@ class SynthIPRuntime(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                "-c",
+                ConfigParams(),
                 "<",
                 "geo-maps/countries-land-1m.geo.json",
                 ">",
