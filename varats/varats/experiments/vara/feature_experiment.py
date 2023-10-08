@@ -25,9 +25,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ZippedReportFolder,
     create_new_success_result_filepath,
-    get_current_config_id,
     get_default_compile_error_wrapped,
-    get_extra_config_options,
     WithUnlimitedStackSize,
 )
 from varats.experiment.trace_util import merge_trace
@@ -40,6 +38,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
 )
 from varats.report.report import ReportSpecification
+from varats.utils.config import get_current_config_id, get_extra_config_options
 
 
 class FeatureInstrType(Enum):
