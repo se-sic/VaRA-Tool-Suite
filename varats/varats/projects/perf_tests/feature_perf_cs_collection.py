@@ -434,7 +434,7 @@ class SynthIPRuntime(VProject):
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                ConfigParams(),
+                ConfigParams("-c"),
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
                 ">",
@@ -447,7 +447,7 @@ class SynthIPRuntime(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                ConfigParams(),
+                ConfigParams("-c"),
                 "<",
                 "geo-maps/countries-land-1m.geo.json",
                 ">",

@@ -20,9 +20,10 @@ from benchbuild.command import (
     Command,
 )
 
+from varats.base.configuration import PlainCommandlineConfiguration
 from varats.experiment.experiment_util import (
     get_extra_config_options,
-    get_config_patches,
+    get_config,
 )
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_command import VCommand
@@ -74,16 +75,21 @@ RSBinary = specify_binary
 
 class ConfigurationParameterRenderer:
 
+    def __init__(self, *default_args: str) -> None:
+        self.__default_args = default_args
+
     def unrendered(self) -> str:
         return f"<params>"
 
     def rendered(self, project: VProject,
                  **kwargs: tp.Any) -> tp.Tuple[str, ...]:
+        if get_config(project, PlainCommandlineConfiguration) is None:
+            return self.__default_args
         return tuple(get_extra_config_options(project))
 
 
-def specify_configuration_parameters() -> ArgsToken:
-    return ArgsToken.make_token(ConfigurationParameterRenderer())
+def specify_configuration_parameters(*default_args: str) -> ArgsToken:
+    return ArgsToken.make_token(ConfigurationParameterRenderer(*default_args))
 
 
 ConfigParams = specify_configuration_parameters
