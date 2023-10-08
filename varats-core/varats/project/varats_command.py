@@ -79,7 +79,7 @@ class VProjectCommand(ProjectCommand):  # type: ignore
         if self.v_command is None:
             return True
 
-        all_args = set(self.v_command.rendered_args())
+        all_args = set(self.v_command.rendered_args(project=self.v_project))
         all_patch_tags: tp.Set[str] = set()
 
         for patch in get_config_patches(self.v_project):

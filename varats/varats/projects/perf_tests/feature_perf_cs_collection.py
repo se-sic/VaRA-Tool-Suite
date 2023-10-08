@@ -508,7 +508,6 @@ class SynthIPTemplate(VProject):
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPTemplate") / RSBinary("Template"),
-                "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
                 ">",
@@ -521,7 +520,6 @@ class SynthIPTemplate(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPTemplate") / RSBinary("Template"),
-                "-c",
                 "<",
                 "geo-maps/countries-land-1m.geo.json",
                 ">",
@@ -582,7 +580,6 @@ class SynthIPTemplate2(VProject):
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
-                "-c",
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
                 ">",
@@ -595,7 +592,6 @@ class SynthIPTemplate2(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
-                "-c",
                 "<",
                 "geo-maps/countries-land-1m.geo.json",
                 ">",
@@ -656,7 +652,7 @@ class SynthIPCombined(VProject):
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPCombined") / RSBinary("Combined"),
-                "-c",
+                ConfigParams("-c"),
                 "<",
                 "geo-maps/countries-land-1km.geo.json",
                 ">",
@@ -669,7 +665,7 @@ class SynthIPCombined(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPCombined") / RSBinary("Combined"),
-                "-c",
+                ConfigParams("-c"),
                 "<",
                 "geo-maps/countries-land-1m.geo.json",
                 ">",

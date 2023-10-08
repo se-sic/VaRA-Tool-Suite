@@ -92,14 +92,13 @@ class TestWorkloadCommands(unittest.TestCase):
         )
         self.assertEqual(len(commands), 1)
         command = commands[0]
-        command.path.parent.mkdir(parents=True, exist_ok=True)
-        command.path.touch()  # as_plumbum asserts the path exists
-        plumbum_command = command.command.as_plumbum(project=project)
+        args = command.command.rendered_args(project=project)
         self.assertEquals(
-            plumbum_command.args, [
+            args,
+            tuple([
                 "-c", "<", "geo-maps/countries-land-1km.geo.json", ">",
                 "geo-maps/countries-land-1km.geo.json.compressed"
-            ]
+            ])
         )
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
@@ -116,7 +115,7 @@ class TestWorkloadCommands(unittest.TestCase):
             ShortCommitHash("7930350628")
         )[0]
         workloads = wu.workload_commands(project, binary, [])
-        self.assertEqual(len(workloads), 2)
+        self.assertEqual(2, len(workloads))
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_workload_commands_requires_patch2(self) -> None:
@@ -131,7 +130,7 @@ class TestWorkloadCommands(unittest.TestCase):
         binary = SynthIPTemplate \
             .binaries_for_revision(ShortCommitHash("7930350628"))[0]
         workloads = wu.workload_commands(project, binary, [])
-        self.assertEqual(len(workloads), 0)
+        self.assertEqual(0, len(workloads))
 
 
 class TestWorkloadFilenames(unittest.TestCase):
