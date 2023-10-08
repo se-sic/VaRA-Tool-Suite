@@ -21,14 +21,11 @@ from benchbuild.command import (
 )
 
 from varats.base.configuration import PlainCommandlineConfiguration
-from varats.experiment.experiment_util import (
-    get_extra_config_options,
-    get_config,
-)
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_command import VProjectCommand
 from varats.project.varats_project import VProject
 from varats.report.report import KeyedReportAggregate, ReportTy
+from varats.utils.config import get_config, get_extra_config_options
 from varats.utils.exceptions import auto_unwrap
 
 

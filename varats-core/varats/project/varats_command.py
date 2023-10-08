@@ -3,8 +3,10 @@ import typing as tp
 
 from benchbuild.command import Command, ProjectCommand
 
-from varats.experiment.experiment_util import get_config_patches
-from varats.project.varats_project import VProject
+from varats.utils.config import get_config_patches
+
+if tp.TYPE_CHECKING:
+    from varats.project.varats_project import VProject
 
 
 class VCommand(Command):  # type: ignore [misc]
@@ -59,7 +61,7 @@ class VCommand(Command):  # type: ignore [misc]
 
 class VProjectCommand(ProjectCommand):  # type: ignore
 
-    def __init__(self, project: VProject, command: Command):
+    def __init__(self, project: 'VProject', command: Command):
         super().__init__(project, command)
         self.v_command = command if isinstance(command, VCommand) else None
         self.v_project = project
@@ -77,7 +79,7 @@ class VProjectCommand(ProjectCommand):  # type: ignore
         if self.v_command is None:
             return True
 
-        all_args = self.v_command.as_plumbum(project=self.project).args
+        all_args = set(self.v_command.rendered_args())
         all_patch_tags: tp.Set[str] = set()
 
         for patch in get_config_patches(self.v_project):
