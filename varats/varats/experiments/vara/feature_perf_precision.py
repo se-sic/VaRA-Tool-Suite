@@ -24,9 +24,7 @@ from varats.experiment.experiment_util import (
     WithUnlimitedStackSize,
     ZippedReportFolder,
     create_new_success_result_filepath,
-    get_current_config_id,
     get_default_compile_error_wrapped,
-    get_extra_config_options,
     ZippedExperimentSteps,
     OutputFolderStep,
     get_config_patch_steps,
@@ -47,6 +45,7 @@ from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReportAggregate
 from varats.tools.research_tools.vara import VaRA
+from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
 
 REPS = 3
@@ -180,14 +179,8 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                                 f"Running example {prj_command.command.label}"
                             )
 
-                            extra_options = get_extra_config_options(
-                                self.project
-                            )
                             with cleanup(prj_command):
-                                pb_cmd(
-                                    *extra_options,
-                                    retcode=self._binary.valid_exit_codes
-                                )
+                                pb_cmd(retcode=self._binary.valid_exit_codes)
 
         return StepResult.OK
 
@@ -252,10 +245,6 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                                     adapted_binary_location, override=True
                                 )
 
-                                extra_options = get_extra_config_options(
-                                    self.project
-                                )
-
                                 bpf_runner = bpf_runner = self.attach_usdt_raw_tracing(
                                     local_tracefile_path,
                                     adapted_binary_location,
@@ -264,7 +253,6 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
 
                                 with cleanup(prj_command):
                                     pb_cmd(
-                                        *extra_options,
                                         retcode=self._binary.valid_exit_codes
                                     )
 
@@ -350,10 +338,6 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                                 f"Running example {prj_command.command.label}"
                             )
 
-                            extra_options = get_extra_config_options(
-                                self.project
-                            )
-
                             bpf_runner = bpf_runner = self.attach_usdt_bcc(
                                 local_tracefile_path,
                                 self.project.source_of_primary /
@@ -361,10 +345,7 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                             )
 
                             with cleanup(prj_command):
-                                pb_cmd(
-                                    *extra_options,
-                                    retcode=self._binary.valid_exit_codes
-                                )
+                                pb_cmd(retcode=self._binary.valid_exit_codes)
 
                             # wait for bpf script to exit
                             if bpf_runner:
@@ -621,12 +602,8 @@ class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
                         timed_pb_cmd = time["-v", "-o", time_report_file,
                                             pb_cmd]
 
-                        extra_options = get_extra_config_options(self.project)
                         with cleanup(prj_command):
-                            timed_pb_cmd(
-                                *extra_options,
-                                retcode=self.__binary.valid_exit_codes
-                            )
+                            timed_pb_cmd(retcode=self.__binary.valid_exit_codes)
 
         return StepResult.OK
 
@@ -780,14 +757,8 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         timed_pb_cmd = time["-v", "-o", time_report_file, "--",
                                             pb_cmd]
 
-                        extra_options = get_extra_config_options(self.project)
                         with cleanup(prj_command):
-                            # print("timed_pb_cmd=", str(timed_pb_cmd[*extra_options]))
-
-                            timed_pb_cmd(
-                                *extra_options,
-                                retcode=self._binary.valid_exit_codes
-                            )
+                            timed_pb_cmd(retcode=self._binary.valid_exit_codes)
 
         return StepResult.OK
 
@@ -856,10 +827,6 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                             timed_pb_cmd = time["-v", "-o", time_report_file,
                                                 "--", pb_cmd]
 
-                            extra_options = get_extra_config_options(
-                                self.project
-                            )
-
                             bpf_runner = RunBPFTracedWorkloads.attach_usdt_raw_tracing(
                                 fake_tracefile_path, adapted_binary_location,
                                 Path(non_nfs_tmp_dir)
@@ -867,7 +834,6 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
 
                             with cleanup(prj_command):
                                 timed_pb_cmd(
-                                    *extra_options,
                                     retcode=self._binary.valid_exit_codes
                                 )
 
@@ -931,18 +897,13 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         timed_pb_cmd = time["-v", "-o", time_report_file, "--",
                                             pb_cmd]
 
-                        extra_options = get_extra_config_options(self.project)
-
                         bpf_runner = RunBCCTracedWorkloads.attach_usdt_bcc(
                             fake_tracefile_path,
                             self.project.source_of_primary / self._binary.path
                         )
 
                         with cleanup(prj_command):
-                            timed_pb_cmd(
-                                *extra_options,
-                                retcode=self._binary.valid_exit_codes
-                            )
+                            timed_pb_cmd(retcode=self._binary.valid_exit_codes)
 
                         # wait for bpf script to exit
                         if bpf_runner:
@@ -1152,13 +1113,8 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
                     timed_pb_cmd = time["-v", "-o", time_report_file, "--",
                                         pb_cmd]
 
-                    extra_options = get_extra_config_options(self.project)
                     with cleanup(prj_command):
-                        # print("timed_pb_cmd=", str(timed_pb_cmd[*extra_options]))
-                        timed_pb_cmd(
-                            *extra_options,
-                            retcode=self.__binary.valid_exit_codes
-                        )
+                        timed_pb_cmd(retcode=self.__binary.valid_exit_codes)
 
         return StepResult.OK
 

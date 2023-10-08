@@ -190,8 +190,9 @@ class SynthSAFieldSensitivity(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthSAFieldSensitivity") / RSBinary("FieldSense"),
+                ConfigParams(),
                 label="FieldSense-no-input"
             )
         ]
@@ -250,8 +251,9 @@ class SynthSAFlowSensitivity(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthSAFlowSensitivity") / RSBinary("FlowSense"),
+                ConfigParams(),
                 label="FlowSense-no-input"
             )
         ]
@@ -312,9 +314,10 @@ class SynthSAContextSensitivity(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthSAContextSensitivity") /
                 RSBinary("ContextSense"),
+                ConfigParams(),
                 label="ContextSense-no-input"
             )
         ]
@@ -373,8 +376,9 @@ class SynthSAWholeProgram(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthSAWholeProgram") / RSBinary("WholeProgram"),
+                ConfigParams(),
                 label="WholeProgram-no-input"
             )
         ]
@@ -434,9 +438,10 @@ class SynthDADynamicDispatch(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthDADynamicDispatch") /
                 RSBinary("DynamicDispatch"),
+                ConfigParams(),
                 label="DynamicDispatch-no-input"
             )
         ]
@@ -495,8 +500,9 @@ class SynthDARecursion(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthDARecursion") / RSBinary("Recursion"),
+                ConfigParams(),
                 label="Recursion-no-input"
             )
         ]
@@ -555,8 +561,9 @@ class SynthOVInsideLoop(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
+                ConfigParams(),
                 label="InsideLoop-no-input"
             )
         ]
@@ -616,9 +623,10 @@ class SynthFeatureInteraction(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthFeatureInteraction") /
                 RSBinary("FeatureInteraction"),
+                ConfigParams(),
                 label="FeatureInteraction-no-input"
             )
         ]
@@ -680,9 +688,10 @@ class SynthFeatureHigherOrderInteraction(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthFeatureHigherOrderInteraction") /
                 RSBinary("HigherOrderInteraction"),
+                ConfigParams(),
                 label="HigherOrderInteraction-no-input"
             )
         ]
