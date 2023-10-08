@@ -1,10 +1,10 @@
 """Custom version of benchbuild's Command for use with the VaRA-Tool-Suite."""
 import typing as tp
 
-from benchbuild.command import Command
+from benchbuild.command import Command, ProjectCommand
 
-if tp.TYPE_CHECKING:
-    import varats.provider.patch.patch_provider as patch_provider
+from varats.experiment.experiment_util import get_config_patches
+from varats.project.varats_project import VProject
 
 
 class VCommand(Command):  # type: ignore [misc]
@@ -56,37 +56,44 @@ class VCommand(Command):  # type: ignore [misc]
     def requires_all_patch(self) -> tp.Set[str]:
         return self._requires_all_patch
 
-    def can_be_executed_by(
-        self, extra_args: tp.Set[str],
-        applied_patches: 'patch_provider.PatchSet'
-    ) -> bool:
-        """
-        Checks whether this command can be executed with the give configuration.
 
-        Args:
-            extra_args: additional command line arguments that will be passed to
-                        the command
-            applied_patches: patches that were applied to create the executable
+class VProjectCommand(ProjectCommand):  # type: ignore
+
+    def __init__(self, project: VProject, command: Command):
+        super().__init__(project, command)
+        self.v_command = command if isinstance(command, VCommand) else None
+        self.v_project = project
+
+    def can_be_executed(self) -> bool:
+        """
+        Checks whether this command can be executed with the given
+        configuration.
 
         Returns:
             whether this command can be executed
         """
-        all_args = set(self._args).union(extra_args)
+        # non-VCommands do not support filtering by configuration, so we default
+        # to using them as-is
+        if self.v_command is None:
+            return True
+
+        all_args = self.v_command.as_plumbum(project=self.project).args
         all_patch_tags: tp.Set[str] = set()
-        for patch in applied_patches:
+
+        for patch in get_config_patches(self.v_project):
             if patch.feature_tags:
                 all_patch_tags.update(patch.feature_tags)
 
         return bool((
-            not self.requires_any_args or
-            all_args.intersection(self.requires_any_args)
+            not self.v_command.requires_any_args or
+            all_args.intersection(self.v_command.requires_any_args)
         ) and (
-            not self.requires_all_args or
-            self.requires_all_args.issubset(all_args)
+            not self.v_command.requires_all_args or
+            self.v_command.requires_all_args.issubset(all_args)
         ) and (
-            not self.requires_any_patch or
-            all_patch_tags.intersection(self.requires_any_patch)
+            not self.v_command.requires_any_patch or
+            all_patch_tags.intersection(self.v_command.requires_any_patch)
         ) and (
-            not self.requires_all_patch or
-            self.requires_all_patch.issubset(all_patch_tags)
+            not self.v_command.requires_all_patch or
+            self.v_command.requires_all_patch.issubset(all_patch_tags)
         ))
