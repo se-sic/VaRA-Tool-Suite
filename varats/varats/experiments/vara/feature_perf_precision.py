@@ -59,9 +59,9 @@ def perf_prec_workload_commands(
     """Uniformly select the workloads that should be processed."""
     return workload_commands(project, binary, [
         WorkloadCategory.EXAMPLE
-    ]) + workload_commands(project, binary, [
-        WorkloadCategory.SMALL
-    ]) + workload_commands(project, binary, [WorkloadCategory.MEDIUM])
+    ]) + workload_commands(
+        project, binary, [WorkloadCategory.SMALL]
+    )  # + workload_commands(project, binary, [WorkloadCategory.MEDIUM])
 
 
 def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
@@ -229,6 +229,7 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                             with local.env(
                                 VARA_TRACE_FILE=local_tracefile_path
                             ):
+                                # TODO: figure out how to handle this
                                 pb_cmd = prj_command.command.as_plumbum(
                                     project=self.project
                                 )
@@ -747,16 +748,14 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                     )
 
                     with local.env(VARA_TRACE_FILE=fake_tracefile_path):
-                        pb_cmd = prj_command.command.as_plumbum(
-                            project=self.project
-                        )
                         print(f"Running example {prj_command.command.label}")
 
-                        timed_pb_cmd = time["-v", "-o", time_report_file, "--",
-                                            pb_cmd]
-
                         with cleanup(prj_command):
-                            timed_pb_cmd(retcode=self._binary.valid_exit_codes)
+                            pb_cmd = prj_command.command.as_plumbum_wrapped_with(
+                                time["-v", "-o", time_report_file],
+                                project=self.project
+                            )
+                            pb_cmd(retcode=self._binary.valid_exit_codes)
 
         return StepResult.OK
 
@@ -807,6 +806,7 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         )
 
                         with local.env(VARA_TRACE_FILE=fake_tracefile_path):
+                            # TODO: figure out how to handle this
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
                             )
@@ -1102,17 +1102,14 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
                         f".{self.__report_file_ending}"
                     )
 
-                    pb_cmd = prj_command.command.as_plumbum(
-                        project=self.project
-                    )
-                    print(f"Running example {prj_command.command.label}")
-
-                    # timed_pb_cmd = time["-v", "-o", time_report_file, pb_cmd]
-                    timed_pb_cmd = time["-v", "-o", time_report_file, "--",
-                                        pb_cmd]
-
                     with cleanup(prj_command):
-                        timed_pb_cmd(retcode=self.__binary.valid_exit_codes)
+                        print(f"Running example {prj_command.command.label}")
+                        pb_cmd = prj_command.command.as_plumbum_wrapped_with(
+                            time["-v", "-o", time_report_file],
+                            project=self.project
+                        )
+
+                        pb_cmd(retcode=self.__binary.valid_exit_codes)
 
         return StepResult.OK
 
