@@ -3,6 +3,7 @@ correctly instrumented."""
 import typing as tp
 from pathlib import Path
 from zipfile import ZipFile
+import yaml
 
 from varats.report.report import BaseReport
 
@@ -15,10 +16,15 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
         super().__init__(report_path)
 
         self.__report_data = {}
+        self.__metadata = {}
 
         with ZipFile(report_path, "r") as archive:
 
             for file in archive.namelist():
+                if file == "metadata.yml":
+                    with archive.open(file, "r") as f:
+                        self.__metadata = yaml.load(f, yaml.Loader)
+
                 if not file.endswith(".ivr"):
                     continue
 
@@ -58,7 +64,9 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
                         unclosed_enter_begin = content.index(
                             'Unclosed Region-ID(s):'
                         ) + 1
-                        wrong_leaves = content[wrong_leaves_begin:-1]
+                        failure_begin = content.index("Finalization: Failure")
+                        wrong_leaves = content[
+                            wrong_leaves_begin:failure_begin - 1]
                         unclosed_regions = content[
                             unclosed_enter_begin:wrong_leaves_begin - 1]
 
@@ -137,9 +145,13 @@ class InstrVerifierReport(BaseReport, shorthand="IVR", file_type="zip"):
 
     def states(self) -> tp.Dict[str, str]:
         return {
-            binary: data['state']  # type: ignore
+            binary:
+                data['state']  # type: ignore
             for binary, data in self.__report_data.items()
         }
 
     def state(self, binary: str) -> str:
         return self.__report_data[binary]['state']  # type: ignore
+
+    def metadata(self) -> tp.Dict[tp.Any, tp.Any]:
+        return self.__metadata

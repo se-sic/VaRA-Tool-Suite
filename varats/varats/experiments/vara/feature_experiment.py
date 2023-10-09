@@ -39,6 +39,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
 )
 from varats.report.report import ReportSpecification
+import yaml
 
 
 class FeatureInstrType(Enum):
@@ -85,6 +86,7 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         analysis_actions: tp.List[Step],
         save_temps: bool = False,
         instruction_threshold: tp.Optional[int] = None,
+        lto: bool = False,
     ) -> tp.MutableSequence[Step]:
         """
         Set common options and return a list of common actions for feature
@@ -103,9 +105,9 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         """
         project.cflags += self.get_vara_feature_cflags(project)
         project.cflags += self.get_vara_tracing_cflags(
-            instr_type, save_temps, instruction_threshold=instruction_threshold
+            instr_type, save_temps, instruction_threshold=instruction_threshold, lto=lto
         )
-        project.ldflags += self.get_vara_tracing_ldflags()
+        project.ldflags += self.get_vara_tracing_ldflags(lto=lto)
 
         # runtime and compiler extensions
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -166,7 +168,8 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         instr_type: FeatureInstrType,
         save_temps: bool = False,
         project: tp.Optional[VProject] = None,
-        instruction_threshold: tp.Optional[int] = None
+        instruction_threshold: tp.Optional[int] = None,
+        lto: bool = True
     ) -> tp.List[str]:
         """
         Returns the cflags needed to trace projects with VaRA, using the
@@ -183,9 +186,14 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         c_flags = []
         if instr_type != FeatureInstrType.NONE:
             c_flags += ["-fsanitize=vara", f"-fvara-instr={instr_type.value}"]
+
+        if lto:
+            c_flags += ["-flto"]
+
         c_flags += [
-            "-flto", "-fuse-ld=lld", "-flegacy-pass-manager",
-            "-fno-omit-frame-pointer"
+            "-fuse-ld=lld",
+            "-flegacy-pass-manager",
+            "-fno-omit-frame-pointer",
         ]
         if instruction_threshold is not None:
             # For test projects, do not exclude small regions
@@ -193,19 +201,20 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
                 instruction_threshold = 1
 
             c_flags += [f"-fvara-instruction-threshold={instruction_threshold}"]
+
         if save_temps:
             c_flags += ["-Wl,-plugin-opt=save-temps"]
 
         return c_flags
 
     @staticmethod
-    def get_vara_tracing_ldflags() -> tp.List[str]:
+    def get_vara_tracing_ldflags(lto: bool = True) -> tp.List[str]:
         """
         Returns the ldflags needed to instrument projects with VaRA during LTO.
 
         Returns: ldflags for VaRA LTO support
         """
-        return ["-flto"]
+        return ["-flto"] if lto else []
 
 
 class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
@@ -220,11 +229,15 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
         self,
         project: VProject,
         experiment_handle: ExperimentHandle,
-        report_file_ending: str = "json"
+        report_file_ending: str = "json",
+        workload_categories: tp.List[WorkloadCategory] = [
+            WorkloadCategory.EXAMPLE
+        ]
     ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
         self.__report_file_ending = report_file_ending
+        self.__workload_categories = workload_categories
 
     def __call__(self) -> StepResult:
         return self.run_traced_code()
@@ -250,8 +263,17 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
             with local.cwd(local.path(self.project.builddir)):
                 with ZippedReportFolder(result_filepath.full_path()) as tmp_dir:
                     for prj_command in workload_commands(
-                        self.project, binary, [WorkloadCategory.EXAMPLE]
+                        self.project, binary, self.__workload_categories
                     ):
+                        metadata_obj = {
+                            "cflags": self.project.cflags,
+                            "ldflags": self.project.ldflags
+                        }
+
+                        local_metadata_path = Path(tmp_dir) / "metadata.yml"
+                        with open(local_metadata_path, "w") as f:
+                            f.write(yaml.dump(metadata_obj))
+
                         local_tracefile_path = Path(
                             tmp_dir
                         ) / f"trace_{prj_command.command.label}" \

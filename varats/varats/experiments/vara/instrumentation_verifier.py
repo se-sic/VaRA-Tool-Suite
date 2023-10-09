@@ -2,15 +2,11 @@
 is used during execution to check if regions are correctly opend/closed."""
 import typing as tp
 
-from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
+from varats.experiment.workload_util import WorkloadCategory
 
 from varats.data.reports.instrumentation_verifier_report import (
     InstrVerifierReport,
-)
-from varats.experiment.experiment_util import (
-    get_default_compile_error_wrapped,
-    WithUnlimitedStackSize,
 )
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
@@ -19,6 +15,7 @@ from varats.experiments.vara.feature_experiment import (
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
+from varats.experiments.vara.multi_compile_experiment import VaryingStartingBudgetExperiment
 
 
 class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
@@ -38,40 +35,68 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         Args:
             project: to analyze
         """
-        project.cflags += self.get_vara_feature_cflags(project)
+        analysis_actions = []
 
-        project.cflags += self.get_vara_tracing_cflags(
-            FeatureInstrType.VERIFY, True
+        analysis_actions.append(actions.Compile(project))
+        analysis_actions.append(
+            RunVaRATracedWorkloads(
+                project,
+                self.get_handle(),
+                report_file_ending="ivr",
+                workload_categories=[
+                    # WorkloadCategory.SMALL
+                    WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
+                ]
+            )
+        )
+        analysis_actions.append(actions.Clean(project))
+
+        return self.get_common_tracing_actions(
+            project,
+            FeatureInstrType.VERIFY,
+            analysis_actions,
+            save_temps=True,
+            instruction_threshold=0
         )
 
-        # Ensure that we detect all regions, when verifying
-        project.cflags += ["-fvara-instruction-threshold=0"]
 
-        # Add debug information, so traces can be better interpreted
-        project.cflags += ["-g"]
+class RunInstrVerifierBudget(VaryingStartingBudgetExperiment, shorthand="RIVB"):
+    """Test runner for feature performance."""
 
-        project.ldflags += self.get_vara_tracing_ldflags()
+    NAME = "RunInstrVerifierBudget"
 
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self)
+    REPORT_SPEC = ReportSpecification(InstrVerifierReport)
 
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << WithUnlimitedStackSize()
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
 
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
-        )
+        Args:
+            project: to analyze
+        """
 
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             RunVaRATracedWorkloads(
-                project, self.get_handle(), report_file_ending="ivr"
+                project,
+                self.get_handle(),
+                report_file_ending="ivr",
+                workload_categories=[
+                    WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
+                ],
             )
         )
         analysis_actions.append(actions.Clean(project))
 
-        return analysis_actions
+        return self.get_common_tracing_actions(
+            project,
+            FeatureInstrType.VERIFY,
+            analysis_actions,
+            save_temps=True,
+            instruction_threshold=0
+        )

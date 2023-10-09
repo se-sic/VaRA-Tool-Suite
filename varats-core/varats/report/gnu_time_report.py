@@ -74,8 +74,6 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                         TimeReport._parse_involuntary_ctx_switches(line)
                     continue
 
-                # print("Not matched: ", line)
-
     @property
     def command_name(self) -> str:
         """Name of the command that was executed."""

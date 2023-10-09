@@ -1,6 +1,7 @@
 """Implements an experiment that times the execution of all project binaries."""
 
 import typing as tp
+import textwrap
 from pathlib import Path
 
 from benchbuild import Project
@@ -37,11 +38,16 @@ class TimeProjectWorkloads(OutputFolderStep):
     project: VProject
 
     def __init__(
-        self, project: Project, num: int, binary: ProjectBinaryWrapper
+        self,
+        project: Project,
+        num: int,
+        binary: ProjectBinaryWrapper,
+        categories: tp.List[WorkloadCategory] = [WorkloadCategory.EXAMPLE]
     ):
         super().__init__(project=project)
         self.__num = num
         self.__binary = binary
+        self.__workload_categories = categories
 
     def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
@@ -50,9 +56,11 @@ class TimeProjectWorkloads(OutputFolderStep):
         """Only create a report file."""
 
         with local.cwd(self.project.builddir):
+            print(f"Step {self.__num}")
             for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                self.project, self.__binary, self.__workload_categories
             ):
+                print("Running workload")
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
                 run_report_name = tmp_dir / create_workload_specific_filename(
@@ -61,10 +69,20 @@ class TimeProjectWorkloads(OutputFolderStep):
 
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
+                print("\t", run_cmd)
+
                 with cleanup(prj_command):
-                    run_cmd()
+                    run_cmd(retcode=self.__binary.valid_exit_codes)
+
+                print("Done")
 
         return actions.StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* Run workloads of categories {', '.join(str(x) for x in self.__workload_categories)} "
+            f"for binary {self.__binary.name} ({self.__num})", indent * " "
+        )
 
 
 class TimeWorkloads(VersionExperiment, shorthand="TWL"):
@@ -95,6 +113,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         binary = project.binaries[0]
 
         measurement_repetitions = 2
+
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
             self.get_handle().report_spec().main_report, project, binary

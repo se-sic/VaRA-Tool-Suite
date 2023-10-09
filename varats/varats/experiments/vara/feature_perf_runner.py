@@ -19,7 +19,6 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReport
 
-
 class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
     """Test runner for feature performance."""
 
@@ -48,8 +47,9 @@ class FeaturePerfRunner(FeatureExperiment, shorthand="FPR"):
         project.ldflags += self.get_vara_tracing_ldflags()
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
+        )
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \

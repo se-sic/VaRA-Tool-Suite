@@ -15,6 +15,7 @@ from varats.revision.revisions import get_all_revisions_files
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
 
 
 class InstrumentationVerifierTable(
@@ -31,37 +32,38 @@ class InstrumentationVerifierTable(
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         variables = [
-            "Workload name", "State", "ConfigID", "#Enters", "#Leaves",
-            "#Unclosed Enters", "#Unentered Leaves"
+            "Experiment type", "Workload name", "State", "ConfigID", "#Enters",
+            "#Leaves", "#Unclosed Enters", "#Unentered Leaves"
         ]
-
-        experiment_type = RunInstrVerifier
-        project_name: str = self.table_kwargs['case_study'].project_name
 
         data = []
+        project_name: str = self.table_kwargs['case_study'].project_name
 
-        revision_files = get_all_revisions_files(
-            project_name, experiment_type, only_newest=False
-        )
+        for experiment in self.table_kwargs["experiment_type"]:
 
-        reports = [
-            InstrVerifierReport(rev_file.full_path())
-            for rev_file in revision_files
-        ]
+            revision_files = get_all_revisions_files(
+                project_name, experiment, only_newest=False
+            )
 
-        for report in reports:
-            for binary in report.binaries():
-                data.append([
-                    f"{report.filename.commit_hash} - {binary}",
-                    report.state(binary), report.filename.config_id,
-                    report.num_enters(binary),
-                    report.num_leaves(binary),
-                    report.num_unclosed_enters(binary),
-                    report.num_unentered_leaves(binary)
-                ])
+            reports = [
+                InstrVerifierReport(rev_file.full_path())
+                for rev_file in revision_files
+            ]
 
-        if len(data) == 0:
-            raise TableDataEmpty()
+            for report in reports:
+                for binary in report.binaries():
+                    data.append([
+                        experiment.NAME,
+                        f"{report.filename.commit_hash} - {binary}",
+                        report.state(binary), report.filename.config_id,
+                        report.num_enters(binary),
+                        report.num_leaves(binary),
+                        report.num_unclosed_enters(binary),
+                        report.num_unentered_leaves(binary)
+                    ])
+
+            if len(data) == 0:
+                raise TableDataEmpty()
 
         pd_data = pd.DataFrame(columns=variables, data=np.array(data))
 
@@ -71,7 +73,9 @@ class InstrumentationVerifierTable(
 
 
 class InstrVerifierTableGenerator(
-    TableGenerator, generator_name="instrumentation-verifier-table", options=[]
+    TableGenerator,
+    generator_name="instrumentation-verifier-table",
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE]
 ):
     """Generates an overview table for the instrumentation verifier
     experiment."""

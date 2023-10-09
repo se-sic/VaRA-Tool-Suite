@@ -11,6 +11,8 @@ from benchbuild.command import cleanup
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import bpftrace, sudo
 from plumbum import BG
+
+from plumbum import local
 from plumbum.commands.modifiers import Future
 
 from varats.data.reports.feature_tracing_stats_report import (
@@ -57,50 +59,51 @@ class CaptureTracingStats(actions.ProjectStep):  # type: ignore
                 continue
 
             # get workload to use
-            workloads = workload_commands(
-                self.project, binary, [WorkloadCategory.MEDIUM]
-            )
-            if len(workloads) == 0:
-                print(
-                    f"No workload for project={self.project.name} "
-                    f"binary={binary.name}. Skipping."
+            with local.cwd(local.path(self.project.builddir)):
+                workloads = workload_commands(
+                    self.project, binary, [WorkloadCategory.SMALL, WorkloadCategory.EXAMPLE]
                 )
-                continue
-            if len(workloads) > 1:
-                raise RuntimeError(
-                    "Currently, only a single workload is supported. "
-                    f"project={self.project.name} binary={binary.name}"
+                if len(workloads) == 0:
+                    print(
+                        f"No workload for project={self.project.name} "
+                        f"binary={binary.name}. Skipping."
+                    )
+                    continue
+                if len(workloads) > 1:
+                    raise RuntimeError(
+                        "Currently, only a single workload is supported. "
+                        f"project={self.project.name} binary={binary.name}"
+                    )
+                workload = workloads[0]
+
+                # report path
+                stats_report = create_new_success_result_filepath(
+                    self.__experiment_handle, FeatureTracingStatsReport,
+                    self.project, binary
                 )
-            workload = workloads[0]
 
-            # report path
-            stats_report = create_new_success_result_filepath(
-                self.__experiment_handle, FeatureTracingStatsReport,
-                self.project, binary
-            )
+                # attach bpftrace script
+                bpftrace_script = Path(
+                    VaRA.install_location(),
+                    "share/vara/perf_bpf_tracing/UsdtExecutionStats.bt"
+                )
 
-            # attach bpftrace script
-            bpftrace_script = Path(
-                VaRA.install_location(),
-                "share/vara/perf_bpf_tracing/UsdtExecutionStats.bt"
-            )
+                # assertion: Can be run without sudo password prompt
+                bpftrace_cmd = bpftrace["-f", "json", "-o", stats_report,
+                                        bpftrace_script,
+                                        self.project.source_of_primary /
+                                        binary.path]
+                bpftrace_cmd = sudo[bpftrace_cmd]
+                bpftrace_runner: Future = bpftrace_cmd & BG
+                sleep(3)  # give bpftrace time to start up
 
-            # assertion: Can be run without sudo password prompt
-            bpftrace_cmd = bpftrace["-f", "json", "-o", stats_report,
-                                    bpftrace_script,
-                                    self.project.source_of_primary /
-                                    binary.path]
-            bpftrace_cmd = sudo[bpftrace_cmd]
-            bpftrace_runner: Future = bpftrace_cmd & BG
-            sleep(3)  # give bpftrace time to start up
+                # execute binary with workload
+                run_cmd = workload.command.as_plumbum(project=self.project)
+                with cleanup(workload):
+                    bb.watch(run_cmd)(retcode=binary.valid_exit_codes)
 
-            # execute binary with workload
-            run_cmd = workload.command.as_plumbum(project=self.project)
-            with cleanup(workload):
-                bb.watch(run_cmd)()
-
-            # Wait for bpftrace running in background to exit.
-            bpftrace_runner.wait()
+                # Wait for bpftrace running in background to exit.
+                bpftrace_runner.wait()
 
         return actions.StepResult.OK
 

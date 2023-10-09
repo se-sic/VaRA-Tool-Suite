@@ -106,8 +106,10 @@ class Gzip(VProject, ReleaseProviderHook):
                 "--best",
                 "--force",  # needed because BB creates symlinks for the inputs
                 "geo-maps/countries-land-1m.geo.json",
-                label="geo-maps/countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.gz"]
+                label="countries-land-1m",
+                creates=[
+                    "geo-maps/countries-land-1m.geo.json.gz"
+                ]
             )
         ],
     }

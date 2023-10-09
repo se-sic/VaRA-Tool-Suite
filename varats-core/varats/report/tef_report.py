@@ -18,21 +18,21 @@ class TraceEventType(Enum):
 
     value: str  # pylint: disable=invalid-name
 
-    DURATION_EVENT_BEGIN = 'B'
-    DURATION_EVENT_END = 'E'
-    COMPLETE_EVENT = 'X'
-    INSTANT_EVENT = 'i'
-    COUNTER_EVENT = 'C'
-    ASYNC_EVENT_START = 'b'
-    ASYNC_EVENT_INSTANT = 'n'
-    ASYNC_EVENT_END = 'e'
-    FLOW_EVENT_START = 's'
-    FLOW_EVENT_STEP = 't'
-    FLOW_EVENT_END = 'f'
-    SAMPLE_EVENT = 'P'
+    DURATION_EVENT_BEGIN = "B"
+    DURATION_EVENT_END = "E"
+    COMPLETE_EVENT = "X"
+    INSTANT_EVENT = "i"
+    COUNTER_EVENT = "C"
+    ASYNC_EVENT_START = "b"
+    ASYNC_EVENT_INSTANT = "n"
+    ASYNC_EVENT_END = "e"
+    FLOW_EVENT_START = "s"
+    FLOW_EVENT_STEP = "t"
+    FLOW_EVENT_END = "f"
+    SAMPLE_EVENT = "P"
 
     @staticmethod
-    def parse_event_type(raw_event_type: str) -> 'TraceEventType':
+    def parse_event_type(raw_event_type: str) -> "TraceEventType":
         """Parses a raw string that represents a trace-format event type and
         converts it to the corresponding enum value."""
         for trace_event_type in TraceEventType:
@@ -45,7 +45,7 @@ class TraceEventType(Enum):
         return str(self.value)
 
 
-class TraceEvent():
+class TraceEvent:
     """Represents a trace event that was captured during the analysis of a
     target program."""
 
@@ -56,9 +56,7 @@ class TraceEvent():
         self.__name_id_mapper = name_id_mapper
         self.__name_id = name_id
         self.__category = str(json_trace_event["cat"])
-        self.__event_type = TraceEventType.parse_event_type(
-            json_trace_event["ph"]
-        )
+        self.__event_type = TraceEventType.parse_event_type(json_trace_event["ph"])
         self.__tracing_clock_timestamp = int(json_trace_event["ts"])
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
@@ -128,9 +126,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     @property
     def stack_frames(self) -> None:
-        raise NotImplementedError(
-            "Stack frame parsing is currently not implemented!"
-        )
+        raise NotImplementedError("Stack frame parsing is currently not implemented!")
 
     def _parse_json(self) -> None:
         trace_events: tp.List[TraceEvent] = list()
@@ -172,7 +168,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 class TEFReportAggregate(
     ReportAggregate[TEFReport],
     shorthand=TEFReport.SHORTHAND + ReportAggregate.SHORTHAND,
-    file_type=ReportAggregate.FILE_TYPE
+    file_type=ReportAggregate.FILE_TYPE,
 ):
     """Context Manager for parsing multiple TEF reports stored inside a zip
     file."""

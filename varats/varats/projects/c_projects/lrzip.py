@@ -7,6 +7,7 @@ from benchbuild.source import HTTP
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
+from varats.project.sources import FeatureSource
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
@@ -39,6 +40,7 @@ class Lrzip(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         # TODO: auto unzipper for BB?
         HTTP(
             local="countries-land-1km.geo.json",
