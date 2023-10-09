@@ -33,6 +33,12 @@ class DunePerfRegression(VProject):
         add `-mllvm --vara-disable-phasar` to the projects `cflags` to
         disable phasar passes.
          This will still allow to analyse compile-time variability.
+
+        Might need deps:
+            * klu
+            * spqr
+            * umfpack
+            * eigen3
     """
 
     NAME = 'DunePerfRegression'
