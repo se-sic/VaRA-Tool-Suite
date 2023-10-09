@@ -13,10 +13,10 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
-from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY, REQUIRE_EXPERIMENT_TYPE
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY, REQUIRE_MULTI_EXPERIMENT_TYPE
 from varats.utils.git_util import FullCommitHash
 
-starting_budget_command_regex = re.compile("starting_budget_([0-9]*)")
+starting_budget_command_regex = re.compile("RunTracedNaive([0-9]+)")
 
 
 class CompareRuntimesBudgetPlot(Plot, plot_name="compare_runtimes_budget"):
@@ -27,41 +27,46 @@ class CompareRuntimesBudgetPlot(Plot, plot_name="compare_runtimes_budget"):
         for case_study in self.plot_kwargs["case_study"]:
             project_name = case_study.project_name
 
-            experiment = self.plot_kwargs["experiment_type"]
-            report_files = get_processed_revisions_files(
-                project_name,
-                experiment,
-                WLTimeReportAggregate,
-                get_case_study_file_name_filter(case_study),
-                only_newest=False
-            )
+            experiments = self.plot_kwargs["experiment_type"]
 
-            for report_filepath in report_files:
-                agg_time_report = WLTimeReportAggregate(
-                    report_filepath.full_path()
+            for experiment in experiments:
+                report_files = get_processed_revisions_files(
+                    project_name,
+                    experiment,
+                    WLTimeReportAggregate,
+                    get_case_study_file_name_filter(case_study),
+                    only_newest=False
                 )
 
-                for workload_name in agg_time_report.workload_names():
-                    for report in agg_time_report.reports(workload_name):
-                        m = re.search(
-                            starting_budget_command_regex, report.command_name
-                        )
-                        if m is None:
-                            budget = 20
-                        else:
-                            budget = int(m.group(1))
+                if (
+                    m :=
+                    re.search(starting_budget_command_regex, experiment.NAME)
+                ) is not None:
+                    budget = int(m.group(1))
+                elif experiment.NAME.startswith("RunTracedNaive"):
+                    budget = 20
+                else:
+                    budget = 0
 
-                        new_row = {
-                            "Workload":
-                                workload_name,
-                            "Budget":
-                                budget,
-                            "Mean wall time (msecs)":
-                                report.wall_clock_time.total_seconds()
-                        }
+                for report_filepath in report_files:
+                    agg_time_report = WLTimeReportAggregate(
+                        report_filepath.full_path()
+                    )
 
-                        df = pd.concat([df, pd.DataFrame([new_row])],
-                                       ignore_index=True)
+                    for workload_name in agg_time_report.workload_names():
+                        for report in agg_time_report.reports(workload_name):
+
+                            new_row = {
+                                "Workload":
+                                    workload_name,
+                                "Budget":
+                                    budget,
+                                "Mean wall time (msecs)":
+                                    report.wall_clock_time.total_seconds()
+                            }
+
+                            df = pd.concat([df, pd.DataFrame([new_row])],
+                                           ignore_index=True)
 
         fig, ax = plt.subplots()
         fig.set_size_inches(11.7, 8.27)
@@ -83,7 +88,7 @@ class CompareRuntimesBudgetPlot(Plot, plot_name="compare_runtimes_budget"):
 class CompareRuntimesBudgetPlotCSGenerator(
     PlotGenerator,
     generator_name="compare-runtimes-budget",
-    options=[REQUIRE_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:

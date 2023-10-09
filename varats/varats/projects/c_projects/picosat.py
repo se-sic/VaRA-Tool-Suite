@@ -105,11 +105,21 @@ class PicoSAT(VProject, ReleaseProviderHook):
             )
         ],
         WorkloadSet(WorkloadCategory.SMALL): [
+            # Command(
+            #     SourceRoot("picosat") / RSBinary("picosat"),
+            #     "aim-100-1_6-no-1.cnf",
+            #     label="aim-100-1-6-no-1.cnf",
+            # )
             Command(
                 SourceRoot("picosat") / RSBinary("picosat"),
-                "aim-100-1_6-no-1.cnf",
-                label="aim-100-1-6-no-1.cnf",
-            )
+                "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
+                label="traffic-kkb-unknow.cnf",
+            ),
+            # Command(
+            #     SourceRoot("picosat") / RSBinary("picosat"),
+            #     "abw-N-bcsstk07.mtx-w44.cnf/abw-N-bcsstk07.mtx-w44.cnf",
+            #     label="abw-N-bcsstk07.mtx-w44.cnf",
+            # ),
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             Command(

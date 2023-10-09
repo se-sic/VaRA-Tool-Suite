@@ -44,6 +44,7 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
                 self.get_handle(),
                 report_file_ending="ivr",
                 workload_categories=[
+                    # WorkloadCategory.SMALL
                     WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
                 ]
             )

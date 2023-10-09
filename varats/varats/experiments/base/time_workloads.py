@@ -56,6 +56,7 @@ class TimeProjectWorkloads(OutputFolderStep):
         """Only create a report file."""
 
         with local.cwd(self.project.builddir):
+            print(f"Step {self.__num}")
             for prj_command in workload_commands(
                 self.project, self.__binary, self.__workload_categories
             ):
@@ -73,13 +74,14 @@ class TimeProjectWorkloads(OutputFolderStep):
                 with cleanup(prj_command):
                     run_cmd(retcode=self.__binary.valid_exit_codes)
 
+                print("Done")
+
         return actions.StepResult.OK
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-                f"* Run workloads of categories {', '.join(str(x) for x in self.__workload_categories)} "
-                f"for binary {self.__binary.name} ({self.__num})",
-            indent * " "
+            f"* Run workloads of categories {', '.join(str(x) for x in self.__workload_categories)} "
+            f"for binary {self.__binary.name} ({self.__num})", indent * " "
         )
 
 

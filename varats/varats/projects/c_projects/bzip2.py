@@ -82,6 +82,23 @@ class Bzip2(VProject):
     ]
 
     WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            Command(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                "--compress",
+                "--best",
+                "-vvv",
+                "--keep",
+                # bzip2 compresses very fast even on the best setting, so we
+                # need the three input files to get approximately 30 seconds
+                # total execution time
+                "geo-maps/countries-land-1m.geo.json",
+                label="countries-land-1m",
+                creates=[
+                    "geo-maps/countries-land-1m.geo.json.bz2",
+                ]
+            )
+        ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             Command(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
@@ -95,6 +112,7 @@ class Bzip2(VProject):
                 "geo-maps/countries-land-1m.geo.json",
                 "geo-maps/countries-land-10m.geo.json",
                 "geo-maps/countries-land-100m.geo.json",
+                label="countries-land-1m-10m-100m",
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.bz2",
                     "geo-maps/countries-land-10m.geo.json.bz2",

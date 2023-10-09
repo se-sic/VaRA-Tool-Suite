@@ -10,6 +10,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
+import yaml
 
 from benchbuild import source
 from benchbuild.experiment import Experiment

@@ -20,7 +20,49 @@ class RunInstrVerifierNaive(
 
     def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
         project.cflags += [
-            "-mllvm", "-vara-optimizer-policy=naive", "-vara-optimizer-starting-budget=0", "-mllvm",
+            "-mllvm", "-vara-optimizer-policy=naive", "-mllvm",
+            "-debug-only=OPT,IRT,InstrMark"
+        ]
+        return super().actions_for_project(project)
+
+
+class RunInstrVerifierNaive40(
+    RunInstrVerifier, shorthand=RunInstrVerifier.SHORTHAND + "N40"
+):
+    NAME = "RunInstrVerifierNaive40"
+
+    def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
+        project.cflags += [
+            "-mllvm", "-vara-optimizer-policy=naive", "-mllvm",
+            "-vara-optimizer-starting-budget=40", "-mllvm",
+            "-debug-only=OPT,IRT,InstrMark"
+        ]
+        return super().actions_for_project(project)
+
+
+class RunInstrVerifierNaive60(
+    RunInstrVerifier, shorthand=RunInstrVerifier.SHORTHAND + "N60"
+):
+    NAME = "RunInstrVerifierNaive60"
+
+    def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
+        project.cflags += [
+            "-mllvm", "-vara-optimizer-policy=naive", "-mllvm",
+            "-vara-optimizer-starting-budget=60", "-mllvm",
+            "-debug-only=OPT,IRT,InstrMark"
+        ]
+        return super().actions_for_project(project)
+
+
+class RunInstrVerifierNaive80(
+    RunInstrVerifier, shorthand=RunInstrVerifier.SHORTHAND + "N60"
+):
+    NAME = "RunInstrVerifierNaive80"
+
+    def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
+        project.cflags += [
+            "-mllvm", "-vara-optimizer-policy=naive", "-mllvm",
+            "-vara-optimizer-starting-budget=80", "-mllvm",
             "-debug-only=OPT,IRT,InstrMark"
         ]
         return super().actions_for_project(project)
@@ -38,17 +80,6 @@ class RunInstrVerifierAlternating(
         ]
         return super().actions_for_project(project)
 
-class RunInstrVerifierLoopExtract(
-    RunInstrVerifier, shorthand=RunInstrVerifier.SHORTHAND + "L"
-):
-    NAME = "RunInstrVerifierLoopExtract"
-
-    def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
-        project.cflags += [
-            "-mllvm", "-vara-optimizer-policy=loop_extract", "-mllvm",
-            "-debug-only=OPT,IRT,InstrMark"
-        ]
-        return super().actions_for_project(project)
 
 class RunInstrVerifierNaiveBudget(
     RunInstrVerifierBudget, shorthand=RunInstrVerifierBudget.SHORTHAND + "N"
@@ -71,4 +102,3 @@ class RunInstrVerifierAlternatingBudget(
     def actions_for_project(self, project: VProject) -> MutableSequence[Step]:
         project.cflags += ["-mllvm", "-vara-optimizer-policy=alternating"]
         return super().actions_for_project(project)
-
