@@ -2,6 +2,9 @@
 import typing as tp
 
 from benchbuild.command import Command, ProjectCommand, PathToken
+from benchbuild.utils.cmd import time
+from plumbum import local
+from plumbum.machines import LocalCommand
 
 from varats.utils.config import get_config_patches
 
@@ -66,6 +69,19 @@ class VCommand(Command):  # type: ignore [misc]
 
     def as_plumbum(self, **kwargs: tp.Any) -> 'BoundEnvCommand':
         cmd = super().as_plumbum(**kwargs)
+
+        if self._redirect_stdin:
+            cmd = cmd < str(self._redirect_stdin.render(**kwargs))
+
+        if self._redirect_stdout:
+            cmd = cmd > str(self._redirect_stdout.render(**kwargs))
+
+        return cmd
+
+    def as_plumbum_wrapped_with(
+        self, cmd: 'BoundEnvCommand', **kwargs: tp.Any
+    ) -> 'BoundEnvCommand':
+        cmd = cmd[super().as_plumbum(**kwargs)]
 
         if self._redirect_stdin:
             cmd = cmd < str(self._redirect_stdin.render(**kwargs))

@@ -594,16 +594,14 @@ class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
                             f".{self.__report_file_ending}"
                         )
 
-                        pb_cmd = prj_command.command.as_plumbum(
-                            project=self.project
-                        )
                         print(f"Running example {prj_command.command.label}")
 
-                        timed_pb_cmd = time["-v", "-o", time_report_file,
-                                            pb_cmd]
-
                         with cleanup(prj_command):
-                            timed_pb_cmd(retcode=self.__binary.valid_exit_codes)
+                            pb_cmd = prj_command.command.as_plumbum_wrapped_with(
+                                time["-v", "-o", time_report_file],
+                                project=self.project
+                            )
+                            pb_cmd(retcode=self.__binary.valid_exit_codes)
 
         return StepResult.OK
 
