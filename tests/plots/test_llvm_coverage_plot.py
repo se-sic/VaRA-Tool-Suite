@@ -214,14 +214,14 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix("", region, 1.0).TN, 1)
         self.assertEqual(confusion_matrix("", region, 0.0).TN, 1)
 
-    def test_confusion_matrix_all_features(self):
+    def test_confusion_matrix_all_both(self):
 
         def confusion_matrix(
             tree: CodeRegion,
             threshold: float,
         ) -> ConfusionMatrix:
             return _confusion_matrix(
-                None, tree, {
+                "__both__", tree, {
                     "a": {"A"},
                     "b": {"B"},
                     "A": {"a"},
@@ -568,7 +568,7 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 self.assertEqual(compress.FP, 0)
                 self.assertEqual(compress.FN, 8)
 
-                all = result["__all__"]
+                all = result["all-both"]
                 self.assertEqual(all.TP, 4)
                 self.assertEqual(all.TN, 36)
                 self.assertEqual(all.FP, 0)

@@ -158,10 +158,22 @@ def vara_found_features(
     if not features:
         return False
 
-    vara_features = set()
+    _vara_features = set()
     for feature in features:
-        vara_features.update(feature_name_map[feature])
-    return 0 < code_region.features_threshold(vara_features) >= threshold
+        _vara_features.update(feature_name_map[feature])
+    return 0 < code_region.features_threshold(_vara_features) >= threshold
+
+
+def vara_features(
+    region: CodeRegion, feature_name_map: tp.Dict[str, tp.Set[str]],
+    threshold: float
+) -> tp.Set[str]:
+    """Features found by VaRA."""
+    found_vara_features = set()
+    for feature in region.vara_features():
+        if 0 < region.features_threshold([feature]) >= threshold:
+            found_vara_features.update(feature_name_map[feature])
+    return found_vara_features
 
 
 def coverage_vara_features_combined(
@@ -169,22 +181,25 @@ def coverage_vara_features_combined(
     threshold: float
 ) -> tp.Set[str]:
     """Features found by coverage data and VaRA combined."""
-    found_vara_features = set()
-    for feature in region.vara_features():
-        if 0 < region.features_threshold([feature]) >= threshold:
-            found_vara_features.update(feature_name_map[feature])
+    found_vara_features = vara_features(region, feature_name_map, threshold)
     return region.coverage_features_set().union(found_vara_features)
 
 
 def _matrix_analyze_code_region(
-    feature: tp.Optional[str], code_region: CodeRegion,
+    feature: str, code_region: CodeRegion,
     feature_name_map: tp.Dict[str, tp.Set[str]], threshold: float, file: str,
     coverage_feature_regions: tp.List[tp.Any],
     coverage_normal_regions: tp.List[tp.Any],
     vara_feature_regions: tp.List[tp.Any], vara_normal_regions: tp.List[tp.Any]
 ) -> None:
     for region in code_region.iter_breadth_first():
-        if feature is None:
+        if feature == "__coverage__":
+            # Only consider coverage features
+            features = region.coverage_features_set()
+        elif feature == "__vara__":
+            # Only consider vara features.
+            features = vara_features(region, feature_name_map, threshold)
+        elif feature == "__both__":
             # Compare all coverage and all vara features with each other
             features = coverage_vara_features_combined(
                 region, feature_name_map, threshold
@@ -225,6 +240,33 @@ def _compute_confusion_matrix(
             coverage_feature_regions, coverage_normal_regions,
             vara_feature_regions, vara_normal_regions
         )
+
+    return ConfusionMatrix(
+        actual_positive_values=coverage_feature_regions,
+        actual_negative_values=coverage_normal_regions,
+        predicted_positive_values=vara_feature_regions,
+        predicted_negative_values=vara_normal_regions
+    )
+
+
+def _compute_total_confusion_matrix(
+    features: tp.List[str],
+    feature_report: CoverageReport,
+    feature_name_map: tp.Dict[str, tp.Set[str]],
+    threshold: float = 1.0
+) -> ConfusionMatrix[ConfusionEntry]:
+    coverage_feature_regions: tp.List[tp.Any] = []
+    coverage_normal_regions: tp.List[tp.Any] = []
+    vara_feature_regions: tp.List[tp.Any] = []
+    vara_normal_regions: tp.List[tp.Any] = []
+
+    for feature in features:
+        for file, code_region in feature_report.tree.items():
+            _matrix_analyze_code_region(
+                feature, code_region, feature_name_map, threshold, file,
+                coverage_feature_regions, coverage_normal_regions,
+                vara_feature_regions, vara_normal_regions
+            )
 
     return ConfusionMatrix(
         actual_positive_values=coverage_feature_regions,
@@ -441,13 +483,11 @@ class CoverageReports:
 
         result = {}
         # Iterate over feature_report and compare vara to coverage features
-        for feature in sorted(self.available_features):
+        features = sorted(self.available_features)
+        for feature in features:
             result[feature] = _compute_confusion_matrix(
                 feature, report, feature_name_map, threshold
             )
-        result["__all__"] = _compute_confusion_matrix(
-            None, report, feature_name_map, threshold
-        )
 
         # Sanity checking all matrices have equal number of code regions
         numbers = set()
@@ -459,6 +499,22 @@ class CoverageReports:
             total += matrix.FN
             numbers.add(total)
         assert len(numbers) == 1
+
+        result["TOTAL"] = _compute_total_confusion_matrix(
+            features, report, feature_name_map, threshold
+        )
+
+        result["all-coverage"] = _compute_confusion_matrix(
+            "__coverage__", report, feature_name_map, threshold
+        )
+
+        result["all-vara"] = _compute_confusion_matrix(
+            "__vara__", report, feature_name_map, threshold
+        )
+
+        result["all-both"] = _compute_confusion_matrix(
+            "__both__", report, feature_name_map, threshold
+        )
 
         print(result)
         return result
@@ -503,7 +559,10 @@ def _process_report_file(
 
 
 def _save_plot(
-    binary_reports_map: BinaryReportsMapping, tmp_dir: Path, base_dir: Path
+    binary_reports_map: BinaryReportsMapping,
+    tmp_dir: Path,
+    base_dir: Path,
+    disabled_workarounds: str = ""
 ) -> None:
     for binary in binary_reports_map:
         reports = CoverageReports(binary_reports_map[binary])
@@ -529,11 +588,16 @@ def _save_plot(
         _plot_confusion_matrix(
             reports,
             binary_dir,
+            disabled_workarounds,
             columns={
+                "TP": "\\# \\ac{TP}",
+                "FN": "\\# \\ac{FN}",
+                "FP": "\\# \\ac{FP}",
+                "TN": "\\# \\ac{TN}",
                 "precision": "Precision",
                 "recall": "Recall",
                 "accuracy": "Accuracy",
-                "balanced_accuracy": "Balanced Accuracy",
+                # "balanced_accuracy": "Balanced Accuracy",
                 "f1_score": "F1 Score",
             }
         )
@@ -631,7 +695,10 @@ class CoveragePlot(Plot, plot_name="coverage"):
                         tmp_dir = Path(
                             tmpdir
                         ) / f"{revision}" / f"{name}: {', '.join(disabled)}"
-                        _save_plot(binary_reports_map, tmp_dir, base_dir)
+                        _save_plot(
+                            binary_reports_map, tmp_dir, base_dir,
+                            ", ".join(disabled)
+                        )
                         if workaround:
                             del disabled[workaround]
                         # Allow binary_reports_map to be freed
@@ -662,20 +729,21 @@ def _plot_coverage_annotations(
 
 def _get_matrix_fields(
     matrix: ConfusionMatrix[ConfusionEntry], fields: tp.List[str]
-) -> tp.List[tp.Union[int, float]]:
+) -> tp.List[str]:
     result = []
     for field in fields:
         attribute = getattr(matrix, field)
         if hasattr(attribute, "__call__"):
-            result.append(attribute())
+            result.append(f"${attribute():.3}$")
         else:
-            result.append(attribute)
+            result.append(f"${attribute}$")
     return result
 
 
-def _plot_confusion_matrix(
+def _plot_confusion_matrix( # pylint: disable=too-many-locals
     reports: CoverageReports,
     outdir: Path,
+    disabled_workarounds: str = "",
     columns: tp.Optional[tp.Dict[str, str]] = None
 ) -> None:
 
@@ -683,48 +751,77 @@ def _plot_confusion_matrix(
         ADDITIONAL_FEATURE_OPTION_MAPPING
     )
 
-    matrix_dict = reports.confusion_matrices(feature_option_mapping)
-    if not columns:
-        columns = {
-            "TP": "True Positives (TP)",
-            "FN": "False Negatives (FN)",
-            "FP": "False Positives (FP)",
-            "TN": "True Negatives (TN)"
-        }
+    for threshold in [0.0, 1.0]:
+        if threshold == 0.0:
+            threshold_text = f"threshold: >{threshold*100}%"
+        else:
+            threshold_text = f"threshold: {threshold*100}%"
+        cf_dir = outdir / threshold_text
+        cf_dir.mkdir()
 
-    rows = []
-    for feature in matrix_dict:
-        outfile = outdir / f"{feature}.matrix"
-        matrix = matrix_dict[feature]
-        with outfile.open("w") as output:
-            output.write(f"{matrix}\n")
-            tps = [str(x) for x in matrix.getTPs()]
-            output.write(f"True Positives:\n{chr(10).join(sorted(tps))}\n")
-            tns = [str(x) for x in matrix.getTNs()]
-            output.write(f"True Negatives:\n{chr(10).join(sorted(tns))}\n")
-            fps = [str(x) for x in matrix.getFPs()]
-            output.write(f"False Positives:\n{chr(10).join(sorted(fps))}\n")
-            fns = [str(x) for x in matrix.getFNs()]
-            output.write(f"False Negatives:\n{chr(10).join(sorted(fns))}\n")
+        matrix_dict = reports.confusion_matrices(
+            feature_option_mapping, threshold
+        )
+        if not columns:
+            columns = {
+                "TP": "True Positives (TP)",
+                "FN": "False Negatives (FN)",
+                "FP": "False Positives (FP)",
+                "TN": "True Negatives (TN)"
+            }
 
-        row: tp.List[tp.Union[str, int, float]] = [f"{feature}"]
-        row.extend(_get_matrix_fields(matrix, list(columns)))
-        rows.append(row)
+        rows = []
+        for feature in matrix_dict:
+            outfile = cf_dir / f"{feature}.matrix"
+            matrix = matrix_dict[feature]
+            with outfile.open("w") as output:
+                output.write(f"{matrix}\n")
+                tps = [str(x) for x in matrix.getTPs()]
+                output.write(f"True Positives:\n{chr(10).join(sorted(tps))}\n")
+                tns = [str(x) for x in matrix.getTNs()]
+                output.write(f"True Negatives:\n{chr(10).join(sorted(tns))}\n")
+                fps = [str(x) for x in matrix.getFPs()]
+                output.write(f"False Positives:\n{chr(10).join(sorted(fps))}\n")
+                fns = [str(x) for x in matrix.getFNs()]
+                output.write(f"False Negatives:\n{chr(10).join(sorted(fns))}\n")
 
-    df = pd.DataFrame(columns=["Feature"] + list(columns.values()), data=rows)
-    df.set_index("Feature", inplace=True)
-    df.sort_index(inplace=True)
+            row: tp.List[tp.Union[str, int, float]] = [f"{feature}"]
+            row.extend(_get_matrix_fields(matrix, list(columns)))
+            rows.append(row)
 
-    table = dataframe_to_table(
-        df,
-        table_format=TableFormat.LATEX_BOOKTABS,
-        style=df.style.format(thousands=r"\,"),
-        wrap_table=False,
-        wrap_landscape=False,
-        hrules=True
-    )
-    outfile = outdir / "cofusion_matrix_table.tex"
-    outfile.write_text(data=table, encoding="utf-8")
+        df = pd.DataFrame(
+            columns=["Feature"] + list(columns.values()), data=rows
+        )
+        #df.set_index("Feature", inplace=True)
+        #df.sort_index(inplace=True)
+
+        base_dir = reports.feature_report().base_dir
+        name = base_dir.name if base_dir is not None else 'Unknown'
+        caption_text = f"{name}: "
+        if disabled_workarounds:
+            caption_text += f"disabled workarounds: {disabled_workarounds}, "
+        threshold_text = threshold_text.replace('%', '\\%')
+        caption_text += f"{threshold_text}."
+
+        column_format = "l" + "c" * len(columns)
+        table = dataframe_to_table(
+            df,
+            table_format=TableFormat.LATEX_BOOKTABS,
+            style=df.style.format(thousands=r"\,",
+                                  precision=3).hide(axis=0
+                                                   ).set_caption(caption_text),
+            wrap_table=False,
+            wrap_landscape=False,
+            hrules=True,
+            column_format=column_format,
+            position="htbp",
+            position_float="centering",
+            label="Change-Me",
+            siunitx=True,
+        )
+
+        outfile = cf_dir / "cofusion_matrix_table.tex"
+        outfile.write_text(data=table, encoding="utf-8")
 
 
 class CoveragePlotGenerator(
