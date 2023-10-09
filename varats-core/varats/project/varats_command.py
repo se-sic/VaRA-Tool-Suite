@@ -68,10 +68,10 @@ class VCommand(Command):  # type: ignore [misc]
         cmd = super().as_plumbum(**kwargs)
 
         if self._redirect_stdin:
-            cmd = cmd < self._redirect_stdin.render(**kwargs)
+            cmd = cmd < str(self._redirect_stdin.render(**kwargs))
 
         if self._redirect_stdout:
-            cmd = cmd > self._redirect_stdout.render(**kwargs)
+            cmd = cmd > str(self._redirect_stdout.render(**kwargs))
 
         return cmd
 
