@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, Command, SourceRoot
+from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils import cmd
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
@@ -17,6 +17,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
 )
 from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
@@ -62,13 +63,13 @@ class DunePerfRegression(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('dune-performance-regressions'),
                 label='dune-helloworld'
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson-test'),
@@ -79,48 +80,48 @@ class DunePerfRegression(VProject):
                     'poisson-yasp-Q2-3d.vtu'
                 ]
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson-ug-pk-2d'),
                 label='poisson-ug-pk-2d',
                 creates=['poisson-UG-Pk-2d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson-yasp-q1-2d'),
                 label='poisson-yasp-q1-2d',
                 creates=['poisson-yasp-q1-2d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson-yasp-q1-3d'),
                 label='poisson-yasp-q1-3d',
                 creates=['poisson-yasp-q1-3d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson-yasp-q2-2d'),
                 label='poisson-yasp-q2-2d',
                 creates=['poisson-yasp-q2-2d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson-yasp-q2-3d'),
                 label='poisson-yasp-q2-3d',
                 creates=['poisson-yasp-q2-3d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('dune_performance_regressions'),
                 label='dune_helloworld'
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_test'),
@@ -131,35 +132,35 @@ class DunePerfRegression(VProject):
                     'poisson-yasp-Q2-3d.vtu'
                 ]
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_ug_pk_2d'),
                 label='poisson_ug_pk_2d',
                 creates=['poisson-UG-Pk-2d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q1_2d'),
                 label='poisson_yasp_q1_2d',
                 creates=['poisson-yasp-q1-2d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q1_3d'),
                 label='poisson_yasp_q1_3d',
                 creates=['poisson-yasp-q1-3d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q2_2d'),
                 label='poisson_yasp_q2_2d',
                 creates=['poisson-yasp-q2-2d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q2_3d'),
@@ -294,7 +295,10 @@ class DunePerfRegression(VProject):
             with local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
-                CMAKE_FLAGS="-DDUNE_ENABLE_PYTHONBINDINGS=OFF"
+                CMAKE_FLAGS=" ".join([
+                    "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
+                    "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE"
+                ])
             ):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
