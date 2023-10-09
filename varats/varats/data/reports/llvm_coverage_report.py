@@ -301,7 +301,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
 
         for instr in self.vara_instrs:
             if instr.has_features(features):
-                assert instr.kind != FeatureKind.NORMAL_REGION
+                assert instr.kind == FeatureKind.FEATURE_REGION
                 with_feature.append(instr)
             else:
                 wo_feature.append(instr)
@@ -638,6 +638,8 @@ class VaraInstr:
 
     def has_features(self, features: tp.Iterable[str]) -> bool:
         """Checks if instr is marked with given features."""
+        if not self.features:
+            return False
         for feature in features:
             if feature not in self.features:
                 return False
