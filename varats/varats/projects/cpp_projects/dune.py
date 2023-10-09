@@ -16,6 +16,7 @@ from varats.project.project_util import (
     BinaryType,
     ProjectBinaryWrapper,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 
@@ -48,12 +49,13 @@ class DunePerfRegression(VProject):
     SOURCE = [
         PaperConfigSpecificGit(
             project_name='DunePerfRegression',
-            remote='git@github.com:se-sic/dune-VaRA.git',
+            remote='https://github.com/se-sic/dune-VaRA.git',
             local='dune-VaRA',
             refspec='origin/HEAD',
             limit=None,
             shallow=False
-        )
+        ),
+        FeatureSource()
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)

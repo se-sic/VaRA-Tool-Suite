@@ -83,6 +83,13 @@ def get_extra_cflags(project: VProject) -> tp.List[str]:
     return []
 
 
+def get_threshold(project: VProject) -> int:
+    if project.DOMAIN.value is ProjectDomains.TEST:
+        return 0
+
+    return 50
+
+
 class AnalysisProjectStepBase(OutputFolderStep):
 
     project: VProject
@@ -383,9 +390,12 @@ def setup_actions_for_vara_experiment(
 
     project.cflags += experiment.get_vara_feature_cflags(project)
 
-    threshold = 0 if project.DOMAIN.value is ProjectDomains.TEST else 100
+    threshold = get_threshold(project)
     project.cflags += experiment.get_vara_tracing_cflags(
-        instr_type, project=project, instruction_threshold=threshold
+        instr_type,
+        project=project,
+        save_temps=True,
+        instruction_threshold=threshold
     )
 
     project.cflags += get_extra_cflags(project)
@@ -917,7 +927,7 @@ def setup_actions_for_vara_overhead_experiment(
 ) -> tp.MutableSequence[actions.Step]:
     project.cflags += experiment.get_vara_feature_cflags(project)
 
-    threshold = 0 if project.DOMAIN.value is ProjectDomains.TEST else 100
+    threshold = get_threshold(project)
     project.cflags += experiment.get_vara_tracing_cflags(
         instr_type, project=project, instruction_threshold=threshold
     )
