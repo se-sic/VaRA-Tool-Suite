@@ -493,13 +493,13 @@ def get_specific_stacked_proportional_commit_dataflow_data(
             [
                 case_study.project_name,
                 fraction_commits_only_outside_df * 100,
-                fraction_commits_only_inside_df * 100,
                 100
                 * (
                     1
                     - fraction_commits_only_outside_df
                     - fraction_commits_only_inside_df
                 ),
+                fraction_commits_only_inside_df * 100,
             ]
         )
 
@@ -508,8 +508,8 @@ def get_specific_stacked_proportional_commit_dataflow_data(
         columns=[
             "Projects",
             "Only Outside DF",
+            "Outside and Inside DF",
             "Only Inside DF",
-            "Inside and Outside DF",
         ],
     )
 
@@ -682,6 +682,33 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
             axs[1].set_ylabel("Num Interacting Commits", size=13)
             if first:
                 axs[1].legend(ncol=1)
+
+            max_ftr_size = max(data["feature_size"].values)
+            max_int_cmmts = max([
+                max(data["num_interacting_commits_outside_df"].values),
+                max(data["num_interacting_commits_inside_df"].values)
+            ])
+            corr, p_value = stats.pearsonr(
+                data["num_interacting_commits_outside_df"].values,
+                data["feature_size"].values,
+            )
+            axs[1].text(
+                max_ftr_size * 0.35,
+                max_int_cmmts * 0.95,
+                "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
+                color="tab:blue",
+            )
+            corr, p_value = stats.pearsonr(
+                data["num_interacting_commits_inside_df"].values,
+                data["feature_size"].values,
+            )
+            axs[1].text(
+                max_ftr_size * 0.35,
+                max_int_cmmts * 0.88,
+                "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
+                color="tab:orange",
+            )
+
             first = False
 
 
@@ -792,14 +819,14 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
             axs[1].set_xlabel("Feature Size", size=13)
             axs[1].set_ylabel("Num Interacting Authors", size=13)
             axs[1].legend(ncol=1)
-            
+
             corr, p_value = stats.pearsonr(
                 data["struct_authors"].values,
                 data["feature_size"].values,
             )
             axs[1].text(
-                corr_x_pos[row-1],
-                corr_y_pos[row-1][0],
+                corr_x_pos[row - 1],
+                corr_y_pos[row - 1][0],
                 "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
                 color="tab:blue",
             )
@@ -808,8 +835,8 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
                 data["feature_size"].values,
             )
             axs[1].text(
-                corr_x_pos[row-1],
-                corr_y_pos[row-1][1],
+                corr_x_pos[row - 1],
+                corr_y_pos[row - 1][1],
                 "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
                 color="tab:orange",
             )
