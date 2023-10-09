@@ -1,11 +1,13 @@
 """Custom version of benchbuild's Command for use with the VaRA-Tool-Suite."""
 import typing as tp
 
-from benchbuild.command import Command, ProjectCommand
+from benchbuild.command import Command, ProjectCommand, PathToken
 
 from varats.utils.config import get_config_patches
 
 if tp.TYPE_CHECKING:
+    from plumbum.commands.base import BoundEnvCommand
+
     from varats.project.varats_project import VProject
 
 
@@ -33,6 +35,8 @@ class VCommand(Command):  # type: ignore [misc]
         requires_all_args: tp.Optional[tp.Set[str]] = None,
         requires_any_patch: tp.Optional[tp.Set[str]] = None,
         requires_all_patch: tp.Optional[tp.Set[str]] = None,
+        redirect_stdin: tp.Optional[PathToken] = None,
+        redirect_stdout: tp.Optional[PathToken] = None,
         **kwargs: tp.Union[str, tp.List[str]],
     ) -> None:
 
@@ -41,6 +45,8 @@ class VCommand(Command):  # type: ignore [misc]
         self._requires_all_args = requires_all_args or set()
         self._requires_any_patch = requires_any_patch or set()
         self._requires_all_patch = requires_all_patch or set()
+        self._redirect_stdin = redirect_stdin
+        self._redirect_stdout = redirect_stdout
 
     @property
     def requires_any_args(self) -> tp.Set[str]:
@@ -57,6 +63,17 @@ class VCommand(Command):  # type: ignore [misc]
     @property
     def requires_all_patch(self) -> tp.Set[str]:
         return self._requires_all_patch
+
+    def as_plumbum(self, **kwargs: tp.Any) -> 'BoundEnvCommand':
+        cmd = super().as_plumbum(**kwargs)
+
+        if self._redirect_stdin:
+            cmd = cmd < self._redirect_stdin.render(**kwargs)
+
+        if self._redirect_stdout:
+            cmd = cmd > self._redirect_stdout.render(**kwargs)
+
+        return cmd
 
 
 class VProjectCommand(ProjectCommand):  # type: ignore
