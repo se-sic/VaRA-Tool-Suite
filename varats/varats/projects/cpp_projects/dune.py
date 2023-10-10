@@ -32,7 +32,7 @@ class DunePerfRegression(VProject):
         If you use Dune with an experiment that uses the vara compiler,
         add `-mllvm --vara-disable-phasar` to the projects `cflags` to
         disable phasar passes.
-         This will still allow to analyse compile-time variability.
+        This will still allow to analyse compile-time variability.
     """
 
     NAME = 'DunePerfRegression'
