@@ -59,9 +59,9 @@ def perf_prec_workload_commands(
     """Uniformly select the workloads that should be processed."""
     return workload_commands(project, binary, [
         WorkloadCategory.EXAMPLE
-    ]) + workload_commands(
-        project, binary, [WorkloadCategory.SMALL]
-    )  # + workload_commands(project, binary, [WorkloadCategory.MEDIUM])
+    ]) + workload_commands(project, binary, [
+        WorkloadCategory.SMALL
+    ]) + workload_commands(project, binary, [WorkloadCategory.MEDIUM])
 
 
 def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
