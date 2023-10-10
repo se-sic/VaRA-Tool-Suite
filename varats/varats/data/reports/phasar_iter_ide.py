@@ -253,6 +253,7 @@ class PhasarIterIDEStatsReport(
     _new_typestate_size_prio_rev: tp.Optional[TimeReportAggregate]
     _new_taint_size_prio_rev: tp.Optional[TimeReportAggregate]
     _new_lca_size_prio_rev: tp.Optional[TimeReportAggregate]
+
     _new_typestate_jf1: tp.Optional[TimeReportAggregate]
     _new_taint_jf1: tp.Optional[TimeReportAggregate]
     _new_lca_jf1: tp.Optional[TimeReportAggregate]
@@ -261,6 +262,10 @@ class PhasarIterIDEStatsReport(
     _new_taint_jf3: tp.Optional[TimeReportAggregate]
     _new_lca_jf3: tp.Optional[TimeReportAggregate]
     _new_iia_jf3: tp.Optional[TimeReportAggregate]
+    _new_typestate_nested: tp.Optional[TimeReportAggregate]
+    _new_taint_nested: tp.Optional[TimeReportAggregate]
+    _new_lca_nested: tp.Optional[TimeReportAggregate]
+    _new_iia_nested: tp.Optional[TimeReportAggregate]
     _new_typestate_gc: tp.Optional[TimeReportAggregate]
     _new_taint_gc: tp.Optional[TimeReportAggregate]
     _new_lca_gc: tp.Optional[TimeReportAggregate]
@@ -325,6 +330,11 @@ class PhasarIterIDEStatsReport(
         self._new_taint_jf3 = None
         self._new_lca_jf3 = None
         self._new_iia_jf3 = None
+
+        self._new_typestate_nested = None
+        self._new_taint_nested = None
+        self._new_lca_nested = None
+        self._new_iia_nested = None
 
         self._new_typestate_gc = None
         self._new_taint_gc = None
@@ -446,6 +456,16 @@ class PhasarIterIDEStatsReport(
                     print("Have _new_iia_jf3")
                     self._new_iia_jf3 = TimeReportAggregate(file)
 
+                elif file.name.startswith("new_typestate_nested"):
+                    self._new_typestate_nested = TimeReportAggregate(file)
+                elif file.name.startswith("new_taint_nested"):
+                    self._new_taint_nested = TimeReportAggregate(file)
+                elif file.name.startswith("new_lca_nested"):
+                    self._new_lca_nested = TimeReportAggregate(file)
+                elif file.name.startswith("new_iia_vara-BR-Nested"):
+                    print("Have _new_iia_nested")
+                    self._new_iia_nested = TimeReportAggregate(file)
+
                 elif file.name.startswith("new_typestate_gc_jf1"):
                     self._new_typestate_gc_jf1 = TimeReportAggregate(file)
                 elif file.name.startswith("new_taint_gc_jf1"):
@@ -532,6 +552,15 @@ class PhasarIterIDEStatsReport(
             self._new_lca_jf3 = Other._new_lca_jf3
         if self._new_iia_jf3 is None:
             self._new_iia_jf3 = Other._new_iia_jf3
+
+        if self._new_typestate_nested is None:
+            self._new_typestate_nested = Other._new_typestate_nested
+        if self._new_taint_nested is None:
+            self._new_taint_nested = Other._new_taint_nested
+        if self._new_lca_nested is None:
+            self._new_lca_nested = Other._new_lca_nested
+        if self._new_iia_nested is None:
+            self._new_iia_nested = Other._new_iia_nested
 
         if self._new_typestate_gc_jf1 is None:
             self._new_typestate_gc_jf1 = Other._new_typestate_gc_jf1
@@ -709,6 +738,22 @@ class PhasarIterIDEStatsReport(
         return self._new_iia_jf3
 
     @property
+    def new_typestate_nested(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_typestate_nested
+
+    @property
+    def new_taint_nested(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_taint_nested
+
+    @property
+    def new_lca_nested(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_lca_nested
+
+    @property
+    def new_iia_nested(self) -> tp.Optional[TimeReportAggregate]:
+        return self._new_iia_nested
+
+    @property
     def new_typestate_gc(self) -> tp.Optional[TimeReportAggregate]:
         return self._new_typestate_gc
 
@@ -795,6 +840,8 @@ class PhasarIterIDEStatsReport(
             ret["new"]["taint"]["JF1"] = self._new_taint_jf1
         if self._new_taint_jf3 is not None:
             ret["new"]["taint"]["JF3"] = self._new_taint_jf3
+        if self._new_taint_nested is not None:
+            ret["new"]["taint"]["Nested"] = self._new_taint_nested
 
         if self._new_typestate_stack is not None:
             ret["new"]["typestate"]["JF2"] = self._new_typestate_stack
@@ -802,6 +849,8 @@ class PhasarIterIDEStatsReport(
             ret["new"]["typestate"]["JF1"] = self._new_typestate_jf1
         if self._new_typestate_jf3 is not None:
             ret["new"]["typestate"]["JF3"] = self._new_typestate_jf3
+        if self._new_typestate_nested is not None:
+            ret["new"]["typestate"]["Nested"] = self._new_typestate_nested
 
         if self._new_lca_stack is not None:
             ret["new"]["lca"]["JF2"] = self._new_lca_stack
@@ -809,6 +858,8 @@ class PhasarIterIDEStatsReport(
             ret["new"]["lca"]["JF1"] = self._new_lca_jf1
         if self._new_lca_jf3 is not None:
             ret["new"]["lca"]["JF3"] = self._new_lca_jf3
+        if self._new_lca_nested is not None:
+            ret["new"]["lca"]["Nested"] = self._new_lca_nested
 
         if self._new_iia_stack is not None:
             ret["new"]["iia"]["JF2"] = self._new_iia_stack
@@ -816,6 +867,8 @@ class PhasarIterIDEStatsReport(
             ret["new"]["iia"]["JF1"] = self._new_iia_jf1
         if self._new_iia_jf3 is not None:
             ret["new"]["iia"]["JF3"] = self._new_iia_jf3
+        if self._new_iia_nested is not None:
+            ret["new"]["iia"]["Nested"] = self._new_iia_nested
 
         # NEW GC
         if self._new_taint_gc is not None:
