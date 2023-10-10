@@ -727,6 +727,10 @@ class SynthCTTraitBased(VProject):
             Command(
                 SourceRoot("SynthCTTraitBased") / RSBinary("CT-TraitBased"),
                 label="CompileTime-TraitBased"
+            ),
+            Command(
+                SourceRoot("SynthCTTraitBased") / RSBinary("CTTraitBased"),
+                label="CompileTime-TraitBased"
             )
         ]
     }
@@ -743,6 +747,12 @@ class SynthCTTraitBased(VProject):
             "build/bin/CT-TraitBased",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("5c2c0535b5", "master")
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTTraitBased",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("a4a133a186", "master")
         )
 
         return binary_map[revision]
@@ -786,6 +796,10 @@ class SynthCTPolicies(VProject):
             Command(
                 SourceRoot("SynthCTPolicies") / RSBinary("CT-Policies"),
                 label="CompileTime-Policies"
+            ),
+            Command(
+                SourceRoot("SynthCTPolicies") / RSBinary("CTPolicies"),
+                label="CompileTime-Policies"
             )
         ]
     }
@@ -804,6 +818,12 @@ class SynthCTPolicies(VProject):
             only_valid_in=RevisionRange(
                 "0768d712a2aa9b7bb3c414b742930a5e8d9ef3a7", "master"
             )
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CT-Policies",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("a4a133a186", "master")
         )
 
         return binary_map[revision]
@@ -846,6 +866,9 @@ class SynthCTCRTP(VProject):
             Command(
                 SourceRoot(NAME) / RSBinary("CT-CRTP"),
                 label="CompileTime-CRTP"
+            ),
+            Command(
+                SourceRoot(NAME) / RSBinary("CTCRTP"), label="CompileTime-CRTP"
             )
         ]
     }
@@ -864,6 +887,12 @@ class SynthCTCRTP(VProject):
             only_valid_in=RevisionRange(
                 "8c976a890eef105d22defbf28f8a5430abec2131", "master"
             )
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTCRTP",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("a4a133a186", "master")
         )
 
         return binary_map[revision]
@@ -907,6 +936,10 @@ class SynthCTTemplateSpecialization(VProject):
             Command(
                 SourceRoot(NAME) / RSBinary("CT-TemplateSpecialization"),
                 label="CompileTime-Template-Specialization"
+            ),
+            Command(
+                SourceRoot(NAME) / RSBinary("CTTemplateSpecialization"),
+                label="CompileTime-Template-Specialization"
             )
         ]
     }
@@ -925,6 +958,12 @@ class SynthCTTemplateSpecialization(VProject):
             only_valid_in=RevisionRange(
                 "81ddd858bfc3507367453c3c3ef7a1f44bb20861", "master"
             )
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTTemplateSpecialization",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("a4a133a186", "master")
         )
 
         return binary_map[revision]
