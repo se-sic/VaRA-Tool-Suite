@@ -236,12 +236,8 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                             with local.env(
                                 VARA_TRACE_FILE=local_tracefile_path
                             ):
-                                # TODO: figure out how to handle this
                                 pb_cmd = prj_command.command.as_plumbum(
                                     project=self.project
-                                )
-                                print(
-                                    f"Running example {prj_command.command.label}"
                                 )
 
                                 adapted_binary_location = Path(
@@ -260,6 +256,9 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                                 )
 
                                 with cleanup(prj_command):
+                                    print(
+                                        f"Running example {prj_command.command.label}"
+                                    )
                                     pb_cmd(
                                         retcode=self._binary.valid_exit_codes
                                     )
@@ -816,24 +815,15 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         )
 
                         with local.env(VARA_TRACE_FILE=fake_tracefile_path):
-                            # TODO: figure out how to handle this
-                            pb_cmd = prj_command.command.as_plumbum(
-                                project=self.project
-                            )
-                            print(
-                                f"Running example {prj_command.command.label}"
-                            )
                             adapted_binary_location = Path(
                                 non_nfs_tmp_dir
                             ) / self._binary.name
 
-                            # Store binary in a local tmp dir that is not on nfs
-                            pb_cmd.executable = pb_cmd.executable.copy(
-                                adapted_binary_location, override=True
+                            pb_cmd = prj_command.command.as_plumbum_wrapped_with(
+                                time["-v", "-o", time_report_file],
+                                adapted_binary_location,
+                                project=self.project
                             )
-
-                            timed_pb_cmd = time["-v", "-o", time_report_file,
-                                                "--", pb_cmd]
 
                             bpf_runner = RunBPFTracedWorkloads.attach_usdt_raw_tracing(
                                 fake_tracefile_path, adapted_binary_location,
@@ -841,9 +831,10 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                             )
 
                             with cleanup(prj_command):
-                                timed_pb_cmd(
-                                    retcode=self._binary.valid_exit_codes
+                                print(
+                                    f"Running example {prj_command.command.label}"
                                 )
+                                pb_cmd(retcode=self._binary.valid_exit_codes)
 
                             # wait for bpf script to exit
                             if bpf_runner:

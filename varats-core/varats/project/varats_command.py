@@ -79,9 +79,19 @@ class VCommand(Command):  # type: ignore [misc]
         return cmd
 
     def as_plumbum_wrapped_with(
-        self, cmd: 'BoundEnvCommand', **kwargs: tp.Any
+        self, cmd: 'BoundEnvCommand',
+        adapted_binary_location: tp.Optional[Path], **kwargs: tp.Any
     ) -> 'BoundEnvCommand':
-        cmd = cmd[super().as_plumbum(**kwargs)]
+        base_cmd = super().as_plumbum(**kwargs)
+
+        # TODO: maybe we should just provide a callable to modify the original
+        # command
+        if adapted_binary_location:
+            base_cmd.executable = base_cmd.executable.copy(
+                adapted_binary_location, override=True
+            )
+
+        cmd = cmd[base_cmd]
 
         if self._redirect_stdin:
             cmd = cmd < str(self._redirect_stdin.render(**kwargs))
