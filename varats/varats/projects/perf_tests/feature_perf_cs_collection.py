@@ -798,7 +798,7 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
                 ConfigParams("-c"),
                 label="countries-land-250m",
                 creates=[
-                    SourceRoot("geo-maps-compr") /
+                    SourceRoot("geo-maps") /
                     "countries-land-250m.geo.json.compressed"
                 ],
                 requires_all_args={"-c"},
@@ -828,7 +828,7 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
                 ConfigParams("-c"),
                 label="countries-land-1m",
                 creates=[
-                    SourceRoot("geo-maps-compr") /
+                    SourceRoot("geo-maps") /
                     "countries-land-1m.geo.json.compressed"
                 ],
                 requires_all_args={"-c"},
