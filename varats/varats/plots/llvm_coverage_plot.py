@@ -224,7 +224,7 @@ def _matrix_analyze_code_region(
 
 
 def _compute_confusion_matrix(
-    feature: tp.Optional[str],
+    feature: str,
     feature_report: CoverageReport,
     feature_name_map: tp.Dict[str, tp.Set[str]],
     threshold: float = 1.0
@@ -800,7 +800,8 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
         caption_text = f"{name}: "
         if disabled_workarounds:
             caption_text += f"disabled workarounds: {disabled_workarounds}, "
-        caption_text += f"threshold: \\qty{{{int(threshold * 100)}}}{{\\percent}}."
+        threshold_percent = f"\\qty{{{int(threshold * 100)}}}{{\\percent}}"
+        caption_text += f"threshold: {threshold_percent}."
 
         column_format = "l"
         for column_text in columns.values():
