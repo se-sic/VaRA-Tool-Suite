@@ -293,6 +293,164 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
         self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
 
+    def test_confusion_matrix_all_coverage(self):
+
+        def confusion_matrix(
+            tree: CodeRegion,
+            threshold: float,
+        ) -> ConfusionMatrix:
+            return _confusion_matrix(
+                "__coverage__", tree, {
+                    "a": {"A"},
+                    "b": {"B"},
+                    "A": {"a"},
+                    "B": {"b"},
+                }, threshold, "test"
+            )
+
+        region = CodeRegion(
+            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
+            "test.txt"
+        )
+        region.coverage_features_set = lambda: {"a", "b"}
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
+
+        # Coverage: A,B == VaRA: A,B
+        self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
+
+        # Coverage: A,B == VaRA: A,(B)
+
+        self.assertEqual(confusion_matrix(region, 1.0).FN, 1)
+        self.assertEqual(confusion_matrix(region, 0.5).TP, 1)
+
+        region.coverage_features_set = lambda: {"a"}
+
+        # Coverage: A == VaRA: A,(B)
+        self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
+        self.assertEqual(confusion_matrix(region, 0.5).TP, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).TP, 1)
+
+        instr_3 = VaraInstr(
+            FeatureKind.NORMAL_REGION, "", 1, 1, [], 42, "test_instr"
+        )
+        region.vara_instrs = [instr_3]
+
+        # Coverage: A == VaRA:
+
+        self.assertEqual(confusion_matrix(region, 1.0).FN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).FN, 1)
+
+        region.vara_instrs = [instr_2, instr_3]
+        region.coverage_features_set = lambda: set()
+
+        # Coverage:  == VaRA: (A)
+
+        self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
+
+        region.vara_instrs = []
+
+        # Coverage:  == VaRA:
+
+        self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
+
+    def test_confusion_matrix_all_vara(self):
+
+        def confusion_matrix(
+            tree: CodeRegion,
+            threshold: float,
+        ) -> ConfusionMatrix:
+            return _confusion_matrix(
+                "__vara__", tree, {
+                    "a": {"A"},
+                    "b": {"B"},
+                    "A": {"a"},
+                    "B": {"b"},
+                }, threshold, "test"
+            )
+
+        region = CodeRegion(
+            RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
+            "test.txt"
+        )
+        region.coverage_features_set = lambda: {"a", "b"}
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
+
+        # Coverage: A,B == VaRA: A,B
+        self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
+
+        instr_1 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
+        )
+        instr_2 = VaraInstr(
+            FeatureKind.FEATURE_REGION, "", 1, 1, ["A"], 42, "test_instr"
+        )
+
+        region.vara_instrs = [instr_1, instr_2]
+
+        # Coverage: A,B == VaRA: A,(B)
+
+        self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
+        self.assertEqual(confusion_matrix(region, 0.5).TP, 1)
+
+        region.coverage_features_set = lambda: {"a"}
+
+        # Coverage: A == VaRA: A,(B)
+        self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
+        self.assertEqual(confusion_matrix(region, 0.5).FP, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).FP, 1)
+
+        instr_3 = VaraInstr(
+            FeatureKind.NORMAL_REGION, "", 1, 1, [], 42, "test_instr"
+        )
+        region.vara_instrs = [instr_3]
+
+        # Coverage: A == VaRA:
+
+        self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
+
+        region.vara_instrs = [instr_2, instr_3]
+        region.coverage_features_set = lambda: set()
+
+        # Coverage:  == VaRA: (A)
+
+        self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).FP, 1)
+
+        region.vara_instrs = []
+
+        # Coverage:  == VaRA:
+
+        self.assertEqual(confusion_matrix(region, 1.0).TN, 1)
+        self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
+
     @run_in_test_environment(
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
