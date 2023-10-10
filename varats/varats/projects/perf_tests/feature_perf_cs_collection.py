@@ -170,67 +170,6 @@ class FeaturePerfCSCollection(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
-class SynthSAFieldSensitivity(VProject):
-    """Synthetic case-study project for testing field sensitivity."""
-
-    NAME = 'SynthSAFieldSensitivity'
-    GROUP = 'perf_tests'
-    DOMAIN = ProjectDomains.TEST
-
-    SOURCE = [
-        bb.source.Git(
-            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="SynthSAFieldSensitivity",
-            refspec="origin/HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("SynthSAFieldSensitivity")
-        ),
-        FeatureSource()
-    ]
-
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
-            VCommand(
-                SourceRoot("SynthSAFieldSensitivity") / RSBinary("FieldSense"),
-                ConfigParams(),
-                label="FieldSense-no-input"
-            )
-        ]
-    }
-
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
-
-    @staticmethod
-    def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
-    ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAFieldSensitivity.NAME)
-        )
-
-        binary_map.specify_binary(
-            "build/bin/FieldSense",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0a9216d769", "master")
-        )
-
-        return binary_map[revision]
-
-    def run_tests(self) -> None:
-        pass
-
-    def compile(self) -> None:
-        """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
-        )
-
-    def recompile(self) -> None:
-        """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
-
-
 class SynthSAFlowSensitivity(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
@@ -1139,6 +1078,85 @@ class SynthIPCombined(VProject):
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHIPCOMBINED"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthSAFieldSensitivity(VProject):
+    """Synthetic case-study project for testing field sensitivity."""
+
+    NAME = 'SynthSAFieldSensitivity'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthSAFieldSensitivity",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthSAFieldSensitivity")
+        ),
+        FeatureSource(),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=[
+                "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
+                "countries-land-1km.geo.json", "countries-land-1m.geo.json"
+            ]
+        ),
+        HTTPMultiple(
+            local="geo-maps-compr",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/compression-data/raw/master/"
+                    "example_comp/geo-maps/"
+            },
+            files=[
+                "countries-land-10km.geo.json.compressed",
+                "countries-land-1m.geo.json.compressed",
+                "countries-land-250m.geo.json.compressed",
+                "countries-land-500m.geo.json.compressed"
+            ]
+        ),
+    ]
+
+    WORKLOADS = get_ip_workloads("SynthSAFieldSensitivity", "FieldSense")
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthSAFieldSensitivity.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/FieldSense",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("0a9216d769", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
         )
 
     def recompile(self) -> None:
