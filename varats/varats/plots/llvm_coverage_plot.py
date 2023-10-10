@@ -590,15 +590,15 @@ def _save_plot(
             binary_dir,
             disabled_workarounds,
             columns={
-                "TP": "\\# \\ac{TP}",
-                "FN": "\\# \\ac{FN}",
-                "FP": "\\# \\ac{FP}",
-                "TN": "\\# \\ac{TN}",
-                "precision": "Precision",
-                "recall": "Recall",
-                "accuracy": "Accuracy",
-                # "balanced_accuracy": "Balanced Accuracy",
-                "f1_score": "F1 Score",
+                "TP": "\\#\\ac{TP}",
+                "FN": "\\#\\ac{FN}",
+                "FP": "\\#\\ac{FP}",
+                "TN": "\\#\\ac{TN}",
+                "accuracy": "Accuracy (\\%)",
+                "precision": "Precision (\\%)",
+                "recall": "Recall (\\%)",
+                "balanced_accuracy": "Balanced Accuracy (\\%)",
+                "f1_score": "F1 Score (\\%)",
             }
         )
 
@@ -734,7 +734,7 @@ def _get_matrix_fields(
     for field in fields:
         attribute = getattr(matrix, field)
         if hasattr(attribute, "__call__"):
-            result.append(f"${attribute():.3}$")
+            result.append(attribute() * 100)
         else:
             result.append(f"${attribute}$")
     return result
@@ -800,15 +800,19 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
         caption_text = f"{name}: "
         if disabled_workarounds:
             caption_text += f"disabled workarounds: {disabled_workarounds}, "
-        threshold_text = threshold_text.replace('%', '\\%')
-        caption_text += f"{threshold_text}."
+        caption_text += f"threshold: \\qty{{{int(threshold * 100)}}}{{\\percent}}."
 
-        column_format = "l" + "c" * len(columns)
+        column_format = "l"
+        for column_text in columns.values():
+            if "%" in column_text:
+                column_format += "S"
+            else:
+                column_format += "c"
         table = dataframe_to_table(
             df,
             table_format=TableFormat.LATEX_BOOKTABS,
             style=df.style.format(thousands=r"\,",
-                                  precision=3).hide(axis=0
+                                  precision=2).hide(axis=0
                                                    ).set_caption(caption_text),
             wrap_table=False,
             wrap_landscape=False,
