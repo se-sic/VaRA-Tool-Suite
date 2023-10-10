@@ -148,8 +148,26 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
+    def _patch_errors_from_file(self):
+        with open(self.path, "r") as f:
+            data = f.read()
+
+        with open(self.path, "w") as f:
+            remove_lost_events = re.compile('Lost \d+ events')
+            for line in data.splitlines():
+                if "Lost" in line:
+                    LOG.error(
+                        "Events where lost during tracing, patching json file."
+                    )
+                    line = remove_lost_events.sub("", line)
+
+                f.write(line)
+
     def _parse_json(self) -> None:
         trace_events: tp.List[TraceEvent] = list()
+
+        self._patch_errors_from_file()
+
         with open(self.path, "rb") as f:
             parser = ijson.parse(f)
             trace_event: tp.Dict[str, str] = {}
