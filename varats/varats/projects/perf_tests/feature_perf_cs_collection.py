@@ -730,124 +730,128 @@ class SynthFeatureHigherOrderInteraction(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
-IP_WORKLOADS: Workloads = {
-    WorkloadSet(WorkloadCategory.EXAMPLE): [
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-c"),
-            label="countries-land-10km",
-            creates=[
-                SourceRoot("geo-maps") /
+def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
+    return {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-10km",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-10km.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-10km.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
                 "countries-land-10km.geo.json.compressed"
-            ],
-            requires_all_args={"-c"},
-            redirect_stdin=SourceRoot("geo-maps") /
-            "countries-land-10km.geo.json",
-            redirect_stdout=SourceRoot("geo-maps") /
-            "countries-land-10km.geo.json.compressed"
-        ),
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-d"),
-            label="countries-land-10km",
-            creates=[
-                SourceRoot("geo-maps-compr") / "countries-land-10km.geo.json"
-            ],
-            requires_all_args={"-d"},
-            redirect_stdin=SourceRoot("geo-maps-compr") /
-            "countries-land-10km.geo.json.compressed",
-            redirect_stdout=SourceRoot("geo-maps-compr") /
-            "countries-land-10km.geo.json"
-        )
-    ],
-    WorkloadSet(WorkloadCategory.SMALL): [
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-c"),
-            label="countries-land-500m",
-            creates=[
-                SourceRoot("geo-maps") /
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-10km",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-10km.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-10km.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-10km.geo.json"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-500m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-500m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
                 "countries-land-500m.geo.json.compressed"
-            ],
-            requires_all_args={"-c"},
-            redirect_stdin=SourceRoot("geo-maps") /
-            "countries-land-500m.geo.json",
-            redirect_stdout=SourceRoot("geo-maps") /
-            "countries-land-500m.geo.json.compressed"
-        ),
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-d"),
-            label="countries-land-500m",
-            creates=[
-                SourceRoot("geo-maps-compr") / "countries-land-500m.geo.json"
-            ],
-            requires_all_args={"-d"},
-            redirect_stdin=SourceRoot("geo-maps-compr") /
-            "countries-land-500m.geo.json.compressed",
-            redirect_stdout=SourceRoot("geo-maps-compr") /
-            "countries-land-500m.geo.json"
-        )
-    ],
-    WorkloadSet(WorkloadCategory.MEDIUM): [
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-c"),
-            label="countries-land-250m",
-            creates=[
-                SourceRoot("geo-maps-compr") /
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-500m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-250m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-250m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-250m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
                 "countries-land-250m.geo.json.compressed"
-            ],
-            requires_all_args={"-c"},
-            redirect_stdin=SourceRoot("geo-maps-compr") /
-            "countries-land-250m.geo.json",
-            redirect_stdout=SourceRoot("geo-maps-compr") /
-            "countries-land-250m.geo.json.compressed"
-        ),
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-d"),
-            label="countries-land-250m",
-            creates=[
-                SourceRoot("geo-maps-compr") / "countries-land-250m.geo.json"
-            ],
-            requires_all_args={"-d"},
-            redirect_stdin=SourceRoot("geo-maps-compr") /
-            "countries-land-250m.geo.json.compressed",
-            redirect_stdout=SourceRoot("geo-maps-compr") /
-            "countries-land-250m.geo.json"
-        )
-    ],
-    WorkloadSet(WorkloadCategory.LARGE): [
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-c"),
-            label="countries-land-1m",
-            creates=[
-                SourceRoot("geo-maps-compr") /
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-250m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-250m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-250m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-250m.geo.json"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-1m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-1m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
                 "countries-land-1m.geo.json.compressed"
-            ],
-            requires_all_args={"-c"},
-            redirect_stdin=SourceRoot("geo-maps-compr") /
-            "countries-land-1m.geo.json",
-            redirect_stdout=SourceRoot("geo-maps-compr") /
-            "countries-land-1m.geo.json.compressed"
-        ),
-        VCommand(
-            SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-            ConfigParams("-d"),
-            label="countries-land-1m",
-            creates=[
-                SourceRoot("geo-maps-compr") / "countries-land-1m.geo.json"
-            ],
-            requires_all_args={"-d"},
-            redirect_stdin=SourceRoot("geo-maps-compr") /
-            "countries-land-1m.geo.json.compressed",
-            redirect_stdout=SourceRoot("geo-maps-compr") /
-            "countries-land-1m.geo.json"
-        )
-    ],
-}
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-1m",
+                creates=[
+                    SourceRoot("geo-maps-compr") / "countries-land-1m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-1m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-1m.geo.json"
+            )
+        ],
+    }
 
 
 class SynthIPRuntime(VProject):
@@ -895,7 +899,7 @@ class SynthIPRuntime(VProject):
         ),
     ]
 
-    WORKLOADS = IP_WORKLOADS
+    WORKLOADS = get_ip_workloads("SynthIPRuntime", "Runtime")
 
     @staticmethod
     def binaries_for_revision(
@@ -951,10 +955,24 @@ class SynthIPTemplate(VProject):
                 "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
                 "countries-land-1km.geo.json", "countries-land-1m.geo.json"
             ]
-        )
+        ),
+        HTTPMultiple(
+            local="geo-maps-compr",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/compression-data/raw/master/"
+                    "example_comp/geo-maps/"
+            },
+            files=[
+                "countries-land-10km.geo.json.compressed",
+                "countries-land-1m.geo.json.compressed",
+                "countries-land-250m.geo.json.compressed",
+                "countries-land-500m.geo.json.compressed"
+            ]
+        ),
     ]
 
-    WORKLOADS = IP_WORKLOADS
+    WORKLOADS = get_ip_workloads("SynthIPTemplate", "Template")
 
     @staticmethod
     def binaries_for_revision(
@@ -1010,10 +1028,24 @@ class SynthIPTemplate2(VProject):
                 "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
                 "countries-land-1km.geo.json", "countries-land-1m.geo.json"
             ]
-        )
+        ),
+        HTTPMultiple(
+            local="geo-maps-compr",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/compression-data/raw/master/"
+                    "example_comp/geo-maps/"
+            },
+            files=[
+                "countries-land-10km.geo.json.compressed",
+                "countries-land-1m.geo.json.compressed",
+                "countries-land-250m.geo.json.compressed",
+                "countries-land-500m.geo.json.compressed"
+            ]
+        ),
     ]
 
-    WORKLOADS = IP_WORKLOADS
+    WORKLOADS = get_ip_workloads("SynthIPTemplate2", "Template2")
 
     @staticmethod
     def binaries_for_revision(
@@ -1069,10 +1101,24 @@ class SynthIPCombined(VProject):
                 "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
                 "countries-land-1km.geo.json", "countries-land-1m.geo.json"
             ]
-        )
+        ),
+        HTTPMultiple(
+            local="geo-maps-compr",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/compression-data/raw/master/"
+                    "example_comp/geo-maps/"
+            },
+            files=[
+                "countries-land-10km.geo.json.compressed",
+                "countries-land-1m.geo.json.compressed",
+                "countries-land-250m.geo.json.compressed",
+                "countries-land-500m.geo.json.compressed"
+            ]
+        ),
     ]
 
-    WORKLOADS = IP_WORKLOADS
+    WORKLOADS = get_ip_workloads("SynthIPCombined", "Combined")
 
     @staticmethod
     def binaries_for_revision(
