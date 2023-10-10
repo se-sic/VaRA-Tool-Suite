@@ -279,7 +279,7 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
         bpftrace_script_location = non_nfs_tmp_dir / "RawUsdtTefMarker.bt"
         cp(orig_bpftrace_script_location, bpftrace_script_location)
 
-        bpftrace_script = bpftrace["-o", report_file, "-q",
+        bpftrace_script = bpftrace["-o", report_file, "--no-warnings", "-q",
                                    bpftrace_script_location, binary]
         bpftrace_script = bpftrace_script.with_env(BPFTRACE_PERF_RB_PAGES=8192)
 
