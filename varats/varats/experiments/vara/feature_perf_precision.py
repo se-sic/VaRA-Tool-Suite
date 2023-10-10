@@ -236,17 +236,14 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                             with local.env(
                                 VARA_TRACE_FILE=local_tracefile_path
                             ):
-                                pb_cmd = prj_command.command.as_plumbum(
-                                    project=self.project
-                                )
-
                                 adapted_binary_location = Path(
                                     non_nfs_tmp_dir
                                 ) / self._binary.name
 
-                                # Store binary in a local tmp dir that is not on nfs
-                                pb_cmd.executable = pb_cmd.executable.copy(
-                                    adapted_binary_location, override=True
+                                pb_cmd = prj_command.command.as_plumbum_wrapped_with(
+                                    adapted_binary_location=
+                                    adapted_binary_location,
+                                    project=self.project
                                 )
 
                                 bpf_runner = bpf_runner = self.attach_usdt_raw_tracing(

@@ -1,9 +1,11 @@
 """Custom version of benchbuild's Command for use with the VaRA-Tool-Suite."""
 import typing as tp
+from pathlib import Path
 
 from benchbuild.command import Command, ProjectCommand, PathToken
 from benchbuild.utils.cmd import time
 from plumbum import local
+from plumbum.commands.base import BaseCommand
 from plumbum.machines import LocalCommand
 
 from varats.utils.config import get_config_patches
@@ -79,19 +81,24 @@ class VCommand(Command):  # type: ignore [misc]
         return cmd
 
     def as_plumbum_wrapped_with(
-        self, cmd: 'BoundEnvCommand',
-        adapted_binary_location: tp.Optional[Path], **kwargs: tp.Any
-    ) -> 'BoundEnvCommand':
+        self,
+        wrapper_cmd: tp.Optional['BoundEnvCommand'] = None,
+        adapted_binary_location: tp.Optional[Path] = None,
+        **kwargs: tp.Any
+    ) -> 'BaseCommand':
         base_cmd = super().as_plumbum(**kwargs)
 
         # TODO: maybe we should just provide a callable to modify the original
         # command
         if adapted_binary_location:
-            base_cmd.executable = base_cmd.executable.copy(
+            base_cmd.cmd.executable = base_cmd.cmd.executable.copy(
                 adapted_binary_location, override=True
             )
 
-        cmd = cmd[base_cmd]
+        if wrapper_cmd:
+            cmd = wrapper_cmd[base_cmd]
+        else:
+            cmd = base_cmd
 
         if self._redirect_stdin:
             cmd = cmd < str(self._redirect_stdin.render(**kwargs))
