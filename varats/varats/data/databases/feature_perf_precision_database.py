@@ -141,9 +141,7 @@ def precise_pim_regression_check(
 
             # TODO: check, maybe we need a "very small value cut off"
             if ttest_res.pvalue < 0.05:
-                # print(
-                #     f"{self.name} found regression for feature {feature}."
-                # )
+                # print(f"Found regression for feature {feature}.")
                 is_regression = True
         else:
             print(f"Could not find feature {feature} in new trace.")
