@@ -590,10 +590,10 @@ def _save_plot(
             binary_dir,
             disabled_workarounds,
             columns={
-                "TP": "\\#\\ac{TP}",
-                "FN": "\\#\\ac{FN}",
-                "FP": "\\#\\ac{FP}",
-                "TN": "\\#\\ac{TN}",
+                "TP": "\\# \\ac{TP}",
+                "FN": "\\# \\ac{FN}",
+                "FP": "\\# \\ac{FP}",
+                "TN": "\\# \\ac{TN}",
                 "accuracy": "Accuracy (\\%)",
                 "precision": "Precision (\\%)",
                 "recall": "Recall (\\%)",
@@ -753,10 +753,10 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
 
     for threshold in [0.0, 1.0]:
         if threshold == 0.0:
-            threshold_text = f"threshold: >{threshold*100}%"
+            threshold_text = f">{int(threshold*100)}"
         else:
-            threshold_text = f"threshold: {threshold*100}%"
-        cf_dir = outdir / threshold_text
+            threshold_text = f"{int(threshold*100)}"
+        cf_dir = outdir / f"threshold: {threshold_text}%"
         cf_dir.mkdir()
 
         matrix_dict = reports.confusion_matrices(
@@ -800,7 +800,10 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
         caption_text = f"{name}: "
         if disabled_workarounds:
             caption_text += f"disabled workarounds: {disabled_workarounds}, "
-        threshold_percent = f"\\qty{{{int(threshold * 100)}}}{{\\percent}}"
+        threshold_percent = f"{int(threshold * 100)}"
+        if threshold == 0.0:
+            threshold_percent = f">{threshold_percent}"
+        threshold_percent = f"\\qty{{{threshold_percent}}}{{\\percent}}"
         caption_text += f"threshold: {threshold_percent}."
 
         column_format = "l"
