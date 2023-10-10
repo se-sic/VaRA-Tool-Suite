@@ -53,7 +53,7 @@ from varats.report.gnu_time_report import TimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import FullCommitHash, calc_repo_loc
 
 
 def from_kibytes_to_mibytes(kbytes: float) -> float:
@@ -71,7 +71,8 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
     JF1 = 0
     JF2 = 1
     JF3 = 2
-    OLD = 3
+    Nested = 3
+    OLD = 4
 
     def __init_subclass__(
         cls,
@@ -89,22 +90,23 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         if ana == self.TAINT:
             return [
                 report.new_taint_jf1, report.new_taint, report.new_taint_jf3,
-                report.old_taint
+                report.new_taint_nested, report.old_taint
             ]
         elif ana == self.TYPESTATE:
             return [
                 report.new_typestate_jf1, report.new_typestate,
-                report.new_typestate_jf3, report.old_typestate
+                report.new_typestate_jf3, report.new_typestate_nested,
+                report.old_typestate
             ]
         elif ana == self.LCA:
             return [
                 report.new_lca_jf1, report.new_lca, report.new_lca_jf3,
-                report.old_lca
+                report.new_lca_nested, report.old_lca
             ]
         elif ana == self.IIA:
             return [
                 report.new_iia_jf1, report.new_iia, report.new_iia_jf3,
-                report.old_iia
+                report.new_iia_nested, report.old_iia
             ]
         else:
             raise "ERROR: Invalid analysis: " + ana
@@ -114,22 +116,23 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         if ana == self.TAINT:
             return [
                 report.new_taint_gc_jf1, report.new_taint_gc,
-                report.new_taint_jf3, report.old_taint
+                report.new_taint_jf3, report.new_taint_nested, report.old_taint
             ]
         elif ana == self.TYPESTATE:
             return [
                 report.new_typestate_gc_jf1, report.new_typestate_gc,
-                report.new_typestate_jf3, report.old_typestate
+                report.new_typestate_jf3, report.new_typestate_nested,
+                report.old_typestate
             ]
         elif ana == self.LCA:
             return [
                 report.new_lca_gc_jf1, report.new_lca_gc, report.new_lca_jf3,
-                report.old_lca
+                report.new_lca_nested, report.old_lca
             ]
         elif ana == self.IIA:
             return [
                 report.new_iia_gc_jf1, report.new_iia_gc, report.new_iia_jf3,
-                report.old_iia
+                report.new_iia_nested, report.old_iia
             ]
         else:
             raise "ERROR: Invalid analysis: " + ana
@@ -174,6 +177,8 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             return "JF4"
         elif jf == self.JF3:
             return "JF4S"
+        elif jf == self.Nested:
+            return "Nested"
         elif jf == self.OLD:
             return "Old"
         else:
@@ -190,6 +195,9 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         timeouts = dict()
         ooms = dict()
         for case_study in case_studies:
+            project_name = case_study.project_name
+            # loc = 42
+
             report_files = get_processed_revisions_files(
                 case_study.project_name, IDELinearConstantAnalysisExperiment,
                 PhasarIterIDEStatsReport,
@@ -239,11 +247,14 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
                 local_ooms = report.aggregate_ooms()
                 merge_dict(ooms, local_ooms, lambda x, y: x + y)
 
-                nodes.extend(
-                    self._get_data_entries(
-                        report, case_study.project_name, speedup_computer
-                    )
+                entries = self._get_data_entries(
+                    report, project_name, speedup_computer
                 )
+
+                for entry in entries:
+                    entry["LOC"] = report.basic_bc_stats.num_instructions
+                    entry["Target"] = project_name
+                    nodes.append(entry)
 
         print("Timeouts: ", timeouts)
         print("OOMs: ", ooms)
@@ -380,6 +391,12 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
 
         return ax
 
+    def data_point_threshold(self) -> int:
+        return 100
+
+    def analysis_order(self) -> tp.List[str]:
+        return ["IIA", "LCA", "Taint", "Typestate"]
+
     def make_phasar_violinplot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(self.compute_speedups)
         ax = sns.violinplot(
@@ -389,24 +406,33 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             hue="JF",
             cut=0,
             palette="pastel",
+            order=self.analysis_order(),
             # inner="point",
         )
-        #ax.axhline(1)
+        ax.axhline(1)
 
         data = self.make_dataframe(self.compute_mean_speedup)
 
-        print(f"make_phasar_plot: {data}")
-        for ana in ["Taint", "LCA", "IIA"]:
-            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
-            Min = Rows.min()
-            Max = Rows.max()
-            Mean = Rows.mean()
-            print(f"{ana}: Min {Min}, Max {Max}, Mean {Mean}")
+        # print(f"make_phasar_plot: {data}")
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"{ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        # threshold = self.data_point_threshold()
+        threshold = 0
+        # gray_data = data.loc[data["Old"] < threshold]
+        colored_data = data if threshold == 0 else data.loc[
+            data["Old"] >= threshold]
+
+        # print(f"make_phasar_plot: {gray_data}")
 
         ax = sns.stripplot(
             x="Analysis",
             y=self.YNAME,
-            data=data,
+            data=colored_data,
             hue="JF",
             dodge=True,
             legend=False,
@@ -414,8 +440,26 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             marker='x',
             edgecolor='face',
             linewidth=1,
-            ax=ax,
+            # ax=ax,
+            order=self.analysis_order(),
         )
+
+        # ax= sns.stripplot(
+        #     x="Analysis",
+        #     y=self.YNAME,
+        #     data=gray_data,
+        #     hue="JF",
+        #     dodge=True,
+        #     legend=False,
+        #     jitter=True,
+        #     marker='x',
+        #     # edgecolor='face',
+        #     facecolor='lightgray',
+        #     linewidth=1,
+        #     #ax=ax,
+        #     order=["IIA", "LCA", "Taint", "Typestate"],
+        # )
+
         return ax
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
@@ -450,6 +494,9 @@ class PhasarIterIDERuntimeSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
             plot_name=plot_name, yname=yname, **kwargs
         )
 
+    def data_point_threshold(self) -> int:
+        return 5
+
     def _get_data_entries(
         self, report: PhasarIterIDEStatsReport, cs: str,
         speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
@@ -462,7 +509,7 @@ class PhasarIterIDERuntimeSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
             if aggregates[self.OLD] is None:
                 print(f"Skip {ana}")
                 continue
-            for jf in [self.JF1, self.JF2, self.JF3]:
+            for jf in [self.JF1, self.JF2, self.JF3, self.Nested]:
                 if aggregates[jf] is None:
                     print(f"Skip {self._get_jf_name(jf)} for {ana}")
                     continue
@@ -494,6 +541,83 @@ class PhasarIterIDERuntimeSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
         return nodes
 
 
+class PhasarIterIDECombinedSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
+
+    def __init_subclass__(
+        cls,
+        *,
+        plot_name: tp.Optional[str],
+        yname: tp.Optional[str] = None,
+        **kwargs: tp.Any
+    ) -> None:
+        return super().__init_subclass__(
+            plot_name=plot_name, yname=yname, **kwargs
+        )
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            # print(f"Processing {ana} analysis results")
+            aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.Nested] is None:
+                print(f"Skip {ana}")
+                continue
+            for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    print(f"Skip {self._get_jf_name(jf)} for {ana}")
+                    continue
+
+                runtime_speedups = speedup_computer(
+                    aggregates[self.Nested].measurements_wall_clock_time,
+                    aggregates[jf].measurements_wall_clock_time
+                )
+
+                memory_speedups = speedup_computer(
+                    aggregates[self.Nested].max_resident_sizes,
+                    aggregates[jf].max_resident_sizes
+                )
+
+                for s, m in zip(runtime_speedups, memory_speedups):
+                    # print(f"> {s}")
+                    nodes.append({
+                        "Runtime Speedup":
+                            s,
+                        "Memory Savings":
+                            m,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Target":
+                            cs,
+                        "Old Runtime":
+                            np.mean(
+                                aggregates[self.Nested
+                                          ].measurements_wall_clock_time
+                            ),
+                        "New Runtime":
+                            np.mean(
+                                aggregates[jf].measurements_wall_clock_time
+                            ),
+                        "Old Memory":
+                            from_kibytes_to_mibytes(
+                                np.mean(
+                                    aggregates[self.Nested].max_resident_sizes
+                                )
+                            ),
+                        "New Memory":
+                            from_kibytes_to_mibytes(
+                                np.mean(aggregates[jf].max_resident_sizes)
+                            ),
+                    })
+
+        return nodes
+
+
 class PhasarIterIDEMemorySpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
 
     def __init_subclass__(
@@ -517,7 +641,7 @@ class PhasarIterIDEMemorySpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
             aggregates = self._get_aggregates(report, ana)
             if aggregates[self.OLD] is None:
                 continue
-            for jf in [self.JF1, self.JF2, self.JF3]:
+            for jf in [self.JF1, self.JF2, self.JF3, self.Nested]:
                 if aggregates[jf] is None:
                     continue
                 for s in speedup_computer(
@@ -548,6 +672,106 @@ class PhasarIterIDEMemorySpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
         return nodes
 
 
+class PhasarIterIDESpeedupJFvsNestedPlotBase(
+    PhasarIterIDERuntimeSpeedupPlotBase,
+    plot_name='phasar-iter-ide-speedup-jf-vs-nested',
+    yname="Runtime Speedup vs Nested"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            # print(f"Processing {ana} analysis results")
+            aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.Nested] is None:
+                print(f"Skip {ana}")
+                continue
+
+            for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    print(f"Skip {self._get_jf_name(jf)} for {ana}")
+                    continue
+                for s in speedup_computer(
+                    aggregates[self.Nested].measurements_wall_clock_time,
+                    aggregates[jf].measurements_wall_clock_time
+                ):
+                    # print(f"> {s}")
+                    nodes.append({
+                        self.YNAME:
+                            s,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Old":
+                            np.mean(
+                                aggregates[self.Nested
+                                          ].measurements_wall_clock_time
+                            ),
+                        "New":
+                            np.mean(
+                                aggregates[jf].measurements_wall_clock_time
+                            ),
+                        "Target":
+                            cs,
+                    })
+
+        return nodes
+
+
+class PhasarIterIDEMemSpeedupJFvsNestedPlotBase(
+    PhasarIterIDEMemorySpeedupPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-jf-vs-nested',
+    yname="Memory Savings vs Nested"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.Nested] is None:
+                continue
+            for jf in [self.JF1, self.JF2, self.JF3]:
+                if aggregates[jf] is None:
+                    continue
+                for s in speedup_computer(
+                    aggregates[self.Nested].max_resident_sizes,
+                    aggregates[jf].max_resident_sizes
+                ):
+                    nodes.append({
+                        self.YNAME:
+                            s,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Old":
+                            from_kibytes_to_mibytes(
+                                np.mean(
+                                    aggregates[self.Nested].max_resident_sizes
+                                )
+                            ),
+                        "New":
+                            from_kibytes_to_mibytes(
+                                np.mean(aggregates[jf].max_resident_sizes)
+                            ),
+                        "Target":
+                            cs,
+                    })
+
+        return nodes
+
+
 ################################################################################
 #                         Concrete Implementations                             #
 ################################################################################
@@ -560,11 +784,6 @@ class PhasarIterIDESpeedupVsJF1Plot(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    # def make_phasar_plot(self) -> matplotlib.axes.Axes:
-    #     ax = super().make_phasar_plot()
-    #     ax.axhline(1)
-    #     return ax
-
 
 class PhasarIterIDEMemSpeedupVsJF1Plot(
     PhasarIterIDEMemorySpeedupPlotBase,
@@ -573,16 +792,636 @@ class PhasarIterIDEMemSpeedupVsJF1Plot(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    # def make_phasar_plot(self) -> matplotlib.axes.Axes:
-    #     data = self.make_dataframe()
-    #     ax = sns.boxplot(
-    #         x="Analysis",
-    #         y=self.YNAME,
-    #         data=data,
-    #         hue="JF",
-    #     )
-    #     ax.set_ylim(bottom=-7500)
-    #     return ax
+
+class PhasarIterIDESpeedupJFvsNested(
+    PhasarIterIDESpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-speedup-jf-vs-nested',
+    yname="Runtime Speedup vs Nested"
+):
+    pass
+
+
+class PhasarIterIDETargetSpeedupVsNested(
+    PhasarIterIDESpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested',
+    yname="Runtime Speedup vs Nested"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        for ana in ["Taint", "LCA", "IIA"]:
+            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+            Min = Rows.min()
+            Max = Rows.max()
+            Mean = Rows.mean()
+            print(
+                f"[PhasarIterIDETargetSpeedupVsNested]: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+            )
+
+        # print("Dataset: ", data.to_string())
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Runtime Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedSize(
+    PhasarIterIDESpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-size',
+    yname="Runtime Speedup vs Nested"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+        data = data.sort_values(by=["LOC"])
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            hue_order=["JF1", "JF4", "JF4S"],
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Runtime Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedTime(
+    PhasarIterIDESpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-time',
+    yname="Runtime Speedup vs Nested"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+        data = data.sort_values(by=["Old"])
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            hue_order=["JF1", "JF4", "JF4S"],
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Runtime Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
+class PhasarIterIDELineTargetSpeedupVsNested(
+    PhasarIterIDESpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-speedup-target-line-vs-nested',
+    yname="Runtime Speedup vs Nested"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        data = data.sort_values(by=[self.YNAME, "JF"])
+
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        # print("Dataset: ", data.to_string())
+
+        ax = sns.lineplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            hue_order=["JF1", "JF4", "JF4S"],
+            units="Analysis",
+            style="Analysis",
+            # linewidth=0,
+            # alpha=0.7,
+            estimator=None,
+            lw=1,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Runtime Speedup")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+
+        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
+class PhasarIterIDEAbsoluteSpeedupJFvsNested(
+    PhasarIterIDESpeedupJFvsNested,
+    plot_name='phasar-iter-ide-abs-speedup-jf-vs-nested',
+    yname="Runtime Speedup vs Nested [s]"
+):
+
+    @staticmethod
+    def compute_speedups(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return list(
+            map(
+                lambda x: round(x[0] - x[1], 3),
+                itertools.product(old_measurements, new_measurements)
+            )
+        )
+
+    @staticmethod
+    def compute_mean_speedup(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return [
+            np.mean(
+                list(
+                    map(
+                        lambda x: round(x[0] - x[1], 3),
+                        itertools.product(old_measurements, new_measurements)
+                    )
+                )
+            )
+        ]
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(self.compute_speedups)
+        ax = sns.violinplot(
+            x="Analysis",
+            y=self.YNAME,
+            data=data,
+            hue="JF",
+            cut=0,
+            palette="pastel",
+            # inner="point",
+        )
+        ax.axhline(0)
+
+        data = self.make_dataframe(self.compute_mean_speedup)
+
+        # print(f"make_phasar_plot: {data}")
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"{ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        ax = sns.stripplot(
+            x="Analysis",
+            y=self.YNAME,
+            data=data,
+            hue="JF",
+            dodge=True,
+            legend=False,
+            jitter=True,
+            marker='x',
+            edgecolor='face',
+            linewidth=1,
+            ax=ax,
+        )
+        return ax
+
+
+class PhasarIterIDEMemSpeedupJFvsNested(
+    PhasarIterIDEMemSpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-jf-vs-nested',
+    yname="Memory Savings vs Nested"
+):
+    pass
+
+
+class PhasarIterIDETargetMemSpeedupVsNested(
+    PhasarIterIDEMemSpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-target-scatter-vs-nested',
+    yname="Memory Savings vs Nested"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        for ana in ["Taint", "LCA", "IIA"]:
+            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+            Min = Rows.min()
+            Max = Rows.max()
+            Mean = Rows.mean()
+            print(
+                f"[PhasarIterIDETargetMemSpeedupVsNested]: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+            )
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Memory Savings")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
+    PhasarIterIDEMemSpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-size',
+    yname="Memory Savings vs Nested"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+        data = data.sort_values(by=["LOC"])
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            hue_order=["JF1", "JF4", "JF4S"],
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Memory Savings")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedMem(
+    PhasarIterIDEMemSpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-mem',
+    yname="Memory Savings vs Nested"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+        data = data.sort_values(by=["Old"])
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            hue_order=["JF1", "JF4", "JF4S"],
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Memory Savings")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        return ax
+
+
+class PhasarIterIDEGrid(
+    PhasarIterIDESpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-grid',
+    yname="Runtime Speedup"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"[PhasarIterIDETargetMemSpeedupVsNested]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        ax = sns.displot(
+            data=data,
+            x="JF",
+            y=self.YNAME,
+            col="Analysis",
+            col_wrap=2,
+            #height = 4,
+            #aspect = 0.7,
+        )
+
+        return ax
+
+
+class PhasarIterIDEMemGrid(
+    PhasarIterIDEMemSpeedupJFvsNestedPlotBase,
+    plot_name='phasar-iter-ide-mem-grid',
+    yname="Memory Savings"
+):
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        # for ana in ["Taint", "LCA", "IIA"]:
+        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        #     Min = Rows.min()
+        #     Max = Rows.max()
+        #     Mean = Rows.mean()
+        #     print(f"[PhasarIterIDETargetMemSpeedupVsNested]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        ax = sns.displot(
+            data=data,
+            x="JF",
+            y=self.YNAME,
+            col="Analysis",
+            col_wrap=2,
+            #height = 4,
+            #aspect = 0.7,
+        )
+
+        return ax
+
+
+class PhasarIterIDEAbsoluteMemSpeedupJFvsNested(
+    PhasarIterIDEMemSpeedupJFvsNested,
+    plot_name='phasar-iter-ide-abs-mem-speedup-jf-vs-nested',
+    yname="Memory Savings vs Nested [MiB]"
+):
+
+    @staticmethod
+    def compute_speedups(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return list(
+            map(
+                lambda x: from_kibytes_to_mibytes(round(x[0] - x[1], 3)),
+                itertools.product(old_measurements, new_measurements)
+            )
+        )
+
+    @staticmethod
+    def compute_mean_speedup(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return [
+            np.mean(
+                list(
+                    map(
+                        lambda x:
+                        from_kibytes_to_mibytes(round(x[0] - x[1], 3)),
+                        itertools.product(old_measurements, new_measurements)
+                    )
+                )
+            )
+        ]
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(self.compute_speedups)
+        ax = sns.violinplot(
+            x="Analysis",
+            y=self.YNAME,
+            data=data,
+            hue="JF",
+            cut=0,
+            palette="pastel",
+            # inner="point",
+        )
+        ax.axhline(0)
+
+        data = self.make_dataframe(self.compute_mean_speedup)
+
+        # print(f"make_phasar_plot: {data}")
+        for ana in ["Taint", "LCA", "IIA"]:
+            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+            Min = Rows.min()
+            Max = Rows.max()
+            Mean = Rows.mean()
+            print(f"{ana}: Min {Min}, Max {Max}, Mean {Mean}")
+
+        ax = sns.stripplot(
+            x="Analysis",
+            y=self.YNAME,
+            data=data,
+            hue="JF",
+            dodge=True,
+            legend=False,
+            jitter=True,
+            marker='x',
+            edgecolor='face',
+            linewidth=1,
+            ax=ax,
+        )
+        return ax
+
+
+class PhasarIterIDECombinedSpeedupPlot(
+    PhasarIterIDECombinedSpeedupPlotBase,
+    plot_name='phasar-iter-ide-combined-speedup',
+    yname="Speedup vs Nested"
+):
+
+    @staticmethod
+    def compute_single_sanitized_speedup(old: float, new: float) -> float:
+
+        # return round((old - new) / old, 3) * 100
+
+        if old < new:
+            return -round(new / old - 1, 3)
+        else:
+            return round(old / new - 1, 3)
+
+        # if old < new:
+        #     return -round(new/old, 3)
+        # else:
+        #     return round(old/new, 3)
+
+    @staticmethod
+    def compute_sanitized_speedup(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return [
+            np.mean(
+                list(
+                    map(
+                        lambda x: PhasarIterIDECombinedSpeedupPlot.
+                        compute_single_sanitized_speedup(x[0], x[1]),
+                        itertools.product(old_measurements, new_measurements)
+                    )
+                )
+            )
+        ]
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(
+            PhasarIterIDECombinedSpeedupPlot.compute_sanitized_speedup
+        )
+
+        runtime_threshold = 5
+        memory_threshold = 100
+
+        gray_data = data.loc[(data["Old Runtime"] < runtime_threshold) &
+                             (data["Old Memory"] < memory_threshold) &
+                             (data["New Runtime"] < runtime_threshold) &
+                             (data["New Memory"] < memory_threshold)]
+        colored_data = data.loc[(data["Old Runtime"] >= runtime_threshold) |
+                                (data["Old Memory"] >= memory_threshold) |
+                                (data["New Runtime"] >= runtime_threshold) |
+                                (data["New Memory"] >= memory_threshold)]
+
+        #print(data)
+
+        ax = sns.scatterplot(
+            data=gray_data,
+            x="Runtime Speedup",
+            y="Memory Savings",
+            # x = "Old",
+            # y = "New",
+            # hue="Target",
+            hue="JF",
+            # markers = markers,
+            # fillstyle="none",
+            # facecolors="none",
+            # edgecolor="face",
+            # c='none',
+            facecolor='lightgray',
+            linewidth=0,
+            alpha=0.5,
+            # s=25,
+            legend=False,
+        )
+
+        ax = sns.scatterplot(
+            data=colored_data,
+            x="Runtime Speedup",
+            y="Memory Savings",
+            # x = "Old",
+            # y = "New",
+            style="Target",
+            hue="JF",
+            # markers = markers,
+            # fillstyle="none",
+            # facecolors="none",
+            # edgecolor="face",
+            # c='none',
+            linewidth=0,
+            alpha=0.5,
+            # s=25,
+        )
+
+        # Move left y-axis and bottom x-axis to centre, passing through (0,0)
+        ax.spines['left'].set_position('zero')
+        ax.spines['bottom'].set_position('zero')
+
+        # Eliminate upper and right axes
+        ax.spines['right'].set_color('none')
+        ax.spines['top'].set_color('none')
+
+        # Show ticks in the left and lower axes only
+        ax.xaxis.set_ticks_position('bottom')
+        ax.yaxis.set_ticks_position('left')
+
+        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+
+        # ax.set_yticks(
+        #     [
+        #        -4, -2, #-1,
+        #         *np.arange(
+        #             2, 15, 2
+        #         ),
+        #     ]
+        # )
+        # ax.set_xticks(
+        #     [   -4,
+        #         -2,
+        #         #-1,
+        #         *np.arange(
+        #             2, 10, 2
+        #         ),
+        #         *np.arange(
+        #             10, 27, 4
+        #         ),
+        #     ]
+        # )
+
+        # unit_circle = plt.Circle((0, 0), 1, fill=False)
+        # ax.add_patch(unit_circle)
+
+        #ax.set_aspect('equal', adjustable='box')
+
+        # ax.set_xscale('log')
+        # ax.set_yscale('log')
+
+        # ax.axline(xy1=(0, 0), slope=1)
+
+        ax.set_xlabel("Runtime Speedup")
+        ax.set_ylabel("Memory Savings")
+
+        return ax
 
 
 class PhasarIterIDESpeedupScatterPlot(
@@ -628,6 +1467,164 @@ class PhasarIterIDESpeedupScatterPlot(
 
         ax.set_ylabel("Old Runtime [s]")
         ax.set_xlabel("New Runtime [s]")
+        # ax.set_yscale('log')
+
+        return ax
+
+
+class PhasarIterIDEOldNewNestedScatterPlot(
+    PhasarIterIDERuntimeSpeedupPlotBase,
+    plot_name='phasar-iter-ide-speedup-scatter-old-new-nested',
+    yname="Runtime Old vs New [s]"
+):
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            # print(f"Processing {ana} analysis results")
+            aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.OLD] is None:
+                print(f"Skip {ana}")
+                continue
+
+            jf = self.Nested
+
+            if aggregates[jf] is None:
+                print(f"Skip {self._get_jf_name(jf)} for {ana}")
+                continue
+            for s in speedup_computer(
+                aggregates[self.OLD].measurements_wall_clock_time,
+                aggregates[jf].measurements_wall_clock_time
+            ):
+                # print(f"> {s}")
+                nodes.append({
+                    self.YNAME:
+                        s,
+                    "JF":
+                        self._get_jf_name(jf),
+                    "Analysis":
+                        ana,
+                    "Old":
+                        np.mean(
+                            aggregates[self.OLD].measurements_wall_clock_time
+                        ),
+                    "New":
+                        np.mean(aggregates[jf].measurements_wall_clock_time),
+                    "Target":
+                        cs,
+                })
+
+        return nodes
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        ax = sns.scatterplot(
+            data=data,
+            x="New",
+            y="Old",
+            # x = "Old",
+            # y = "New",
+            hue="Target",
+            # style="JF",
+            # markers = 'x',
+            # fillstyle="none",
+            # facecolors="none",
+            # edgecolor="face",
+            # c='none',
+            linewidth=0,
+            alpha=0.8,
+            # s=25,
+        )
+
+        ax.axline(xy1=(0, 0), slope=1)
+
+        ax.set_ylabel("Old Runtime [s]")
+        ax.set_xlabel("New Runtime [s]")
+        # ax.set_yscale('log')
+
+        return ax
+
+
+class PhasarIterIDEMemOldNewNestedScatterPlot(
+    PhasarIterIDEMemorySpeedupPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-scatter-old-new-nested',
+    yname="Memory Old vs New [s]"
+):
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+            # print(f"Processing {ana} analysis results")
+            aggregates = self._get_aggregates(report, ana)
+            if aggregates[self.OLD] is None:
+                print(f"Skip {ana}")
+                continue
+
+            jf = self.Nested
+
+            if aggregates[jf] is None:
+                print(f"Skip {self._get_jf_name(jf)} for {ana}")
+                continue
+            for s in speedup_computer(
+                aggregates[self.OLD].max_resident_sizes,
+                aggregates[jf].max_resident_sizes
+            ):
+                # print(f"> {s}")
+                nodes.append({
+                    self.YNAME:
+                        s,
+                    "JF":
+                        self._get_jf_name(jf),
+                    "Analysis":
+                        ana,
+                    "Old":
+                        from_kibytes_to_mibytes(
+                            np.mean(aggregates[self.OLD].max_resident_sizes)
+                        ),
+                    "New":
+                        from_kibytes_to_mibytes(
+                            np.mean(aggregates[jf].max_resident_sizes)
+                        ),
+                    "Target":
+                        cs,
+                })
+
+        return nodes
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        ax = sns.scatterplot(
+            data=data,
+            x="New",
+            y="Old",
+            # x = "Old",
+            # y = "New",
+            hue="Target",
+            # style="JF",
+            # markers = 'x',
+            # fillstyle="none",
+            # facecolors="none",
+            # edgecolor="face",
+            # c='none',
+            linewidth=0,
+            alpha=0.8,
+            # s=25,
+        )
+
+        ax.axline(xy1=(0, 0), slope=1)
+
+        ax.set_ylabel("Old Memory [MiB]")
+        ax.set_xlabel("New Memory [MiB]")
         # ax.set_yscale('log')
 
         return ax
@@ -726,7 +1723,7 @@ class PhasarIterIDEMemSpeedupTargetScatter(
                 f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
             )
 
-        print("Dataset: ", data.to_string())
+        # print("Dataset: ", data.to_string())
 
         ax = sns.scatterplot(
             data=data,
@@ -750,82 +1747,69 @@ class PhasarIterIDEMemSpeedupTargetScatter(
         return ax
 
 
-class PhasarIterIDESpeedupGCPlot(
+class PhasarIterIDESpeedupGCPlotBase(
     PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-speedup-gc-plot-base',
+    yname="Runtime Speedup /w GC"
+):
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            gc_aggregates = self._get_gc_aggregates(report, ana)
+
+            for jf in [self.JF1, self.JF2]:
+                speedups = [
+                    float('nan')
+                ] if aggregates[jf] is None or gc_aggregates[
+                    jf] is None else speedup_computer(
+                        aggregates[jf].measurements_wall_clock_time,
+                        gc_aggregates[jf].measurements_wall_clock_time
+                    )
+
+                for s in speedups:
+                    nodes.append({
+                        self.YNAME:
+                            s,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Old":
+                            np.mean(
+                                aggregates[jf].measurements_wall_clock_time
+                            ),
+                        "New":
+                            np.mean(
+                                gc_aggregates[jf].measurements_wall_clock_time
+                            ),
+                    })
+
+        return nodes
+
+
+class PhasarIterIDESpeedupGCPlot(
+    PhasarIterIDESpeedupGCPlotBase,
     plot_name='phasar-iter-ide-speedup-gc',
     yname="Runtime Speedup /w GC"
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(
-        self, report: PhasarIterIDEStatsReport, cs: str,
-        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
-    ) -> tp.List[tp.Dict[str, tp.Any]]:
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
-
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
-            aggregates = self._get_aggregates(report, ana)
-            gc_aggregates = self._get_gc_aggregates(report, ana)
-
-            for jf in [self.JF1, self.JF2]:
-                if aggregates[jf] is None or gc_aggregates[jf] is None:
-                    nodes.append({
-                        self.YNAME: float('nan'),
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-                    continue
-                for s in speedup_computer(
-                    aggregates[jf].measurements_wall_clock_time,
-                    gc_aggregates[jf].measurements_wall_clock_time
-                ):
-                    nodes.append({
-                        self.YNAME: s,
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-
-        return nodes
+    def analysis_order(self) -> tp.List[str]:
+        return ["LCA", "Taint", "Typestate"]
 
 
 class PhasarIterIDESpeedupGCScatterPlot(
-    PhasarIterIDEPlotBase,
+    PhasarIterIDESpeedupGCPlotBase,
     plot_name='phasar-iter-ide-speedup-scatter-gc',
     yname="Runtime Speedup /w GC"
 ):
     """Box plot of commit-author interaction commit node degrees."""
-
-    def _get_data_entries(
-        self, report: PhasarIterIDEStatsReport, cs: str,
-        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
-    ) -> tp.List[tp.Dict[str, tp.Any]]:
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
-
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
-            aggregates = self._get_aggregates(report, ana)
-            gc_aggregates = self._get_gc_aggregates(report, ana)
-
-            for jf in [self.JF1, self.JF2]:
-                if aggregates[jf] is None or gc_aggregates[jf] is None:
-                    nodes.append({
-                        self.YNAME: float('nan'),
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                        "Target": cs,
-                    })
-                    continue
-                for s in speedup_computer(
-                    aggregates[jf].measurements_wall_clock_time,
-                    gc_aggregates[jf].measurements_wall_clock_time
-                ):
-                    nodes.append({
-                        self.YNAME: s,
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                        "Target": cs,
-                    })
-
-        return nodes
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
@@ -843,8 +1827,8 @@ class PhasarIterIDESpeedupGCScatterPlot(
             data=data,
             x="Target",
             y=self.YNAME,
-            hue="Analysis",
-            style="JF",
+            hue="JF",
+            style="Analysis",
             linewidth=0,
             alpha=0.5,
         )
@@ -861,85 +1845,134 @@ class PhasarIterIDESpeedupGCScatterPlot(
         return ax
 
 
-class PhasarIterIDEMemSpeedupGCPlot(
+class PhasarIterIDEMemSpeedupGCPlotBase(
     PhasarIterIDEPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-gc-plot-base',
+    yname="Memory Speedup /w GC"
+):
+
+    def _get_data_entries(
+        self, report: PhasarIterIDEStatsReport, cs: str,
+        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+    ) -> tp.List[tp.Dict[str, tp.Any]]:
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+            aggregates = self._get_aggregates(report, ana)
+            gc_aggregates = self._get_gc_aggregates(report, ana)
+
+            for jf in [self.JF1, self.JF2]:
+                speedups = [float('nan')
+                           ] if aggregates[jf] is None or gc_aggregates[
+                               jf] is None else speedup_computer(
+                                   aggregates[jf].max_resident_sizes,
+                                   gc_aggregates[jf].max_resident_sizes
+                               )
+
+                for s in speedups:
+                    nodes.append({
+                        self.YNAME:
+                            s,
+                        "JF":
+                            self._get_jf_name(jf),
+                        "Analysis":
+                            ana,
+                        "Old":
+                            from_kibytes_to_mibytes(
+                                np.mean(aggregates[jf].max_resident_sizes)
+                            ),
+                        "New":
+                            from_kibytes_to_mibytes(
+                                np.mean(gc_aggregates[jf].max_resident_sizes)
+                            ),
+                    })
+
+        return nodes
+
+
+class PhasarIterIDEMemSpeedupGCPlot(
+    PhasarIterIDEMemSpeedupGCPlotBase,
     plot_name='phasar-iter-ide-mem-speedup-gc',
     yname="Memory Speedup /w GC"
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(
-        self, report: PhasarIterIDEStatsReport, cs: str,
-        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
-    ) -> tp.List[tp.Dict[str, tp.Any]]:
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
-
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
-            aggregates = self._get_aggregates(report, ana)
-            gc_aggregates = self._get_gc_aggregates(report, ana)
-
-            for jf in [self.JF1, self.JF2]:
-                if aggregates[jf] is None or gc_aggregates[jf] is None:
-                    nodes.append({
-                        self.YNAME: float('nan'),
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-                    continue
-                for s in speedup_computer(
-                    aggregates[jf].max_resident_sizes,
-                    gc_aggregates[jf].max_resident_sizes
-                ):
-                    nodes.append({
-                        self.YNAME: s,
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-
-        return nodes
+    def analysis_order(self) -> tp.List[str]:
+        return ["LCA", "Taint", "Typestate"]
 
 
-class PhasarIterIDEMemSavingsGCPlot(
-    PhasarIterIDEPlotBase,
-    plot_name='phasar-iter-ide-mem-savings-gc',
-    yname="Memory Savings /w GC [%]"
+class PhasarIterIDEMemSpeedupGCScatterPlot(
+    PhasarIterIDEMemSpeedupGCPlotBase,
+    plot_name='phasar-iter-ide-mem-speedup-scatter-gc',
+    yname="Runtime Speedup /w GC"
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
-    def _get_data_entries(
-        self, report: PhasarIterIDEStatsReport, cs: str,
-        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
-    ) -> tp.List[tp.Dict[str, tp.Any]]:
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
-
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
-            aggregates = self._get_aggregates(report, ana)
-            gc_aggregates = self._get_gc_aggregates(report, ana)
-
-            for jf in [self.JF1, self.JF2]:
-                if aggregates[jf] is None or gc_aggregates[jf] is None:
-                    nodes.append({
-                        self.YNAME: float('nan'),
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-                    continue
-                for s in speedup_computer(
-                    aggregates[jf].max_resident_sizes,
-                    gc_aggregates[jf].max_resident_sizes
-                ):
-                    nodes.append({
-                        self.YNAME: (1 - 1 / s) * 100,
-                        "JF": self._get_jf_name(jf),
-                        "Analysis": ana,
-                    })
-
-        return nodes
-
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        ax = self.make_phasar_violinplot()
-        ax.axhline(0)
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+
+        ax = sns.scatterplot(
+            data=data,
+            x="Target",
+            y=self.YNAME,
+            hue="JF",
+            style="Analysis",
+            linewidth=0,
+            alpha=0.5,
+        )
+
+        ax.axhline(1, linewidth=1, color='gray')
+
+        ax.set_ylabel("Relative Memory Savings")
+        ax.set_xlabel("Target Program")
+        ax.set_xticklabels(
+            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+
         return ax
+
+
+# class PhasarIterIDEMemSavingsGCPlot(
+#     PhasarIterIDEPlotBase,
+#     plot_name='phasar-iter-ide-mem-savings-gc',
+#     yname="Memory Savings /w GC [%]"
+# ):
+#     """Box plot of commit-author interaction commit node degrees."""
+
+#     def _get_data_entries(
+#         self, report: PhasarIterIDEStatsReport, cs: str,
+#         speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+#     ) -> tp.List[tp.Dict[str, tp.Any]]:
+#         nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+#         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
+#             aggregates = self._get_aggregates(report, ana)
+#             gc_aggregates = self._get_gc_aggregates(report, ana)
+
+#             for jf in [self.JF1, self.JF2]:
+#                 if aggregates[jf] is None or gc_aggregates[jf] is None:
+#                     nodes.append({
+#                         self.YNAME: float('nan'),
+#                         "JF": self._get_jf_name(jf),
+#                         "Analysis": ana,
+#                     })
+#                     continue
+#                 for s in speedup_computer(
+#                     aggregates[jf].max_resident_sizes,
+#                     gc_aggregates[jf].max_resident_sizes
+#                 ):
+#                     nodes.append({
+#                         self.YNAME: (1 - 1 / s) * 100,
+#                         "JF": self._get_jf_name(jf),
+#                         "Analysis": ana,
+#                     })
+
+#         return nodes
+
+#     def make_phasar_plot(self) -> matplotlib.axes.Axes:
+#         ax = self.make_phasar_violinplot()
+#         ax.axhline(0)
+#         return ax
 
 
 class PhasarIterIDESpeedupHeatmap(
@@ -966,7 +1999,7 @@ class PhasarIterIDESpeedupHeatmap(
                     speedup_computer(
                         Old, aggregates[jf].measurements_wall_clock_time
                     )
-                ) for jf in range(0, 3) if aggregates[jf] is not None
+                ) for jf in range(0, 4) if aggregates[jf] is not None
             ]
 
             MaxSpeedupJF, OtherJF = self.get_argmaxmin(JFMeanSpeedups)
@@ -1002,7 +2035,7 @@ class PhasarIterIDESpeedupHeatmap(
             values="WeightedJF",
             # aggfunc=last,
         )
-        print(f"Runtime Data: {data}")
+        # print(f"Runtime Data: {data}")
 
         return self.heatmap(data, annot)
 
@@ -1028,7 +2061,7 @@ class PhasarIterIDEMemSpeedupHeatmap(
             JFMeanSpeedups = [
                 np.mean(
                     speedup_computer(Old, aggregates[jf].max_resident_sizes)
-                ) for jf in range(0, 3) if aggregates[jf] is not None
+                ) for jf in range(0, 4) if aggregates[jf] is not None
             ]
 
             # MaxSpeedupJF = int(np.argmax(JFMeanSpeedups))
@@ -1066,7 +2099,7 @@ class PhasarIterIDEMemSpeedupHeatmap(
             values="WeightedJF",
             # aggfunc=last,
         )
-        print(f"Memory Data: {data}")
+        # print(f"Memory Data: {data}")
 
         return self.heatmap(data, annot)
 
@@ -1086,7 +2119,7 @@ class PhasarIterIDENewTime(
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
-            for jf in [self.JF1, self.JF2, self.JF3]:
+            for jf in [self.JF1, self.JF2, self.JF3, self.Nested]:
                 if aggregates[jf] is None:
                     continue
                 for time in aggregates[jf].measurements_wall_clock_time:
@@ -1126,7 +2159,7 @@ class PhasarIterIDENewMem(
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
-            for jf in [self.JF1, self.JF2, self.JF3]:
+            for jf in [self.JF1, self.JF2, self.JF3, self.Nested]:
                 if aggregates[jf] is None:
                     continue
                 for mem in aggregates[jf].max_resident_sizes:
@@ -1166,7 +2199,7 @@ class PhasarIterIDEOldNewMemViolinPlot(
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
-            for jf in [self.JF1, self.JF2, self.JF3, self.OLD]:
+            for jf in [self.JF1, self.JF2, self.JF3, self.Nested, self.OLD]:
                 if aggregates[jf] is None:
                     continue
                 for mem, old_mem in zip(
@@ -1203,7 +2236,7 @@ class PhasarIterIDEOldNewTimeViolinPlot(
 
         for ana in [self.TAINT, self.TYPESTATE, self.LCA]:
             aggregates = self._get_aggregates(report, ana)
-            for jf in [0, 1, 2, 3]:
+            for jf in [self.JF1, self.JF2, self.JF3, self.Nested, self.OLD]:
                 if aggregates[jf] is None:
                     continue
                 for time in aggregates[jf].measurements_wall_clock_time:
@@ -1357,7 +2390,7 @@ class PhasarIterIDEWLSpeedupScatterPlot(
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        print("WL Make Dataframe: ")
+        # print("WL Make Dataframe: ")
 
         timeouts = dict()
         ooms = dict()
@@ -1463,31 +2496,81 @@ class CAIGViolinPlotGenerator(
             # PhasarIterIDEJF1JF2TimeViolinPlot(
             #     self.plot_config, **self.plot_kwargs
             # ),
-            PhasarIterIDESpeedupScatterPlot(
+
+            # PhasarIterIDESpeedupScatterPlot(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
+            # PhasarIterIDEMemSpeedupScatterPlot(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
+            # PhasarIterIDEOldNewTimeViolinPlot(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
+            # PhasarIterIDEOldNewMemViolinPlot(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
+            # PhasarIterIDESpeedupVsJF1Plot(self.plot_config, **self.plot_kwargs),
+            # PhasarIterIDEMemSpeedupVsJF1Plot(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
+            # PhasarIterIDENewTime(self.plot_config, **self.plot_kwargs),
+            # PhasarIterIDENewMem(self.plot_config, **self.plot_kwargs),
+            # PhasarIterIDESpeedupHeatmap(self.plot_config, **self.plot_kwargs),
+            # PhasarIterIDEMemSpeedupHeatmap(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
+            # PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            # PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDESpeedupGCScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDEMemSpeedupScatterPlot(
+            PhasarIterIDEMemSpeedupGCScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDEOldNewTimeViolinPlot(
+            PhasarIterIDEOldNewNestedScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDEOldNewMemViolinPlot(
+            PhasarIterIDEMemOldNewNestedScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDESpeedupVsJF1Plot(self.plot_config, **self.plot_kwargs),
-            PhasarIterIDEMemSpeedupVsJF1Plot(
+            PhasarIterIDESpeedupJFvsNested(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDENewTime(self.plot_config, **self.plot_kwargs),
-            PhasarIterIDENewMem(self.plot_config, **self.plot_kwargs),
-            PhasarIterIDESpeedupHeatmap(self.plot_config, **self.plot_kwargs),
-            PhasarIterIDEMemSpeedupHeatmap(
+            PhasarIterIDEMemSpeedupJFvsNested(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
-            PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
-            PhasarIterIDEMemSavingsGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDEAbsoluteMemSpeedupJFvsNested(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDEAbsoluteSpeedupJFvsNested(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNested(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNested(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDECombinedSpeedupPlot(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDELineTargetSpeedupVsNested(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedSize(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedTime(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedMem(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDEMemGrid(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDEGrid(self.plot_config, **self.plot_kwargs),
         ]
 
 
@@ -1514,7 +2597,7 @@ class CAIGScatterPlotGenerator(
             PhasarIterIDESpeedupGCScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
-            PhasarIterIDEWLSpeedupScatterPlot(
-                self.plot_config, **self.plot_kwargs
-            ),
+            # PhasarIterIDEWLSpeedupScatterPlot(
+            #     self.plot_config, **self.plot_kwargs
+            # ),
         ]
