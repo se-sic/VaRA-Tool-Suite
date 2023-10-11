@@ -4,7 +4,7 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
-from benchbuild.project import Workloads
+from benchbuild.project import Workloads, Sources
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
@@ -793,6 +793,41 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
     }
 
 
+def get_ip_data_sources() -> tp.List[Sources]:
+    # TODO: fix typing in benchbuild
+    return tp.cast(
+        tp.List[Sources], [
+            HTTPMultiple(
+                local="geo-maps",
+                remote={
+                    "1.0":
+                        "https://github.com/simonepri/geo-maps/releases/"
+                        "download/v0.6.0"
+                },
+                files=[
+                    "countries-land-10km.geo.json",
+                    "countries-land-500m.geo.json",
+                    "countries-land-250m.geo.json", "countries-land-1m.geo.json"
+                ]
+            ),
+            HTTPMultiple(
+                local="geo-maps-compr",
+                remote={
+                    "1.0":
+                        "https://github.com/se-sic/compression-data/raw/master/"
+                        "example_comp/geo-maps/"
+                },
+                files=[
+                    "countries-land-10km.geo.json.compressed",
+                    "countries-land-1m.geo.json.compressed",
+                    "countries-land-250m.geo.json.compressed",
+                    "countries-land-500m.geo.json.compressed"
+                ]
+            ),
+        ]
+    )
+
+
 class SynthIPRuntime(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
@@ -810,32 +845,7 @@ class SynthIPRuntime(VProject):
             version_filter=project_filter_generator("SynthIPRuntime")
         ),
         FeatureSource(),
-        HTTPMultiple(
-            local="geo-maps",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
-            },
-            files=[
-                "countries-land-10km.geo.json", "countries-land-500m.geo.json",
-                "countries-land-250m.geo.json", "countries-land-1m.geo.json"
-            ]
-        ),
-        HTTPMultiple(
-            local="geo-maps-compr",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/compression-data/raw/master/"
-                    "example_comp/geo-maps/"
-            },
-            files=[
-                "countries-land-10km.geo.json.compressed",
-                "countries-land-1m.geo.json.compressed",
-                "countries-land-250m.geo.json.compressed",
-                "countries-land-500m.geo.json.compressed"
-            ]
-        ),
+        *get_ip_data_sources(),
     ]
 
     WORKLOADS = get_ip_workloads("SynthIPRuntime", "Runtime")
@@ -883,32 +893,7 @@ class SynthIPTemplate(VProject):
             version_filter=project_filter_generator("SynthIPTemplate")
         ),
         FeatureSource(),
-        HTTPMultiple(
-            local="geo-maps",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
-            },
-            files=[
-                "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
-                "countries-land-1km.geo.json", "countries-land-1m.geo.json"
-            ]
-        ),
-        HTTPMultiple(
-            local="geo-maps-compr",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/compression-data/raw/master/"
-                    "example_comp/geo-maps/"
-            },
-            files=[
-                "countries-land-10km.geo.json.compressed",
-                "countries-land-1m.geo.json.compressed",
-                "countries-land-250m.geo.json.compressed",
-                "countries-land-500m.geo.json.compressed"
-            ]
-        ),
+        *get_ip_data_sources(),
     ]
 
     WORKLOADS = get_ip_workloads("SynthIPTemplate", "Template")
@@ -956,32 +941,7 @@ class SynthIPTemplate2(VProject):
             version_filter=project_filter_generator("SynthIPTemplate2")
         ),
         FeatureSource(),
-        HTTPMultiple(
-            local="geo-maps",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
-            },
-            files=[
-                "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
-                "countries-land-1km.geo.json", "countries-land-1m.geo.json"
-            ]
-        ),
-        HTTPMultiple(
-            local="geo-maps-compr",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/compression-data/raw/master/"
-                    "example_comp/geo-maps/"
-            },
-            files=[
-                "countries-land-10km.geo.json.compressed",
-                "countries-land-1m.geo.json.compressed",
-                "countries-land-250m.geo.json.compressed",
-                "countries-land-500m.geo.json.compressed"
-            ]
-        ),
+        *get_ip_data_sources(),
     ]
 
     WORKLOADS = get_ip_workloads("SynthIPTemplate2", "Template2")
@@ -1029,32 +989,7 @@ class SynthIPCombined(VProject):
             version_filter=project_filter_generator("SynthIPCombined")
         ),
         FeatureSource(),
-        HTTPMultiple(
-            local="geo-maps",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
-            },
-            files=[
-                "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
-                "countries-land-1km.geo.json", "countries-land-1m.geo.json"
-            ]
-        ),
-        HTTPMultiple(
-            local="geo-maps-compr",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/compression-data/raw/master/"
-                    "example_comp/geo-maps/"
-            },
-            files=[
-                "countries-land-10km.geo.json.compressed",
-                "countries-land-1m.geo.json.compressed",
-                "countries-land-250m.geo.json.compressed",
-                "countries-land-500m.geo.json.compressed"
-            ]
-        ),
+        *get_ip_data_sources(),
     ]
 
     WORKLOADS = get_ip_workloads("SynthIPCombined", "Combined")
@@ -1102,32 +1037,7 @@ class SynthSAFieldSensitivity(VProject):
             version_filter=project_filter_generator("SynthSAFieldSensitivity")
         ),
         FeatureSource(),
-        HTTPMultiple(
-            local="geo-maps",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
-            },
-            files=[
-                "earth-lakes-10km.geo.json", "countries-land-10km.geo.json",
-                "countries-land-1km.geo.json", "countries-land-1m.geo.json"
-            ]
-        ),
-        HTTPMultiple(
-            local="geo-maps-compr",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/compression-data/raw/master/"
-                    "example_comp/geo-maps/"
-            },
-            files=[
-                "countries-land-10km.geo.json.compressed",
-                "countries-land-1m.geo.json.compressed",
-                "countries-land-250m.geo.json.compressed",
-                "countries-land-500m.geo.json.compressed"
-            ]
-        ),
+        *get_ip_data_sources(),
     ]
 
     WORKLOADS = get_ip_workloads("SynthSAFieldSensitivity", "FieldSense")
