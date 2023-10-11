@@ -18,6 +18,20 @@ from varats.utils.settings import bb_cfg
 
 
 class HyTeg(VProject):
+    """
+    C++ framework for large scale high performance finite element simulations
+    based on (but not limited to) matrix-free geometric multigrid.
+
+    Note:
+        Currently HyTeg CANNOT be compiled with the Phasar passes activated
+        in vara.
+        Trying to do so will crash the compiler
+
+        If you use Dune with an experiment that uses the vara compiler,
+        add `-mllvm --vara-disable-phasar` to the projects `cflags` to
+        disable phasar passes.
+        This will still allow to analyse compile-time variability.
+    """
     NAME = 'HyTeg'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.TEST
@@ -37,7 +51,7 @@ class HyTeg(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("HyTeG/build/apps/profiling") /
+                SourceRoot("HyTeG") / "build" / "apps" / "profiling" /
                 RSBinary('ProfilingApp'),
                 label='ProfilingApp'
             )
@@ -65,10 +79,6 @@ class HyTeg(VProject):
 
         mkdir("-p", hyteg_source / "build")
 
-        # Currently Phasar passes crash the compiler
-        # This limits us to analysing compile time variability
-        self.cflags += ["-mllvm", "--vara-disable-phasar"]
-
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
@@ -83,7 +93,10 @@ class HyTeg(VProject):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def recompile(self) -> None:
-        pass
+        hyteg_source = local.path(self.source_of(self.primary_source))
+
+        with local.cwd(hyteg_source / "build" / "apps" / "profiling"):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def run_tests(self) -> None:
         pass
