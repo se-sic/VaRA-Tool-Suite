@@ -1,3 +1,4 @@
+"""Adds the HyTeg framework as a project to VaRA-TS."""
 import typing as tp
 
 import benchbuild as bb
@@ -10,7 +11,11 @@ from plumbum import local
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import get_local_project_git_path, BinaryType
+from varats.project.project_util import (
+    get_local_project_git_path,
+    BinaryType,
+    ProjectBinaryWrapper,
+)
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
@@ -75,6 +80,7 @@ class HyTeg(VProject):
         return binaries[revision]
 
     def compile(self) -> None:
+        """Compile HyTeg with irrelevant settings disabled."""
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         mkdir("-p", hyteg_source / "build")
@@ -93,6 +99,7 @@ class HyTeg(VProject):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def recompile(self) -> None:
+        """Recompiles HyTeg e.g. after a patch has been applied."""
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(hyteg_source / "build" / "apps" / "profiling"):
