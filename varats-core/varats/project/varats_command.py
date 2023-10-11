@@ -91,9 +91,14 @@ class VCommand(Command):  # type: ignore [misc]
         # TODO: maybe we should just provide a callable to modify the original
         # command
         if adapted_binary_location:
-            base_cmd.cmd.executable = base_cmd.cmd.executable.copy(
-                adapted_binary_location, override=True
-            )
+            if isinstance(base_cmd, LocalCommand):
+                base_cmd.executable = base_cmd.executable.copy(
+                    adapted_binary_location, override=True
+                )
+            else:
+                base_cmd.cmd.executable = base_cmd.cmd.executable.copy(
+                    adapted_binary_location, override=True
+                )
 
         if wrapper_cmd:
             cmd = wrapper_cmd[base_cmd]
