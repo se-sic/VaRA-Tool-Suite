@@ -5,9 +5,9 @@ from benchbuild.command import WorkloadSet, Command, SourceRoot
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
-from experiment.workload_util import WorkloadCategory, RSBinary
 from plumbum import local
 
+from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path, BinaryType
@@ -34,7 +34,7 @@ class HyTeg(VProject):
     """
     NAME = 'HyTeg'
     GROUP = 'cpp_projects'
-    DOMAIN = ProjectDomains.TEST
+    DOMAIN = ProjectDomains.HPC
 
     SOURCE = [
         PaperConfigSpecificGit(
