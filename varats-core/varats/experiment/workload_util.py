@@ -11,6 +11,7 @@ from enum import Enum
 from pathlib import Path
 
 from benchbuild.command import (
+    ArgsToken,
     PathToken,
     ProjectCommand,
     unwrap,
@@ -19,14 +20,12 @@ from benchbuild.command import (
     Command,
 )
 
-from varats.experiment.experiment_util import (
-    get_extra_config_options,
-    get_config_patches,
-)
+from varats.base.configuration import PlainCommandlineConfiguration
 from varats.project.project_util import ProjectBinaryWrapper
-from varats.project.varats_command import VCommand
+from varats.project.varats_command import VProjectCommand
 from varats.project.varats_project import VProject
 from varats.report.report import KeyedReportAggregate, ReportTy
+from varats.utils.config import get_config, get_extra_config_options
 from varats.utils.exceptions import auto_unwrap
 
 
@@ -71,6 +70,28 @@ def specify_binary(binary_name: str) -> PathToken:
 RSBinary = specify_binary
 
 
+class ConfigurationParameterRenderer:
+
+    def __init__(self, *default_args: str) -> None:
+        self.__default_args = default_args
+
+    def unrendered(self) -> str:
+        return f"<params>"
+
+    def rendered(self, project: VProject,
+                 **kwargs: tp.Any) -> tp.Tuple[str, ...]:
+        if get_config(project, PlainCommandlineConfiguration) is None:
+            return self.__default_args
+        return tuple(get_extra_config_options(project))
+
+
+def specify_configuration_parameters(*default_args: str) -> ArgsToken:
+    return ArgsToken.make_token(ConfigurationParameterRenderer(*default_args))
+
+
+ConfigParams = specify_configuration_parameters
+
+
 def workload_commands(
     project: VProject, binary: ProjectBinaryWrapper,
     requested_workload_tags: tp.List[WorkloadCategory]
@@ -89,26 +110,17 @@ def workload_commands(
     if requested_workload_tags:
         run_only = WorkloadSet(*requested_workload_tags)
 
-    project_cmds: tp.List[ProjectCommand] = [
-        ProjectCommand(project, workload_cmd)
+    project_cmds: tp.List[VProjectCommand] = [
+        VProjectCommand(project, workload_cmd)
         for workload_cmd in itertools.chain(
             *
             filter_workload_index(run_only, unwrap(project.workloads, project))
         )
     ]
 
-    # Filter commands that have required args and patches set.
-    extra_options = set(get_extra_config_options(project))
-    patches = get_config_patches(project)
-
-    def filter_by_config(prj_cmd: ProjectCommand) -> bool:
-        if isinstance(prj_cmd.command, VCommand):
-            return prj_cmd.command.can_be_executed_by(extra_options, patches)
-        return True
-
     return [
         cmd for cmd in project_cmds
-        if cmd.path.name == binary.name and filter_by_config(cmd)
+        if cmd.path.name == binary.name and cmd.can_be_executed()
     ]
 
 

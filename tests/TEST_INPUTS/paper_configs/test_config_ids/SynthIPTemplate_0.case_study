@@ -19,7 +19,7 @@ version: 0
 ---
 config_type: PatchConfiguration
 0: '["Decompress"]'
-1: '["Compress"]'
+1: '["Compress", "no_fastmode", "no_smallmode"]'
 2: '["Compress", "fastmode", "no_smallmode"]'
 3: '["Compress", "no_fastmode", "smallmode"]'
 4: '["Compress", "fastmode", "smallmode"]'
