@@ -97,11 +97,17 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         fig, naxs = pyplot.subplots(len(case_studies), 3, figsize=(18, 18))
-        for ax, case_study in zip(naxs[:,0], case_studies):
-            ax.annotate(case_study.project_name, xy=(0, 0.5), 
+        for ax, case_study in zip(naxs[:, 0], case_studies):
+            ax.annotate(
+                case_study.project_name,
+                xy=(0, 0.5),
                 xytext=(-ax.yaxis.labelpad - 10, 0),
-                xycoords=ax.yaxis.label, textcoords='offset points',
-                size='20', ha='right', va='center')
+                xycoords=ax.yaxis.label,
+                textcoords="offset points",
+                size="20",
+                ha="right",
+                va="center",
+            )
         fig.tight_layout(pad=5)
         row: int = 1
         for axs, case_study in zip(naxs, case_studies):
@@ -191,7 +197,7 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
             )
 
             row += 1
-        
+
         fig.subplots_adjust(left=0.15, top=0.95)
 
 
@@ -215,113 +221,71 @@ class FeatureSFBRPlotGenerator(
 class CommitSFBRPlot(Plot, plot_name="commit_sfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
+        fig, naxs = pyplot.subplots(2, 2, figsize=(18, 18))
+        projects_commit_data = [
+            get_structural_commit_data_for_case_study(case_study)
+            for case_study in case_studies
+        ]
 
-        rows = []
-        for case_study in case_studies:
-            commit_data = get_structural_commit_data_for_case_study(case_study)
-            project_name = case_study.project_name
-            for index in commit_data.index:
-                rows.extend([
-                    [
-                        project_name,
-                        sum(commit_data.at[index, "num_interacting_features"]),
-                        "No",
-                    ],
-                    [
-                        project_name,
-                        commit_data.at[index, "num_interacting_features"][0] + 
-                        sum(commit_data.at[index, "num_interacting_features"][1:]) / 2,
-                        "Yes",
-                    ],
-                ])
-        df = pd.DataFrame(
-            data=rows,
-            columns=["Projects", "Num Interacting Features", "Adjust to Nesting Degree of CFI"],
-        )
-        print(df)
-        ax = sns.violinplot(
-            data=df,
-            x="Projects",
-            y="Num Interacting Features",
-            hue="Adjust to Nesting Degree of CFI",
-            split=True,
-            gap="1",
-            cut=0,
-        )
-        """
-        fig, naxs = pyplot.subplots(2, 2, figsize=(15, 15))
         case_study_counter = 0
-        for axs in naxs:
-            for ax in axs:
-                if case_study_counter == len(case_studies):
-                    continue
-                case_study = case_studies[case_study_counter]
-
-                commit_data = get_structural_commit_data_for_case_study(case_study)
-                commit_data = commit_data.sort_values(by=["num_interacting_features"])
-
-                filter_lrg_commits = apply_tukeys_fence(
-                    commit_data, column="commit_size", k=1.5
-                )
-
-                commit_data = commit_data["num_interacting_features"]
-
-                interacting_with_nd1 = [
-                    commit_data[index][0] if index in filter_lrg_commits.index else 0
-                    for index in commit_data.index
-                ]
-                interacting_with_at_least_nd2 = [
-                    sum(commit_data[index][1:])
-                    if index in filter_lrg_commits.index
-                    else 0
-                    for index in commit_data.index
-                ]
-                interacting_with_nd1_lrg_commit = [
-                    0 if index in filter_lrg_commits.index else commit_data[index][0]
-                    for index in commit_data.index
-                ]
-                interacting_with_at_least_nd2_lrg_commit = [
-                    0
-                    if index in filter_lrg_commits.index
-                    else sum(commit_data[index][1:])
-                    for index in commit_data.index
-                ]
-
-                rng = range(len(commit_data))
-                ax.bar(rng, interacting_with_nd1)
-                ax.bar(
-                    rng,
-                    interacting_with_at_least_nd2,
-                    bottom=interacting_with_nd1,
-                )
-                ax.bar(
-                    rng, interacting_with_nd1_lrg_commit, alpha=0.65, color="tab:blue"
-                )
-                ax.bar(
-                    rng,
-                    interacting_with_at_least_nd2_lrg_commit,
-                    bottom=interacting_with_nd1_lrg_commit,
-                    alpha=0.65,
-                    color="tab:orange",
-                )
-                ax.set_xlabel("Commits")
-                ax.set_ylabel("Num Interacting Features")
-                step = round(len(commit_data) / 6)
-                ax.set_xticks(
-                    ticks=[i * step for i in range(6)],
-                    labels=[str(i * step) for i in range(6)],
-                )
-                ax.set_title(case_study.project_name)
-                ax.legend(
+        max_count = max(
+            [
+                sum(
                     [
-                        "Interacting with ND1",
-                        "Interacting with ND>1",
-                        "ND1, Large Commit",
-                        "ND>1, Large Commit",
+                        sum(commit_data.at[index, "num_interacting_features"]) == 1
+                        for index in commit_data.index
                     ]
                 )
+                for commit_data in projects_commit_data
+            ]
+        )
+        max_num_interacting_features = max(
+            [
+                max(
+                    [
+                        sum(commit_data.at[index, "num_interacting_features"])
+                        for index in commit_data.index
+                    ]
+                )
+                for commit_data in projects_commit_data
+            ]
+        )
+        for axs in naxs:
+            for ax in axs:
+                case_study = case_studies[case_study_counter]
+                commit_data = projects_commit_data[case_study_counter]
+                rows = []
+                for index in commit_data.index:
+                    num_interacting_features = sum(
+                        commit_data.at[index, "num_interacting_features"]
+                    )
+                    rows.append(
+                        [
+                            num_interacting_features,
+                            num_interacting_features == 1,
+                        ]
+                    )
+                df = pd.DataFrame(
+                    data=rows,
+                    columns=[
+                        "Num Interacting Features",
+                        "Changing More Than One Feature",
+                    ],
+                )
+                sns.histplot(
+                    data=df, y="Num Interacting Features", discrete=True, ax=ax,
+                    hue="Changing More Than One Feature",
+                    palette=[ "tab:orange","tab:blue",]
+                )
+                ax.legend_.remove()
+                ax.set_title(case_study.project_name, size="18")
+                ax.set_xlabel("Count", size="15")
+                ax.set_ylabel("Num Interacting Features", size="15")
+                ax.set_xticks(range(0, max_count + 1, 10))
+                ax.set_xticklabels(range(0, max_count + 1, 10))
+                ax.set_yticks(range(1, max_num_interacting_features + 1, 1))
+                ax.set_yticklabels(range(1, max_num_interacting_features + 1, 1))
                 case_study_counter += 1
-        """
 
 
 class CommitSFBRPlotGenerator(
@@ -616,11 +580,17 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=2, figsize=(15, 15))
-        for ax, case_study in zip(naxs[:,0], case_studies):
-            ax.annotate(case_study.project_name, xy=(0, 0.5), 
+        for ax, case_study in zip(naxs[:, 0], case_studies):
+            ax.annotate(
+                case_study.project_name,
+                xy=(0, 0.5),
                 xytext=(-ax.yaxis.labelpad - 10, 0),
-                xycoords=ax.yaxis.label, textcoords='offset points',
-                size='20', ha='right', va='center')
+                xycoords=ax.yaxis.label,
+                textcoords="offset points",
+                size="20",
+                ha="right",
+                va="center",
+            )
         fig.tight_layout(pad=5)
         first: bool = True
         for axs, case_study in zip(naxs, case_studies):
@@ -668,7 +638,9 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
             )
             axs[0].set_xlabel("Features" if first else "", size=13)
             axs[0].set_ylabel("Num Interacting Commits", size=13)
-            axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5), ha="right")
+            axs[0].set_xticklabels(
+                labels=data["feature"].values, rotation=(22.5), ha="right"
+            )
 
             if not first:
                 axs[0].legend_.remove()
@@ -773,11 +745,17 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=2, figsize=(15, 15))
-        for ax, case_study in zip(naxs[:,0], case_studies):
-            ax.annotate(case_study.project_name, xy=(0, 0.5), 
+        for ax, case_study in zip(naxs[:, 0], case_studies):
+            ax.annotate(
+                case_study.project_name,
+                xy=(0, 0.5),
                 xytext=(-ax.yaxis.labelpad - 10, 0),
-                xycoords=ax.yaxis.label, textcoords='offset points',
-                size='20', ha='right', va='center')
+                xycoords=ax.yaxis.label,
+                textcoords="offset points",
+                size="20",
+                ha="right",
+                va="center",
+            )
         fig.tight_layout(pad=5)
         row: int = 1
         corr_x_pos = [0, 600, 20, 15]
@@ -812,7 +790,6 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
                 data=rows,
                 columns=["Feature", "Num Interacting Authors", "Interaction Type"],
             )
-            print(df)
             sns.barplot(
                 data=df,
                 x="Feature",
@@ -822,7 +799,9 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
             )
             axs[0].set_xlabel("Features (sorted by size)" if row == 1 else "", size=13)
             axs[0].set_ylabel("Num Interacting Authors", size=13)
-            axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5), ha="right")
+            axs[0].set_xticklabels(
+                labels=data["feature"].values, rotation=(22.5), ha="right"
+            )
 
             sns.regplot(
                 data=data,
@@ -866,7 +845,7 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
             )
 
             row += 1
-        
+
         fig.subplots_adjust(left=0.15, top=0.95)
 
 
