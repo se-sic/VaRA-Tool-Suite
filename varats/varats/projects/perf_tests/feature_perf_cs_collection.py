@@ -10,7 +10,11 @@ from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -414,6 +418,7 @@ class SynthIPRuntime(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPRuntime")
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -422,35 +427,40 @@ class SynthIPRuntime(VProject):
                     "download/v0.6.0"
             },
             files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
-        ),
-        FeatureSource()
+        )
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
+                ConfigParams("-c"),
                 label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_args={"-c"}
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1km.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json.compressed"
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_args={"-c"}
+                ConfigParams("-c"),
+                label="countries-land-1km",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json.compressed"
             )
         ],
     }
@@ -497,34 +507,47 @@ class SynthIPTemplate(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPTemplate")
         ),
-        FeatureSource()
+        FeatureSource(),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
+        )
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPTemplate") / RSBinary("Template"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
                 label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_patch={"Compress"}
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1km.geo.json.compressed"
+                ],
+                requires_all_patch={"Compress"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json.compressed"
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPTemplate") / RSBinary("Template"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_patch={"Compress"}
+                label="countries-land-1km",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1m.geo.json.compressed"
+                ],
+                requires_all_patch={"Compress"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json.compressed"
             )
         ],
     }
@@ -571,34 +594,47 @@ class SynthIPTemplate2(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPTemplate2")
         ),
-        FeatureSource()
+        FeatureSource(),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
+        )
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
                 label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_patch={"Compress"}
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1km.geo.json.compressed"
+                ],
+                requires_all_patch={"Compress"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json.compressed"
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_patch={"Compress"}
+                label="countries-land-1km",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1m.geo.json.compressed"
+                ],
+                requires_all_patch={"Compress"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json.compressed"
             )
         ],
     }
@@ -645,34 +681,49 @@ class SynthIPCombined(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPCombined")
         ),
-        FeatureSource()
+        FeatureSource(),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
+        )
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("SynthIPCombined") / RSBinary("Combined"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
+                ConfigParams("-c"),
                 label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_args={"-c"}
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1km.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1km.geo.json.compressed"
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("SynthIPCombined") / RSBinary("Combined"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_args={"-c"}
+                ConfigParams("-c"),
+                label="countries-land-1km",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json.compressed"
             )
         ],
     }
