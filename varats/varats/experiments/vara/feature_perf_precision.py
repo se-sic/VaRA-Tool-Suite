@@ -85,6 +85,13 @@ def get_extra_cflags(project: VProject) -> tp.List[str]:
 
 def get_threshold(project: VProject) -> int:
     if project.DOMAIN.value is ProjectDomains.TEST:
+        if project.name in [
+            "SynthSAFieldSensitivity", "SynthIPRuntime", "SynthIPTemplate",
+            "SynthIPTemplate2", "SynthIPCombined"
+        ]:
+            print("Don't instrument everything")
+            return 20
+
         return 0
 
     return 50
