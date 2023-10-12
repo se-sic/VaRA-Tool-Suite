@@ -196,6 +196,10 @@ def create_new_bb_config(
         bb_root, "containers", "export"
     )
     new_bb_cfg["container"]["source"] = None
+    new_bb_cfg["container"]["storage_driver"] = "overlay"
+    new_bb_cfg["container"]["storage_opts"] = [
+        "mount_program=/usr/bin/fuse-overlayfs"
+    ]
 
     # will be set correctly when saved
     new_bb_cfg["config_file"] = None
