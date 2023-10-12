@@ -559,6 +559,27 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
 
         return loc
 
+    @staticmethod
+    def _calc_folder_locs_dune(repo_path: Path, rev_range: str) -> int:
+        dune_sub_projects = [
+            "dune-alugrid", "dune-common", "dune-functions", "dune-geometry",
+            "dune-grid", "dune-istl", "dune-localfunctions",
+            "dune-multidomaingrid", "dune-pdelab", "dune-typetree",
+            "dune-uggrid"
+        ]
+        total_locs = 0
+
+        total_locs += calc_repo_loc(repo_path, rev_range)
+
+        for sub_project in dune_sub_projects:
+            sub_project_path = repo_path / sub_project
+            # TODO: get sub_rpoject hashes
+            locs = calc_repo_loc(sub_project_path, "HEAD")
+            # print(f"Calculated {locs} for {sub_project_path}")
+            total_locs += locs
+
+        return total_locs
+
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
         profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
@@ -581,6 +602,8 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
                 locs = self._calc_folder_locs(
                     project_git_path, rev.hash, src_folder
                 )
+            elif case_study.project_cls.NAME == "DunePerfRegression":
+                locs = self._calc_folder_locs_dune(project_git_path, rev.hash)
             else:
                 locs = calc_repo_loc(project_git_path, rev.hash)
 
