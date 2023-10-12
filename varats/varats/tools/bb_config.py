@@ -74,7 +74,8 @@ def update_projects(
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
         'varats.projects.cpp_projects.ect',
-        'varats.projects.cpp_projects.lepton'
+        'varats.projects.cpp_projects.lepton',
+        'varats.projects.cpp_projects.dune'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -180,25 +181,19 @@ def create_new_bb_config(
 
     # Set paths to defaults
     bb_root = str(varats_cfg["benchbuild_root"])
-    new_bb_cfg["build_dir"] = s.ConfigPath(os.path.join(bb_root, "results"))
-    new_bb_cfg["tmp_dir"] = s.ConfigPath(os.path.join(bb_root, "tmp"))
-    new_bb_cfg["slurm"]["node_dir"] = s.ConfigPath(
-        os.path.join(bb_root, "results")
+    new_bb_cfg["build_dir"] = os.path.join(bb_root, "results")
+    new_bb_cfg["tmp_dir"] = os.path.join(bb_root, "tmp")
+    new_bb_cfg["slurm"]["node_dir"] = os.path.join(bb_root, "results")
+    new_bb_cfg["slurm"]["logs"] = os.path.join(bb_root, "slurm_logs")
+    new_bb_cfg["container"]["root"] = os.path.join(bb_root, "containers", "lib")
+    new_bb_cfg["container"]["runroot"] = os.path.join(
+        bb_root, "containers", "run"
     )
-    new_bb_cfg["slurm"]["logs"] = s.ConfigPath(
-        os.path.join(bb_root, "slurm_logs")
+    new_bb_cfg["container"]["export"] = os.path.join(
+        bb_root, "containers", "export"
     )
-    new_bb_cfg["container"]["root"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "lib")
-    )
-    new_bb_cfg["container"]["runroot"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "run")
-    )
-    new_bb_cfg["container"]["export"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "export")
-    )
-    new_bb_cfg["container"]["import"] = s.ConfigPath(
-        os.path.join(bb_root, "containers", "export")
+    new_bb_cfg["container"]["import"] = os.path.join(
+        bb_root, "containers", "export"
     )
     new_bb_cfg["container"]["source"] = None
     new_bb_cfg["container"]["storage_driver"] = "overlay"

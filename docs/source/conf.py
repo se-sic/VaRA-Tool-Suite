@@ -87,6 +87,10 @@ import numpy.typing as npt  # isort:skip
 # modules that require this module before setting the type checking flag.
 import scipy.stats  # isort:skip
 
+# Matplotlib >=3.8 has a type-checking-flag-guarded import of a symbol that does
+# not exist in the shipped version.
+import matplotlib.pyplot  # isort:skip
+
 # The autodocs typehints plugin does not resolve circular imports caused by type
 # annotations, so we have to manually break the circles.
 import rich.console  # isort:skip

@@ -1,0 +1,10 @@
+description: Patch valid for a range of commits where a single one is excluded
+exclude_revisions:
+  single_revision: 162db88346b06be20faac6976f1ff9bad986accf
+include_revisions:
+  revision_range:
+    end: 8ca5cc28e6746eef7340064b5d843631841bf31e
+    start: 01f9f1f07bef22d4248e8349aba4f0c1f204607e
+path: bug.patch
+project_name: FeaturePerfCSCollection
+shortname: include-range-exclude-single

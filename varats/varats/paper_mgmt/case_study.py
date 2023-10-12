@@ -301,7 +301,7 @@ def get_newest_result_files_for_case_study(
     Returns:
         list of result file paths
     """
-    files_to_store: tp.Dict[tp.Tuple[ShortCommitHash, tp.Optional[int]],
+    files_to_store: tp.Dict[tp.Tuple[ShortCommitHash, str, tp.Optional[int]],
                             Path] = {}
 
     result_dir /= case_study.project_name
@@ -319,16 +319,23 @@ def get_newest_result_files_for_case_study(
             )
 
             if case_study.has_revision(commit_hash) and config_id_matches:
-                current_file = files_to_store.get((commit_hash, config_id),
-                                                  None)
+                current_file = files_to_store.get(
+                    (commit_hash, report_file.experiment_shorthand, config_id),
+                    None
+                )
                 if current_file is None:
-                    files_to_store[(commit_hash, config_id)] = opt_res_file
+                    files_to_store[(
+                        commit_hash, report_file.experiment_shorthand, config_id
+                    )] = opt_res_file
                 else:
                     if (
                         current_file.stat().st_mtime <
                         opt_res_file.stat().st_mtime
                     ):
-                        files_to_store[(commit_hash, config_id)] = opt_res_file
+                        files_to_store[(
+                            commit_hash, report_file.experiment_shorthand,
+                            config_id
+                        )] = opt_res_file
 
     return list(files_to_store.values())
 

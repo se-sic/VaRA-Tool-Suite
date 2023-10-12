@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import mkdir, make
+from benchbuild.utils.cmd import cmake, mkdir, make
 from benchbuild.utils.revision_ranges import (
     RevisionRange,
     block_revisions,
@@ -132,7 +132,7 @@ class Brotli(VProject):
             mkdir(brotli_version_source / "out")
             with local.cwd(brotli_version_source / "out"):
                 with local.env(CC=str(c_compiler)):
-                    bb.watch(local["../configure-cmake"])()
+                    bb.watch(cmake)("-G", "Unix Makefiles", "..")
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(brotli_version_source):

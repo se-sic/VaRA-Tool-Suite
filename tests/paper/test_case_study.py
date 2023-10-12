@@ -48,6 +48,7 @@ stages:
     commit_id: 494
 ...
 ---
+config_type: ConfigurationImpl
 0: '{"foo": true, "bar": false, "bazz": "bazz-value", "buzz": "None"}'
 1: '{}'
 2: '{}'
