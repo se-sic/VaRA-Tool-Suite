@@ -92,26 +92,19 @@ def get_structural_commit_data_for_case_study(case_study: CaseStudy) -> pd.DataF
 ######## FEATURES #########
 
 
-def create_subtitle(fig: pyplot.Figure, grid: pyplot.SubplotSpec, title: str):
-    "Sign sets of subplots with title"
-    row = fig.add_subplot(grid)
-    # the '\n' is important
-    row.set_title(f"{title}\n", fontweight="semibold", fontsize="15")
-    # hide subplot
-    row.set_frame_on(False)
-    row.axis("off")
-
-
 class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
 
         fig, naxs = pyplot.subplots(len(case_studies), 3, figsize=(18, 18))
-        grid = pyplot.GridSpec(len(case_studies), 3)
-        fig.tight_layout(pad=7)
+        for ax, case_study in zip(naxs[:,0], case_studies):
+            ax.annotate(case_study.project_name, xy=(0, 0.5), 
+                xytext=(-ax.yaxis.labelpad - 10, 0),
+                xycoords=ax.yaxis.label, textcoords='offset points',
+                size='20', ha='right', va='center')
+        fig.tight_layout(pad=5)
         row: int = 1
         for axs, case_study in zip(naxs, case_studies):
-            create_subtitle(fig, grid[row - 1, ::], case_study.project_name)
             data = get_structural_feature_data_for_case_study(case_study)
 
             data = data.sort_values(by=["num_interacting_commits_nd1"])
@@ -130,7 +123,7 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
 
             axs[0].set_xlabel("Features" if row == 1 else "", size="13")
             axs[0].set_ylabel("Num Interacting Commits", size="13")
-            axs[0].set_xticklabels(data["feature"].values, rotation=(36))
+            axs[0].set_xticklabels(data["feature"].values, rotation=(22.5), ha="right")
             if row > 1:
                 axs[0].legend_.remove()
 
@@ -148,7 +141,7 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
             stacked_feature_size_data.plot.bar(stacked=True, width=0.95, ax=axs[1])
 
             axs[1].set_ylabel("Feature Size", size="13")
-            axs[1].set_xticklabels(data["feature"].values, rotation=(36))
+            axs[1].set_xticklabels(data["feature"].values, rotation=(22.5), ha="right")
             if row > 1:
                 axs[1].legend_.remove()
 
@@ -198,6 +191,8 @@ class FeatureSFBRPlot(Plot, plot_name="feature_sfbr_plot"):
             )
 
             row += 1
+        
+        fig.subplots_adjust(left=0.15, top=0.95)
 
 
 class FeatureSFBRPlotGenerator(
@@ -226,15 +221,33 @@ class CommitSFBRPlot(Plot, plot_name="commit_sfbr_plot"):
             commit_data = get_structural_commit_data_for_case_study(case_study)
             project_name = case_study.project_name
             for index in commit_data.index:
-                rows.append(
+                rows.extend([
                     [
                         project_name,
                         sum(commit_data.at[index, "num_interacting_features"]),
-                    ]
-                )
-        df = pd.DataFrame(data=rows, columns=["Projects", "Num Interacting Features"])
-        sns.violinplot(data=df, x="Projects", y="Num Interacting Features", cut=1)
-
+                        "No",
+                    ],
+                    [
+                        project_name,
+                        commit_data.at[index, "num_interacting_features"][0] + 
+                        sum(commit_data.at[index, "num_interacting_features"][1:]) / 2,
+                        "Yes",
+                    ],
+                ])
+        df = pd.DataFrame(
+            data=rows,
+            columns=["Projects", "Num Interacting Features", "Adjust to Nesting Degree of CFI"],
+        )
+        print(df)
+        ax = sns.violinplot(
+            data=df,
+            x="Projects",
+            y="Num Interacting Features",
+            hue="Adjust to Nesting Degree of CFI",
+            split=True,
+            gap="1",
+            cut=0,
+        )
         """
         fig, naxs = pyplot.subplots(2, 2, figsize=(15, 15))
         case_study_counter = 0
@@ -603,7 +616,12 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=2, figsize=(15, 15))
-        fig.tight_layout(pad=6.5)
+        for ax, case_study in zip(naxs[:,0], case_studies):
+            ax.annotate(case_study.project_name, xy=(0, 0.5), 
+                xytext=(-ax.yaxis.labelpad - 10, 0),
+                xycoords=ax.yaxis.label, textcoords='offset points',
+                size='20', ha='right', va='center')
+        fig.tight_layout(pad=5)
         first: bool = True
         for axs, case_study in zip(naxs, case_studies):
             data = get_feature_dataflow_data_for_case_study(case_study)
@@ -648,10 +666,9 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 linestyle="--",
                 linewidth=2,
             )
-            axs[0].set_title(case_study.project_name, size=15)
             axs[0].set_xlabel("Features" if first else "", size=13)
             axs[0].set_ylabel("Num Interacting Commits", size=13)
-            axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5))
+            axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5), ha="right")
 
             if not first:
                 axs[0].legend_.remove()
@@ -684,10 +701,12 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 axs[1].legend(ncol=1)
 
             max_ftr_size = max(data["feature_size"].values)
-            max_int_cmmts = max([
-                max(data["num_interacting_commits_outside_df"].values),
-                max(data["num_interacting_commits_inside_df"].values)
-            ])
+            max_int_cmmts = max(
+                [
+                    max(data["num_interacting_commits_outside_df"].values),
+                    max(data["num_interacting_commits_inside_df"].values),
+                ]
+            )
             corr, p_value = stats.pearsonr(
                 data["num_interacting_commits_outside_df"].values,
                 data["feature_size"].values,
@@ -710,6 +729,8 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
             )
 
             first = False
+
+        fig.subplots_adjust(left=0.15, top=0.95)
 
 
 class FeatureDFBRPlotGenerator(
@@ -752,13 +773,16 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
         fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=2, figsize=(15, 15))
-        grid = pyplot.GridSpec(len(case_studies), 2)
-        fig.tight_layout(pad=6.5)
+        for ax, case_study in zip(naxs[:,0], case_studies):
+            ax.annotate(case_study.project_name, xy=(0, 0.5), 
+                xytext=(-ax.yaxis.labelpad - 10, 0),
+                xycoords=ax.yaxis.label, textcoords='offset points',
+                size='20', ha='right', va='center')
+        fig.tight_layout(pad=5)
         row: int = 1
         corr_x_pos = [0, 600, 20, 15]
         corr_y_pos = [(1.9, 1.83), (1.8, 1.2), (2.5, 2.35), (5.6, 5.2)]
         for axs, case_study in zip(naxs, case_studies):
-            create_subtitle(fig, grid[row - 1, ::], case_study.project_name)
             data = get_feature_author_data_for_case_study(case_study)
             data = data.sort_values(by=["feature_size"])
 
@@ -798,7 +822,7 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
             )
             axs[0].set_xlabel("Features (sorted by size)" if row == 1 else "", size=13)
             axs[0].set_ylabel("Num Interacting Authors", size=13)
-            axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5))
+            axs[0].set_xticklabels(labels=data["feature"].values, rotation=(22.5), ha="right")
 
             sns.regplot(
                 data=data,
@@ -842,6 +866,8 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
             )
 
             row += 1
+        
+        fig.subplots_adjust(left=0.15, top=0.95)
 
 
 class AuthorCFIPlotGenerator(

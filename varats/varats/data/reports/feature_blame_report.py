@@ -422,7 +422,6 @@ def generate_general_commit_dcfi_data(
     num_structural_interactions = 0
     # check for every structural CFI, if its respective commit and feature also interact through dataflow
     for commit_hash, features in commits_structurally_interacting_features.items():
-        commit_hash: str = ShortCommitHash(commit_hash).hash
         entry = commits_dataflow_interacting_features.get(commit_hash)
         num_structural_interactions += len(features)
         for feature in features:
@@ -433,9 +432,24 @@ def generate_general_commit_dcfi_data(
         interacting_structurally_and_through_dataflow / num_structural_interactions
     )
 
+    interacting_through_inside_dataflow = 0
+    interacting_through_outside_dataflow = 0
+    num_dataflow_interactions = 0
+    for _, (all, inside, outside) in commits_dataflow_interacting_features.items():
+        num_dataflow_interactions += len(all)
+        interacting_through_inside_dataflow += len(inside)
+        interacting_through_outside_dataflow += len(outside)
+    row.append(
+        (
+            interacting_through_inside_dataflow / num_dataflow_interactions,
+            interacting_through_outside_dataflow / num_dataflow_interactions
+        )
+    )
+    
     columns = [
         "fraction_commits_structurally_interacting_with_features",
         "likelihood_dataflow_interaction_when_interacting_structurally",
+        "proportion_dataflow_origin_for_interactions",
     ]
     return pd.DataFrame([row], columns=columns)
 
