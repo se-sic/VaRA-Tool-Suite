@@ -183,18 +183,23 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Returns: list of tracing specific cflags
         """
         c_flags = []
+
         if instr_type != FeatureInstrType.NONE:
             c_flags += ["-fsanitize=vara", f"-fvara-instr={instr_type.value}"]
+
         c_flags += [
             "-flto", "-fuse-ld=lld", "-flegacy-pass-manager",
             "-fno-omit-frame-pointer"
         ]
-        if instruction_threshold is not None:
+
+        if instruction_threshold is None:
             # For test projects, do not exclude small regions
             if project is not None and project.domain == ProjectDomains.TEST:
                 instruction_threshold = 1
 
+        if instruction_threshold is not None:
             c_flags += [f"-fvara-instruction-threshold={instruction_threshold}"]
+
         if save_temps:
             c_flags += ["-Wl,-plugin-opt=save-temps"]
 
