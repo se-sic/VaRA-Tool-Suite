@@ -74,7 +74,8 @@ def update_projects(
         'varats.projects.cpp_projects.poppler',
         'varats.projects.cpp_projects.z3',
         'varats.projects.cpp_projects.ect',
-        'varats.projects.cpp_projects.lepton'
+        'varats.projects.cpp_projects.lepton',
+        'varats.projects.cpp_projects.dune'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -195,6 +196,10 @@ def create_new_bb_config(
         bb_root, "containers", "export"
     )
     new_bb_cfg["container"]["source"] = None
+    new_bb_cfg["container"]["storage_driver"] = "overlay"
+    new_bb_cfg["container"]["storage_opts"] = [
+        "mount_program=/usr/bin/fuse-overlayfs"
+    ]
 
     # will be set correctly when saved
     new_bb_cfg["config_file"] = None
