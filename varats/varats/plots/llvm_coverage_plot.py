@@ -590,15 +590,15 @@ def _save_plot(
             binary_dir,
             disabled_workarounds,
             columns={
-                "TP": "\\# \\ac{TP}",
-                "FN": "\\# \\ac{FN}",
-                "FP": "\\# \\ac{FP}",
-                "TN": "\\# \\ac{TN}",
-                "accuracy": "Accuracy (\\%)",
+                "TP": "\\ac{TP}",
+                "FN": "\\ac{FN}",
+                "FP": "\\ac{FP}",
+                "TN": "\\ac{TN}",
+                "accuracy": "_Accuracy (\\%)",
                 "precision": "Precision (\\%)",
                 "recall": "Recall (\\%)",
                 "balanced_accuracy": "Balanced Accuracy (\\%)",
-                "f1_score": "F1 Score (\\%)",
+                "f1_score": "_F1 Score (\\%)",
             }
         )
 
@@ -790,7 +790,9 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
             rows.append(row)
 
         df = pd.DataFrame(
-            columns=["Feature"] + list(columns.values()), data=rows
+            columns=["Feature"] +
+            list(value.lstrip("_") for value in columns.values()),
+            data=rows
         )
         #df.set_index("Feature", inplace=True)
         #df.sort_index(inplace=True)
@@ -808,7 +810,9 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
 
         column_format = "l"
         for column_text in columns.values():
-            if "%" in column_text:
+            if column_text.startswith("_"):
+                column_format += "H"
+            elif "%" in column_text:
                 column_format += "S"
             else:
                 column_format += "c"
@@ -828,8 +832,22 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
             siunitx=True,
         )
 
+        # Add midline befor TOTAL and comment rows after total.
+        table_lines = []
+        found_total = False
+        for line in table.splitlines():
+            if "TOTAL" in line:
+                found_total = True
+                table_lines.append("\\midrule")
+                table_lines.append(line)
+            else:
+                if found_total and "&" in line:
+                    table_lines.append(f"%{line}")
+                else:
+                    table_lines.append(line)
+
         outfile = cf_dir / "cofusion_matrix_table.tex"
-        outfile.write_text(data=table, encoding="utf-8")
+        outfile.write_text(data="\n".join(table_lines), encoding="utf-8")
 
 
 class CoveragePlotGenerator(
