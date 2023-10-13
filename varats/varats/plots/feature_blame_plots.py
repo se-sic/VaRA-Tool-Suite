@@ -273,9 +273,15 @@ class CommitSFBRPlot(Plot, plot_name="commit_sfbr_plot"):
                     ],
                 )
                 sns.histplot(
-                    data=df, y="Num Interacting Features", discrete=True, ax=ax,
+                    data=df,
+                    y="Num Interacting Features",
+                    discrete=True,
+                    ax=ax,
                     hue="Changing More Than One Feature",
-                    palette=[ "tab:orange","tab:blue",]
+                    palette=[
+                        "tab:orange",
+                        "tab:blue",
+                    ],
                 )
                 ax.legend_.remove()
                 ax.set_title(case_study.project_name, size="18")
@@ -579,7 +585,7 @@ def get_feature_dataflow_data_for_case_study(case_study: CaseStudy) -> pd.DataFr
 class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
     def plot(self, view_mode: bool) -> None:
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_studies"]
-        fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=2, figsize=(15, 15))
+        fig, naxs = pyplot.subplots(nrows=len(case_studies), ncols=3, figsize=(17, 17))
         for ax, case_study in zip(naxs[:, 0], case_studies):
             ax.annotate(
                 case_study.project_name,
@@ -592,10 +598,16 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 va="center",
             )
         fig.tight_layout(pad=5)
-        first: bool = True
+        row: int = 1
+        pos: tp.List[tp.Tuple[int]] = [
+            (0.01, 0.8),
+            (0.4, 0.1),
+            (0.01, 0.99),
+            (0.03, 0.99),
+        ]
         for axs, case_study in zip(naxs, case_studies):
             data = get_feature_dataflow_data_for_case_study(case_study)
-            data = data.sort_values(by=["num_interacting_commits_outside_df"])
+            data = data.sort_values(by=["feature_size"])
             rows = []
             for index in data.index:
                 feature = data.at[index, "feature"]
@@ -636,21 +648,56 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 linestyle="--",
                 linewidth=2,
             )
-            axs[0].set_xlabel("Features" if first else "", size=13)
+            axs[0].set_xlabel("Features (Sorted by Size)" if row==1 else "", size=13)
             axs[0].set_ylabel("Num Interacting Commits", size=13)
             axs[0].set_xticklabels(
                 labels=data["feature"].values, rotation=(22.5), ha="right"
             )
 
-            if not first:
+            if row > 1:
                 axs[0].legend_.remove()
+
+            df = pd.DataFrame(
+                data=[
+                    [   
+                        data.at[index, "feature_size"],
+                        data.at[index, "num_interacting_commits_outside_df"]
+                        / data.at[index, "num_interacting_commits_inside_df"],
+                    ]
+                    for index in data.index
+                ],
+                columns=["Feature Size", "Proportion Outside to Inside Commits"],
+            )
+            sns.regplot(
+                data=df,
+                x="Feature Size",
+                y="Proportion Outside to Inside Commits",
+                ci=None,
+                ax=axs[1],
+                label="Outside Commits",
+            )
+            max_ftr_size = max(df["Feature Size"].values)
+            max_proportion = max(df["Proportion Outside to Inside Commits"].values)
+            corr, p_value = stats.pearsonr(
+                df["Feature Size"].values,
+                df["Proportion Outside to Inside Commits"].values,
+            )
+            axs[1].text(
+                max_ftr_size * 0.35,
+                max_proportion * 0.95,
+                "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
+                color="tab:blue",
+            )
+            axs[1].set_xlabel("Feature Size", size=13)
+            axs[1].set_ylabel("Proportion Outside to Inside Commits", size=11)
+
 
             sns.regplot(
                 data=data,
                 x="feature_size",
                 y="num_interacting_commits_outside_df",
                 ci=None,
-                ax=axs[1],
+                ax=axs[2],
                 line_kws={"lw": 2},
                 scatter=True,
                 truncate=False,
@@ -661,18 +708,17 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 x="feature_size",
                 y="num_interacting_commits_inside_df",
                 ci=None,
-                ax=axs[1],
+                ax=axs[2],
                 line_kws={"lw": 2},
                 scatter=True,
                 truncate=False,
                 label="Inside Commits",
             )
-            axs[1].set_xlabel("Feature Size", size=13)
-            axs[1].set_ylabel("Num Interacting Commits", size=13)
-            if first:
-                axs[1].legend(ncol=1)
+            axs[2].set_xlabel("Feature Size", size=13)
+            axs[2].set_ylabel("Num Interacting Commits", size=13)
+            if row == 1:
+                axs[2].legend(ncol=1)
 
-            max_ftr_size = max(data["feature_size"].values)
             max_int_cmmts = max(
                 [
                     max(data["num_interacting_commits_outside_df"].values),
@@ -683,9 +729,9 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 data["num_interacting_commits_outside_df"].values,
                 data["feature_size"].values,
             )
-            axs[1].text(
-                max_ftr_size * 0.35,
-                max_int_cmmts * 0.95,
+            axs[2].text(
+                max_ftr_size * pos[row - 1][0],
+                max_int_cmmts * pos[row - 1][1],
                 "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
                 color="tab:blue",
             )
@@ -693,14 +739,14 @@ class FeatureDFBRPlot(Plot, plot_name="feature_dfbr_plot"):
                 data["num_interacting_commits_inside_df"].values,
                 data["feature_size"].values,
             )
-            axs[1].text(
-                max_ftr_size * 0.35,
-                max_int_cmmts * 0.88,
+            axs[2].text(
+                max_ftr_size * pos[row - 1][0],
+                max_int_cmmts * (pos[row - 1][1] - 0.07),
                 "corr=" + str(round(corr, 3)) + ", p-value=" + str(round(p_value, 3)),
                 color="tab:orange",
             )
 
-            first = False
+            row += 1
 
         fig.subplots_adjust(left=0.15, top=0.95)
 

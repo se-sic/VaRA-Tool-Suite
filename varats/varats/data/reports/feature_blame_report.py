@@ -169,6 +169,10 @@ def generate_commit_scfi_data(
         features = SCFI.features
         full_commit_hash = SCFI.commit.commit_hash
         commit_hash = ShortCommitHash(SCFI.commit.commit_hash).hash
+        if "force,no_time,no_name" in features:
+            print(features)
+            print(commit_hash)
+            print(SCFI.num_instructions)
         repository_name = SCFI.commit.repository_name
         entry = commit_cfi_data.get(commit_hash)
 
