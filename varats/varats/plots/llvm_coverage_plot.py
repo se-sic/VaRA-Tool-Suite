@@ -31,6 +31,9 @@ from varats.base.configuration import (
 from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.llvm_coverage_report import (
     CodeRegion,
+    CodeRegionKind,
+    RegionEnd,
+    RegionStart,
     CoverageReport,
     cov_segments,
     cov_show_segment_buffer,
@@ -63,6 +66,36 @@ TIMEOUT_SECONDS = 120
 
 _IN = tp.TypeVar("_IN")
 _OUT = tp.TypeVar("_OUT")
+
+INGORE_PARSING_CODE = [
+    CodeRegion(
+        start=RegionStart(line=9, column=1),
+        end=RegionEnd(line=17, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="isFeatureEnabled",
+        filename="include/fpcsc/perf_util/feature_cmd.h"
+    ),
+    CodeRegion(
+        start=RegionStart(line=42, column=1),
+        end=RegionEnd(line=49, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="loadConfigFromArgv",
+        filename="src/SimpleFeatureInteraction/SFImain.cpp"
+    )
+]
+
+IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [
+    CodeRegion(
+        start=RegionStart(line=19, column=1),
+        end=RegionEnd(line=35, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="compress+addPadding+encrypt",
+        filename="src/SimpleFeatureInteraction/SFImain.cpp"
+    )
+]
 
 
 def _init_process() -> None:
@@ -193,6 +226,9 @@ def _matrix_analyze_code_region(
     vara_feature_regions: tp.List[tp.Any], vara_normal_regions: tp.List[tp.Any]
 ) -> None:
     for region in code_region.iter_breadth_first():
+        # Skip ignored regions
+        if region.ignore:
+            continue
         if feature == "__coverage__":
             # Only consider coverage features
             features = region.coverage_features_set()
@@ -381,7 +417,8 @@ class CoverageReports:
         self._feature_model: tp.Optional[Function] = None
         self._feature_option_mapping: tp.Optional[tp.Dict[str,
                                                           tp.Set[str]]] = None
-        self._feature_report: tp.Optional[CoverageReport] = None
+        self._feature_report: tp.Dict[tp.Tuple[bool, bool, bool],
+                                      CoverageReport] = {}
 
         # Check all reports have same feature model
         self._reports = reports
@@ -452,22 +489,54 @@ class CoverageReports:
 
         return self._feature_model
 
-    def feature_report(self) -> CoverageReport:
+    def feature_report(
+        self,
+        ignore_conditions: bool = True,
+        ignore_parsing_code: bool = True,
+        ignore_feature_dependent_functions: bool = True,
+    ) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
-        if self._feature_report is not None:
-            return self._feature_report
+        if (
+            ignore_conditions, ignore_parsing_code,
+            ignore_feature_dependent_functions
+        ) in self._feature_report:
+            result = self._feature_report[(
+                ignore_conditions, ignore_parsing_code,
+                ignore_feature_dependent_functions
+            )]
+        else:
+            with MeasureTime("FeatureReport", "Calculating..."):
+                result = reduce(
+                    lambda x, y: x.combine_features(y), self._reports
+                )
+            result.feature_model = self.feature_model()
 
-        with MeasureTime("FeatureReport", "Calculating..."):
-            result = reduce(lambda x, y: x.combine_features(y), self._reports)
-        result.feature_model = self.feature_model()
-        self._feature_report = result
-        return self._feature_report
+        result.parse_instrs(ignore_conditions)
+        result.clean_ignored_regions()
 
-    def feature_segments(self, base_dir: Path) -> FileSegmentBufferMapping:
+        ignore_regions = []
+        if ignore_parsing_code:
+            ignore_regions.extend(INGORE_PARSING_CODE)
+        if ignore_feature_dependent_functions:
+            ignore_regions.extend(IGNORE_FEATURE_DEPENDENT_FUNCTIONS)
+
+        if ignore_regions:
+            result.mark_regions_ignored(ignore_regions)
+
+        self._feature_report[(
+            ignore_conditions, ignore_parsing_code,
+            ignore_feature_dependent_functions
+        )] = result
+
+        return result
+
+    def feature_segments(
+        self, base_dir: Path, **kwargs: tp.Any
+    ) -> FileSegmentBufferMapping:
         """Returns segments annotated with corresponding feature
         combinations."""
 
-        feature_report = self.feature_report()
+        feature_report = self.feature_report(**kwargs)
         assert feature_report.feature_model is not None
 
         return cov_segments(feature_report, base_dir)
@@ -475,11 +544,12 @@ class CoverageReports:
     def confusion_matrices(
         self,
         feature_name_map: tp.Dict[str, tp.Set[str]],
-        threshold: float = 1.0
+        threshold: float = 1.0,
+        **kwargs: tp.Any
     ) -> tp.Dict[str, ConfusionMatrix[ConfusionEntry]]:
         """Returns the confusion matrices."""
 
-        report = self.feature_report()
+        report = self.feature_report(**kwargs)
 
         result = {}
         # Iterate over feature_report and compare vara to coverage features
@@ -538,9 +608,9 @@ BinaryReportsMapping = tp.NewType(
 
 
 def _process_report_file(
-    args: tp.Tuple[ConfigurationMap, ReportFilepath, Path, bool]
+    args: tp.Tuple[ConfigurationMap, ReportFilepath, Path]
 ) -> tp.Tuple[str, CoverageReport]:
-    config_map, report_filepath, base_dir, ignore_conditions = args
+    config_map, report_filepath, base_dir = args
 
     binary = report_filepath.report_filename.binary_name
     config_id = report_filepath.report_filename.config_id
@@ -553,54 +623,58 @@ def _process_report_file(
             raise ValueError("config is None!")
 
         coverage_report = CoverageReport.from_report(
-            report_filepath.full_path(), config, base_dir, ignore_conditions
+            report_filepath.full_path(),
+            config,
+            base_dir,
         )
     return binary, coverage_report
 
 
 def _save_plot(
-    binary_reports_map: BinaryReportsMapping,
-    tmp_dir: Path,
-    base_dir: Path,
-    disabled_workarounds: str = ""
+    reports: CoverageReports, binary_dir: Path, base_dir: Path,
+    **workarounds: bool
 ) -> None:
-    for binary in binary_reports_map:
-        reports = CoverageReports(binary_reports_map[binary])
+    name = "enabled_workarounds"
+    text = ', '.join(
+        workaround for workaround, value in workarounds.items() if value
+    ).replace('_', '-')
 
-        binary_dir = tmp_dir / binary
-        binary_dir.mkdir(parents=True)
+    workaround_dir = (binary_dir / f"{name}: {text}")
+    workaround_dir.mkdir(parents=True)
 
-        feature_annotations = \
-            binary_dir / "feature_annotations.txt"
+    feature_annotations = \
+        workaround_dir / "feature_annotations.txt"
 
-        _plot_coverage_annotations(reports, base_dir, feature_annotations)
+    _plot_coverage_annotations(
+        reports, base_dir, feature_annotations, workarounds
+    )
 
-        print(
-            cov_show_segment_buffer(
-                reports.feature_segments(base_dir),
-                show_counts=False,
-                show_coverage_features=True,
-                show_coverage_feature_set=True,
-                show_vara_features=True
-            )
+    print(
+        cov_show_segment_buffer(
+            reports.feature_segments(base_dir, **workarounds),
+            show_counts=False,
+            show_coverage_features=True,
+            show_coverage_feature_set=True,
+            show_vara_features=True
         )
+    )
 
-        _plot_confusion_matrix(
-            reports,
-            binary_dir,
-            disabled_workarounds,
-            columns={
-                "TP": "\\ac{TP}",
-                "FN": "\\ac{FN}",
-                "FP": "\\ac{FP}",
-                "TN": "\\ac{TN}",
-                "accuracy": "_Accuracy (\\%)",
-                "precision": "Precision (\\%)",
-                "recall": "Recall (\\%)",
-                "balanced_accuracy": "Balanced Accuracy (\\%)",
-                "f1_score": "_F1 Score (\\%)",
-            }
-        )
+    _plot_confusion_matrix(
+        reports,
+        workaround_dir,
+        workarounds,
+        columns={
+            "TP": "\\ac{TP}",
+            "FN": "\\ac{FN}",
+            "FP": "\\ac{FP}",
+            "TN": "\\ac{TN}",
+            "accuracy": "_Accuracy (\\%)",
+            "precision": "Precision (\\%)",
+            "recall": "Recall (\\%)",
+            "balanced_accuracy": "Balanced Accuracy (\\%)",
+            "f1_score": "_F1 Score (\\%)",
+        }
+    )
 
 
 class CoveragePlot(Plot, plot_name="coverage"):
@@ -610,14 +684,16 @@ class CoveragePlot(Plot, plot_name="coverage"):
         self, plot_config: PlotConfig, *args: tp.List[tp.Any], **kwargs: tp.Any
     ) -> None:
         super().__init__(plot_config, *args, **kwargs)
-        self.workarounds = ["ignore_conditions"]
+        self.workarounds = [
+            "ignore_conditions", "ignore_parsing_code",
+            "ignore_feature_dependent_functions"
+        ]
 
     def _get_binary_reports_map(
         self,
         case_study: CaseStudy,
         report_files: tp.List[ReportFilepath],
         base_dir: Path,
-        ignore_conditions: bool = True
     ) -> tp.Optional[BinaryReportsMapping]:
         try:
             config_map = load_configuration_map_for_case_study(
@@ -631,8 +707,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
             defaultdict(list)
         )
 
-        to_process = [(config_map, report_file, base_dir, ignore_conditions)
-                      for report_file in report_files]
+        to_process = [
+            (config_map, report_file, base_dir) for report_file in report_files
+        ]
 
         processed = optimized_map(
             _process_report_file,
@@ -674,36 +751,38 @@ class CoveragePlot(Plot, plot_name="coverage"):
             zip_file = plot_dir / self.plot_file_name("zip")
             with ZippedReportFolder(zip_file) as tmpdir:
                 with RepositoryAtCommit(project_name, revision) as base_dir:
-                    disabled = dict(
+                    workarounds = dict(
                         (workaround, False) for workaround in self.workarounds
                     )
-                    name = "disabled_workarounds"
-                    for workaround in self.workarounds + [""]:
-                        # Disable Python's GC to speed up plotting
-                        gc.disable()
-                        binary_reports_map = self._get_binary_reports_map(
-                            case_study, revisions[revision], base_dir,
-                            **disabled
+                    # Disable Python's GC to speed up plotting
+                    gc.disable()
+                    binary_reports_map = self._get_binary_reports_map(
+                        case_study,
+                        revisions[revision],
+                        base_dir,
+                    )
+
+                    if not binary_reports_map:
+                        raise ValueError(
+                            "Cannot load configs for case study '" +
+                            case_study.project_name + "'! " +
+                            "Have you set configs in your case study file?"
                         )
 
-                        if not binary_reports_map:
-                            raise ValueError(
-                                "Cannot load configs for case study '" +
-                                case_study.project_name + "'! " +
-                                "Have you set configs in your case study file?"
+                    tmp_dir = Path(tmpdir) / f"{revision}"
+                    for binary in binary_reports_map:
+                        reports = CoverageReports(binary_reports_map[binary])
+
+                        binary_dir = tmp_dir / binary
+                        for workaround in self.workarounds + [""]:
+                            _save_plot(
+                                reports, binary_dir, base_dir, **workarounds
                             )
-                        tmp_dir = Path(
-                            tmpdir
-                        ) / f"{revision}" / f"{name}: {', '.join(disabled)}"
-                        _save_plot(
-                            binary_reports_map, tmp_dir, base_dir,
-                            ", ".join(disabled)
-                        )
-                        if workaround:
-                            del disabled[workaround]
-                        # Allow binary_reports_map to be freed
-                        del binary_reports_map
-                        gc.enable()
+                            if workaround:
+                                workarounds[workaround] = True
+                    # Allow binary_reports_map to be freed
+                    del binary_reports_map
+                    gc.enable()
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -712,12 +791,13 @@ class CoveragePlot(Plot, plot_name="coverage"):
 
 
 def _plot_coverage_annotations(
-    reports: CoverageReports, base_dir: Path, outfile: Path
+    reports: CoverageReports, base_dir: Path, outfile: Path,
+    workarounds: tp.Dict[str, bool]
 ) -> None:
     with outfile.open("w") as output:
         output.write(
             cov_show_segment_buffer(
-                reports.feature_segments(base_dir),
+                reports.feature_segments(base_dir, **workarounds),
                 show_counts=False,
                 show_coverage_features=True,
                 show_coverage_feature_set=True,
@@ -740,10 +820,10 @@ def _get_matrix_fields(
     return result
 
 
-def _plot_confusion_matrix( # pylint: disable=too-many-locals
+def _plot_confusion_matrix( # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     reports: CoverageReports,
     outdir: Path,
-    disabled_workarounds: str = "",
+    workarounds: tp.Dict[str, bool],
     columns: tp.Optional[tp.Dict[str, str]] = None
 ) -> None:
 
@@ -760,7 +840,7 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
         cf_dir.mkdir()
 
         matrix_dict = reports.confusion_matrices(
-            feature_option_mapping, threshold
+            feature_option_mapping, threshold, **workarounds
         )
         if not columns:
             columns = {
@@ -800,8 +880,12 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
         base_dir = reports.feature_report().base_dir
         name = base_dir.name if base_dir is not None else 'Unknown'
         caption_text = f"{name}: "
-        if disabled_workarounds:
-            caption_text += f"disabled workarounds: {disabled_workarounds}, "
+        if workarounds:
+            text = ', '.join(
+                workaround for workaround in workarounds if workaround
+            ).replace('_', '-')
+            workaround_text = f"workarounds: {text}"
+            caption_text += f"{workaround_text}, "
         threshold_percent = f"{int(threshold * 100)}"
         if threshold == 0.0:
             threshold_percent = f">{threshold_percent}"
@@ -828,7 +912,7 @@ def _plot_confusion_matrix( # pylint: disable=too-many-locals
             column_format=column_format,
             position="htbp",
             position_float="centering",
-            label="Change-Me",
+            label=f"table:{name}:{workaround_text}_{threshold}",
             siunitx=True,
         )
 

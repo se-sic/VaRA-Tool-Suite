@@ -463,7 +463,10 @@ class TestCoveragePlot(unittest.TestCase):
             reports = setup_reports(
                 "test_coverage_SimpleFeatureInteraction", base_dir
             )
-            report = reports.feature_report()
+            report = reports.feature_report(
+                ignore_parsing_code=False,
+                ignore_feature_dependent_functions=False
+            )
 
             code_region = report.tree["src/SimpleFeatureInteraction/SFImain.cpp"
                                      ]
@@ -679,7 +682,11 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
 
 """,
                 cov_show_segment_buffer(
-                    reports.feature_segments(base_dir),
+                    reports.feature_segments(
+                        base_dir,
+                        ignore_parsing_code=False,
+                        ignore_feature_dependent_functions=False
+                    ),
                     show_counts=False,
                     show_coverage_features=True
                 )
@@ -706,10 +713,16 @@ src/MultiSharedMultipleRegions/MSMRmain.cpp:
                 }
             )
             result_1 = reports.confusion_matrices(
-                feature_option_mapping, threshold=1.0
+                feature_option_mapping,
+                threshold=1.0,
+                ignore_parsing_code=False,
+                ignore_feature_dependent_functions=False
             )
             result_0 = reports.confusion_matrices(
-                feature_option_mapping, threshold=0.0
+                feature_option_mapping,
+                threshold=0.0,
+                ignore_parsing_code=False,
+                ignore_feature_dependent_functions=False
             )
 
             for result in [result_1, result_0]:

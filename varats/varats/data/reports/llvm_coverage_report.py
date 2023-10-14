@@ -216,6 +216,7 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
     vara_instrs: tp.List[VaraInstr] = field(default_factory=list)
     counts: tp.List[int] = field(default_factory=list)
     instantiations: tp.List[str] = field(default_factory=list)
+    ignore: bool = False  # Ignore code region during comparison/classification.
 
     @classmethod
     def from_list(
@@ -315,6 +316,9 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
         self, feature_model: tp.Optional[Function] = None
     ) -> str:
         """Returns presence conditions."""
+        if self.ignore:
+            return "__cov_ignored__"
+
         if (
             self.presence_condition is None or
             self.presence_condition == self.presence_condition.bdd.false
@@ -330,6 +334,8 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
         self, feature_model: tp.Optional[Function] = None
     ) -> tp.Set[str]:
         """Returns features affecting code region somehow."""
+        if self.ignore:
+            return {"__cov_ignored__"}
         if (
             self.presence_condition is None or
             self.presence_condition == self.presence_condition.bdd.false or
@@ -342,6 +348,9 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
 
     def vara_features(self) -> tp.Set[str]:
         """Returns all features from annotated vara instrs."""
+        if self.ignore:
+            return {"__vara_ignored__"}
+
         features = set()
         for instr in self.vara_instrs:
             features.update(instr.features)
@@ -685,7 +694,6 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         report_file: Path,
         configuration: Configuration,
         base_dir: Path,
-        ignore_conditions: bool = True,
     ) -> CoverageReport:
         """CoverageReport from report file."""
         c_r = cls(report_file, configuration, base_dir)
@@ -715,7 +723,10 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             if len(csvs) != 1:
                 raise ValueError("Multiple CSVs detected!")
             for csv_file in csvs:
-                c_r._parse_instrs(csv_file, ignore_conditions)
+                with csv_file.open() as file:
+                    reader = csv.DictReader(file, quotechar="'", delimiter=";")
+                    rows = list(reader)
+                c_r.instrs_csv = rows
 
         return c_r
 
@@ -731,6 +742,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         self.absolute_path = ""
         self.feature_model: tp.Optional[Function] = None
         self.feature_model_xml: str = ""
+        self.instrs_csv: tp.Optional[tp.List[tp.Dict[str, str]]] = None
 
         self.configuration = configuration
         self.base_dir = base_dir
@@ -758,52 +770,74 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
 
         return FeatureXMLWriter(self.feature_model_xml)
 
-    def _parse_instrs(self, csv_file: Path, ignore_conditions: bool) -> None:
-        with csv_file.open() as file:
-            reader = csv.DictReader(file, quotechar="'", delimiter=";")
-            for row in reader:
-                kind = FeatureKind(row["type"])
-                source_file = row["source_file"]
-                line = int(row["line"])
-                column = int(row["column"])
-                location = FrozenLocation(line, column)
-                _features = row["features"].split(",")
-                # Don't consider features belonging to conditions a feature.
-                features = []
-                for feature in _features:
-                    if feature.startswith("__CONDITION__:"):
-                        if ignore_conditions:
-                            continue
-                        feature = feature.replace("__CONDITION__:", "", 1)
-                    if feature != "":
-                        features.append(feature)
-                instr_index = int(row["instr_index"])
-                instr = row["instr"]
-                vara_instr = VaraInstr(
-                    kind, Path(source_file), line, column, features,
-                    instr_index, instr
-                )
-                # Convert absolute paths to relative paths when possible
-                try:
-                    relative_path = Path(source_file).relative_to(
-                        self.absolute_path
-                    )
-                    source_file = str(relative_path)
-                except ValueError:
-                    pass
-                if source_file in self.tree:
-                    code_region_tree = self.tree[source_file]
-                    feature_node = code_region_tree.find_code_region(
-                        location.line, location.column
-                    )
-                    if feature_node is not None:
-                        feature_node.vara_instrs.append(vara_instr)
-                #else:
-                #    files = list(self.tree)
-                #    print(
-                #        "WARNING Ignoring VaRA instructions!:",
-                #        f"'{source_file}' not in {files}"
-                #    )
+    def clean_ignored_regions(self) -> None:
+        """Unignore all regions."""
+        for code_region in self.tree.values():
+            for region in code_region.iter_preorder():
+                region.ignore = False
+
+    def mark_regions_ignored(self, ignore_regions: tp.List[CodeRegion]) -> None:
+        """Sets ignore for all code regions that are subregions of the ones in
+        the list."""
+        for ignore_region in ignore_regions:
+            filename = ignore_region.filename
+            if filename in self.tree:
+                to_check = self.tree[filename]
+                for region in to_check.iter_postorder():
+                    if ignore_region.is_subregion(region):
+                        region.ignore = True
+
+    def parse_instrs(self, ignore_conditions: bool = True) -> None:
+        """Annotates vara-instrs to nodes."""
+        # Clean all vara_instrs
+        for code_region in self.tree.values():
+            for region in code_region.iter_preorder():
+                region.vara_instrs = []
+        assert self.instrs_csv
+        for row in self.instrs_csv:
+            kind = FeatureKind(row["type"])
+            source_file = row["source_file"]
+            line = int(row["line"])
+            column = int(row["column"])
+            _features = row["features"].split(",")
+            # Don't consider features belonging to conditions a feature.
+            features = []
+            for feature in _features:
+                if feature.startswith("__CONDITION__:"):
+                    if ignore_conditions:
+                        continue
+                    feature = feature.replace("__CONDITION__:", "", 1)
+                if feature != "":
+                    features.append(feature)
+            instr_index = int(row["instr_index"])
+            instr = row["instr"]
+            vara_instr = VaraInstr(
+                kind, Path(source_file), line, column, features, instr_index,
+                instr
+            )
+            self._annotate_vara_instr(vara_instr)
+
+    def _annotate_vara_instr(self, vara_instr: VaraInstr) -> None:
+        source_file = vara_instr.source_file
+        # Convert absolute paths to relative paths when possible
+        try:
+            relative_path = Path(source_file).relative_to(self.absolute_path)
+            source_file = str(relative_path)
+        except ValueError:
+            pass
+        if source_file in self.tree:
+            code_region_tree = self.tree[source_file]
+            feature_node = code_region_tree.find_code_region(
+                vara_instr.line, vara_instr.column
+            )
+            if feature_node is not None:
+                feature_node.vara_instrs.append(vara_instr)
+        #else:
+        #    files = list(self.tree)
+        #    print(
+        #        "WARNING Ignoring VaRA instructions!:",
+        #        f"'{source_file}' not in {files}"
+        #    )
 
     def _import_functions(
         self, json_file: Path, tree: FilenameRegionMapping
@@ -833,7 +867,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
         data: tp.Dict[str, tp.Any] = coverage_json["data"][0]
         # files: tp.List = data["files"]
         functions: tp.List[tp.Any] = data["functions"]
-        totals: tp.Dict[str, tp.Any] = data["totals"]
+        #totals: tp.Dict[str, tp.Any] = data["totals"]
 
         for function in functions:
             name: str = function["name"]

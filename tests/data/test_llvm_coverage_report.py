@@ -422,6 +422,7 @@ int main() {
                 / "7e6bcdd3-5ea4-4e29-a47d-0a9d155f17b3_config-0_success.zip",
                 None, base_dir
             )
+            report.parse_instrs()
 
             code_region = report.tree["src/SimpleFeatureInteraction/SFImain.cpp"
                                      ]
