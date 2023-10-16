@@ -102,7 +102,7 @@ class InstrumentationOverviewPlot(
             f"Overview for {case_study.project_name}"
         )
         ax.legend()
-        plt.xticks(rotation=90, ha='right')
+        plt.xticks(ha='right')
         plt.subplots_adjust(bottom=0.25)
 
 

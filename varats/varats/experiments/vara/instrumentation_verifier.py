@@ -35,21 +35,16 @@ class RunInstrVerifier(FeatureExperiment, shorthand="RIV"):
         Args:
             project: to analyze
         """
-        analysis_actions = []
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
+        analysis_actions = [
             RunVaRATracedWorkloads(
                 project,
                 self.get_handle(),
                 report_file_ending="ivr",
                 workload_categories=[
-                    # WorkloadCategory.SMALL
                     WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
                 ]
             )
-        )
-        analysis_actions.append(actions.Clean(project))
+        ]
 
         return self.get_common_tracing_actions(
             project,
@@ -78,10 +73,7 @@ class RunInstrVerifierBudget(VaryingStartingBudgetExperiment, shorthand="RIVB"):
             project: to analyze
         """
 
-        analysis_actions = []
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
+        analysis_actions = [
             RunVaRATracedWorkloads(
                 project,
                 self.get_handle(),
@@ -90,8 +82,7 @@ class RunInstrVerifierBudget(VaryingStartingBudgetExperiment, shorthand="RIVB"):
                     WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
                 ],
             )
-        )
-        analysis_actions.append(actions.Clean(project))
+        ]
 
         return self.get_common_tracing_actions(
             project,

@@ -22,7 +22,7 @@ from varats.utils.git_util import FullCommitHash
 # the revision files for all workloads with only_newest=True...
 
 
-class CompareRuntimesCSPlot(Plot, plot_name="compare_runtimes_cs"):
+class CompareRuntimesCSBPlot(Plot, plot_name="compare_runtimes_csb"):
 
     def plot(self, view_mode: bool) -> None:
         df = pd.DataFrame()
@@ -37,7 +37,7 @@ class CompareRuntimesCSPlot(Plot, plot_name="compare_runtimes_cs"):
                     experiment,
                     WLTimeReportAggregate,
                     get_case_study_file_name_filter(case_study),
-                    only_newest=False
+                    only_newest=True
                 )
 
                 for report_filepath in report_files:
@@ -80,9 +80,9 @@ class CompareRuntimesCSPlot(Plot, plot_name="compare_runtimes_cs"):
         raise NotImplementedError
 
 
-class CompareRuntimesPlotCSGenerator(
+class CompareRuntimesPlotCSBGenerator(
     PlotGenerator,
-    generator_name="compare-runtimes-cs",
+    generator_name="compare-runtimes-csb",
     options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
 

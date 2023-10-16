@@ -282,9 +282,6 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
                             pb_cmd = prj_command.command.as_plumbum(
                                 project=self.project
                             )
-                            print(
-                                f"Running example {prj_command.command.label}"
-                            )
 
                             extra_options = get_extra_config_options(
                                 self.project

@@ -77,6 +77,14 @@ class PicoSAT(VProject, ReleaseProviderHook):
             }
         ),
         HTTPUntar(
+            local="SAT_H_instances_childsnack_p08.hddl_2.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/SAT_H_instances_childsnack_p08.hddl_2.cnf.tar.gz"
+            }
+        ),
+        HTTPUntar(
             local="UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
             remote={
                 "1.0":
@@ -95,7 +103,6 @@ class PicoSAT(VProject, ReleaseProviderHook):
         ),
     ]
 
-    # TODO: Not sure about the categories here
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
@@ -105,21 +112,11 @@ class PicoSAT(VProject, ReleaseProviderHook):
             )
         ],
         WorkloadSet(WorkloadCategory.SMALL): [
-            # Command(
-            #     SourceRoot("picosat") / RSBinary("picosat"),
-            #     "aim-100-1_6-no-1.cnf",
-            #     label="aim-100-1-6-no-1.cnf",
-            # )
             Command(
                 SourceRoot("picosat") / RSBinary("picosat"),
-                "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
-                label="traffic-kkb-unknow.cnf",
+                "SAT_H_instances_childsnack_p08.hddl_2.cnf/SAT_H_instances_childsnack_p08.hddl_2.cnf",
+                label="SAT-H-instances-childsnack-p08.hddl-2.cnf",
             ),
-            # Command(
-            #     SourceRoot("picosat") / RSBinary("picosat"),
-            #     "abw-N-bcsstk07.mtx-w44.cnf/abw-N-bcsstk07.mtx-w44.cnf",
-            #     label="abw-N-bcsstk07.mtx-w44.cnf",
-            # ),
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             Command(

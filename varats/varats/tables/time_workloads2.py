@@ -11,29 +11,40 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_CASE_STUDY
 
 
-class TimedWorkloadTable(Table, table_name="time_workloads"):
+import re
+
+budgetre = re.compile("RunTracedNaive([0-9]+)")
+
+def budget_from_experiment_name(name):
+    if (m := re.search(budgetre, name)) is not None:
+        return int(m.group(1))
+    elif name == "RunTraced":
+        return 0
+    elif name == "RunUntraced":
+        return -1
+
+
+class TimedWorkloadTable(Table, table_name="time_workloads_2"):
     """Simple table to print the run-time and memory consumption of different
     workloads."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-
         df = pd.DataFrame()
 
-        for case_study in case_studies:
+        case_study = self.table_kwargs["case_study"]
+        project_name = case_study.project_name
+
+        experiments = self.table_kwargs["experiment_type"]
+
+        for experiment in experiments:
+
             project_name = case_study.project_name
 
-            if len(self.table_kwargs["experiment_type"]) > 1:
-                raise RuntimeError(
-                    "Table can currently handle only a single experiment, "
-                    "ignoring everything else."
-                )
-
             report_files = get_processed_revisions_files(
-                project_name, self.table_kwargs["experiment_type"][0],
+                project_name, experiment,
                 WLTimeReportAggregate,
                 get_case_study_file_name_filter(case_study),
                 only_newest=False
@@ -54,16 +65,12 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                 agg_time_report = WLTimeReportAggregate(
                     report_filepath.full_path()
                 )
-                report_file = agg_time_report.filename
 
                 for workload_name in agg_time_report.workload_names():
                     new_row = {
-                        "Project":
-                            project_name,
-                        "Binary":
-                            report_file.binary_name,
-                        "Revision":
-                            str(report_file.commit_hash),
+                        "Experiment":
+                            experiment.NAME,
+                        "Budget": budget_from_experiment_name(experiment.NAME),
                         "Workload":
                             workload_name,
                         "Mean wall time (msecs)":
@@ -74,22 +81,13 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
                                     wall_clock_time_in_msecs(agg_time_report)
                                 ), 2
                             ),
-                        "Max resident size (kbytes)":
-                            max(
-                                agg_time_report.
-                                max_resident_sizes(workload_name)
-                            ),
                         "Reps":
                             len(agg_time_report.reports(workload_name))
                     }
 
                     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
-        df.sort_values(["Project", "Binary"], inplace=True)
-        df.set_index(
-            ["Project", "Binary"],
-            inplace=True,
-        )
+        df.sort_values(["Workload", "Budget"], inplace=True)
 
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
@@ -102,8 +100,8 @@ class TimedWorkloadTable(Table, table_name="time_workloads"):
 
 class TimedWorkloadTableGenerator(
     TableGenerator,
-    generator_name="time-workloads",
-    options=[REQUIRE_MULTI_EXPERIMENT_TYPE]
+    generator_name="time-workloads-2",
+    options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_CASE_STUDY]
 ):
     """Generator for `TimeWorkloadsTable`."""
 

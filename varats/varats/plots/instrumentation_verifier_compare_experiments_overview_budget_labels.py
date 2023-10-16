@@ -18,10 +18,15 @@ from varats.revision.revisions import get_all_revisions_files
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
+import re
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+
+starting_budget_command_regex = re.compile("RunInstrVerifierNaive([0-9]+)")
 
 
-class InstrumentationOverviewCompareExperimentsPlot(
-    Plot, plot_name="instrumentation_overview_compare_experiments_plot"
+class InstrumentationOverviewCompareExperimentsBudgetLabelsPlot(
+    Plot,
+    plot_name="instrumentation_overview_compare_experiments_budget_labels_plot"
 ):
     """
     Plot configuration for the instrumentation verifier experiment.
@@ -46,7 +51,11 @@ class InstrumentationOverviewCompareExperimentsPlot(
 
         for experiment in kwargs["experiment_type"]:
             revisions_files: tp.List[ReportFilepath] = get_all_revisions_files(
-                case_study.project_name, experiment, only_newest=False
+                case_study.project_name,
+                experiment,
+                InstrVerifierReport,
+                get_case_study_file_name_filter(case_study),
+                only_newest=False
             )
 
             reports: tp.List[InstrVerifierReport] = [
@@ -57,10 +66,16 @@ class InstrumentationOverviewCompareExperimentsPlot(
             if len(reports) == 0:
                 raise PlotDataEmpty()
 
+            budget = 0
+            if (
+                m := re.search(starting_budget_command_regex, experiment.NAME)
+            ) is not None:
+                budget = int(m.group(1))
+
             for report in reports:
                 for binary in report.binaries():
                     rows.append({
-                        "experiment": experiment.NAME,
+                        "experiment": str(budget),
                         "binary": binary,
                         "enters": report.num_enters(binary),
                         "leaves": report.num_leaves(binary),
@@ -69,8 +84,11 @@ class InstrumentationOverviewCompareExperimentsPlot(
                     })
 
         df = pd.DataFrame(rows)
+        df = df.drop(df[df["binary"] == "example"].index)
         binaries = df["binary"].unique()
+
         experiments = df["experiment"].unique()
+
         fig, axs = plt.subplots((1 + len(binaries)) // 2,
                                 2 - len(binaries) % 2,
                                 constrained_layout=True)
@@ -109,9 +127,7 @@ class InstrumentationOverviewCompareExperimentsPlot(
             )
 
             ax.set_ylabel("Number of events")
-            ax.set_xticks(
-                ax.get_xticks(), ax.get_xticklabels()
-            )
+            ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45)
             ax.set_title(binary)
 
         fig.suptitle(
@@ -123,9 +139,9 @@ class InstrumentationOverviewCompareExperimentsPlot(
         )
 
 
-class VerifierExperimentCompareOverviewGenerator(
+class VerifierExperimentCompareBudgetLabelsOverviewGenerator(
     PlotGenerator,
-    generator_name="iv-ce-overview-plot",
+    generator_name="iv-ceb-overview-plot",
     options=[REQUIRE_MULTI_EXPERIMENT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a single pc-overview plot for the current paper config."""
@@ -133,7 +149,7 @@ class VerifierExperimentCompareOverviewGenerator(
     def generate(self) -> tp.List[Plot]:
         case_studies = self.plot_kwargs.pop("case_study")
         return [
-            InstrumentationOverviewCompareExperimentsPlot(
-                self.plot_config, cse_study=cs, **self.plot_kwargs
+            InstrumentationOverviewCompareExperimentsBudgetLabelsPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
             ) for cs in case_studies
         ]

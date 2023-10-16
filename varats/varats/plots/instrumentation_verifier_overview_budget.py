@@ -67,9 +67,10 @@ class InstrumentationVerifierOverviewBudgetPlot(
         df = pd.DataFrame(rows)
 
         binaries = df["binary"].unique()
-        fig, axs = plt.subplots((1 + len(binaries)) // 2, 2 - len(binaries) % 2)
-        fig.suptitle(f"Results of {experiment.NAME} by budget for case study {case_study.project_name}")
-        # fig.set_size_inches(11.7, 8.27)
+        fig, axs = plt.subplots((1 + len(binaries)) // 2, 2 - len(binaries) % 2, constrained_layout=True)
+        fig.suptitle(
+            f"Results of {experiment.NAME} by budget for case study {case_study.project_name}"
+        )
 
         for i, binary in enumerate(binaries):
             if len(binaries) == 1:
@@ -77,7 +78,8 @@ class InstrumentationVerifierOverviewBudgetPlot(
             elif len(binaries) == 2:
                 ax = axs[i % 2]
             else:
-                ax = axs[*divmod(i, 2)]
+                x, y = divmod(i, 2)
+                ax = axs[x, y]
 
             d = df[df["binary"] == binary].sort_values("budget")
 
@@ -108,10 +110,15 @@ class InstrumentationVerifierOverviewBudgetPlot(
 
             ax.set_ylabel("# Events")
             ax.set_xlabel("Budget")
-            ax.set_xticks(X, labels=d["budget"], rotation=45)
+            ax.set_xticks(X, labels=d["budget"])
             ax.set_title(binary)
 
-        fig.legend(labels=["Closed enters", "Entered leaves", "Unclosed enters", "Unentered leaves"])
+        fig.legend(
+            labels=[
+                "Closed enters", "Entered leaves", "Unclosed enters",
+                "Unentered leaves"
+            ]
+        )
         sns.despine()
 
     def calc_missing_revisions(

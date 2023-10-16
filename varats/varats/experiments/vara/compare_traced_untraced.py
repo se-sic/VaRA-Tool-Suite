@@ -17,9 +17,8 @@ from varats.project.varats_project import VProject
 
 from varats.experiments.vara.dynamic_overhead_analysis import OptimizerPolicyType
 from varats.experiments.vara.feature_experiment import FeatureExperiment, FeatureInstrType
-from varats.experiments.vara.multi_compile_experiment import VaryingStartingBudgetExperiment
 
-MEASUREMENT_REPS = 1
+MEASUREMENT_REPS = 10
 
 
 class RunUntraced(FeatureExperiment, shorthand="RU"):
@@ -73,21 +72,18 @@ class RunTraced(FeatureExperiment, shorthand="RT"):
     @property
     @abstractmethod
     def budget(self) -> tp.Optional[int]:
-        return None
+        return 0
 
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
 
         project.cflags += [
-            "-mllvm", f"-vara-optimizer-policy={self.optimizer_policy.value}"
+            "-mllvm",
+            f"-vara-optimizer-policy={self.optimizer_policy.value}",
+            "-mllvm",
+            f"-vara-optimizer-starting-budget={self.budget}",
         ]
-
-        if self.budget is not None:
-            project.cflags += [
-                "-mllvm",
-                f"-vara-optimizer-starting-budget={self.budget}",
-            ]
 
         actions = []
         for binary in project.binaries:
@@ -126,7 +122,9 @@ class RunTracedNaive(RunTraced, shorthand=RunTraced.SHORTHAND + "N"):
         return OptimizerPolicyType.NAIVE
 
 
-class RunTracedNaive20(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "20"):
+class RunTracedNaive20(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "20"
+):
     NAME = "RunTracedNaive20"
 
     @property
@@ -135,7 +133,9 @@ class RunTracedNaive20(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "20"
         return 20
 
 
-class RunTracedNaive40(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "40"):
+class RunTracedNaive40(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "40"
+):
     NAME = "RunTracedNaive40"
 
     @property
@@ -144,7 +144,9 @@ class RunTracedNaive40(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "40"
         return 40
 
 
-class RunTracedNaive60(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "60"):
+class RunTracedNaive60(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "60"
+):
     NAME = "RunTracedNaive60"
 
     @property
@@ -153,7 +155,9 @@ class RunTracedNaive60(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "60"
         return 60
 
 
-class RunTracedNaive80(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "80"):
+class RunTracedNaive80(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "80"
+):
     NAME = "RunTracedNaive80"
 
     @property
@@ -162,7 +166,9 @@ class RunTracedNaive80(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "80"
         return 80
 
 
-class RunTracedNaive100(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "100"):
+class RunTracedNaive100(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "100"
+):
     NAME = "RunTracedNaive100"
 
     @property
@@ -171,82 +177,45 @@ class RunTracedNaive100(RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "10
         return 100
 
 
-# class RunTracedAlternating(RunTraced, shorthand=RunTraced.SHORTHAND + "A"):
-#     """Build and run the traced version of the binary"""
+class RunTracedNaive200(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "200"
+):
+    NAME = "RunTracedNaive200"
 
-#     NAME = "RunTracedAlternating"
-
-#     @property
-#     @abstractmethod
-#     def optimizer_policy(self) -> OptimizerPolicyType:
-#         return OptimizerPolicyType.ALTERNATING
+    @property
+    @abstractmethod
+    def budget(self) -> int:
+        return 200
 
 
-# class RunTracedBudget(VaryingStartingBudgetExperiment, shorthand="RTB"):
-#     """Build and run the traced version of the binary"""
+class RunTracedNaive500(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "500"
+):
+    NAME = "RunTracedNaive500"
 
-#     NAME = "RunTracedBudget"
-#     REPORT_SPEC = ReportSpecification(WLTimeReportAggregate)
+    @property
+    @abstractmethod
+    def budget(self) -> int:
+        return 500
 
-#     @property
-#     @abstractmethod
-#     def optimizer_policy(self) -> OptimizerPolicyType:
-#         return OptimizerPolicyType.NONE
 
-#     def actions_for_project(
-#         self, project: VProject
-#     ) -> tp.MutableSequence[actions.Step]:
+class RunTracedNaive1000(
+    RunTracedNaive, shorthand=RunTracedNaive.SHORTHAND + "1000"
+):
+    NAME = "RunTracedNaive1000"
 
-#         project.cflags += [
-#             "-mllvm",
-#             f"-vara-optimizer-policy={self.optimizer_policy.value}",
-#         ]
+    @property
+    @abstractmethod
+    def budget(self) -> int:
+        return 1000
 
-#         actions = []
-#         for binary in project.binaries:
-#             result_filepath = create_new_success_result_filepath(
-#                 self.get_handle(),
-#                 self.get_handle().report_spec().main_report, project, binary
-#             )
-#             actions.append(
-#                 ZippedExperimentSteps(
-#                     result_filepath, [
-#                         TimeProjectWorkloads(
-#                             project,
-#                             num,
-#                             binary,
-#                             categories=[
-#                                 WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL
-#                             ]
-#                         ) for num in range(MEASUREMENT_REPS)
-#                     ]
-#                 )
-#             )
 
-#         return self.get_common_tracing_actions(
-#             project, FeatureInstrType.TEF, actions, save_temps=True
-#         )
+class RunTracedAlternating(RunTraced, shorthand=RunTraced.SHORTHAND + "A"):
+    """Build and run the traced version of the binary"""
 
-# class RunTracedNaiveBudget(
-#     RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "N"
-# ):
-#     """Build and run the traced version of the binary"""
+    NAME = "RunTracedAlternating"
 
-#     NAME = "RunTracedNaiveBudget"
-
-#     @property
-#     @abstractmethod
-#     def optimizer_policy(self) -> OptimizerPolicyType:
-#         return OptimizerPolicyType.NAIVE
-
-# class RunTracedAlternatingBudget(
-#     RunTracedBudget, shorthand=RunTracedBudget.SHORTHAND + "A"
-# ):
-#     """Build and run the traced version of the binary"""
-
-#     NAME = "RunTracedAlternatingBudget"
-
-#     @property
-#     @abstractmethod
-#     def optimizer_policy(self) -> OptimizerPolicyType:
-#         return OptimizerPolicyType.ALTERNATING
+    @property
+    @abstractmethod
+    def optimizer_policy(self) -> OptimizerPolicyType:
+        return OptimizerPolicyType.ALTERNATING
