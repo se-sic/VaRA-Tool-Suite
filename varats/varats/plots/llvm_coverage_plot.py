@@ -417,8 +417,7 @@ class CoverageReports:
         self._feature_model: tp.Optional[Function] = None
         self._feature_option_mapping: tp.Optional[tp.Dict[str,
                                                           tp.Set[str]]] = None
-        self._feature_report: tp.Dict[tp.Tuple[bool, bool, bool],
-                                      CoverageReport] = {}
+        self._feature_report: tp.Optional[CoverageReport] = None
 
         # Check all reports have same feature model
         self._reports = reports
@@ -496,14 +495,8 @@ class CoverageReports:
         ignore_feature_dependent_functions: bool = True,
     ) -> CoverageReport:
         """Creates a Coverage Report with all features annotated."""
-        if (
-            ignore_conditions, ignore_parsing_code,
-            ignore_feature_dependent_functions
-        ) in self._feature_report:
-            result = self._feature_report[(
-                ignore_conditions, ignore_parsing_code,
-                ignore_feature_dependent_functions
-            )]
+        if self._feature_report is not None:
+            result = self._feature_report
         else:
             with MeasureTime("FeatureReport", "Calculating..."):
                 result = reduce(
@@ -523,10 +516,8 @@ class CoverageReports:
         if ignore_regions:
             result.mark_regions_ignored(ignore_regions)
 
-        self._feature_report[(
-            ignore_conditions, ignore_parsing_code,
-            ignore_feature_dependent_functions
-        )] = result
+        if self._feature_report is None:
+            self._feature_report = result
 
         return result
 
