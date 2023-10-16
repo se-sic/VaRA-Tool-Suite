@@ -811,118 +811,183 @@ def _get_matrix_fields(
     return result
 
 
-def _plot_confusion_matrix( # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def __threshold_to_text(threshold: float) -> str:
+    if threshold == 0.0:
+        return f">{int(threshold*100)}"
+    return f"{int(threshold*100)}"
+
+
+def __get_df_columns(columns: tp.Dict[str, str]) -> tp.List[str]:
+    return list(value.lstrip("_") for value in columns.values())
+
+
+def __plot_confusion_matrix_inner(
+    reports: CoverageReports, threshold: float, cf_dir: Path,
+    workarounds: tp.Dict[str, bool], columns: tp.Dict[str, str]
+) -> pd.DataFrame:
+
+    feature_option_mapping = reports.feature_option_mapping(
+        ADDITIONAL_FEATURE_OPTION_MAPPING
+    )
+
+    matrix_dict = reports.confusion_matrices(
+        feature_option_mapping, threshold, **workarounds
+    )
+
+    rows = []
+    for feature in matrix_dict:
+        outfile = cf_dir / f"{feature}.matrix"
+        matrix = matrix_dict[feature]
+        with outfile.open("w") as output:
+            output.write(f"{matrix}\n")
+            tps = [str(x) for x in matrix.getTPs()]
+            output.write(f"True Positives:\n{chr(10).join(sorted(tps))}\n")
+            tns = [str(x) for x in matrix.getTNs()]
+            output.write(f"True Negatives:\n{chr(10).join(sorted(tns))}\n")
+            fps = [str(x) for x in matrix.getFPs()]
+            output.write(f"False Positives:\n{chr(10).join(sorted(fps))}\n")
+            fns = [str(x) for x in matrix.getFNs()]
+            output.write(f"False Negatives:\n{chr(10).join(sorted(fns))}\n")
+
+        row: tp.List[tp.Union[str, int, float]] = [f"{feature}"]
+        row.extend(_get_matrix_fields(matrix, list(columns)))
+        rows.append(row)
+
+    df = pd.DataFrame(
+        columns=["Feature"] + __get_df_columns(columns), data=rows
+    )
+    df.set_index("Feature", inplace=True)
+    return df
+
+
+def _plot_confusion_matrix(
     reports: CoverageReports,
     outdir: Path,
     workarounds: tp.Dict[str, bool],
     columns: tp.Optional[tp.Dict[str, str]] = None
 ) -> None:
 
-    feature_option_mapping = reports.feature_option_mapping(
-        ADDITIONAL_FEATURE_OPTION_MAPPING
-    )
+    if columns is None:
+        columns = {
+            "TP": "True Positives (TP)",
+            "FN": "False Negatives (FN)",
+            "FP": "False Positives (FP)",
+            "TN": "True Negatives (TN)"
+        }
 
+    base_dir = reports.feature_report().base_dir
+    project_name = base_dir.name if base_dir is not None else 'Unknown'
+
+    dataframes = {}
     for threshold in [0.0, 1.0]:
-        if threshold == 0.0:
-            threshold_text = f">{int(threshold*100)}"
-        else:
-            threshold_text = f"{int(threshold*100)}"
+        threshold_text = __threshold_to_text(threshold)
         cf_dir = outdir / f"threshold: {threshold_text}%"
         cf_dir.mkdir()
 
-        matrix_dict = reports.confusion_matrices(
-            feature_option_mapping, threshold, **workarounds
+        df = __plot_confusion_matrix_inner(
+            reports, threshold, cf_dir, workarounds, columns
         )
-        if not columns:
-            columns = {
-                "TP": "True Positives (TP)",
-                "FN": "False Negatives (FN)",
-                "FP": "False Positives (FP)",
-                "TN": "True Negatives (TN)"
-            }
 
-        rows = []
-        for feature in matrix_dict:
-            outfile = cf_dir / f"{feature}.matrix"
-            matrix = matrix_dict[feature]
-            with outfile.open("w") as output:
-                output.write(f"{matrix}\n")
-                tps = [str(x) for x in matrix.getTPs()]
-                output.write(f"True Positives:\n{chr(10).join(sorted(tps))}\n")
-                tns = [str(x) for x in matrix.getTNs()]
-                output.write(f"True Negatives:\n{chr(10).join(sorted(tns))}\n")
-                fps = [str(x) for x in matrix.getFPs()]
-                output.write(f"False Positives:\n{chr(10).join(sorted(fps))}\n")
-                fns = [str(x) for x in matrix.getFNs()]
-                output.write(f"False Negatives:\n{chr(10).join(sorted(fns))}\n")
+        threshold_percent = f"\\qty{{{threshold_text}}}{{\\percent}}"
+        dataframes[threshold_percent] = df
 
-            row: tp.List[tp.Union[str, int, float]] = [f"{feature}"]
-            row.extend(_get_matrix_fields(matrix, list(columns)))
-            rows.append(row)
-
-        df = pd.DataFrame(
-            columns=["Feature"] +
-            list(value.lstrip("_") for value in columns.values()),
-            data=rows
-        )
-        #df.set_index("Feature", inplace=True)
-        #df.sort_index(inplace=True)
-
-        base_dir = reports.feature_report().base_dir
-        name = base_dir.name if base_dir is not None else 'Unknown'
-        caption_text = f"{name}: "
-        if workarounds:
-            text = ', '.join(
-                workaround for workaround in workarounds if workaround
-            ).replace('_', '-')
-            workaround_text = f"workarounds: {text}"
-            caption_text += f"{workaround_text}, "
-        threshold_percent = f"{int(threshold * 100)}"
-        if threshold == 0.0:
-            threshold_percent = f">{threshold_percent}"
-        threshold_percent = f"\\qty{{{threshold_percent}}}{{\\percent}}"
-        caption_text += f"threshold: {threshold_percent}."
-
-        column_format = "l"
-        for column_text in columns.values():
-            if column_text.startswith("_"):
-                column_format += "H"
-            elif "%" in column_text:
-                column_format += "S"
-            else:
-                column_format += "c"
-        table = dataframe_to_table(
+        table = _dataframe_to_latex(
             df,
-            table_format=TableFormat.LATEX_BOOKTABS,
-            style=df.style.format(thousands=r"\,",
-                                  precision=2).hide(axis=0
-                                                   ).set_caption(caption_text),
-            wrap_table=False,
-            wrap_landscape=False,
-            hrules=True,
-            column_format=column_format,
-            position="htbp",
-            position_float="centering",
-            label=f"table:{name}:{workaround_text}_{threshold}",
-            siunitx=True,
+            project_name,
+            list(columns.values()),
+            workarounds,
+            threshold_caption=threshold_percent,
+            threshold_label=f"_{threshold_text}"
         )
-
-        # Add midline befor TOTAL and comment rows after total.
-        table_lines = []
-        found_total = False
-        for line in table.splitlines():
-            if "TOTAL" in line:
-                found_total = True
-                table_lines.append("\\midrule")
-                table_lines.append(line)
-            else:
-                if found_total and "&" in line:
-                    table_lines.append(f"%{line}")
-                else:
-                    table_lines.append(line)
+        print(table)
 
         outfile = cf_dir / "cofusion_matrix_table.tex"
-        outfile.write_text(data="\n".join(table_lines), encoding="utf-8")
+        outfile.write_text(data=table, encoding="utf-8")
+
+    # Combine different thresholds in one table
+    thresholds = list(dataframes)
+    features = list(df.index)
+    combined_df = pd.DataFrame(
+        columns=__get_df_columns(columns),
+        index=pd.MultiIndex.from_product([features, thresholds],
+                                         names=["Feature", "Threshold"])
+    )
+    for feature, threshold_percent in combined_df.index:
+        for column in combined_df.keys():
+            combined_df.loc[feature, threshold_percent][column] = dataframes[
+                threshold_percent].loc[feature][column]
+    column_values = list(columns.values())
+    column_values.insert(1, "Threshold")
+    table = _dataframe_to_latex(
+        combined_df, project_name, column_values, workarounds
+    )
+    print(table)
+
+    outfile = outdir / "cofusion_matrix_table_threshold_combined.tex"
+    outfile.write_text(data=table, encoding="utf-8")
+
+
+def _dataframe_to_latex(
+    df: pd.DataFrame,
+    project_name: str,
+    columns: tp.List[str],
+    workarounds: tp.Dict[str, bool],
+    threshold_caption: str = "",
+    threshold_label: str = ""
+) -> str:
+    caption_text = f"{project_name}: "
+    if workarounds:
+        text = ', '.join(
+            workaround for workaround, enabled in workarounds.items() if enabled
+        ).replace('_', '-')
+        workaround_text = f"workarounds: {text}"
+        caption_text += f"{workaround_text}"
+    if threshold_caption:
+        caption_text += f", threshold: {threshold_caption}."
+
+    column_format = "l"
+    for column_text in columns:
+        if column_text.startswith("_"):
+            column_format += "H"
+        elif "%" in column_text:
+            column_format += "S"
+        else:
+            column_format += "c"
+    table = dataframe_to_table(
+        df,
+        table_format=TableFormat.LATEX_BOOKTABS,
+        style=df.style.format(thousands=r"\,",
+                              precision=2).set_caption(caption_text),
+        wrap_table=False,
+        wrap_landscape=False,
+        hrules=True,
+        column_format=column_format,
+        position="htbp",
+        position_float="centering",
+        label=f"table:{project_name}:{workaround_text}{threshold_label}",
+        siunitx=True,
+        sparse_columns=True,
+    )
+
+    # Add midline befor TOTAL and comment rows after total.
+    table_lines = []
+    found_total = False
+    last_line = ""
+    for line in table.splitlines():
+        if "TOTAL" in line:
+            found_total = True
+            table_lines.append("\\midrule")
+            table_lines.append(line)
+        else:
+            if found_total and "&" in line and "TOTAL" not in last_line:
+                table_lines.append(f"%{line}")
+            elif "TOTAL" in last_line and not line.startswith(" &"):
+                table_lines.append(f"%{line}")
+            else:
+                table_lines.append(line)
+        last_line = line
+
+    return "\n".join(table_lines)
 
 
 class CoveragePlotGenerator(
