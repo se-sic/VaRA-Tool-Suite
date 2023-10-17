@@ -436,6 +436,37 @@ def generate_general_commit_dcfi_data(
         interacting_structurally_and_through_dataflow / num_structural_interactions
     )
 
+    num_commits_with_structural_interactions = 0
+    num_commits_with_dataflow_interactions = 0
+    num_commits_with_outside_dataflow_interactions = 0
+    # check for every commit structurally interacting with features,
+    # if it also interacts with features through dataflow
+    for commit_hash, features in commits_structurally_interacting_features.items():
+        num_commits_with_structural_interactions += 1
+        entry = commits_dataflow_interacting_features.get(commit_hash)
+        if not (entry is None):
+            num_commits_with_dataflow_interactions += 1
+            if len(entry[2]) > 0:
+                num_commits_with_outside_dataflow_interactions += 1
+    row.append(
+        num_commits_with_dataflow_interactions
+        / num_commits_with_structural_interactions
+    )
+    row.append(
+        num_commits_with_outside_dataflow_interactions
+        / num_commits_with_structural_interactions
+    )
+
+    num_commits_with_outside_dataflow_interactions = sum([
+        len(entry[1][2]) > 0
+        for entry in commits_dataflow_interacting_features.items()
+    ])
+    print(num_commits)
+    row.append(
+        num_commits_with_outside_dataflow_interactions
+        / num_commits
+    )
+
     interacting_through_inside_dataflow = 0
     interacting_through_outside_dataflow = 0
     num_dataflow_interactions = 0
@@ -446,13 +477,16 @@ def generate_general_commit_dcfi_data(
     row.append(
         (
             interacting_through_inside_dataflow / num_dataflow_interactions,
-            interacting_through_outside_dataflow / num_dataflow_interactions
+            interacting_through_outside_dataflow / num_dataflow_interactions,
         )
     )
-    
+
     columns = [
         "fraction_commits_structurally_interacting_with_features",
         "likelihood_dataflow_interaction_when_interacting_structurally",
+        "fraction_commits_with_dataflow_interactions_given_structural_interactions",
+        "fraction_commits_with_outside_dataflow_interactions_given_structural_interactions",
+        "fraction_commits_with_outside_dataflow_interactions",
         "proportion_dataflow_origin_for_interactions",
     ]
     return pd.DataFrame([row], columns=columns)

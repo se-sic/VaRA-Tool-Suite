@@ -472,16 +472,18 @@ def get_specific_stacked_proportional_commit_dataflow_data(
             len(commits_only_outside_df) / num_commits_with_df_int
         )
 
+        commits_inside_and_outside_df = commits_inside_df.loc[
+            commits_inside_df["num_interacting_features_outside_df"] > 0
+        ]
+        fraction_commits_inside_and_outside_df = (
+            len(commits_inside_and_outside_df) / num_commits_with_df_int
+        )
+
         rows.append(
             [
                 case_study.project_name,
                 fraction_commits_only_outside_df * 100,
-                100
-                * (
-                    1
-                    - fraction_commits_only_outside_df
-                    - fraction_commits_only_inside_df
-                ),
+                fraction_commits_inside_and_outside_df * 100,
                 fraction_commits_only_inside_df * 100,
             ]
         )
@@ -538,7 +540,6 @@ class ProportionalCommitDFBRPlot(Plot, plot_name="proportional_commit_dfbr_plot"
         ax_0.set_ylabel("Proportion (%)")
 
         case_studies = [
-            case_studies[3],
             case_studies[0],
             case_studies[2],
             case_studies[1],
@@ -818,35 +819,42 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
                         [
                             feature,
                             data.at[index, "struct_authors"],
-                            "Structurally",
+                            "Structural",
                         ],
                         [
                             feature,
                             data.at[index, "df_authors"],
-                            "Through Outside DF",
+                            "Outside DF",
                         ],
                         [
                             feature,
                             data.at[index, "unique_df_authors"],
-                            "Only Through DF",
+                            "Unique DF",
                         ],
                     ]
                 )
             df = pd.DataFrame(
                 data=rows,
-                columns=["Feature", "Num Interacting Authors", "Interaction Type"],
+                columns=["Feature", "Num Interacting Authors", "Author Type"],
             )
             sns.barplot(
                 data=df,
                 x="Feature",
                 y="Num Interacting Authors",
-                hue="Interaction Type",
+                hue="Author Type",
                 ax=axs[0],
             )
             axs[0].set_xlabel("Features (sorted by size)" if row == 1 else "", size=13)
             axs[0].set_ylabel("Num Interacting Authors", size=13)
             axs[0].set_xticklabels(
                 labels=data["feature"].values, rotation=(22.5), ha="right"
+            )
+            y_tick_range = range(0, max(df["Num Interacting Authors"].values + 1))
+            axs[0].set_yticks(
+                y_tick_range
+            )
+            axs[0].set_yticklabels(
+                y_tick_range
             )
 
             sns.regplot(
@@ -867,6 +875,12 @@ class AuthorCFIPlot(Plot, plot_name="author_cfi_plot"):
             )
             axs[1].set_xlabel("Feature Size", size=13)
             axs[1].set_ylabel("Num Interacting Authors", size=13)
+            axs[1].set_yticks(
+                y_tick_range
+            )
+            axs[1].set_yticklabels(
+                y_tick_range
+            )
             axs[1].legend(ncol=1)
 
             corr, p_value = stats.pearsonr(

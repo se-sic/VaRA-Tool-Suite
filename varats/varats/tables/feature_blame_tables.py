@@ -358,10 +358,7 @@ class DFBRCommitEvalTable(Table, table_name="dfbr_commit_eval_table"):
             for case_study, i in zip(case_studies, range(len(case_studies)))
         ]
 
-        rows = [[case_study.project_name] for case_study in case_studies] + [
-            ["Mean"],
-            ["Variance"],
-        ]
+        rows = [[case_study.project_name] for case_study in case_studies]
 
         for data_general, current_row in zip(
             projects_data_commits_general,
@@ -370,6 +367,22 @@ class DFBRCommitEvalTable(Table, table_name="dfbr_commit_eval_table"):
             num_commits = num_active_commits_cs[current_row]
             rows[current_row].append(num_commits)
 
+            commit_int_through_dataflow_given_int_structurally = data_general[
+                "fraction_commits_with_dataflow_interactions_given_structural_interactions"
+            ][0]
+            rows[current_row].append(commit_int_through_dataflow_given_int_structurally)
+
+            commit_int_through_outside_df_given_int_structurally = data_general[
+                "fraction_commits_with_outside_dataflow_interactions_given_structural_interactions"
+            ][0]
+            rows[current_row].append(commit_int_through_outside_df_given_int_structurally)
+
+            commit_in_through_outside_df = data_general[
+                "fraction_commits_with_outside_dataflow_interactions"
+            ][0]
+            rows[current_row].append(commit_in_through_outside_df)
+
+            """
             likelihood_coincide_structural_dataflow = data_general[
                 "likelihood_dataflow_interaction_when_interacting_structurally"
             ][0]
@@ -379,18 +392,16 @@ class DFBRCommitEvalTable(Table, table_name="dfbr_commit_eval_table"):
                 "proportion_dataflow_origin_for_interactions"
             ][0]
             rows[current_row].append(proportion_dataflow_origin)
-
-        # calc overall mean and variance for each column
-        add_mean_and_variance(rows, len(case_studies))
-        rows.pop()
+            """
 
         df = pd.DataFrame(
             round_rows(rows, 3),
             columns=[
                 "Projects",
-                "Num Active Commits",
-                "Likelihood for Structural to Coincide With Dataflow Interaction",
-                "Proportion of Dataflow Origin (Inside, Outside) for Dataflow Interactions",
+                "Number of Active Commits",
+                "P(Df|Struc)",
+                "P(Df_out|Struct)",
+                "P(Df_out)",
             ],
         )
 
@@ -398,10 +409,11 @@ class DFBRCommitEvalTable(Table, table_name="dfbr_commit_eval_table"):
         projects_separated_by_comma = ",".join(
             [case_study.project_name for case_study in case_studies]
         )
+        table_format = TableFormat.LATEX
         if table_format.is_latex():
             kwargs[
                 "caption"
-            ] = f"Evaluation of dataflow-based CFIs for projects {projects_separated_by_comma}. "
+            ] = f"Additional Information to Dataflow Analysis of Commits"
             kwargs["position"] = "t"
 
         return dataframe_to_table(
