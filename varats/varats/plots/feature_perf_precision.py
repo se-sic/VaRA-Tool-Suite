@@ -139,7 +139,7 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
                 x="Profiler",
                 y="value",
                 hue="metric",
-                jitter=0.1,
+                jitter=0.15,
                 dodge=True,
                 linewidth=0.5,
                 marker='x',
@@ -147,7 +147,7 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
                     mcolors.CSS4_COLORS['dimgrey'],
                     mcolors.CSS4_COLORS['darkgrey']
                 ],
-                size=4,
+                size=7,
                 ax=ax
             )
 

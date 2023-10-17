@@ -68,12 +68,13 @@ def get_feature_performance_from_tef_report(
                 open_events.remove(event)
                 return event
 
-        LOG.error(
+        LOG.debug(
             f"Could not find matching start for Event {repr(closing_event)}."
         )
 
         return None
 
+    found_missing_open_event = False
     for trace_event in tef_report.trace_events:
         if trace_event.category == "Feature":
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
@@ -83,6 +84,7 @@ def get_feature_performance_from_tef_report(
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
                 opening_event = get_matching_event(open_events, trace_event)
                 if not opening_event:
+                    found_missing_open_event = True
                     continue
 
                 end_timestamp = trace_event.timestamp
@@ -119,7 +121,11 @@ def get_feature_performance_from_tef_report(
                 )
 
     if open_events:
-        LOG.error(f"Not all events have been closed: {open_events}.")
+        LOG.error("Not all events have been correctly closed.")
+        LOG.debug(f"Events = {open_events}.")
+
+    if found_missing_open_event:
+        LOG.error("Not all events have been correctly opened.")
 
     return feature_performances
 
