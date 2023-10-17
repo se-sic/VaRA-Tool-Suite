@@ -17,6 +17,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
 )
 from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
@@ -55,8 +56,8 @@ class HyTeg(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
-                SourceRoot("HyTeG") / "build" / "apps" / "profiling" /
+            VCommand(
+                SourceRoot("HyTeg") / "build" / "apps" / "profiling" /
                 RSBinary('ProfilingApp'),
                 label='ProfilingApp'
             )
@@ -70,7 +71,7 @@ class HyTeg(VProject):
         binaries = RevisionBinaryMap(get_local_project_git_path(HyTeg.NAME))
 
         binaries.specify_binary(
-            "build/apps/profiling/ProfilingApp",
+            "ProfilingApp",
             BinaryType.EXECUTABLE,
             only_valid_in=SingleRevision(
                 "f4711dadc3f61386e6ccdc704baa783253332db2"
