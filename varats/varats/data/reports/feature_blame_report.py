@@ -6,6 +6,8 @@ from pathlib import Path
 import pandas as pd
 import pygit2
 import yaml
+from benchbuild.utils.cmd import git
+import re
 
 from varats.base.version_header import VersionHeader
 from varats.data.reports.feature_analysis_report import (
@@ -17,6 +19,8 @@ from varats.utils.git_util import (
     ShortCommitHash,
     get_author,
     FullCommitHash,
+    get_submodule_head,
+    ChurnConfig,
 )
 
 
@@ -160,29 +164,53 @@ def generate_feature_scfi_data(SFBR: StructuralFeatureBlameReport) -> pd.DataFra
 
 
 def generate_commit_scfi_data(
-    SFBR: StructuralFeatureBlameReport, code_churn_lookup
+    SFBR: StructuralFeatureBlameReport, project_git_paths: tp.Dict[str, Path],
+    project_name: str, head_commit: FullCommitHash
 ) -> pd.DataFrame:
     commit_cfi_data: tp.Dict[str, tp.Tuple[tp.List[tp.Set[str]], int]] = {}
+    churn_config = ChurnConfig.create_c_style_languages_config()
+    file_pattern = re.compile(
+        r"|".join(
+            churn_config.get_extensions_repr(prefix=r"\.", suffix=r"$")
+        )
+    )
+    blame_regex = re.compile(r"^([0-9a-f]+)\s+(?:.+\s+)?[\d]+\) ?(.*)$")
 
     max_index: int = 0
     for SCFI in SFBR.commit_feature_interactions:
         features = SCFI.features
-        full_commit_hash = SCFI.commit.commit_hash
+        full_commit_hash = FullCommitHash(SCFI.commit.commit_hash)
         commit_hash = ShortCommitHash(SCFI.commit.commit_hash).hash
-        if "force,no_time,no_name" in features:
-            print(features)
-            print(commit_hash)
-            print(SCFI.num_instructions)
-        repository_name = SCFI.commit.repository_name
+        repo_name = SCFI.commit.repository_name
         entry = commit_cfi_data.get(commit_hash)
 
         if not entry:
-            repo_lookup = code_churn_lookup[repository_name]
-            commit_lookup = repo_lookup.get(FullCommitHash(full_commit_hash))
-            if commit_lookup is None:
-                continue
-            _, insertions, _ = commit_lookup
-            entry = ([], insertions)
+            repo_path = project_git_paths[repo_name]
+            project_git = git["-C", str(repo_path)]
+            head_commit = get_submodule_head(
+                project_name, repo_name, head_commit
+            )
+
+            file_names = project_git(
+                "ls-tree", "--full-tree", "--name-only", "-r", full_commit_hash
+            ).split("\n")
+            files: tp.List[Path] = [
+                repo_path / path
+                for path in file_names
+                if file_pattern.search(path)
+            ]
+            num_lines: int = 0
+            for file in files:
+                blame_lines: str = project_git(
+                    "blame", "-w", "-s", "-l", "--root", full_commit_hash, "--",
+                    str(file.relative_to(repo_path))
+                )
+
+                for line in blame_lines.strip().split("\n"):
+                    sch = ShortCommitHash(blame_regex.match(line).group(1)).hash
+                    if sch == commit_hash:
+                        num_lines += 1
+            entry = ([], num_lines)
 
         index = len(SCFI.features) - 1
         max_index = max(max_index, index)
