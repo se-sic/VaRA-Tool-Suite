@@ -115,7 +115,7 @@ class DunePerfRegression(VProject):
                 label='poisson_yasp_q2_3d',
                 creates=['poisson-yasp-q2-3d.vtu']
             ),
-            Command(
+            VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_alugrid'),
