@@ -791,7 +791,9 @@ class SynthCTTraitBased(VProject):
         )
 
         binary_map.specify_binary(
-            "build/bin/CTTraitBased", BinaryType.EXECUTABLE
+            "build/bin/CTTraitBased",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
         )
 
         return binary_map[revision]
@@ -847,7 +849,11 @@ class SynthCTPolicies(VProject):
             get_local_project_git_path(SynthCTPolicies.NAME)
         )
 
-        binary_map.specify_binary("build/bin/CTPolicies", BinaryType.EXECUTABLE)
+        binary_map.specify_binary(
+            "build/bin/CTPolicies",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
+        )
 
         return binary_map[revision]
 
@@ -900,7 +906,11 @@ class SynthCTCRTP(VProject):
             get_local_project_git_path(SynthCTCRTP.NAME)
         )
 
-        binary_map.specify_binary("build/bin/CTCRTP", BinaryType.EXECUTABLE)
+        binary_map.specify_binary(
+            "build/bin/CTCRTP",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
+        )
 
         return binary_map[revision]
 
@@ -956,7 +966,9 @@ class SynthCTTemplateSpecialization(VProject):
         )
 
         binary_map.specify_binary(
-            "build/bin/CTTemplateSpecialization", BinaryType.EXECUTABLE
+            "build/bin/CTTemplateSpecialization",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
         )
 
         return binary_map[revision]
