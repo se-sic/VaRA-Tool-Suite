@@ -90,11 +90,11 @@ def get_threshold(project: VProject) -> int:
             "SynthIPTemplate2", "SynthIPCombined"
         ]:
             print("Don't instrument everything")
-            return 20
+            return 10
 
         return 0
 
-    return 50
+    return 100
 
 
 class AnalysisProjectStepBase(OutputFolderStep):
