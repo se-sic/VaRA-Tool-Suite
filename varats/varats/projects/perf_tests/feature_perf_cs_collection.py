@@ -765,7 +765,7 @@ class SynthCTTraitBased(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthCTTraitBased",
-            refspec="origin/f-SynthCompileTimeCS",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthCTTraitBased")
@@ -793,7 +793,7 @@ class SynthCTTraitBased(VProject):
         binary_map.specify_binary(
             "build/bin/CTTraitBased",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("a4a133a186", "HEAD")
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
         )
 
         return binary_map[revision]
@@ -824,7 +824,7 @@ class SynthCTPolicies(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthCTPolicies",
-            refspec="origin/f-SynthCompileTimeCS",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("SynthCTPolicies")
@@ -852,7 +852,7 @@ class SynthCTPolicies(VProject):
         binary_map.specify_binary(
             "build/bin/CTPolicies",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("a4a133a186", "HEAD")
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
         )
 
         return binary_map[revision]
@@ -882,7 +882,7 @@ class SynthCTCRTP(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local=NAME,
-            refspec="origin/f-SynthCompileTimeCS",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(NAME)
@@ -909,7 +909,7 @@ class SynthCTCRTP(VProject):
         binary_map.specify_binary(
             "build/bin/CTCRTP",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("a4a133a186", "HEAD")
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
         )
 
         return binary_map[revision]
@@ -940,7 +940,7 @@ class SynthCTTemplateSpecialization(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local=NAME,
-            refspec="origin/f-SynthCompileTimeCS",
+            refspec="origin/master",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(NAME)
@@ -968,7 +968,7 @@ class SynthCTTemplateSpecialization(VProject):
         binary_map.specify_binary(
             "build/bin/CTTemplateSpecialization",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("a4a133a186", "HEAD")
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
         )
 
         return binary_map[revision]
