@@ -83,6 +83,54 @@ INGORE_PARSING_CODE = [
         kind=CodeRegionKind.FILE_ROOT,
         function="loadConfigFromArgv",
         filename="src/SimpleFeatureInteraction/SFImain.cpp"
+    ),
+    CodeRegion(
+        start=RegionStart(line=7, column=1),
+        end=RegionEnd(line=9, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="enableCppFeature",
+        filename="src/MultiSharedMultipleRegions/FeatureHeader.cpp"
+    ),
+    CodeRegion(
+        start=RegionStart(line=8, column=1),
+        end=RegionEnd(line=10, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="enableExternFeature",
+        filename="src/MultiSharedMultipleRegions/FeatureHeader.h"
+    ),
+    CodeRegion(
+        start=RegionStart(line=11, column=66),
+        end=RegionEnd(line=13, column=4),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="isFeatureEnabled--slow",
+        filename="src/MultiSharedMultipleRegions/MSMRmain.cpp"
+    ),
+    CodeRegion(
+        start=RegionStart(line=15, column=68),
+        end=RegionEnd(line=17, column=4),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="isFeatureEnabled--header",
+        filename="src/MultiSharedMultipleRegions/MSMRmain.cpp"
+    ),
+    CodeRegion(
+        start=RegionStart(line=19, column=68),
+        end=RegionEnd(line=21, column=4),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="isFeatureEnabled--extern",
+        filename="src/MultiSharedMultipleRegions/MSMRmain.cpp"
+    ),
+    CodeRegion(
+        start=RegionStart(line=23, column=65),
+        end=RegionEnd(line=25, column=4),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="isFeatureEnabled--cpp",
+        filename="src/MultiSharedMultipleRegions/MSMRmain.cpp"
     )
 ]
 
