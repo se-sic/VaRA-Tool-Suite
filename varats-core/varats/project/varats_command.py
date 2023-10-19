@@ -4,7 +4,7 @@ import typing as tp
 from benchbuild.command import Command
 
 if tp.TYPE_CHECKING:
-    import varats.provider.patch.patch_provider as patch_provider
+    from varats.provider.patch import patch_provider
 
 
 class VCommand(Command):  # type: ignore [misc]
@@ -27,6 +27,7 @@ class VCommand(Command):  # type: ignore [misc]
     def __init__(
         self,
         *args: tp.Any,
+        requires_not_args: tp.Optional[tp.Set[str]] = None,
         requires_any_args: tp.Optional[tp.Set[str]] = None,
         requires_all_args: tp.Optional[tp.Set[str]] = None,
         requires_any_patch: tp.Optional[tp.Set[str]] = None,
@@ -35,10 +36,15 @@ class VCommand(Command):  # type: ignore [misc]
     ) -> None:
 
         super().__init__(*args, **kwargs)
+        self._requires_not_args = requires_not_args or set()
         self._requires_any_args = requires_any_args or set()
         self._requires_all_args = requires_all_args or set()
         self._requires_any_patch = requires_any_patch or set()
         self._requires_all_patch = requires_all_patch or set()
+
+    @property
+    def requires_not_args(self) -> tp.Set[str]:
+        return self._requires_not_args
 
     @property
     def requires_any_args(self) -> tp.Set[str]:
@@ -78,6 +84,9 @@ class VCommand(Command):  # type: ignore [misc]
                 all_patch_tags.update(patch.feature_tags)
 
         return bool((
+            not self.requires_not_args or
+            not all_args.intersection(self.requires_not_args)
+        ) and (
             not self.requires_any_args or
             all_args.intersection(self.requires_any_args)
         ) and (

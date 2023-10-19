@@ -13,12 +13,36 @@ stages:
     - 1
     - 2
     - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
 version: 0
 ...
 ---
 config_type: PlainCommandlineConfiguration
 0: '[]'
-1: '["--enc"]'
-2: '["--compress"]'
-3: '["--enc", "--compress"]'
+1: '["--extern"]'
+2: '["--slow"]'
+3: '["--cpp"]'
+4: '["--cpp", "--extern"]'
+5: '["--cpp", "--slow", "--extern"]'
+6: '["--cpp", "--slow"]'
+7: '["--slow", "--extern"]'
+8: '["--header"]'
+9: '["--extern", "--header"]'
+10: '["--slow", "--header"]'
+11: '["--slow", "--extern", "--header"]'
+12: '["--cpp", "--header"]'
+13: '["--cpp", "--extern", "--header"]'
+14: '["--cpp", "--slow", "--header"]'
+15: '["--cpp", "--slow", "--extern", "--header"]'
 ...

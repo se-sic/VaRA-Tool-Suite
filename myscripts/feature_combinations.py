@@ -28,12 +28,15 @@ def formatted_print(mapping):
     for id, config in mapping.items():
         tmp.append(f"{id}: {config}")
 
-    print(f"""version: 0
+    print(
+        f"""version: 0
 ...
 ---
+config_type: PlainCommandlineConfiguration
 {chr(10).join(tmp)}
 ...
-""")
+"""
+    )
 
 
 def main():

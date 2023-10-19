@@ -20,6 +20,8 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
@@ -45,6 +47,7 @@ class Bzip2(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -52,9 +55,16 @@ class Bzip2(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0"
             },
+            files=["countries-land-250m.geo.json"]
+        ),
+        HTTPMultiple(
+            local="xz_files",
+            remote={
+                "1.0":
+                    "https://github.com/xz-mirror/xz/releases/download/v5.4.0"
+            },
             files=[
-                "countries-land-1m.geo.json", "countries-land-10m.geo.json",
-                "countries-land-100m.geo.json"
+                "xz-5.4.0.tar.bz2",
             ]
         )
     ]
@@ -98,6 +108,26 @@ class Bzip2(VProject):
                     "geo-maps/countries-land-100m.geo.json.bz2"
                 ]
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                label="countries-land-250m-compress",
+                creates=["geo-maps/countries-land-250m.geo.json.bz2"],
+                consumes=["geo-maps/countries-land-250m.geo.json"],
+                requires_all_args={"--compress"},
+            ),
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                output_param=["{output}"],
+                output=SourceRoot("xz_files/xz-5.4.0.tar.bz2"),
+                label="xz-files-compressed",
+                creates=["xz_files/xz-5.4.0.tar"],
+                consumes=["xz_files/xz-5.4.0.tar.bz2"],
+                requires_any_args={"--decompress", "--test"}
+            ),
         ],
     }
 
