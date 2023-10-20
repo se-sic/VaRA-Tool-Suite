@@ -143,6 +143,10 @@ def precise_pim_regression_check(
                 continue
 
             new_values = current_pim[feature]
+            if np.mean(old_values) < 20 and np.mean(new_values) < 20:
+                # TODO: adapt this to a relative value
+                continue
+
             ttest_res = ttest_ind(old_values, new_values)
 
             # TODO: check, maybe we need a "very small value cut off"
@@ -152,8 +156,8 @@ def precise_pim_regression_check(
         else:
             print(f"Could not find feature {feature} in new trace.")
             # TODO: how to handle this?
-            raise NotImplementedError()
-            is_regression = True
+            # raise NotImplementedError()
+            # is_regression = True
 
     return is_regression
 
@@ -171,12 +175,17 @@ def cliffs_delta_pim_regression_check(
                 continue
 
             new_values = current_pim[feature]
+            # if np.mean(old_values) < 20 and np.mean(new_values) < 20:
+            #     # TODO: adapt this to a relative value
+            #     continue
+
             d, res = cliffs_delta(old_values, new_values)
 
             # print(f"{d=}, {res=}")
 
             # if d > 0.70 or d < -0.7:
-            if res == "large":
+            # if res == "large":
+            if d > 0.7 or d < -0.7:
                 # print(
                 #     f"{self.name} found regression for feature {feature}."
                 # )
@@ -184,8 +193,8 @@ def cliffs_delta_pim_regression_check(
         else:
             print(f"Could not find feature {feature} in new trace.")
             # TODO: how to handle this?
-            raise NotImplementedError()
-            is_regression = True
+            # raise NotImplementedError()
+            # is_regression = True
 
     return is_regression
 
@@ -199,23 +208,25 @@ def sum_pim_regression_check(
         old_values for feature, old_values in baseline_pim.items()
         if feature != "Base"
     ]
-    print(f"{baseline_pim_totals=}")
     current_pim_totals: tp.List[tp.List[int]] = [
         current_values for feature, current_values in current_pim.items()
         if feature != "Base"
     ]
-    print(f"{current_pim_totals=}")
 
     baseline_pim_total: tp.List[int] = [
         sum(values) for values in zip(*baseline_pim_totals)
     ]
-    print(f"{baseline_pim_total=}")
     current_pim_total: tp.List[int] = [
         sum(values) for values in zip(*current_pim_totals)
     ]
-    print(f"{current_pim_total=}")
 
-    # TODO: does not work for large numbers
+    if not baseline_pim_total and not current_pim_total:
+        # How do we get here?
+        return False
+
+    # d, res = cliffs_delta(baseline_pim_total, current_pim_total)
+    # # return res == "large"
+    # return d > 0.6 or d < -0.6
     return ttest_ind(baseline_pim_total, current_pim_total).pvalue < 0.05
 
 
@@ -226,6 +237,7 @@ def pim_regression_check(
     """Compares two pims and determines if there was a regression between the
     baseline and current."""
     # return cliffs_delta_pim_regression_check(baseline_pim, current_pim)
+    # return sum_pim_regression_check(baseline_pim, current_pim)
     return precise_pim_regression_check(baseline_pim, current_pim)
 
 
@@ -457,13 +469,18 @@ def get_regressing_config_ids_gt(
                   ) == np.mean(new_time.measurements_wall_clock_time):
             gt[config_id] = False
         else:
-            # TODO: fix to use same check as profilers
+            # d, res = cliffs_delta(
+            #     old_time.measurements_wall_clock_time,
+            #     new_time.measurements_wall_clock_time
+            # )
 
-            # TODO: double check ttest handling
             ttest_res = ttest_ind(
                 old_time.measurements_wall_clock_time,
                 new_time.measurements_wall_clock_time
             )
+
+            # if res == "large":
+            # if d > 0.7 or d < -0.7:
             if ttest_res.pvalue < 0.05:
                 gt[config_id] = True
             else:
@@ -521,6 +538,7 @@ def compute_profiler_predictions(
             return None
 
         try:
+            #print(f"{report_files[0]}")
             result_dict[config_id] = profiler.is_regression(
                 report_files[0], patch_name
             )
@@ -531,6 +549,7 @@ def compute_profiler_predictions(
             )
             print(exception)
             print(traceback.format_exc())
+            # raise exception
 
     return result_dict
 
