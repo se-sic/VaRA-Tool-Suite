@@ -100,7 +100,7 @@ class TestContainerSupport(unittest.TestCase):
         self.check_layer_type(layers[0], FromLayer)
 
         varats_core_install_layer = self.check_layer_type(layers[2], RunLayer)
-        self.assertEqual("pip3", varats_core_install_layer.command)
+        self.assertEqual("pip", varats_core_install_layer.command)
         self.assertTupleEqual(
             ("install", "--ignore-installed", "varats-core", "varats"),
             varats_core_install_layer.args
@@ -127,7 +127,7 @@ class TestContainerSupport(unittest.TestCase):
         self.check_layer_type(layers[0], FromLayer)
 
         varats_core_install_layer = self.check_layer_type(layers[4], RunLayer)
-        self.assertEqual("pip3", varats_core_install_layer.command)
+        self.assertEqual("pip", varats_core_install_layer.command)
         self.assertTupleEqual(("install", "/varats/varats-core"),
                               varats_core_install_layer.args)
         mounting_parameters = "type=bind,src=varats_src,target=/varats"
