@@ -57,11 +57,22 @@ def perf_prec_workload_commands(
     project: VProject, binary: ProjectBinaryWrapper
 ) -> tp.List[ProjectCommand]:
     """Uniformly select the workloads that should be processed."""
-    return workload_commands(project, binary, [
-        WorkloadCategory.EXAMPLE
-    ]) + workload_commands(project, binary, [
-        WorkloadCategory.SMALL
-    ]) + workload_commands(project, binary, [WorkloadCategory.MEDIUM])
+
+    wl_commands = []
+
+    if not project.name.startswith(
+        "SynthIP"
+    ) and project.name != "SynthSAFieldSensitivity":
+        # Example commands from these CS are to "fast"
+        wl_commands += workload_commands(
+            project, binary, [WorkloadCategory.EXAMPLE]
+        )
+
+    wl_commands += workload_commands(project, binary, [WorkloadCategory.SMALL])
+
+    wl_commands += workload_commands(project, binary, [WorkloadCategory.MEDIUM])
+
+    return wl_commands
 
 
 def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
@@ -90,11 +101,11 @@ def get_threshold(project: VProject) -> int:
             "SynthIPTemplate2", "SynthIPCombined"
         ]:
             print("Don't instrument everything")
-            return 20
+            return 10
 
         return 0
 
-    return 50
+    return 100
 
 
 class AnalysisProjectStepBase(OutputFolderStep):
