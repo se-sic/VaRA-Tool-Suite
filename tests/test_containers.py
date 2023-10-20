@@ -32,6 +32,10 @@ class TestImageBase(unittest.TestCase):
     def test_distro(self) -> None:
         self.assertEqual(Distro.DEBIAN, ImageBase.DEBIAN_10.distro)
 
+    def test_distro_version_number(self) -> None:
+        self.assertEqual(10, ImageBase.DEBIAN_10.version)
+        self.assertEqual(12, ImageBase.DEBIAN_12.version)
+
 
 class TestContainerSupport(unittest.TestCase):
     """Test container support related functionality."""
