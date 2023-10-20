@@ -23,7 +23,9 @@ def getConfigs(fm):
                 options[name] = int(value)
             else:
                 options[name] = value
-        configs.append(options)
+        if options not in configs:
+            # Reduce number of duplicates caused by buggy getAllCondfigs
+            configs.append(options)
     return reversed(configs)
 
 
