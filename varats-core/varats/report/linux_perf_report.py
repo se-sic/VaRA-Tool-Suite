@@ -18,7 +18,6 @@ Examples to produce a ``LinuxPerfReport``:
             command = sleep["2"]
             perf("stat", "-x", "';'", "-o", f"{report_file}", "--", command)
 """
-import csv
 import math
 import typing as tp
 from pathlib import Path
@@ -45,10 +44,6 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
                 if line == "" or line.startswith("#"):
                     continue
 
-                # TODO: impl cmd
-                # if line.startswith("Performance counter"):
-                #     print(f"CMD: {line}")
-
                 if "time elapsed" in line:
                     self.__elapsed_time = self.__parse_elapsed_time(line)
 
@@ -70,10 +65,9 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
         return int(line.split(" ")[0].replace(",", ""))
 
     @staticmethod
-    def __parse_branch_misses(line: str) -> int:
-        # TODO: fix return type
+    def __parse_branch_misses(line: str) -> tp.Optional[int]:
         if line.startswith("<not counted>"):
-            return np.NaN
+            return None
         return int(line.split(" ")[0].replace(",", ""))
 
     @property
