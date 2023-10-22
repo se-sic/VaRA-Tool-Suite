@@ -131,7 +131,52 @@ INGORE_PARSING_CODE = [
         kind=CodeRegionKind.FILE_ROOT,
         function="isFeatureEnabled--cpp",
         filename="src/MultiSharedMultipleRegions/MSMRmain.cpp"
-    )
+    ),
+    # BZIP_2
+    CodeRegion(
+        start=RegionStart(line=1838, column=1),
+        end=RegionEnd(line=1950, column=5),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="main--parsing",
+        filename="bzip2.c"
+    ),
+    # GZIP
+    CodeRegion(
+        start=RegionStart(line=469, column=1),
+        end=RegionEnd(line=630, column=1),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="main--parsing",
+        filename="gzip.c"
+    ),
+
+    # PicoSAT
+    CodeRegion(
+        start=RegionStart(line=574, column=1),
+        end=RegionEnd(line=944, column=6),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="main--parsing-argv-for-loop",
+        filename="app.c"
+    ),
+    # XZ
+    CodeRegion(
+        start=RegionStart(line=1, column=1),
+        end=RegionEnd(line=363, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="complete file",
+        filename="src/xz/options.c"
+    ),
+    CodeRegion(
+        start=RegionStart(line=1, column=1),
+        end=RegionEnd(line=710, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="complete file",
+        filename="src/xz/args.c"
+    ),
 ]
 
 IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [
@@ -708,9 +753,10 @@ def _save_plot(
             "FP": "\\ac{FP}",
             "TN": "\\ac{TN}",
             "accuracy": "_Accuracy (\\%)",
-            "precision": "Precision (\\%)",
-            "recall": "Recall (\\%)",
-            "balanced_accuracy": "Balanced Accuracy (\\%)",
+            "precision": "\\ac{PPV} (\\%)",
+            "recall": "\\ac{TPR} (\\%)",
+            "specificity": "\\ac{TNR} (\\%)",
+            "balanced_accuracy": "\\ac{BAccuracy} (\\%)",
             "f1_score": "_F1 Score (\\%)",
         }
     )
@@ -723,9 +769,12 @@ class CoveragePlot(Plot, plot_name="coverage"):
         self, plot_config: PlotConfig, *args: tp.List[tp.Any], **kwargs: tp.Any
     ) -> None:
         super().__init__(plot_config, *args, **kwargs)
+        #self.workarounds = [
+        #    "ignore_conditions", "ignore_parsing_code",
+        #    "ignore_feature_dependent_functions"
+        #]
         self.workarounds = [
-            "ignore_conditions", "ignore_parsing_code",
-            "ignore_feature_dependent_functions"
+            "ignore_parsing_code",
         ]
 
     def _get_binary_reports_map(
