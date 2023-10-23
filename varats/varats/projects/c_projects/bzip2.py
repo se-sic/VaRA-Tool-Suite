@@ -59,19 +59,20 @@ class Bzip2(VProject):
                 "countries-land-100m.geo.json"
             ]
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps-compr",
             remote={
                 "1.0":
-                    "https://github.com/se-sic/compression-data/raw/master/bzip2/geo-maps/"
+                    "https://github.com/se-sic/compression-data/"
+                    "raw/master/bzip2/geo-maps/"
             },
             files=[
                 "countries-land-100m.geo.json.bz2",
                 "countries-land-10m.geo.json.bz2",
                 "countries-land-1m.geo.json.bz2"
             ]
-        ),
-        FeatureSource()
+        )
     ]
     _AUTOTOOLS_VERSIONS = GoodBadSubgraph([
         "8cfd87aed5ba8843af50569fb440489b1ca74259"
@@ -97,9 +98,6 @@ class Bzip2(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
-                #"--compress",
-                # "--best",
-                # "-vvv",
                 "--keep",
                 # bzip2 compresses very fast even on the best setting, so we
                 # need the three input files to get approximately 30 seconds
@@ -117,9 +115,6 @@ class Bzip2(VProject):
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
-                #"--decompress",
-                # "--best",
-                # "-vvv",
                 "--keep",
                 # bzip2 compresses very fast even on the best setting, so we
                 # need the three input files to get approximately 30 seconds

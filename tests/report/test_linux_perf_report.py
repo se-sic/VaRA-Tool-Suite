@@ -1,9 +1,8 @@
 """Test LinuxPerfReport."""
 
 import unittest
-import unittest.mock as mock
-from datetime import timedelta
 from pathlib import Path
+from unittest import mock
 
 from varats.report.linux_perf_report import LinuxPerfReport
 
@@ -40,7 +39,7 @@ PERF_REPORT_1 = """# started on Sun Jul 23 22:51:54 2023
 PERF_REPORT_2 = """# started on Sun Jul 23 22:44:31 2023
 
 
- Performance counter stats for '/home/vulder/vara-root/benchbuild/results/GenBBBaselineO/SynthSAContextSensitivity-perf_tests@a8c3a8722f,0/SynthSAContextSensitivity/build/bin/ContextSense --compress --mem 10 8':
+ Performance counter stats for 'foobar':
 
               1.23 msec task-clock:u                     #    0.000 CPUs utilized
                  0      context-switches:u               #    0.000 /sec
