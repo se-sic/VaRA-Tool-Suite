@@ -52,11 +52,15 @@ def init_all_submodules(folder: Path) -> None:
     git("-C", folder.absolute(), "submodule", "init")
 
 
-def update_all_submodules(folder: Path, recursive: bool = True) -> None:
+def update_all_submodules(
+    folder: Path, recursive: bool = True, init: bool = False
+) -> None:
     """Updates all submodules."""
     git_params = ["submodule", "update"]
     if recursive:
         git_params.append("--recursive")
+    if init:
+        git_params.append("--init")
     git("-C", folder, git_params)
 
 
