@@ -32,6 +32,10 @@ class TestImageBase(unittest.TestCase):
     def test_distro(self) -> None:
         self.assertEqual(Distro.DEBIAN, ImageBase.DEBIAN_10.distro)
 
+    def test_distro_version_number(self) -> None:
+        self.assertEqual(10, ImageBase.DEBIAN_10.version)
+        self.assertEqual(12, ImageBase.DEBIAN_12.version)
+
 
 class TestContainerSupport(unittest.TestCase):
     """Test container support related functionality."""
@@ -96,7 +100,7 @@ class TestContainerSupport(unittest.TestCase):
         self.check_layer_type(layers[0], FromLayer)
 
         varats_core_install_layer = self.check_layer_type(layers[2], RunLayer)
-        self.assertEqual("pip3", varats_core_install_layer.command)
+        self.assertEqual("pip", varats_core_install_layer.command)
         self.assertTupleEqual(
             ("install", "--ignore-installed", "varats-core", "varats"),
             varats_core_install_layer.args
@@ -123,7 +127,7 @@ class TestContainerSupport(unittest.TestCase):
         self.check_layer_type(layers[0], FromLayer)
 
         varats_core_install_layer = self.check_layer_type(layers[4], RunLayer)
-        self.assertEqual("pip3", varats_core_install_layer.command)
+        self.assertEqual("pip", varats_core_install_layer.command)
         self.assertTupleEqual(("install", "/varats/varats-core"),
                               varats_core_install_layer.args)
         mounting_parameters = "type=bind,src=varats_src,target=/varats"
@@ -133,7 +137,7 @@ class TestContainerSupport(unittest.TestCase):
                       varats_core_install_layer.kwargs)
 
         varats_install_layer = self.check_layer_type(layers[5], RunLayer)
-        self.assertEqual("pip3", varats_install_layer.command)
+        self.assertEqual("pip", varats_install_layer.command)
         self.assertTupleEqual(("install", "/varats/varats"),
                               varats_install_layer.args)
         mounting_parameters = "type=bind,src=varats_src,target=/varats"
