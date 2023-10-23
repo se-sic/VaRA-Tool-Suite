@@ -59,6 +59,7 @@ class Bzip2(VProject):
                 "countries-land-100m.geo.json"
             ]
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps-compr",
             remote={
@@ -71,8 +72,7 @@ class Bzip2(VProject):
                 "countries-land-10m.geo.json.bz2",
                 "countries-land-1m.geo.json.bz2"
             ]
-        ),
-        FeatureSource()
+        )
     ]
     _AUTOTOOLS_VERSIONS = GoodBadSubgraph([
         "8cfd87aed5ba8843af50569fb440489b1ca74259"
