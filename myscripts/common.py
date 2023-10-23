@@ -23,9 +23,8 @@ def getConfigs(fm):
                 options[name] = int(value)
             else:
                 options[name] = value
-        if options not in configs:
-            # Reduce number of duplicates caused by buggy getAllCondfigs
-            configs.append(options)
+        assert options not in configs, f"{options} already in {configs}"
+        configs.append(options)
     return reversed(configs)
 
 
