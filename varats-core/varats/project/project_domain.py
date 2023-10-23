@@ -18,6 +18,7 @@ class ProjectDomains(Enum):
     EDITOR = "Editor"
     FILE_FORMAT = "File format"
     HW_EMULATOR = "Hardware emulator"
+    HPC = "High Performance Applications"
     PARSER = "Parser"
     PLANNING = "Planning"
     PROG_LANG = "Programming language"

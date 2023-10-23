@@ -75,6 +75,7 @@ def update_projects(
         'varats.projects.cpp_projects.z3',
         'varats.projects.cpp_projects.ect',
         'varats.projects.cpp_projects.lepton',
+        'varats.projects.cpp_projects.hyteg',
         'varats.projects.cpp_projects.dune'
     ]
     projects_conf.value[:] += [

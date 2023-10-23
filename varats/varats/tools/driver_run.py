@@ -91,6 +91,9 @@ def __validate_project_parameters(
     "--container", is_flag=True, help="Run experiments in a container."
 )
 @click.option(
+    "--debug", is_flag=True, help="Run container in an interactive debug mode."
+)
+@click.option(
     "-E",
     "--experiment",
     type=create_multi_experiment_type_choice(),
@@ -104,6 +107,7 @@ def main(
     slurm: bool,
     submit: bool,
     container: bool,
+    debug: bool,
     experiment: tp.List[tp.Type['VersionExperiment']],
     projects: tp.List[str],
     pretend: bool,
@@ -145,6 +149,9 @@ def main(
                 bb_extra_args.append("--import")
         else:
             bb_command_args.append("container")
+            if debug:
+                bb_extra_args.append("--debug")
+                bb_extra_args.append("--interactive")
 
     if not slurm:
         bb_command_args.append("run")
