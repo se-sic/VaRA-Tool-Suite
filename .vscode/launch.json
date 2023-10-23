@@ -46,6 +46,22 @@
             "justMyCode": false,
             "console": "integratedTerminal"
         },
+        {
+            "name": "benchbuildGZIP",
+            "type": "python",
+            "request": "launch",
+            "program": "~/.local/bin/benchbuild",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/benchbuild",
+            "args": [
+                "run",
+                "-E",
+                "GenerateCoverage",
+                "gzip"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+
 
         {
             "name": "plot",

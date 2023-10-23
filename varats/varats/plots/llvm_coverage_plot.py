@@ -769,12 +769,9 @@ class CoveragePlot(Plot, plot_name="coverage"):
         self, plot_config: PlotConfig, *args: tp.List[tp.Any], **kwargs: tp.Any
     ) -> None:
         super().__init__(plot_config, *args, **kwargs)
-        #self.workarounds = [
-        #    "ignore_conditions", "ignore_parsing_code",
-        #    "ignore_feature_dependent_functions"
-        #]
         self.workarounds = [
-            "ignore_parsing_code",
+            "ignore_conditions", "ignore_parsing_code",
+            "ignore_feature_dependent_functions"
         ]
 
     def _get_binary_reports_map(
