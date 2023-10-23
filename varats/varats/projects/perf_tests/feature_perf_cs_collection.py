@@ -752,3 +752,236 @@ class SynthIPCombined(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTTraitBased(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthCTTraitBased'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthCTTraitBased",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthCTTraitBased")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthCTTraitBased") / RSBinary("CTTraitBased"),
+                label="CompileTime-TraitBased"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTTraitBased.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTTraitBased",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTTRAITBASED"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTPolicies(VProject):
+    """Synthetic case-study project for compile time variability using
+    policies."""
+
+    NAME = 'SynthCTPolicies'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthCTPolicies",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthCTPolicies")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthCTPolicies") / RSBinary("CTPolicies"),
+                label="CompileTime-Policies"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTPolicies.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTPolicies",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTPOLICIES"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTCRTP(VProject):
+    """Synthetic case-study project for compile time variability using CRTP."""
+
+    NAME = 'SynthCTCRTP'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("CTCRTP"), label="CompileTime-CRTP"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTCRTP.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTCRTP",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTCRTP"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTTemplateSpecialization(VProject):
+    """Synthetic case-study project for compile time variability using template
+    specialization."""
+
+    NAME = 'SynthCTTemplateSpecialization'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("CTTemplateSpecialization"),
+                label="CompileTime-Template-Specialization"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTTemplateSpecialization.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTTemplateSpecialization",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "HEAD")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTSPECIALIZATION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
