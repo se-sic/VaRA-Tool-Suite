@@ -13,6 +13,7 @@ def multivariate_grid(
     y: str,
     hue: str,
     global_kde: bool = True,
+    legend: bool = True,
     **kwargs: tp.Any
 ) -> sns.JointGrid:
     """
@@ -84,7 +85,7 @@ def multivariate_grid(
             color='grey',
             warn_singular=False
         )
-    if len(grouped_data) > 1:
+    if len(grouped_data) > 1 and legend:
         plt.legend(legends)
 
     return grid
