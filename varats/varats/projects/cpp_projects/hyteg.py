@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, Command, SourceRoot
+from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
