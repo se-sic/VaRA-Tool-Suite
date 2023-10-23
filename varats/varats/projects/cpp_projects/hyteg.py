@@ -45,7 +45,7 @@ class HyTeg(VProject):
     SOURCE = [
         PaperConfigSpecificGit(
             project_name="HyTeg",
-            remote="git@github.com:se-sic/hyteg-VaRA.git",
+            remote="https://github.com/se-sic/hyteg-VaRA.git",
             local="HyTeg",
             refspec="origin/HEAD",
             limit=None,
