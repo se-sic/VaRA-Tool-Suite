@@ -16,6 +16,7 @@ from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
 
+from varats.base.configuration import PatchConfiguration
 from varats.containers.containers import get_base_image, ImageBase
 from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReportAggregate,
@@ -39,18 +40,45 @@ from varats.experiments.vara.feature_experiment import (
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider
+from varats.projects.cpp_projects.dune import DunePerfRegression
+from varats.projects.cpp_projects.hyteg import HyTeg
+from varats.provider.patch.patch_provider import PatchProvider, PatchSet
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReportAggregate
 from varats.tools.research_tools.vara import VaRA
-from varats.utils.config import get_current_config_id
+from varats.utils.config import get_current_config_id, get_config
 from varats.utils.git_util import ShortCommitHash
 
 REPS = 3
 
-IDENTIFIER_PATCH_TAG = 'perf_prec'
+IDENTIFIER_PATCH_TAG = 'gibberish'
+
+
+def get_feature_tags(project):
+    config = get_config(project, PatchConfiguration)
+    if not config:
+        return []
+
+    result = {opt.value for opt in config.options()}
+
+    return result
+
+
+def get_tags_RQ1(project):
+    result = get_feature_tags(project)
+
+    to_remove = [
+        "SynthCTCRTP", "SynthCTPolicies", "SynthCTTraitBased",
+        "SynthCTTemplateSpecialization"
+    ]
+
+    for s in to_remove:
+        if s in result:
+            result.remove(s)
+
+    return result
 
 
 def perf_prec_workload_commands(
@@ -78,16 +106,23 @@ def perf_prec_workload_commands(
 def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
     """Uniformly select the binaries that should be analyzed."""
     if project.name == "DunePerfRegression":
-        return [
-            binary for binary in project.binaries
-            if binary.name == "poisson_yasp_q2_3d"
-        ]
+        f_tags = get_feature_tags(project)
+
+        grid_binary_map = {
+            "YaspGrid": "poisson_yasp_q2_3d",
+            "UGGrid": "poisson_ug_pk_2d",
+            "ALUGrid": "poisson_alugrid"
+        }
+
+        for grid in grid_binary_map:
+            if grid in f_tags:
+                return [grid_binary_map[grid]]
 
     return [project.binaries[0]]
 
 
 def get_extra_cflags(project: VProject) -> tp.List[str]:
-    if project.name == "DunePerfRegression":
+    if project.name in [DunePerfRegression.NAME, HyTeg.NAME]:
         # Disable phasar for dune as the analysis cannot handle dunes size
         return ["-mllvm", "--vara-disable-phasar"]
 
@@ -442,10 +477,16 @@ def setup_actions_for_vara_experiment(
         get_current_config_id(project)
     )
 
+    rq1_tags = get_tags_RQ1(project)
+
     patch_provider = PatchProvider.get_provider_for_project(project)
-    patches = patch_provider.get_patches_for_revision(
-        ShortCommitHash(project.version_of_primary)
-    )[IDENTIFIER_PATCH_TAG]
+
+    patches = PatchSet(set())
+
+    for tag in rq1_tags:
+        patches |= patch_provider.get_patches_for_revision(
+            ShortCommitHash(project.version_of_primary)
+        )[tag, "regression"]
     print(f"{patches=}")
 
     patch_steps = []
@@ -575,7 +616,7 @@ class BCCTEFProfileRunner(FeatureExperiment, shorthand="BCCp"):
         )
 
 
-class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
+class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -680,10 +721,16 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             get_current_config_id(project)
         )
 
+        rq1_tags = get_tags_RQ1(project)
+
         patch_provider = PatchProvider.get_provider_for_project(project)
-        patches = patch_provider.get_patches_for_revision(
-            ShortCommitHash(project.version_of_primary)
-        )[IDENTIFIER_PATCH_TAG]
+
+        patches = PatchSet(set())
+
+        for tag in rq1_tags:
+            patches |= patch_provider.get_patches_for_revision(
+                ShortCommitHash(project.version_of_primary)
+            )[tag, "regression"]
         print(f"{patches=}")
 
         patch_steps = []
@@ -692,7 +739,7 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
-                RunBackBoxBaseline(
+                RunBlackBoxBaseline(
                     project,
                     binary,
                     file_name=MPRTimeReportAggregate.create_patched_report_name(
@@ -708,7 +755,7 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                    RunBackBoxBaseline(
+                    RunBlackBoxBaseline(
                         project,
                         binary,
                         file_name=MPRTimeReportAggregate.

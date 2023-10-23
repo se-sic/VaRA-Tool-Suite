@@ -59,7 +59,7 @@ class RevisionBinaryRenderer:
                     return entry_point
 
         raise AssertionError(
-            "Specified binary was not present in the current version."
+            f"Specified binary {self.__binary_name} was not present in the current version."
         )
 
 
