@@ -91,7 +91,7 @@ def __validate_project_parameters(
     "--container", is_flag=True, help="Run experiments in a container."
 )
 @click.option(
-    "--debug", is_flag=True, help="Run container in a interactive debug mode."
+    "--debug", is_flag=True, help="Run container in an interactive debug mode."
 )
 @click.option(
     "-E",
