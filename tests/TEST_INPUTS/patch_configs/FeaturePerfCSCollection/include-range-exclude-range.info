@@ -1,0 +1,12 @@
+description: Patch valid for a range of commits where a subrange is explicitly excluded
+exclude_revisions:
+  revision_range:
+    end: a94fb35ca49719028a1c50bdbc2fb82122043f46
+    start: c051e44a973ee31b3baa571407694467a513ba68
+include_revisions:
+  revision_range:
+    end: 4300ea495e7f013f68e785fdde5c4ead81297999
+    start: 01f9f1f07bef22d4248e8349aba4f0c1f204607e
+path: bug.patch
+project_name: FeaturePerfCSCollection
+shortname: include-range-exclude-range

@@ -239,7 +239,8 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
     )
     def test_get_newest_result_files_for_case_study_with_config(self) -> None:
-        """Check that when we have two files, the newes one get's selected."""
+        """Check that when we have two files that differ in their config id,
+        both get selected."""
         vara_cfg()['paper_config']['current_config'] = "test_config_ids"
         load_paper_config()
 
@@ -273,7 +274,56 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
 
         self.assertEqual(newest_res_filenames[0].config_id, 0)
         self.assertEqual(newest_res_filenames[1].config_id, 1)
-        self.assertEqual(len(newest_res_filenames), 2)
+        self.assertEqual(newest_res_filenames[2].config_id, 0)
+        self.assertEqual(newest_res_filenames[3].config_id, 1)
+        self.assertEqual(len(newest_res_filenames), 4)
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_get_newest_result_files_for_case_study_with_diff_exp(self) -> None:
+        """Check that when we have two files that differ in their experiment
+        shorthand, both get selected."""
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        config_0_file = ReportFilename(
+            "BBBase-CR-SynthSAContextSensitivity-ContextSense-06eac0edb6/"
+            "b24ee2c1-fc85-47ba-abbd-90c98e88a37c_config-0_success.zip"
+        )
+        config_1_file = ReportFilename(
+            "BBBaseO-CR-SynthSAContextSensitivity-ContextSense-06eac0edb6/"
+            "b24ee2c1-fc85-47ba-abbd-90c98e88a37c_config-0_success.zip"
+        )
+
+        now = datetime.now().timestamp()
+        file_path_0 = Path(
+            str(vara_cfg()['result_dir'])
+        ) / 'SynthSAContextSensitivity' / config_0_file.filename
+        os.utime(file_path_0, (now, now))
+
+        file_path_1 = Path(
+            str(vara_cfg()['result_dir'])
+        ) / 'SynthSAContextSensitivity' / config_1_file.filename
+        os.utime(file_path_1, (now, now))
+
+        newest_res_files = MCS.get_newest_result_files_for_case_study(
+            get_paper_config().get_case_studies('SynthSAContextSensitivity')[0],
+            Path(vara_cfg()['result_dir'].value), CR
+        )
+
+        newest_res_files.sort(reverse=True)
+        newest_res_filenames = [ReportFilename(x) for x in newest_res_files]
+
+        self.assertEqual(
+            newest_res_filenames[0].experiment_shorthand, "BBBaseO"
+        )
+        self.assertEqual(
+            newest_res_filenames[1].experiment_shorthand, "BBBaseO"
+        )
+        self.assertEqual(newest_res_filenames[2].experiment_shorthand, "BBBase")
+        self.assertEqual(newest_res_filenames[3].experiment_shorthand, "BBBase")
+        self.assertEqual(len(newest_res_filenames), 4)
 
     def test_get_case_study_file_name_filter_empty(self) -> None:
         """Check that we correctly handle  case study filter generation even if

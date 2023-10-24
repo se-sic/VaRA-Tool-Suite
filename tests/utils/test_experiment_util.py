@@ -24,8 +24,16 @@ from varats.paper.paper_config import load_paper_config
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.projects.c_projects.xz import Xz
+from varats.projects.perf_tests.feature_perf_cs_collection import (
+    SynthIPTemplate,
+)
 from varats.report.gnu_time_report import TimeReport
 from varats.report.report import FileStatusExtension, ReportSpecification
+from varats.utils.config import (
+    get_current_config_id,
+    get_extra_config_options,
+    get_config_patches,
+)
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -399,7 +407,7 @@ class TestConfigID(unittest.TestCase):
     def test_get_current_config_id_no_config(self) -> None:
         revision = Revision(Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"))
         project = Xz(revision=revision)
-        self.assertEqual(EU.get_current_config_id(project), None)
+        self.assertEqual(get_current_config_id(project), None)
 
     def test_get_current_config_id(self) -> None:
         revision = Revision(
@@ -407,7 +415,7 @@ class TestConfigID(unittest.TestCase):
             Variant(Xz.SOURCE[1], "42")
         )
         project = Xz(revision=revision)
-        self.assertEqual(EU.get_current_config_id(project), 42)
+        self.assertEqual(get_current_config_id(project), 42)
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_get_extra_config_options(self) -> None:
@@ -418,4 +426,21 @@ class TestConfigID(unittest.TestCase):
             Xz, Variant(Xz.SOURCE[0], "c5c7ceb08a"), Variant(Xz.SOURCE[1], "1")
         )
         project = Xz(revision=revision)
-        self.assertEqual(EU.get_extra_config_options(project), ["--foo"])
+        self.assertEqual(get_extra_config_options(project), ["--foo"])
+
+    @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
+    def test_get_config_patches(self) -> None:
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        revision = Revision(
+            SynthIPTemplate, Variant(SynthIPTemplate.SOURCE[0], "7930350628"),
+            Variant(SynthIPTemplate.SOURCE[1], "4")
+        )
+        project = SynthIPTemplate(revision=revision)
+        patches = get_config_patches(project)
+        self.assertEqual(len(patches), 1)
+        self.assertEqual(
+            list(patches)[0].feature_tags,
+            ["Compress", "fastmode", "smallmode"]
+        )
