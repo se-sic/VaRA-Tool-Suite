@@ -49,6 +49,11 @@ class ImageBase(Enum):
         """Distro of the base image."""
         return self.__distro
 
+    @property
+    def version(self) -> int:
+        """Version number of the distro."""
+        return self.__version_number
+
 
 class ImageStage(Enum):
     """The stages that make up a base image."""
