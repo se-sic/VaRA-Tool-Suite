@@ -158,9 +158,7 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
                     file_suffix=f".{extra_args}.profraw"
                 )
                 profile_raw_names.append(profile_raw_name)
-                run_cmd = watch(
-                    pb_cmd.with_env(LLVM_PROFILE_FILE=profile_raw_name)
-                )
+                run_cmd = pb_cmd.with_env(LLVM_PROFILE_FILE=profile_raw_name)
 
                 with cleanup(prj_command):
                     if self.binary.valid_exit_codes:
