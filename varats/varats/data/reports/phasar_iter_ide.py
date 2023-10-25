@@ -4,6 +4,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 
+import numpy as np
+
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.report import BaseReport
 
@@ -900,4 +902,55 @@ class PhasarIterIDEStatsReport(
         reports = self.time_reports_as_dict()
 
         ret = flatten_dict(reports, lambda x: x.num_out_of_memory)
+        return ret
+
+    def get_completion_state(
+        self,
+        cs: str,
+        dev_limit: float = 32,
+        server_limit: float = 128
+    ) -> tp.List[dict]:
+        ret = list()
+
+        def get_state(report: TimeReportAggregate) -> str:
+            if report.num_timeouts > 0:
+                return "timeout"
+            if report.num_out_of_memory > 0:
+                return "oom"
+            mem = np.mean(report.max_resident_sizes) / 1048576
+            if mem > server_limit:
+                return "larger-server"
+            if mem > dev_limit:
+                return "server"
+            return "dev"
+
+        if self.old_taint is not None and self.new_taint_nested is not None:
+            ret.append({
+                "Analysis": "Taint",
+                "Old": get_state(self.old_taint),
+                "New": get_state(self.new_taint_nested),
+                "Target": cs,
+            })
+        if self.old_typestate is not None and self.new_typestate_nested is not None:
+            ret.append({
+                "Analysis": "Typestate",
+                "Old": get_state(self.old_typestate),
+                "New": get_state(self.new_typestate_nested),
+                "Target": cs,
+            })
+        if self.old_lca is not None and self.new_lca_nested is not None:
+            ret.append({
+                "Analysis": "LCA",
+                "Old": get_state(self.old_lca),
+                "New": get_state(self.new_lca_nested),
+                "Target": cs,
+            })
+        if self.old_iia is not None and self.new_iia_nested is not None:
+            ret.append({
+                "Analysis": "IIA",
+                "Target": cs,
+                "Old": get_state(self.old_iia),
+                "New": get_state(self.new_iia_nested),
+            })
+
         return ret

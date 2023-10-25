@@ -1,5 +1,6 @@
 import itertools
 import typing as tp
+from math import isnan
 
 import numpy as np
 import pandas as pd
@@ -51,6 +52,8 @@ def get_compare_mark(res_cmp: tp.Optional[ResultCompare]) -> str:
 
 
 class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
+    TIMEOUT = "t/o"
+    OUT_OF_MEMORY = "OOM"
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         cs_data: tp.List[pd.DataFrame] = []
@@ -82,6 +85,10 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                 print(f"Skip {project_name}")
                 continue
 
+            project_cls = get_project_cls_by_name(project_name)
+            project_repo = get_local_project_git_path(project_name)
+            #repo_loc = calc_repo_loc(project_repo, rev_range)
+
             for report_file, iia_report_file in itertools.zip_longest(
                 report_files, iia_report_files
             ):
@@ -101,8 +108,6 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
 
                 # print(f"Report: {report}")
 
-                project_cls = get_project_cls_by_name(project_name)
-                project_repo = get_local_project_git_path(project_name)
                 if not report.basic_bc_stats:
                     print(f"No basic stats on {project_name}, skip")
                     continue
@@ -114,16 +119,25 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                     if tr is None:
                         return np.nan, np.nan
                     if tr.num_timeouts == len(tr.measurements_wall_clock_time):
-                        time = "timeout"
-                        mem = np.nan
+                        time = self.TIMEOUT
+                        mem = "-"
                         return time, mem
                     time = np.mean(tr.measurements_wall_clock_time)
+
                     if tr.num_out_of_memory == len(tr.max_resident_sizes):
-                        mem = 250 * 1024
+                        mem = self.OUT_OF_MEMORY
+                        time = "-"
                     else:
-                        mem = from_kbytes_to_mbytes(
-                            np.mean(tr.max_resident_sizes)
+                        mem = round(
+                            from_kbytes_to_mbytes(
+                                np.mean(tr.max_resident_sizes)
+                            )
                         )
+                        if mem == 0:
+                            mem = "<1"
+                        time = round(time)
+                        if time == 0:
+                            time = "<1"
 
                     return time, mem
 
@@ -134,17 +148,20 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                 lca_time, lca_mem = handle_time_report(report.old_lca)
                 iia_time, iia_mem = handle_time_report(report.old_iia)
 
+                ir_loc = report.basic_bc_stats.num_instructions
+
                 cs_dict = {
                     latex_sanitize_project_name(project_name): {
                         "Revision":
-                            str(revision.short_hash),
+                            "\\texttt{" + str(revision.short_hash) + "}",
                         "Domain":
                             str(project_cls.DOMAIN)[0].upper() +
                             str(project_cls.DOMAIN)[1:],
-                        "LOC":
-                            calc_repo_loc(project_repo, rev_range),
-                        "IR-LOC":
-                            report.basic_bc_stats.num_instructions,
+                        #"LOC":
+                        #    repo_loc,
+                        "\#IR":
+                            str(ir_loc)
+                            if ir_loc < 1000 else str(ir_loc // 1000) + 'k',
                         "IIA-T":
                             iia_time,
                         "IIA-M":
@@ -176,8 +193,8 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
         df.columns = pd.MultiIndex.from_tuples([
             ('', '{Revision}'),
             ('', '{Domain}'),
-            ('', '{LOC}'),
-            ('', '{IR-LOC}'),
+            #('', '{LOC}'),
+            ('', '{\#IR}'),
             ('IIA', '{Time}'),
             ('IIA', '{Mem}'),
             ('Taint', '{Time}'),
@@ -196,21 +213,67 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
-            style.highlight_between(
-                left=cluster_memory_limit,
-                props='cellcolor:{red};',
+
+            def color_dev_machine(mem):
+                return "cellcolor:{SmallServerCol};" if not isinstance(
+                    mem, str
+                ) and mem >= dev_memory_limit and mem < cluster_memory_limit else None
+
+            def color_cluster(mem):
+                return "cellcolor:{LargeServerCol};" if not isinstance(
+                    mem, str
+                ) and mem >= cluster_memory_limit else None
+
+            def color_oom(mem):
+                return "cellcolor:{OOMCol};" if mem == self.OUT_OF_MEMORY else None
+
+            def color_time(tm):
+                return "cellcolor:{TOCol};" if tm == self.TIMEOUT else None
+
+            def color_below_dev(mem):
+                return "cellcolor:{DevCol};" if not isinstance(
+                    mem, str
+                ) and mem < dev_memory_limit else None
+
+            style.applymap(
+                color_dev_machine,
                 subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
                         ('LCA', '{Mem}'), ('IIA', '{Mem}')]
             )
-            style.highlight_between(
-                left=dev_memory_limit,
-                right=cluster_memory_limit,
-                props='cellcolor:{orange};',
+            style.applymap(
+                color_cluster,
                 subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
                         ('LCA', '{Mem}'), ('IIA', '{Mem}')]
             )
+            style.applymap(
+                color_oom,
+                subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
+                        ('LCA', '{Mem}'), ('IIA', '{Mem}')]
+            )
+            style.applymap(
+                color_time,
+                subset=[('Typestate', '{Time}'), ('Taint', '{Time}'),
+                        ('LCA', '{Time}'), ('IIA', '{Time}')]
+            )
+
+            # style.applymap(color_below_dev, subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
+            #             ('LCA', '{Mem}'), ('IIA', '{Mem}')])
+
+            # style.highlight_between(
+            #     left=cluster_memory_limit,
+            #     props='cellcolor:{red};',
+            #     subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
+            #             ('LCA', '{Mem}'), ('IIA', '{Mem}')]
+            # )
+            # style.highlight_between(
+            #     left=dev_memory_limit,
+            #     right=cluster_memory_limit,
+            #     props='cellcolor:{orange};',
+            #     subset=[('Typestate', '{Mem}'), ('Taint', '{Mem}'),
+            #             ('LCA', '{Mem}'), ('IIA', '{Mem}')]
+            # )
             # df.style.format('j')
-            kwargs["column_format"] = "lr|crr|rr|rr|rr|rr"
+            kwargs["column_format"] = "lr|cr|rr|rr|rr|rr"
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'

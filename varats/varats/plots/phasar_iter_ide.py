@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.gridspec import GridSpec
 from matplotlib.markers import MarkerStyle, JoinStyle
+from matplotlib.sankey import Sankey
 from matplotlib.ticker import Locator, FixedLocator, StrMethodFormatter
 
 from varats.data.reports.blame_interaction_graph import (
@@ -1385,6 +1386,29 @@ class PhasarIterIDECombinedSpeedupPlot(
         ax.xaxis.set_ticks_position('bottom')
         ax.yaxis.set_ticks_position('left')
 
+        all_runtime_mean = np.mean(data["Runtime Speedup"])
+        all_runtime_stddev = np.std(data["Runtime Speedup"])
+
+        all_memory_mean = np.mean(data["Memory Savings"])
+        all_memory_stddev = np.std(data["Memory Savings"])
+
+        color = "crimson"
+        for mult in [1, 2, 3]:
+            ellipse = matplotlib.patches.Ellipse(
+                (all_runtime_mean, all_memory_mean),
+                width=2 * all_runtime_stddev * mult,
+                height=2 * all_memory_stddev * mult,
+                facecolor=color,
+                alpha=0.2 if mult == 1 else 0.1
+            )
+
+            ax.add_patch(ellipse)
+
+        all_mean_circle = plt.Circle((all_runtime_mean, all_memory_mean),
+                                     0.02,
+                                     color='r')
+        ax.add_patch(all_mean_circle)
+
         sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 
         # ax.set_yticks(
@@ -2083,6 +2107,7 @@ class PhasarIterIDEMemSpeedupHeatmap(
 
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
+
         # print(f"Data: {data}")
         annot = pd.pivot_table(
             data=data, index="Target", columns="Analysis", values=self.YNAME
@@ -2102,6 +2127,51 @@ class PhasarIterIDEMemSpeedupHeatmap(
         # print(f"Memory Data: {data}")
 
         return self.heatmap(data, annot)
+
+
+class PhasarIterIDESpeedupHeatmapGrid(
+    PhasarIterIDERuntimeSpeedupPlotBase,
+    plot_name='phasar-iter-ide-speedup-heatmap-grid',
+    yname="Best Runtime Speedup vs Old"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_speedups)
+
+        # def do_plot(x, **kwargs):
+        #     plt.scatter(x, self.YNAME, **kwargs)
+
+        ax = sns.FacetGrid(data, col="JF", col_wrap=2, height=4, hue="Analysis")
+        ax.map(
+            sns.scatterplot,
+            self.YNAME,
+            "Target",
+            alpha=0.7,
+        )
+        ax.add_legend()
+        # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+        # print(f"Data: {data}")
+        # annot = pd.pivot_table(
+        #     data=data, index="Target", columns="Analysis", values=self.YNAME
+        # )
+
+        # # print(f"Annot: {annot}")
+        # def last(series):
+        #     return reduce(lambda x, y: y, series)
+
+        # # data = pd.pivot_table(data=data,index="Target",columns="Analysis",values="JF", aggfunc=last)
+        # data = pd.pivot_table(
+        #     data=data,
+        #     index="Target",
+        #     columns="Analysis",
+        #     values="WeightedJF",
+        #     # aggfunc=last,
+        # )
+        # # print(f"Runtime Data: {data}")
+
+        # return self.heatmap(data, annot)
+        return ax
 
 
 class PhasarIterIDENewTime(
@@ -2480,6 +2550,167 @@ class PhasarIterIDEWLSpeedupScatterPlot(
         return (Max, Min)
 
 
+class PhasarIterIDEEventsSankeyPlot(Plot, plot_name="phasar-iter-ide-events"):
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for case_study in case_studies:
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IDELinearConstantAnalysisExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+
+            assert len(
+                report_files
+            ) <= 1, f"Invalid length of report_files list: got {len(report_files)}, expected 1"
+
+            if (len(report_files) == 0):
+                print("No report files for ", case_study.project_name)
+                continue
+
+            print("Num Reports: ", len(report_files))
+
+            for report_file in report_files:
+                # print("Report: ", report_file)
+                report = load_phasar_iter_ide_stats_report(report_file)
+
+                nodes.extend(
+                    report.get_completion_state(case_study.project_name)
+                )
+
+        aggregate = {
+            "timeout": {
+                "timeout": 0,
+                "oom": 0,
+                "larger-server": 0,
+                "server": 0,
+                "dev": 0,
+            },
+            "oom": {
+                "timeout": 0,
+                "oom": 0,
+                "larger-server": 0,
+                "server": 0,
+                "dev": 0,
+            },
+            "larger-server": {
+                "timeout": 0,
+                "oom": 0,
+                "larger-server": 0,
+                "server": 0,
+                "dev": 0,
+            },
+            "dev": {
+                "timeout": 0,
+                "oom": 0,
+                "larger-server": 0,
+                "server": 0,
+                "dev": 0,
+            },
+            "server": {
+                "timeout": 0,
+                "oom": 0,
+                "larger-server": 0,
+                "server": 0,
+                "dev": 0,
+            },
+        }
+
+        total_old = {
+            "timeout": 0,
+            "oom": 0,
+            "larger-server": 0,
+            "server": 0,
+            "dev": 0,
+        }
+        total_new = {
+            "timeout": 0,
+            "oom": 0,
+            "larger-server": 0,
+            "server": 0,
+            "dev": 0,
+        }
+
+        for entry in nodes:
+            aggregate[entry["Old"]][entry["New"]] += 1
+            total_old[entry["Old"]] += 1
+            total_new[entry["New"]] += 1
+
+        num_cs = len(nodes)
+
+        print("EVENTS:")
+        print("aggregates = ", aggregate)
+        print("total_old = ", total_old)
+        print("total_new = ", total_new)
+        print("num_cs: ", num_cs)
+
+        # s = Sankey(scale=1/num_cs)
+        # s.add(
+        #     flows=[num_cs, -total_old["timeout"], -total_old["oom"], -total_old["completed"]],
+        #     labels=["Projects Analyzed", None, None, None],
+        #     trunklength=2,
+        # )
+        # s.add(
+        #     flows=[total_old["timeout"], -total_old["timeout"]],
+        #     labels=[None, "old timeout"],
+        #     prior=0,
+        #     connect=(1,0),
+        #     trunklength=2,
+        # )
+        # s.add(
+        #     flows=[total_old["oom"], -total_old["oom"]],
+        #     labels=[None, "old OOM"],
+        #     prior=0,
+        #     connect=(2,0),
+        #     trunklength=2,
+        # )
+        # s.add(
+        #     flows=[total_old["completed"], -total_old["completed"]],
+        #     labels=[None, "old Completed"],
+        #     prior=0,
+        #     connect=(3,0),
+        #     trunklength=2,
+        # )
+
+        # s.add(
+        #     flows=[total_old["timeout"], -aggregate["timeout"]["timeout"], -aggregate["timeout"]["oom"],-aggregate["timeout"]["completed"]],
+        #     labels=[None, None, None, None],
+        #     prior=1,
+        #     connect=(1, 0),
+        # )
+        # s.add(
+        #     flows=[total_old["oom"], -aggregate["oom"]["timeout"], -aggregate["oom"]["oom"],-aggregate["oom"]["completed"]],
+        #     labels=[None, None, None, None],
+        #     prior=2,
+        #     connect=(1, 0),
+        # )
+        # s.add(
+        #     flows=[total_old["completed"], -aggregate["completed"]["timeout"], -aggregate["completed"]["oom"],-aggregate["completed"]["completed"]],
+        #     labels=[None, None, None, None],
+        #     prior=3,
+        #     connect=(1, 0),
+        # )
+
+        # s.add(
+        #     flows=[aggregate["timeout"]["timeout"],aggregate["oom"]["timeout"],aggregate["completed"]["timeout"], -total_new["timeout"]],
+        #     labels=[None, None, None, None],
+        #     prior=4,
+        #     connect=(1, 0),
+
+        # )
+
+        # s.finish()
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise UnsupportedOperation
+
+
 ##
 ################################################################################
 ##
@@ -2521,6 +2752,10 @@ class CAIGViolinPlotGenerator(
             # ),
             # PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
             # PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDEEventsSankeyPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDESpeedupHeatmapGrid(
+                self.plot_config, **self.plot_kwargs
+            ),
             PhasarIterIDESpeedupGCScatterPlot(
                 self.plot_config, **self.plot_kwargs
             ),
