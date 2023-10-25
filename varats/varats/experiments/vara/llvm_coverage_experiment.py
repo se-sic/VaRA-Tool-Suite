@@ -24,8 +24,6 @@ from varats.experiment.experiment_util import (
     create_default_analysis_failure_handler,
     create_default_compiler_error_handler,
     create_new_success_result_filepath,
-    get_extra_config_options,
-    get_current_config_id,
     wrap_unlimit_stack_size,
     ZippedExperimentSteps,
     OutputFolderStep,
@@ -43,6 +41,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
 )
 from varats.report.report import ReportSpecification
+from varats.utils.config import get_extra_config_options, get_current_config_id
 
 BC_FILE_EXTENSIONS = [
     BCFileExtensions.NO_OPT, BCFileExtensions.TBAA, BCFileExtensions.FEATURE
