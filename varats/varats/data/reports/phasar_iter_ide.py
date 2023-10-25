@@ -58,8 +58,11 @@ class PhasarIterIDESolverStats():
 
     def __init__(self, path: Path) -> None:
         self._all_inter_propagations = -1
+        self._all_inter_propagations_bytes = -1
         self._source_facts_and_cs_to_inter_job = -1
+        self._source_facts_and_cs_to_inter_job_bytes = -1
         self._source_facts_and_func_to_inter_job = -1
+        self._source_facts_and_func_to_inter_job_bytes = -1
         self._max_inner_map_size = -1
         self._avg_inner_map_size = -1.0
         self._jump_functions_map_bytes = -1
@@ -89,13 +92,32 @@ class PhasarIterIDESolverStats():
                     self._all_inter_propagations = int(
                         line.split(":")[1].strip()
                     )
+                elif line.startswith("> AllInterPropagations(Bytes):"):
+                    ApproxSize = line.split(":")[1].strip()
+                    if ApproxSize.startswith('~'):
+                        ApproxSize = ApproxSize[1:]
+                    self._all_inter_propagations_bytes = int(ApproxSize)
                 elif line.startswith("> SourceFactAndCSToInterJob:"):
                     self._source_facts_and_cs_to_inter_job = int(
                         line.split(":")[1].strip()
                     )
+                elif line.startswith("> SourceFactAndCSToInterJob(Bytes):"):
+                    ApproxSize = line.split(":")[1].strip()
+                    if ApproxSize.startswith('~'):
+                        ApproxSize = ApproxSize[1:]
+                    self._source_facts_and_cs_to_inter_job_bytes = int(
+                        ApproxSize
+                    )
                 elif line.startswith("> SourceFactAndFuncToInterJob:"):
                     self._source_facts_and_func_to_inter_job = int(
                         line.split(":")[1].strip()
+                    )
+                elif line.startswith("> SourceFactAndFuncToInterJob(Bytes):"):
+                    ApproxSize = line.split(":")[1].strip()
+                    if ApproxSize.startswith('~'):
+                        ApproxSize = ApproxSize[1:]
+                    self._source_facts_and_func_to_inter_job_bytes = int(
+                        ApproxSize
                     )
                 elif line.startswith("> MaxInnerMapSize:"):
                     self._max_inner_map_size = int(line.split(":")[1].strip())

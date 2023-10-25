@@ -1639,6 +1639,9 @@ class PhasarIterIDESolverStats(
 
                 # all_inter_propagations_jf1 = report._solver_stats_taint_jf1._all_inter_propagations
                 all_inter_propagations_jf2 = report._solver_stats_taint_jf2._all_inter_propagations
+                all_inter_propagations_jf2_mbytes = float(
+                    report._solver_stats_taint_jf2._all_inter_propagations_bytes
+                ) / 2**20
                 val_tab_mbytes = float(
                     report._solver_stats_taint_jf2._val_tab_bytes
                 ) / 2**20
@@ -1666,6 +1669,9 @@ class PhasarIterIDESolverStats(
                 rel_lin_search_diff = report._solver_stats_taint_jf2._rel_diff_summaries_vs_search_len
                 num_jump_functions = report._solver_stats_taint_jf2._jump_functions_high_watermark
 
+                max_inter_jobs_per_call_jf2 = report._solver_stats_taint_jf2._max_inter_jobs_per_relevant_call
+                avg_inter_jobs_per_call_jf2 = report._solver_stats_taint_jf2._avg_inter_jobs_per_relevant_call
+
                 cs_dict = {
                     latex_sanitize_project_name(project_name): {
                         # "Revision":
@@ -1675,40 +1681,60 @@ class PhasarIterIDESolverStats(
                         #     str(project_cls.DOMAIN)[1:],
                         # "LOC":
                         #     calc_repo_loc(project_repo, rev_range),
-                        # "IR-LOC":
-                        #     report.basic_bc_stats.num_instructions,
-                        "ValTab (mbytes)": val_tab_mbytes,
-                        "NumFlowFacts": num_flow_facts,
+                        "IR-LOC":
+                            report.basic_bc_stats.num_instructions,
+                        "ValTab (mbytes)":
+                            val_tab_mbytes,
+                        "NumFlowFacts":
+                            num_flow_facts,
                         # "Total InterProps-JF1":
                         #     all_inter_propagations_jf1,
-                        "Total InterProps-JF2": all_inter_propagations_jf2,
-                        "MaxInnerMapSize-JF1": max_inner_size_jf1,
-                        "MaxInnerMapSize-JF2": max_inner_size_jf2,
-                        "AvgInnerMapSize-JF1": avg_inner_size_jf1,
-                        "AvgInnerMapSize-JF2": avg_inner_size_jf2,
-                        "JFTabBytes-JF1": jf_tab_mbytes_jf1,
-                        "JFTabBytes-JF2": jf_tab_mbytes_jf2,
-                        "NumPathEdges": num_jump_functions,
+                        "Total InterProps-JF2":
+                            all_inter_propagations_jf2,
+                        "MaxInnerMapSize-JF1":
+                            max_inner_size_jf1,
+                        "MaxInnerMapSize-JF2":
+                            max_inner_size_jf2,
+                        "AvgInnerMapSize-JF1":
+                            avg_inner_size_jf1,
+                        "AvgInnerMapSize-JF2":
+                            avg_inner_size_jf2,
+                        "JFTabBytes-JF1":
+                            jf_tab_mbytes_jf1,
+                        "JFTabBytes-JF2":
+                            jf_tab_mbytes_jf2,
+                        "AllInterProps (mbytes)":
+                            all_inter_propagations_jf2_mbytes,
+                        "NumPathEdges":
+                            num_jump_functions,
                         # "#Summary Props-JF1": num_summary_propagations_jf1,
-                        "#Summary Props": num_summary_propagations_jf2,
+                        "#Summary Props":
+                            num_summary_propagations_jf2,
                         # "Max #InterJobs/Call-JF1":
                         #     max_inter_jobs_per_call_jf1,
-                        # "Max #InterJobs/Call-JF2":
-                        #     max_inter_jobs_per_call_jf2,
+                        "Max #InterJobs/Call-JF2":
+                            max_inter_jobs_per_call_jf2,
                         # "Avg #InterJobs/Call-JF1":
                         #     avg_inter_jobs_per_call_jf1,
-                        # "Avg #InterJobs/Call-JF2":
-                        #     avg_inter_jobs_per_call_jf2,
+                        "Avg #InterJobs/Call-JF2":
+                            avg_inter_jobs_per_call_jf2,
                         # "#Lin Searches-JF1": num_linear_search_jf1,
-                        "#Lin Searches": num_linear_search_jf2,
-                        "Max Search Len-JF1": max_lin_search_len_lf1,
-                        "Max Search Len-JF2": max_lin_search_len_lf2,
-                        "Avg Search Len-JF1": avg_lin_search_len_lf1,
-                        "Avg Search Len-JF2": avg_lin_search_len_lf2,
+                        "#Lin Searches":
+                            num_linear_search_jf2,
+                        "Max Search Len-JF1":
+                            max_lin_search_len_lf1,
+                        "Max Search Len-JF2":
+                            max_lin_search_len_lf2,
+                        "Avg Search Len-JF1":
+                            avg_lin_search_len_lf1,
+                        "Avg Search Len-JF2":
+                            avg_lin_search_len_lf2,
                         # "Max Search Diff-JF2":
                         #     max_lin_search_diff,
-                        "Avg Search Diff-JF2": avg_lin_search_diff,
-                        "Rel Search Diff-JF2[%]": rel_lin_search_diff * 100,
+                        "Avg Search Diff-JF2":
+                            avg_lin_search_diff,
+                        "Rel Search Diff-JF2[%]":
+                            rel_lin_search_diff * 100,
                     }
                 }
 
@@ -1725,7 +1751,7 @@ class PhasarIterIDESolverStats(
             #('', 'Revision'),
             #('', 'Domain'),
             #('', 'LOC'),
-            #('', 'IR-LOC'),
+            ('', 'IR-LOC'),
             ('', 'Val(MB)'),
             ('', 'Facts'),
             # ('Inter Props', 'JF1'),
@@ -1737,13 +1763,14 @@ class PhasarIterIDESolverStats(
             ('Avg Inner Size', 'JF2'),
             ('JF Table (MB)', 'JF1'),
             ('JF Table (MB)', 'JF2'),
+            ('InterProps (MB)', 'JF2'),
             ('Path Edges', 'JF2'),
             # ('Summary Props', 'JF1'),
             ('Summary Props', 'JF2'),
             # ('Max IJobs/CS', 'JF1'),
-            # ('Max IJobs/CS', 'JF2'),
+            ('Max IJobs/CS', 'JF2'),
             # ('Avg IJobs/CS', 'JF1'),
-            # ('Avg IJobs/CS', 'JF2'),
+            ('Avg IJobs/CS', 'JF2'),
             # ('Linear Searches', 'JF1'),
             ('Linear Searches', 'JF2'),
             ('Max Search Len', 'JF1'),
@@ -1774,7 +1801,7 @@ class PhasarIterIDESolverStats(
             #             ('Taint', 'Mem (mbytes)'), ('LCA', 'Mem (mbytes)')]
             # )
             # df.style.format('j')
-            kwargs["column_format"] = "l|rrr|rr|rr|rr|r|r|r|rr|rr|r|r"
+            kwargs["column_format"] = "l|rrrr|rr|rr|rr|r|r|r|rr|r|rr|rr|r|r"
             kwargs["multicol_align"] = "c|"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
