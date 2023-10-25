@@ -795,8 +795,9 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
 
 def get_ip_data_sources() -> tp.List[Sources]:
     # TODO: fix typing in benchbuild
-    return tp.cast(
-        tp.List[Sources], [
+    return [
+        tp.cast(
+            Sources,
             HTTPMultiple(
                 local="geo-maps",
                 remote={
@@ -809,7 +810,10 @@ def get_ip_data_sources() -> tp.List[Sources]:
                     "countries-land-500m.geo.json",
                     "countries-land-250m.geo.json", "countries-land-1m.geo.json"
                 ]
-            ),
+            )
+        ),
+        tp.cast(
+            Sources,
             HTTPMultiple(
                 local="geo-maps-compr",
                 remote={
@@ -823,9 +827,9 @@ def get_ip_data_sources() -> tp.List[Sources]:
                     "countries-land-250m.geo.json.compressed",
                     "countries-land-500m.geo.json.compressed"
                 ]
-            ),
-        ]
-    )
+            )
+        ),
+    ]
 
 
 class SynthIPRuntime(VProject):
