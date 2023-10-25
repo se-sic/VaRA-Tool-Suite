@@ -6,8 +6,8 @@ from benchbuild.command import Command, ProjectCommand, PathToken
 from varats.utils.config import get_config_patches
 
 if tp.TYPE_CHECKING:
-    from varats.provider.patch import patch_provider
     from plumbum.commands.base import BoundEnvCommand
+
     from varats.project.varats_project import VProject
 
 
