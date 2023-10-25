@@ -723,7 +723,7 @@ def _save_plot(
         workaround for workaround, value in workarounds.items() if value
     ).replace('_', '-')
 
-    workaround_dir = (binary_dir / f"{name}: {text}")
+    workaround_dir = binary_dir / f"{name}: {text}"
     workaround_dir.mkdir(parents=True)
 
     feature_annotations = \

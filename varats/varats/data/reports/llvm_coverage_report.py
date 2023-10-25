@@ -818,7 +818,7 @@ class CoverageReport(BaseReport, shorthand="CovR", file_type="json"):
             self._annotate_vara_instr(vara_instr)
 
     def _annotate_vara_instr(self, vara_instr: VaraInstr) -> None:
-        source_file = vara_instr.source_file
+        source_file = str(vara_instr.source_file)
         # Convert absolute paths to relative paths when possible
         try:
             relative_path = Path(source_file).relative_to(self.absolute_path)
