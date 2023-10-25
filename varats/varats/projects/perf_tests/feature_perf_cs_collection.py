@@ -4,6 +4,7 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.project import Workloads, Sources
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
@@ -11,7 +12,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -127,6 +132,8 @@ class FeaturePerfCSCollection(VProject):
         ]
     }
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -179,64 +186,6 @@ class FeaturePerfCSCollection(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
-class SynthSAFieldSensitivity(VProject):
-    """Synthetic case-study project for testing field sensitivity."""
-
-    NAME = 'SynthSAFieldSensitivity'
-    GROUP = 'perf_tests'
-    DOMAIN = ProjectDomains.TEST
-
-    SOURCE = [
-        bb.source.Git(
-            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="SynthSAFieldSensitivity",
-            refspec="origin/HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("SynthSAFieldSensitivity")
-        ),
-        FeatureSource()
-    ]
-
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
-                SourceRoot("SynthSAFieldSensitivity") / RSBinary("FieldSense"),
-                label="FieldSense-no-input"
-            )
-        ]
-    }
-
-    @staticmethod
-    def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
-    ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAFieldSensitivity.NAME)
-        )
-
-        binary_map.specify_binary(
-            "build/bin/FieldSense",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0a9216d769", "master")
-        )
-
-        return binary_map[revision]
-
-    def run_tests(self) -> None:
-        pass
-
-    def compile(self) -> None:
-        """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
-        )
-
-    def recompile(self) -> None:
-        """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
-
-
 class SynthSAFlowSensitivity(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
@@ -258,12 +207,15 @@ class SynthSAFlowSensitivity(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthSAFlowSensitivity") / RSBinary("FlowSense"),
+                ConfigParams(),
                 label="FlowSense-no-input"
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -318,13 +270,16 @@ class SynthSAContextSensitivity(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("SynthSAContextSensitivity") /
                 RSBinary("ContextSense"),
+                ConfigParams(),
                 label="ContextSense-no-input"
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -356,45 +311,47 @@ class SynthSAContextSensitivity(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
-class SynthSAInterProcedural(VProject):
+class SynthSAWholeProgram(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
-    NAME = 'SynthSAInterProcedural'
+    NAME = 'SynthSAWholeProgram'
     GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="SynthSAInterProcedural",
-            refspec="origin/HEAD",
+            local="SynthSAWholeProgram",
+            refspec="origin/master",
             limit=None,
             shallow=False,
-            version_filter=project_filter_generator("SynthSAInterProcedural")
+            version_filter=project_filter_generator("SynthSAWholeProgram")
         ),
         FeatureSource()
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
-                SourceRoot("SynthSAInterProcedural") /
-                RSBinary("InterProcedural"),
-                label="ContextSense-no-input"
+            VCommand(
+                SourceRoot("SynthSAWholeProgram") / RSBinary("WholeProgram"),
+                ConfigParams(),
+                label="WholeProgram-no-input"
             )
         ]
     }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAInterProcedural.NAME)
+            get_local_project_git_path(SynthSAWholeProgram.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/InterProcedural",
+            "build/bin/WholeProgram",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("0a9216d769", "master")
         )
@@ -407,12 +364,488 @@ class SynthSAInterProcedural(VProject):
     def compile(self) -> None:
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_SYNTHSAINTERPROCEDURAL"
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSAWHOLEPROGRAM"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthDADynamicDispatch(VProject):
+    """Synthetic case-study project for testing detection of virtual
+    inheritance."""
+
+    NAME = 'SynthDADynamicDispatch'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthDADynamicDispatch",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthDADynamicDispatch")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthDADynamicDispatch") /
+                RSBinary("DynamicDispatch"),
+                ConfigParams(),
+                label="DynamicDispatch-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthDADynamicDispatch.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/DynamicDispatch",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHDADYNAMICDISPATCH"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthDARecursion(VProject):
+    """Synthetic case-study project for testing detection of recursion."""
+
+    NAME = 'SynthDARecursion'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthDARecursion",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthDARecursion")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthDARecursion") / RSBinary("Recursion"),
+                ConfigParams(),
+                label="Recursion-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthDARecursion.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/Recursion",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHDARECURSION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthOVInsideLoop(VProject):
+    """Synthetic case-study project for testing detection of hot loop codes."""
+
+    NAME = 'SynthOVInsideLoop'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthOVInsideLoop",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthOVInsideLoop")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
+                ConfigParams(),
+                label="InsideLoop-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthOVInsideLoop.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/InsideLoop",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHOVINSIDELOOP"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthFeatureInteraction(VProject):
+    """Synthetic case-study project for testing detection of feature
+    interactions."""
+
+    NAME = 'SynthFeatureInteraction'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthFeatureInteraction",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthFeatureInteraction")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthFeatureInteraction") /
+                RSBinary("FeatureInteraction"),
+                ConfigParams(),
+                label="FeatureInteraction-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthFeatureInteraction.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/FeatureInteraction",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHFEATUREINTERACTION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthFeatureHigherOrderInteraction(VProject):
+    """Synthetic case-study project for testing detection of higher-order
+    feature interactions."""
+
+    NAME = 'SynthFeatureHigherOrderInteraction'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthFeatureHigherOrderInteraction",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "SynthFeatureHigherOrderInteraction"
+            )
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthFeatureHigherOrderInteraction") /
+                RSBinary("HigherOrderInteraction"),
+                ConfigParams(),
+                label="HigherOrderInteraction-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthFeatureHigherOrderInteraction.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/HigherOrderInteraction",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("daf81de073", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHFEATUREHIGHERORDERINTERACTION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
+    return {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-10km",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-10km.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-10km.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-10km.geo.json.compressed"
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-10km",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-10km.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-10km.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-10km.geo.json"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-500m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-500m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-500m.geo.json.compressed"
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-500m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-250m",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-250m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-250m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-250m.geo.json.compressed"
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-250m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-250m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-250m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-250m.geo.json"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-1m",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-1m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-1m.geo.json.compressed"
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-1m",
+                creates=[
+                    SourceRoot("geo-maps-compr") / "countries-land-1m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-1m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-1m.geo.json"
+            )
+        ],
+    }
+
+
+def get_ip_data_sources() -> tp.List[Sources]:
+    # TODO: fix typing in benchbuild
+    return [
+        tp.cast(
+            Sources,
+            HTTPMultiple(
+                local="geo-maps",
+                remote={
+                    "1.0":
+                        "https://github.com/simonepri/geo-maps/releases/"
+                        "download/v0.6.0"
+                },
+                files=[
+                    "countries-land-10km.geo.json",
+                    "countries-land-500m.geo.json",
+                    "countries-land-250m.geo.json", "countries-land-1m.geo.json"
+                ]
+            )
+        ),
+        tp.cast(
+            Sources,
+            HTTPMultiple(
+                local="geo-maps-compr",
+                remote={
+                    "1.0":
+                        "https://github.com/se-sic/compression-data/raw/master/"
+                        "example_comp/geo-maps/"
+                },
+                files=[
+                    "countries-land-10km.geo.json.compressed",
+                    "countries-land-1m.geo.json.compressed",
+                    "countries-land-250m.geo.json.compressed",
+                    "countries-land-500m.geo.json.compressed"
+                ]
+            )
+        ),
+    ]
 
 
 class SynthIPRuntime(VProject):
@@ -431,46 +864,11 @@ class SynthIPRuntime(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPRuntime")
         ),
-        HTTPMultiple(
-            local="geo-maps",
-            remote={
-                "1.0":
-                    "https://github.com/simonepri/geo-maps/releases/"
-                    "download/v0.6.0"
-            },
-            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
-        ),
-        FeatureSource()
+        FeatureSource(),
+        *get_ip_data_sources(),
     ]
 
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.SMALL): [
-            VCommand(
-                SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
-                label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_args={"-c"}
-            )
-        ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
-            VCommand(
-                SourceRoot("SynthIPRuntime") / RSBinary("Runtime"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_args={"-c"}
-            )
-        ],
-    }
+    WORKLOADS = get_ip_workloads("SynthIPRuntime", "Runtime")
 
     @staticmethod
     def binaries_for_revision(
@@ -514,37 +912,11 @@ class SynthIPTemplate(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPTemplate")
         ),
-        FeatureSource()
+        FeatureSource(),
+        *get_ip_data_sources(),
     ]
 
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.SMALL): [
-            VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
-                label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_patch={"Compress"}
-            )
-        ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
-            VCommand(
-                SourceRoot("SynthIPTemplate") / RSBinary("Template"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_patch={"Compress"}
-            )
-        ],
-    }
+    WORKLOADS = get_ip_workloads("SynthIPTemplate", "Template")
 
     @staticmethod
     def binaries_for_revision(
@@ -588,37 +960,11 @@ class SynthIPTemplate2(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPTemplate2")
         ),
-        FeatureSource()
+        FeatureSource(),
+        *get_ip_data_sources(),
     ]
 
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.SMALL): [
-            VCommand(
-                SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
-                label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_patch={"Compress"}
-            )
-        ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
-            VCommand(
-                SourceRoot("SynthIPTemplate2") / RSBinary("Template2"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_patch={"Compress"}
-            )
-        ],
-    }
+    WORKLOADS = get_ip_workloads("SynthIPTemplate2", "Template2")
 
     @staticmethod
     def binaries_for_revision(
@@ -662,37 +1008,11 @@ class SynthIPCombined(VProject):
             shallow=False,
             version_filter=project_filter_generator("SynthIPCombined")
         ),
-        FeatureSource()
+        FeatureSource(),
+        *get_ip_data_sources(),
     ]
 
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.SMALL): [
-            VCommand(
-                SourceRoot("SynthIPCombined") / RSBinary("Combined"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1km.geo.json",
-                ">",
-                "geo-maps/countries-land-1km.geo.json.compressed",
-                label="countries-land-1km",
-                creates=["geo-maps/countries-land-1km.geo.json.compressed"],
-                requires_all_args={"-c"}
-            )
-        ],
-        WorkloadSet(WorkloadCategory.MEDIUM): [
-            VCommand(
-                SourceRoot("SynthIPCombined") / RSBinary("Combined"),
-                "-c",
-                "<",
-                "geo-maps/countries-land-1m.geo.json",
-                ">",
-                "geo-maps/countries-land-1m.geo.json.compressed",
-                label="countries-land-1m",
-                creates=["geo-maps/countries-land-1m.geo.json.compressed"],
-                requires_all_args={"-c"}
-            )
-        ],
-    }
+    WORKLOADS = get_ip_workloads("SynthIPCombined", "Combined")
 
     @staticmethod
     def binaries_for_revision(
@@ -713,6 +1033,293 @@ class SynthIPCombined(VProject):
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHIPCOMBINED"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthSAFieldSensitivity(VProject):
+    """Synthetic case-study project for testing field sensitivity."""
+
+    NAME = 'SynthSAFieldSensitivity'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthSAFieldSensitivity",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthSAFieldSensitivity")
+        ),
+        FeatureSource(),
+        *get_ip_data_sources(),
+    ]
+
+    WORKLOADS = get_ip_workloads("SynthSAFieldSensitivity", "FieldSense")
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthSAFieldSensitivity.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/FieldSense",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("0a9216d769", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTTraitBased(VProject):
+    """Synthetic case-study project for testing flow sensitivity."""
+
+    NAME = 'SynthCTTraitBased'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthCTTraitBased",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthCTTraitBased")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthCTTraitBased") / RSBinary("CTTraitBased"),
+                label="CompileTime-TraitBased"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTTraitBased.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTTraitBased",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTTRAITBASED"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTPolicies(VProject):
+    """Synthetic case-study project for compile time variability using
+    policies."""
+
+    NAME = 'SynthCTPolicies'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthCTPolicies",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthCTPolicies")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthCTPolicies") / RSBinary("CTPolicies"),
+                label="CompileTime-Policies"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTPolicies.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTPolicies",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTPOLICIES"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTCRTP(VProject):
+    """Synthetic case-study project for compile time variability using CRTP."""
+
+    NAME = 'SynthCTCRTP'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("CTCRTP"), label="CompileTime-CRTP"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTCRTP.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTCRTP",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTCRTP"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class SynthCTTemplateSpecialization(VProject):
+    """Synthetic case-study project for compile time variability using template
+    specialization."""
+
+    NAME = 'SynthCTTemplateSpecialization'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("CTTemplateSpecialization"),
+                label="CompileTime-Template-Specialization"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTTemplateSpecialization.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTTemplateSpecialization",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHCTSPECIALIZATION"
         )
 
     def recompile(self) -> None:

@@ -3,7 +3,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import Command, SourceRoot, WorkloadSet
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import cmake, make
 from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
@@ -66,6 +66,20 @@ class Bzip2(VProject):
             files=[
                 "xz-5.4.0.tar.bz2",
             ]
+        ),
+        FeatureSource(),
+        HTTPMultiple(
+            local="geo-maps-compr",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/compression-data/"
+                    "raw/master/bzip2/geo-maps/"
+            },
+            files=[
+                "countries-land-100m.geo.json.bz2",
+                "countries-land-10m.geo.json.bz2",
+                "countries-land-1m.geo.json.bz2"
+            ]
         )
     ]
     _AUTOTOOLS_VERSIONS = GoodBadSubgraph([
@@ -90,11 +104,8 @@ class Bzip2(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
+            VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
-                "--compress",
-                "--best",
-                "-vvv",
                 "--keep",
                 # bzip2 compresses very fast even on the best setting, so we
                 # need the three input files to get approximately 30 seconds
@@ -102,11 +113,30 @@ class Bzip2(VProject):
                 "geo-maps/countries-land-1m.geo.json",
                 "geo-maps/countries-land-10m.geo.json",
                 "geo-maps/countries-land-100m.geo.json",
+                label="med_geo",
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.bz2",
                     "geo-maps/countries-land-10m.geo.json.bz2",
                     "geo-maps/countries-land-100m.geo.json.bz2"
-                ]
+                ],
+                requires_all_args={"--compress"}
+            ),
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                "--keep",
+                # bzip2 compresses very fast even on the best setting, so we
+                # need the three input files to get approximately 30 seconds
+                # total execution time
+                "geo-maps-compr/countries-land-1m.geo.json.bz2",
+                "geo-maps-compr/countries-land-10m.geo.json.bz2",
+                "geo-maps-compr/countries-land-100m.geo.json.bz2",
+                label="med_geo",
+                creates=[
+                    "geo-maps-compr/countries-land-1m.geo.json",
+                    "geo-maps-compr/countries-land-10m.geo.json",
+                    "geo-maps-compr/countries-land-100m.geo.json"
+                ],
+                requires_all_args={"--decompress"}
             )
         ],
         WorkloadSet(WorkloadCategory.JAN): [
@@ -191,3 +221,22 @@ class Bzip2(VProject):
                 )
         with local.cwd(bzip2_source):
             verify_binaries(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        bzip2_source = Path(self.source_of_primary)
+        bzip2_version = ShortCommitHash(self.version_of_primary)
+
+        if bzip2_version in typed_revision_range(
+            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
+        ) or bzip2_version in typed_revision_range(
+            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
+        ):
+            with local.cwd(bzip2_source / "build"):
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        else:
+            with local.cwd(bzip2_source / "build"):
+                bb.watch(cmake)(
+                    "--build", ".", "--config", "Release", "-j",
+                    get_number_of_jobs(bb_cfg())
+                )
