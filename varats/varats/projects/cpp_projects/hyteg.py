@@ -19,6 +19,7 @@ from varats.project.project_util import (
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
+from varats.utils.git_commands import init_all_submodules, update_all_submodules
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
@@ -85,6 +86,8 @@ class HyTeg(VProject):
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         mkdir("-p", hyteg_source / "build")
+
+        update_all_submodules(hyteg_source, recursive=True, init=True)
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
