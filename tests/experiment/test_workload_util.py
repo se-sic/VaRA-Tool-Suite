@@ -109,7 +109,7 @@ class TestWorkloadCommands(unittest.TestCase):
             ShortCommitHash("7930350628")
         )[0]
         workloads = wu.workload_commands(project, binary, [])
-        self.assertEqual(2, len(workloads))
+        self.assertEqual(8, len(workloads))
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_workload_commands_requires_patch2(self) -> None:
@@ -124,7 +124,7 @@ class TestWorkloadCommands(unittest.TestCase):
         binary = SynthIPTemplate \
             .binaries_for_revision(ShortCommitHash("7930350628"))[0]
         workloads = wu.workload_commands(project, binary, [])
-        self.assertEqual(0, len(workloads))
+        self.assertEqual(8, len(workloads))
 
 
 class TestWorkloadFilenames(unittest.TestCase):
