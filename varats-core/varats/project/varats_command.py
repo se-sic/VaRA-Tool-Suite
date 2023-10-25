@@ -110,10 +110,10 @@ class VProjectCommand(ProjectCommand):  # type: ignore
                 all_patch_tags.update(patch.feature_tags)
 
         return bool((
-            not self.requires_not_args or
+            not self.v_command.requires_not_args or
             not all_args.intersection(self.v_command.requires_not_args)
         ) and (
-            not self.requires_any_args or
+            not self.v_command.requires_any_args or
             all_args.intersection(self.v_command.requires_any_args)
         ) and (
             not self.v_command.requires_all_args or
