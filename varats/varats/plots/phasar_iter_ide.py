@@ -173,17 +173,29 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
 
     def _get_jf_name(self, jf: int) -> str:
         if jf == self.JF1:
-            return "JF1"
+            return "JF[ND]"
         elif jf == self.JF2:
-            return "JF4"
+            return "JF[N]"
         elif jf == self.JF3:
-            return "JF4S"
+            return "JF[NE]"
         elif jf == self.Nested:
-            return "Nested"
+            return "JF[old]"
         elif jf == self.OLD:
             return "Old"
         else:
             raise "ERROR: Table Rep out-of-range: " + str(jf)
+
+    def _get_num_jf(self) -> int:
+        return 3
+
+    def _get_hue_order(self, num_jf: int) -> tp.List[str]:
+        lst = [
+            self._get_jf_name(self.JF1),
+            self._get_jf_name(self.JF2),
+            self._get_jf_name(self.JF3),
+            self._get_jf_name(self.Nested)
+        ]
+        return lst[:num_jf]
 
     def make_dataframe(
         self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
@@ -310,6 +322,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             ax=ax1,
         )
         sns.boxplot(
@@ -317,6 +330,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             ax=ax2,
         )
 
@@ -405,6 +419,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             cut=0,
             palette="pastel",
             order=self.analysis_order(),
@@ -435,6 +450,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             y=self.YNAME,
             data=colored_data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             dodge=True,
             legend=False,
             jitter=True,
@@ -827,6 +843,7 @@ class PhasarIterIDETargetSpeedupVsNested(
             x="Target",
             y=self.YNAME,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -860,7 +877,7 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSize(
             x="Target",
             y=self.YNAME,
             hue="JF",
-            hue_order=["JF1", "JF4", "JF4S"],
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -895,7 +912,7 @@ class PhasarIterIDETargetSpeedupVsNestedSortedTime(
             x="Target",
             y=self.YNAME,
             hue="JF",
-            hue_order=["JF1", "JF4", "JF4S"],
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -939,7 +956,7 @@ class PhasarIterIDELineTargetSpeedupVsNested(
             x="Target",
             y=self.YNAME,
             hue="JF",
-            hue_order=["JF1", "JF4", "JF4S"],
+            hue_order=self._get_hue_order(self._get_num_jf()),
             units="Analysis",
             style="Analysis",
             # linewidth=0,
@@ -1002,6 +1019,7 @@ class PhasarIterIDEAbsoluteSpeedupJFvsNested(
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             cut=0,
             palette="pastel",
             # inner="point",
@@ -1023,6 +1041,7 @@ class PhasarIterIDEAbsoluteSpeedupJFvsNested(
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             dodge=True,
             legend=False,
             jitter=True,
@@ -1065,6 +1084,7 @@ class PhasarIterIDETargetMemSpeedupVsNested(
             x="Target",
             y=self.YNAME,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -1097,7 +1117,7 @@ class PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
             x="Target",
             y=self.YNAME,
             hue="JF",
-            hue_order=["JF1", "JF4", "JF4S"],
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -1131,7 +1151,7 @@ class PhasarIterIDETargetMemSpeedupVsNestedSortedMem(
             x="Target",
             y=self.YNAME,
             hue="JF",
-            hue_order=["JF1", "JF4", "JF4S"],
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -1248,6 +1268,7 @@ class PhasarIterIDEAbsoluteMemSpeedupJFvsNested(
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             cut=0,
             palette="pastel",
             # inner="point",
@@ -1269,6 +1290,7 @@ class PhasarIterIDEAbsoluteMemSpeedupJFvsNested(
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             dodge=True,
             legend=False,
             jitter=True,
@@ -1344,6 +1366,7 @@ class PhasarIterIDECombinedSpeedupPlot(
             # y = "New",
             # hue="Target",
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             # markers = markers,
             # fillstyle="none",
             # facecolors="none",
@@ -1364,6 +1387,7 @@ class PhasarIterIDECombinedSpeedupPlot(
             # y = "New",
             style="Target",
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             # markers = markers,
             # fillstyle="none",
             # facecolors="none",
@@ -1386,28 +1410,68 @@ class PhasarIterIDECombinedSpeedupPlot(
         ax.xaxis.set_ticks_position('bottom')
         ax.yaxis.set_ticks_position('left')
 
-        all_runtime_mean = np.mean(data["Runtime Speedup"])
-        all_runtime_stddev = np.std(data["Runtime Speedup"])
+        runtime_means = [
+            np.mean(
+                data.loc[data["JF"] == self._get_jf_name(jf)]["Runtime Speedup"]
+            ) for jf in [self.JF1, self.JF2, self.JF3]
+        ]
+        runtime_stds = [
+            np.std(
+                data.loc[data["JF"] == self._get_jf_name(jf)]["Runtime Speedup"]
+            ) for jf in [self.JF1, self.JF2, self.JF3]
+        ]
+        memory_means = [
+            np.mean(
+                data.loc[data["JF"] == self._get_jf_name(jf)]["Memory Savings"]
+            ) for jf in [self.JF1, self.JF2, self.JF3]
+        ]
+        memory_stds = [
+            np.std(
+                data.loc[data["JF"] == self._get_jf_name(jf)]["Memory Savings"]
+            ) for jf in [self.JF1, self.JF2, self.JF3]
+        ]
 
-        all_memory_mean = np.mean(data["Memory Savings"])
-        all_memory_stddev = np.std(data["Memory Savings"])
+        colors = sns.color_palette("dark")
+        colors2 = sns.color_palette("bright")
 
-        color = "crimson"
-        for mult in [1, 2, 3]:
-            ellipse = matplotlib.patches.Ellipse(
-                (all_runtime_mean, all_memory_mean),
-                width=2 * all_runtime_stddev * mult,
-                height=2 * all_memory_stddev * mult,
-                facecolor=color,
-                alpha=0.2 if mult == 1 else 0.1
-            )
-
+        for rt_mean, rt_std, mem_mean, mem_std, col in zip(
+            runtime_means, runtime_stds, memory_means, memory_stds, colors
+        ):
+            ellipse = matplotlib.patches.Ellipse((rt_mean, mem_mean),
+                                                 width=2 * rt_std,
+                                                 height=2 * mem_std,
+                                                 facecolor=col,
+                                                 alpha=0.3)
             ax.add_patch(ellipse)
 
-        all_mean_circle = plt.Circle((all_runtime_mean, all_memory_mean),
-                                     0.02,
-                                     color='r')
-        ax.add_patch(all_mean_circle)
+        for rt_mean, rt_std, mem_mean, mem_std, col in zip(
+            runtime_means, runtime_stds, memory_means, memory_stds, colors2
+        ):
+            all_mean_circle = plt.Circle((rt_mean, mem_mean), 0.03, color=col)
+            ax.add_patch(all_mean_circle)
+
+        # all_runtime_mean = np.mean(data["Runtime Speedup"])
+        # all_runtime_stddev = np.std(data["Runtime Speedup"])
+
+        # all_memory_mean = np.mean(data["Memory Savings"])
+        # all_memory_stddev = np.std(data["Memory Savings"])
+
+        # color = "crimson"
+        # for mult in [1]:
+        #     ellipse = matplotlib.patches.Ellipse(
+        #         (all_runtime_mean, all_memory_mean),
+        #         width=2 * all_runtime_stddev * mult,
+        #         height=2 * all_memory_stddev * mult,
+        #         facecolor=color,
+        #         alpha=0.2 if mult == 1 else 0.1
+        #     )
+
+        #     ax.add_patch(ellipse)
+
+        # all_mean_circle = plt.Circle((all_runtime_mean, all_memory_mean),
+        #                              0.02,
+        #                              color='r')
+        # ax.add_patch(all_mean_circle)
 
         sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 
@@ -1663,13 +1727,25 @@ class PhasarIterIDESpeedupTargetScatter(
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
 
-        # for ana in ["Taint", "LCA", "IIA"]:
-        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
-        #     Min = Rows.min()
-        #     Max = Rows.max()
-        #     Mean = Rows.mean()
-        #     print(f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+        for j in [self.JF2, self.Nested]:
+            jf = self._get_jf_name(j)
+            for ana in ["Taint", "LCA", "IIA", "Typestate"]:
+                Rows = data.loc[(data["Analysis"] == ana) &
+                                (data["JF"] == jf)][self.YNAME]
+                Min = Rows.min()
+                Max = Rows.max()
+                Mean = Rows.mean()
+                print(
+                    f"[PhasarIterIDESpeedupTargetScatter]: {jf}: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+                )
 
+            Rows = data.loc[data["JF"] == jf][self.YNAME]
+            Min = Rows.min()
+            Max = Rows.max()
+            Mean = Rows.mean()
+            print(
+                f"[PhasarIterIDESpeedupTargetScatter]: {jf}: All: Min {Min}, Max {Max}, Mean {Mean}"
+            )
         # print("Dataset: ", data.to_string())
 
         ax = sns.scatterplot(
@@ -1677,6 +1753,7 @@ class PhasarIterIDESpeedupTargetScatter(
             x="Target",
             y=self.YNAME,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -1738,13 +1815,24 @@ class PhasarIterIDEMemSpeedupTargetScatter(
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
 
-        for ana in ["Taint", "LCA", "IIA"]:
-            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+        for j in [self.JF2, self.Nested]:
+            jf = self._get_jf_name(j)
+            for ana in ["Taint", "LCA", "IIA", "Typestate"]:
+                Rows = data.loc[(data["Analysis"] == ana) &
+                                (data["JF"] == jf)][self.YNAME]
+                Min = Rows.min()
+                Max = Rows.max()
+                Mean = Rows.mean()
+                print(
+                    f"[PhasarIterIDEMemSpeedupTargetScatter]: {jf}: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+                )
+
+            Rows = data.loc[data["JF"] == jf][self.YNAME]
             Min = Rows.min()
             Max = Rows.max()
             Mean = Rows.mean()
             print(
-                f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+                f"[PhasarIterIDEMemSpeedupTargetScatter]: {jf}: All: Min {Min}, Max {Max}, Mean {Mean}"
             )
 
         # print("Dataset: ", data.to_string())
@@ -1754,6 +1842,7 @@ class PhasarIterIDEMemSpeedupTargetScatter(
             x="Target",
             y=self.YNAME,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
             alpha=0.7,
@@ -1776,6 +1865,9 @@ class PhasarIterIDESpeedupGCPlotBase(
     plot_name='phasar-iter-ide-speedup-gc-plot-base',
     yname="Runtime Speedup /w GC"
 ):
+
+    def _get_num_jf(self) -> int:
+        return 2
 
     def _get_data_entries(
         self, report: PhasarIterIDEStatsReport, cs: str,
@@ -1852,6 +1944,10 @@ class PhasarIterIDESpeedupGCScatterPlot(
             x="Target",
             y=self.YNAME,
             hue="JF",
+            hue_order=[
+                self._get_jf_name(self.JF1),
+                self._get_jf_name(self.JF2)
+            ],
             style="Analysis",
             linewidth=0,
             alpha=0.5,
@@ -1872,8 +1968,11 @@ class PhasarIterIDESpeedupGCScatterPlot(
 class PhasarIterIDEMemSpeedupGCPlotBase(
     PhasarIterIDEPlotBase,
     plot_name='phasar-iter-ide-mem-speedup-gc-plot-base',
-    yname="Memory Speedup /w GC"
+    yname="Memory Savings /w GC"
 ):
+
+    def _get_num_jf(self) -> int:
+        return 2
 
     def _get_data_entries(
         self, report: PhasarIterIDEStatsReport, cs: str,
@@ -1917,7 +2016,7 @@ class PhasarIterIDEMemSpeedupGCPlotBase(
 class PhasarIterIDEMemSpeedupGCPlot(
     PhasarIterIDEMemSpeedupGCPlotBase,
     plot_name='phasar-iter-ide-mem-speedup-gc',
-    yname="Memory Speedup /w GC"
+    yname="Memory Savings /w GC"
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
@@ -1940,6 +2039,10 @@ class PhasarIterIDEMemSpeedupGCScatterPlot(
             x="Target",
             y=self.YNAME,
             hue="JF",
+            hue_order=[
+                self._get_jf_name(self.JF1),
+                self._get_jf_name(self.JF2)
+            ],
             style="Analysis",
             linewidth=0,
             alpha=0.5,
@@ -2208,6 +2311,7 @@ class PhasarIterIDENewTime(
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             showfliers=False,
         )
         ax.set_ylim(top=600)
@@ -2248,6 +2352,7 @@ class PhasarIterIDENewMem(
             y=self.YNAME,
             data=data,
             hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
             showfliers=False,
         )
         ax.set_ylim(top=15000)
@@ -2330,224 +2435,224 @@ class PhasarIterIDEOldNewTimeViolinPlot(
         raise UnsupportedOperation
 
 
-class PhasarIterIDEWLSpeedupScatterPlot(
-    Plot, plot_name='phasar-iter-ide-speedup-target-scatter'
-):
+# class PhasarIterIDEWLSpeedupScatterPlot(
+#     Plot, plot_name='phasar-iter-ide-speedup-target-scatter'
+# ):
 
-    YNAME = "Runtime with WorkLists"
+#     YNAME = "Runtime with WorkLists"
 
-    TAINT = "Taint"
-    TYPESTATE = "Typestate"
-    LCA = "LCA"
-    IIA = "IIA"
+#     TAINT = "Taint"
+#     TYPESTATE = "Typestate"
+#     LCA = "LCA"
+#     IIA = "IIA"
 
-    JF1 = 0
-    JF2 = 1
-    JF3 = 2
-    OLD = 3
+#     JF1 = 0
+#     JF2 = 1
+#     JF3 = 2
+#     OLD = 3
 
-    def _get_aggregates(self, report: PhasarIterIDEStatsReport,
-                        ana: str) -> tp.List[TimeReportAggregate]:
-        if ana == self.TAINT:
-            return [
-                report.new_taint_jf1, report.new_taint, report.new_taint_jf3,
-                report.old_taint
-            ]
-        elif ana == self.TYPESTATE:
-            return [
-                report.new_typestate_jf1, report.new_typestate,
-                report.new_typestate_jf3, report.old_typestate
-            ]
-        elif ana == self.LCA:
-            return [
-                report.new_lca_jf1, report.new_lca, report.new_lca_jf3,
-                report.old_lca
-            ]
-        elif ana == self.IIA:
-            return [
-                report.new_iia_jf1, report.new_iia, report.new_iia_jf3,
-                report.old_iia
-            ]
-        else:
-            raise "ERROR: Invalid analysis: " + ana
+#     def _get_aggregates(self, report: PhasarIterIDEStatsReport,
+#                         ana: str) -> tp.List[TimeReportAggregate]:
+#         if ana == self.TAINT:
+#             return [
+#                 report.new_taint_jf1, report.new_taint, report.new_taint_jf3,
+#                 report.old_taint
+#             ]
+#         elif ana == self.TYPESTATE:
+#             return [
+#                 report.new_typestate_jf1, report.new_typestate,
+#                 report.new_typestate_jf3, report.old_typestate
+#             ]
+#         elif ana == self.LCA:
+#             return [
+#                 report.new_lca_jf1, report.new_lca, report.new_lca_jf3,
+#                 report.old_lca
+#             ]
+#         elif ana == self.IIA:
+#             return [
+#                 report.new_iia_jf1, report.new_iia, report.new_iia_jf3,
+#                 report.old_iia
+#             ]
+#         else:
+#             raise "ERROR: Invalid analysis: " + ana
 
-    @staticmethod
-    def compute_speedups(
-        old_measurements: tp.List[float], new_measurements: tp.List[float]
-    ) -> tp.List[float]:
-        return list(
-            map(
-                lambda x: round(x[0] / x[1], 3),
-                itertools.product(old_measurements, new_measurements)
-            )
-        )
+#     @staticmethod
+#     def compute_speedups(
+#         old_measurements: tp.List[float], new_measurements: tp.List[float]
+#     ) -> tp.List[float]:
+#         return list(
+#             map(
+#                 lambda x: round(x[0] / x[1], 3),
+#                 itertools.product(old_measurements, new_measurements)
+#             )
+#         )
 
-    @staticmethod
-    def compute_mean_speedup(
-        old_measurements: tp.List[float], new_measurements: tp.List[float]
-    ) -> tp.List[float]:
-        return [
-            np.mean(
-                list(
-                    map(
-                        lambda x: round(x[0] / x[1], 3),
-                        itertools.product(old_measurements, new_measurements)
-                    )
-                )
-            )
-        ]
+#     @staticmethod
+#     def compute_mean_speedup(
+#         old_measurements: tp.List[float], new_measurements: tp.List[float]
+#     ) -> tp.List[float]:
+#         return [
+#             np.mean(
+#                 list(
+#                     map(
+#                         lambda x: round(x[0] / x[1], 3),
+#                         itertools.product(old_measurements, new_measurements)
+#                     )
+#                 )
+#             )
+#         ]
 
-    def _get_data_entries(
-        self, report: PhasarIterIDEStatsReport, cs: str,
-        speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
-    ) -> tp.List[tp.Dict[str, tp.Any]]:
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+#     def _get_data_entries(
+#         self, report: PhasarIterIDEStatsReport, cs: str,
+#         speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
+#     ) -> tp.List[tp.Dict[str, tp.Any]]:
+#         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
-            # print(f"Processing {ana} analysis results")
-            aggregates = self._get_aggregates(report, ana)
-            if aggregates[self.OLD] is None:
-                print(f"Skip {ana}")
-                continue
-            for jf in [self.JF1, self.JF2, self.JF3]:
-                if aggregates[jf] is None:
-                    print(f"Skip {self._get_jf_name(jf)} for {ana}")
-                    continue
-                for s in speedup_computer(
-                    aggregates[self.OLD].measurements_wall_clock_time,
-                    aggregates[jf].measurements_wall_clock_time
-                ):
-                    # print(f"> {s}")
-                    nodes.append({
-                        self.YNAME:
-                            s,
-                        "JF":
-                            self._get_jf_name(jf),
-                        "Analysis":
-                            ana,
-                        "Old":
-                            np.mean(
-                                aggregates[self.OLD
-                                          ].measurements_wall_clock_time
-                            ),
-                        "New":
-                            np.mean(
-                                aggregates[jf].measurements_wall_clock_time
-                            ),
-                        "Target":
-                            cs,
-                    })
+#         for ana in [self.TAINT, self.TYPESTATE, self.LCA, self.IIA]:
+#             # print(f"Processing {ana} analysis results")
+#             aggregates = self._get_aggregates(report, ana)
+#             if aggregates[self.OLD] is None:
+#                 print(f"Skip {ana}")
+#                 continue
+#             for jf in [self.JF1, self.JF2, self.JF3]:
+#                 if aggregates[jf] is None:
+#                     print(f"Skip {self._get_jf_name(jf)} for {ana}")
+#                     continue
+#                 for s in speedup_computer(
+#                     aggregates[self.OLD].measurements_wall_clock_time,
+#                     aggregates[jf].measurements_wall_clock_time
+#                 ):
+#                     # print(f"> {s}")
+#                     nodes.append({
+#                         self.YNAME:
+#                             s,
+#                         "JF":
+#                             self._get_jf_name(jf),
+#                         "Analysis":
+#                             ana,
+#                         "Old":
+#                             np.mean(
+#                                 aggregates[self.OLD
+#                                           ].measurements_wall_clock_time
+#                             ),
+#                         "New":
+#                             np.mean(
+#                                 aggregates[jf].measurements_wall_clock_time
+#                             ),
+#                         "Target":
+#                             cs,
+#                     })
 
-        return nodes
+#         return nodes
 
-    def _get_jf_name(self, jf: int) -> str:
-        if jf == self.JF1:
-            return "JF1"
-        elif jf == self.JF2:
-            return "JF4"
-        elif jf == self.JF3:
-            return "JF4S"
-        elif jf == self.OLD:
-            return "Old"
-        else:
-            raise "ERROR: Table Rep out-of-range: " + str(jf)
+#     def _get_jf_name(self, jf: int) -> str:
+#         if jf == self.JF1:
+#             return "JF1"
+#         elif jf == self.JF2:
+#             return "JF4"
+#         elif jf == self.JF3:
+#             return "JF4S"
+#         elif jf == self.OLD:
+#             return "Old"
+#         else:
+#             raise "ERROR: Table Rep out-of-range: " + str(jf)
 
-    def make_dataframe(
-        self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
-                                            float]
-    ) -> pd.DataFrame:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
+#     def make_dataframe(
+#         self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
+#                                             float]
+#     ) -> pd.DataFrame:
+#         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+#         nodes: tp.List[tp.Dict[str, tp.Any]] = []
 
-        # print("WL Make Dataframe: ")
+#         # print("WL Make Dataframe: ")
 
-        timeouts = dict()
-        ooms = dict()
-        for case_study in case_studies:
-            report_files = get_processed_revisions_files(
-                case_study.project_name, IDELinearConstantAnalysisExperimentWL,
-                PhasarIterIDEStatsReport,
-                get_case_study_file_name_filter(case_study)
-            )
+#         timeouts = dict()
+#         ooms = dict()
+#         for case_study in case_studies:
+#             report_files = get_processed_revisions_files(
+#                 case_study.project_name, IDELinearConstantAnalysisExperimentWL,
+#                 PhasarIterIDEStatsReport,
+#                 get_case_study_file_name_filter(case_study)
+#             )
 
-            assert len(
-                report_files
-            ) <= 1, f"Invalid length of report_files list: got {len(report_files)}, expected 1"
+#             assert len(
+#                 report_files
+#             ) <= 1, f"Invalid length of report_files list: got {len(report_files)}, expected 1"
 
-            if (len(report_files) == 0):
-                print("No report files for ", case_study.project_name)
-                continue
+#             if (len(report_files) == 0):
+#                 print("No report files for ", case_study.project_name)
+#                 continue
 
-            print("Num Reports: ", len(report_files))
+#             print("Num Reports: ", len(report_files))
 
-            for report_file in report_files:
-                # print("Report: ", report_file)
-                report = load_phasar_iter_ide_stats_report(report_file)
+#             for report_file in report_files:
+#                 # print("Report: ", report_file)
+#                 report = load_phasar_iter_ide_stats_report(report_file)
 
-                local_timeouts = report.aggregate_timeouts()
-                merge_dict(timeouts, local_timeouts, lambda x, y: x + y)
+#                 local_timeouts = report.aggregate_timeouts()
+#                 merge_dict(timeouts, local_timeouts, lambda x, y: x + y)
 
-                local_ooms = report.aggregate_ooms()
-                merge_dict(ooms, local_ooms, lambda x, y: x + y)
+#                 local_ooms = report.aggregate_ooms()
+#                 merge_dict(ooms, local_ooms, lambda x, y: x + y)
 
-                nodes.extend(
-                    self._get_data_entries(
-                        report, case_study.project_name, speedup_computer
-                    )
-                )
+#                 nodes.extend(
+#                     self._get_data_entries(
+#                         report, case_study.project_name, speedup_computer
+#                     )
+#                 )
 
-        print("Timeouts: ", timeouts)
-        print("OOMs: ", ooms)
-        df = pd.DataFrame(nodes)
-        print("WL DataFrame: ", df)
-        return df.sort_values(by=["Analysis", "JF"])
+#         print("Timeouts: ", timeouts)
+#         print("OOMs: ", ooms)
+#         df = pd.DataFrame(nodes)
+#         print("WL DataFrame: ", df)
+#         return df.sort_values(by=["Analysis", "JF"])
 
-    def make_phasar_plot(self) -> matplotlib.axes.Axes:
-        data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
+#     def make_phasar_plot(self) -> matplotlib.axes.Axes:
+#         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
 
-        # for ana in ["Taint", "LCA", "IIA"]:
-        #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
-        #     Min = Rows.min()
-        #     Max = Rows.max()
-        #     Mean = Rows.mean()
-        #     print(f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
+#         # for ana in ["Taint", "LCA", "IIA"]:
+#         #     Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+#         #     Min = Rows.min()
+#         #     Max = Rows.max()
+#         #     Mean = Rows.mean()
+#         #     print(f"[PhasarIterIDESpeedupTargetScatter]: {ana}: Min {Min}, Max {Max}, Mean {Mean}")
 
-        # print("Dataset: ", data.to_string())
+#         # print("Dataset: ", data.to_string())
 
-        ax = sns.scatterplot(
-            data=data,
-            x="Target",
-            y=self.YNAME,
-            hue="JF",
-            style="Analysis",
-            linewidth=0,
-            alpha=0.7,
-        )
+#         ax = sns.scatterplot(
+#             data=data,
+#             x="Target",
+#             y=self.YNAME,
+#             hue="JF",
+#             style="Analysis",
+#             linewidth=0,
+#             alpha=0.7,
+#         )
 
-        ax.axhline(1, linewidth=1, color='gray')
+#         ax.axhline(1, linewidth=1, color='gray')
 
-        ax.set_ylabel("Runtime Speedup")
-        ax.set_xlabel("Target Program")
-        ax.set_xticklabels(
-            ax.get_xticklabels(), rotation=45, horizontalalignment='right'
-        )
-        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+#         ax.set_ylabel("Runtime Speedup")
+#         ax.set_xlabel("Target Program")
+#         ax.set_xticklabels(
+#             ax.get_xticklabels(), rotation=45, horizontalalignment='right'
+#         )
+#         # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
-        return ax
+#         return ax
 
-    def plot(self, view_mode: bool) -> None:
-        ax = self.make_phasar_plot()
+#     def plot(self, view_mode: bool) -> None:
+#         ax = self.make_phasar_plot()
 
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        raise UnsupportedOperation
+#     def calc_missing_revisions(
+#         self, boundary_gradient: float
+#     ) -> tp.Set[FullCommitHash]:
+#         raise UnsupportedOperation
 
-    def get_argmaxmin(self, Args: tp.List[float]) -> tp.Tuple[int, int]:
-        Max = np.argmax(Args)
-        Min = np.argmin(Args)
-        return (Max, Min)
+#     def get_argmaxmin(self, Args: tp.List[float]) -> tp.Tuple[int, int]:
+#         Max = np.argmax(Args)
+#         Min = np.argmin(Args)
+#         return (Max, Min)
 
 
 class PhasarIterIDEEventsSankeyPlot(Plot, plot_name="phasar-iter-ide-events"):
@@ -2750,8 +2855,8 @@ class CAIGViolinPlotGenerator(
             # PhasarIterIDEMemSpeedupHeatmap(
             #     self.plot_config, **self.plot_kwargs
             # ),
-            # PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
-            # PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
             PhasarIterIDEEventsSankeyPlot(self.plot_config, **self.plot_kwargs),
             PhasarIterIDESpeedupHeatmapGrid(
                 self.plot_config, **self.plot_kwargs

@@ -1637,7 +1637,7 @@ class PhasarIterIDESolverStats(
                 if report._solver_stats_taint_jf1 is None or report._solver_stats_taint_jf2 is None:
                     continue
 
-                # all_inter_propagations_jf1 = report._solver_stats_taint_jf1._all_inter_propagations
+                all_inter_propagations_jf1 = report._solver_stats_taint_jf1._all_inter_propagations
                 all_inter_propagations_jf2 = report._solver_stats_taint_jf2._all_inter_propagations
                 all_inter_propagations_jf2_mbytes = float(
                     report._solver_stats_taint_jf2._all_inter_propagations_bytes
@@ -1687,8 +1687,8 @@ class PhasarIterIDESolverStats(
                             val_tab_mbytes,
                         "NumFlowFacts":
                             num_flow_facts,
-                        # "Total InterProps-JF1":
-                        #     all_inter_propagations_jf1,
+                        "Total InterProps-JF1":
+                            all_inter_propagations_jf1,
                         "Total InterProps-JF2":
                             all_inter_propagations_jf2,
                         "MaxInnerMapSize-JF1":
@@ -1754,8 +1754,8 @@ class PhasarIterIDESolverStats(
             ('', 'IR-LOC'),
             ('', 'Val(MB)'),
             ('', 'Facts'),
-            # ('Inter Props', 'JF1'),
-            # ('Inter Props', 'JF2'),
+            #('Inter Props', 'JF1'),
+            #('Inter Props', 'JF2'),
             ('', 'InterProps'),
             ('Max Inner Size', 'JF1'),
             ('Max Inner Size', 'JF2'),
@@ -1766,17 +1766,17 @@ class PhasarIterIDESolverStats(
             ('InterProps (MB)', 'JF2'),
             ('Path Edges', 'JF2'),
             # ('Summary Props', 'JF1'),
-            ('Summary Props', 'JF2'),
+            ('Smry Props', 'JF2'),
             # ('Max IJobs/CS', 'JF1'),
             ('Max IJobs/CS', 'JF2'),
             # ('Avg IJobs/CS', 'JF1'),
             ('Avg IJobs/CS', 'JF2'),
             # ('Linear Searches', 'JF1'),
-            ('Linear Searches', 'JF2'),
-            ('Max Search Len', 'JF1'),
-            ('Max Search Len', 'JF2'),
-            ('Avg Search Len', 'JF1'),
-            ('Avg Search Len', 'JF2'),
+            ('Linear Srchs', 'JF2'),
+            ('Max Srch Len', 'JF1'),
+            ('Max Srch Len', 'JF2'),
+            ('Avg Srch Len', 'JF1'),
+            ('Avg Srch Len', 'JF2'),
             # ('Max SDiff ', 'JF2'),
             ('Avg SDiff', 'JF2'),
             ('Rel SDiff [\%]', 'JF2'),
