@@ -717,7 +717,7 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
                 "countries-land-10km.geo.json"
             )
         ],
-        WorkloadSet(WorkloadCategory.SMALL): [
+        WorkloadSet(WorkloadCategory.JAN): [ # SMALL
             VCommand(
                 SourceRoot(project_source_name) / RSBinary(binary_name),
                 ConfigParams("-c"),

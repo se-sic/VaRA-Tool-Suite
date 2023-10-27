@@ -142,13 +142,15 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
             extra_args = get_extra_config_options(self.project)
 
             # Treat space in extra_args as seperate arguments
-            seperated_extra_args = []
-            for extra_arg in extra_args:
-                seperated_extra_args.extend(extra_arg.split(' ', 1))
+            # Workaround for picosat
+            #seperated_extra_args = []
+            #for extra_arg in extra_args:
+            #    seperated_extra_args.extend(extra_arg.split(' ', 1))
 
             profile_raw_names = []
             for prj_command in self.__workload_cmds:
-                cmd = prj_command.command[seperated_extra_args]
+                cmd = prj_command.command  # [seperated_extra_args]
+                # otherwise overwrites stdout, stdin
                 pb_cmd = cmd.as_plumbum(project=self.project)
 
                 profile_raw_name = tmp_dir / create_workload_specific_filename(

@@ -61,6 +61,21 @@
             "justMyCode": false,
             "console": "integratedTerminal"
         },
+        {
+            "name": "benchbuildSynthIPRuntime",
+            "type": "python",
+            "request": "launch",
+            "program": "~/.local/bin/benchbuild",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/benchbuild",
+            "args": [
+                "run",
+                "-E",
+                "GenerateCoverage",
+                "SynthIPRuntime"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
 
 
         {

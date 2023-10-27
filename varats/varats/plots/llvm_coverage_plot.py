@@ -177,6 +177,15 @@ INGORE_PARSING_CODE = [
         function="complete file",
         filename="src/xz/args.c"
     ),
+    #SynthIPRuntime
+    CodeRegion(
+        start=RegionStart(line=604, column=1),
+        end=RegionEnd(line=615, column=4),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="complete file",
+        filename="projects/SynthIPRuntime/main.cpp"
+    ),
 ]
 
 IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [
