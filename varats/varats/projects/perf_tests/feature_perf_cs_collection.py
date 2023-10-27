@@ -717,6 +717,36 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
                 "countries-land-10km.geo.json"
             )
         ],
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-500m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-500m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-500m.geo.json.compressed"
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-500m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json"
+            )
+        ],
         WorkloadSet(WorkloadCategory.JAN): [ # SMALL
             VCommand(
                 SourceRoot(project_source_name) / RSBinary(binary_name),
