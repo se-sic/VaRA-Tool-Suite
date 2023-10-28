@@ -141,17 +141,19 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
                 return actions.StepResult.ERROR
             extra_args = get_extra_config_options(self.project)
 
-            # Treat space in extra_args as seperate arguments
-            # Workaround for picosat
-            #seperated_extra_args = []
-            #for extra_arg in extra_args:
-            #    seperated_extra_args.extend(extra_arg.split(' ', 1))
-
             profile_raw_names = []
             for prj_command in self.__workload_cmds:
-                cmd = prj_command.command  # [seperated_extra_args]
-                # otherwise overwrites stdout, stdin
+                cmd = prj_command.command
+                # seperate args in plumbum command
+                # otherwise overwrites potentially redirected stdout, stdin
                 pb_cmd = cmd.as_plumbum(project=self.project)
+                seperated_args = []
+                for arg in pb_cmd.args:
+                    if arg in extra_args:
+                        seperated_args.extend(arg.split(' ', 1))
+                    else:
+                        seperated_args.append(arg)
+                pb_cmd.args = seperated_args
 
                 profile_raw_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",

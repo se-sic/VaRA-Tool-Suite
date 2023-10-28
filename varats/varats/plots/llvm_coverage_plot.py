@@ -186,6 +186,15 @@ INGORE_PARSING_CODE = [
         function="parsing-code",
         filename="projects/SynthIPRuntime/main.cpp"
     ),
+    #SynthDARecursion
+    CodeRegion(
+        start=RegionStart(line=1, column=1),
+        end=RegionEnd(line=55, column=2),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="complete file",
+        filename="external/FeaturePerfUtilities/include/fp_util/feature_cmd.h"
+    ),
 ]
 
 IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [

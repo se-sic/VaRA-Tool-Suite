@@ -6,6 +6,11 @@ from feature_option_mapping import feature_option_mapping
 
 
 def wrap_ticks(wrappee):
+    # Split spaces
+    #splitted_wrappee = []
+    #for x in wrappee:
+    #    splitted_wrappee.extend(x.split(" ", 1))
+
     return map(lambda x: f'"{x}"', wrappee)
 
 

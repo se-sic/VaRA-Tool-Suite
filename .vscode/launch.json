@@ -76,6 +76,21 @@
             "justMyCode": false,
             "console": "integratedTerminal"
         },
+        {
+            "name": "benchbuildSynthDARecursion",
+            "type": "python",
+            "request": "launch",
+            "program": "~/.local/bin/benchbuild",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/benchbuild",
+            "args": [
+                "run",
+                "-E",
+                "GenerateCoverage",
+                "SynthDARecursion"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
 
 
         {

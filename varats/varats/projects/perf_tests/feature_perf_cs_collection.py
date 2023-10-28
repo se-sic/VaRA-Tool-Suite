@@ -461,6 +461,15 @@ class SynthDARecursion(VProject):
                 ConfigParams(),
                 label="Recursion-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthDARecursion") / RSBinary("Recursion"),
+                ConfigParams(),
+                "--base",
+                "AABAACAADAABAABA",
+                label="Recursion-no-input"
+            )
         ]
     }
 
