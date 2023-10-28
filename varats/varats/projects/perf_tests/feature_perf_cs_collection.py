@@ -212,6 +212,14 @@ class SynthSAFlowSensitivity(VProject):
                 ConfigParams(),
                 label="FlowSense-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthSAFlowSensitivity") / RSBinary("FlowSense"),
+                ConfigParams(),
+                "5",
+                label="FlowSense-no-input",
+            )
         ]
     }
 
@@ -276,6 +284,15 @@ class SynthSAContextSensitivity(VProject):
                 ConfigParams(),
                 label="ContextSense-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthSAContextSensitivity") /
+                RSBinary("ContextSense"),
+                ConfigParams(),
+                "8",
+                label="ContextSense-no-input"
+            )
         ]
     }
 
@@ -335,6 +352,15 @@ class SynthSAWholeProgram(VProject):
             VCommand(
                 SourceRoot("SynthSAWholeProgram") / RSBinary("WholeProgram"),
                 ConfigParams(),
+                label="WholeProgram-no-input"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthSAWholeProgram") / RSBinary("WholeProgram"),
+                ConfigParams(),
+                "AABA",
+                "AABAACAADAABAABA",
                 label="WholeProgram-no-input"
             )
         ]

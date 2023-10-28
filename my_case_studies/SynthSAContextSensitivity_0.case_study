@@ -1,0 +1,40 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthSAContextSensitivity
+stages:
+- revisions:
+  - commit_hash: 06eac0edb6886a7e487867c8d5629cb2409b54fd
+    commit_id: 43
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["--mem 1275"]'
+1: '["--mem 1275", "--compress"]'
+2: '["--mem 765"]'
+3: '["--mem 1020"]'
+4: '["--mem 0"]'
+5: '["--mem 255"]'
+6: '["--mem 510"]'
+7: '["--mem 255", "--compress"]'
+8: '["--mem 510", "--compress"]'
+9: '["--mem 1020", "--compress"]'
+10: '["--mem 765", "--compress"]'
+11: '["--mem 0", "--compress"]'
+...

@@ -1,0 +1,24 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthSAFlowSensitivity
+stages:
+- revisions:
+  - commit_hash: 06eac0edb6886a7e487867c8d5629cb2409b54fd
+    commit_id: 43
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '[]'
+1: '["--rec"]'
+2: '["--cutoff 4"]'
+3: '["--cutoff 4", "--rec"]'
+...

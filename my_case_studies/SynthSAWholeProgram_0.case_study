@@ -1,0 +1,32 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthSAWholeProgram
+stages:
+- revisions:
+  - commit_hash: 06eac0edb6886a7e487867c8d5629cb2409b54fd
+    commit_id: 43
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '[]'
+1: '["--fast"]'
+2: '["--print", "--fast"]'
+3: '["--count", "--print"]'
+4: '["--count", "--fast"]'
+5: '["--count", "--print", "--fast"]'
+6: '["--print"]'
+7: '["--count"]'
+...

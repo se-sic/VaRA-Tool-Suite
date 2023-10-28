@@ -177,7 +177,7 @@ INGORE_PARSING_CODE = [
         function="complete file",
         filename="src/xz/args.c"
     ),
-    #SynthIPRuntime
+    # SynthIPRuntime
     CodeRegion(
         start=RegionStart(line=604, column=1),
         end=RegionEnd(line=615, column=4),
@@ -186,7 +186,8 @@ INGORE_PARSING_CODE = [
         function="parsing-code",
         filename="projects/SynthIPRuntime/main.cpp"
     ),
-    #SynthDARecursion, SynthDADynamicDispatch, SynthOVInsideLoop
+    # SynthDARecursion, SynthDADynamicDispatch, SynthOVInsideLoop,
+    # SynthSAWholeProgram, SynthSAFlowSensitivity, SynthSAContextSensitivity
     CodeRegion(
         start=RegionStart(line=1, column=1),
         end=RegionEnd(line=55, column=2),
