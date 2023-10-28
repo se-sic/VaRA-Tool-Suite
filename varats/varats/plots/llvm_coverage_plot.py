@@ -183,7 +183,7 @@ INGORE_PARSING_CODE = [
         end=RegionEnd(line=615, column=4),
         count=-1,
         kind=CodeRegionKind.FILE_ROOT,
-        function="complete file",
+        function="parsing-code",
         filename="projects/SynthIPRuntime/main.cpp"
     ),
 ]
@@ -196,7 +196,24 @@ IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [
         kind=CodeRegionKind.FILE_ROOT,
         function="compress+addPadding+encrypt",
         filename="src/SimpleFeatureInteraction/SFImain.cpp"
-    )
+    ),
+    #SynthIPRuntime
+    CodeRegion(
+        start=RegionStart(line=245, column=1),
+        end=RegionEnd(line=349, column=3),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="struct compress_t",
+        filename="projects/SynthIPRuntime/main.cpp"
+    ),
+    CodeRegion(
+        start=RegionStart(line=351, column=1),
+        end=RegionEnd(line=570, column=3),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="struct decompress_t",
+        filename="projects/SynthIPRuntime/main.cpp"
+    ),
 ]
 
 
