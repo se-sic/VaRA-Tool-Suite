@@ -1,0 +1,24 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthOVInsideLoop
+stages:
+- revisions:
+  - commit_hash: 51d3c768e5688a6471cb77d36433804088496ca8
+    commit_id: 51
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '[]'
+1: '["--verbose"]'
+2: '["--reverse"]'
+3: '["--verbose", "--reverse"]'
+...

@@ -400,6 +400,26 @@ class SynthDADynamicDispatch(VProject):
                 ConfigParams(),
                 label="DynamicDispatch-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthDADynamicDispatch") /
+                RSBinary("DynamicDispatch"),
+                ConfigParams(),
+                "--sum",
+                "8",
+                "1,2,3,5,6,10,23,2,5",
+                label="DynamicDispatch-first-no-input"
+            ),
+            VCommand(
+                SourceRoot("SynthDADynamicDispatch") /
+                RSBinary("DynamicDispatch"),
+                ConfigParams(),
+                "--sum",
+                "21",
+                "1,2,3,5,6,10,23,2,5",
+                label="DynamicDispatch-second-no-input"
+            )
         ]
     }
 
@@ -529,6 +549,16 @@ class SynthOVInsideLoop(VProject):
             VCommand(
                 SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
                 ConfigParams(),
+                label="InsideLoop-no-input"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
+                ConfigParams(),
+                "--sum",
+                "24",
+                "1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5,1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5",
                 label="InsideLoop-no-input"
             )
         ]

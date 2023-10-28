@@ -1,0 +1,22 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthDADynamicDispatch
+stages:
+- revisions:
+  - commit_hash: 04de0642afe35a42931e03c670b588e8f294dcfc
+    commit_id: 47
+    config_ids:
+    - 0
+    - 1
+    - 2
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '[]'
+1: '["--sorting"]'
+2: '["--hashing"]'
+...

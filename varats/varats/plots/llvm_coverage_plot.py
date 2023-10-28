@@ -186,7 +186,7 @@ INGORE_PARSING_CODE = [
         function="parsing-code",
         filename="projects/SynthIPRuntime/main.cpp"
     ),
-    #SynthDARecursion
+    #SynthDARecursion, SynthDADynamicDispatch, SynthOVInsideLoop
     CodeRegion(
         start=RegionStart(line=1, column=1),
         end=RegionEnd(line=55, column=2),
