@@ -583,8 +583,8 @@ class SynthOVInsideLoop(VProject):
                 SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
                 ConfigParams(),
                 "--sum",
-                "24",
-                "1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5,1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5",
+                "24", "1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5,"
+                "1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5",
                 label="InsideLoop-no-input"
             )
         ]
