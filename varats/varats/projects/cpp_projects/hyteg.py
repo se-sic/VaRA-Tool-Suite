@@ -44,18 +44,23 @@ class HyTeg(VProject):
         This will still allow to analyse compile-time variability.
 
         2.
-        Due to the way that benchbuild generates the build folder names when running experiments in different
-        configurations, HyTeg currently DOES NOT work out of the box when creating a case study with multiple
-        configurations. This is due to benchbuild creating a temporary folder name with a comma in it to separate
-        the revision and configuration id.
-        This comma will be misinterpreted when the path for the eigen library is passed onto the linker.
+        Due to the way that benchbuild generates the build folder names when
+        running experiments in different configurations, HyTeg currently DOES
+        NOT work out of the box when creating a case study with multiple
+        configurations. This is due to benchbuild creating a temporary folder
+        name with a comma in it to separate the revision and configuration
+        id.
+        This comma will be misinterpreted when the path for the eigen library
+        is passed onto the linker.
 
         There is a limited workaround for this:
-        1. Copy the eigen library revision that you want HyTeg to use to some other accessible location (That has
-        no comma in its absolute path)
-        2. Set the environment variable EIGEN_PATH to point to the absolute path of that directory
-            - This can be achieved by either EXPORT-ing it manually, adding it to your .benchbuild.yml configuration or
-             (when running with slurm) adding the export to your slurm scripts
+        1. Copy the eigen library revision that you want HyTeg to use to some
+        other accessible location (That has no comma in its absolute path)
+        2. Set the environment variable EIGEN_PATH to point to the absolute
+        path of that directory
+            - This can be achieved by either EXPORT-ing it manually, adding it
+            to your .benchbuild.yml configuration or (when running with slurm)
+            adding the export to your slurm scripts
     """
     NAME = 'HyTeg'
     GROUP = 'cpp_projects'
@@ -119,8 +124,8 @@ class HyTeg(VProject):
             cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
         else:
             LOG.warning(
-                "EIGEN_PATH environment variable not set! This will cause compilation errors when using "
-                "configurations"
+                "EIGEN_PATH environment variable not set! This will cause"
+                " compilation errors when using configurations"
             )
 
         with local.cwd(hyteg_source / "build"):
