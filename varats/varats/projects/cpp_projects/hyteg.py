@@ -3,7 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
-from benchbuild.utils.cmd import make, cmake, mkdir
+from benchbuild.utils.cmd import ninja, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -95,19 +95,19 @@ class HyTeg(VProject):
         with local.cwd(hyteg_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)(
-                    "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
+                    "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
                     "-DHYTEG_BUILD_DOC=OFF"
                 )
 
-                with local.cwd(hyteg_source / "build" / "apps" / "profiling"):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                with local.cwd(hyteg_source / "build"):
+                    bb.watch(ninja)("ProfilingApp")
 
     def recompile(self) -> None:
         """Recompiles HyTeg e.g. after a patch has been applied."""
         hyteg_source = local.path(self.source_of(self.primary_source))
 
-        with local.cwd(hyteg_source / "build" / "apps" / "profiling"):
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        with local.cwd(hyteg_source / "build"):
+            bb.watch(ninja)("ProfilingApp")
 
     def run_tests(self) -> None:
         pass

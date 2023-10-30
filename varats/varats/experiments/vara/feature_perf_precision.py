@@ -116,7 +116,10 @@ def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
 
         for grid in grid_binary_map:
             if grid in f_tags:
-                return [grid_binary_map[grid]]
+                return [
+                    binary for binary in project.binaries
+                    if binary.name == grid_binary_map[grid]
+                ]
 
     return [project.binaries[0]]
 
