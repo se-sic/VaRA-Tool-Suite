@@ -1,9 +1,11 @@
 """Adds the HyTeg framework as a project to VaRA-TS."""
+import logging
+import os
 import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
-from benchbuild.utils.cmd import make, cmake, mkdir
+from benchbuild.utils.cmd import ninja, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -19,9 +21,11 @@ from varats.project.project_util import (
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_commands import update_all_submodules
+from varats.utils.git_commands import init_all_submodules, update_all_submodules
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
+
+LOG = logging.getLogger(__name__)
 
 
 class HyTeg(VProject):
@@ -92,22 +96,32 @@ class HyTeg(VProject):
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
+        cmake_args = [
+            "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
+            "-DHYTEG_BUILD_DOC=OFF"
+        ]
+
+        if (eigen_path := os.getenv("EIGEN_PATH")):
+            cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
+        else:
+            LOG.warning(
+                "EIGEN_PATH environment variable not set! This will cause compilation errors when using "
+                "configurations"
+            )
+
         with local.cwd(hyteg_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)(
-                    "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
-                    "-DHYTEG_BUILD_DOC=OFF"
-                )
+                bb.watch(cmake)(*cmake_args)
 
-                with local.cwd(hyteg_source / "build" / "apps" / "profiling"):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                with local.cwd(hyteg_source / "build"):
+                    bb.watch(ninja)("ProfilingApp")
 
     def recompile(self) -> None:
         """Recompiles HyTeg e.g. after a patch has been applied."""
         hyteg_source = local.path(self.source_of(self.primary_source))
 
-        with local.cwd(hyteg_source / "build" / "apps" / "profiling"):
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        with local.cwd(hyteg_source / "build"):
+            bb.watch(ninja)("ProfilingApp")
 
     def run_tests(self) -> None:
         pass
