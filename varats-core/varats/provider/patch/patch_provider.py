@@ -350,6 +350,8 @@ class PatchProvider(Provider):
 
     @classmethod
     def _update_local_patches_repo(cls) -> None:
+        # Disable temporarily
+        return
         lock_path = Path(target_prefix()) / "patch_provider.lock"
 
         with lock_file(lock_path):

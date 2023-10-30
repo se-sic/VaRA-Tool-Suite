@@ -103,11 +103,15 @@ class HyTeg(VProject):
 
         if (eigen_path := os.getenv("EIGEN_PATH")):
             cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
+            print("EIGEN_DIR SET")
         else:
             LOG.warning(
                 "EIGEN_PATH environment variable not set! This will cause compilation errors when using "
                 "configurations"
             )
+            print("EIGEN_PATH Environment variable not set!!!")
+
+        print(cmake_args)
 
         with local.cwd(hyteg_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
