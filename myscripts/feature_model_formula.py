@@ -27,7 +27,10 @@ def dnf_formula(configs, feature_to_options):
             replace_feature_with_option(config, feature_to_options)
         )
         conjunction = options_to_formula(options)
-        output.append(conjunction)
+        if conjunction not in output:
+            output.append(conjunction)
+
+    assert len(output) == len(set(output)), "Formula not unique"
     return " | ".join(output)
 
 
