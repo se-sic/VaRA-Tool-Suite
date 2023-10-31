@@ -17,10 +17,16 @@ def wrap_ticks(wrappee):
 def create_mapping(configs, feature_to_options):
     mapping = {}
 
-    for id, config in enumerate(configs):
-        mapping[
-            id
-        ] = f"""'[{', '.join(wrap_ticks(config_to_options(config, feature_to_options)))}]'"""
+    id = 0
+    for config in configs:
+        to_add = f"""'[{', '.join(wrap_ticks(config_to_options(config, feature_to_options)))}]'"""
+        if to_add not in mapping.values():
+            mapping[id] = to_add
+            id += 1
+
+    # test mapping unique
+    assert len(mapping.values()
+              ) == len(set(mapping.values())), "Mapping contains duplicates!"
 
     return mapping
 

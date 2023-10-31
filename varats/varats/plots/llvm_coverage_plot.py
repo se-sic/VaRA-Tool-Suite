@@ -1149,6 +1149,7 @@ def _dataframe_to_latex(
                 table_lines.append(line)
         last_line = line
 
+    table_lines.insert(-1, "\\tablelegend")
     return "\n".join(table_lines)
 
 
