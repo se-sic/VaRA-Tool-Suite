@@ -375,7 +375,8 @@ def _matrix_analyze_code_region(
 
         feature_entry = ConfusionEntry(
             str(features), file, region.function, region.start.line,
-            region.start.column, region.end.line, region.end.column
+            region.start.column, region.end.line, region.end.column,
+            tuple(str(x) for x in region.vara_instrs)
         )
 
         if coverage_found_features(features, region):
@@ -711,7 +712,7 @@ class CoverageReports:
 
 
 @dataclass(frozen=True)
-class ConfusionEntry:
+class ConfusionEntry:  # pylint: disable=too-many-instance-attributes
     """Entry in confusion matrix."""
     feature: str
     file: str
@@ -720,6 +721,7 @@ class ConfusionEntry:
     start_column: int
     end_line: int
     end_column: int
+    instrs: tp.Optional[tp.Tuple[str]] = None
 
 
 BinaryReportsMapping = tp.NewType(
@@ -792,7 +794,7 @@ def _save_plot(
             "precision": "\\ac{PPV} (\\%)",
             "recall": "\\ac{TPR} (\\%)",
             "specificity": "\\ac{TNR} (\\%)",
-            "balanced_accuracy": "\\ac{BAccuracy} (\\%)",
+            "balanced_accuracy": "\\ac{BA} (\\%)",
             "f1_score": "_F1 Score (\\%)",
         }
     )
@@ -964,19 +966,49 @@ def __plot_confusion_matrix_inner(
         feature_option_mapping, threshold, **workarounds
     )
 
+    def str_with_instrs(entries: tp.Set[ConfusionEntry]):
+        out = []
+        for entry in entries:
+            assert entry.instrs is not None
+            out.append(
+                f"ConfusionEntry(feature={entry.feature}, "
+                f"file={entry.file}, "
+                f"function={entry.function}, "
+                f"start_line={entry.start_line}, "
+                f"start_column={entry.start_column}, "
+                f"end_line={entry.end_line}, "
+                f"end_column={entry.end_column}, "
+                f"instrs:\n{chr(10).join(entry.instrs)})"
+            )
+        return out
+
+    def str_wo_instrs(entries: tp.Set[ConfusionEntry]):
+        out = []
+        for entry in entries:
+            out.append(
+                f"ConfusionEntry(feature={entry.feature}, "
+                f"file={entry.file}, "
+                f"function={entry.function}, "
+                f"start_line={entry.start_line}, "
+                f"start_column={entry.start_column}, "
+                f"end_line={entry.end_line}, "
+                f"end_column={entry.end_column})"
+            )
+        return out
+
     rows = []
     for feature in matrix_dict:
         outfile = cf_dir / f"{feature}.matrix"
         matrix = matrix_dict[feature]
         with outfile.open("w") as output:
             output.write(f"{matrix}\n")
-            tps = [str(x) for x in matrix.getTPs()]
+            tps = str_wo_instrs(matrix.getTPs())
             output.write(f"True Positives:\n{chr(10).join(sorted(tps))}\n")
-            tns = [str(x) for x in matrix.getTNs()]
+            tns = str_wo_instrs(matrix.getTNs())
             output.write(f"True Negatives:\n{chr(10).join(sorted(tns))}\n")
-            fps = [str(x) for x in matrix.getFPs()]
+            fps = str_with_instrs(matrix.getFPs())
             output.write(f"False Positives:\n{chr(10).join(sorted(fps))}\n")
-            fns = [str(x) for x in matrix.getFNs()]
+            fns = str_with_instrs(matrix.getFNs())
             output.write(f"False Negatives:\n{chr(10).join(sorted(fns))}\n")
 
         row: tp.List[tp.Union[str, int, float]] = [f"{feature}"]
