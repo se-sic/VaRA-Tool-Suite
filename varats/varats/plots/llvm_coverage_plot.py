@@ -721,7 +721,7 @@ class ConfusionEntry:  # pylint: disable=too-many-instance-attributes
     start_column: int
     end_line: int
     end_column: int
-    instrs: tp.Optional[tp.Tuple[str]] = None
+    instrs: tp.Optional[tp.Tuple[str, ...]] = None
 
 
 BinaryReportsMapping = tp.NewType(
@@ -966,7 +966,7 @@ def __plot_confusion_matrix_inner(
         feature_option_mapping, threshold, **workarounds
     )
 
-    def str_with_instrs(entries: tp.Set[ConfusionEntry]):
+    def str_with_instrs(entries: tp.Set[ConfusionEntry]) -> tp.List[str]:
         out = []
         for entry in entries:
             assert entry.instrs is not None
@@ -982,7 +982,7 @@ def __plot_confusion_matrix_inner(
             )
         return out
 
-    def str_wo_instrs(entries: tp.Set[ConfusionEntry]):
+    def str_wo_instrs(entries: tp.Set[ConfusionEntry]) -> tp.List[str]:
         out = []
         for entry in entries:
             out.append(
