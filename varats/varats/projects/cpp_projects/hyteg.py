@@ -33,15 +33,34 @@ class HyTeg(VProject):
     C++ framework for large scale high performance finite element simulations
     based on (but not limited to) matrix-free geometric multigrid.
 
-    Note:
-        Currently HyTeg CANNOT be compiled with the Phasar passes activated
-        in vara.
-        Trying to do so will crash the compiler
+    Notes:
+        1.
+        Currently, HyTeg CANNOT be compiled with the Phasar passes activated
+        in vara. Trying to do so will crash the compiler
 
         If you use Dune with an experiment that uses the vara compiler,
         add `-mllvm --vara-disable-phasar` to the projects `cflags` to
         disable phasar passes.
         This will still allow to analyse compile-time variability.
+
+        2.
+        Due to the way that benchbuild generates the build folder names when
+        running experiments in different configurations, HyTeg currently DOES
+        NOT work out of the box when creating a case study with multiple
+        configurations. This is due to benchbuild creating a temporary folder
+        name with a comma in it to separate the revision and configuration
+        id.
+        This comma will be misinterpreted when the path for the eigen library
+        is passed onto the linker.
+
+        There is a limited workaround for this:
+        1. Copy the eigen library revision that you want HyTeg to use to some
+        other accessible location (That has no comma in its absolute path)
+        2. Set the environment variable EIGEN_PATH to point to the absolute
+        path of that directory
+            - This can be achieved by either EXPORT-ing it manually, adding it
+            to your .benchbuild.yml configuration or (when running with slurm)
+            adding the export to your slurm scripts
     """
     NAME = 'HyTeg'
     GROUP = 'cpp_projects'
@@ -103,15 +122,11 @@ class HyTeg(VProject):
 
         if (eigen_path := os.getenv("EIGEN_PATH")):
             cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
-            print("EIGEN_DIR SET")
         else:
             LOG.warning(
-                "EIGEN_PATH environment variable not set! This will cause compilation errors when using "
-                "configurations"
+                "EIGEN_PATH environment variable not set! This will cause"
+                " compilation errors when using configurations"
             )
-            print("EIGEN_PATH Environment variable not set!!!")
-
-        print(cmake_args)
 
         with local.cwd(hyteg_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
