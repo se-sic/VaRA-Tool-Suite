@@ -147,13 +147,14 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
                 # seperate args in plumbum command
                 # otherwise overwrites potentially redirected stdout, stdin
                 pb_cmd = cmd.as_plumbum(project=self.project)
-                seperated_args = []
-                for arg in pb_cmd.args:
-                    if arg in extra_args:
-                        seperated_args.extend(arg.split(' ', 1))
-                    else:
-                        seperated_args.append(arg)
-                pb_cmd.args = seperated_args
+                if hasattr(pb_cmd, "args"):
+                    seperated_args = []
+                    for arg in pb_cmd.args:
+                        if arg in extra_args:
+                            seperated_args.extend(arg.split(' ', 1))
+                        else:
+                            seperated_args.append(arg)
+                    pb_cmd.args = seperated_args
 
                 profile_raw_name = tmp_dir / create_workload_specific_filename(
                     "coverage_report",

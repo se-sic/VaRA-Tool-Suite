@@ -87,16 +87,18 @@ class FeaturePerfCSCollection(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.JAN): [
-            Command(
+            VCommand(
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("SimpleFeatureInteraction"),
+                ConfigParams(),
                 label="SFI-no-input"
             )
         ],
         WorkloadSet(WorkloadCategory.JAN_2): [
-            Command(
+            VCommand(
                 SourceRoot("FeaturePerfCSCollection") /
                 RSBinary("MultiSharedMultipleRegions"),
+                ConfigParams(),
                 label="MSMR-no-input"
             )
         ],
@@ -131,8 +133,6 @@ class FeaturePerfCSCollection(VProject):
             )
         ]
     }
-
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(

@@ -8,7 +8,11 @@ from benchbuild.utils.cmd import make, cmake, mkdir
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -94,6 +98,7 @@ class Ect(VProject):
         WorkloadSet(WorkloadCategory.JAN): [
             VCommand(
                 SourceRoot("ect") / RSBinary("ect"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("archlinux.png"),
                 creates=["archlinux.png"],
@@ -102,6 +107,7 @@ class Ect(VProject):
             ),
             VCommand(
                 SourceRoot("ect") / RSBinary("ect"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("vara.jpg"),
                 creates=["vara.jpg"],
@@ -110,6 +116,7 @@ class Ect(VProject):
             ),
             VCommand(
                 SourceRoot("ect") / RSBinary("ect"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("ect.zip"),
                 creates=["ect.zip"],
@@ -118,6 +125,7 @@ class Ect(VProject):
             ),
             VCommand(
                 SourceRoot("ect") / RSBinary("ect"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("ect.tar.gz"),
                 creates=["ect.tar.gz"],
@@ -126,6 +134,7 @@ class Ect(VProject):
             ),
             VCommand(
                 SourceRoot("ect") / RSBinary("ect"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("ect_src"),
                 creates=["ect_src.zip"],

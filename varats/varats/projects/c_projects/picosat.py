@@ -10,7 +10,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -130,6 +134,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.JAN): [
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("aim-100-1_6-no-1.cnf"),
                 creates=[
@@ -142,6 +147,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
             ),
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("aim-100-1_6-yes1-1.cnf"),
                 creates=[
@@ -154,6 +160,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
             ),
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot(
                     "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf"

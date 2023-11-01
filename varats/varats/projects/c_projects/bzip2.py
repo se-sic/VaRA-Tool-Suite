@@ -11,7 +11,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -142,6 +146,7 @@ class Bzip2(VProject):
         WorkloadSet(WorkloadCategory.JAN): [
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
                 label="countries-land-250m-compress",
@@ -151,6 +156,7 @@ class Bzip2(VProject):
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
+                ConfigParams(),
                 output_param=["{output}"],
                 output=SourceRoot("xz_files/xz-5.4.0.tar.bz2"),
                 label="xz-files-compressed",
