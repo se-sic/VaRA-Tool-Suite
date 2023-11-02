@@ -170,64 +170,6 @@ class FeaturePerfCSCollection(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
-class SynthSAFieldSensitivity(VProject):
-    """Synthetic case-study project for testing field sensitivity."""
-
-    NAME = 'SynthSAFieldSensitivity'
-    GROUP = 'perf_tests'
-    DOMAIN = ProjectDomains.TEST
-
-    SOURCE = [
-        bb.source.Git(
-            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="SynthSAFieldSensitivity",
-            refspec="origin/HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("SynthSAFieldSensitivity")
-        ),
-        FeatureSource()
-    ]
-
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
-                SourceRoot("SynthSAFieldSensitivity") / RSBinary("FieldSense"),
-                label="FieldSense-no-input"
-            )
-        ]
-    }
-
-    @staticmethod
-    def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
-    ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAFieldSensitivity.NAME)
-        )
-
-        binary_map.specify_binary(
-            "build/bin/FieldSense",
-            BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0a9216d769", "master")
-        )
-
-        return binary_map[revision]
-
-    def run_tests(self) -> None:
-        pass
-
-    def compile(self) -> None:
-        """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
-        )
-
-    def recompile(self) -> None:
-        """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
-
-
 class SynthSAFlowSensitivity(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
@@ -853,8 +795,9 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
 
 def get_ip_data_sources() -> tp.List[Sources]:
     # TODO: fix typing in benchbuild
-    return tp.cast(
-        tp.List[Sources], [
+    return [
+        tp.cast(
+            Sources,
             HTTPMultiple(
                 local="geo-maps",
                 remote={
@@ -867,7 +810,10 @@ def get_ip_data_sources() -> tp.List[Sources]:
                     "countries-land-500m.geo.json",
                     "countries-land-250m.geo.json", "countries-land-1m.geo.json"
                 ]
-            ),
+            )
+        ),
+        tp.cast(
+            Sources,
             HTTPMultiple(
                 local="geo-maps-compr",
                 remote={
@@ -881,9 +827,9 @@ def get_ip_data_sources() -> tp.List[Sources]:
                     "countries-land-250m.geo.json.compressed",
                     "countries-land-500m.geo.json.compressed"
                 ]
-            ),
-        ]
-    )
+            )
+        ),
+    ]
 
 
 class SynthIPRuntime(VProject):
