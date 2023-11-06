@@ -407,13 +407,13 @@ class EbpfTraceTEF(Profiler):
         return pim_regression_check(old_acc_pim, new_acc_pim)
 
 
-def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
+def get_patch_names(case_study: CaseStudy, config_id: int) -> tp.List[str]:
     report_files = get_processed_revisions_files(
         case_study.project_name,
         fpp.BlackBoxBaselineRunner,
         fpp.MPRTimeReportAggregate,
         get_case_study_file_name_filter(case_study),
-        config_id=0
+        config_id=config_id
     )
 
     if len(report_files) > 1:
@@ -421,7 +421,7 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
     if not report_files:
         print(
             f"Could not find profiling data for {case_study.project_name}"
-            ". config_id=0, profiler=Baseline"
+            f". config_id={config_id}, profiler=Baseline"
         )
         return []
 

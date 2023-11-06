@@ -26,10 +26,16 @@ from varats.data.databases.feature_perf_precision_database import (
     load_overhead_data,
 )
 from varats.data.metrics import ConfusionMatrix
+from varats.experiments.vara.feature_perf_precision import (
+    BlackBoxBaselineRunner,
+    MPRTimeReportAggregate,
+)
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path
+from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
@@ -355,6 +361,111 @@ class FeaturePerfOverheadTableGenerator(
     def generate(self) -> tp.List[Table]:
         return [
             FeaturePerfOverheadTable(self.table_config, **self.table_kwargs)
+        ]
+
+
+class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+
+        # Data aggregation
+        df = pd.DataFrame()
+        table_rows = []
+
+        for case_study in case_studies:
+            rev = case_study.revisions[0]
+            project_name = case_study.project_name
+            for config_id in case_study.get_config_ids_for_revision(rev):
+                new_row = {
+                    'CaseStudy': project_name,
+                    'ConfigID': config_id,
+                    'Patch': "Baseline",
+                }
+
+                time_reports = {}
+
+                for p in profilers:
+                    report_files = get_processed_revisions_files(
+                        project_name,
+                        p.experiment,
+                        p.report_type,
+                        get_case_study_file_name_filter(case_study),
+                        config_id=config_id
+                    )
+
+                    if len(report_files) != 1:
+                        print(
+                            f"Found {len(report_files)} report files for profiler {p.name}. Expected 1. (config_id={config_id})"
+                        )
+                        new_row[p.name] = np.nan
+                        time_reports[p] = None
+                        continue
+
+                    time_reports[p] = MPRTimeReportAggregate(
+                        report_files[0].full_path()
+                    )
+
+                    new_row[p.name] = np.mean(
+                        time_reports[p].get_baseline_report().
+                        measurements_wall_clock_time
+                    )
+
+                table_rows.append(new_row)
+
+                for patch_name in get_patch_names(case_study, config_id):
+                    new_row = {
+                        'CaseStudy': project_name,
+                        'ConfigID': config_id,
+                        'Patch': patch_name,
+                    }
+
+                    for p in profilers:
+                        report = time_reports[p]
+
+                        if not report:
+                            new_row[p.name] = np.nan
+                            continue
+
+                        patch_time_report = report.get_report_for_patch(
+                            patch_name
+                        )
+
+                        if not patch_time_report:
+                            print(
+                                f"Could not find report for project '{project_name}', Config {config_id}, patch '{patch_name}'."
+                            )
+                            new_row[p.name] = np.nan
+                            continue
+
+                        new_row[p.name] = np.mean(
+                            patch_time_report.measurements_wall_clock_time
+                        )
+
+                    table_rows.append(new_row)
+
+        df = pd.concat([df, pd.DataFrame(table_rows)])
+
+        print(f"{df=}")
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style=df.style,
+            wrap_table=wrap_table,
+            wrap_landscape=True
+        )
+
+
+class FeaturePerfSensitivityTableGenerator(
+    TableGenerator, generator_name="fperf-sensitivity", options=[]
+):
+    """Generator for FeaturePerfSensitivityTable."""
+
+    def generate(self) -> tp.List['varats.table.table.Table']:
+        return [
+            FeaturePerfSensitivityTable(self.table_config, **self.table_kwargs)
         ]
 
 
