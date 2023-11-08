@@ -224,7 +224,33 @@ IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [
         function="struct decompress_t",
         filename="projects/SynthIPRuntime/main.cpp"
     ),
+    #SynthDARecursion,
+    CodeRegion(
+        start=RegionStart(line=20, column=1),
+        end=RegionEnd(line=30, column=3),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="checkPalindrome",
+        filename="projects/SynthDARecursion/main.cpp"
+    ),
+    # SynthDADynamicDispatch
+    CodeRegion(
+        start=RegionStart(line=140, column=1),
+        end=RegionEnd(line=146, column=4),
+        count=-1,
+        kind=CodeRegionKind.FILE_ROOT,
+        function="parsing-code",
+        filename="projects/SynthDADynamicDispatch/main.cpp"
+    ),
 ]
+
+# Workaround BDD displaying equivalent but negated formula.
+EXCLUDED_OPTIONS = {
+    # SynthDADynamicDispatch
+    "brut-force": ["hashing", "sorting"],
+    "hashing": ["brut-force", "sorting"],
+    "sorting": ["hashing", "brut-force"],
+}
 
 
 def _init_process() -> None:
@@ -525,6 +551,11 @@ def _annotate_covered(
                 assert len(features) == 1
                 options = feature_option_mapping[features[0]]
                 if len(options) > 1:
+                    continue
+            if option in EXCLUDED_OPTIONS:
+                # Check if other excluded options are set.
+                if set(EXCLUDED_OPTIONS[option]
+                      ).intersection(set(get_option_names(configuration))):
                     continue
             configuration.set_config_option(option, False)
 

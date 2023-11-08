@@ -209,7 +209,7 @@ class GenerateCoverage(OutputFolderStep):  # type: ignore[misc]
             model_name = tmp_dir / "coverage_report-vara-feature_model.xml"
             copy(self.__feature_model, model_name)
 
-            opt_command = opt["-enable-new-pm=0", "-vara-PTFDD",
+            opt_command = opt["-enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD",
                               "-vara-export-feature-dbg",
                               #"-vara-view-IRegions",
                               f"-vara-report-outfile={ptfdd_report_name}", "-S",

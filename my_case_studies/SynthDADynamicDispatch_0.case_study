@@ -16,7 +16,7 @@ version: 0
 ...
 ---
 config_type: PlainCommandlineConfiguration
-0: '[]'
+0: '["--brut-force"]'
 1: '["--sorting"]'
 2: '["--hashing"]'
 ...

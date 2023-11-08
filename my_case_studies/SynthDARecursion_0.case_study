@@ -19,6 +19,6 @@ version: 0
 config_type: PlainCommandlineConfiguration
 0: '[]'
 1: '["--rev"]'
-2: '["--limit 5"]'
-3: '["--limit 5", "--rev"]'
+2: '["--limit 0"]'
+3: '["--limit 0", "--rev"]'
 ...
