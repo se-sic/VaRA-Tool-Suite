@@ -322,18 +322,21 @@ def available_features(
     return result
 
 
-def coverage_missed_features(features: tp.Set[str],
-                             code_region: CodeRegion) -> tp.Set[str]:
-    return features.difference(code_region.coverage_features_set())
+def coverage_missed_features(
+    features: tp.Set[str], code_region: CodeRegion, feature_model: Function
+) -> tp.Set[str]:
+    return features.difference(code_region.coverage_features_set(feature_model))
 
 
 def coverage_found_features(
-    features: tp.Set[str], code_region: CodeRegion
+    features: tp.Set[str], code_region: CodeRegion, feature_model: Function
 ) -> bool:
     """Are features found by coverage data?"""
     if not features:
         return False
-    return len(coverage_missed_features(features, code_region)) == 0
+    return len(
+        coverage_missed_features(features, code_region, feature_model)
+    ) == 0
 
 
 def vara_found_features(
@@ -366,17 +369,18 @@ def vara_features(
 
 def coverage_vara_features_combined(
     region: CodeRegion, feature_name_map: tp.Dict[str, tp.Set[str]],
-    threshold: float
+    feature_model: Function, threshold: float
 ) -> tp.Set[str]:
     """Features found by coverage data and VaRA combined."""
     found_vara_features = vara_features(region, feature_name_map, threshold)
-    return region.coverage_features_set().union(found_vara_features)
+    return region.coverage_features_set(feature_model
+                                       ).union(found_vara_features)
 
 
 def _matrix_analyze_code_region(
     feature: str, code_region: CodeRegion,
-    feature_name_map: tp.Dict[str, tp.Set[str]], threshold: float, file: str,
-    coverage_feature_regions: tp.List[tp.Any],
+    feature_name_map: tp.Dict[str, tp.Set[str]], feature_model: Function,
+    threshold: float, file: str, coverage_feature_regions: tp.List[tp.Any],
     coverage_normal_regions: tp.List[tp.Any],
     vara_feature_regions: tp.List[tp.Any], vara_normal_regions: tp.List[tp.Any]
 ) -> None:
@@ -386,14 +390,14 @@ def _matrix_analyze_code_region(
             continue
         if feature == "__coverage__":
             # Only consider coverage features
-            features = region.coverage_features_set()
+            features = region.coverage_features_set(feature_model)
         elif feature == "__vara__":
             # Only consider vara features.
             features = vara_features(region, feature_name_map, threshold)
         elif feature == "__both__":
             # Compare all coverage and all vara features with each other
             features = coverage_vara_features_combined(
-                region, feature_name_map, threshold
+                region, feature_name_map, feature_model, threshold
             )
         else:
             # Consider only single feature
@@ -405,7 +409,7 @@ def _matrix_analyze_code_region(
             tuple(str(x) for x in region.vara_instrs)
         )
 
-        if coverage_found_features(features, region):
+        if coverage_found_features(features, region, feature_model):
             coverage_feature_regions.append(feature_entry)
         else:
             coverage_normal_regions.append(feature_entry)
@@ -426,10 +430,13 @@ def _compute_confusion_matrix(
     vara_feature_regions: tp.List[tp.Any] = []
     vara_normal_regions: tp.List[tp.Any] = []
 
+    feature_model = feature_report.feature_model
+    assert feature_model is not None
+
     for file, code_region in feature_report.tree.items():
         _matrix_analyze_code_region(
-            feature, code_region, feature_name_map, threshold, file,
-            coverage_feature_regions, coverage_normal_regions,
+            feature, code_region, feature_name_map, feature_model, threshold,
+            file, coverage_feature_regions, coverage_normal_regions,
             vara_feature_regions, vara_normal_regions
         )
 
@@ -452,12 +459,16 @@ def _compute_total_confusion_matrix(
     vara_feature_regions: tp.List[tp.Any] = []
     vara_normal_regions: tp.List[tp.Any] = []
 
+    feature_model = feature_report.feature_model
+    assert feature_model is not None
+
     for feature in features:
         for file, code_region in feature_report.tree.items():
             _matrix_analyze_code_region(
-                feature, code_region, feature_name_map, threshold, file,
-                coverage_feature_regions, coverage_normal_regions,
-                vara_feature_regions, vara_normal_regions
+                feature, code_region, feature_name_map, feature_model,
+                threshold, file, coverage_feature_regions,
+                coverage_normal_regions, vara_feature_regions,
+                vara_normal_regions
             )
 
     return ConfusionMatrix(
@@ -541,6 +552,9 @@ def _annotate_covered(
     report, all_options, feature_option_mapping = args
     configuration = report.configuration
     assert configuration is not None
+
+    # Ensure we have instrs available
+    report.parse_instrs(False)
 
     # Set not set features in configuration to false
     for option in all_options:

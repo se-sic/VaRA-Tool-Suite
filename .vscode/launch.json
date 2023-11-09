@@ -157,6 +157,22 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "plotSynthDADynamicDispatch",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/mmustermann/Dokumente/VARA-root2/.venv/bin/vara-plot",
+            "cwd": "/home/mmustermann/Dokumente/VARA-root2/",
+            "args": [
+                "coverage",
+                "--experiment-type",
+                "GenerateCoverage",
+                "--case-study",
+                "SynthDADynamicDispatch_0"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Debug Unit Test",
             "type": "python",
             "request": "test",

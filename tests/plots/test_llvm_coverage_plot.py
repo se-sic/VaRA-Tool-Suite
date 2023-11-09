@@ -60,7 +60,7 @@ def _confusion_matrix(
     vara_normal_regions = []
 
     _matrix_analyze_code_region(
-        feature, tree, feature_name_map, threshold, file,
+        feature, tree, feature_name_map, None, threshold, file,
         coverage_feature_regions, coverage_normal_regions, vara_feature_regions,
         vara_normal_regions
     )
@@ -118,13 +118,15 @@ class TestCoveragePlot(unittest.TestCase):
 
     def test_coverage_found_features(self):
         region = create_autospec(CodeRegion)
-        region.coverage_features_set = lambda: set(["A", "B"])
+        region.coverage_features_set = lambda _: set(["A", "B"])
 
-        self.assertTrue(coverage_found_features(set(["A", "B"]), region))
-        self.assertFalse(coverage_found_features(set(["A", "B", "C"]), region))
+        self.assertTrue(coverage_found_features(set(["A", "B"]), region, None))
+        self.assertFalse(
+            coverage_found_features(set(["A", "B", "C"]), region, None)
+        )
 
-        self.assertTrue(coverage_found_features(set(["A"]), region))
-        self.assertFalse(coverage_found_features(set(), region))
+        self.assertTrue(coverage_found_features(set(["A"]), region, None))
+        self.assertFalse(coverage_found_features(set(), region, None))
 
     def test_vara_found_features(self):
         vara_found_features = lambda feature, region, threshold: _vara_found_features(
@@ -191,7 +193,7 @@ class TestCoveragePlot(unittest.TestCase):
             RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
             "test.txt"
         )
-        region.coverage_features_set = lambda: {"A", "B"}
+        region.coverage_features_set = lambda _: {"A", "B"}
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -233,7 +235,7 @@ class TestCoveragePlot(unittest.TestCase):
             RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
             "test.txt"
         )
-        region.coverage_features_set = lambda: {"a", "b"}
+        region.coverage_features_set = lambda _: {"a", "b"}
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -261,7 +263,7 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 1.0).FN, 1)
         self.assertEqual(confusion_matrix(region, 0.5).TP, 1)
 
-        region.coverage_features_set = lambda: {"a"}
+        region.coverage_features_set = lambda _: {"a"}
 
         # Coverage: A == VaRA: A,(B)
         self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
@@ -279,7 +281,7 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 0.0).FN, 1)
 
         region.vara_instrs = [instr_2, instr_3]
-        region.coverage_features_set = lambda: set()
+        region.coverage_features_set = lambda _: set()
 
         # Coverage:  == VaRA: (A)
 
@@ -312,7 +314,7 @@ class TestCoveragePlot(unittest.TestCase):
             RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
             "test.txt"
         )
-        region.coverage_features_set = lambda: {"a", "b"}
+        region.coverage_features_set = lambda _: {"a", "b"}
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -340,7 +342,7 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 1.0).FN, 1)
         self.assertEqual(confusion_matrix(region, 0.5).TP, 1)
 
-        region.coverage_features_set = lambda: {"a"}
+        region.coverage_features_set = lambda _: {"a"}
 
         # Coverage: A == VaRA: A,(B)
         self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
@@ -358,7 +360,7 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 0.0).FN, 1)
 
         region.vara_instrs = [instr_2, instr_3]
-        region.coverage_features_set = lambda: set()
+        region.coverage_features_set = lambda _: set()
 
         # Coverage:  == VaRA: (A)
 
@@ -391,7 +393,7 @@ class TestCoveragePlot(unittest.TestCase):
             RegionStart(1, 1), RegionEnd(1, 1), 1, CodeRegionKind.CODE, "test",
             "test.txt"
         )
-        region.coverage_features_set = lambda: {"a", "b"}
+        region.coverage_features_set = lambda _: {"a", "b"}
 
         instr_1 = VaraInstr(
             FeatureKind.FEATURE_REGION, "", 1, 1, ["A", "B"], 42, "test_instr"
@@ -419,7 +421,7 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
         self.assertEqual(confusion_matrix(region, 0.5).TP, 1)
 
-        region.coverage_features_set = lambda: {"a"}
+        region.coverage_features_set = lambda _: {"a"}
 
         # Coverage: A == VaRA: A,(B)
         self.assertEqual(confusion_matrix(region, 1.0).TP, 1)
@@ -437,7 +439,7 @@ class TestCoveragePlot(unittest.TestCase):
         self.assertEqual(confusion_matrix(region, 0.0).TN, 1)
 
         region.vara_instrs = [instr_2, instr_3]
-        region.coverage_features_set = lambda: set()
+        region.coverage_features_set = lambda _: set()
 
         # Coverage:  == VaRA: (A)
 

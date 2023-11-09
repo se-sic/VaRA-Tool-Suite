@@ -505,14 +505,10 @@ class CodeRegion:  # pylint: disable=too-many-instance-attributes, too-many-publ
         """
         Adds the presence condition to all covered regions.
 
-        Ignore GAP regions without VaRA instructions.
+        Ignore regions without instructions aka GAP regions.
         """
         for region in self.iter_breadth_first():
-            if region.kind == CodeRegionKind.GAP:
-                assert len(region.vara_instrs) == 0
-                region.presence_condition = func.bdd.false
-                continue
-            if region.is_covered():
+            if region.is_covered() and region.vara_instrs:
                 region.presence_condition = func
             else:
                 region.presence_condition = func.bdd.false
