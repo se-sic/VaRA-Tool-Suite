@@ -209,11 +209,11 @@ IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [
     ),
     #SynthIPRuntime
     CodeRegion(
-        start=RegionStart(line=245, column=1),
+        start=RegionStart(line=28, column=1),
         end=RegionEnd(line=349, column=3),
         count=-1,
         kind=CodeRegionKind.FILE_ROOT,
-        function="struct compress_t",
+        function="multiple functions + struct compress_t",
         filename="projects/SynthIPRuntime/main.cpp"
     ),
     CodeRegion(
@@ -250,6 +250,20 @@ EXCLUDED_OPTIONS = {
     "brut-force": ["hashing", "sorting"],
     "hashing": ["brut-force", "sorting"],
     "sorting": ["hashing", "brut-force"],
+
+    # SynthIPRuntime
+    "d": ["c"],
+    "c": ["d"],
+    "1": ["d"],
+    "2": ["d"],
+
+    #SynthSAContextSensitivity
+    "mem 0": ["mem 1020", "mem 1275", "mem 255", "mem 510", "mem 765"],
+    "mem 1020": ["mem 0", "mem 1275", "mem 255", "mem 510", "mem 765"],
+    "mem 1275": ["mem 1020", "mem 0", "mem 255", "mem 510", "mem 765"],
+    "mem 255": ["mem 1020", "mem 1275", "mem 0", "mem 510", "mem 765"],
+    "mem 510": ["mem 1020", "mem 1275", "mem 255", "mem 0", "mem 765"],
+    "mem 765": ["mem 1020", "mem 1275", "mem 255", "mem 510", "mem 0"],
 }
 
 
