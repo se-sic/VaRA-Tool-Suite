@@ -264,6 +264,11 @@ EXCLUDED_OPTIONS = {
     "mem 255": ["mem 1020", "mem 1275", "mem 0", "mem 510", "mem 765"],
     "mem 510": ["mem 1020", "mem 1275", "mem 255", "mem 0", "mem 765"],
     "mem 765": ["mem 1020", "mem 1275", "mem 255", "mem 510", "mem 0"],
+
+    # bzip2
+    "compress": ["decompress", "test"],
+    "decompress": ["compress", "test"],
+    "test": ["decompress", "compress"],
 }
 
 
@@ -567,9 +572,6 @@ def _annotate_covered(
     configuration = report.configuration
     assert configuration is not None
 
-    # Ensure we have instrs available
-    report.parse_instrs(False)
-
     # Set not set features in configuration to false
     for option in all_options:
         if option not in get_option_names(configuration):
@@ -808,6 +810,7 @@ def _process_report_file(
             config,
             base_dir,
         )
+        coverage_report.parse_instrs(False)
     return binary, coverage_report
 
 
