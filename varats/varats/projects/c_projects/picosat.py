@@ -4,13 +4,17 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, Command, SourceRoot
-from benchbuild.source import HTTP
-from benchbuild.source.http import HTTPUntar
+from benchbuild.source import HTTP, HTTPUntar
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.containers.containers import ImageBase, get_base_image
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -21,6 +25,7 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
     ReleaseProviderHook,
@@ -53,19 +58,21 @@ class PicoSAT(VProject, ReleaseProviderHook):
         ),
         FeatureSource(),
         HTTP(
-            local="example.cnf",
+            local="aim-100-1_6-no-1.cnf",
             remote={
                 "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/example.cnf"
+                    "https://raw.githubusercontent.com/mitchellh/go-sat/"
+                    "fc0e735aff48989326f256121b5ed6fc585858c3/testdata/"
+                    "satlib/file-dimacs-aim/aim-100-1_6-no-1.cnf"
             }
         ),
-        HTTPUntar(
-            local="abw-N-bcsstk07.mtx-w44.cnf",
+        HTTP(
+            local="aim-100-1_6-yes1-1.cnf",
             remote={
                 "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/abw-N-bcsstk07.mtx-w44.cnf.tar.gz"
+                    "https://raw.githubusercontent.com/mitchellh/go-sat/"
+                    "fc0e735aff48989326f256121b5ed6fc585858c3/testdata/"
+                    "satlib/file-dimacs-aim/aim-100-1_6-yes1-1.cnf"
             }
         ),
         HTTPUntar(
@@ -76,25 +83,12 @@ class PicoSAT(VProject, ReleaseProviderHook):
                     "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
             }
         ),
-        HTTPUntar(
-            local="UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/"
-                    "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
-            }
-        ),
-        HTTPUntar(
-            local="UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
-            remote={
-                "1.0":
-                    "https://github.com/se-sic/picoSAT-mirror/releases/"
-                    "download/picoSAT-965/"
-                    "UNSAT_H_instances_childsnack_p12.hddl_1.cnf.tar.gz"
-            }
-        ),
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
+        'autotools-dev', 'libtool', 'pkg-config'
+    )
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
@@ -136,6 +130,49 @@ class PicoSAT(VProject, ReleaseProviderHook):
                 "UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
                 label="UNSAT-H-instances-childsnack-p12.hddl-1.cnf",
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("aim-100-1_6-no-1.cnf"),
+                creates=[
+                    "coreFileName", "compactTraceFileName",
+                    "extendedTraceFileName", "varFileName", "outputFileName",
+                    "rupFileName"
+                ],
+                consumes=["aim-100-1_6-no-1.cnf"],
+                label="aim-100-1-6-no-1.cnf",
+            ),
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("aim-100-1_6-yes1-1.cnf"),
+                creates=[
+                    "coreFileName", "compactTraceFileName",
+                    "extendedTraceFileName", "varFileName", "outputFileName",
+                    "rupFileName"
+                ],
+                consumes=["aim-100-1_6-yes1-1.cnf"],
+                label="aim-100-1-6-yes1-1.cnf",
+            ),
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot(
+                    "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf"
+                ),
+                creates=[
+                    "coreFileName", "compactTraceFileName",
+                    "extendedTraceFileName", "varFileName", "outputFileName",
+                    "rupFileName"
+                ],
+                consumes=["traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf"],
+                label="traffic-kkb-unknow.cnf",
+            ),
         ],
     }
 

@@ -1,0 +1,25 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: FeaturePerfCSCollection
+stages:
+- revisions:
+  - commit_hash: 27f17080376e409860405c40744887d81d6b3f34
+    commit_id: 22
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '[]'
+1: '["--slow"]'
+2: '["--header"]'
+3: '["--slow", "--header"]'
+...
+

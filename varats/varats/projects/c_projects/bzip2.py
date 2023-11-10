@@ -11,7 +11,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -47,6 +51,7 @@ class Bzip2(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -54,9 +59,16 @@ class Bzip2(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0"
             },
+            files=["countries-land-250m.geo.json"]
+        ),
+        HTTPMultiple(
+            local="xz_files",
+            remote={
+                "1.0":
+                    "https://github.com/xz-mirror/xz/releases/download/v5.4.0"
+            },
             files=[
-                "countries-land-1m.geo.json", "countries-land-10m.geo.json",
-                "countries-land-100m.geo.json"
+                "xz-5.4.0.tar.bz2",
             ]
         ),
         FeatureSource(),
@@ -130,6 +142,28 @@ class Bzip2(VProject):
                 ],
                 requires_all_args={"--decompress"}
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                label="countries-land-250m-compress",
+                creates=["geo-maps/countries-land-250m.geo.json.bz2"],
+                consumes=["geo-maps/countries-land-250m.geo.json"],
+                requires_all_args={"--compress"},
+            ),
+            VCommand(
+                SourceRoot("bzip2") / RSBinary("bzip2"),
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("xz_files/xz-5.4.0.tar.bz2"),
+                label="xz-files-compressed",
+                creates=["xz_files/xz-5.4.0.tar"],
+                consumes=["xz_files/xz-5.4.0.tar.bz2"],
+                requires_any_args={"--decompress", "--test"}
+            ),
         ],
     }
 

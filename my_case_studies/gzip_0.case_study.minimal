@@ -1,0 +1,26 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: gzip
+stages:
+- revisions:
+  - commit_hash: 23a870d14a49803c6d2579071886c1acf497c9d1
+    commit_id: 604
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["-6"]'
+1: '["--decompress", "-6"]'
+2: '["--decompress", "-6", "--list"]'
+3: '["--test", "--decompress", "-6"]'
+4: '["--test", "--decompress", "-6", "--list"]'
+...

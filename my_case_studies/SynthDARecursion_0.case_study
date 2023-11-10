@@ -1,0 +1,24 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthDARecursion
+stages:
+- revisions:
+  - commit_hash: daf81de0738cb861b800c4dae1a805e8dabaa544
+    commit_id: 46
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '[]'
+1: '["--rev"]'
+2: '["--limit 0"]'
+3: '["--limit 0", "--rev"]'
+...

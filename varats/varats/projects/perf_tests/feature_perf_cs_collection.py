@@ -83,7 +83,25 @@ class FeaturePerfCSCollection(VProject):
         FeatureSource()
     ]
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+
     WORKLOADS = {
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("SimpleFeatureInteraction"),
+                ConfigParams(),
+                label="SFI-no-input"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.JAN_2): [
+            VCommand(
+                SourceRoot("FeaturePerfCSCollection") /
+                RSBinary("MultiSharedMultipleRegions"),
+                ConfigParams(),
+                label="MSMR-no-input"
+            )
+        ],
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
                 SourceRoot("FeaturePerfCSCollection") /
@@ -115,8 +133,6 @@ class FeaturePerfCSCollection(VProject):
             )
         ]
     }
-
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -196,6 +212,14 @@ class SynthSAFlowSensitivity(VProject):
                 ConfigParams(),
                 label="FlowSense-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthSAFlowSensitivity") / RSBinary("FlowSense"),
+                ConfigParams(),
+                "5",
+                label="FlowSense-no-input",
+            )
         ]
     }
 
@@ -260,6 +284,15 @@ class SynthSAContextSensitivity(VProject):
                 ConfigParams(),
                 label="ContextSense-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthSAContextSensitivity") /
+                RSBinary("ContextSense"),
+                ConfigParams(),
+                "8",
+                label="ContextSense-no-input"
+            )
         ]
     }
 
@@ -319,6 +352,15 @@ class SynthSAWholeProgram(VProject):
             VCommand(
                 SourceRoot("SynthSAWholeProgram") / RSBinary("WholeProgram"),
                 ConfigParams(),
+                label="WholeProgram-no-input"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthSAWholeProgram") / RSBinary("WholeProgram"),
+                ConfigParams(),
+                "AABA",
+                "AABAACAADAABAABA",
                 label="WholeProgram-no-input"
             )
         ]
@@ -384,6 +426,26 @@ class SynthDADynamicDispatch(VProject):
                 ConfigParams(),
                 label="DynamicDispatch-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthDADynamicDispatch") /
+                RSBinary("DynamicDispatch"),
+                ConfigParams(),
+                "--sum",
+                "8",
+                "1,2,3,5,6,10,23,2,5",
+                label="DynamicDispatch-first-no-input"
+            ),
+            VCommand(
+                SourceRoot("SynthDADynamicDispatch") /
+                RSBinary("DynamicDispatch"),
+                ConfigParams(),
+                "--sum",
+                "21",
+                "1,2,3,5,6,10,23,2,5",
+                label="DynamicDispatch-second-no-input"
+            )
         ]
     }
 
@@ -445,6 +507,15 @@ class SynthDARecursion(VProject):
                 ConfigParams(),
                 label="Recursion-no-input"
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthDARecursion") / RSBinary("Recursion"),
+                ConfigParams(),
+                "--base",
+                "AABAACAADAABAABA",
+                label="Recursion-no-input"
+            )
         ]
     }
 
@@ -504,6 +575,16 @@ class SynthOVInsideLoop(VProject):
             VCommand(
                 SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
                 ConfigParams(),
+                label="InsideLoop-no-input"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("SynthOVInsideLoop") / RSBinary("InsideLoop"),
+                ConfigParams(),
+                "--sum",
+                "24", "1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5,"
+                "1,2,3,4,4,1,2,1,3,1,1,4,2,23,3,2,4,4,5",
                 label="InsideLoop-no-input"
             )
         ]
@@ -702,6 +783,36 @@ def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
             )
         ],
         WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-c"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps") /
+                    "countries-land-500m.geo.json.compressed"
+                ],
+                requires_all_args={"-c"},
+                redirect_stdin=SourceRoot("geo-maps") /
+                "countries-land-500m.geo.json",
+                redirect_stdout=SourceRoot("geo-maps") /
+                "countries-land-500m.geo.json.compressed"
+            ),
+            VCommand(
+                SourceRoot(project_source_name) / RSBinary(binary_name),
+                ConfigParams("-d"),
+                label="countries-land-500m",
+                creates=[
+                    SourceRoot("geo-maps-compr") /
+                    "countries-land-500m.geo.json"
+                ],
+                requires_all_args={"-d"},
+                redirect_stdin=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json.compressed",
+                redirect_stdout=SourceRoot("geo-maps-compr") /
+                "countries-land-500m.geo.json"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [ # SMALL
             VCommand(
                 SourceRoot(project_source_name) / RSBinary(binary_name),
                 ConfigParams("-c"),

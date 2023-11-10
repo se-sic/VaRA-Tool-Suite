@@ -1,0 +1,26 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthIPRuntime
+stages:
+- revisions:
+  - commit_hash: 793035062810ea3a2d9a10f831cd199fbbb82090
+    commit_id: 53
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["-c"]'
+1: '["-c", "-1"]'
+2: '["-c", "-2"]'
+3: '["-c", "-1", "-2"]'
+4: '["-d"]'
+...

@@ -1,0 +1,336 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: xz
+stages:
+- revisions:
+  - commit_hash: 4773608554d1b684a05ff9c1d879cf5c42266d33
+    commit_id: 1684
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+    - 35
+    - 36
+    - 37
+    - 38
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 50
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+    - 64
+    - 65
+    - 66
+    - 67
+    - 68
+    - 69
+    - 70
+    - 71
+    - 72
+    - 73
+    - 74
+    - 75
+    - 76
+    - 77
+    - 78
+    - 79
+    - 80
+    - 81
+    - 82
+    - 83
+    - 84
+    - 85
+    - 86
+    - 87
+    - 88
+    - 89
+    - 90
+    - 91
+    - 92
+    - 93
+    - 94
+    - 95
+    - 96
+    - 97
+    - 98
+    - 99
+    - 100
+    - 101
+    - 102
+    - 103
+    - 104
+    - 105
+    - 106
+    - 107
+    - 108
+    - 109
+    - 110
+    - 111
+    - 112
+    - 113
+    - 114
+    - 115
+    - 116
+    - 117
+    - 118
+    - 119
+    - 120
+    - 121
+    - 122
+    - 123
+    - 124
+    - 125
+    - 126
+    - 127
+    - 128
+    - 129
+    - 130
+    - 131
+    - 132
+    - 133
+    - 134
+    - 135
+    - 136
+    - 137
+    - 138
+    - 139
+    - 140
+    - 141
+    - 142
+    - 143
+    - 144
+    - 145
+    - 146
+    - 147
+    - 148
+    - 149
+    - 150
+    - 151
+    - 152
+    - 153
+    - 154
+    - 155
+    - 156
+    - 157
+    - 158
+    - 159
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["-6", "--list", "--format=xz"]'
+1: '["--robot", "-6", "--list", "--format=xz"]'
+2: '["-6", "--force", "--list", "--format=xz"]'
+3: '["--robot", "-6", "--force", "--list", "--format=xz"]'
+4: '["--robot", "-6", "--list", "--format=xz", "--suffix=.su"]'
+5: '["-6", "--list", "--format=xz", "--suffix=.su"]'
+6: '["--robot", "-6", "--format=auto", "--list", "--suffix=.su"]'
+7: '["-6", "--format=auto", "--list"]'
+8: '["--robot", "-6", "--format=auto", "--list"]'
+9: '["-6", "--force", "--list", "--format=xz", "--suffix=.su"]'
+10: '["--robot", "-6", "--force", "--list", "--format=xz", "--suffix=.su"]'
+11: '["-6", "--format=auto", "--list", "--suffix=.su"]'
+12: '["-6", "--force", "--format=auto", "--list"]'
+13: '["-6", "--force", "--format=auto", "--list", "--suffix=.su"]'
+14: '["--robot", "-6", "--force", "--format=auto", "--list", "--suffix=.su"]'
+15: '["--robot", "-6", "--force", "--format=auto", "--list"]'
+16: '["--robot", "-6", "--force", "-v", "--list", "--format=xz", "--suffix=.su"]'
+17: '["-6", "-v", "--list", "--format=xz"]'
+18: '["-6", "-v", "--list", "--format=xz", "--suffix=.su"]'
+19: '["--robot", "-6", "-v", "--list", "--format=xz", "--suffix=.su"]'
+20: '["--robot", "-6", "-v", "--list", "--format=xz"]'
+21: '["--robot", "-6", "--force", "-v", "--list", "--format=xz"]'
+22: '["--robot", "-6", "--force", "-v", "--format=auto", "--list", "--suffix=.su"]'
+23: '["--robot", "-6", "-v", "--format=auto", "--list", "--suffix=.su"]'
+24: '["-6", "--force", "-v", "--format=auto", "--list", "--suffix=.su"]'
+25: '["--robot", "-6", "--force", "-v", "--format=auto", "--list"]'
+26: '["-6", "-v", "--format=auto", "--list"]'
+27: '["-6", "--force", "-v", "--format=auto", "--list"]'
+28: '["--robot", "-6", "-v", "--format=auto", "--list"]'
+29: '["-6", "-v", "--format=auto", "--list", "--suffix=.su"]'
+30: '["-6", "--force", "-v", "--list", "--format=xz", "--suffix=.su"]'
+31: '["-6", "--force", "-v", "--list", "--format=xz"]'
+32: '["-9", "--force", "-v", "--compress", "--format=xz", "--suffix=.su"]'
+33: '["-6", "--force", "-v", "--compress", "--format=xz", "--suffix=.su"]'
+34: '["-9", "--force", "-v", "--format=auto", "--compress", "--suffix=.su"]'
+35: '["-6", "--force", "-v", "--format=auto", "--compress", "--suffix=.su"]'
+36: '["--decompress", "-6", "--force", "-v", "--format=xz", "--suffix=.su"]'
+37: '["--decompress", "-6", "--force", "-v", "--format=auto", "--suffix=.su"]'
+38: '["-9", "--force", "-v", "--compress", "--format=xz"]'
+39: '["-6", "--force", "-v", "--compress", "--format=xz"]'
+40: '["-9", "--force", "-v", "--format=auto", "--compress"]'
+41: '["-6", "-v", "--format=auto", "--compress"]'
+42: '["-6", "--force", "-v", "--format=auto", "--compress"]'
+43: '["--decompress", "-6", "--force", "-v", "--format=xz"]'
+44: '["--decompress", "-6", "--force", "-v", "--format=auto"]'
+45: '["-9", "--force", "--compress", "--format=xz"]'
+46: '["-6", "--force", "--compress", "--format=xz"]'
+47: '["-9", "--force", "--format=auto", "--compress"]'
+48: '["-6", "--force", "--format=auto", "--compress"]'
+49: '["--decompress", "-6", "--force", "--format=xz"]'
+50: '["--decompress", "-6", "--force", "--format=auto"]'
+51: '["-9", "--compress", "--format=xz"]'
+52: '["--decompress", "-6", "--format=xz"]'
+53: '["--decompress", "-6", "--format=auto"]'
+54: '["-6", "--compress", "--format=xz"]'
+55: '["-9", "--format=auto", "--compress"]'
+56: '["-6", "--format=auto", "--compress"]'
+57: '["-9", "--compress", "--format=xz", "--suffix=.su"]'
+58: '["-6", "--compress", "--format=xz", "--suffix=.su"]'
+59: '["-9", "--format=auto", "--compress", "--suffix=.su"]'
+60: '["-6", "--format=auto", "--compress", "--suffix=.su"]'
+61: '["--decompress", "-6", "--format=xz", "--suffix=.su"]'
+62: '["--decompress", "-6", "--format=auto", "--suffix=.su"]'
+63: '["-9", "--force", "--compress", "--format=xz", "--suffix=.su"]'
+64: '["-6", "--force", "--compress", "--format=xz", "--suffix=.su"]'
+65: '["-9", "--force", "--format=auto", "--compress", "--suffix=.su"]'
+66: '["-6", "--force", "--format=auto", "--compress", "--suffix=.su"]'
+67: '["--decompress", "-6", "--force", "--format=xz", "--suffix=.su"]'
+68: '["--decompress", "-6", "--force", "--format=auto", "--suffix=.su"]'
+69: '["-9", "-v", "--compress", "--format=xz"]'
+70: '["-6", "-v", "--compress", "--format=xz"]'
+71: '["-9", "-v", "--format=auto", "--compress"]'
+72: '["--decompress", "-6", "-v", "--format=xz"]'
+73: '["--decompress", "-6", "-v", "--format=auto"]'
+74: '["-9", "-v", "--compress", "--format=xz", "--suffix=.su"]'
+75: '["-6", "-v", "--compress", "--format=xz", "--suffix=.su"]'
+76: '["-9", "-v", "--format=auto", "--compress", "--suffix=.su"]'
+77: '["-6", "-v", "--format=auto", "--compress", "--suffix=.su"]'
+78: '["--decompress", "-6", "-v", "--format=xz", "--suffix=.su"]'
+79: '["--decompress", "-6", "-v", "--format=auto", "--suffix=.su"]'
+80: '["-9", "--keep", "--compress", "--format=xz"]'
+81: '["-6", "--keep", "--compress", "--format=xz"]'
+82: '["--test", "-6", "--keep", "--format=xz"]'
+83: '["--test", "--stdout", "-6", "--keep", "--format=xz"]'
+84: '["--decompress", "-6", "--keep", "--format=xz"]'
+85: '["--stdout", "--decompress", "-6", "--keep", "--format=xz"]'
+86: '["--test", "--decompress", "-6", "--keep", "--format=xz"]'
+87: '["--test", "--stdout", "--decompress", "-6", "--keep", "--format=xz"]'
+88: '["-9", "--keep", "--compress", "--format=xz", "--suffix=.su"]'
+89: '["-6", "--keep", "--compress", "--format=xz", "--suffix=.su"]'
+90: '["--test", "-6", "--keep", "--format=xz", "--suffix=.su"]'
+91: '["--test", "--stdout", "-6", "--keep", "--format=xz", "--suffix=.su"]'
+92: '["--decompress", "-6", "--keep", "--format=xz", "--suffix=.su"]'
+93: '["--stdout", "--decompress", "-6", "--keep", "--format=xz", "--suffix=.su"]'
+94: '["--test", "--decompress", "-6", "--keep", "--format=xz", "--suffix=.su"]'
+95: '["--test", "--stdout", "--decompress", "-6", "--keep", "--format=xz", "--suffix=.su"]'
+96: '["-9", "-v", "--keep", "--compress", "--format=xz"]'
+97: '["-6", "-v", "--keep", "--compress", "--format=xz"]'
+98: '["--test", "-6", "-v", "--keep", "--format=xz"]'
+99: '["--test", "--stdout", "-6", "-v", "--keep", "--format=xz"]'
+100: '["--decompress", "-6", "-v", "--keep", "--format=xz"]'
+101: '["--stdout", "--decompress", "-6", "-v", "--keep", "--format=xz"]'
+102: '["--test", "--decompress", "-6", "-v", "--keep", "--format=xz"]'
+103: '["--test", "--stdout", "--decompress", "-6", "-v", "--keep", "--format=xz"]'
+104: '["--test", "-6", "-v", "--keep", "--format=xz", "--suffix=.su"]'
+105: '["--test", "--stdout", "-6", "-v", "--keep", "--format=xz", "--suffix=.su"]'
+106: '["--decompress", "-6", "-v", "--keep", "--format=xz", "--suffix=.su"]'
+107: '["--stdout", "--decompress", "-6", "-v", "--keep", "--format=xz", "--suffix=.su"]'
+108: '["--test", "--decompress", "-6", "-v", "--keep", "--format=xz", "--suffix=.su"]'
+109: '["--test", "--stdout", "--decompress", "-6", "-v", "--keep", "--format=xz", "--suffix=.su"]'
+110: '["-9", "-v", "--keep", "--compress", "--format=xz", "--suffix=.su"]'
+111: '["-6", "-v", "--keep", "--compress", "--format=xz", "--suffix=.su"]'
+112: '["-9", "--format=auto", "--keep", "--compress"]'
+113: '["-6", "--format=auto", "--keep", "--compress"]'
+114: '["-9", "-v", "--format=auto", "--keep", "--compress"]'
+115: '["-6", "-v", "--format=auto", "--keep", "--compress"]'
+116: '["--test", "-6", "--format=auto", "--keep"]'
+117: '["--test", "--stdout", "-6", "--format=auto", "--keep"]'
+118: '["--decompress", "-6", "--format=auto", "--keep"]'
+119: '["--stdout", "--decompress", "-6", "--format=auto", "--keep"]'
+120: '["--test", "--decompress", "-6", "--format=auto", "--keep"]'
+121: '["--test", "--stdout", "--decompress", "-6", "--format=auto", "--keep"]'
+122: '["--test", "-6", "-v", "--format=auto", "--keep"]'
+123: '["--test", "--stdout", "-6", "-v", "--format=auto", "--keep"]'
+124: '["--decompress", "-6", "-v", "--format=auto", "--keep"]'
+125: '["--stdout", "--decompress", "-6", "-v", "--format=auto", "--keep"]'
+126: '["--test", "--decompress", "-6", "-v", "--format=auto", "--keep"]'
+127: '["--test", "--stdout", "--decompress", "-6", "-v", "--format=auto", "--keep"]'
+128: '["-9", "--format=auto", "--keep", "--compress", "--suffix=.su"]'
+129: '["-6", "--format=auto", "--keep", "--compress", "--suffix=.su"]'
+130: '["-9", "-v", "--format=auto", "--keep", "--compress", "--suffix=.su"]'
+131: '["-6", "-v", "--format=auto", "--keep", "--compress", "--suffix=.su"]'
+132: '["--test", "-6", "--format=auto", "--keep", "--suffix=.su"]'
+133: '["--test", "--stdout", "-6", "--format=auto", "--keep", "--suffix=.su"]'
+134: '["--decompress", "-6", "--format=auto", "--keep", "--suffix=.su"]'
+135: '["--stdout", "--decompress", "-6", "--format=auto", "--keep", "--suffix=.su"]'
+136: '["--test", "--decompress", "-6", "--format=auto", "--keep", "--suffix=.su"]'
+137: '["--test", "--stdout", "--decompress", "-6", "--format=auto", "--keep", "--suffix=.su"]'
+138: '["--test", "-6", "-v", "--format=auto", "--keep", "--suffix=.su"]'
+139: '["--test", "--stdout", "-6", "-v", "--format=auto", "--keep", "--suffix=.su"]'
+140: '["--decompress", "-6", "-v", "--format=auto", "--keep", "--suffix=.su"]'
+141: '["--stdout", "--decompress", "-6", "-v", "--format=auto", "--keep", "--suffix=.su"]'
+142: '["--test", "--decompress", "-6", "-v", "--format=auto", "--keep", "--suffix=.su"]'
+143: '["--test", "--stdout", "--decompress", "-6", "-v", "--format=auto", "--keep", "--suffix=.su"]'
+144: '["-6", "--keep", "--list", "--format=xz"]'
+145: '["-6", "-v", "--keep", "--list", "--format=xz"]'
+146: '["-6", "--keep", "--list", "--format=xz", "--suffix=.su"]'
+147: '["-6", "-v", "--keep", "--list", "--format=xz", "--suffix=.su"]'
+148: '["-6", "--format=auto", "--keep", "--list"]'
+149: '["-6", "-v", "--format=auto", "--keep", "--list"]'
+150: '["-6", "--format=auto", "--keep", "--list", "--suffix=.su"]'
+151: '["-6", "-v", "--format=auto", "--keep", "--list", "--suffix=.su"]'
+152: '["--robot", "-6", "--keep", "--list", "--format=xz"]'
+153: '["--robot", "-6", "-v", "--keep", "--list", "--format=xz"]'
+154: '["--robot", "-6", "--keep", "--list", "--format=xz", "--suffix=.su"]'
+155: '["--robot", "-6", "-v", "--keep", "--list", "--format=xz", "--suffix=.su"]'
+156: '["--robot", "-6", "--format=auto", "--keep", "--list"]'
+157: '["--robot", "-6", "-v", "--format=auto", "--keep", "--list"]'
+158: '["--robot", "-6", "--format=auto", "--keep", "--list", "--suffix=.su"]'
+159: '["--robot", "-6", "-v", "--format=auto", "--keep", "--list", "--suffix=.su"]'
+...

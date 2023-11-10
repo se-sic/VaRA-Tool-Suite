@@ -11,10 +11,13 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
-from varats.paper.paper_config import (
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
+from varats.paper.paper_config import (  # project_filter_generator,
     PaperConfigSpecificGit,
-    project_filter_generator,
 )
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -24,6 +27,8 @@ from varats.project.project_util import (
     get_local_project_git_path,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
     ReleaseProviderHook,
@@ -55,21 +60,22 @@ class Gzip(VProject, ReleaseProviderHook):
         ])(
             PaperConfigSpecificGit(
                 project_name="gzip",
-                remote="https://github.com/vulder/gzip.git",
+                remote="https://github.com/danjujan/gzip.git",
                 local="gzip",
                 refspec="origin/HEAD",
                 limit=None,
                 shallow=False
             )
         ),
-        bb.source.GitSubmodule(
-            remote="https://github.com/coreutils/gnulib.git",
-            local="gzip/gnulib",
-            refspec="origin/HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("gzip")
-        ),
+        #bb.source.GitSubmodule(
+        #    remote="https://github.com/coreutils/gnulib.git",
+        #    local="gzip/gnulib",
+        #    refspec="origin/HEAD",
+        #    limit=None,
+        #    shallow=False,
+        #    version_filter=project_filter_generator("gzip")
+        #),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -77,7 +83,17 @@ class Gzip(VProject, ReleaseProviderHook):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0"
             },
-            files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
+            files=["countries-land-250m.geo.json"]
+        ),
+        HTTPMultiple(
+            local="xz_files",
+            remote={
+                "1.0":
+                    "https://github.com/xz-mirror/xz/releases/download/v5.4.0"
+            },
+            files=[
+                "xz-5.4.0.tar.gz",
+            ]
         )
     ]
 
@@ -109,6 +125,28 @@ class Gzip(VProject, ReleaseProviderHook):
                 label="geo-maps/countries-land-1m",
                 creates=["geo-maps/countries-land-1m.geo.json.gz"]
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("gzip") / RSBinary("gzip"),
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                label="countries-land-250m-compress",
+                creates=["geo-maps/countries-land-250m.geo.json.gz"],
+                consumes=["geo-maps/countries-land-250m.geo.json"],
+                requires_not_args={"--decompress", "--test", "--list"},
+            ),
+            VCommand(
+                SourceRoot("gzip") / RSBinary("gzip"),
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("xz_files/xz-5.4.0.tar.gz"),
+                label="xz-files-compressed",
+                creates=["xz_files/xz-5.4.0.tar"],
+                consumes=["xz_files/xz-5.4.0.tar.gz"],
+                requires_any_args={"--decompress", "--test", "--list"}
+            ),
         ],
     }
 

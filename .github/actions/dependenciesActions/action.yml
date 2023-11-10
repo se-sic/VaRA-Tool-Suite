@@ -11,6 +11,14 @@ runs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install cython
+        pip install dd  # to first install dependencies of `dd`
+        pip uninstall -y dd
+        pip download --no-binary dd --no-deps dd
+        tar -xzf dd-*.tar.gz
+        pushd dd-*/
+        python setup.py install --fetch --cudd
+        popd
         pip install wheel
         pip install -e ./varats-core
         pip install -e ./varats

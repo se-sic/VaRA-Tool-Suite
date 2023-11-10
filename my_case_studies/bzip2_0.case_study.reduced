@@ -1,0 +1,208 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: bzip2
+stages:
+- revisions:
+  - commit_hash: 1ea1ac188ad4b9cb662e3f8314673c63df95a589
+    commit_id: 193
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+    - 35
+    - 36
+    - 37
+    - 38
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 50
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+    - 64
+    - 65
+    - 66
+    - 67
+    - 68
+    - 69
+    - 70
+    - 71
+    - 72
+    - 73
+    - 74
+    - 75
+    - 76
+    - 77
+    - 78
+    - 79
+    - 80
+    - 81
+    - 82
+    - 83
+    - 84
+    - 85
+    - 86
+    - 87
+    - 88
+    - 89
+    - 90
+    - 91
+    - 92
+    - 93
+    - 94
+    - 95
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["--compress", "-9"]'
+1: '["-9", "--decompress"]'
+2: '["-9", "--decompress", "--small"]'
+3: '["-9", "--force", "--decompress", "--small"]'
+4: '["-1", "--force", "--decompress"]'
+5: '["-1", "--decompress", "--small"]'
+6: '["-1", "--force", "--decompress", "--small"]'
+7: '["--compress", "-1", "--force", "--small"]'
+8: '["--compress", "-9", "--small"]'
+9: '["--compress", "-9", "--force"]'
+10: '["--compress", "-9", "--force", "--small"]'
+11: '["--compress", "-1", "--small"]'
+12: '["--compress", "-1"]'
+13: '["--compress", "-9", "--keep"]'
+14: '["--compress", "-9", "--force", "--keep"]'
+15: '["--compress", "-1", "--force", "--keep"]'
+16: '["--compress", "-1", "--force"]'
+17: '["-1", "--decompress"]'
+18: '["-9", "--force", "--decompress"]'
+19: '["-9", "--force", "--keep", "--decompress"]'
+20: '["-1", "--force", "--keep", "--decompress"]'
+21: '["-9", "--keep", "--quiet", "--decompress"]'
+22: '["-9", "--force", "--quiet", "--decompress"]'
+23: '["-9", "--force", "--keep", "--quiet", "--decompress"]'
+24: '["-1", "--force", "--keep", "--quiet", "--decompress"]'
+25: '["-9", "--force", "--keep", "--quiet", "--test"]'
+26: '["-1", "--test"]'
+27: '["-1", "--quiet", "--test"]'
+28: '["-1", "--force", "--keep", "--test"]'
+29: '["-1", "--force", "--keep", "--quiet", "--test"]'
+30: '["-9", "--force", "--quiet", "--test"]'
+31: '["-1", "--force", "--test"]'
+32: '["-1", "--force", "--quiet", "--test"]'
+33: '["-1", "--force", "--quiet", "--decompress"]'
+34: '["-9", "--force", "--quiet", "--decompress", "--small"]'
+35: '["-1", "--quiet", "--decompress", "--small"]'
+36: '["-1", "--force", "--quiet", "--decompress", "--small"]'
+37: '["-9", "--quiet", "--decompress"]'
+38: '["-1", "--quiet", "--decompress"]'
+39: '["--compress", "-9", "--quiet"]'
+40: '["--compress", "-1", "--quiet"]'
+41: '["--compress", "-9", "--keep", "--quiet"]'
+42: '["--compress", "-1", "--keep", "--quiet"]'
+43: '["--compress", "-9", "--force", "--keep", "--quiet"]'
+44: '["--compress", "-1", "--force", "--quiet"]'
+45: '["--compress", "-1", "--force", "--keep", "--quiet"]'
+46: '["--compress", "-9", "--force", "--keep", "--quiet", "--small"]'
+47: '["--compress", "-1", "--force", "--quiet", "--small"]'
+48: '["--compress", "-1", "--keep", "--small"]'
+49: '["--compress", "-1", "--keep", "--quiet", "--small"]'
+50: '["--compress", "-1", "--force", "--keep", "--quiet", "--small"]'
+51: '["-9", "--force", "--keep", "--quiet", "--decompress", "--small"]'
+52: '["-1", "--force", "--keep", "--quiet", "--decompress", "--small"]'
+53: '["-9", "--force", "--keep", "--test", "--small"]'
+54: '["-9", "--quiet", "--test", "--small"]'
+55: '["-9", "--keep", "--quiet", "--test", "--small"]'
+56: '["-9", "--force", "--keep", "--quiet", "--test", "--small"]'
+57: '["-1", "--force", "--keep", "--quiet", "--test", "--small"]'
+58: '["-1", "--force", "--keep", "--test", "--small"]'
+59: '["-9", "--test", "--small"]'
+60: '["-9", "--keep", "--test"]'
+61: '["-9", "--keep", "--test", "--small"]'
+62: '["-1", "--keep", "--test", "--small"]'
+63: '["-1", "--keep", "--test"]'
+64: '["-9", "--force", "--keep", "--test"]'
+65: '["-9", "--force", "--test"]'
+66: '["-9", "--force", "--test", "--small"]'
+67: '["-1", "--force", "--test", "--small"]'
+68: '["-9", "--force", "--keep", "--decompress", "--small"]'
+69: '["-1", "--force", "--keep", "--decompress", "--small"]'
+70: '["-9", "--keep", "--decompress", "--small"]'
+71: '["-1", "--keep", "--decompress", "--small"]'
+72: '["--compress", "-9", "--keep", "--small"]'
+73: '["--compress", "-1", "--keep"]'
+74: '["-9", "--test"]'
+75: '["-9", "--quiet", "--test"]'
+76: '["-9", "--quiet", "--decompress", "--small"]'
+77: '["-1", "--quiet", "--test", "--small"]'
+78: '["-9", "--keep", "--quiet", "--decompress", "--small"]'
+79: '["-1", "--keep", "--quiet", "--decompress", "--small"]'
+80: '["-1", "--keep", "--quiet", "--test", "--small"]'
+81: '["-1", "--keep", "--quiet", "--decompress"]'
+82: '["-9", "--keep", "--quiet", "--test"]'
+83: '["-1", "--keep", "--quiet", "--test"]'
+84: '["--compress", "-9", "--keep", "--quiet", "--small"]'
+85: '["--compress", "-9", "--quiet", "--small"]'
+86: '["--compress", "-1", "--quiet", "--small"]'
+87: '["-1", "--test", "--small"]'
+88: '["-9", "--force", "--quiet", "--test", "--small"]'
+89: '["-1", "--force", "--quiet", "--test", "--small"]'
+90: '["--compress", "-9", "--force", "--quiet"]'
+91: '["-9", "--keep", "--decompress"]'
+92: '["-1", "--keep", "--decompress"]'
+93: '["--compress", "-9", "--force", "--quiet", "--small"]'
+94: '["--compress", "-9", "--force", "--keep", "--small"]'
+95: '["--compress", "-1", "--force", "--keep", "--small"]'
+...

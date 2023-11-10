@@ -3,7 +3,7 @@ import typing as tp
 
 from benchbuild.command import Command, ProjectCommand, PathToken
 
-from varats.utils.config import get_config_patches
+from varats.utils.config import get_config_patches, get_extra_config_options
 
 if tp.TYPE_CHECKING:
     from plumbum.commands.base import BoundEnvCommand
@@ -31,6 +31,7 @@ class VCommand(Command):  # type: ignore [misc]
     def __init__(
         self,
         *args: tp.Any,
+        requires_not_args: tp.Optional[tp.Set[str]] = None,
         requires_any_args: tp.Optional[tp.Set[str]] = None,
         requires_all_args: tp.Optional[tp.Set[str]] = None,
         requires_any_patch: tp.Optional[tp.Set[str]] = None,
@@ -41,12 +42,17 @@ class VCommand(Command):  # type: ignore [misc]
     ) -> None:
 
         super().__init__(*args, **kwargs)
+        self._requires_not_args = requires_not_args or set()
         self._requires_any_args = requires_any_args or set()
         self._requires_all_args = requires_all_args or set()
         self._requires_any_patch = requires_any_patch or set()
         self._requires_all_patch = requires_all_patch or set()
         self._redirect_stdin = redirect_stdin
         self._redirect_stdout = redirect_stdout
+
+    @property
+    def requires_not_args(self) -> tp.Set[str]:
+        return self._requires_not_args
 
     @property
     def requires_any_args(self) -> tp.Set[str]:
@@ -96,7 +102,10 @@ class VProjectCommand(ProjectCommand):  # type: ignore
         if self.v_command is None:
             return True
 
-        all_args = set(self.v_command.rendered_args(project=self.v_project))
+        all_args = set(
+            self.v_command.rendered_args(project=self.v_project) +
+            tuple(get_extra_config_options(project=self.v_project))
+        )
         all_patch_tags: tp.Set[str] = set()
 
         for patch in get_config_patches(self.v_project):
@@ -104,6 +113,9 @@ class VProjectCommand(ProjectCommand):  # type: ignore
                 all_patch_tags.update(patch.feature_tags)
 
         return bool((
+            not self.v_command.requires_not_args or
+            not all_args.intersection(self.v_command.requires_not_args)
+        ) and (
             not self.v_command.requires_any_args or
             all_args.intersection(self.v_command.requires_any_args)
         ) and (

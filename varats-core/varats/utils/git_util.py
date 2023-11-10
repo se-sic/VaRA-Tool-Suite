@@ -1154,7 +1154,9 @@ class RepositoryAtCommit():
         self.__revision = self.__repo.get(revision.hash)
 
     def __enter__(self) -> Path:
-        self.__repo.checkout_tree(self.__revision)
+        self.__repo.checkout_tree(
+            self.__revision, strategy=pygit2.GIT_CHECKOUT_FORCE
+        )
         return Path(self.__repo.path).parent
 
     def __exit__(
@@ -1162,4 +1164,8 @@ class RepositoryAtCommit():
         exc_value: tp.Optional[BaseException],
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
-        self.__repo.checkout(self.__initial_head)
+        # Force checkout to prevent GitError: #number conflicts prevent checkout bug
+        # without having modified the repo
+        self.__repo.checkout(
+            self.__initial_head, strategy=pygit2.GIT_CHECKOUT_FORCE
+        )

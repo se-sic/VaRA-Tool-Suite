@@ -1,0 +1,912 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: gzip
+stages:
+- revisions:
+  - commit_hash: 23a870d14a49803c6d2579071886c1acf497c9d1
+    commit_id: 604
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+    - 35
+    - 36
+    - 37
+    - 38
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 50
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+    - 64
+    - 65
+    - 66
+    - 67
+    - 68
+    - 69
+    - 70
+    - 71
+    - 72
+    - 73
+    - 74
+    - 75
+    - 76
+    - 77
+    - 78
+    - 79
+    - 80
+    - 81
+    - 82
+    - 83
+    - 84
+    - 85
+    - 86
+    - 87
+    - 88
+    - 89
+    - 90
+    - 91
+    - 92
+    - 93
+    - 94
+    - 95
+    - 96
+    - 97
+    - 98
+    - 99
+    - 100
+    - 101
+    - 102
+    - 103
+    - 104
+    - 105
+    - 106
+    - 107
+    - 108
+    - 109
+    - 110
+    - 111
+    - 112
+    - 113
+    - 114
+    - 115
+    - 116
+    - 117
+    - 118
+    - 119
+    - 120
+    - 121
+    - 122
+    - 123
+    - 124
+    - 125
+    - 126
+    - 127
+    - 128
+    - 129
+    - 130
+    - 131
+    - 132
+    - 133
+    - 134
+    - 135
+    - 136
+    - 137
+    - 138
+    - 139
+    - 140
+    - 141
+    - 142
+    - 143
+    - 144
+    - 145
+    - 146
+    - 147
+    - 148
+    - 149
+    - 150
+    - 151
+    - 152
+    - 153
+    - 154
+    - 155
+    - 156
+    - 157
+    - 158
+    - 159
+    - 160
+    - 161
+    - 162
+    - 163
+    - 164
+    - 165
+    - 166
+    - 167
+    - 168
+    - 169
+    - 170
+    - 171
+    - 172
+    - 173
+    - 174
+    - 175
+    - 176
+    - 177
+    - 178
+    - 179
+    - 180
+    - 181
+    - 182
+    - 183
+    - 184
+    - 185
+    - 186
+    - 187
+    - 188
+    - 189
+    - 190
+    - 191
+    - 192
+    - 193
+    - 194
+    - 195
+    - 196
+    - 197
+    - 198
+    - 199
+    - 200
+    - 201
+    - 202
+    - 203
+    - 204
+    - 205
+    - 206
+    - 207
+    - 208
+    - 209
+    - 210
+    - 211
+    - 212
+    - 213
+    - 214
+    - 215
+    - 216
+    - 217
+    - 218
+    - 219
+    - 220
+    - 221
+    - 222
+    - 223
+    - 224
+    - 225
+    - 226
+    - 227
+    - 228
+    - 229
+    - 230
+    - 231
+    - 232
+    - 233
+    - 234
+    - 235
+    - 236
+    - 237
+    - 238
+    - 239
+    - 240
+    - 241
+    - 242
+    - 243
+    - 244
+    - 245
+    - 246
+    - 247
+    - 248
+    - 249
+    - 250
+    - 251
+    - 252
+    - 253
+    - 254
+    - 255
+    - 256
+    - 257
+    - 258
+    - 259
+    - 260
+    - 261
+    - 262
+    - 263
+    - 264
+    - 265
+    - 266
+    - 267
+    - 268
+    - 269
+    - 270
+    - 271
+    - 272
+    - 273
+    - 274
+    - 275
+    - 276
+    - 277
+    - 278
+    - 279
+    - 280
+    - 281
+    - 282
+    - 283
+    - 284
+    - 285
+    - 286
+    - 287
+    - 288
+    - 289
+    - 290
+    - 291
+    - 292
+    - 293
+    - 294
+    - 295
+    - 296
+    - 297
+    - 298
+    - 299
+    - 300
+    - 301
+    - 302
+    - 303
+    - 304
+    - 305
+    - 306
+    - 307
+    - 308
+    - 309
+    - 310
+    - 311
+    - 312
+    - 313
+    - 314
+    - 315
+    - 316
+    - 317
+    - 318
+    - 319
+    - 320
+    - 321
+    - 322
+    - 323
+    - 324
+    - 325
+    - 326
+    - 327
+    - 328
+    - 329
+    - 330
+    - 331
+    - 332
+    - 333
+    - 334
+    - 335
+    - 336
+    - 337
+    - 338
+    - 339
+    - 340
+    - 341
+    - 342
+    - 343
+    - 344
+    - 345
+    - 346
+    - 347
+    - 348
+    - 349
+    - 350
+    - 351
+    - 352
+    - 353
+    - 354
+    - 355
+    - 356
+    - 357
+    - 358
+    - 359
+    - 360
+    - 361
+    - 362
+    - 363
+    - 364
+    - 365
+    - 366
+    - 367
+    - 368
+    - 369
+    - 370
+    - 371
+    - 372
+    - 373
+    - 374
+    - 375
+    - 376
+    - 377
+    - 378
+    - 379
+    - 380
+    - 381
+    - 382
+    - 383
+    - 384
+    - 385
+    - 386
+    - 387
+    - 388
+    - 389
+    - 390
+    - 391
+    - 392
+    - 393
+    - 394
+    - 395
+    - 396
+    - 397
+    - 398
+    - 399
+    - 400
+    - 401
+    - 402
+    - 403
+    - 404
+    - 405
+    - 406
+    - 407
+    - 408
+    - 409
+    - 410
+    - 411
+    - 412
+    - 413
+    - 414
+    - 415
+    - 416
+    - 417
+    - 418
+    - 419
+    - 420
+    - 421
+    - 422
+    - 423
+    - 424
+    - 425
+    - 426
+    - 427
+    - 428
+    - 429
+    - 430
+    - 431
+    - 432
+    - 433
+    - 434
+    - 435
+    - 436
+    - 437
+    - 438
+    - 439
+    - 440
+    - 441
+    - 442
+    - 443
+    - 444
+    - 445
+    - 446
+    - 447
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["-9"]'
+1: '["--decompress", "-9"]'
+2: '["--stdout", "-9"]'
+3: '["-9", "--no-name"]'
+4: '["--verbose", "-9"]'
+5: '["-6"]'
+6: '["--decompress", "-6"]'
+7: '["--keep", "--decompress", "-6"]'
+8: '["--force", "--decompress", "-6"]'
+9: '["--force", "--decompress", "-9"]'
+10: '["--quiet", "--force", "--decompress", "-6"]'
+11: '["--quiet", "-9"]'
+12: '["--quiet", "--force", "-9"]'
+13: '["--quiet", "--force", "--decompress", "-9"]'
+14: '["--quiet", "--force", "--decompress", "-6", "--no-name"]'
+15: '["--decompress", "-9", "--no-name"]'
+16: '["--quiet", "--decompress", "-9", "--no-name"]'
+17: '["--quiet", "--force", "-9", "--no-name"]'
+18: '["--quiet", "--force", "--decompress", "-9", "--no-name"]'
+19: '["--force", "--decompress", "-6", "--no-name"]'
+20: '["--quiet", "-6", "--no-name"]'
+21: '["--quiet", "--force", "-6"]'
+22: '["--stdout", "--quiet", "--decompress", "-6", "--no-name"]'
+23: '["--stdout", "--force", "--decompress", "-6"]'
+24: '["--stdout", "--force", "-6", "--no-name"]'
+25: '["--stdout", "--quiet", "--force", "-6", "--no-name"]'
+26: '["--stdout", "--force", "--decompress", "-6", "--no-name"]'
+27: '["--stdout", "--quiet", "--force", "--decompress", "-6"]'
+28: '["--stdout", "--quiet", "--force", "--decompress", "-6", "--no-name"]'
+29: '["--stdout", "--quiet", "--force", "-9", "--no-name"]'
+30: '["--stdout", "--quiet", "--force", "--decompress", "-9", "--no-name"]'
+31: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-6", "--no-name"]'
+32: '["--test", "--stdout", "--decompress", "-9"]'
+33: '["--test", "--stdout", "--force", "--decompress", "-9", "--no-name"]'
+34: '["--test", "--stdout", "--quiet", "--decompress", "-9", "--no-name"]'
+35: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-9", "--no-name"]'
+36: '["--force", "--decompress", "-9", "--no-name"]'
+37: '["--force", "-6"]'
+38: '["--force", "-9"]'
+39: '["--keep", "--quiet", "-6"]'
+40: '["--keep", "--quiet", "--force", "-6"]'
+41: '["--keep", "--force", "-6"]'
+42: '["--keep", "--quiet", "--force", "-9"]'
+43: '["--keep", "--quiet", "--force", "--verbose", "-6"]'
+44: '["--force", "--verbose", "-9"]'
+45: '["--keep", "--verbose", "-9"]'
+46: '["--keep", "--quiet", "--verbose", "-9"]'
+47: '["--quiet", "--force", "--verbose", "-9"]'
+48: '["--keep", "--quiet", "--force", "--verbose", "-9"]'
+49: '["--keep", "--stdout", "--quiet", "--force", "--verbose", "-6"]'
+50: '["--stdout", "--verbose", "-6"]'
+51: '["--keep", "--stdout", "--quiet", "--force", "-6"]'
+52: '["--stdout", "--quiet", "--force", "--verbose", "-6"]'
+53: '["--keep", "--stdout", "--quiet", "--verbose", "-6"]'
+54: '["--keep", "--stdout", "--force", "--verbose", "-6"]'
+55: '["--keep", "--stdout", "--quiet", "--force", "--verbose", "-9"]'
+56: '["--quiet", "--force", "--verbose", "-6"]'
+57: '["--force", "--verbose", "-6", "--no-name"]'
+58: '["--quiet", "--force", "--verbose", "-6", "--no-name"]'
+59: '["--quiet", "--verbose", "-9", "--no-name"]'
+60: '["--quiet", "--force", "--verbose", "-9", "--no-name"]'
+61: '["--quiet", "--verbose", "-6", "--no-name"]'
+62: '["--decompress", "--verbose", "-6", "--no-name"]'
+63: '["--quiet", "--decompress", "--verbose", "-6"]'
+64: '["--quiet", "--decompress", "--verbose", "-6", "--no-name"]'
+65: '["--quiet", "--decompress", "--verbose", "-9", "--no-name"]'
+66: '["--quiet", "--decompress", "-6", "--no-name"]'
+67: '["--quiet", "--decompress", "-6"]'
+68: '["--decompress", "-6", "--no-name"]'
+69: '["-6", "--no-name"]'
+70: '["--keep", "-6", "--no-name"]'
+71: '["--keep", "-9"]'
+72: '["--keep", "-9", "--no-name"]'
+73: '["--keep", "--verbose", "-6", "--no-name"]'
+74: '["--keep", "--verbose", "-9", "--no-name"]'
+75: '["--keep", "--quiet", "--verbose", "-6", "--no-name"]'
+76: '["--keep", "--quiet", "--verbose", "-9", "--no-name"]'
+77: '["--verbose", "-6", "--no-name"]'
+78: '["--stdout", "--quiet", "--verbose", "-6"]'
+79: '["--stdout", "--quiet", "--verbose", "-6", "--no-name"]'
+80: '["--stdout", "-9", "--no-name"]'
+81: '["--stdout", "--verbose", "-9", "--no-name"]'
+82: '["--stdout", "--quiet", "--verbose", "-9", "--no-name"]'
+83: '["--stdout", "--quiet", "-9"]'
+84: '["--stdout", "--quiet", "--verbose", "-9"]'
+85: '["--quiet", "--verbose", "-9"]'
+86: '["--stdout", "--quiet", "--decompress", "-6"]'
+87: '["--stdout", "--decompress", "-6"]'
+88: '["--decompress", "--verbose", "-6"]'
+89: '["--stdout", "--quiet", "--decompress", "--verbose", "-6"]'
+90: '["--stdout", "--decompress", "--verbose", "-6"]'
+91: '["--stdout", "--quiet", "--decompress", "--verbose", "-9"]'
+92: '["--stdout", "--quiet", "--decompress", "--verbose", "-6", "--no-name"]'
+93: '["--decompress", "--verbose", "-9", "--no-name"]'
+94: '["--stdout", "--quiet", "--decompress", "--verbose", "-9", "--no-name"]'
+95: '["--stdout", "--decompress", "-9", "--no-name"]'
+96: '["--stdout", "--quiet", "--decompress", "-9", "--no-name"]'
+97: '["--stdout", "--decompress", "--verbose", "-9", "--no-name"]'
+98: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-6"]'
+99: '["--test", "--stdout", "--decompress", "--verbose", "-9"]'
+100: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-9"]'
+101: '["--test", "--stdout", "--quiet", "--decompress", "-9"]'
+102: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-6"]'
+103: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-6"]'
+104: '["--keep", "--stdout", "--quiet", "--decompress", "-6"]'
+105: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6"]'
+106: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6"]'
+107: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9"]'
+108: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9"]'
+109: '["--stdout", "--force", "--decompress", "--verbose", "-6"]'
+110: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6"]'
+111: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9"]'
+112: '["--quiet", "--force", "--decompress", "--verbose", "-6"]'
+113: '["--force", "--decompress", "--verbose", "-9"]'
+114: '["--quiet", "--force", "--decompress", "--verbose", "-9"]'
+115: '["--keep", "--quiet", "--force", "--decompress", "--verbose", "-6"]'
+116: '["--keep", "--force", "--decompress", "-9"]'
+117: '["--keep", "--decompress", "-9"]'
+118: '["--keep", "--quiet", "--decompress", "--verbose", "-9"]'
+119: '["--keep", "--quiet", "--force", "--decompress", "--verbose", "-9"]'
+120: '["--keep", "--quiet", "--force", "--decompress", "-6"]'
+121: '["--keep", "--force", "--decompress", "--verbose", "-6"]'
+122: '["--keep", "--force", "--decompress", "--verbose", "-9"]'
+123: '["--keep", "--force", "--verbose", "-6"]'
+124: '["--keep", "--force", "--verbose", "-9"]'
+125: '["--keep", "--stdout", "--force", "-6"]'
+126: '["--keep", "--stdout", "--verbose", "-9"]'
+127: '["--stdout", "--force", "--verbose", "-9"]'
+128: '["--keep", "--stdout", "--force", "--verbose", "-9"]'
+129: '["--keep", "--stdout", "--force", "--verbose", "-6", "--no-name"]'
+130: '["--stdout", "--force", "--verbose", "-9", "--no-name"]'
+131: '["--keep", "--stdout", "--force", "--verbose", "-9", "--no-name"]'
+132: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+133: '["--keep", "--stdout", "--decompress", "--verbose", "-6"]'
+134: '["--keep", "--stdout", "--decompress", "--verbose", "-6", "--no-name"]'
+135: '["--keep", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+136: '["--keep", "--stdout", "--force", "--decompress", "-6", "--no-name"]'
+137: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-6"]'
+138: '["--stdout", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+139: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+140: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+141: '["--test", "--keep", "--stdout", "--decompress", "-9"]'
+142: '["--test", "--keep", "--stdout", "--force", "--decompress", "-9", "--no-name"]'
+143: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+144: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-9", "--no-name"]'
+145: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+146: '["--keep", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+147: '["--keep", "--quiet", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+148: '["--keep", "--quiet", "--force", "-9", "--no-name"]'
+149: '["--keep", "--quiet", "--force", "--decompress", "-9", "--no-name"]'
+150: '["--keep", "--quiet", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+151: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+152: '["--keep", "--stdout", "--quiet", "--force", "--verbose", "-9", "--no-name"]'
+153: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9"]'
+154: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--no-name"]'
+155: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-9", "--no-name"]'
+156: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+157: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+158: '["--keep", "--stdout", "--decompress", "--verbose", "-9", "--no-name"]'
+159: '["--stdout", "--decompress", "-6", "--no-name"]'
+160: '["--keep", "--decompress", "-6", "--no-name"]'
+161: '["--keep", "--stdout", "--verbose", "-6", "--no-name"]'
+162: '["--keep", "--decompress", "--verbose", "-9"]'
+163: '["--keep", "--stdout", "--decompress", "-9", "--no-name"]'
+164: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--no-name"]'
+165: '["--keep", "--stdout", "--quiet", "--decompress", "-9", "--no-name"]'
+166: '["--keep", "--quiet", "--decompress", "--verbose", "-9", "--no-name"]'
+167: '["--keep", "--stdout", "--quiet", "--verbose", "-9", "--no-name"]'
+168: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-9"]'
+169: '["--keep", "--stdout", "-9"]'
+170: '["--keep", "--stdout", "--decompress", "--verbose", "-9"]'
+171: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-9"]'
+172: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-6", "--list"]'
+173: '["--stdout", "--decompress", "-9", "--list"]'
+174: '["--test", "--stdout", "--decompress", "-9", "--list"]'
+175: '["--keep", "--stdout", "--decompress", "-9", "--list"]'
+176: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-9", "--list"]'
+177: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-6", "--list"]'
+178: '["--keep", "--stdout", "--quiet", "--decompress", "-6", "--list"]'
+179: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list"]'
+180: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list"]'
+181: '["--test", "--stdout", "--quiet", "--decompress", "-9", "--list"]'
+182: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-9", "--list"]'
+183: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list"]'
+184: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list"]'
+185: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list"]'
+186: '["--test", "--keep", "--stdout", "--decompress", "-9", "--list"]'
+187: '["--stdout", "--quiet", "--decompress", "-9", "--list"]'
+188: '["--keep", "--stdout", "--quiet", "--decompress", "-9", "--list"]'
+189: '["--keep", "--stdout", "--quiet", "--decompress", "-9"]'
+190: '["--keep", "--quiet", "-9"]'
+191: '["--keep", "--stdout", "--quiet", "--verbose", "-9"]'
+192: '["--keep", "--verbose", "-6"]'
+193: '["--keep", "--stdout", "-6"]'
+194: '["--keep", "--stdout", "--verbose", "-6"]'
+195: '["--keep", "--decompress", "--verbose", "-6"]'
+196: '["--stdout", "--force", "--decompress", "-9", "--no-name"]'
+197: '["--keep", "--stdout", "--force", "--decompress", "-9", "--no-name"]'
+198: '["--test", "--keep", "--stdout", "--force", "--decompress", "-6", "--no-name"]'
+199: '["--test", "--keep", "--stdout", "--force", "--decompress", "-6"]'
+200: '["--test", "--keep", "--stdout", "--force", "--decompress", "-9"]'
+201: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-6"]'
+202: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-6"]'
+203: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-9"]'
+204: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-6"]'
+205: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-9"]'
+206: '["--test", "--stdout", "--force", "--decompress", "-6", "--no-name"]'
+207: '["--test", "--stdout", "--decompress", "-9", "--no-name"]'
+208: '["--test", "--stdout", "--force", "--decompress", "-6", "--list"]'
+209: '["--stdout", "--force", "--decompress", "-6", "--list", "--no-name"]'
+210: '["--stdout", "--decompress", "-6", "--list", "--no-name"]'
+211: '["--test", "--stdout", "--force", "--decompress", "-6", "--list", "--no-name"]'
+212: '["--stdout", "--force", "--decompress", "-9", "--list", "--no-name"]'
+213: '["--test", "--stdout", "--decompress", "-9", "--list", "--no-name"]'
+214: '["--test", "--stdout", "--force", "--decompress", "-9", "--list", "--no-name"]'
+215: '["--test", "--stdout", "--force", "--decompress", "-9", "--list"]'
+216: '["--test", "--stdout", "--force", "--decompress", "-6"]'
+217: '["--test", "--stdout", "--force", "--decompress", "-9"]'
+218: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+219: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-9"]'
+220: '["--stdout", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+221: '["--test", "--stdout", "--decompress", "--verbose", "-9", "--no-name"]'
+222: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+223: '["--stdout", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+224: '["--test", "--stdout", "--decompress", "--verbose", "-9", "--list"]'
+225: '["--stdout", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+226: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+227: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-6", "--list"]'
+228: '["--stdout", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+229: '["--test", "--stdout", "--decompress", "-6", "--list", "--no-name"]'
+230: '["--test", "--stdout", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+231: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-6"]'
+232: '["--stdout", "--force", "--decompress", "--verbose", "-9"]'
+233: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6"]'
+234: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+235: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+236: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+237: '["--stdout", "--decompress", "--verbose", "-9"]'
+238: '["--force", "--decompress", "--verbose", "-6"]'
+239: '["--force", "-6", "--no-name"]'
+240: '["--force", "-9", "--no-name"]'
+241: '["--quiet", "--force", "-6", "--no-name"]'
+242: '["--quiet", "-9", "--no-name"]'
+243: '["--keep", "--quiet", "--force", "--decompress", "-6", "--no-name"]'
+244: '["--keep", "--quiet", "--decompress", "-6", "--no-name"]'
+245: '["--keep", "--quiet", "--decompress", "-9"]'
+246: '["--keep", "--quiet", "-9", "--no-name"]'
+247: '["--keep", "--quiet", "--decompress", "-9", "--no-name"]'
+248: '["--keep", "--force", "-6", "--no-name"]'
+249: '["--keep", "--force", "-9", "--no-name"]'
+250: '["--keep", "--force", "-9"]'
+251: '["--keep", "--stdout", "--force", "-6", "--no-name"]'
+252: '["--keep", "--stdout", "-9", "--no-name"]'
+253: '["--keep", "--stdout", "--force", "-9", "--no-name"]'
+254: '["--stdout", "--quiet", "-6", "--no-name"]'
+255: '["--keep", "--quiet", "--force", "-6", "--no-name"]'
+256: '["--stdout", "--quiet", "--force", "-6"]'
+257: '["--keep", "--stdout", "--quiet", "-6", "--no-name"]'
+258: '["--keep", "--stdout", "--quiet", "--force", "-6", "--no-name"]'
+259: '["--keep", "--stdout", "--quiet", "--force", "-9", "--no-name"]'
+260: '["--stdout", "--force", "-9", "--no-name"]'
+261: '["--keep", "--stdout", "--quiet", "--force", "-9"]'
+262: '["--keep", "--stdout", "--quiet", "-9", "--no-name"]'
+263: '["--keep", "--quiet", "-6", "--no-name"]'
+264: '["--keep", "--decompress", "-9", "--no-name"]'
+265: '["--keep", "--stdout", "--decompress", "-6", "--no-name"]'
+266: '["--keep", "--stdout", "--decompress", "-6", "--list", "--no-name"]'
+267: '["--keep", "--stdout", "--decompress", "-9", "--list", "--no-name"]'
+268: '["--test", "--keep", "--stdout", "--decompress", "-6", "--no-name"]'
+269: '["--test", "--keep", "--stdout", "--decompress", "-9", "--no-name"]'
+270: '["--test", "--keep", "--stdout", "--decompress", "-6", "--list", "--no-name"]'
+271: '["--test", "--keep", "--stdout", "--decompress", "-9", "--list", "--no-name"]'
+272: '["--keep", "--stdout", "--decompress", "-9"]'
+273: '["--keep", "--stdout", "--decompress", "-6"]'
+274: '["--keep", "--stdout", "--decompress", "-6", "--list"]'
+275: '["--test", "--keep", "--stdout", "--decompress", "-6"]'
+276: '["--test", "--keep", "--stdout", "--decompress", "-6", "--list"]'
+277: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-9"]'
+278: '["--keep", "--stdout", "--quiet", "--decompress", "-6", "--no-name"]'
+279: '["--keep", "--stdout", "--quiet", "--decompress", "-9", "--list", "--no-name"]'
+280: '["--keep", "--stdout", "--quiet", "--decompress", "-6", "--list", "--no-name"]'
+281: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-9", "--no-name"]'
+282: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-6", "--no-name"]'
+283: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-9", "--list", "--no-name"]'
+284: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "-6", "--list", "--no-name"]'
+285: '["--keep", "--stdout", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+286: '["--keep", "--stdout", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+287: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-6", "--no-name"]'
+288: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+289: '["--test", "--keep", "--stdout", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+290: '["--keep", "--stdout", "--decompress", "--verbose", "-9", "--list"]'
+291: '["--keep", "--stdout", "--decompress", "--verbose", "-6", "--list"]'
+292: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list"]'
+293: '["--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list"]'
+294: '["--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list"]'
+295: '["--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+296: '["--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+297: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--no-name"]'
+298: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--no-name"]'
+299: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+300: '["--test", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+301: '["--stdout", "--quiet", "--decompress", "-9"]'
+302: '["--stdout", "--quiet", "--decompress", "-6", "--list"]'
+303: '["--test", "--stdout", "--quiet", "--decompress", "-6"]'
+304: '["--test", "--stdout", "--quiet", "--decompress", "-6", "--list"]'
+305: '["--quiet", "--decompress", "-9"]'
+306: '["--quiet", "--decompress", "--verbose", "-9"]'
+307: '["--keep", "--quiet", "--decompress", "--verbose", "-6"]'
+308: '["--keep", "--quiet", "--decompress", "--verbose", "-6", "--no-name"]'
+309: '["--keep", "--quiet", "--decompress", "-6"]'
+310: '["--stdout", "--quiet", "--decompress", "-6", "--list", "--no-name"]'
+311: '["--stdout", "--quiet", "--decompress", "-9", "--list", "--no-name"]'
+312: '["--test", "--stdout", "--quiet", "--decompress", "-6", "--list", "--no-name"]'
+313: '["--test", "--stdout", "--quiet", "--decompress", "-9", "--list", "--no-name"]'
+314: '["--test", "--stdout", "--quiet", "--decompress", "-6", "--no-name"]'
+315: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+316: '["--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+317: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--no-name"]'
+318: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--no-name"]'
+319: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+320: '["--test", "--keep", "--stdout", "--quiet", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+321: '["--stdout", "--decompress", "--verbose", "-6", "--no-name"]'
+322: '["--stdout", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+323: '["--test", "--stdout", "--decompress", "--verbose", "-6", "--no-name"]'
+324: '["--test", "--stdout", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+325: '["--stdout", "--decompress", "-9", "--list", "--no-name"]'
+326: '["--stdout", "--decompress", "--verbose", "-6", "--list"]'
+327: '["--stdout", "--decompress", "--verbose", "-9", "--list"]'
+328: '["--test", "--stdout", "--decompress", "--verbose", "-6"]'
+329: '["--test", "--stdout", "--decompress", "--verbose", "-6", "--list"]'
+330: '["--stdout", "--verbose", "-9"]'
+331: '["--keep", "--stdout", "--quiet", "-6"]'
+332: '["--keep", "--stdout", "--quiet", "-9"]'
+333: '["--stdout", "--quiet", "-6"]'
+334: '["--stdout", "--quiet", "-9", "--no-name"]'
+335: '["--stdout", "--quiet", "--force", "-9"]'
+336: '["--quiet", "-6"]'
+337: '["--stdout", "-6"]'
+338: '["--verbose", "-6"]'
+339: '["--force", "--verbose", "-6"]'
+340: '["--keep", "--quiet", "--verbose", "-6"]'
+341: '["--keep", "-6"]'
+342: '["--stdout", "--decompress", "-9"]'
+343: '["--stdout", "--decompress", "-6", "--list"]'
+344: '["--test", "--stdout", "--decompress", "-6"]'
+345: '["--test", "--stdout", "--decompress", "-6", "--list"]'
+346: '["--stdout", "--force", "--verbose", "-6"]'
+347: '["--stdout", "--force", "--verbose", "-6", "--no-name"]'
+348: '["--stdout", "-6", "--no-name"]'
+349: '["--test", "--stdout", "--decompress", "-6", "--no-name"]'
+350: '["--keep", "--stdout", "-6", "--no-name"]'
+351: '["--keep", "--stdout", "--quiet", "--verbose", "-6", "--no-name"]'
+352: '["--keep", "--stdout", "--verbose", "-9", "--no-name"]'
+353: '["--verbose", "-9", "--no-name"]'
+354: '["--keep", "--decompress", "--verbose", "-6", "--no-name"]'
+355: '["--keep", "--decompress", "--verbose", "-9", "--no-name"]'
+356: '["--force", "--decompress", "--verbose", "-6", "--no-name"]'
+357: '["--force", "--decompress", "--verbose", "-9", "--no-name"]'
+358: '["--stdout", "--quiet", "--force", "--decompress", "-6", "--list", "--no-name"]'
+359: '["--stdout", "--quiet", "--force", "--decompress", "-9", "--list"]'
+360: '["--stdout", "--quiet", "--force", "--decompress", "-9", "--list", "--no-name"]'
+361: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-6", "--list", "--no-name"]'
+362: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-9", "--list", "--no-name"]'
+363: '["--stdout", "--quiet", "--force", "--decompress", "-9"]'
+364: '["--stdout", "--quiet", "--force", "--decompress", "-6", "--list"]'
+365: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-6", "--list"]'
+366: '["--test", "--stdout", "--quiet", "--force", "--decompress", "-9", "--list"]'
+367: '["--stdout", "--quiet", "--force", "--verbose", "-9"]'
+368: '["--quiet", "--verbose", "-6"]'
+369: '["--stdout", "--force", "-6"]'
+370: '["--stdout", "--force", "-9"]'
+371: '["--decompress", "--verbose", "-9"]'
+372: '["--stdout", "--verbose", "-6", "--no-name"]'
+373: '["--stdout", "--force", "--decompress", "-9"]'
+374: '["--stdout", "--force", "--decompress", "-9", "--list"]'
+375: '["--stdout", "--force", "--decompress", "-6", "--list"]'
+376: '["--stdout", "--force", "--decompress", "--verbose", "-9", "--list"]'
+377: '["--stdout", "--force", "--decompress", "--verbose", "-6", "--list"]'
+378: '["--test", "--stdout", "--force", "--decompress", "--verbose", "-9", "--list"]'
+379: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9"]'
+380: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list"]'
+381: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list"]'
+382: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list"]'
+383: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list"]'
+384: '["--force", "--verbose", "-9", "--no-name"]'
+385: '["--stdout", "--quiet", "--force", "--verbose", "-9", "--no-name"]'
+386: '["--stdout", "--quiet", "--force", "--verbose", "-6", "--no-name"]'
+387: '["--keep", "--stdout", "--force", "-9"]'
+388: '["--keep", "--force", "--decompress", "-6"]'
+389: '["--keep", "--stdout", "--force", "--decompress", "-9"]'
+390: '["--keep", "--stdout", "--force", "--decompress", "-6"]'
+391: '["--keep", "--stdout", "--force", "--decompress", "-9", "--list"]'
+392: '["--keep", "--stdout", "--force", "--decompress", "-6", "--list"]'
+393: '["--test", "--keep", "--stdout", "--force", "--decompress", "-9", "--list"]'
+394: '["--test", "--keep", "--stdout", "--force", "--decompress", "-6", "--list"]'
+395: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-9"]'
+396: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-6"]'
+397: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-9", "--list"]'
+398: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-6", "--list"]'
+399: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-9", "--list"]'
+400: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-6", "--list"]'
+401: '["--keep", "--quiet", "--force", "--decompress", "-9"]'
+402: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-9"]'
+403: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-6", "--list"]'
+404: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-9", "--list"]'
+405: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-6", "--list"]'
+406: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-9", "--list"]'
+407: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6"]'
+408: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6"]'
+409: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9"]'
+410: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list"]'
+411: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list"]'
+412: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list"]'
+413: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list"]'
+414: '["--keep", "--force", "--decompress", "-6", "--no-name"]'
+415: '["--keep", "--force", "--decompress", "-9", "--no-name"]'
+416: '["--keep", "--stdout", "--force", "--decompress", "-6", "--list", "--no-name"]'
+417: '["--keep", "--stdout", "--force", "--decompress", "-9", "--list", "--no-name"]'
+418: '["--test", "--keep", "--stdout", "--force", "--decompress", "-6", "--list", "--no-name"]'
+419: '["--test", "--keep", "--stdout", "--force", "--decompress", "-9", "--list", "--no-name"]'
+420: '["--keep", "--force", "--verbose", "-6", "--no-name"]'
+421: '["--keep", "--force", "--verbose", "-9", "--no-name"]'
+422: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+423: '["--keep", "--stdout", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+424: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+425: '["--test", "--keep", "--stdout", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+426: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-6", "--no-name"]'
+427: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-6", "--list", "--no-name"]'
+428: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "-9", "--list", "--no-name"]'
+429: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-6", "--no-name"]'
+430: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-9", "--no-name"]'
+431: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-6", "--list", "--no-name"]'
+432: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "-9", "--list", "--no-name"]'
+433: '["--keep", "--quiet", "--force", "--verbose", "-6", "--no-name"]'
+434: '["--keep", "--quiet", "--force", "--verbose", "-9", "--no-name"]'
+435: '["--keep", "--stdout", "--quiet", "--force", "--verbose", "-6", "--no-name"]'
+436: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+437: '["--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+438: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+439: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+440: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+441: '["--test", "--keep", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+442: '["--quiet", "--force", "--decompress", "--verbose", "-6", "--no-name"]'
+443: '["--quiet", "--force", "--decompress", "--verbose", "-9", "--no-name"]'
+444: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+445: '["--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+446: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-6", "--list", "--no-name"]'
+447: '["--test", "--stdout", "--quiet", "--force", "--decompress", "--verbose", "-9", "--list", "--no-name"]'
+...

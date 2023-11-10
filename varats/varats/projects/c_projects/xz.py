@@ -6,30 +6,34 @@ from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import autoreconf, make
 from benchbuild.utils.revision_ranges import (
-    block_revisions,
     GoodBadSubgraph,
     RevisionRange,
+    block_revisions,
 )
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.containers.containers import ImageBase, get_base_image
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
+    BinaryType,
     ProjectBinaryWrapper,
     get_local_project_git_path,
-    BinaryType,
     verify_binaries,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
+    RevisionBinaryMap,
     ShortCommitHash,
     get_all_revisions_between,
-    RevisionBinaryMap,
 )
 from varats.utils.settings import bb_cfg
 
@@ -75,6 +79,16 @@ class Xz(VProject):
             files=[
                 "countries-land-1km.geo.json", "countries-land-250m.geo.json"
             ]
+        ),
+        HTTPMultiple(
+            local="xz_files",
+            remote={
+                "1.0":
+                    "https://github.com/xz-mirror/xz/releases/download/v5.4.0"
+            },
+            files=[
+                "xz-5.4.0.tar.xz",
+            ]
         )
     ]
 
@@ -113,6 +127,30 @@ class Xz(VProject):
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
                 requires_all_args={"--compress"},
             )
+        ],
+        WorkloadSet(WorkloadCategory.JAN): [
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                "--threads=1",
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                label="countries-land-250m-compress",
+                creates=["geo-maps/countries-land-250m.geo.json.xz"],
+                consumes=["geo-maps/countries-land-250m.geo.json"],
+                requires_all_args={"--compress"},
+            ),
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                "--threads=1",
+                ConfigParams(),
+                output_param=["{output}"],
+                output=SourceRoot("xz_files/xz-5.4.0.tar.xz"),
+                label="xz-files-compressed",
+                creates=["xz_files/xz-5.4.0.tar"],
+                consumes=["xz_files/xz-5.4.0.tar.xz"],
+                requires_any_args={"--decompress", "--test", "--list"}
+            ),
         ],
     }
 
