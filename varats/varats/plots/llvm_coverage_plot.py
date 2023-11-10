@@ -247,28 +247,41 @@ IGNORE_FEATURE_DEPENDENT_FUNCTIONS = [
 # Workaround BDD displaying equivalent but negated formula.
 EXCLUDED_OPTIONS = {
     # SynthDADynamicDispatch
-    "brut-force": ["hashing", "sorting"],
-    "hashing": ["brut-force", "sorting"],
-    "sorting": ["hashing", "brut-force"],
+    #"brut-force": ["hashing", "sorting"],
+    #"hashing": ["brut-force", "sorting"],
+    #"sorting": ["hashing", "brut-force"],
 
     # SynthIPRuntime
-    "d": ["c"],
-    "c": ["d"],
-    "1": ["d"],
-    "2": ["d"],
+    #"d": ["c"],
+    #"c": ["d"],
+    #"1": ["d"],
+    #"2": ["d"],
 
     #SynthSAContextSensitivity
-    "mem 0": ["mem 1020", "mem 1275", "mem 255", "mem 510", "mem 765"],
-    "mem 1020": ["mem 0", "mem 1275", "mem 255", "mem 510", "mem 765"],
-    "mem 1275": ["mem 1020", "mem 0", "mem 255", "mem 510", "mem 765"],
-    "mem 255": ["mem 1020", "mem 1275", "mem 0", "mem 510", "mem 765"],
-    "mem 510": ["mem 1020", "mem 1275", "mem 255", "mem 0", "mem 765"],
-    "mem 765": ["mem 1020", "mem 1275", "mem 255", "mem 510", "mem 0"],
+    #"mem 0": ["mem 1020", "mem 1275", "mem 255", "mem 510", "mem 765"],
+    #"mem 1020": ["mem 0", "mem 1275", "mem 255", "mem 510", "mem 765"],
+    #"mem 1275": ["mem 1020", "mem 0", "mem 255", "mem 510", "mem 765"],
+    #"mem 255": ["mem 1020", "mem 1275", "mem 0", "mem 510", "mem 765"],
+    #"mem 510": ["mem 1020", "mem 1275", "mem 255", "mem 0", "mem 765"],
+    #"mem 765": ["mem 1020", "mem 1275", "mem 255", "mem 510", "mem 0"],
 
     # bzip2
-    "compress": ["decompress", "test"],
-    "decompress": ["compress", "test"],
-    "test": ["decompress", "compress"],
+    #"compress": ["decompress", "test"],
+    #"decompress": ["compress", "test"],
+    #"test": ["decompress", "compress"],
+
+    # gzip
+    # No alternative options since compress cannot be explicitly enabled
+    # through command-line option
+
+    # xz
+    "compress": ["decompress", "list", "test"],
+    "list": ["decompress", "compress", "test"],
+    "test": ["list", "compress"],
+    "decompress": ["list", "compress"],
+    "robot": ["compress", "decompress", "test"],
+    "format=auto": ["format=xz"],
+    "format=xz": ["format=auto"],
 }
 
 
