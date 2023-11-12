@@ -378,6 +378,52 @@ def num_commits(
     )
 
 
+def num_active_commits(
+    repo_folder: Path, churn_config: tp.Optional['ChurnConfig'] = None
+) -> int:
+    """
+    Count the number of active commits, i.e. commits whose changes still
+    contribute source code to a git repo.
+
+    Args:
+        repo_folder: path to the git repo
+        churn_config: to specify the files that should be considered
+
+    Returns:
+        the number of active commits
+    """
+    if not churn_config:
+        churn_config = ChurnConfig.create_c_style_languages_config()
+    commits = get_all_revisions_between(
+        get_initial_commit(repo_folder).to_short_commit_hash().hash,
+        get_head_commit(repo_folder).to_short_commit_hash().hash, ShortCH,
+        repo_folder
+    )
+    return sum([
+        contains_source_code(
+            commit.to_short_commit_hash(), repo_folder, churn_config
+        ) for commit in commits
+    ])
+
+
+def get_author(commit_hash: any, repo: pygit2.Repository) -> tp.Optional[str]:
+    """
+    Get the author (name) of a commit with its respective hash.
+
+    Args:
+        commit_hash: hash of the commit
+        repo_folder: path to the git repo
+
+    Returns:
+        the name of the author
+    """
+    commit: pygit2.Commit = repo.get(commit_hash)
+    if commit is None:
+        return None
+    author: str = commit.author.name
+    return author
+
+
 def num_authors(
     c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
 ) -> int:

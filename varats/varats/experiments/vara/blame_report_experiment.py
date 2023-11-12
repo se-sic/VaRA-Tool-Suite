@@ -12,7 +12,7 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
-import varats.experiments.vara.blame_experiment as BE
+import varats.experiments.vara.vara_experiments as BE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.reports.blame_report import BlameTaintScope
 from varats.experiment.experiment_util import (

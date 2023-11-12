@@ -18,6 +18,10 @@ from varats.data.reports.szz_report import (
     SZZReport,
     PyDrillerSZZReport,
 )
+from varats.data.reports.feature_blame_report import (
+    StructuralFeatureBlameReport,
+    DataflowFeatureBlameReport
+)
 
 
 def load_commit_report(file_path: PathLikeTy) -> CommitReport:
@@ -113,3 +117,25 @@ def load_feature_analysis_report(file_path: PathLikeTy) -> \
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, FeatureAnalysisReport)
+
+
+def load_structural_feature_blame_report(file_path: PathLikeTy) -> \
+        StructuralFeatureBlameReport:
+    """
+    Load a StructuralFeatureBlameReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, StructuralFeatureBlameReport)
+
+
+def load_dataflow_feature_blame_report(file_path: PathLikeTy) -> \
+        DataflowFeatureBlameReport:
+    """
+    Load a DataflowFeatureBlameReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, DataflowFeatureBlameReport)
