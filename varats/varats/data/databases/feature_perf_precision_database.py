@@ -156,7 +156,11 @@ def precise_pim_regression_check(
                 # print(f"Found regression for feature {feature}.")
                 is_regression = True
         else:
-            print(f"Could not find feature {feature} in new trace.")
+            if np.mean(old_values) > 20:
+                print(
+                    f"Could not find feature {feature} in new trace. "
+                    f"({np.mean(old_values)}us lost)"
+                )
             # TODO: how to handle this?
             # raise NotImplementedError()
             # is_regression = True
@@ -429,7 +433,12 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
         return []
 
     # TODO: fix to prevent double loading
-    time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
+    try:
+        time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
+    except:
+        print(f"Could not load report from: {report_files[0]}")
+        return []
+
     return time_reports.get_patch_names()
 
 
@@ -709,9 +718,12 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
-            ground_truth = get_regressing_config_ids_gt(
-                project_name, case_study, rev, patch_name
-            )
+            try:
+                ground_truth = get_regressing_config_ids_gt(
+                    project_name, case_study, rev, patch_name
+                )
+            except:
+                continue
 
             for profiler in profilers:
                 new_row = {
