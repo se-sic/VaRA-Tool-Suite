@@ -365,31 +365,50 @@ class FeaturePerfOverheadTableGenerator(
 
 
 class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
+    PROFILERS: tp.List[Profiler] = [Baseline(), VXray(), PIMTracer()]
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         # Data aggregation
         df = pd.DataFrame()
-        meta_df = pd.DataFrame()
-        table_rows, metadata_rows = self.__by_severity()
+        table_rows = self.__by_severity()
         df = pd.concat([df, pd.DataFrame(table_rows)])
-        meta_df = pd.DataFrame(metadata_rows)
+
+        columns_names = ["CaseStudy", "# Regressions"]
+
+        for p in self.PROFILERS:
+            for severity in ["1ms", "10ms", "100ms", "1000ms", "10000ms"]:
+                columns_names.append(f"{p.name}_{severity}")
+        print(f"{df=}")
+        df = df.reindex(columns=columns_names)
+        print(f"{df=}")
+        symb_regressed_configs = "$\\mathbb{R}$"
+
+        column_setup = [(' ', 'CaseStudy'), ('', f'{symb_regressed_configs}')]
+
+        for p in self.PROFILERS:
+            for severity in ["1ms", "10ms", "100ms", "1000ms", "10000ms"]:
+                column_setup.append((p.name, severity))
+
+        df.columns = pd.MultiIndex.from_tuples(column_setup)
 
         print(f"{df=}")
+
+        style = df.style
+        style.format(precision=2)
 
         return dataframe_to_table(
             df,
             table_format,
-            style=df.style,
+            style=style,
             wrap_table=wrap_table,
             wrap_landscape=True
         )
 
     def __by_severity(self):
+        profilers = self.PROFILERS
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [Baseline(), VXray(), PIMTracer()]
 
         table_rows = []
-        metadata_rows = []
 
         for case_study in case_studies:
             rev = case_study.revisions[0]
@@ -451,30 +470,17 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                         if p.is_regression(path, patch_name):
                             regressed_num_regressions[f"{p.name}_{severity}"
                                                      ] += 1
-                        elif severity == "10000ms" and project_name == "SynthCTTraitBased" and p.name == "Base":
-                            print(
-                                f"{project_name}-{p.name}-{patch_name}-{config_id}"
-                            )
 
-            new_row = {
-                'CaseStudy': project_name,
-                #'#Configs': len(case_study.get_config_ids_for_revision(rev)),
-            }
-
-            metadata_row = {
-                'CaseStudy': project_name,
-            }
+            new_row = {'CaseStudy': project_name}
 
             for k in total_num_patches:
+                new_row["# Regressions"] = total_num_patches[k]
                 new_row[
-                    k
-                ] = f"{regressed_num_regressions[k]}/{total_num_patches[k]}"
-                metadata_row[k] = total_num_patches
+                    k] = f"{regressed_num_regressions[k]/total_num_patches[k]}"
 
             table_rows.append(new_row)
-            metadata_rows.append(metadata_row)
 
-        return table_rows, metadata_rows
+        return table_rows
 
 
 class FeaturePerfSensitivityTableGenerator(
