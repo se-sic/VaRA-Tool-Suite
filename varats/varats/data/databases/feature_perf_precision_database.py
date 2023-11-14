@@ -12,6 +12,9 @@ from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
 from varats.data.metrics import ConfusionMatrix
+from varats.data.reports.performance_influence_trace_report import (
+    PerfInfluenceTraceReportAggregate,
+)
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -508,8 +511,34 @@ class Baseline(Profiler):
             fpp.TimeReportAggregate
         )
 
-    def is_regression(self, report_path: ReportFilepath) -> bool:
-        raise NotImplementedError()
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
+        multi_report = fpp.MultiPatchReport(
+            report_path.full_path(), fpp.TimeReportAggregate
+        )
+
+        old_time = multi_report.get_baseline_report()
+        new_time = multi_report.get_report_for_patch(patch_name)
+
+        if not new_time:
+            return False
+
+        if np.mean(old_time.measurements_wall_clock_time
+                  ) == np.mean(new_time.measurements_wall_clock_time):
+            return False
+        else:
+            ttest_res = ttest_ind(
+                old_time.measurements_wall_clock_time,
+                new_time.measurements_wall_clock_time
+            )
+
+            # if res == "large":
+            # if d > 0.7 or d < -0.7:
+            if ttest_res.pvalue < 0.05:
+                return True
+            else:
+                return False
 
 
 def compute_profiler_predictions(
@@ -538,7 +567,7 @@ def compute_profiler_predictions(
             return None
 
         try:
-            #print(f"{report_files[0]}")
+            # print(f"{report_files[0]}")
             result_dict[config_id] = profiler.is_regression(
                 report_files[0], patch_name
             )
@@ -865,3 +894,46 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
             table_rows.append(new_row)
 
     return pd.DataFrame(table_rows)
+
+
+def total_feature_time_from_pim(pim_data: tp.DefaultDict[str, tp.List[int]]):
+    pim_totals: tp.List[tp.List[int]] = [
+        values for feature, values in pim_data.items() if feature != "Base"
+    ]
+
+    return [sum(values) for values in zip(*pim_totals)]
+
+
+def extract_measured_times(time_report, requested_features=None):
+    acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+    if isinstance(time_report, TimeReportAggregate):
+        return time_report.measurements_wall_clock_time
+    elif isinstance(time_report, TEFReportAggregate):
+        for report in time_report.reports():
+            pim = get_feature_performance_from_tef_report(report)
+
+            for feature, value in pim.items():
+                acc_pim[feature].append(value)
+
+    elif isinstance(time_report, PerfInfluenceTraceReportAggregate):
+        for old_pim_report in time_report.reports():
+            per_report_acc_pim: tp.DefaultDict[str, int] = defaultdict(int)
+            for region_inter in old_pim_report.region_interaction_entries:
+                name = get_interactions_from_fr_string(
+                    old_pim_report._translate_interaction(
+                        region_inter.interaction
+                    )
+                )
+                per_report_acc_pim[name] += region_inter.time
+
+            for name, time_value in per_report_acc_pim.items():
+                acc_pim[name].append(time_value)
+
+    else:
+        print(f"Uncovered report type: {type(time_report)}")
+        return [np.nan]
+
+    if requested_features:
+        return acc_pim[requested_features]
+
+    return total_feature_time_from_pim(acc_pim)
