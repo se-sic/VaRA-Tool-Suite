@@ -29,19 +29,21 @@ from varats.utils.git_util import FullCommitHash
 LOG = logging.getLogger(__name__)
 
 
-def get_interactions_from_fr_string(interactions: str) -> str:
+def get_interactions_from_fr_string(interactions: str, sep: str = ",") -> str:
     """Convert the feature strings in a TEFReport from FR(x,y) to x*y, similar
     to the format used by SPLConqueror."""
     interactions = (
         interactions.replace("FR", "").replace("(", "").replace(")", "")
     )
-    interactions_list = interactions.split(",")
+    interactions_list = interactions.split(sep)
+
+    # Features cannot interact with itself, so remove duplicates
+    interactions_list = list(set(interactions_list))
+
     # Ignore interactions with base, but do not remove base if it's the only
     # feature
     if "Base" in interactions_list and len(interactions_list) > 1:
         interactions_list.remove("Base")
-    # Features cannot interact with itself, so remove duplicastes
-    interactions_list = list(set(interactions_list))
 
     interactions_str = "*".join(interactions_list)
 
@@ -336,7 +338,8 @@ class PIMTracer(Profiler):
                 name = get_interactions_from_fr_string(
                     old_pim_report._translate_interaction(
                         region_inter.interaction
-                    )
+                    ),
+                    sep="*"
                 )
                 per_report_acc_pim[name] += region_inter.time
 
@@ -363,9 +366,9 @@ class PIMTracer(Profiler):
                 raise NotImplementedError()
 
             new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
-        except Exception as e:
+        except Exception as exc:
             print(f"FAILURE: Report parsing failed: {report_path}")
-            print(e)
+            print(exc)
             return False
 
         return pim_regression_check(old_acc_pim, new_acc_pim)
