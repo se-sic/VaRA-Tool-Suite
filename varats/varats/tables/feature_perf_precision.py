@@ -1,13 +1,15 @@
 """Module for the FeaturePerfPrecision tables."""
+import enum
 import re
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from plumbum import local, TF, RETCODE
+from plumbum import local
 from pylatex import Document, Package
 
 from varats.data.databases.feature_perf_precision_database import (
@@ -27,10 +29,8 @@ from varats.data.databases.feature_perf_precision_database import (
 )
 from varats.data.metrics import ConfusionMatrix
 from varats.experiments.vara.feature_perf_precision import (
-    BlackBoxBaselineRunner,
     MPRTimeReportAggregate,
 )
-from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_domain import ProjectDomains
@@ -367,85 +367,12 @@ class FeaturePerfOverheadTableGenerator(
 class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
-
         # Data aggregation
         df = pd.DataFrame()
-        table_rows = []
-
-        for case_study in case_studies:
-            rev = case_study.revisions[0]
-            project_name = case_study.project_name
-            for config_id in case_study.get_config_ids_for_revision(rev):
-                new_row = {
-                    'CaseStudy': project_name,
-                    'ConfigID': config_id,
-                    'Patch': "Baseline",
-                }
-
-                time_reports = {}
-
-                for p in profilers:
-                    report_files = get_processed_revisions_files(
-                        project_name,
-                        p.experiment,
-                        p.report_type,
-                        get_case_study_file_name_filter(case_study),
-                        config_id=config_id
-                    )
-
-                    if len(report_files) != 1:
-                        print(
-                            f"Found {len(report_files)} report files for profiler {p.name}. Expected 1. (config_id={config_id})"
-                        )
-                        new_row[p.name] = np.nan
-                        time_reports[p] = None
-                        continue
-
-                    time_reports[p] = MPRTimeReportAggregate(
-                        report_files[0].full_path()
-                    )
-
-                    new_row[p.name] = np.mean(
-                        time_reports[p].get_baseline_report().
-                        measurements_wall_clock_time
-                    )
-
-                table_rows.append(new_row)
-
-                for patch_name in get_patch_names(case_study, config_id):
-                    new_row = {
-                        'CaseStudy': project_name,
-                        'ConfigID': config_id,
-                        'Patch': patch_name,
-                    }
-
-                    for p in profilers:
-                        report = time_reports[p]
-
-                        if not report:
-                            new_row[p.name] = np.nan
-                            continue
-
-                        patch_time_report = report.get_report_for_patch(
-                            patch_name
-                        )
-
-                        if not patch_time_report:
-                            print(
-                                f"Could not find report for project '{project_name}', Config {config_id}, patch '{patch_name}'."
-                            )
-                            new_row[p.name] = np.nan
-                            continue
-
-                        new_row[p.name] = np.mean(
-                            patch_time_report.measurements_wall_clock_time
-                        )
-
-                    table_rows.append(new_row)
-
+        meta_df = pd.DataFrame()
+        table_rows, metadata_rows = self.__by_severity()
         df = pd.concat([df, pd.DataFrame(table_rows)])
+        meta_df = pd.DataFrame(metadata_rows)
 
         print(f"{df=}")
 
@@ -456,6 +383,98 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             wrap_table=wrap_table,
             wrap_landscape=True
         )
+
+    def __by_severity(self):
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [Baseline(), VXray(), PIMTracer()]
+
+        table_rows = []
+        metadata_rows = []
+
+        for case_study in case_studies:
+            rev = case_study.revisions[0]
+            project_name = case_study.project_name
+
+            if project_name in ["HyTeg"]:
+                continue
+
+            total_num_patches = defaultdict(int)
+            regressed_num_regressions = defaultdict(int)
+
+            for config_id in case_study.get_config_ids_for_revision(rev):
+                report_paths = {}
+
+                # Load reports once in the beginning
+                for p in profilers:
+                    rep_type = p.report_type if p.name != "Base" else MPRTimeReportAggregate
+
+                    report_files = get_processed_revisions_files(
+                        project_name,
+                        p.experiment,
+                        rep_type,
+                        get_case_study_file_name_filter(case_study),
+                        config_id=config_id
+                    )
+
+                    if len(report_files) != 1:
+                        print(
+                            f"Found {len(report_files)} report files for profiler {p.name}. Expected 1. (config_id={config_id})"
+                        )
+                        report_paths[p] = None
+                        continue
+
+                    try:
+                        report_paths[p] = report_files[0]
+                    except Exception as e:
+                        print(
+                            f"Exception during report parsing for project '{case_study.project_name}' (config_id={config_id}, profiler='{p.name}')"
+                        )
+                        report_paths[p] = None
+                        continue
+
+                patch_names = get_patch_names(case_study, config_id)
+
+                for patch_name in patch_names:
+                    if '-' in patch_name and '_' not in patch_name:
+                        severity = patch_name.split("-")[-1]
+                    else:
+                        severity = patch_name.split("_")[-1]
+
+                    for p in profilers:
+                        total_num_patches[f"{p.name}_{severity}"] += 1
+
+                        path = report_paths[p]
+
+                        if not path:
+                            continue
+
+                        if p.is_regression(path, patch_name):
+                            regressed_num_regressions[f"{p.name}_{severity}"
+                                                     ] += 1
+                        elif severity == "10000ms" and project_name == "SynthCTTraitBased" and p.name == "Base":
+                            print(
+                                f"{project_name}-{p.name}-{patch_name}-{config_id}"
+                            )
+
+            new_row = {
+                'CaseStudy': project_name,
+                #'#Configs': len(case_study.get_config_ids_for_revision(rev)),
+            }
+
+            metadata_row = {
+                'CaseStudy': project_name,
+            }
+
+            for k in total_num_patches:
+                new_row[
+                    k
+                ] = f"{regressed_num_regressions[k]}/{total_num_patches[k]}"
+                metadata_row[k] = total_num_patches
+
+            table_rows.append(new_row)
+            metadata_rows.append(metadata_row)
+
+        return table_rows, metadata_rows
 
 
 class FeaturePerfSensitivityTableGenerator(
