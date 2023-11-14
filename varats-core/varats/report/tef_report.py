@@ -130,7 +130,11 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     def __init__(self, path: Path) -> None:
         super().__init__(path)
         self.__name_id_mapper: TEFReport.NameIDMapper = TEFReport.NameIDMapper()
-        self._parse_json()
+        try:
+            self._parse_json()
+        except Exception as e:
+            print(f"Could not parse file: {self.path}")
+            raise e
         # Parsing stackFrames is currently not implemented
         # x = data["stackFrames"]
 
