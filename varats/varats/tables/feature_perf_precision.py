@@ -420,7 +420,7 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             columns='Profiler',
             values=[
                 'precision', 'recall', 'overhead_time_rel',
-                'overhead_memory_rel'
+                'overhead_memory_rel', 'overhead_memory'
             ]
         )
 
@@ -430,7 +430,8 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
         # print(f"pivot_df=\n{pivot_df}")
         columns = [
-            'precision', 'recall', 'overhead_time_rel', 'overhead_memory_rel'
+            'precision', 'recall', 'overhead_time_rel', 'overhead_memory_rel',
+            'overhead_memory'
         ]
         pivot_df = pivot_df.reindex([
             (prof.name, c) for prof in profilers for c in columns
@@ -446,12 +447,14 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         # Rename columns
         overhead_time_c_name = "$\Delta$ Time $(\%)$"
         overhead_memory_c_name = "$\Delta$ Mem $(\%)$"
+        overhead_memory_val_c_name = "$\Delta$ Mem $(Kbyte)$"
         pivot_df = pivot_df.rename(
             columns={
                 "precision": "Precision",
                 "recall": "Recall",
                 "overhead_time_rel": overhead_time_c_name,
                 "overhead_memory_rel": overhead_memory_c_name,
+                "overhead_memory": overhead_memory_val_c_name,
             }
         )
 
@@ -463,7 +466,10 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             doc.packages.append(Package("amssymb"))
 
         if table_format.is_latex():
-            style.format(precision=2)
+            mv_columns = [
+                (prof.name, overhead_memory_val_c_name) for prof in profilers
+            ]
+            style.format({col: "{:.0f}" for col in mv_columns}, precision=2)
 
             ryg_map = plt.get_cmap('RdYlGn')
             ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
@@ -500,8 +506,18 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
                 vmax=100.0,
             )
 
+            # style.background_gradient(
+            #     cmap=gray_map,
+            #     subset=[(prof.name, overhead_memory_val_c_name)
+            #             for prof in profilers],
+            #     vmin=0.0,
+            #     # vmax=100.0,
+            # )
+
             kwargs["convert_css"] = True
-            kwargs["column_format"] = "l" + "".join(["rrrr" for _ in profilers])
+            kwargs["column_format"] = "l" + "".join([
+                "rrrrr" for _ in profilers
+            ])
             kwargs["hrules"] = True
             kwargs["multicol_align"] = "c"
 
