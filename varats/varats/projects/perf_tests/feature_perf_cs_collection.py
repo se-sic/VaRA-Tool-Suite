@@ -1322,7 +1322,7 @@ class SynthFeatureLargeConfigSpace(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthFeatureLargeConfigSpace",
-            refspec="origin/f-FeatureCaseStudies",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
@@ -1331,6 +1331,17 @@ class SynthFeatureLargeConfigSpace(VProject):
         ),
         FeatureSource()
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthFeatureLargeConfigSpace") /
+                RSBinary("LargeConfigSpace"),
+                ConfigParams(),
+                label="RestrictedConfigSpace-no-input"
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -1369,7 +1380,7 @@ class SynthFeatureRestrictedConfigSpace(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthFeatureRestrictedConfigSpace",
-            refspec="origin/f-FeatureCaseStudies",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
@@ -1378,6 +1389,17 @@ class SynthFeatureRestrictedConfigSpace(VProject):
         ),
         FeatureSource()
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthFeatureRestrictedConfigSpace") /
+                RSBinary("RestrictedConfigSpace"),
+                ConfigParams(),
+                label="RestrictedConfigSpace-no-input"
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
