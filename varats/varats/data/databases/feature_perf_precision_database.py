@@ -132,9 +132,33 @@ def get_feature_performance_from_tef_report(
     return feature_performances
 
 
+def is_feature_relevant(
+    old_measurements,
+    new_measurements,
+    rel_cut_off: float = 0.01,
+    abs_cut_off: int = 20
+):
+    """Check if a feature can be ignored for regression checking as it's time
+    measurements seem not relevant."""
+    old_mean = np.mean(old_measurements)
+    new_mean = np.mean(new_measurements)
+
+    if old_mean < abs_cut_off and new_mean < abs_cut_off:
+        return False
+
+    old_rel_cut_off = old_mean * rel_cut_off
+    abs_mean_diff = abs(old_mean - new_mean)
+    if abs_mean_diff < old_rel_cut_off:
+        return False
+
+    return True
+
+
 def precise_pim_regression_check(
     baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+    current_pim: tp.DefaultDict[str, tp.List[int]],
+    rel_cut_off: float = 0.01,
+    abs_cut_off: int = 20
 ) -> bool:
     is_regression = False
 
@@ -145,8 +169,11 @@ def precise_pim_regression_check(
                 continue
 
             new_values = current_pim[feature]
-            if np.mean(old_values) < 20 and np.mean(new_values) < 20:
-                # TODO: adapt this to a relative value
+
+            # Skip features that seem not to be relevant for regressions testing
+            if not is_feature_relevant(
+                old_values, new_values, rel_cut_off, abs_cut_off
+            ):
                 continue
 
             ttest_res = ttest_ind(old_values, new_values)
@@ -170,7 +197,9 @@ def precise_pim_regression_check(
 
 def cliffs_delta_pim_regression_check(
     baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+    current_pim: tp.DefaultDict[str, tp.List[int]],
+    rel_cut_off: float = 0.01,
+    abs_cut_off: int = 20
 ) -> bool:
     is_regression = False
 
@@ -181,9 +210,11 @@ def cliffs_delta_pim_regression_check(
                 continue
 
             new_values = current_pim[feature]
-            # if np.mean(old_values) < 20 and np.mean(new_values) < 20:
-            #     # TODO: adapt this to a relative value
-            #     continue
+
+            if not is_feature_relevant(
+                old_values, new_values, rel_cut_off, abs_cut_off
+            ):
+                continue
 
             d, res = cliffs_delta(old_values, new_values)
 
@@ -207,7 +238,9 @@ def cliffs_delta_pim_regression_check(
 
 def sum_pim_regression_check(
     baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+    current_pim: tp.DefaultDict[str, tp.List[int]],
+    rel_cut_off: float = 0.01,
+    abs_cut_off: int = 20
 ) -> bool:
     # TODO: add some tests
     baseline_pim_totals: tp.List[tp.List[int]] = [
@@ -449,7 +482,7 @@ def get_regressing_config_ids_gt(
     """Computes the baseline data, i.e., the config ids where a regression was
     identified."""
 
-    gt: tp.Dict[int, bool] = {}
+    ground_truth: tp.Dict[int, bool] = {}
 
     for config_id in case_study.get_config_ids_for_revision(rev):
         report_files = get_processed_revisions_files(
@@ -477,9 +510,21 @@ def get_regressing_config_ids_gt(
         if not new_time:
             return None
 
+        # TODO: what baseline cutoff to choose?
+        # req_diff = np.mean(old_time.measurements_wall_clock_time) * 0.03
+        req_diff = 0.1
         if np.mean(old_time.measurements_wall_clock_time
                   ) == np.mean(new_time.measurements_wall_clock_time):
-            gt[config_id] = False
+            ground_truth[config_id] = False
+        elif abs(
+            np.mean(old_time.measurements_wall_clock_time) -
+            np.mean(new_time.measurements_wall_clock_time)
+        ) < req_diff:
+            # if project_name == "DunePerfRegression":
+            #     print(
+            #         f"No  {patch_name=}_{config_id=} -> {old_time.measurements_wall_clock_time=} || {new_time.measurements_wall_clock_time=}"
+            #     )
+            ground_truth[config_id] = False
         else:
             # d, res = cliffs_delta(
             #     old_time.measurements_wall_clock_time,
@@ -494,11 +539,19 @@ def get_regressing_config_ids_gt(
             # if res == "large":
             # if d > 0.7 or d < -0.7:
             if ttest_res.pvalue < 0.05:
-                gt[config_id] = True
+                # if project_name == "DunePerfRegression":
+                #     print(
+                #         f"Reg {patch_name=}_{config_id=} -> {old_time.measurements_wall_clock_time=} || {new_time.measurements_wall_clock_time=}"
+                #     )
+                ground_truth[config_id] = True
             else:
-                gt[config_id] = False
+                # if project_name == "DunePerfRegression":
+                #     print(
+                #         f"No  {patch_name=}_{config_id=} -> {old_time.measurements_wall_clock_time=} || {new_time.measurements_wall_clock_time=}"
+                #     )
+                ground_truth[config_id] = False
 
-    return gt
+    return ground_truth
 
 
 def map_to_positive_config_ids(reg_dict: tp.Dict[int, bool]) -> tp.List[int]:
