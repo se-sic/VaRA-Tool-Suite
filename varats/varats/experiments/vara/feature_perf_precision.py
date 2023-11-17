@@ -143,6 +143,9 @@ def get_threshold(project: VProject) -> int:
 
         return 0
 
+    if project.DOMAIN is ProjectDomains.HPC:
+        return 0
+
     return 100
 
 
