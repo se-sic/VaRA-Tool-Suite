@@ -9,6 +9,7 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from ijson import IncompleteJSONError
 from plumbum import local
 from pylatex import Document, Package
 
@@ -365,7 +366,13 @@ class FeaturePerfOverheadTableGenerator(
 
 
 class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
-    PROFILERS: tp.List[Profiler] = [Baseline(), VXray(), PIMTracer()]
+    PROFILERS: tp.List[Profiler] = [
+        Baseline(), VXray(), PIMTracer(),
+        EbpfTraceTEF()
+    ]
+    SEVERITIES: tp.List[str] = [
+        "1 ms", "10 ms", "100 ms", "1000 ms", "10000 ms"
+    ]
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         # Data aggregation
@@ -386,22 +393,55 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         column_setup = [(' ', 'CaseStudy'), ('', f'{symb_regressed_configs}')]
 
         for p in self.PROFILERS:
-            for severity in ["1ms", "10ms", "100ms", "1000ms", "10000ms"]:
-                column_setup.append((p.name, severity))
+            for severity in self.SEVERITIES:
+                column_setup.append((
+                    p.name, "\\begin{sideways}" + severity + "\\end{sideways}"
+                ))
 
         df.columns = pd.MultiIndex.from_tuples(column_setup)
 
         print(f"{df=}")
 
-        style = df.style
-        style.format(precision=2)
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            column_format = "lr"
+            column_format += "ccccc" * len(self.PROFILERS)
+            kwargs["column_format"] = column_format
+            kwargs["multicol_align"] = "c"
+            kwargs[
+                "caption"
+            ] = f"""Sensitivity of different profiling approaches with regard to the introduced regression in milliseconds.
+        On the left, we show the total amount of regressed program variants that are considered for each regression severity.
+        Furthermore, the table depicts for each profiler the relative amount of regressions that were detected.
+        """
+            style.format(precision=2)
+
+            ryg_map = plt.get_cmap('RdYlGn')
+            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
+
+            #style.background_gradient(
+            #    cmap=ryg_map,
+            #    subset=[(p.name, s) for p in self.PROFILERS for s in self.SEVERITIES],
+            #    vmin=0.0,
+            #    vmax=1.0
+            #)
+
+            style.hide()
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amsmath"))
+            doc.packages.append(Package("amssymb"))
 
         return dataframe_to_table(
             df,
             table_format,
             style=style,
             wrap_table=wrap_table,
-            wrap_landscape=True
+            wrap_landscape=True,
+            document_decorator=add_extras,
+            **kwargs
         )
 
     def __by_severity(self):
@@ -413,9 +453,6 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         for case_study in case_studies:
             rev = case_study.revisions[0]
             project_name = case_study.project_name
-
-            if project_name in ["HyTeg"]:
-                continue
 
             total_num_patches = defaultdict(int)
             regressed_num_regressions = defaultdict(int)
@@ -467,16 +504,20 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                         if not path:
                             continue
 
-                        if p.is_regression(path, patch_name):
-                            regressed_num_regressions[f"{p.name}_{severity}"
-                                                     ] += 1
+                        try:
+                            if p.is_regression(path, patch_name):
+                                regressed_num_regressions[f"{p.name}_{severity}"
+                                                         ] += 1
+                        except IncompleteJSONError as e:
+                            print(
+                                f"Error in parsing. Case Study={project_name}, Config_id={config_id}, patch_name={patch_name}, profiler={p.name}"
+                            )
 
             new_row = {'CaseStudy': project_name}
 
             for k in total_num_patches:
                 new_row["# Regressions"] = total_num_patches[k]
-                new_row[
-                    k] = f"{regressed_num_regressions[k]/total_num_patches[k]}"
+                new_row[k] = regressed_num_regressions[k] / total_num_patches[k]
 
             table_rows.append(new_row)
 
