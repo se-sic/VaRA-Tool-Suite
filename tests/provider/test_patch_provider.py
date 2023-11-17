@@ -35,6 +35,25 @@ class TestPatchProvider(unittest.TestCase):
         patch = provider.get_by_shortname("dummy-patch")
         self.assertIsNone(patch)
 
+    def test_parse_regression_severity(self):
+        regression_patch = Patch.from_yaml(
+            Path(
+                TEST_INPUTS_DIR /
+                'patch_configs/FeaturePerfCSCollection/regression-severity.info'
+            )
+        )
+
+        other_patch = Patch.from_yaml(
+            Path(
+                TEST_INPUTS_DIR /
+                'patch_configs/FeaturePerfCSCollection/unrestricted-range.info'
+            )
+        )
+
+        self.assertIsNotNone(regression_patch.regression_severity)
+        self.assertEqual(1000, regression_patch.regression_severity)
+        self.assertIsNone(other_patch.regression_severity)
+
 
 class TestPatchRevisionRanges(unittest.TestCase):
 
