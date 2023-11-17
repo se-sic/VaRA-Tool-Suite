@@ -70,7 +70,7 @@ class Patch:
         project_git_path = get_local_project_git_path(project_name)
 
         # Update repository to have all upstream changes
-        fetch_repository(project_git_path)
+        # fetch_repository(project_git_path)
 
         def parse_revisions(
             rev_dict: tp.Dict[str, tp.Any]
@@ -278,6 +278,8 @@ class PatchProvider(Provider):
                 "Could not find patches directory for project "
                 f"'{self.project.NAME}'."
             )
+
+            print(f"{patches_project_dir}")
 
         self.__patches: tp.Set[Patch] = set()
 
