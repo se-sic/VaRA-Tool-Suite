@@ -11,7 +11,11 @@ from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,
 )
 from varats.provider.patch.patch_provider import PatchProvider, Patch, PatchSet
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import (
+    ShortCommitHash,
+    get_all_revisions_between,
+    get_initial_commit,
+)
 
 
 class TestPatchProvider(unittest.TestCase):
@@ -35,6 +39,25 @@ class TestPatchProvider(unittest.TestCase):
         patch = provider.get_by_shortname("dummy-patch")
         self.assertIsNone(patch)
 
+    def test_parse_regression_severity(self):
+        regression_patch = Patch.from_yaml(
+            Path(
+                TEST_INPUTS_DIR /
+                'patch_configs/FeaturePerfCSCollection/regression-severity.info'
+            )
+        )
+
+        other_patch = Patch.from_yaml(
+            Path(
+                TEST_INPUTS_DIR /
+                'patch_configs/FeaturePerfCSCollection/unrestricted-range.info'
+            )
+        )
+
+        self.assertIsNotNone(regression_patch.regression_severity)
+        self.assertEqual(1000, regression_patch.regression_severity)
+        self.assertIsNone(other_patch.regression_severity)
+
 
 class TestPatchRevisionRanges(unittest.TestCase):
 
@@ -53,14 +76,14 @@ class TestPatchRevisionRanges(unittest.TestCase):
 
         project_git_source.fetch()
 
-        repo_git = _get_git_for_path(
-            target_prefix() + "/FeaturePerfCSCollection"
-        )
+        repo_git_path = Path(target_prefix() + "/FeaturePerfCSCollection")
 
-        cls.all_revisions = {
-            ShortCommitHash(h) for h in
-            repo_git('log', '--pretty=%H', '--first-parent').strip().split()
-        }
+        cls.all_revisions = set(
+            get_all_revisions_between(
+                get_initial_commit(repo_git_path).hash, "", ShortCommitHash,
+                repo_git_path
+            )
+        )
 
     def __test_patch_revisions(
         self, shortname: str, expected_revisions: set[ShortCommitHash]
