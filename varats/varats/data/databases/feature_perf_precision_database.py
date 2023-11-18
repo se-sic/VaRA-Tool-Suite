@@ -48,31 +48,32 @@ def get_interactions_from_fr_string(interactions: str) -> str:
     return interactions_str
 
 
+def get_matching_event(
+        open_events: tp.List[TraceEvent], closing_event: TraceEvent
+):
+    for event in open_events:
+        if (
+                event.uuid == closing_event.uuid and
+                event.pid == closing_event.pid and
+                event.tid == closing_event.tid
+        ):
+            open_events.remove(event)
+            return event
+
+    LOG.debug(
+        f"Could not find matching start for Event {repr(closing_event)}."
+    )
+
+    return None
+
+
 def get_feature_performance_from_tef_report(
-    tef_report: TEFReport,
+        tef_report: TEFReport,
 ) -> tp.Dict[str, int]:
     """Extract feature performance from a TEFReport."""
     open_events: tp.List[TraceEvent] = []
 
     feature_performances: tp.Dict[str, int] = {}
-
-    def get_matching_event(
-        open_events: tp.List[TraceEvent], closing_event: TraceEvent
-    ):
-        for event in open_events:
-            if (
-                event.uuid == closing_event.uuid and
-                event.pid == closing_event.pid and
-                event.tid == closing_event.tid
-            ):
-                open_events.remove(event)
-                return event
-
-        LOG.debug(
-            f"Could not find matching start for Event {repr(closing_event)}."
-        )
-
-        return None
 
     found_missing_open_event = False
     for trace_event in tef_report.trace_events:
@@ -102,11 +103,11 @@ def get_feature_performance_from_tef_report(
                     )
                     if interaction_string in feature_performances:
                         feature_performances[interaction_string] -= (
-                            end_timestamp - begin_timestamp
+                                end_timestamp - begin_timestamp
                         )
                     else:
                         feature_performances[interaction_string] = -(
-                            end_timestamp - begin_timestamp
+                                end_timestamp - begin_timestamp
                         )
 
                 interaction_string = get_interactions_from_fr_string(
@@ -117,7 +118,7 @@ def get_feature_performance_from_tef_report(
                     interaction_string, 0
                 )
                 feature_performances[interaction_string] = (
-                    current_performance + end_timestamp - begin_timestamp
+                        current_performance + end_timestamp - begin_timestamp
                 )
 
     if open_events:
@@ -130,9 +131,49 @@ def get_feature_performance_from_tef_report(
     return feature_performances
 
 
+def get_feature_regions_from_tef_report(
+        tef_report: TEFReport,
+) -> tp.Dict[str, int]:
+    """Extract feature regions occurrences from a TEFReport."""
+    open_events: tp.List[TraceEvent] = []
+
+    feature_regions: tp.Dict[str, int] = defaultdict(int)
+
+    found_missing_open_event = False
+    for trace_event in tef_report.trace_events:
+        if trace_event.category == "Feature":
+            if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
+                # open_events.append(trace_event)
+                # insert event at the top of the list
+                open_events.insert(0, trace_event)
+
+                interactions = [event.name for event in open_events]
+                interaction_string = get_interactions_from_fr_string(
+                    ",".join(interactions)
+                )
+
+                feature_regions[interaction_string] += 1
+            elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
+                opening_event = get_matching_event(open_events, trace_event)
+                if not opening_event:
+                    found_missing_open_event = True
+                    continue
+
+                open_events.remove(opening_event)
+
+    if open_events:
+        LOG.error("Not all events have been correctly closed.")
+        LOG.debug(f"Events = {open_events}.")
+
+    if found_missing_open_event:
+        LOG.error("Not all events have been correctly opened.")
+
+    return feature_regions
+
+
 def precise_pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+        baseline_pim: tp.DefaultDict[str, tp.List[int]],
+        current_pim: tp.DefaultDict[str, tp.List[int]]
 ) -> bool:
     is_regression = False
 
@@ -163,8 +204,8 @@ def precise_pim_regression_check(
 
 
 def cliffs_delta_pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+        baseline_pim: tp.DefaultDict[str, tp.List[int]],
+        current_pim: tp.DefaultDict[str, tp.List[int]]
 ) -> bool:
     is_regression = False
 
@@ -200,8 +241,8 @@ def cliffs_delta_pim_regression_check(
 
 
 def sum_pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+        baseline_pim: tp.DefaultDict[str, tp.List[int]],
+        current_pim: tp.DefaultDict[str, tp.List[int]]
 ) -> bool:
     # TODO: add some tests
     baseline_pim_totals: tp.List[tp.List[int]] = [
@@ -231,8 +272,8 @@ def sum_pim_regression_check(
 
 
 def pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+        baseline_pim: tp.DefaultDict[str, tp.List[int]],
+        current_pim: tp.DefaultDict[str, tp.List[int]]
 ) -> bool:
     """Compares two pims and determines if there was a regression between the
     baseline and current."""
@@ -245,9 +286,9 @@ class Profiler():
     """Profiler interface to add different profilers to the evaluation."""
 
     def __init__(
-        self, name: str, experiment: tp.Type[FeatureExperiment],
-        overhead_experiment: tp.Type[FeatureExperiment],
-        report_type: tp.Type[BaseReport]
+            self, name: str, experiment: tp.Type[FeatureExperiment],
+            overhead_experiment: tp.Type[FeatureExperiment],
+            report_type: tp.Type[BaseReport]
     ) -> None:
         self.__name = name
         self.__experiment = experiment
@@ -276,7 +317,7 @@ class Profiler():
 
     @abc.abstractmethod
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+            self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
 
@@ -291,7 +332,7 @@ class VXray(Profiler):
         )
 
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+            self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
         multi_report = fpp.MultiPatchReport(
@@ -346,7 +387,7 @@ class PIMTracer(Profiler):
         return acc_pim
 
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+            self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
         multi_report = fpp.MultiPatchReport(
@@ -381,7 +422,7 @@ class EbpfTraceTEF(Profiler):
         )
 
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+            self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
         multi_report = fpp.MultiPatchReport(
@@ -431,8 +472,8 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
 
 
 def get_regressing_config_ids_gt(
-    project_name: str, case_study: CaseStudy, rev: FullCommitHash,
-    patch_name: str
+        project_name: str, case_study: CaseStudy, rev: FullCommitHash,
+        patch_name: str
 ) -> tp.Optional[tp.Dict[int, bool]]:
     """Computes the baseline data, i.e., the config ids where a regression was
     identified."""
@@ -466,7 +507,7 @@ def get_regressing_config_ids_gt(
             return None
 
         if np.mean(old_time.measurements_wall_clock_time
-                  ) == np.mean(new_time.measurements_wall_clock_time):
+                   ) == np.mean(new_time.measurements_wall_clock_time):
             gt[config_id] = False
         else:
             # d, res = cliffs_delta(
@@ -513,8 +554,8 @@ class Baseline(Profiler):
 
 
 def compute_profiler_predictions(
-    profiler: Profiler, project_name: str, case_study: CaseStudy,
-    config_ids: tp.List[int], patch_name: str
+        profiler: Profiler, project_name: str, case_study: CaseStudy,
+        config_ids: tp.List[int], patch_name: str
 ) -> tp.Optional[tp.Dict[int, bool]]:
     """Computes the regression predictions for a given profiler."""
 
@@ -538,7 +579,7 @@ def compute_profiler_predictions(
             return None
 
         try:
-            #print(f"{report_files[0]}")
+            # print(f"{report_files[0]}")
             result_dict[config_id] = profiler.is_regression(
                 report_files[0], patch_name
             )
@@ -557,11 +598,11 @@ def compute_profiler_predictions(
 class OverheadData:
 
     def __init__(
-        self, profiler, mean_time: tp.Dict[int, float],
-        mean_memory: tp.Dict[int, float], major_page_faults: tp.Dict[int,
-                                                                     float],
-        minor_page_faults: tp.Dict[int, float], fs_inputs: tp.Dict[int, float],
-        fs_outputs: tp.Dict[int, float]
+            self, profiler, mean_time: tp.Dict[int, float],
+            mean_memory: tp.Dict[int, float], major_page_faults: tp.Dict[int,
+            float],
+            minor_page_faults: tp.Dict[int, float], fs_inputs: tp.Dict[int, float],
+            fs_outputs: tp.Dict[int, float]
     ) -> None:
         self.__profiler = profiler
         self.__mean_time: tp.Dict[int, float] = mean_time
@@ -598,26 +639,26 @@ class OverheadData:
         return self.__config_wise(self.__mean_memory, other.__mean_memory)
 
     def config_wise_major_page_faults_diff(
-        self, other: 'OverheadData'
+            self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
         return self.__config_wise(
             self.__mean_major_page_faults, other.__mean_major_page_faults
         )
 
     def config_wise_minor_page_faults_diff(
-        self, other: 'OverheadData'
+            self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
         return self.__config_wise(
             self.__mean_minor_page_faults, other.__mean_minor_page_faults
         )
 
     def config_wise_fs_inputs_diff(
-        self, other: 'OverheadData'
+            self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
         return self.__config_wise(self.__mean_fs_inputs, other.__mean_fs_inputs)
 
     def config_wise_fs_outputs_diff(
-        self, other: 'OverheadData'
+            self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
         return self.__config_wise(
             self.__mean_fs_outputs, other.__mean_fs_outputs
@@ -625,7 +666,7 @@ class OverheadData:
 
     @staticmethod
     def __config_wise(
-        self_map: tp.Dict[int, float], other_map: tp.Dict[int, float]
+            self_map: tp.Dict[int, float], other_map: tp.Dict[int, float]
     ) -> tp.Dict[int, float]:
         gen_diff: tp.Dict[int, float] = {}
         for config_id, gen_value in self_map.items():
@@ -638,7 +679,7 @@ class OverheadData:
 
     @staticmethod
     def compute_overhead_data(
-        profiler: Profiler, case_study: CaseStudy, rev: FullCommitHash
+            profiler: Profiler, case_study: CaseStudy, rev: FullCommitHash
     ) -> tp.Optional['OverheadData']:
 
         mean_time: tp.Dict[int, float] = {}
@@ -823,13 +864,13 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
                 new_row['overhead_memory'] = np.mean(list(memory_diff.values()))
 
                 new_row['major_page_faults'
-                       ] = profiler_overhead.mean_major_page_faults()
+                ] = profiler_overhead.mean_major_page_faults()
                 new_row['overhead_major_page_faults'] = np.mean(
                     list(major_page_faults_diff.values())
                 )
 
                 new_row['minor_page_faults'
-                       ] = profiler_overhead.mean_minor_page_faults()
+                ] = profiler_overhead.mean_minor_page_faults()
                 new_row['overhead_minor_page_faults'] = np.mean(
                     list(minor_page_faults_diff.values())
                 )
