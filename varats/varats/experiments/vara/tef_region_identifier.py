@@ -1,24 +1,39 @@
 import json
+import textwrap
+import typing as tp
 from pathlib import Path
 
+import benchbuild.extensions as bb_ext
 from benchbuild.utils import actions
 from benchbuild.utils.actions import Step, StepResult, ProjectStep
-import benchbuild.extensions as bb_ext
 
-from varats.data.databases.feature_perf_precision_database import get_feature_regions_from_tef_report
-from varats.data.reports.tef_feature_identifier_report import TEFFeatureIdentifierReport
-from varats.experiment.experiment_util import WithUnlimitedStackSize, get_default_compile_error_wrapped, \
-    create_new_success_result_filepath, get_config_patch_steps, ZippedExperimentSteps
+from varats.data.databases.feature_perf_precision_database import (
+    get_feature_regions_from_tef_report,
+)
+from varats.data.reports.tef_feature_identifier_report import (
+    TEFFeatureIdentifierReport,
+)
+from varats.experiment.experiment_util import (
+    WithUnlimitedStackSize,
+    get_default_compile_error_wrapped,
+    create_new_success_result_filepath,
+    get_config_patch_steps,
+    ZippedExperimentSteps,
+)
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
-from varats.experiments.vara.feature_experiment import FeatureExperiment, FeatureInstrType
-from varats.experiments.vara.feature_perf_precision import get_extra_cflags, MPRTEFAggregate, select_project_binaries, \
-    RunGenTracedWorkloads
+from varats.experiments.vara.feature_experiment import (
+    FeatureExperiment,
+    FeatureInstrType,
+)
+from varats.experiments.vara.feature_perf_precision import (
+    get_extra_cflags,
+    MPRTEFAggregate,
+    select_project_binaries,
+    RunGenTracedWorkloads,
+)
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
-
-import typing as tp
-
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
@@ -29,7 +44,9 @@ from varats.utils.git_util import ShortCommitHash
 class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
     NAME = "RunTEFIdentifier"
 
-    REPORT_SPEC = TEFFeatureIdentifierReport
+    REPORT_SPEC = ReportSpecification(
+        TEFFeatureIdentifierReport, MPRTEFAggregate
+    )
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -58,7 +75,8 @@ class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, ReportSpecification(MPRTEFAggregate).main_report
+            self.get_handle(), project,
+            ReportSpecification(MPRTEFAggregate).main_report
         )
 
         # TODO: change to multiple binaries
@@ -67,8 +85,7 @@ class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
             raise AssertionError("Experiment only works with executables.")
 
         tmp_tef_result = create_new_success_result_filepath(
-            self.get_handle(),
-            MPRTEFAggregate, project, binary,
+            self.get_handle(), MPRTEFAggregate, project, binary,
             get_current_config_id(project)
         )
 
@@ -101,20 +118,27 @@ class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 tmp_tef_result, [
-                                    RunGenTracedWorkloads(
-                                        project,
-                                        binary,
-                                        file_name=MultiPatchReport.
-                                        create_baseline_report_name("feature_id"),
-                                        reps=1
-                                    )
-                                ] + patch_steps
+                    RunGenTracedWorkloads(
+                        project,
+                        binary,
+                        file_name=MultiPatchReport.
+                        create_baseline_report_name("feature_id"),
+                        reps=1
+                    )
+                ] + patch_steps
             )
         )
         analysis_actions.append(actions.Clean(project))
 
-        mpr_tef_report = MPRTEFAggregate(tmp_tef_result.full_path())
-        analysis_actions.append(AnalyzeMPRTEFTrace(mpr_tef_report))
+        mpr_tef_path = tmp_tef_result.full_path()
+        result_path = create_new_success_result_filepath(
+            self.get_handle(), MPRTEFAggregate, project, binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions.append(
+            AnalyzeMPRTEFTrace(project, result_path, mpr_tef_path)
+        )
 
         return analysis_actions
 
@@ -125,26 +149,37 @@ class AnalyzeMPRTEFTrace(ProjectStep):
 
     project: VProject
 
-    def __init__(self, file_name: Path, mpr_tef_report: MPRTEFAggregate):
-        self.__report = mpr_tef_report
+    def __init__(self, project: VProject, file_name: Path, mpr_tef_path: Path):
+        self.__report_path = mpr_tef_path
         self.__file_name = file_name
-        pass
+        super().__init__(project=project)
 
     def __call__(self):
         result_dict = {}
 
-        base_report = self.__report.get_baseline_report()
+        report = MPRTEFAggregate(self.__report_path)
+
+        base_report = report.get_baseline_report()
 
         tef_report = base_report.reports()[0]
 
-        result_dict["Baseline"] = get_feature_regions_from_tef_report(tef_report)
+        result_dict["Baseline"] = get_feature_regions_from_tef_report(
+            tef_report
+        )
 
-        for patch in self.__report.get_patch_names():
-            tef_report = self.__report.get_report_for_patch(patch).reports()[0]
+        for patch in report.get_patch_names():
+            tef_report = report.get_report_for_patch(patch).reports()[0]
 
-            result_dict[f"PATCHED_{patch}"] = get_feature_regions_from_tef_report(tef_report)
+            result_dict[f"PATCHED_{patch}"
+                       ] = get_feature_regions_from_tef_report(tef_report)
 
         with open(self.__file_name, "w ") as f:
             json.dump(result_dict, f)
 
         return StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Extract feature interactions from MPRTEFReport: {self.__report_path}",
+            indent * " "
+        )
