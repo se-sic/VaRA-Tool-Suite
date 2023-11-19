@@ -59,7 +59,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
         df = load_precision_data(case_studies, profilers)
         # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows())])
         df.sort_values(["CaseStudy"], inplace=True)
-        print(f"{df=}")
+        print(f"df=\n{df.to_string()}")
 
         grid = multivariate_grid(
             df,

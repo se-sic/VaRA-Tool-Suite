@@ -12,6 +12,9 @@ from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
 from varats.data.metrics import ConfusionMatrix
+from varats.data.reports.performance_influence_trace_report import (
+    PerfInfluenceTraceReportAggregate,
+)
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -29,19 +32,21 @@ from varats.utils.git_util import FullCommitHash
 LOG = logging.getLogger(__name__)
 
 
-def get_interactions_from_fr_string(interactions: str) -> str:
+def get_interactions_from_fr_string(interactions: str, sep: str = ",") -> str:
     """Convert the feature strings in a TEFReport from FR(x,y) to x*y, similar
     to the format used by SPLConqueror."""
     interactions = (
         interactions.replace("FR", "").replace("(", "").replace(")", "")
     )
-    interactions_list = interactions.split(",")
+    interactions_list = interactions.split(sep)
+
+    # Features cannot interact with itself, so remove duplicates
+    interactions_list = list(set(interactions_list))
+
     # Ignore interactions with base, but do not remove base if it's the only
     # feature
     if "Base" in interactions_list and len(interactions_list) > 1:
         interactions_list.remove("Base")
-    # Features cannot interact with itself, so remove duplicastes
-    interactions_list = list(set(interactions_list))
 
     interactions_str = "*".join(interactions_list)
 
@@ -195,7 +200,11 @@ def precise_pim_regression_check(
                 # print(f"Found regression for feature {feature}.")
                 is_regression = True
         else:
-            print(f"Could not find feature {feature} in new trace.")
+            if np.mean(old_values) > 20:
+                print(
+                    f"Could not find feature {feature} in new trace. "
+                    f"({np.mean(old_values)}us lost)"
+                )
             # TODO: how to handle this?
             # raise NotImplementedError()
             # is_regression = True
@@ -377,7 +386,8 @@ class PIMTracer(Profiler):
                 name = get_interactions_from_fr_string(
                     old_pim_report._translate_interaction(
                         region_inter.interaction
-                    )
+                    ),
+                    sep="*"
                 )
                 per_report_acc_pim[name] += region_inter.time
 
@@ -404,9 +414,9 @@ class PIMTracer(Profiler):
                 raise NotImplementedError()
 
             new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
-        except Exception as e:
+        except Exception as exc:
             print(f"FAILURE: Report parsing failed: {report_path}")
-            print(e)
+            print(exc)
             return False
 
         return pim_regression_check(old_acc_pim, new_acc_pim)
@@ -448,13 +458,13 @@ class EbpfTraceTEF(Profiler):
         return pim_regression_check(old_acc_pim, new_acc_pim)
 
 
-def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
+def get_patch_names(case_study: CaseStudy, config_id: int) -> tp.List[str]:
     report_files = get_processed_revisions_files(
         case_study.project_name,
         fpp.BlackBoxBaselineRunner,
         fpp.MPRTimeReportAggregate,
         get_case_study_file_name_filter(case_study),
-        config_id=0
+        config_id=config_id
     )
 
     if len(report_files) > 1:
@@ -462,12 +472,17 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
     if not report_files:
         print(
             f"Could not find profiling data for {case_study.project_name}"
-            ". config_id=0, profiler=Baseline"
+            f". config_id={config_id}, profiler=Baseline"
         )
         return []
 
     # TODO: fix to prevent double loading
-    time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
+    try:
+        time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
+    except:
+        print(f"Could not load report from: {report_files[0]}")
+        return []
+
     return time_reports.get_patch_names()
 
 
@@ -549,8 +564,34 @@ class Baseline(Profiler):
             fpp.TimeReportAggregate
         )
 
-    def is_regression(self, report_path: ReportFilepath) -> bool:
-        raise NotImplementedError()
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
+        multi_report = fpp.MultiPatchReport(
+            report_path.full_path(), fpp.TimeReportAggregate
+        )
+
+        old_time = multi_report.get_baseline_report()
+        new_time = multi_report.get_report_for_patch(patch_name)
+
+        if not new_time:
+            return False
+
+        if np.mean(old_time.measurements_wall_clock_time
+                  ) == np.mean(new_time.measurements_wall_clock_time):
+            return False
+        else:
+            ttest_res = ttest_ind(
+                old_time.measurements_wall_clock_time,
+                new_time.measurements_wall_clock_time
+            )
+
+            # if res == "large":
+            # if d > 0.7 or d < -0.7:
+            if ttest_res.pvalue < 0.05:
+                return True
+            else:
+                return False
 
 
 def compute_profiler_predictions(
@@ -747,9 +788,12 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
-            ground_truth = get_regressing_config_ids_gt(
-                project_name, case_study, rev, patch_name
-            )
+            try:
+                ground_truth = get_regressing_config_ids_gt(
+                    project_name, case_study, rev, patch_name
+                )
+            except:
+                continue
 
             for profiler in profilers:
                 new_row = {
@@ -906,3 +950,46 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
             table_rows.append(new_row)
 
     return pd.DataFrame(table_rows)
+
+
+def total_feature_time_from_pim(pim_data: tp.DefaultDict[str, tp.List[int]]):
+    pim_totals: tp.List[tp.List[int]] = [
+        values for feature, values in pim_data.items() if feature != "Base"
+    ]
+
+    return [sum(values) for values in zip(*pim_totals)]
+
+
+def extract_measured_times(time_report, requested_features=None):
+    acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+    if isinstance(time_report, TimeReportAggregate):
+        return time_report.measurements_wall_clock_time
+    elif isinstance(time_report, TEFReportAggregate):
+        for report in time_report.reports():
+            pim = get_feature_performance_from_tef_report(report)
+
+            for feature, value in pim.items():
+                acc_pim[feature].append(value)
+
+    elif isinstance(time_report, PerfInfluenceTraceReportAggregate):
+        for old_pim_report in time_report.reports():
+            per_report_acc_pim: tp.DefaultDict[str, int] = defaultdict(int)
+            for region_inter in old_pim_report.region_interaction_entries:
+                name = get_interactions_from_fr_string(
+                    old_pim_report._translate_interaction(
+                        region_inter.interaction
+                    )
+                )
+                per_report_acc_pim[name] += region_inter.time
+
+            for name, time_value in per_report_acc_pim.items():
+                acc_pim[name].append(time_value)
+
+    else:
+        print(f"Uncovered report type: {type(time_report)}")
+        return [np.nan]
+
+    if requested_features:
+        return acc_pim[requested_features]
+
+    return total_feature_time_from_pim(acc_pim)

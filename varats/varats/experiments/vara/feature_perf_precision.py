@@ -127,7 +127,7 @@ def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
 def get_extra_cflags(project: VProject) -> tp.List[str]:
     if project.name in ["DunePerfRegression", "HyTeg"]:
         # Disable phasar for dune as the analysis cannot handle dunes size
-        return ["-mllvm", "--vara-disable-phasar"]
+        return ["-fvara-disable-phasar"]
 
     return []
 
@@ -141,6 +141,9 @@ def get_threshold(project: VProject) -> int:
             print("Don't instrument everything")
             return 10
 
+        return 0
+
+    if project.DOMAIN is ProjectDomains.HPC:
         return 0
 
     return 100
