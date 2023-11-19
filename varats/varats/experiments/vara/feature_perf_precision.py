@@ -53,7 +53,7 @@ from varats.utils.git_util import ShortCommitHash
 
 REPS = 3
 
-IDENTIFIER_PATCH_TAG = 'gibberish'
+IDENTIFIER_PATCH_TAG = 'perf_prec'
 
 
 def get_feature_tags(project):
