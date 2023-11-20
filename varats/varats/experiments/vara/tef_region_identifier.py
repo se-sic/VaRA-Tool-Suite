@@ -132,12 +132,12 @@ class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
 
         mpr_tef_path = tmp_tef_result.full_path()
         result_path = create_new_success_result_filepath(
-            self.get_handle(), MPRTEFAggregate, project, binary,
+            self.get_handle(), TEFFeatureIdentifierReport, project, binary,
             get_current_config_id(project)
         )
 
         analysis_actions.append(
-            AnalyzeMPRTEFTrace(project, result_path, mpr_tef_path)
+            AnalyzeMPRTEFTrace(project, result_path.full_path(), mpr_tef_path)
         )
 
         return analysis_actions
