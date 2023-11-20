@@ -51,6 +51,25 @@ def get_compare_mark(res_cmp: tp.Optional[ResultCompare]) -> str:
     return "{\color{Red} x}"
 
 
+class FormattedNumber:
+    value: float = 0
+
+    def __init__(self, val: float) -> None:
+        self.value = val
+
+    def __str__(self) -> str:
+        if self.value >= 1000:
+            return "{}\,{:03}".format(self.value // 1000, self.value % 1000)
+        else:
+            return str(self.value)
+
+    def __ge__(self, other: float) -> bool:
+        return self.value >= other
+
+    def __lt__(self, other: float) -> bool:
+        return self.value < other
+
+
 class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
     TIMEOUT = "t/o"
     OUT_OF_MEMORY = "OOM"
@@ -128,15 +147,17 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                         mem = self.OUT_OF_MEMORY
                         time = "-"
                     else:
-                        mem = round(
-                            from_kbytes_to_mbytes(
-                                np.mean(tr.max_resident_sizes)
+                        mem = FormattedNumber(
+                            round(
+                                from_kbytes_to_mbytes(
+                                    np.mean(tr.max_resident_sizes)
+                                )
                             )
                         )
-                        if mem == 0:
+                        if mem.value == 0:
                             mem = "<1"
-                        time = round(time)
-                        if time == 0:
+                        time = FormattedNumber(round(time))
+                        if time.value == 0:
                             time = "<1"
 
                     return time, mem
@@ -153,7 +174,8 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                 cs_dict = {
                     latex_sanitize_project_name(project_name): {
                         "Revision":
-                            "\\texttt{" + str(revision.short_hash) + "}",
+                            "\\scriptsize\\texttt{" + str(revision.short_hash) +
+                            "}",
                         "Domain":
                             str(project_cls.DOMAIN)[0].upper() +
                             str(project_cls.DOMAIN)[1:],
@@ -162,22 +184,22 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                         "\#IR":
                             str(ir_loc)
                             if ir_loc < 1000 else str(ir_loc // 1000) + 'k',
-                        "IIA-T":
-                            iia_time,
-                        "IIA-M":
-                            iia_mem,
-                        "Taint-T":
-                            taint_time,
-                        "Taint-M":
-                            taint_mem,
-                        "LCA-T":
-                            lca_time,
-                        "LCA-M":
-                            lca_mem,
                         "Typestate-T":
                             typestate_time,
                         "Typestate-M":
                             typestate_mem,
+                        "LCA-T":
+                            lca_time,
+                        "LCA-M":
+                            lca_mem,
+                        "Taint-T":
+                            taint_time,
+                        "Taint-M":
+                            taint_mem,
+                        "IIA-T":
+                            iia_time,
+                        "IIA-M":
+                            iia_mem,
                     }
                 }
 
@@ -194,15 +216,15 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             ('', '{Revision}'),
             ('', '{Domain}'),
             #('', '{LOC}'),
-            ('', '{\#IR}'),
-            ('IIA', '{Time}'),
-            ('IIA', '{Mem}'),
-            ('Taint', '{Time}'),
-            ('Taint', '{Mem}'),
-            ('LCA', '{Time}'),
-            ('LCA', '{Mem}'),
+            ('', '{LOC}'),
             ('Typestate', '{Time}'),
             ('Typestate', '{Mem}'),
+            ('LCA', '{Time}'),
+            ('LCA', '{Mem}'),
+            ('Taint', '{Time}'),
+            ('Taint', '{Mem}'),
+            ('IIA', '{Time}'),
+            ('IIA', '{Mem}'),
         ])
 
         print(df)
