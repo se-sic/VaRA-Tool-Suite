@@ -1,5 +1,5 @@
 """Module for BlameInteractionGraph plots."""
-
+import subprocess
 import typing as tp
 from datetime import datetime
 from pathlib import Path
@@ -278,6 +278,72 @@ OPTIONAL_SORT_METHOD: CLIOptionTy = make_cli_option(
     required=False,
     help="Sort method for commit interaction graph nodes."
 )
+
+
+class SubCommitInteractionGraphPlot(Plot, plot_name='sub-cig_plot'):
+
+    def is_submodule_change(self, commit_hash):
+        # Get the change information of the specified commit
+        subprocess.run(['git', 'checkout', commit_hash], check=True)
+        submodule_status = subprocess.run(['git', 'submodule', 'status'], capture_output=True, text=True)
+
+        # Check if the output contains submodule changes
+        return "+Subproject" in submodule_status.stdout
+    def plot(self, view_mode: bool) -> None:
+        project_name = self.plot_kwargs["case_study"].project_name
+        commit_map = get_commit_map(project_name)
+        short_revision = ShortCommitHash(self.plot_kwargs["revision"])
+        revision = commit_map.convert_to_full_or_warn(short_revision)
+
+        cig = create_blame_interaction_graph(
+            project_name, revision, BlameReportExperiment
+        ).commit_interaction_graph()
+        nx.set_node_attributes(
+            cig,
+            {node: cig.nodes[node]["commit"].commit_hash for node in cig.nodes},
+            "label"
+        )
+
+        # Find nodes representing commits that changed submodules
+        submodule_commit_nodes = [node for node in cig.nodes if
+                                  self.is_submodule_change(cig.nodes[node]["commit"].commit_hash)]
+
+        # Color those nodes red
+        node_colors = ['red' if node in submodule_commit_nodes else 'blue' for node in cig.nodes]
+
+        # Find nodes pointed to by red nodes
+        blue_nodes = set()
+        for node in submodule_commit_nodes:
+            blue_nodes.update(cig.successors(node))
+
+        # Color those nodes blue
+        for node in blue_nodes:
+            node_colors[node] = 'blue'
+
+        # Draw the graph
+        pos = nx.spring_layout(cig)  # You can choose a different layout if needed
+        nx.draw(cig, pos, with_labels=True, node_color=node_colors, font_color='white')
+        plt.show()
+
+
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise UnsupportedOperation
+
+
+class SubCIGPlotGenerator(
+    PlotGenerator,
+    generator_name="sub-cig-plot",
+    options=[REQUIRE_CASE_STUDY, REQUIRE_REVISION]
+):
+    """Generates a plot for a submodule's commit interaction graph."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            SubCommitInteractionGraphPlot(self.plot_config, **self.plot_kwargs)
+        ]
 
 
 class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
