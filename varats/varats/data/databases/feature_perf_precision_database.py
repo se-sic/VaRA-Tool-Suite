@@ -14,6 +14,7 @@ import varats.experiments.vara.feature_perf_precision as fpp
 from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReport,
+    PerfInfluenceTraceReportAggregate,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.paper.case_study import CaseStudy
@@ -137,8 +138,8 @@ def get_feature_performance_from_tef_report(
 
 
 def is_feature_relevant(
-    old_measurements,
-    new_measurements,
+    old_measurements: tp.List[int],
+    new_measurements: tp.List[int],
     rel_cut_off: float = 0.01,
     abs_cut_off: int = 20
 ) -> bool:
@@ -223,10 +224,10 @@ def cliffs_delta_pim_regression_check(
             ):
                 continue
 
-            d, res = cliffs_delta(old_values, new_values)
+            cdelta_val, _ = cliffs_delta(old_values, new_values)
 
             # if res == "large":
-            if abs(d) > 0.7:
+            if abs(cdelta_val) > 0.7:
                 is_regression = True
         else:
             if np.mean(old_values) > abs_cut_off:
@@ -288,8 +289,6 @@ def pim_regression_check(
 ) -> bool:
     """Compares two pims and determines if there was a regression between the
     baseline and current."""
-    # return cliffs_delta_pim_regression_check(baseline_pim, current_pim)
-    # return sum_pim_regression_check(baseline_pim, current_pim)
     return precise_pim_regression_check(baseline_pim, current_pim)
 
 
@@ -405,7 +404,7 @@ class PIMTracer(Profiler):
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
         multi_report = MultiPatchReport(
-            report_path.full_path(), fpp.PerfInfluenceTraceReportAggregate
+            report_path.full_path(), PerfInfluenceTraceReportAggregate
         )
 
         old_acc_pim = self.__aggregate_pim_data(
@@ -458,6 +457,7 @@ class EbpfTraceTEF(Profiler):
 
 
 def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
+    """Looks up all patch names from the given case study."""
     report_files = get_processed_revisions_files(
         case_study.project_name,
         fpp.BlackBoxBaselineRunner,
@@ -559,10 +559,12 @@ class Baseline(Profiler):
     def __init__(self) -> None:
         super().__init__(
             "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
-            fpp.TimeReportAggregate
+            TimeReportAggregate
         )
 
-    def is_regression(self, report_path: ReportFilepath) -> bool:
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
         raise NotImplementedError()
 
 
@@ -756,7 +758,9 @@ class OverheadData:
         )
 
 
-def load_precision_data(case_studies, profilers) -> pd.DataFrame:
+def load_precision_data(
+    case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+) -> pd.DataFrame:
     """Loads precision measurement data for the given cases studies and computes
     precision and recall for the different profilers."""
     table_rows_plot = []
@@ -814,7 +818,9 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
     return pd.DataFrame(table_rows_plot)
 
 
-def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
+def load_overhead_data(
+    case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+) -> pd.DataFrame:
     """Loads overhead measurement data for the given cases studies and computes
     overhead metrics that where introduced by the different profilers."""
     table_rows = []
