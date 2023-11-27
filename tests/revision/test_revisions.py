@@ -26,3 +26,9 @@ class TestGetProcessedRevisionsFiles(unittest.TestCase):
         self.assertEqual(
             processed_rev_files_cid_1[0].report_filename.config_id, 1
         )
+
+        processed_rev_files_cid_2 = get_processed_revisions_files(
+            "SynthSAContextSensitivity", config_id=2
+        )
+        # there should not be a report for config id 2
+        self.assertEqual(len(processed_rev_files_cid_2), 0)
