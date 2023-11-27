@@ -60,6 +60,7 @@ class TEFFeatureIdentifier(FeatureExperiment, shorthand="TEFid"):
         )
 
         project.cflags += get_extra_cflags(project)
+        project.cflags += ["-O0", "-g"]
 
         project.ldflags += self.get_vara_tracing_ldflags()
 
@@ -173,7 +174,7 @@ class AnalyzeMPRTEFTrace(ProjectStep):
             result_dict[f"PATCHED_{patch}"
                        ] = get_feature_regions_from_tef_report(tef_report)
 
-        with open(self.__file_name, "w ") as f:
+        with open(self.__file_name, "w") as f:
             json.dump(result_dict, f)
 
         return StepResult.OK
