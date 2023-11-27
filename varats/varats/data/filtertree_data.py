@@ -48,6 +48,7 @@ InteractionFilter
   │     ├── TargetOperator
   └── ConcreteInteractionFilter
         ├── UnaryInteractionFilter
+        │     ├── SingleCommitFilter
         │     ├── AuthorFilter
         │     ├── CommitterFilter
         │     ├── AuthorDateMinFilter
@@ -68,6 +69,7 @@ import yaml
 from PyQt5.QtCore import QDateTime, Qt
 
 from varats.base.version_header import VersionHeader
+from varats.utils.git_util import UNCOMMITTED_COMMIT_HASH
 
 
 class SecretYamlObject(yaml.YAMLObject):
@@ -253,6 +255,46 @@ class BinaryInteractionFilter(ConcreteInteractionFilter):
         comment: tp.Optional[str] = None
     ) -> None:
         super().__init__(parent, comment)
+
+
+class SingleCommitFilter(UnaryInteractionFilter):
+    yaml_tag = u'!SingleCommitFilter'
+
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        commit_hash: tp.Optional[str] = None
+    ) -> None:
+        super().__init__(parent, comment)
+        if commit_hash:
+            self._commit_hash = commit_hash
+        else:
+            self._commit_hash = UNCOMMITTED_COMMIT_HASH.hash
+
+    def commit(self) -> str:
+        return self._commit_hash
+
+    def setCommit(self, commit_hash: str) -> None:
+        self._commit_hash = commit_hash
+
+    def data(self, column: int) -> tp.Any:
+        val = super().data(column)
+
+        if column == 2:
+            val = self.commit()
+
+        return val
+
+    def setData(self, column: int, value: tp.Any) -> None:
+        super().setData(column, value)
+
+        if column == 2:
+            self.setCommit(value)
+
+    @staticmethod
+    def resource() -> str:
+        return ":/breeze/light/vcs-commit.svg"
 
 
 class AuthorFilter(UnaryInteractionFilter):

@@ -46,6 +46,9 @@ from varats.gui.views.ui_FilterMain import Ui_FilterEditor
 from varats.gui.views.ui_FilterNodeProperties import Ui_FilterNodeProperties
 from varats.gui.views.ui_FilterProperties import Ui_FilterProperties
 from varats.gui.views.ui_FilterUnaryWarning import Ui_FilterUnaryWarning
+from varats.gui.views.ui_SingleCommitFilterProperties import (
+    Ui_SingleCommitFilterProperties,
+)
 
 
 def _showTimeDurationHelp() -> None:
@@ -81,6 +84,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
 
         self._node_editor = NodeEditor(self)
         self._filter_unary_warning = FilterUnaryWarning(self)
+        self._single_commit_editor = SingleCommitFilterEditor(self)
         self._author_filter_editor = AuthorFilterEditor(self)
         self._committer_filter_editor = CommitterFilterEditor(self)
         self._author_date_min_filter_editor = AuthorDateMinFilterEditor(self)
@@ -102,6 +106,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
 
         self.layoutNode.addWidget(self._node_editor)
         self.layoutNodeWarning.addWidget(self._filter_unary_warning)
+        self.layoutNodeSpec.addWidget(self._single_commit_editor)
         self.layoutNodeSpec.addWidget(self._author_filter_editor)
         self.layoutNodeSpec.addWidget(self._committer_filter_editor)
         self.layoutNodeSpec.addWidget(self._author_date_min_filter_editor)
@@ -130,6 +135,8 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
                 pass
             if node.name() == 'TargetOperator':
                 pass
+            if node.name() == 'SingleCommitFilter':
+                self._single_commit_editor.setVisible(True)
             if node.name() == 'AuthorFilter':
                 self._author_filter_editor.setVisible(True)
             if node.name() == 'CommitterFilter':
@@ -153,6 +160,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
 
         self._node_editor.setSelection(current)
 
+        self._single_commit_editor.setSelection(current)
         self._author_filter_editor.setSelection(current)
         self._filter_unary_warning.setSelection(current)
         self._committer_filter_editor.setSelection(current)
@@ -170,6 +178,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
 
         self._node_editor.setModel(model)
         self._filter_unary_warning.setModel(model)
+        self._single_commit_editor.setModel(model)
         self._author_filter_editor.setModel(model)
         self._committer_filter_editor.setModel(model)
         self._author_date_min_filter_editor.setModel(model)
@@ -183,6 +192,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
 
     def _setEditorsInvisible(self):
         self._author_filter_editor.setVisible(False)
+        self._single_commit_editor.setVisible(False)
         self._committer_filter_editor.setVisible(False)
         self._author_date_min_filter_editor.setVisible(False)
         self._author_date_max_filter_editor.setVisible(False)
@@ -235,6 +245,25 @@ class FilterUnaryWarning(QWidget, Ui_FilterUnaryWarning):
                 self.uiWarningLabel.show()
         else:
             self.uiWarningLabel.hide()
+
+
+class SingleCommitFilterEditor(QWidget, Ui_SingleCommitFilterProperties):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+
+        self._data_mapper = QDataWidgetMapper()
+
+    def setModel(self, model):
+        self._model = model
+        self._data_mapper.setModel(model)
+        self._data_mapper.addMapping(self.uiCommitHash, 2)
+
+    def setSelection(self, current: QModelIndex) -> None:
+        parent = current.parent()
+        self._data_mapper.setRootIndex(parent)
+        self._data_mapper.setCurrentModelIndex(current)
 
 
 class AuthorFilterEditor(QWidget, Ui_AuthorFilterProperties):
@@ -472,6 +501,11 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
         )
         menu.addSeparator()
         menu.addAction(
+            QIcon(QPixmap(":/breeze/light/vcs-commit.svg")),
+            'Single Commit Filter', self.addSingleCommitFilterNode
+        )
+        menu.addSeparator()
+        menu.addAction(
             QIcon(QPixmap(":/breeze/light/im-user.svg")), 'Committer Filter',
             self.addCommitterFilterNode
         )
@@ -562,10 +596,8 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
                 event.ignore()
 
     def updateWindowTitle(self) -> None:
-        self.setWindowTitle(
-            "[*]{} - InteractionFilter Editor".
-            format(self._file_basename if self._file_basename else "Untitled")
-        )
+        filter_name = self._file_basename if self._file_basename else 'Untitled'
+        self.setWindowTitle(f"[*]{filter_name} - InteractionFilter Editor")
 
     def addAndNode(self):
         with self._lock:
@@ -598,6 +630,13 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
     def addTargetNode(self):
         with self._lock:
             modified = self._model.addTargetNode()
+            self.uiTree.selectionModel().clear()
+            if modified:
+                self.setWindowModified(True)
+
+    def addSingleCommitFilterNode(self):
+        with self._lock:
+            modified = self._model.addSingleCommitFilterNode()
             self.uiTree.selectionModel().clear()
             if modified:
                 self.setWindowModified(True)
