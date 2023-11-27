@@ -1322,7 +1322,7 @@ class SynthFeatureLargeConfigSpace(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthFeatureLargeConfigSpace",
-            refspec="origin/f-FeatureCaseStudies",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
@@ -1369,7 +1369,7 @@ class SynthFeatureRestrictedConfigSpace(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="SynthFeatureRestrictedConfigSpace",
-            refspec="origin/f-FeatureCaseStudies",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
