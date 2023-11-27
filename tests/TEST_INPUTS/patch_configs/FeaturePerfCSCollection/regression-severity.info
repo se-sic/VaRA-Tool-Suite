@@ -1,0 +1,5 @@
+description: Patch with a regression severity
+path: bug.patch
+project_name: FeaturePerfCSCollection
+shortname: regression-severity
+regression_severity: 1000
