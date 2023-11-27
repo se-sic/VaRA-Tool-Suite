@@ -52,6 +52,8 @@ class TraceEvent():
     """Represents a trace event that was captured during the analysis of a
     target program."""
 
+    __uuid: int
+
     def __init__(
         self, json_trace_event: tp.Dict[str, tp.Any], name_id: int,
         name_id_mapper: 'TEFReport.NameIDMapper'
@@ -67,9 +69,9 @@ class TraceEvent():
         self.__tid = int(json_trace_event["tid"])
 
         if "UUID" in json_trace_event:
-            self.__uuid: int = int(json_trace_event["UUID"])
+            self.__uuid = int(json_trace_event["UUID"])
         elif "ID" in json_trace_event:
-            self.__uuid: int = int(json_trace_event["ID"])
+            self.__uuid = int(json_trace_event["ID"])
         else:
             LOG.critical("Could not parse UUID/ID from trace event")
             self.__uuid: int = 0
@@ -152,7 +154,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
-    def _patch_errors_from_file(self):
+    def _patch_errors_from_file(self) -> None:
         with open(self.path, "r") as f:
             data = f.read()
 
@@ -168,7 +170,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                 f.write(line)
 
     def _parse_json(self) -> None:
-        trace_events: tp.List[TraceEvent] = list()
+        trace_events: tp.List[TraceEvent] = []
 
         self._patch_errors_from_file()
 
@@ -205,10 +207,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
                     if event == "string":
                         self.__timestamp_unit: str = str(value)
         self.__trace_events: tp.List[TraceEvent] = trace_events
-
-
-def extract_feature_data():
-    pass
 
 
 class TEFReportAggregate(
