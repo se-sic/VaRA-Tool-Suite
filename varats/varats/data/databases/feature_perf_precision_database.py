@@ -217,16 +217,15 @@ def cliffs_delta_pim_regression_check(
 
             d, res = cliffs_delta(old_values, new_values)
 
-            # print(f"{d=}, {res=}")
-
-            # if d > 0.70 or d < -0.7:
             # if res == "large":
-            if d > 0.7 or d < -0.7:
-                # print(
-                #     f"{self.name} found regression for feature {feature}."
-                # )
+            if abs(d) > 0.7:
                 is_regression = True
         else:
+            if np.mean(old_values) > abs_cut_off:
+                print(
+                    f"Could not find feature {feature} in new trace. "
+                    f"({np.mean(old_values)}us lost)"
+                )
             print(f"Could not find feature {feature} in new trace.")
             # TODO: how to handle this?
             # raise NotImplementedError()
@@ -241,7 +240,6 @@ def sum_pim_regression_check(
     rel_cut_off: float = 0.01,
     abs_cut_off: int = 20
 ) -> bool:
-    # TODO: add some tests
     baseline_pim_totals: tp.List[tp.List[int]] = [
         old_values for feature, old_values in baseline_pim.items()
         if feature != "Base"
@@ -262,9 +260,11 @@ def sum_pim_regression_check(
         # How do we get here?
         return False
 
-    # d, res = cliffs_delta(baseline_pim_total, current_pim_total)
-    # # return res == "large"
-    # return d > 0.6 or d < -0.6
+    mean_baseline = np.mean(baseline_pim_total)
+    mean_diff = abs(mean_baseline - np.mean(current_pim_total))
+    if mean_diff < abs_cut_off or mean_diff < mean_baseline * rel_cut_off:
+        return False
+
     return ttest_ind(baseline_pim_total, current_pim_total).pvalue < 0.05
 
 
@@ -504,13 +504,11 @@ def get_regressing_config_ids_gt(
         time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
 
         old_time = time_reports.get_baseline_report()
-        # new_time = time_reports.get_new_report()
         new_time = time_reports.get_report_for_patch(patch_name)
         if not new_time:
             return None
 
-        # TODO: what baseline cutoff to choose?
-        # req_diff = np.mean(old_time.measurements_wall_clock_time) * 0.03
+        # Cut off regressions smaller than 100ms
         req_diff = 0.1
         if np.mean(old_time.measurements_wall_clock_time
                   ) == np.mean(new_time.measurements_wall_clock_time):
@@ -519,35 +517,16 @@ def get_regressing_config_ids_gt(
             np.mean(old_time.measurements_wall_clock_time) -
             np.mean(new_time.measurements_wall_clock_time)
         ) < req_diff:
-            # if project_name == "DunePerfRegression":
-            #     print(
-            #         f"No  {patch_name=}_{config_id=} -> {old_time.measurements_wall_clock_time=} || {new_time.measurements_wall_clock_time=}"
-            #     )
             ground_truth[config_id] = False
         else:
-            # d, res = cliffs_delta(
-            #     old_time.measurements_wall_clock_time,
-            #     new_time.measurements_wall_clock_time
-            # )
-
             ttest_res = ttest_ind(
                 old_time.measurements_wall_clock_time,
                 new_time.measurements_wall_clock_time
             )
 
-            # if res == "large":
-            # if d > 0.7 or d < -0.7:
             if ttest_res.pvalue < 0.05:
-                # if project_name == "DunePerfRegression":
-                #     print(
-                #         f"Reg {patch_name=}_{config_id=} -> {old_time.measurements_wall_clock_time=} || {new_time.measurements_wall_clock_time=}"
-                #     )
                 ground_truth[config_id] = True
             else:
-                # if project_name == "DunePerfRegression":
-                #     print(
-                #         f"No  {patch_name=}_{config_id=} -> {old_time.measurements_wall_clock_time=} || {new_time.measurements_wall_clock_time=}"
-                #     )
                 ground_truth[config_id] = False
 
     return ground_truth
@@ -584,6 +563,10 @@ def compute_profiler_predictions(
 
     result_dict: tp.Dict[int, bool] = {}
     for config_id in config_ids:
+        print(
+            f"Compute profiler predictions:\n    profiler={profiler.name} - "
+            f"{project_name=} - {patch_name} - {config_id=}"
+        )
         report_files = get_processed_revisions_files(
             project_name,
             profiler.experiment,
@@ -774,6 +757,7 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
                     project_name, case_study, rev, patch_name
                 )
             except:
+                # TODO: ???
                 continue
 
             for profiler in profilers:
@@ -789,7 +773,6 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
                         if ground_truth else -1
                 }
 
-                # TODO: multiple patch cycles
                 predicted = compute_profiler_predictions(
                     profiler, project_name, case_study,
                     case_study.get_config_ids_for_revision(rev), patch_name
