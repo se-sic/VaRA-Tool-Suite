@@ -39,8 +39,20 @@ class Patch:
         path: Path,
         valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
         tags: tp.Optional[tp.Set[str]] = None,
-        feature_tags: tp.Optional[tp.Set[str]] = None
+        feature_tags: tp.Optional[tp.Set[str]] = None,
+        regression_severity: tp.Optional[int] = None
     ):
+        """
+        Args:
+            project_name: Project name that this patch belongs to
+            shortname: Short name to uniquely identify a patch
+            description: Textual description of the patch
+            path: Path to the patch file
+            valid_revisions: List of revisions that the patch is applicable to
+            tags: Tags of the patch
+            feature_tags: Feature specific tags of a patch (Used for PatchConfiguration)
+            regression_severity: Regression severity in milliseconds (If applicable)
+        """
         self.project_name: str = project_name
         self.shortname: str = shortname
         self.description: str = description
@@ -49,6 +61,7 @@ class Patch:
             CommitHash] = valid_revisions if valid_revisions else set()
         self.tags: tp.Optional[tp.Set[str]] = tags
         self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
+        self.regression_severity: tp.Optional[int] = regression_severity
 
     @staticmethod
     def from_yaml(yaml_path: Path) -> 'Patch':
@@ -119,9 +132,15 @@ class Patch:
                 parse_revisions(yaml_dict["exclude_revisions"])
             )
 
+        regression_severity: tp.Optional[int]
+        if "regression_severity" in yaml_dict:
+            regression_severity = yaml_dict["regression_severity"]
+        else:
+            regression_severity = None
+
         return Patch(
             project_name, shortname, description, path, include_revisions, tags,
-            feature_tags
+            feature_tags, regression_severity
         )
 
     def __repr__(self) -> str:
