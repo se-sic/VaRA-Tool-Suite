@@ -564,7 +564,7 @@ def compute_profiler_predictions(
     result_dict: tp.Dict[int, bool] = {}
     for config_id in config_ids:
         print(
-            f"Compute profiler predictions:\n    profiler={profiler.name} - "
+            f"Compute profiler predictions:  profiler={profiler.name} - "
             f"{project_name=} - {patch_name} - {config_id=}"
         )
         report_files = get_processed_revisions_files(
