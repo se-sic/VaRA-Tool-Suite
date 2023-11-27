@@ -11,12 +11,11 @@ import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult, Clean
-from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
+from benchbuild.utils.actions import StepResult
+from benchbuild.utils.cmd import time, cp, sudo, bpftrace
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
 
-from varats.containers.containers import get_base_image, ImageBase
 from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReportAggregate,
 )
@@ -87,6 +86,7 @@ def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
 
 
 def get_extra_cflags(project: VProject) -> tp.List[str]:
+    """Get additional cflags for some projects."""
     if project.name in ["DunePerfRegression", "HyTeg"]:
         # Disable phasar for dune as the analysis cannot handle dunes size
         return ["-fvara-disable-phasar"]
@@ -95,6 +95,7 @@ def get_extra_cflags(project: VProject) -> tp.List[str]:
 
 
 def get_threshold(project: VProject) -> int:
+    """Get the project specific instrumentation threshold."""
     if project.DOMAIN is ProjectDomains.TEST:
         if project.name in [
             "SynthSAFieldSensitivity", "SynthIPRuntime", "SynthIPTemplate",
@@ -112,6 +113,7 @@ def get_threshold(project: VProject) -> int:
 
 
 class AnalysisProjectStepBase(OutputFolderStep):
+    """Base class for project steps."""
 
     project: VProject
 
@@ -137,6 +139,7 @@ class AnalysisProjectStepBase(OutputFolderStep):
 class MPRTimeReportAggregate(
     MultiPatchReport[TimeReportAggregate], shorthand="MPRTRA", file_type=".zip"
 ):
+    """Multi-patch wrapper report for time aggregates."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TimeReportAggregate)
@@ -145,6 +148,7 @@ class MPRTimeReportAggregate(
 class MPRTEFAggregate(
     MultiPatchReport[TEFReportAggregate], shorthand="MPRTEFA", file_type=".zip"
 ):
+    """Multi-patch wrapper report for tef aggregates."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, TEFReportAggregate)
@@ -153,6 +157,7 @@ class MPRTEFAggregate(
 class MPRPIMAggregate(
     MultiPatchReport[TEFReportAggregate], shorthand="MPRPIMA", file_type=".zip"
 ):
+    """Multi-patch wrapper report for tef aggregates."""
 
     def __init__(self, path: Path) -> None:
         # TODO: clean up report handling, we currently parse it as a TEFReport
@@ -167,16 +172,6 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     DESCRIPTION = "Run traced binary on workloads."
 
     project: VProject
-
-    def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "json",
-        reps=REPS
-    ):
-        super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -221,16 +216,6 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
 
     project: VProject
 
-    def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "json",
-        reps=REPS
-    ):
-        super().__init__(project, binary, file_name, report_file_ending, reps)
-
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
 
@@ -261,21 +246,24 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                                     non_nfs_tmp_dir
                                 ) / self._binary.name
 
-                                pb_cmd = prj_command.command.as_plumbum_wrapped_with(
-                                    adapted_binary_location=
-                                    adapted_binary_location,
-                                    project=self.project
-                                )
+                                pb_cmd = \
+                                    prj_command.command.as_plumbum_wrapped_with(
+                                        adapted_binary_location=
+                                        adapted_binary_location,
+                                        project=self.project
+                                    )
 
-                                bpf_runner = bpf_runner = self.attach_usdt_raw_tracing(
-                                    local_tracefile_path,
-                                    adapted_binary_location,
-                                    Path(non_nfs_tmp_dir)
-                                )
+                                bpf_runner = \
+                                    self.attach_usdt_raw_tracing(
+                                        local_tracefile_path,
+                                        adapted_binary_location,
+                                        Path(non_nfs_tmp_dir)
+                                    )
 
                                 with cleanup(prj_command):
                                     print(
-                                        f"Running example {prj_command.command.label}"
+                                        "Running example "
+                                        f"{prj_command.command.label}"
                                     )
                                     pb_cmd(
                                         retcode=self._binary.valid_exit_codes
@@ -306,7 +294,6 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
 
         # Assertion: Can be run without sudo password prompt.
         bpftrace_cmd = sudo[bpftrace_script]
-        # bpftrace_cmd = numactl["--cpunodebind=0", "--membind=0", bpftrace_cmd]
 
         bpftrace_runner = bpftrace_cmd & BG
         # give bpftrace time to start up, requires more time than regular USDT
@@ -322,16 +309,6 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     DESCRIPTION = "Run traced binary on workloads."
 
     project: VProject
-
-    def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "json",
-        reps=REPS
-    ):
-        super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -392,7 +369,6 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                              "--executable", binary]
         print(f"{bcc_cmd=}")
         bcc_cmd = sudo[bcc_cmd]
-        # bcc_cmd = numactl["--cpunodebind=0", "--membind=0", bcc_cmd]
 
         bcc_runner = bcc_cmd & BG
         sleep(3)  # give bcc script time to start up
@@ -404,6 +380,7 @@ def setup_actions_for_vara_experiment(
     instr_type: FeatureInstrType,
     analysis_step: tp.Type[AnalysisProjectStepBase]
 ) -> tp.MutableSequence[actions.Step]:
+    """Sets up actions for a given perf precision experiment."""
 
     project.cflags += experiment.get_vara_feature_cflags(project)
 
@@ -445,7 +422,7 @@ def setup_actions_for_vara_experiment(
         get_current_config_id(project)
     )
 
-    patch_provider = PatchProvider.get_provider_for_project(project)
+    patch_provider = PatchProvider.get_provider_for_project(type(project))
     patches = patch_provider.get_patches_for_revision(
         ShortCommitHash(project.version_of_primary)
     )[IDENTIFIER_PATCH_TAG]
@@ -934,6 +911,7 @@ def setup_actions_for_vara_overhead_experiment(
     instr_type: FeatureInstrType,
     analysis_step: tp.Type[AnalysisProjectStepBase]
 ) -> tp.MutableSequence[actions.Step]:
+    """Sets up actions for a given perf overhead experiment."""
     project.cflags += experiment.get_vara_feature_cflags(project)
 
     threshold = get_threshold(project)

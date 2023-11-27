@@ -1,5 +1,4 @@
 """Module for the FeaturePerfPrecision plots."""
-import random
 import typing as tp
 from itertools import chain
 

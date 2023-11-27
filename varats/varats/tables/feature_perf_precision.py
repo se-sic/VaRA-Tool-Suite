@@ -3,11 +3,12 @@ import re
 import typing as tp
 from pathlib import Path
 
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from plumbum import local, TF, RETCODE
+from benchbuild.utils.cmd import git
+from matplotlib import colors
+from plumbum import local
 from pylatex import Document, Package
 
 from varats.data.databases.feature_perf_precision_database import (
@@ -33,42 +34,41 @@ from varats.project.project_util import get_local_project_git_path
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.utils.git_util import calc_repo_loc, ChurnConfig, git
+from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
 
-def cmap_map(function, cmap):
+def cmap_map(function, cmap: colors.Colormap) -> colors.LinearSegmentedColormap:
     """
     Applies function (which should operate on vectors of shape 3: [r, g, b]), on
     colormap cmap.
 
     This routine will break any discontinuous points in a colormap.
     """
-    cdict = cmap._segmentdata
+    c_dict = cmap._segmentdata
     step_dict = {}
     # Firt get the list of points where the segments start or end
     for key in ('red', 'green', 'blue'):
-        step_dict[key] = list(map(lambda x: x[0], cdict[key]))
+        step_dict[key] = list(map(lambda x: x[0], c_dict[key]))
     step_list = sum(step_dict.values(), [])
     step_list = np.array(list(set(step_list)))
     # Then compute the LUT, and apply the function to the LUT
     reduced_cmap = lambda step: np.array(cmap(step)[0:3])
-    old_LUT = np.array(list(map(reduced_cmap, step_list)))
-    new_LUT = np.array(list(map(function, old_LUT)))
+    old_lut = np.array(list(map(reduced_cmap, step_list)))
+    new_lut = np.array(list(map(function, old_lut)))
     # Now try to make a minimal segment definition of the new LUT
-    cdict = {}
+    c_dict = {}
     for i, key in enumerate(['red', 'green', 'blue']):
         this_cdict = {}
         for j, step in enumerate(step_list):
             if step in step_dict[key]:
-                this_cdict[step] = new_LUT[j, i]
-            elif new_LUT[j, i] != old_LUT[j, i]:
-                this_cdict[step] = new_LUT[j, i]
+                this_cdict[step] = new_lut[j, i]
+            elif new_lut[j, i] != old_lut[j, i]:
+                this_cdict[step] = new_lut[j, i]
         colorvector = list(map(lambda x: x + (x[1],), this_cdict.items()))
         colorvector.sort()
-        cdict[key] = colorvector
+        c_dict[key] = colorvector
 
-    import matplotlib
-    return matplotlib.colors.LinearSegmentedColormap('colormap', cdict, 1024)
+    return colors.LinearSegmentedColormap('colormap', c_dict, 1024)
 
 
 class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
@@ -76,6 +76,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
     measurement approaches."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Setup performance precision table."""
         case_studies = get_loaded_paper_config().get_all_case_studies()
         profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
 
@@ -172,10 +173,9 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
         print(f"{colum_setup=}")
         df.columns = pd.MultiIndex.from_tuples(colum_setup)
 
-        # Table config
-
         print(f"{df=}")
 
+        # Table config
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
@@ -220,147 +220,25 @@ class FeaturePerfPrecisionTableGenerator(
         ]
 
 
-class FeaturePerfOverheadTable(Table, table_name="fperf_overhead"):
-    """Table that compares overhead of different feature performance measurement
-    approaches."""
+def truncate_colormap(
+    cmap: colors.Colormap,
+    minval: float = 0.0,
+    maxval: float = 1.0,
+    n: int = 100
+) -> colors.LinearSegmentedColormap:
+    """
+    Truncates a given color map to a specific range and number of elements.
 
-    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+    Args:
+        cmap: the original colormap
+        minval: smallest color value
+        maxval: largest color value
+        n: number of colors that should be in the map
 
-        # Data aggregation
-        df = pd.DataFrame()
-        table_rows = []
-
-        for case_study in case_studies:
-            rev = case_study.revisions[0]
-            project_name = case_study.project_name
-
-            overhead_ground_truth = OverheadData.compute_overhead_data(
-                Baseline(), case_study, rev
-            )
-            if not overhead_ground_truth:
-                print(
-                    f"No baseline data for {case_study.project_name}, skipping"
-                )
-                continue
-
-            new_row = {
-                'CaseStudy': project_name,
-                'WithoutProfiler_mean_time': overhead_ground_truth.mean_time(),
-                'WithoutProfiler_mean_ctx': overhead_ground_truth.mean_ctx()
-            }
-
-            for profiler in profilers:
-                profiler_overhead = OverheadData.compute_overhead_data(
-                    profiler, case_study, rev
-                )
-                if profiler_overhead:
-                    time_diff = profiler_overhead.config_wise_time_diff(
-                        overhead_ground_truth
-                    )
-                    ctx_diff = profiler_overhead.config_wise_ctx_diff(
-                        overhead_ground_truth
-                    )
-                    print(f"{time_diff=}")
-                    new_row[f"{profiler.name}_time_mean"] = np.mean(
-                        list(time_diff.values())
-                    )
-                    new_row[f"{profiler.name}_time_std"] = np.std(
-                        list(time_diff.values())
-                    )
-                    new_row[f"{profiler.name}_time_max"] = np.max(
-                        list(time_diff.values())
-                    )
-                    new_row[f"{profiler.name}_ctx_mean"] = np.mean(
-                        list(ctx_diff.values())
-                    )
-                    new_row[f"{profiler.name}_ctx_std"] = np.std(
-                        list(ctx_diff.values())
-                    )
-                    new_row[f"{profiler.name}_ctx_max"] = np.max(
-                        list(ctx_diff.values())
-                    )
-                else:
-                    new_row[f"{profiler.name}_time_mean"] = np.nan
-                    new_row[f"{profiler.name}_time_std"] = np.nan
-                    new_row[f"{profiler.name}_time_max"] = np.nan
-
-                    new_row[f"{profiler.name}_ctx_mean"] = np.nan
-                    new_row[f"{profiler.name}_ctx_std"] = np.nan
-                    new_row[f"{profiler.name}_ctx_max"] = np.nan
-
-            table_rows.append(new_row)
-            # df.append(new_row, ignore_index=True)
-
-        df = pd.concat([df, pd.DataFrame(table_rows)])
-        df.sort_values(["CaseStudy"], inplace=True)
-        print(f"{df=}")
-
-        colum_setup = [('', '', 'CaseStudy'), ('Baseline', 'time', 'mean'),
-                       ('Baseline', 'ctx', 'mean')]
-        for profiler in profilers:
-            colum_setup.append((profiler.name, 'time', 'mean'))
-            colum_setup.append((profiler.name, 'time', 'std'))
-            colum_setup.append((profiler.name, 'time', 'max'))
-
-            colum_setup.append((profiler.name, 'ctx', 'mean'))
-            colum_setup.append((profiler.name, 'ctx', 'std'))
-            colum_setup.append((profiler.name, 'ctx', 'max'))
-
-        print(f"{colum_setup=}")
-        df.columns = pd.MultiIndex.from_tuples(colum_setup)
-
-        # Table config
-
-        print(f"{df=}")
-
-        style: pd.io.formats.style.Styler = df.style
-        kwargs: tp.Dict[str, tp.Any] = {}
-        if table_format.is_latex():
-            kwargs["hrules"] = True
-            column_format = "l|rr"
-            for _ in profilers:
-                column_format += "|rrrrrr"
-            kwargs["column_format"] = column_format
-            kwargs["multicol_align"] = "|c"
-            kwargs["caption"
-                  ] = """This table depicts the overhead measurement data.
-For each case study, we show on the left the mean time it took to execute it without instrumentation (Baseline).
-To the right of the baseline, we show for each profiler the induced overhead.
-"""
-            style.format(precision=2)
-            style.hide()
-
-        def add_extras(doc: Document) -> None:
-            doc.packages.append(Package("amsmath"))
-            doc.packages.append(Package("amssymb"))
-
-        return dataframe_to_table(
-            df,
-            table_format,
-            style=style,
-            wrap_table=wrap_table,
-            wrap_landscape=True,
-            document_decorator=add_extras,
-            **kwargs
-        )
-
-
-class FeaturePerfOverheadTableGenerator(
-    TableGenerator, generator_name="fperf-overhead", options=[]
-):
-    """Generator for `FeaturePerfOverheadTable`."""
-
-    def generate(self) -> tp.List[Table]:
-        return [
-            FeaturePerfOverheadTable(self.table_config, **self.table_kwargs)
-        ]
-
-
-def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    Returns: color map truncated to the given parameters
+    """
     new_cmap = colors.LinearSegmentedColormap.from_list(
-        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        f"trunc({cmap.name},{minval:.2f},{maxval:.2f})",
         cmap(np.linspace(minval, maxval, n))
     )
     return new_cmap
@@ -371,6 +249,7 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
     approaches."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Setup performance overhead comparision table."""
         case_studies = get_loaded_paper_config().get_all_case_studies()
         profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
@@ -388,7 +267,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
                                                 'recall': 'mean',
                                                 'f1_score': 'mean'
                                             })
-        print(f"precision_df=\n{precision_df}")
 
         overhead_df = load_overhead_data(case_studies, profilers)
         overhead_df = overhead_df[[
@@ -412,7 +290,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         merged_df = pd.merge(
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
-        print(f"merged_df=\n{merged_df}")
 
         pivot_df = merged_df.pivot(
             index='CaseStudy',
@@ -433,10 +310,8 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             (prof.name, c) for prof in profilers for c in columns
         ],
                                     axis=1)
-        print(f"pivot_df=\n{pivot_df}")
 
         pivot_df.loc["Total"] = pivot_df.mean()
-        print(f"pivot_df=\n{pivot_df}")
 
         # Rename columns
         overhead_time_c_name = "$\Delta$ Time $(\%)$"
@@ -500,14 +375,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
                 vmax=100.0,
             )
 
-            # style.background_gradient(
-            #     cmap=gray_map,
-            #     subset=[(prof.name, overhead_memory_val_c_name)
-            #             for prof in profilers],
-            #     vmin=0.0,
-            #     # vmax=100.0,
-            # )
-
             kwargs["convert_css"] = True
             kwargs["column_format"] = "l" + "".join([
                 "rrrrr" for _ in profilers
@@ -543,7 +410,6 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
     """Table showing some general information about feature performance case
     studies."""
 
-    # TODO: refactor out
     @staticmethod
     def _calc_folder_locs(repo_path: Path, rev_range: str, folder: str) -> int:
         churn_config = ChurnConfig.create_c_style_languages_config()
