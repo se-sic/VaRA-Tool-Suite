@@ -56,6 +56,34 @@ REPS = 3
 IDENTIFIER_PATCH_TAG = 'perf_prec'
 
 
+def default_patch_selector(project):
+    patch_provider = PatchProvider.get_provider_for_project(project)
+    patches = patch_provider.get_patches_for_revision(
+        ShortCommitHash(project.version_of_primary)
+    )[IDENTIFIER_PATCH_TAG]
+
+    return [(p.shortname, [p]) for p in patches]
+
+
+def RQ1_patch_selector(project):
+    rq1_tags = get_tags_RQ1(project)
+
+    patch_provider = PatchProvider.get_provider_for_project(project)
+
+    patches = PatchSet(set())
+
+    for tag in rq1_tags:
+        patches |= patch_provider.get_patches_for_revision(
+            ShortCommitHash(project.version_of_primary)
+        )[tag, "regression"]
+
+    return [(p.shortname, [p]) for p in patches]
+
+
+def RQ2_patch_selector(project):
+    pass
+
+
 def get_feature_tags(project):
     config = get_config(project, PatchConfiguration)
     if not config:
@@ -150,7 +178,6 @@ def get_threshold(project: VProject) -> int:
 
 
 class AnalysisProjectStepBase(OutputFolderStep):
-
     project: VProject
 
     def __init__(
@@ -438,11 +465,12 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
 
 
 def setup_actions_for_vara_experiment(
-    experiment: FeatureExperiment, project: VProject,
+    experiment: FeatureExperiment,
+    project: VProject,
     instr_type: FeatureInstrType,
-    analysis_step: tp.Type[AnalysisProjectStepBase]
+    analysis_step: tp.Type[AnalysisProjectStepBase],
+    patch_selector=RQ1_patch_selector
 ) -> tp.MutableSequence[actions.Step]:
-
     project.cflags += experiment.get_vara_feature_cflags(project)
 
     threshold = get_threshold(project)
@@ -483,33 +511,27 @@ def setup_actions_for_vara_experiment(
         get_current_config_id(project)
     )
 
-    rq1_tags = get_tags_RQ1(project)
-
-    patch_provider = PatchProvider.get_provider_for_project(project)
-
-    patches = PatchSet(set())
-
-    for tag in rq1_tags:
-        patches |= patch_provider.get_patches_for_revision(
-            ShortCommitHash(project.version_of_primary)
-        )[tag, "regression"]
-    print(f"{patches=}")
+    patchlists = patch_selector(project)
+    print(f"{patchlists=}")
 
     patch_steps = []
-    for patch in patches:
-        print(f"Got patch with path: {patch.path}")
-        patch_steps.append(ApplyPatch(project, patch))
+    for name, patches in patchlists:
+        for patch in patches:
+            print(f"Got patch with path: {patch.path}")
+            patch_steps.append(ApplyPatch(project, patch))
         patch_steps.append(ReCompile(project))
         patch_steps.append(
             analysis_step(
                 project,
                 binary,
-                file_name=MultiPatchReport.create_patched_report_name(
-                    patch, "rep_measurements"
+                file_name=MultiPatchReport.
+                create_custom_named_patched_report_name(
+                    name, "rep_measurements"
                 )
             )
         )
-        patch_steps.append(RevertPatch(project, patch))
+        for patch in reversed(patches):
+            patch_steps.append(RevertPatch(project, patch))
 
     analysis_actions = get_config_patch_steps(project)
 
@@ -727,33 +749,26 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             get_current_config_id(project)
         )
 
-        rq1_tags = get_tags_RQ1(project)
-
-        patch_provider = PatchProvider.get_provider_for_project(project)
-
-        patches = PatchSet(set())
-
-        for tag in rq1_tags:
-            patches |= patch_provider.get_patches_for_revision(
-                ShortCommitHash(project.version_of_primary)
-            )[tag, "regression"]
-        print(f"{patches=}")
+        patchlists = RQ1_patch_selector(project)
 
         patch_steps = []
-        for patch in patches:
-            print(f"Got patch with path: {patch.path}")
-            patch_steps.append(ApplyPatch(project, patch))
+        for name, patches in patchlists:
+            for patch in patches:
+                print(f"Got patch with path: {patch.path}")
+                patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
                 RunBlackBoxBaseline(
                     project,
                     binary,
-                    file_name=MPRTimeReportAggregate.create_patched_report_name(
-                        patch, "rep_measurements"
+                    file_name=MPRTimeReportAggregate.
+                    create_custom_named_patched_report_name(
+                        name, "rep_measurements"
                     )
                 )
             )
-            patch_steps.append(RevertPatch(project, patch))
+            for patch in reversed(patches):
+                patch_steps.append(RevertPatch(project, patch))
 
         analysis_actions = get_config_patch_steps(project)
 

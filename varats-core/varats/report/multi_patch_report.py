@@ -70,6 +70,14 @@ class MultiPatchReport(
         )
 
     @staticmethod
+    def create_custom_named_patched_report_name(
+        custom_name: str, base_file_name: str
+    ):
+        return (
+            f"patched_{len(custom_name)}_" + f"{custom_name}_{base_file_name}"
+        )
+
+    @staticmethod
     def is_patched_report(file_name: str) -> bool:
         return file_name.startswith("patched_")
 
