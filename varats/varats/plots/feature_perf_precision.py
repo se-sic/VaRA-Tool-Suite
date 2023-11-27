@@ -222,8 +222,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         overhead_df['overhead_major_page_faults_rel'].replace([np.inf, -np.inf],
                                                               np.nan,
                                                               inplace=True)
-        # TODO: fix
-        overhead_df["overhead_major_page_faults_rel"].fillna(100, inplace=True)
 
         overhead_df['overhead_minor_page_faults_rel'
                    ] = overhead_df['minor_page_faults'] / (
@@ -233,8 +231,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         overhead_df['overhead_minor_page_faults_rel'].replace([np.inf, -np.inf],
                                                               np.nan,
                                                               inplace=True)
-        # TODO: fix
-        overhead_df["overhead_minor_page_faults_rel"].fillna(100, inplace=True)
 
         # Filesystem
         overhead_df['overhead_fs_inputs_rel'] = overhead_df['fs_inputs'] / (
@@ -325,8 +321,8 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         )
         ax.set_xlim(x_limit, 100)
         ax.tick_params(labelsize=20, pad=10)
-        ax.xaxis.label.set_size(25)
-        ax.yaxis.label.set_size(25)
+        ax.xaxis.label.set_fontsize(25)
+        ax.yaxis.label.set_fontsize(25)
         ax.yaxis.labelpad = 10
         ax.xaxis.labelpad = 20
 

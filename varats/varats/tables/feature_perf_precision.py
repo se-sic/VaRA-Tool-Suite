@@ -20,13 +20,12 @@ from varats.data.databases.feature_perf_precision_database import (
     VXray,
     PIMTracer,
     EbpfTraceTEF,
-    Baseline,
     compute_profiler_predictions,
-    OverheadData,
     load_precision_data,
     load_overhead_data,
 )
 from varats.data.metrics import ConfusionMatrix
+from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path
@@ -45,7 +44,7 @@ def cmap_map(
 
     This routine will break any discontinuous points in a colormap.
     """
-    c_dict = cmap._segmentdata  # pylint: disable=protected-access
+    c_dict = cmap._segmentdata  # pylint: disable=protected-access  # type: ignore
     step_dict: tp.Dict[str, tp.List[tp.Any]] = {}
 
     # First get the list of points where the segments start or end
@@ -81,12 +80,10 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
     """Table that compares the precision of different feature performance
     measurement approaches."""
 
-    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        """Setup performance precision table."""
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
-
-        # Data aggregation
+    @staticmethod
+    def _prepare_data_table(
+        case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+    ):
         df = pd.DataFrame()
         table_rows = []
 
@@ -136,9 +133,16 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
                         new_row[f"{profiler.name}_baccuracy"] = np.nan
 
                 table_rows.append(new_row)
-                # df.append(new_row, ignore_index=True)
 
-        df = pd.concat([df, pd.DataFrame(table_rows)])
+        return pd.concat([df, pd.DataFrame(table_rows)])
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        """Setup performance precision table."""
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+
+        # Data aggregation
+        df = self._prepare_data_table(case_studies, profilers)
         df.sort_values(["CaseStudy"], inplace=True)
         print(f"{df=}")
 
@@ -350,8 +354,7 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             ]
             style.format({col: "{:.0f}" for col in mv_columns}, precision=2)
 
-            ryg_map = plt.get_cmap('RdYlGn')
-            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
+            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, plt.get_cmap('RdYlGn'))
 
             style.background_gradient(
                 cmap=ryg_map,

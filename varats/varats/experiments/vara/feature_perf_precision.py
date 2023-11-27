@@ -123,7 +123,7 @@ class AnalysisProjectStepBase(OutputFolderStep):
         binary: ProjectBinaryWrapper,
         file_name: str,
         report_file_ending: str = "json",
-        reps=REPS
+        reps: int = REPS
     ) -> None:
         super().__init__(project=project)
         self._binary = binary
@@ -487,7 +487,10 @@ class TEFProfileRunner(FeatureExperiment, shorthand="TEFp"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads
+            self,
+            project,
+            FeatureInstrType.TEF,
+            RunGenTracedWorkloads  # type: ignore[type-abstract]
         )
 
 
@@ -509,8 +512,10 @@ class PIMProfileRunner(FeatureExperiment, shorthand="PIMp"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.PERF_INFLUENCE_TRACE,
-            RunGenTracedWorkloads
+            self,
+            project,
+            FeatureInstrType.PERF_INFLUENCE_TRACE,
+            RunGenTracedWorkloads  # type: ignore[type-abstract]
         )
 
 
@@ -534,7 +539,10 @@ class EbpfTraceTEFProfileRunner(FeatureExperiment, shorthand="ETEFp"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads
+            self,
+            project,
+            FeatureInstrType.USDT_RAW,
+            RunBPFTracedWorkloads  # type: ignore[type-abstract]
         )
 
 
@@ -556,7 +564,10 @@ class BCCTEFProfileRunner(FeatureExperiment, shorthand="BCCp"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.USDT, RunBCCTracedWorkloads
+            self,
+            project,
+            FeatureInstrType.USDT,
+            RunBCCTracedWorkloads  # type: ignore[type-abstract]
         )
 
 
@@ -574,7 +585,7 @@ class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
         binary: ProjectBinaryWrapper,
         file_name: str,
         report_file_ending: str = "txt",
-        reps=REPS
+        reps: int = REPS
     ) -> None:
         super().__init__(project=project)
         self.__binary = binary
@@ -727,7 +738,7 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         binary: ProjectBinaryWrapper,
         file_name: str,
         report_file_ending: str = "txt",
-        reps=REPS
+        reps: int = REPS
     ) -> None:
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -785,7 +796,7 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         binary: ProjectBinaryWrapper,
         file_name: str,
         report_file_ending: str = "txt",
-        reps=REPS
+        reps: int = REPS
     ) -> None:
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -830,7 +841,8 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
 
                             bpf_runner = \
                                 RunBPFTracedWorkloads.attach_usdt_raw_tracing(
-                                    fake_tracefile_path, adapted_binary_location,
+                                    fake_tracefile_path, \
+                                    adapted_binary_location,
                                     Path(non_nfs_tmp_dir)
                                 )
 
@@ -862,7 +874,7 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         binary: ProjectBinaryWrapper,
         file_name: str,
         report_file_ending: str = "txt",
-        reps=REPS
+        reps: int = REPS
     ) -> None:
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -1082,7 +1094,7 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
         project: VProject,
         binary: ProjectBinaryWrapper,
         report_file_ending: str = "txt",
-        reps=REPS
+        reps: int = REPS
     ) -> None:
         super().__init__(project=project)
         self.__binary = binary

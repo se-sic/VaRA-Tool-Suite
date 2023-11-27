@@ -17,6 +17,7 @@ from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReportAggregate,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.jupyterhelper.file import load_mpr_time_report_aggregate
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.gnu_time_report import TimeReportAggregate
@@ -476,12 +477,7 @@ def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
         )
         return []
 
-    # TODO: fix to prevent double loading
-    try:
-        time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
-    except:
-        print(f"Could not load report from: {report_files[0]}")
-        return []
+    time_reports = load_mpr_time_report_aggregate(report_files[0].full_path())
 
     return time_reports.get_patch_names()
 
@@ -512,8 +508,9 @@ def get_regressing_config_ids_gt(
             )
             return None
 
-        # TODO: fix to prevent double loading
-        time_reports = fpp.MPRTimeReportAggregate(report_files[0].full_path())
+        time_reports = load_mpr_time_report_aggregate(
+            report_files[0].full_path()
+        )
 
         old_time = time_reports.get_baseline_report()
         new_time = time_reports.get_report_for_patch(patch_name)
@@ -651,6 +648,8 @@ class OverheadData:
     def mean_fs_outputs(self) -> float:
         return float(np.mean(list(self._mean_fs_outputs.values())))
 
+    # TODO: remove after 'Type' notation is removed
+    # pylint: disable=protected-access
     def config_wise_time_diff(self,
                               other: 'OverheadData') -> tp.Dict[int, float]:
         return self.__config_wise(self._mean_time, other._mean_time)
@@ -682,6 +681,8 @@ class OverheadData:
         self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
         return self.__config_wise(self._mean_fs_outputs, other._mean_fs_outputs)
+
+    # pylint: enable=protected-access
 
     @staticmethod
     def __config_wise(
