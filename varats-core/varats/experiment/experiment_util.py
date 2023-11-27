@@ -523,7 +523,7 @@ ZippedStepTy = tp.TypeVar(
 )
 
 
-class ZippedExperimentSteps(MultiStep[ZippedStepTy]):
+class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive."""
 

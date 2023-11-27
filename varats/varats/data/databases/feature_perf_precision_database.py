@@ -7,15 +7,19 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
-from cliffs_delta import cliffs_delta
+from cliffs_delta import cliffs_delta  # type: ignore
 from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
 from varats.data.metrics import ConfusionMatrix
+from varats.data.reports.performance_influence_trace_report import (
+    PerfInfluenceTraceReport,
+)
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.gnu_time_report import TimeReportAggregate, TimeReport
+from varats.report.gnu_time_report import TimeReportAggregate
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportFilepath
 from varats.report.tef_report import (
     TEFReport,
@@ -60,7 +64,7 @@ def get_feature_performance_from_tef_report(
 
     def get_matching_event(
         open_events: tp.List[TraceEvent], closing_event: TraceEvent
-    ):
+    ) -> tp.Optional[TraceEvent]:
         for event in open_events:
             if (
                 event.uuid == closing_event.uuid and
@@ -137,7 +141,7 @@ def is_feature_relevant(
     new_measurements,
     rel_cut_off: float = 0.01,
     abs_cut_off: int = 20
-):
+) -> bool:
     """Check if a feature can be ignored for regression checking as it's time
     measurements seem not relevant."""
     old_mean = np.mean(old_measurements)
@@ -160,6 +164,8 @@ def precise_pim_regression_check(
     rel_cut_off: float = 0.01,
     abs_cut_off: int = 20
 ) -> bool:
+    """Compute if there was a regression in one of the feature terms of the
+    model between the current and the baseline, using a Mann-Whitney U test."""
     is_regression = False
     abs_cut_off = 100
 
@@ -200,6 +206,8 @@ def cliffs_delta_pim_regression_check(
     rel_cut_off: float = 0.01,
     abs_cut_off: int = 20
 ) -> bool:
+    """Compute if there was a regression in one of the feature terms of the
+    model between the current and the baseline, using cliffs delta."""
     is_regression = False
 
     for feature, old_values in baseline_pim.items():
@@ -240,6 +248,12 @@ def sum_pim_regression_check(
     rel_cut_off: float = 0.01,
     abs_cut_off: int = 20
 ) -> bool:
+    """
+    Compute if there was a regression in the sum of the features in the model
+    between the current and the baseline.
+
+    The comparision is done through a Mann-Whitney U test.
+    """
     baseline_pim_totals: tp.List[tp.List[int]] = [
         old_values for feature, old_values in baseline_pim.items()
         if feature != "Base"
@@ -332,7 +346,7 @@ class VXray(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        multi_report = fpp.MultiPatchReport(
+        multi_report = MultiPatchReport(
             report_path.full_path(), TEFReportAggregate
         )
 
@@ -366,7 +380,9 @@ class PIMTracer(Profiler):
         )
 
     @staticmethod
-    def __aggregate_pim_data(reports) -> tp.DefaultDict[str, tp.List[int]]:
+    def __aggregate_pim_data(
+        reports: tp.List[PerfInfluenceTraceReport]
+    ) -> tp.DefaultDict[str, tp.List[int]]:
         acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
         for old_pim_report in reports:
             per_report_acc_pim: tp.DefaultDict[str, int] = defaultdict(int)
@@ -388,24 +404,19 @@ class PIMTracer(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        multi_report = fpp.MultiPatchReport(
+        multi_report = MultiPatchReport(
             report_path.full_path(), fpp.PerfInfluenceTraceReportAggregate
         )
 
-        try:
-            old_acc_pim = self.__aggregate_pim_data(
-                multi_report.get_baseline_report().reports()
-            )
+        old_acc_pim = self.__aggregate_pim_data(
+            multi_report.get_baseline_report().reports()
+        )
 
-            opt_mr = multi_report.get_report_for_patch(patch_name)
-            if not opt_mr:
-                raise NotImplementedError()
+        opt_mr = multi_report.get_report_for_patch(patch_name)
+        if not opt_mr:
+            raise NotImplementedError()
 
-            new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
-        except Exception as exc:
-            print(f"FAILURE: Report parsing failed: {report_path}")
-            print(exc)
-            return False
+        new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
 
         return pim_regression_check(old_acc_pim, new_acc_pim)
 
@@ -423,7 +434,7 @@ class EbpfTraceTEF(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        multi_report = fpp.MultiPatchReport(
+        multi_report = MultiPatchReport(
             report_path.full_path(), TEFReportAggregate
         )
 
@@ -595,79 +606,79 @@ def compute_profiler_predictions(
             )
             print(exception)
             print(traceback.format_exc())
+            # TODO: clean up
             # raise exception
 
     return result_dict
 
 
 class OverheadData:
+    """Data class to store the collected overhead data and provide high-level
+    operations on it."""
 
     def __init__(
-        self, profiler, mean_time: tp.Dict[int, float],
-        mean_memory: tp.Dict[int, float], major_page_faults: tp.Dict[int,
-                                                                     float],
-        minor_page_faults: tp.Dict[int, float], fs_inputs: tp.Dict[int, float],
-        fs_outputs: tp.Dict[int, float]
+        self, mean_time: tp.Dict[int, float], mean_memory: tp.Dict[int, float],
+        major_page_faults: tp.Dict[int,
+                                   float], minor_page_faults: tp.Dict[int,
+                                                                      float],
+        fs_inputs: tp.Dict[int, float], fs_outputs: tp.Dict[int, float]
     ) -> None:
-        self.__profiler = profiler
-        self.__mean_time: tp.Dict[int, float] = mean_time
-        self.__mean_memory: tp.Dict[int, float] = mean_memory
-        self.__mean_major_page_faults: tp.Dict[int, float] = major_page_faults
-        self.__mean_minor_page_faults: tp.Dict[int, float] = minor_page_faults
-        self.__mean_fs_inputs: tp.Dict[int, float] = fs_inputs
-        self.__mean_fs_outputs: tp.Dict[int, float] = fs_outputs
+        self._mean_time: tp.Dict[int, float] = mean_time
+        self._mean_memory: tp.Dict[int, float] = mean_memory
+        self._mean_major_page_faults: tp.Dict[int, float] = major_page_faults
+        self._mean_minor_page_faults: tp.Dict[int, float] = minor_page_faults
+        self._mean_fs_inputs: tp.Dict[int, float] = fs_inputs
+        self._mean_fs_outputs: tp.Dict[int, float] = fs_outputs
 
     def mean_time(self) -> float:
-        return float(np.mean(list(self.__mean_time.values())))
+        return float(np.mean(list(self._mean_time.values())))
 
     def mean_memory(self) -> float:
-        return float(np.mean(list(self.__mean_memory.values())))
+        return float(np.mean(list(self._mean_memory.values())))
 
     def mean_major_page_faults(self) -> float:
-        return float(np.mean(list(self.__mean_major_page_faults.values())))
+        return float(np.mean(list(self._mean_major_page_faults.values())))
 
     def mean_minor_page_faults(self) -> float:
-        return float(np.mean(list(self.__mean_minor_page_faults.values())))
+        return float(np.mean(list(self._mean_minor_page_faults.values())))
 
     def mean_fs_inputs(self) -> float:
-        return float(np.mean(list(self.__mean_fs_inputs.values())))
+        return float(np.mean(list(self._mean_fs_inputs.values())))
 
     def mean_fs_outputs(self) -> float:
-        return float(np.mean(list(self.__mean_fs_outputs.values())))
+        return float(np.mean(list(self._mean_fs_outputs.values())))
 
     def config_wise_time_diff(self,
                               other: 'OverheadData') -> tp.Dict[int, float]:
-        return self.__config_wise(self.__mean_time, other.__mean_time)
+        return self.__config_wise(self._mean_time, other._mean_time)
 
     def config_wise_memory_diff(self,
                                 other: 'OverheadData') -> tp.Dict[int, float]:
-        return self.__config_wise(self.__mean_memory, other.__mean_memory)
+        return self.__config_wise(self._mean_memory, other._mean_memory)
 
     def config_wise_major_page_faults_diff(
         self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
         return self.__config_wise(
-            self.__mean_major_page_faults, other.__mean_major_page_faults
+            self._mean_major_page_faults, other._mean_major_page_faults
         )
 
     def config_wise_minor_page_faults_diff(
         self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
         return self.__config_wise(
-            self.__mean_minor_page_faults, other.__mean_minor_page_faults
+            self._mean_minor_page_faults, other._mean_minor_page_faults
         )
 
     def config_wise_fs_inputs_diff(
         self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
-        return self.__config_wise(self.__mean_fs_inputs, other.__mean_fs_inputs)
+        return self.__config_wise(self._mean_fs_inputs, other._mean_fs_inputs)
 
     def config_wise_fs_outputs_diff(
         self, other: 'OverheadData'
     ) -> tp.Dict[int, float]:
-        return self.__config_wise(
-            self.__mean_fs_outputs, other.__mean_fs_outputs
-        )
+        return self.__config_wise(self._mean_fs_outputs, other._mean_fs_outputs)
 
     @staticmethod
     def __config_wise(
@@ -686,6 +697,7 @@ class OverheadData:
     def compute_overhead_data(
         profiler: Profiler, case_study: CaseStudy, rev: FullCommitHash
     ) -> tp.Optional['OverheadData']:
+        """Computes overhead data for a given case study."""
 
         mean_time: tp.Dict[int, float] = {}
         mean_memory: tp.Dict[int, float] = {}
@@ -738,27 +750,24 @@ class OverheadData:
             )
             return None
 
-        # print(f"{mean_time=}")
         return OverheadData(
-            profiler, mean_time, mean_memory, mean_major_page_faults,
+            mean_time, mean_memory, mean_major_page_faults,
             mean_minor_page_faults, mean_fs_inputs, mean_fs_outputs
         )
 
 
 def load_precision_data(case_studies, profilers) -> pd.DataFrame:
+    """Loads precision measurement data for the given cases studies and computes
+    precision and recall for the different profilers."""
     table_rows_plot = []
     for case_study in case_studies:
         for patch_name in get_patch_names(case_study):
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
-            try:
-                ground_truth = get_regressing_config_ids_gt(
-                    project_name, case_study, rev, patch_name
-                )
-            except:
-                # TODO: ???
-                continue
+            ground_truth = get_regressing_config_ids_gt(
+                project_name, case_study, rev, patch_name
+            )
 
             for profiler in profilers:
                 new_row = {
@@ -806,6 +815,8 @@ def load_precision_data(case_studies, profilers) -> pd.DataFrame:
 
 
 def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
+    """Loads overhead measurement data for the given cases studies and computes
+    overhead metrics that where introduced by the different profilers."""
     table_rows = []
 
     for case_study in case_studies:
@@ -852,12 +863,14 @@ def load_overhead_data(case_studies, profilers) -> pd.DataFrame:
                 memory_diff = profiler_overhead.config_wise_memory_diff(
                     overhead_ground_truth
                 )
-                major_page_faults_diff = profiler_overhead.config_wise_major_page_faults_diff(
-                    overhead_ground_truth
-                )
-                minor_page_faults_diff = profiler_overhead.config_wise_minor_page_faults_diff(
-                    overhead_ground_truth
-                )
+                major_page_faults_diff = \
+                    profiler_overhead.config_wise_major_page_faults_diff(
+                        overhead_ground_truth
+                    )
+                minor_page_faults_diff = \
+                    profiler_overhead.config_wise_minor_page_faults_diff(
+                        overhead_ground_truth
+                    )
                 fs_inputs_diff = profiler_overhead.config_wise_fs_inputs_diff(
                     overhead_ground_truth
                 )

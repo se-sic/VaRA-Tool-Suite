@@ -423,11 +423,8 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             ]
         )
 
-        # print(f"pivot_df=\n{pivot_df}")
-        # print(f"{pivot_df.columns=}")
         pivot_df = pivot_df.swaplevel(0, 1, 1).sort_index(axis=1)
 
-        # print(f"pivot_df=\n{pivot_df}")
         columns = [
             'precision', 'recall', 'overhead_time_rel', 'overhead_memory_rel',
             'overhead_memory'
@@ -437,8 +434,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         ],
                                     axis=1)
         print(f"pivot_df=\n{pivot_df}")
-
-        # print(f"{pivot_df.columns=}")
 
         pivot_df.loc["Total"] = pivot_df.mean()
         print(f"pivot_df=\n{pivot_df}")
