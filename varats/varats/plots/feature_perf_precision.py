@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.axes import Axes
 from matplotlib.text import Text
 
 from varats.data.databases.feature_perf_precision_database import (
@@ -277,12 +278,13 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 )
 
     def do_single_plot(
-        self, x_values, target_row, merged_df, plot_extra_name, ax
+        self, x_values_name: str, target_row: str, merged_df: pd.DataFrame,
+        plot_extra_name: str, ax: Axes
     ) -> None:
         """Plot a single overhead metric."""
         sns.scatterplot(
             merged_df,
-            x=x_values,
+            x=x_values_name,
             y=target_row,
             hue="Profiler",
             style='CaseStudy',
@@ -291,8 +293,8 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             ax=ax
         )
 
+        text_obj: Text
         for text_obj in ax.legend().get_texts():
-            text_obj: Text
 
             text_obj.set_fontsize("xx-large")
             if text_obj.get_text() == "Profiler":
@@ -313,7 +315,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         x_limit = max(
             np.max(
                 np.nan_to_num(
-                    merged_df[x_values],
+                    merged_df[x_values_name],
                     copy=True,
                     nan=0.0,
                     posinf=0.0,
@@ -328,20 +330,23 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         ax.yaxis.labelpad = 10
         ax.xaxis.labelpad = 20
 
-        prof_df = merged_df[['Profiler', 'precision', x_values, 'f1_score'
-                            ]].groupby('Profiler').agg(['mean', 'std'])
+        prof_df = merged_df[[
+            'Profiler', 'precision', x_values_name, 'f1_score'
+        ]].groupby('Profiler').agg(['mean', 'std'])
         prof_df.fillna(0, inplace=True)
 
         pareto_front = self.plot_pareto_frontier(
-            prof_df[x_values]['mean'], prof_df[target_row]['mean'], max_x=False
+            prof_df[x_values_name]['mean'],
+            prof_df[target_row]['mean'],
+            max_x=False
         )
 
         pf_x = [pair[0] for pair in pareto_front]
         pf_y = [pair[1] for pair in pareto_front]
 
-        x_loc = prof_df[x_values]['mean']
+        x_loc = prof_df[x_values_name]['mean']
         y_loc = prof_df[target_row]['mean']
-        x_error = prof_df[x_values]['std']
+        x_error = prof_df[x_values_name]['std']
         y_error = prof_df[target_row]['std']
 
         ax.errorbar(
@@ -359,7 +364,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         sns.scatterplot(
             prof_df,
-            x=(x_values, 'mean'),
+            x=(x_values_name, 'mean'),
             y=(target_row, 'mean'),
             hue="Profiler",
             ax=ax,
@@ -384,7 +389,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         y_values: tp.List[float],
         max_x: bool = True,
         max_y: bool = True
-    ):
+    ) -> tp.List[tp.List[float]]:
         """Pareto frontier selection process."""
         sorted_list = sorted([
             [x_values[i], y_values[i]] for i in range(len(x_values))

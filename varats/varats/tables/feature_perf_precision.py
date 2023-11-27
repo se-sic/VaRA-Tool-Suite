@@ -27,7 +27,6 @@ from varats.data.databases.feature_perf_precision_database import (
     load_overhead_data,
 )
 from varats.data.metrics import ConfusionMatrix
-from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path
@@ -37,34 +36,41 @@ from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
 
-def cmap_map(function, cmap: colors.Colormap) -> colors.LinearSegmentedColormap:
+def cmap_map(
+    function, cmap: colors.LinearSegmentedColormap
+) -> colors.LinearSegmentedColormap:
     """
     Applies function (which should operate on vectors of shape 3: [r, g, b]), on
     colormap cmap.
 
     This routine will break any discontinuous points in a colormap.
     """
-    c_dict = cmap._segmentdata
-    step_dict = {}
-    # Firt get the list of points where the segments start or end
+    c_dict = cmap._segmentdata  # pylint: disable=protected-access
+    step_dict: tp.Dict[str, tp.List[tp.Any]] = {}
+
+    # First get the list of points where the segments start or end
     for key in ('red', 'green', 'blue'):
         step_dict[key] = list(map(lambda x: x[0], c_dict[key]))
     step_list = sum(step_dict.values(), [])
-    step_list = np.array(list(set(step_list)))
+    step_array = np.array(list(set(step_list)))
+
     # Then compute the LUT, and apply the function to the LUT
-    reduced_cmap = lambda step: np.array(cmap(step)[0:3])
-    old_lut = np.array(list(map(reduced_cmap, step_list)))
+    def reduced_cmap(step) -> np.ndarray:
+        return np.array(cmap(step)[0:3])
+
+    old_lut = np.array(list(map(reduced_cmap, step_array)))
     new_lut = np.array(list(map(function, old_lut)))
+
     # Now try to make a minimal segment definition of the new LUT
     c_dict = {}
     for i, key in enumerate(['red', 'green', 'blue']):
-        this_cdict = {}
-        for j, step in enumerate(step_list):
+        this_c_dict = {}
+        for j, step in enumerate(step_array):
             if step in step_dict[key]:
-                this_cdict[step] = new_lut[j, i]
+                this_c_dict[step] = new_lut[j, i]
             elif new_lut[j, i] != old_lut[j, i]:
-                this_cdict[step] = new_lut[j, i]
-        colorvector = list(map(lambda x: x + (x[1],), this_cdict.items()))
+                this_c_dict[step] = new_lut[j, i]
+        colorvector = list(map(lambda x: x + (x[1],), this_c_dict.items()))
         colorvector.sort()
         c_dict[key] = colorvector
 
@@ -185,12 +191,14 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
                 column_format += "|rrr"
             kwargs["column_format"] = column_format
             kwargs["multicol_align"] = "|c"
+            # pylint: disable=line-too-long
             kwargs[
                 "caption"
             ] = f"""Localization precision of different performance profiling approaches to detect configuration-specific performance regression detection.
 On the left, we show the amount of different configurations ({symb_configs}) analyzed and the amount of regressed configurations ({symb_regressed_configs}), determined through our baseline measurements.
 Furthermore, the table depicts for each profiler, precision ({symb_precision}), recall ({symb_recall}), and balanced accuracy ({symb_b_accuracy}).
 """
+            # pylint: enable=line-too-long
             style.format(precision=2)
             style.hide()
 
@@ -314,9 +322,11 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         pivot_df.loc["Total"] = pivot_df.mean()
 
         # Rename columns
+        # pylint: disable=anomalous-backslash-in-string
         overhead_time_c_name = "$\Delta$ Time $(\%)$"
         overhead_memory_c_name = "$\Delta$ Mem $(\%)$"
         overhead_memory_val_c_name = "$\Delta$ Mem $(Kbyte)$"
+        # pylint: enable=anomalous-backslash-in-string
         pivot_df = pivot_df.rename(
             columns={
                 "precision": "Precision",

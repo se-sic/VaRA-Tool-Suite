@@ -280,7 +280,8 @@ def sum_pim_regression_check(
     if mean_diff < abs_cut_off or mean_diff < mean_baseline * rel_cut_off:
         return False
 
-    return ttest_ind(baseline_pim_total, current_pim_total).pvalue < 0.05
+    u_test = ttest_ind(baseline_pim_total, current_pim_total)
+    return u_test.pvalue < 0.05  # type: ignore
 
 
 def pim_regression_check(

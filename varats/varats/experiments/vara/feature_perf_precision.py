@@ -124,7 +124,7 @@ class AnalysisProjectStepBase(OutputFolderStep):
         file_name: str,
         report_file_ending: str = "json",
         reps=REPS
-    ):
+    ) -> None:
         super().__init__(project=project)
         self._binary = binary
         self._report_file_ending = report_file_ending
@@ -375,10 +375,15 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
         return bcc_runner
 
 
+AnalysisProjectStepBaseTy = tp.TypeVar(
+    "AnalysisProjectStepBaseTy", bound=AnalysisProjectStepBase
+)
+
+
 def setup_actions_for_vara_experiment(
     experiment: FeatureExperiment, project: VProject,
     instr_type: FeatureInstrType,
-    analysis_step: tp.Type[AnalysisProjectStepBase]
+    analysis_step: tp.Type[AnalysisProjectStepBaseTy]
 ) -> tp.MutableSequence[actions.Step]:
     """Sets up actions for a given perf precision experiment."""
 
@@ -570,7 +575,7 @@ class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
         file_name: str,
         report_file_ending: str = "txt",
         reps=REPS
-    ):
+    ) -> None:
         super().__init__(project=project)
         self.__binary = binary
         self.__report_file_ending = report_file_ending
@@ -602,10 +607,11 @@ class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
                         print(f"Running example {prj_command.command.label}")
 
                         with cleanup(prj_command):
-                            pb_cmd = prj_command.command.as_plumbum_wrapped_with(
-                                time["-v", "-o", time_report_file],
-                                project=self.project
-                            )
+                            pb_cmd = \
+                                prj_command.command.as_plumbum_wrapped_with(
+                                    time["-v", "-o", time_report_file],
+                                    project=self.project
+                                )
                             pb_cmd(retcode=self.__binary.valid_exit_codes)
 
         return StepResult.OK
@@ -722,7 +728,7 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         file_name: str,
         report_file_ending: str = "txt",
         reps=REPS
-    ):
+    ) -> None:
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
@@ -755,10 +761,11 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         print(f"Running example {prj_command.command.label}")
 
                         with cleanup(prj_command):
-                            pb_cmd = prj_command.command.as_plumbum_wrapped_with(
-                                time["-v", "-o", time_report_file],
-                                project=self.project
-                            )
+                            pb_cmd = \
+                                prj_command.command.as_plumbum_wrapped_with(
+                                    time["-v", "-o", time_report_file],
+                                    project=self.project
+                                )
                             pb_cmd(retcode=self._binary.valid_exit_codes)
 
         return StepResult.OK
@@ -779,7 +786,7 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         file_name: str,
         report_file_ending: str = "txt",
         reps=REPS
-    ):
+    ) -> None:
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
@@ -814,20 +821,23 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                                 non_nfs_tmp_dir
                             ) / self._binary.name
 
-                            pb_cmd = prj_command.command.as_plumbum_wrapped_with(
-                                time["-v", "-o", time_report_file],
-                                adapted_binary_location,
-                                project=self.project
-                            )
+                            pb_cmd = \
+                                prj_command.command.as_plumbum_wrapped_with(
+                                    time["-v", "-o", time_report_file],
+                                    adapted_binary_location,
+                                    project=self.project
+                                )
 
-                            bpf_runner = RunBPFTracedWorkloads.attach_usdt_raw_tracing(
-                                fake_tracefile_path, adapted_binary_location,
-                                Path(non_nfs_tmp_dir)
-                            )
+                            bpf_runner = \
+                                RunBPFTracedWorkloads.attach_usdt_raw_tracing(
+                                    fake_tracefile_path, adapted_binary_location,
+                                    Path(non_nfs_tmp_dir)
+                                )
 
                             with cleanup(prj_command):
                                 print(
-                                    f"Running example {prj_command.command.label}"
+                                    "Running example "
+                                    f"{prj_command.command.label}"
                                 )
                                 pb_cmd(retcode=self._binary.valid_exit_codes)
 
@@ -853,7 +863,7 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         file_name: str,
         report_file_ending: str = "txt",
         reps=REPS
-    ):
+    ) -> None:
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
@@ -1073,7 +1083,7 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
         binary: ProjectBinaryWrapper,
         report_file_ending: str = "txt",
         reps=REPS
-    ):
+    ) -> None:
         super().__init__(project=project)
         self.__binary = binary
         self.__report_file_ending = report_file_ending
