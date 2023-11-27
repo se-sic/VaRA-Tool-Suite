@@ -112,7 +112,7 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
             value_name="value"
         )
 
-        colors = sns.color_palette("Paired", len(case_studies) * 2)
+        colors = sns.color_palette("Paired", len(profilers) * 2)
         _, axes = plt.subplots(ncols=len(profilers), nrows=1, sharey=True)
 
         for idx, profiler in enumerate(profilers):
@@ -129,7 +129,6 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
                 cut=0,
                 split=True,
                 palette=color_slice,
-                alpha=.25,
                 linewidth=1,
                 ax=ax
             )
@@ -144,8 +143,8 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
                 linewidth=0.5,
                 marker='x',
                 palette=[
-                    mcolors.CSS4_COLORS['dimgrey'],
-                    mcolors.CSS4_COLORS['darkgrey']
+                    mcolors.XKCD_COLORS['xkcd:dark grey'],
+                    mcolors.CSS4_COLORS['dimgrey']
                 ],
                 size=7,
                 ax=ax

@@ -161,6 +161,7 @@ def precise_pim_regression_check(
     abs_cut_off: int = 20
 ) -> bool:
     is_regression = False
+    abs_cut_off = 100
 
     for feature, old_values in baseline_pim.items():
         if feature in current_pim:
@@ -178,12 +179,10 @@ def precise_pim_regression_check(
 
             ttest_res = ttest_ind(old_values, new_values)
 
-            # TODO: check, maybe we need a "very small value cut off"
             if ttest_res.pvalue < 0.05:
-                # print(f"Found regression for feature {feature}.")
                 is_regression = True
         else:
-            if np.mean(old_values) > 20:
+            if np.mean(old_values) > abs_cut_off:
                 print(
                     f"Could not find feature {feature} in new trace. "
                     f"({np.mean(old_values)}us lost)"
@@ -603,7 +602,6 @@ def compute_profiler_predictions(
             return None
 
         try:
-            #print(f"{report_files[0]}")
             result_dict[config_id] = profiler.is_regression(
                 report_files[0], patch_name
             )

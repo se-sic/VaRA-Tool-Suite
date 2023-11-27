@@ -407,7 +407,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         overhead_df['overhead_memory_rel'].replace([np.inf, -np.inf],
                                                    np.nan,
                                                    inplace=True)
-        print(f"{overhead_df=}")
 
         # Merge with precision data
         merged_df = pd.merge(
@@ -615,6 +614,10 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
             locs: int
             if case_study.project_cls.DOMAIN == ProjectDomains.TEST:
                 src_folder = f'projects/{project_name}'
+                if src_folder.endswith(
+                    "projects/SynthCTTemplateSpecialization"
+                ):
+                    src_folder = "projects/SynthCTSpecialization"
                 locs = self._calc_folder_locs(
                     project_git_path, rev.hash, src_folder
                 )
