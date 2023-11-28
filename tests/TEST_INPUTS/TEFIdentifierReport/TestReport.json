@@ -1,0 +1,7 @@
+{  "Baseline": {"Base": 1, "FeatureA": 6, "FeatureB": 26},
+   "PATCHED_patch1": {"Base": 1, "FeatureA": 6, "FeatureB": 26},
+   "PATCHED_patch2": {"Base": 1, "FeatureA": 6, "FeatureB": 26, "FeatureC*FeatureB": 24},
+   "PATCHED_patch3": {"Base": 1, "FeatureA": 6, "FeatureB": 26, "FeatureC*FeatureA": 2},
+   "PATCHED_patch4": {"Base": 1, "FeatureA": 6, "FeatureB": 26, "FeatureC":  1},
+   "PATCHED_patch5": {"Base": 1, "FeatureA": 6, "FeatureB": 26}
+}

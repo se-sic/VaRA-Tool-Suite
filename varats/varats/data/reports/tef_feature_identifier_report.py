@@ -26,10 +26,11 @@ class TEFFeatureIdentifierReport(
 
             for entry in results:
                 if entry == "Baseline":
-                    self.__baseline_regions = set([
-                        (r.split('*'), results[entry][r])
-                        for r in results[entry]
-                    ])
+                    self.__baseline_regions = set()
+                    for r in results[entry]:
+                        self.__baseline_regions.add(
+                            (frozenset(r.split('*')), results[entry][r])
+                        )
                     continue
 
                 patch_name = entry[len("PATCHED_"):]
@@ -43,7 +44,7 @@ class TEFFeatureIdentifierReport(
                         (regions, results[entry][region])
                     )
                     self.__regions_to_patches[regions].append(
-                        (patch_name, results[entry][region])
+                        (patch_name, regions, results[entry][region])
                     )
 
     @property
@@ -59,16 +60,18 @@ class TEFFeatureIdentifierReport(
 
     def patches_containing_region(
         self, regions: tp.Iterable[str]
-    ) -> tp.List[PatchesTupleTy]:
+    ) -> tp.List[tp.Tuple[str, frozenset, int]]:
         result = []
+        regions = frozenset(regions)
         for region in self.__regions_to_patches:
-            if regions in region:
+            if not regions.isdisjoint(region):
                 result += self.__regions_to_patches[region]
         return result
 
     def patches_for_regions(
         self, regions: tp.Iterable[str]
-    ) -> tp.List[PatchesTupleTy]:
+    ) -> tp.List[tp.Tuple[str, frozenset, int]]:
+        regions = frozenset(regions)
         if regions in self.__regions_to_patches:
             return self.__regions_to_patches[regions]
         return []
