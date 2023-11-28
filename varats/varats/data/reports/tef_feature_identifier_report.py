@@ -55,6 +55,10 @@ class TEFFeatureIdentifierReport(
     def baseline_regions(self) -> tp.Set[RegionTupleTy]:
         return self.__baseline_regions
 
+    @property
+    def affectable_regions(self):
+        return self.__regions_to_patches.keys()
+
     def regions_for_patch(self, patch_name: str) -> tp.Set[RegionTupleTy]:
         return self.__patch_to_regions[patch_name]
 
