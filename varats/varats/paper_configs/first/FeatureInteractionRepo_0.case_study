@@ -1,0 +1,22 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: FeatureInteractionRepo
+stages:
+- revisions:
+  - commit_hash: 1fa18025cfde4adf99c8070ab1d99b930a3b3fe6
+    commit_id: 5
+    config_ids:
+    - 0
+    - 1
+    - 2
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["--foo"]'
+1: '["--bar"]'
+2: '["--foo", "--bar"]'
+...
