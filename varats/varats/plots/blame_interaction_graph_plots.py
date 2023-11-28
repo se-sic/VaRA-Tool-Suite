@@ -1,4 +1,5 @@
 """Module for BlameInteractionGraph plots."""
+import configparser
 import subprocess
 import typing as tp
 from datetime import datetime
@@ -9,6 +10,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import plotly.offline as offply
+import pygit2
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -18,7 +20,7 @@ from varats.data.reports.blame_interaction_graph import (
     CAIGNodeAttrs,
 )
 from varats.experiments.vara.blame_report_experiment import (
-    BlameReportExperiment,
+    BlameReportExperiment, BlameReportExperimentRegion,
 )
 from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.case_study import (
@@ -64,7 +66,7 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
         revision = commit_map.convert_to_full_or_warn(short_revision)
 
         cig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision, BlameReportExperimentRegion
         ).commit_interaction_graph()
         nx.set_node_attributes(
             cig,
@@ -109,7 +111,7 @@ def _prepare_cig_plotly(
     NodeTy, NodeTy, EdgeInfoTy]]]:
     commit_lookup = create_commit_lookup_helper(project_name)
     cig = create_blame_interaction_graph(
-        project_name, revision, BlameReportExperiment
+        project_name, revision, BlameReportExperimentRegion
     ).commit_interaction_graph()
 
     def filter_nodes(node: CommitRepoPair) -> bool:
@@ -280,15 +282,79 @@ OPTIONAL_SORT_METHOD: CLIOptionTy = make_cli_option(
 )
 
 
-class SubCommitInteractionGraphPlot(Plot, plot_name='sub-cig_plot'):
+def get_gitmodules_info():
+    repo = pygit2.Repository(REPO_PATH)
+    # Get the .gitmodules blob object
+    commit = repo[repo.head.target]
+    tree = commit.tree
+    gitmodules_entry = tree[".gitmodules"]
+    gitmodules_blob = repo[gitmodules_entry.oid]
+
+    # Parse the .gitmodules file contents
+    gitmodules_data = gitmodules_blob.data
+    gitmodules_config = configparser.ConfigParser()
+    gitmodules_config.read_string(gitmodules_data.decode('utf-8'))
+
+    # Collect the submodule path and URL information
+    submodules = []
+    for section in gitmodules_config.sections():
+        if section.startswith('submodule '):
+            submodule_name = section[len('submodule '):]
+            submodule_path = gitmodules_config.get(section, 'path')
+            submodule_url = gitmodules_config.get(section, 'url')
+            submodules.append((submodule_name, submodule_path, submodule_url))
+
+    return submodules
+
+
+def pull_commit_history_information(submodules):
+
+    # Get the tree object for the specified commit
+    repo = pygit2.Repository(REPO_PATH)
+
+    commits = []
+    i = 0
+    for submodule in submodules:
+        walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE)
+        subdirectory_path = submodule[1]
+        for commit in walker:
+            # Initialize a flag to check if the 'third_party' has changes in this commit
+            # has_changes = False
+            # Compare the tree of this commit with its parent
+            if len(commit.parents) == 0:
+                continue
+            diff = repo.diff(commit.parents[0], commit)
+            # Loop through all patches in the diff
+            files_changed = [patch.delta.new_file.path for patch in diff]
+            if any([file.startswith(subdirectory_path) for file in files_changed]):
+                i += 1
+                print(i)  # total 1864 times commits is for third party
+                commits.append({
+                    'author_name': commit.author.name,
+                    'author_email': commit.author.email,
+                    # 'message': commit.message,
+                    'commit_hash': commit.hex,
+                    'commit_time': datetime.datetime.fromtimestamp(commit.commit_time)
+                    # 'changed_folder': get_change_folder(commit)
+                })
+
+    df = pd.DataFrame(commits)
+    # df.to_csv(TASK_PATH + 'openssl_commit_history2.csv', index=False)
+
+    return df
+
+
+class SubCommitInteractionGraphPlot(Plot, plot_name='sub-cig-plot'):
+    submodule_info = get_gitmodules_info()
+    df = pull_commit_history_information(submodule_info)
 
     def is_submodule_change(self, commit_hash):
-        # Get the change information of the specified commit
-        subprocess.run(['git', 'checkout', commit_hash], check=True)
-        submodule_status = subprocess.run(['git', 'submodule', 'status'], capture_output=True, text=True)
+        for index, row in self.df.iterrows():
+            if row['commit_hash'] == commit_hash:
+                return True
+            else:
+                return False
 
-        # Check if the output contains submodule changes
-        return "+Subproject" in submodule_status.stdout
     def plot(self, view_mode: bool) -> None:
         project_name = self.plot_kwargs["case_study"].project_name
         commit_map = get_commit_map(project_name)
@@ -296,7 +362,7 @@ class SubCommitInteractionGraphPlot(Plot, plot_name='sub-cig_plot'):
         revision = commit_map.convert_to_full_or_warn(short_revision)
 
         cig = create_blame_interaction_graph(
-            project_name, revision, BlameReportExperiment
+            project_name, revision, BlameReportExperimentRegion
         ).commit_interaction_graph()
         nx.set_node_attributes(
             cig,
@@ -308,22 +374,24 @@ class SubCommitInteractionGraphPlot(Plot, plot_name='sub-cig_plot'):
         submodule_commit_nodes = [node for node in cig.nodes if
                                   self.is_submodule_change(cig.nodes[node]["commit"].commit_hash)]
 
-        # Color those nodes red
-        node_colors = ['red' if node in submodule_commit_nodes else 'blue' for node in cig.nodes]
+        # Count the number of unique authors for main repository and submodule changes
+        main_repo_authors = set()
+        submodule_change_authors = set()
 
-        # Find nodes pointed to by red nodes
-        blue_nodes = set()
-        for node in submodule_commit_nodes:
-            blue_nodes.update(cig.successors(node))
+        for node in cig.nodes:
+            commit_info = cig.nodes[node]["commit"]
+            author = commit_info.author_name  # Assuming the existence of the author_name attribute, modify as needed
 
-        # Color those nodes blue
-        for node in blue_nodes:
-            node_colors[node] = 'blue'
+            main_repo_authors.add(author)
 
-        # Draw the graph
-        pos = nx.spring_layout(cig)  # You can choose a different layout if needed
-        nx.draw(cig, pos, with_labels=True, node_color=node_colors, font_color='white')
-        plt.show()
+            if node in submodule_commit_nodes:
+                submodule_change_authors.add(author)
+
+        main_repo_author_count = len(main_repo_authors)
+        submodule_change_author_count = len(submodule_change_authors)
+
+        print(f"Main Repository Authors: {main_repo_author_count}")
+        print(f"Authors with Submodule Changes: {submodule_change_author_count}")
 
 
 
