@@ -1,9 +1,12 @@
 """Module for feature performance precision experiments that evaluate
 measurement support of vara."""
+import math
 import tempfile
 import textwrap
 import typing as tp
 from abc import abstractmethod
+from collections import defaultdict
+from itertools import chain, combinations
 from pathlib import Path
 from time import sleep
 
@@ -13,8 +16,15 @@ from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Clean
 from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
+from data.reports.tef_feature_identifier_report import (
+    TEFFeatureIdentifierReport,
+)
+from experiments.vara.tef_region_identifier import TEFFeatureIdentifier
+from paper.paper_config import get_paper_config
+from paper_mgmt.case_study import get_case_study_file_name_filter
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
+from revision.revisions import get_processed_revisions_files
 
 from varats.base.configuration import PatchConfiguration
 from varats.containers.containers import get_base_image, ImageBase
@@ -80,8 +90,117 @@ def RQ1_patch_selector(project):
     return [(p.shortname, [p]) for p in patches]
 
 
-def RQ2_patch_selector(project):
-    pass
+def RQ2_patch_selector(project: VProject):
+    paper_config = get_paper_config()
+    case_studies = paper_config.get_case_studies(cs_name=project.name)
+    current_config = get_current_config_id(project)
+
+    report_files = get_processed_revisions_files(
+        project.name,
+        TEFFeatureIdentifier,
+        TEFFeatureIdentifierReport,
+        get_case_study_file_name_filter(case_studies[0]),
+        config_id=current_config
+    )
+
+    if len(report_files) != 1:
+        print("Invalid number of reports from TEFIdentifier")
+
+    report_file = TEFFeatureIdentifierReport(report_files[0].full_path())
+
+    if len(report_file.patches_containing_region("__VARA__DETECT__")) <= 5:
+        patch_lists = build_patch_sets_under_5(report_file)
+    else:
+        patch_lists = build_patch_sets_over_5(report_files)
+
+    ...
+
+
+def build_patch_sets_under_5(report_file: TEFFeatureIdentifierReport):
+    regressing_patches = {
+        p[0]
+        for p in report_file.patches_containing_region("__VARA__DETECT__")
+        if len(p[1]) >= 2
+    }
+    patch_names = regressing_patches
+
+    for patch in report_file.patch_names:
+        if len(patch_names) >= 5:
+            break
+
+        if patch in patch_names:
+            continue
+
+        if any([
+            "__VARA__DETECT__" in regions
+            for regions in report_file.regions_for_patch(patch)
+        ]):
+            continue
+
+        patch_names.add(patch)
+
+    patch_lists = [
+        set(s) for s in chain.from_iterable(
+            combinations(patch_names, r)
+            for r in range(1,
+                           len(patch_names) + 1)
+        )
+    ]
+
+    patch_lists = [s for s in patch_lists if regressing_patches.issubset(s)]
+
+    return patch_lists
+
+
+def build_patch_sets_over_5(report_file: TEFFeatureIdentifierReport):
+    patch_candidates = defaultdict(str)
+    region_candidates = defaultdict(lambda: math.inf)
+
+    for region in report_file.affectable_regions:
+        # We only consider regions that affect one other feature
+        if len(region) != 2 or "__VARA__DETECT__" not in region:
+            continue
+
+        # Check all patches that affect exactly this region
+        for patch in report_file.patches_for_regions(region):
+            patch_name = patch[0]
+
+            consider_patch = False
+            num_affections = math.inf
+            for patch_region in report_file.regions_for_patch(patch_name):
+                # We do not care about unaffected regions
+                if "__VARA__DETECT__" not in patch_region[0]:
+                    continue
+
+                # This is our region of interest
+                if patch_region[0] == region:
+                    consider_patch = True
+                    num_affections = patch_region[1]
+                    continue
+
+                # At this point, we know that we don't want to consider the patch
+                # It has the __VARA__DETECT__ interaction but is not our region of interest
+                # That means that either also other regions are affected by this patch
+                consider_patch = False
+                break
+
+            if consider_patch:
+                if region_candidates[patch_name] < num_affections:
+                    patch_candidates[region] = patch_name
+
+    region_candidates = sorted(region_candidates, key=lambda kv: kv[1])[:4]
+
+    patch_candidates = {r: patch_candidates[r] for r, _ in region_candidates}
+
+    # patch_candidates now has a maximum of 4 entries
+    patch_names = patch_candidates.values()
+    # Build the powerset
+    patch_lists = chain.from_iterable(
+        combinations(patch_names, r) for r in range(1,
+                                                    len(patch_names) + 1)
+    )
+
+    # 2nd step of patch selection:
 
 
 def get_feature_tags(project):
