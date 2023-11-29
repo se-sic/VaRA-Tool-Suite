@@ -16,15 +16,15 @@ from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Clean
 from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
-from data.reports.tef_feature_identifier_report import (
+from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
-from experiments.vara.tef_region_identifier import TEFFeatureIdentifier
-from paper.paper_config import get_paper_config
-from paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
+from varats.paper.paper_config import get_paper_config
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
-from revision.revisions import get_processed_revisions_files
+from varats.revision.revisions import get_processed_revisions_files
 
 from varats.base.configuration import PatchConfiguration
 from varats.containers.containers import get_base_image, ImageBase
@@ -188,7 +188,7 @@ def build_patch_sets_over_5(report_file: TEFFeatureIdentifierReport):
                 if region_candidates[patch_name] < num_affections:
                     patch_candidates[region] = patch_name
 
-    region_candidates = sorted(region_candidates, key=lambda kv: kv[1])[:4]
+    region_candidates = sorted(region_candidates.items(), key=lambda kv: kv[1])[:4]
 
     patch_candidates = {r: patch_candidates[r] for r, _ in region_candidates}
 
@@ -201,6 +201,33 @@ def build_patch_sets_over_5(report_file: TEFFeatureIdentifierReport):
     )
 
     # 2nd step of patch selection:
+    patch_pairs = chain.from_iterable(combinations(patch_names, 2))
+
+    for pair in patch_pairs:
+        regions_of_interest = []
+        for patch in patch_pairs:
+            for region in report_file.regions_for_patch(patch):
+                if "__VARA__DETECT__" in region[0]:
+                    regions_of_interest += region[0]
+
+        patch_candidates = defaultdict(int)
+
+        for region in regions_of_interest:
+            for patch in report_file.patches_containing_region(region):
+                if patch[0] in pair:
+                    # Ignore patch already selected
+                    continue
+
+                patch_candidates[patch[0]] += 1
+
+        patch_candidates = sorted(patch_candidates.items(), key=lambda kv: kv[1])
+
+        selected_patches = []
+        for candidate in patch_candidates:
+            if len(selected_patches) == 2:
+                break
+
+
 
 
 def get_feature_tags(project):
