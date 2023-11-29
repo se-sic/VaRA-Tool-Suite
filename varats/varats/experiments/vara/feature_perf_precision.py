@@ -19,7 +19,8 @@ from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
 from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
-from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
+
+#from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from plumbum import local, BG
@@ -27,7 +28,6 @@ from plumbum.commands.modifiers import Future
 from varats.revision.revisions import get_processed_revisions_files
 
 from varats.base.configuration import PatchConfiguration
-from varats.containers.containers import get_base_image, ImageBase
 from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReportAggregate,
 )
@@ -50,8 +50,6 @@ from varats.experiments.vara.feature_experiment import (
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.projects.cpp_projects.dune import DunePerfRegression
-from varats.projects.cpp_projects.hyteg import HyTeg
 from varats.provider.patch.patch_provider import PatchProvider, PatchSet
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
@@ -90,30 +88,30 @@ def RQ1_patch_selector(project):
     return [(p.shortname, [p]) for p in patches]
 
 
-def RQ2_patch_selector(project: VProject):
-    paper_config = get_paper_config()
-    case_studies = paper_config.get_case_studies(cs_name=project.name)
-    current_config = get_current_config_id(project)
-
-    report_files = get_processed_revisions_files(
-        project.name,
-        TEFFeatureIdentifier,
-        TEFFeatureIdentifierReport,
-        get_case_study_file_name_filter(case_studies[0]),
-        config_id=current_config
-    )
-
-    if len(report_files) != 1:
-        print("Invalid number of reports from TEFIdentifier")
-
-    report_file = TEFFeatureIdentifierReport(report_files[0].full_path())
-
-    if len(report_file.patches_containing_region("__VARA__DETECT__")) <= 5:
-        patch_lists = build_patch_sets_under_5(report_file)
-    else:
-        patch_lists = build_patch_sets_over_5(report_files)
-
-    ...
+# def RQ2_patch_selector(project: VProject):
+#     paper_config = get_paper_config()
+#     case_studies = paper_config.get_case_studies(cs_name=project.name)
+#     current_config = get_current_config_id(project)
+#
+#     report_files = get_processed_revisions_files(
+#         project.name,
+#         TEFFeatureIdentifier,
+#         TEFFeatureIdentifierReport,
+#         get_case_study_file_name_filter(case_studies[0]),
+#         config_id=current_config
+#     )
+#
+#     if len(report_files) != 1:
+#         print("Invalid number of reports from TEFIdentifier")
+#
+#     report_file = TEFFeatureIdentifierReport(report_files[0].full_path())
+#
+#     if len(report_file.patches_containing_region("__VARA__DETECT__")) <= 5:
+#         patch_lists = build_patch_sets_under_5(report_file)
+#     else:
+#         patch_lists = build_patch_sets_over_5(report_files)
+#
+#     ...
 
 
 def build_patch_sets_under_5(report_file: TEFFeatureIdentifierReport):
