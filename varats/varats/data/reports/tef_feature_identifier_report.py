@@ -68,7 +68,7 @@ class TEFFeatureIdentifierReport(
         result = []
         regions = frozenset(regions)
         for region in self.__regions_to_patches:
-            if not regions.isdisjoint(region):
+            if regions.issubset(region):
                 result += self.__regions_to_patches[region]
         return result
 
