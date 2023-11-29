@@ -65,9 +65,9 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
         return int(line.split(" ")[0].replace(",", ""))
 
     @staticmethod
-    def __parse_branch_misses(line: str) -> tp.Optional[int]:
+    def __parse_branch_misses(line: str) -> int:
         if line.startswith("<not counted>"):
-            return None
+            return np.NaN
         return int(line.split(" ")[0].replace(",", ""))
 
     @property
