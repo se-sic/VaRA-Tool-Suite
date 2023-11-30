@@ -1,37 +1,27 @@
 """Module for experiments run in the master thesis of Lukas Abelt"""
 import math
-import tempfile
-import textwrap
 import typing as tp
-from abc import abstractmethod
 from collections import defaultdict
 from itertools import chain, combinations
-from pathlib import Path
-from time import sleep
 
 import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult, Clean
-from benchbuild.utils.cmd import time, rm, cp, numactl, sudo, bpftrace, perf
 from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
-from varats.experiments.vara.feature_perf_precision import RunBlackBoxBaseline, AnalysisProjectStepBase, \
+from varats.experiments.vara.feature_perf_precision import RunBackBoxBaseline, AnalysisProjectStepBase, \
     MPRTEFAggregate, MPRPIMAggregate, MPRTimeReportAggregate, RunGenTracedWorkloads, RunBPFTracedWorkloads
 
 from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from plumbum import local, BG
-from plumbum.commands.modifiers import Future
 from varats.revision.revisions import get_processed_revisions_files
 
 from varats.base.configuration import PatchConfiguration
 from varats.experiment.experiment_util import (
     WithUnlimitedStackSize,
-    ZippedReportFolder,
     create_new_success_result_filepath,
     get_default_compile_error_wrapped,
     ZippedExperimentSteps,
@@ -50,7 +40,6 @@ from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider, PatchSet
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
-from varats.tools.research_tools.vara import VaRA
 from varats.utils.config import get_current_config_id, get_config
 from varats.utils.git_util import ShortCommitHash
 
@@ -536,7 +525,7 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
                 patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
-                RunBlackBoxBaseline(
+                RunBackBoxBaseline(
                     project,
                     binary,
                     file_name=MPRTimeReportAggregate.
@@ -554,7 +543,7 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                                     RunBlackBoxBaseline(
+                                     RunBackBoxBaseline(
                                          project,
                                          binary,
                                          file_name=MPRTimeReportAggregate.
