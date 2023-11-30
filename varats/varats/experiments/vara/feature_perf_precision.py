@@ -20,7 +20,7 @@ from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
 
-#from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
+from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from plumbum import local, BG
@@ -88,69 +88,44 @@ def RQ1_patch_selector(project):
     return [(p.shortname, [p]) for p in patches]
 
 
-# def RQ2_patch_selector(project: VProject):
-#     paper_config = get_paper_config()
-#     case_studies = paper_config.get_case_studies(cs_name=project.name)
-#     current_config = get_current_config_id(project)
-#
-#     report_files = get_processed_revisions_files(
-#         project.name,
-#         TEFFeatureIdentifier,
-#         TEFFeatureIdentifierReport,
-#         get_case_study_file_name_filter(case_studies[0]),
-#         config_id=current_config
-#     )
-#
-#     if len(report_files) != 1:
-#         print("Invalid number of reports from TEFIdentifier")
-#
-#     report_file = TEFFeatureIdentifierReport(report_files[0].full_path())
-#
-#     if len(report_file.patches_containing_region("__VARA__DETECT__")) <= 5:
-#         patch_lists = build_patch_sets_under_5(report_file)
-#     else:
-#         patch_lists = build_patch_sets_over_5(report_files)
-#
-#     ...
+def RQ2_patch_selector(project: VProject):
+    MAX_PATCHES = 5
+
+    paper_config = get_paper_config()
+    case_studies = paper_config.get_case_studies(cs_name=project.name)
+    current_config = get_current_config_id(project)
+
+    report_files = get_processed_revisions_files(
+        project.name,
+        TEFFeatureIdentifier,
+        TEFFeatureIdentifierReport,
+        get_case_study_file_name_filter(case_studies[0]),
+        config_id=current_config
+    )
+
+    if len(report_files) != 1:
+        print("Invalid number of reports from TEFIdentifier")
+
+    report_file = TEFFeatureIdentifierReport(report_files[0].full_path())
+
+    patch_names = select_non_interacting_patches(report_file)
+    patch_names += select_interacting_patches(report_file, patch_names, MAX_PATCHES - len(patch_names))
+    patch_names += greedily_select_patches(report_file, patch_names, MAX_PATCHES - len(patch_names))
+
+    SEVERITY = "1000ms"
+
+    patch_names = [p[:-len("detect")]+SEVERITY for p in patch_names]
+
+    patch_tuples = chain.from_iterable(combinations(patch_names, r) for r in range(1, len(patch_names)+1))
+
+    patch_provider = PatchProvider.get_provider_for_project(project)
+
+    result = [('+'.join(p_tuple), [patch_provider.get_by_shortname(p_name) for p_name in p_tuple]) for p_tuple in patch_tuples]
+
+    return result
 
 
-def build_patch_sets_under_5(report_file: TEFFeatureIdentifierReport):
-    regressing_patches = {
-        p[0]
-        for p in report_file.patches_containing_region("__VARA__DETECT__")
-        if len(p[1]) >= 2
-    }
-    patch_names = regressing_patches
-
-    for patch in report_file.patch_names:
-        if len(patch_names) >= 5:
-            break
-
-        if patch in patch_names:
-            continue
-
-        if any([
-            "__VARA__DETECT__" in regions
-            for regions in report_file.regions_for_patch(patch)
-        ]):
-            continue
-
-        patch_names.add(patch)
-
-    patch_lists = [
-        set(s) for s in chain.from_iterable(
-            combinations(patch_names, r)
-            for r in range(1,
-                           len(patch_names) + 1)
-        )
-    ]
-
-    patch_lists = [s for s in patch_lists if regressing_patches.issubset(s)]
-
-    return patch_lists
-
-
-def build_patch_sets_over_5(report_file: TEFFeatureIdentifierReport):
+def select_non_interacting_patches(report_file: TEFFeatureIdentifierReport, count: int = 3):
     patch_candidates = defaultdict(str)
     region_candidates = defaultdict(lambda: math.inf)
 
@@ -186,46 +161,69 @@ def build_patch_sets_over_5(report_file: TEFFeatureIdentifierReport):
                 if region_candidates[patch_name] < num_affections:
                     patch_candidates[region] = patch_name
 
-    region_candidates = sorted(region_candidates.items(), key=lambda kv: kv[1])[:4]
+    region_candidates = sorted(region_candidates.items(), key=lambda kv: kv[1])[:count]
 
     patch_candidates = {r: patch_candidates[r] for r, _ in region_candidates}
 
-    # patch_candidates now has a maximum of 4 entries
+    # patch_candidates now has a maximum of 3 entries
     patch_names = patch_candidates.values()
-    # Build the powerset
-    patch_lists = chain.from_iterable(
-        combinations(patch_names, r) for r in range(1,
-                                                    len(patch_names) + 1)
-    )
 
-    # 2nd step of patch selection:
-    patch_pairs = chain.from_iterable(combinations(patch_names, 2))
-
-    for pair in patch_pairs:
-        regions_of_interest = []
-        for patch in patch_pairs:
-            for region in report_file.regions_for_patch(patch):
-                if "__VARA__DETECT__" in region[0]:
-                    regions_of_interest += region[0]
-
-        patch_candidates = defaultdict(int)
-
-        for region in regions_of_interest:
-            for patch in report_file.patches_containing_region(region):
-                if patch[0] in pair:
-                    # Ignore patch already selected
-                    continue
-
-                patch_candidates[patch[0]] += 1
-
-        patch_candidates = sorted(patch_candidates.items(), key=lambda kv: kv[1])
-
-        selected_patches = []
-        for candidate in patch_candidates:
-            if len(selected_patches) == 2:
-                break
+    return patch_names
 
 
+def select_interacting_patches(report_file: TEFFeatureIdentifierReport, selected_patches: tp.Iterable[str], count: int):
+    affected_regions = get_affected_regions(report_file, selected_patches)
+
+    new_regions = {}
+
+    for patch in report_file.patch_names:
+        if patch in selected_patches:
+            continue
+        new_regions[patch] = set()
+        for region in report_file.regions_for_patch(patch):
+            if "__VARA__DETECT__" not in region[0]:
+                continue
+
+            if region[0] in affected_regions:
+                continue
+
+            new_regions[patch].add(region)
+
+    new_regions = sorted(new_regions.items(), key=lambda kv: len(kv[1]), reverse=True)
+
+    return [r[0] for r in new_regions[:count]]
+
+
+def greedily_select_patches(report_file: TEFFeatureIdentifierReport, selected_patches: tp.Iterable[str], count: int):
+    if count <= 0:
+        return []
+    result = []
+
+    new_regions = {}
+    for patch in report_file.patch_names:
+        if patch in selected_patches:
+            continue
+        new_regions[patch] = set()
+        for region in report_file.regions_for_patch(patch):
+            if "__VARA__DETECT__" not in region[0]:
+                continue
+
+            new_regions[patch].add(region)
+
+    new_regions = sorted(new_regions.items(), key=lambda kv: len(kv[1]), reverse=True)
+    return [r[0] for r in new_regions[:count]]
+
+
+
+def get_affected_regions(report_file: TEFFeatureIdentifierReport, patch_names: tp.Iterable[str]):
+    result = set()
+
+    for patch in patch_names:
+        for region in report_file.regions_for_patch(patch):
+            if "__VARA__REGION__" in region[0]:
+                result += region[0]
+
+    return result
 
 
 def get_feature_tags(project):
@@ -254,14 +252,14 @@ def get_tags_RQ1(project):
 
 
 def perf_prec_workload_commands(
-    project: VProject, binary: ProjectBinaryWrapper
+        project: VProject, binary: ProjectBinaryWrapper
 ) -> tp.List[ProjectCommand]:
     """Uniformly select the workloads that should be processed."""
 
     wl_commands = []
 
     if not project.name.startswith(
-        "SynthIP"
+            "SynthIP"
     ) and project.name != "SynthSAFieldSensitivity":
         # Example commands from these CS are to "fast"
         wl_commands += workload_commands(
@@ -325,12 +323,12 @@ class AnalysisProjectStepBase(OutputFolderStep):
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "json",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "json",
+            reps=REPS
     ):
         super().__init__(project=project)
         self._binary = binary
@@ -378,12 +376,12 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "json",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "json",
+            reps=REPS
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -402,7 +400,7 @@ class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
                     for prj_command in perf_prec_workload_commands(
-                        self.project, self._binary
+                            self.project, self._binary
                     ):
                         local_tracefile_path = Path(reps_tmp_dir) / (
                             f"trace_{prj_command.command.label}_{rep}"
@@ -431,12 +429,12 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "json",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "json",
+            reps=REPS
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -456,7 +454,7 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                 with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                     for rep in range(0, self._reps):
                         for prj_command in perf_prec_workload_commands(
-                            self.project, self._binary
+                                self.project, self._binary
                         ):
                             local_tracefile_path = Path(reps_tmp_dir) / (
                                 f"trace_{prj_command.command.label}_{rep}"
@@ -464,7 +462,7 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                             )
 
                             with local.env(
-                                VARA_TRACE_FILE=local_tracefile_path
+                                    VARA_TRACE_FILE=local_tracefile_path
                             ):
                                 adapted_binary_location = Path(
                                     non_nfs_tmp_dir
@@ -498,7 +496,7 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
 
     @staticmethod
     def attach_usdt_raw_tracing(
-        report_file: Path, binary: Path, non_nfs_tmp_dir: Path
+            report_file: Path, binary: Path, non_nfs_tmp_dir: Path
     ) -> Future:
         """Attach bpftrace script to binary to activate raw USDT probes."""
         orig_bpftrace_script_location = Path(
@@ -510,7 +508,7 @@ class RunBPFTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
         cp(orig_bpftrace_script_location, bpftrace_script_location)
 
         bpftrace_script = bpftrace["-o", report_file, "--no-warnings", "-q",
-                                   bpftrace_script_location, binary]
+        bpftrace_script_location, binary]
         bpftrace_script = bpftrace_script.with_env(BPFTRACE_PERF_RB_PAGES=8192)
 
         # Assertion: Can be run without sudo password prompt.
@@ -533,12 +531,12 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "json",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "json",
+            reps=REPS
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -557,7 +555,7 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
                     for prj_command in perf_prec_workload_commands(
-                        self.project, self._binary
+                            self.project, self._binary
                     ):
                         local_tracefile_path = Path(reps_tmp_dir) / (
                             f"trace_{prj_command.command.label}_{rep}"
@@ -598,7 +596,7 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
 
         # Assertion: Can be run without sudo password prompt.
         bcc_cmd = bcc_script["--output_file", report_file, "--no_poll",
-                             "--executable", binary]
+        "--executable", binary]
         print(f"{bcc_cmd=}")
         bcc_cmd = sudo[bcc_cmd]
         # bcc_cmd = numactl["--cpunodebind=0", "--membind=0", bcc_cmd]
@@ -609,11 +607,11 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
 
 
 def setup_actions_for_vara_experiment(
-    experiment: FeatureExperiment,
-    project: VProject,
-    instr_type: FeatureInstrType,
-    analysis_step: tp.Type[AnalysisProjectStepBase],
-    patch_selector=RQ1_patch_selector
+        experiment: FeatureExperiment,
+        project: VProject,
+        instr_type: FeatureInstrType,
+        analysis_step: tp.Type[AnalysisProjectStepBase],
+        patch_selector=RQ1_patch_selector
 ) -> tp.MutableSequence[actions.Step]:
     project.cflags += experiment.get_vara_feature_cflags(project)
 
@@ -683,13 +681,13 @@ def setup_actions_for_vara_experiment(
     analysis_actions.append(
         ZippedExperimentSteps(
             result_filepath, [
-                analysis_step(
-                    project,
-                    binary,
-                    file_name=MultiPatchReport.
-                    create_baseline_report_name("rep_measurements")
-                )
-            ] + patch_steps
+                                 analysis_step(
+                                     project,
+                                     binary,
+                                     file_name=MultiPatchReport.
+                                     create_baseline_report_name("rep_measurements")
+                                 )
+                             ] + patch_steps
         )
     )
     analysis_actions.append(actions.Clean(project))
@@ -705,7 +703,7 @@ class TEFProfileRunner(FeatureExperiment, shorthand="TEFp"):
     REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -727,7 +725,7 @@ class PIMProfileRunner(FeatureExperiment, shorthand="PIMp"):
     REPORT_SPEC = ReportSpecification(MPRPIMAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -752,7 +750,7 @@ class EbpfTraceTEFProfileRunner(FeatureExperiment, shorthand="ETEFp"):
     CONTAINER = ContainerImage().run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -774,7 +772,7 @@ class BCCTEFProfileRunner(FeatureExperiment, shorthand="BCCp"):
     REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -797,12 +795,12 @@ class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "txt",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "txt",
+            reps=REPS
     ):
         super().__init__(project=project)
         self.__binary = binary
@@ -825,7 +823,7 @@ class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self.__reps):
                     for prj_command in perf_prec_workload_commands(
-                        self.project, self.__binary
+                            self.project, self.__binary
                     ):
                         time_report_file = Path(reps_tmp_dir) / (
                             f"baseline_{prj_command.command.label}_{rep}"
@@ -852,7 +850,7 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
     REPORT_SPEC = ReportSpecification(MPRTimeReportAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -920,13 +918,13 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                    RunBlackBoxBaseline(
-                        project,
-                        binary,
-                        file_name=MPRTimeReportAggregate.
-                        create_baseline_report_name("rep_measurements")
-                    )
-                ] + patch_steps
+                                     RunBlackBoxBaseline(
+                                         project,
+                                         binary,
+                                         file_name=MPRTimeReportAggregate.
+                                         create_baseline_report_name("rep_measurements")
+                                     )
+                                 ] + patch_steps
             )
         )
         analysis_actions.append(actions.Clean(project))
@@ -948,12 +946,12 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "txt",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "txt",
+            reps=REPS
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -970,7 +968,7 @@ class RunGenTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         with local.cwd(local.path(self.project.builddir)):
             for rep in range(0, self._reps):
                 for prj_command in perf_prec_workload_commands(
-                    self.project, self._binary
+                        self.project, self._binary
                 ):
                     base = Path("/tmp/")
                     fake_tracefile_path = base / (
@@ -1005,12 +1003,12 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "txt",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "txt",
+            reps=REPS
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -1028,7 +1026,7 @@ class RunBPFTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
             with tempfile.TemporaryDirectory() as non_nfs_tmp_dir:
                 for rep in range(0, self._reps):
                     for prj_command in perf_prec_workload_commands(
-                        self.project, self._binary
+                            self.project, self._binary
                     ):
                         base = Path(non_nfs_tmp_dir)
                         fake_tracefile_path = base / (
@@ -1079,12 +1077,12 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        file_name: str,
-        report_file_ending: str = "txt",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            file_name: str,
+            report_file_ending: str = "txt",
+            reps=REPS
     ):
         super().__init__(project, binary, file_name, report_file_ending, reps)
 
@@ -1101,7 +1099,7 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
         with local.cwd(local.path(self.project.builddir)):
             for rep in range(0, self._reps):
                 for prj_command in perf_prec_workload_commands(
-                    self.project, self._binary
+                        self.project, self._binary
                 ):
                     base = Path("/tmp/")
                     fake_tracefile_path = base / (
@@ -1121,7 +1119,7 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
                         print(f"Running example {prj_command.command.label}")
 
                         timed_pb_cmd = time["-v", "-o", time_report_file, "--",
-                                            pb_cmd]
+                        pb_cmd]
 
                         bpf_runner = RunBCCTracedWorkloads.attach_usdt_bcc(
                             fake_tracefile_path,
@@ -1139,9 +1137,9 @@ class RunBCCTracedWorkloadsOverhead(AnalysisProjectStepBase):  # type: ignore
 
 
 def setup_actions_for_vara_overhead_experiment(
-    experiment: FeatureExperiment, project: VProject,
-    instr_type: FeatureInstrType,
-    analysis_step: tp.Type[AnalysisProjectStepBase]
+        experiment: FeatureExperiment, project: VProject,
+        instr_type: FeatureInstrType,
+        analysis_step: tp.Type[AnalysisProjectStepBase]
 ) -> tp.MutableSequence[actions.Step]:
     project.cflags += experiment.get_vara_feature_cflags(project)
 
@@ -1206,7 +1204,7 @@ class TEFProfileOverheadRunner(FeatureExperiment, shorthand="TEFo"):
     REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -1228,7 +1226,7 @@ class PIMProfileOverheadRunner(FeatureExperiment, shorthand="PIMo"):
     REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -1253,7 +1251,7 @@ class EbpfTraceTEFOverheadRunner(FeatureExperiment, shorthand="ETEFo"):
     CONTAINER = ContainerImage().run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -1276,7 +1274,7 @@ class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
     REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -1299,11 +1297,11 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
     project: VProject
 
     def __init__(
-        self,
-        project: VProject,
-        binary: ProjectBinaryWrapper,
-        report_file_ending: str = "txt",
-        reps=REPS
+            self,
+            project: VProject,
+            binary: ProjectBinaryWrapper,
+            report_file_ending: str = "txt",
+            reps=REPS
     ):
         super().__init__(project=project)
         self.__binary = binary
@@ -1323,7 +1321,7 @@ class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
         with local.cwd(local.path(self.project.builddir)):
             for rep in range(0, self.__reps):
                 for prj_command in perf_prec_workload_commands(
-                    self.project, self.__binary
+                        self.project, self.__binary
                 ):
                     time_report_file = tmp_dir / (
                         f"overhead_{prj_command.command.label}_{rep}"
@@ -1350,7 +1348,7 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
     REPORT_SPEC = ReportSpecification(TimeReportAggregate)
 
     def actions_for_project(
-        self, project: VProject
+            self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
