@@ -48,7 +48,7 @@ class RevertPatch(actions.ProjectStep):
     NAME = "REVERT_PATCH"
     DESCRIPTION = "Revert a Git patch from a project."
 
-    def __init__(self, project, patch):
+    def __init__(self, project: VProject, patch: Patch) -> None:
         super().__init__(project)
         self.__patch = patch
 

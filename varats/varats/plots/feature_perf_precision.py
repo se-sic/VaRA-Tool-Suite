@@ -1,5 +1,4 @@
 """Module for the FeaturePerfPrecision plots."""
-import random
 import typing as tp
 from itertools import chain
 
@@ -8,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.axes import Axes
 from matplotlib.text import Text
 
 from varats.data.databases.feature_perf_precision_database import (
@@ -20,35 +20,15 @@ from varats.data.databases.feature_perf_precision_database import (
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotConfig, PlotGenerator
+from varats.plot.plots import PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 
-def get_fake_prec_rows() -> tp.List[tp.Any]:
-    fake_rows = []
-    fake_prof = [("prof1", 10), ("prof2", 42)]
-    for prof, seed in fake_prof:
-        random.seed(seed)
-        for _ in range(0, 3):
-            x = random.random()
-            y = random.random()
-            new_fake_row = {
-                'CaseStudy': "fake",
-                'Patch': "fpatch",
-                'Configs': 42,
-                'RegressedConfigs': 21,
-                'precision': x,
-                'recall': y,
-                'Profiler': prof
-            }
-            fake_rows.append(new_fake_row)
-
-    return fake_rows
-
-
 class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
+    """Precision plot that plots the precision and recall values of different
+    profilers."""
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -57,9 +37,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
         # Data aggregation
         df = pd.DataFrame()
         df = load_precision_data(case_studies, profilers)
-        # df = pd.concat([df, pd.DataFrame(get_fake_prec_rows())])
         df.sort_values(["CaseStudy"], inplace=True)
-        print(f"df=\n{df.to_string()}")
 
         grid = multivariate_grid(
             df,
@@ -89,6 +67,7 @@ class PerfPrecisionPlot(Plot, plot_name='fperf_precision'):
 class PerfPrecisionPlotGenerator(
     PlotGenerator, generator_name="fperf-precision", options=[]
 ):
+    """Generates precision plot."""
 
     def generate(self) -> tp.List[Plot]:
 
@@ -96,6 +75,8 @@ class PerfPrecisionPlotGenerator(
 
 
 class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
+    """Precision plot that plots the precision and recall distributions of
+    different profilers."""
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -112,7 +93,7 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
             value_name="value"
         )
 
-        colors = sns.color_palette("Paired", len(case_studies) * 2)
+        colors = sns.color_palette("Paired", len(profilers) * 2)
         _, axes = plt.subplots(ncols=len(profilers), nrows=1, sharey=True)
 
         for idx, profiler in enumerate(profilers):
@@ -129,7 +110,6 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
                 cut=0,
                 split=True,
                 palette=color_slice,
-                alpha=.25,
                 linewidth=1,
                 ax=ax
             )
@@ -144,8 +124,8 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
                 linewidth=0.5,
                 marker='x',
                 palette=[
-                    mcolors.CSS4_COLORS['dimgrey'],
-                    mcolors.CSS4_COLORS['darkgrey']
+                    mcolors.XKCD_COLORS['xkcd:dark grey'],
+                    mcolors.CSS4_COLORS['dimgrey']
                 ],
                 size=7,
                 ax=ax
@@ -175,6 +155,7 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
 class PerfProfDistPlotGenerator(
     PlotGenerator, generator_name="fperf-precision-dist", options=[]
 ):
+    """Generates performance distribution plot."""
 
     def generate(self) -> tp.List[Plot]:
 
@@ -182,19 +163,25 @@ class PerfProfDistPlotGenerator(
 
 
 class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
+    """Performance overhead plot that shows the pareto front of the different
+    performance metrics."""
 
     def plot(self, view_mode: bool) -> None:
         # -- Configure plot --
         plot_metric = [
             ("Time", "overhead_time_rel"),
             ("Memory", "overhead_memory_rel"),
-            #("Major Page Faults", "overhead_major_page_faults_rel"),
-            #("Minor Page Faults", "overhead_minor_page_faults_rel"),
-            #("Filesystem Inputs", "overhead_fs_inputs_rel"),
-            #("Filesystem Outputs", "overhead_fs_outputs_rel"),
         ]
+        extra_metrics = False
+        if extra_metrics:
+            plot_metric.extend([
+                ("Major Page Faults", "overhead_major_page_faults_rel"),
+                ("Minor Page Faults", "overhead_minor_page_faults_rel"),
+                ("Filesystem Inputs", "overhead_fs_inputs_rel"),
+                ("Filesystem Outputs", "overhead_fs_outputs_rel"),
+            ])
+
         target_row = "f1_score"
-        # target_row = "precision"
 
         # Load data
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -213,10 +200,8 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                                                 'recall': 'mean',
                                                 'f1_score': 'mean'
                                             })
-        print(f"precision_df=\n{precision_df}")
 
         overhead_df = load_overhead_data(case_studies, profilers)
-        print(f"{overhead_df=}")
         overhead_df['overhead_time_rel'] = overhead_df['time'] / (
             overhead_df['time'] - overhead_df['overhead_time']
         ) * 100
@@ -237,8 +222,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         overhead_df['overhead_major_page_faults_rel'].replace([np.inf, -np.inf],
                                                               np.nan,
                                                               inplace=True)
-        # TODO: fix
-        overhead_df["overhead_major_page_faults_rel"].fillna(100, inplace=True)
 
         overhead_df['overhead_minor_page_faults_rel'
                    ] = overhead_df['minor_page_faults'] / (
@@ -248,8 +231,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         overhead_df['overhead_minor_page_faults_rel'].replace([np.inf, -np.inf],
                                                               np.nan,
                                                               inplace=True)
-        # TODO: fix
-        overhead_df["overhead_minor_page_faults_rel"].fillna(100, inplace=True)
 
         # Filesystem
         overhead_df['overhead_fs_inputs_rel'] = overhead_df['fs_inputs'] / (
@@ -266,14 +247,9 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                                                        np.nan,
                                                        inplace=True)
 
-        print(f"other_df=\n{overhead_df}")
-
         merged_df = pd.merge(
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
-        print(f"merged_df=\n{merged_df}")
-
-        # print(f"{self.plot_config.width()}")
 
         rows = 1
         _, axes = plt.subplots(
@@ -286,7 +262,6 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 axes
             )
         else:
-            print(f"{axes=}")
             if rows == 1:
                 axes_list = list(axes)
             else:
@@ -299,12 +274,13 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
                 )
 
     def do_single_plot(
-        self, x_values, target_row, merged_df, plot_extra_name, ax
+        self, x_values_name: str, target_row: str, merged_df: pd.DataFrame,
+        plot_extra_name: str, ax: Axes
     ) -> None:
-        # ax =
+        """Plot a single overhead metric."""
         sns.scatterplot(
             merged_df,
-            x=x_values,
+            x=x_values_name,
             y=target_row,
             hue="Profiler",
             style='CaseStudy',
@@ -313,8 +289,8 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             ax=ax
         )
 
+        text_obj: Text
         for text_obj in ax.legend().get_texts():
-            text_obj: Text
 
             text_obj.set_fontsize("xx-large")
             if text_obj.get_text() == "Profiler":
@@ -335,7 +311,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         x_limit = max(
             np.max(
                 np.nan_to_num(
-                    merged_df[x_values],
+                    merged_df[x_values_name],
                     copy=True,
                     nan=0.0,
                     posinf=0.0,
@@ -345,26 +321,28 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
         )
         ax.set_xlim(x_limit, 100)
         ax.tick_params(labelsize=20, pad=10)
-        ax.xaxis.label.set_size(25)
-        ax.yaxis.label.set_size(25)
+        ax.xaxis.label.set_fontsize(25)
+        ax.yaxis.label.set_fontsize(25)
         ax.yaxis.labelpad = 10
         ax.xaxis.labelpad = 20
 
-        prof_df = merged_df[['Profiler', 'precision', x_values, 'f1_score'
-                            ]].groupby('Profiler').agg(['mean', 'std'])
+        prof_df = merged_df[[
+            'Profiler', 'precision', x_values_name, 'f1_score'
+        ]].groupby('Profiler').agg(['mean', 'std'])
         prof_df.fillna(0, inplace=True)
 
-        print(f"{prof_df=}")
         pareto_front = self.plot_pareto_frontier(
-            prof_df[x_values]['mean'], prof_df[target_row]['mean'], maxX=False
+            prof_df[x_values_name]['mean'],
+            prof_df[target_row]['mean'],
+            max_x=False
         )
 
         pf_x = [pair[0] for pair in pareto_front]
         pf_y = [pair[1] for pair in pareto_front]
 
-        x_loc = prof_df[x_values]['mean']
+        x_loc = prof_df[x_values_name]['mean']
         y_loc = prof_df[target_row]['mean']
-        x_error = prof_df[x_values]['std']
+        x_error = prof_df[x_values_name]['std']
         y_error = prof_df[target_row]['std']
 
         ax.errorbar(
@@ -382,7 +360,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 
         sns.scatterplot(
             prof_df,
-            x=(x_values, 'mean'),
+            x=(x_values_name, 'mean'),
             y=(target_row, 'mean'),
             hue="Profiler",
             ax=ax,
@@ -401,14 +379,21 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
             zorder=1
         )
 
-    def plot_pareto_frontier(self, Xs, Ys, maxX=True, maxY=True):
+    def plot_pareto_frontier(
+        self,
+        x_values: tp.List[float],
+        y_values: tp.List[float],
+        max_x: bool = True,
+        max_y: bool = True
+    ) -> tp.List[tp.List[float]]:
         """Pareto frontier selection process."""
-        sorted_list = sorted([[Xs[i], Ys[i]] for i in range(len(Xs))],
-                             reverse=maxX)
-        print(f"{sorted_list=}")
+        sorted_list = sorted([
+            [x_values[i], y_values[i]] for i in range(len(x_values))
+        ],
+                             reverse=max_x)
         pareto_front = [sorted_list[0]]
         for pair in sorted_list[1:]:
-            if maxY:
+            if max_y:
                 if pair[1] >= pareto_front[-1][1]:
                     if pair[0] == pareto_front[-1][0]:
                         # If both points, have the same x-values, we should
@@ -436,6 +421,7 @@ class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
 class PerfOverheadPlotGenerator(
     PlotGenerator, generator_name="fperf-overhead", options=[]
 ):
+    """Generates overhead plot."""
 
     def generate(self) -> tp.List[Plot]:
         return [PerfOverheadPlot(self.plot_config, **self.plot_kwargs)]
