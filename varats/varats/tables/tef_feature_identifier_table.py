@@ -37,7 +37,7 @@ class TEFFeatureIdentifierTable(Table, table_name="tef-feature-id"):
 
             new_row = {
                 'Name': "__Baseline",
-                'ConfigId': config_id
+                'ConfigId' : config_id
             }
             for region in report.baseline_regions:
                 r = region[0].difference({"__VARA__DETECT__"})
@@ -58,7 +58,7 @@ class TEFFeatureIdentifierTable(Table, table_name="tef-feature-id"):
                 table_rows.append(new_row)
 
         df = pd.DataFrame(table_rows)
-        df.sort_values(['ConfigId','Name'])
+        df.sort_values(['ConfigId', 'Name'])
 
         return dataframe_to_table(
             df,
