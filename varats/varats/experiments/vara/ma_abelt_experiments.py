@@ -1,4 +1,4 @@
-"""Module for experiments run in the master thesis of Lukas Abelt"""
+"""Module for experiments run in the master thesis of Lukas Abelt."""
 import math
 import typing as tp
 from collections import defaultdict
@@ -8,18 +8,11 @@ import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
+
+from varats.base.configuration import PatchConfiguration
 from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
-from varats.experiments.vara.feature_perf_precision import RunBackBoxBaseline, AnalysisProjectStepBase, \
-    MPRTEFAggregate, MPRPIMAggregate, MPRTimeReportAggregate, RunGenTracedWorkloads, RunBPFTracedWorkloads
-
-from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
-from varats.paper.paper_config import get_paper_config
-from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.revision.revisions import get_processed_revisions_files
-
-from varats.base.configuration import PatchConfiguration
 from varats.experiment.experiment_util import (
     WithUnlimitedStackSize,
     create_new_success_result_filepath,
@@ -34,12 +27,27 @@ from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     FeatureInstrType,
 )
+from varats.experiments.vara.feature_perf_precision import (
+    RunBackBoxBaseline,
+    AnalysisProjectStepBase,
+    MPRTEFAggregate,
+    MPRPIMAggregate,
+    MPRTimeReportAggregate,
+    RunGenTracedWorkloads,
+    RunBPFTracedWorkloads,
+    get_extra_cflags,
+    get_threshold,
+)
+from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
+from varats.paper.paper_config import get_paper_config
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider, PatchSet
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
+from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.config import get_current_config_id, get_config
 from varats.utils.git_util import ShortCommitHash
 
@@ -92,26 +100,42 @@ def RQ2_patch_selector(project: VProject):
 
     report_file = TEFFeatureIdentifierReport(report_files[0].full_path())
 
+    print(f"Selecting patches for {project.name}, Config {current_config}")
+
     patch_names = select_non_interacting_patches(report_file)
-    patch_names += select_interacting_patches(report_file, patch_names, MAX_PATCHES - len(patch_names))
-    patch_names += greedily_select_patches(report_file, patch_names, MAX_PATCHES - len(patch_names))
+    print(f"{patch_names=}")
+    patch_names += select_interacting_patches(
+        report_file, patch_names, MAX_PATCHES - len(patch_names)
+    )
+    print(f"{patch_names=}")
+    patch_names += greedily_select_patches(
+        report_file, patch_names, MAX_PATCHES - len(patch_names)
+    )
+    print(f"{patch_names=}")
 
     SEVERITY = "1000ms"
 
     patch_names = [p[:-len("detect")] + SEVERITY for p in patch_names]
 
-    patch_tuples = chain.from_iterable(combinations(patch_names, r) for r in range(1, len(patch_names) + 1))
+    patch_tuples = chain.from_iterable(
+        combinations(patch_names, r) for r in range(1,
+                                                    len(patch_names) + 1)
+    )
 
     patch_provider = PatchProvider.get_provider_for_project(project)
 
-    result = [('+'.join(p_tuple), [patch_provider.get_by_shortname(p_name) for p_name in p_tuple]) for p_tuple in
-              patch_tuples]
+    result = [(
+        '+'.join(p_tuple),
+        [patch_provider.get_by_shortname(p_name) for p_name in p_tuple]
+    ) for p_tuple in patch_tuples]
 
     return result
 
 
-def select_non_interacting_patches(report_file: TEFFeatureIdentifierReport, count: int = 3):
-    patch_candidates = defaultdict(str)
+def select_non_interacting_patches(
+    report_file: TEFFeatureIdentifierReport, count: int = 3
+):
+    patch_candidates = {}
     region_candidates = defaultdict(lambda: math.inf)
 
     for region in report_file.affectable_regions:
@@ -143,69 +167,95 @@ def select_non_interacting_patches(report_file: TEFFeatureIdentifierReport, coun
                 break
 
             if consider_patch:
-                if region_candidates[patch_name] < num_affections:
-                    patch_candidates[region] = patch_name
+                if num_affections < region_candidates[region]:
+                    patch_candidates[region] = (patch_name, num_affections)
+                    region_candidates[region] = num_affections
 
-    region_candidates = sorted(region_candidates.items(), key=lambda kv: kv[1])[:count]
-
-    patch_candidates = {r: patch_candidates[r] for r, _ in region_candidates}
-
-    # patch_candidates now has a maximum of 3 entries
-    patch_names = patch_candidates.values()
+    region_candidates = sorted(region_candidates.items(),
+                               key=lambda kv: kv[1])[:count]
+    patch_candidates = sorted(
+        patch_candidates.items(), key=lambda kv: kv[1][1]
+    )[:count]
+    patch_names = [r[1][0] for r in patch_candidates]
 
     return patch_names
 
 
-def select_interacting_patches(report_file: TEFFeatureIdentifierReport, selected_patches: tp.Iterable[str], count: int):
+def select_interacting_patches(
+    report_file: TEFFeatureIdentifierReport, selected_patches: tp.Iterable[str],
+    count: int
+):
     affected_regions = get_affected_regions(report_file, selected_patches)
 
-    new_regions = {}
+    new_regions = defaultdict(set)
 
     for patch in report_file.patch_names:
+        consider_patch = False
+        new_patch_regions = set()
         if patch in selected_patches:
             continue
-        new_regions[patch] = set()
         for region in report_file.regions_for_patch(patch):
+            # We want "interesting regions
             if "__VARA__DETECT__" not in region[0]:
                 continue
 
+            # We want to ensure that we have at least some interaction with the affected regions
+            for affected_region in affected_regions:
+                intersection = affected_region.intersection(region[0])
+                if "__VARA__DETECT__" in intersection and len(intersection) > 1:
+                    consider_patch = True
+                    break
+
+            # This region is already covered
             if region[0] in affected_regions:
+                consider_patch = True
                 continue
 
-            new_regions[patch].add(region)
+            new_patch_regions.add(region)
 
-    new_regions = sorted(new_regions.items(), key=lambda kv: len(kv[1]), reverse=True)
+        if consider_patch:
+            new_regions[patch] = new_patch_regions
+
+    new_regions = sorted(
+        new_regions.items(), key=lambda kv: len(kv[1]), reverse=True
+    )
 
     return [r[0] for r in new_regions[:count]]
 
 
-def greedily_select_patches(report_file: TEFFeatureIdentifierReport, selected_patches: tp.Iterable[str], count: int):
+def greedily_select_patches(
+    report_file: TEFFeatureIdentifierReport, selected_patches: tp.Iterable[str],
+    count: int
+):
     if count <= 0:
         return []
     result = []
 
-    new_regions = {}
+    new_regions = defaultdict(set)
     for patch in report_file.patch_names:
         if patch in selected_patches:
             continue
-        new_regions[patch] = set()
         for region in report_file.regions_for_patch(patch):
-            if "__VARA__DETECT__" not in region[0]:
+            if "__VARA__DETECT__" not in region[0] or len(region[0]) < 2:
                 continue
 
             new_regions[patch].add(region)
 
-    new_regions = sorted(new_regions.items(), key=lambda kv: len(kv[1]), reverse=True)
+    new_regions = sorted(
+        new_regions.items(), key=lambda kv: len(kv[1]), reverse=True
+    )
     return [r[0] for r in new_regions[:count]]
 
 
-def get_affected_regions(report_file: TEFFeatureIdentifierReport, patch_names: tp.Iterable[str]):
+def get_affected_regions(
+    report_file: TEFFeatureIdentifierReport, patch_names: tp.Iterable[str]
+):
     result = set()
 
     for patch in patch_names:
         for region in report_file.regions_for_patch(patch):
-            if "__VARA__REGION__" in region[0]:
-                result += region[0]
+            if "__VARA__DETECT__" in region[0]:
+                result.add(region[0])
 
     return result
 
@@ -235,28 +285,6 @@ def get_tags_RQ1(project):
     return result
 
 
-def perf_prec_workload_commands(
-        project: VProject, binary: ProjectBinaryWrapper
-) -> tp.List[ProjectCommand]:
-    """Uniformly select the workloads that should be processed."""
-
-    wl_commands = []
-
-    if not project.name.startswith(
-            "SynthIP"
-    ) and project.name != "SynthSAFieldSensitivity":
-        # Example commands from these CS are to "fast"
-        wl_commands += workload_commands(
-            project, binary, [WorkloadCategory.EXAMPLE]
-        )
-
-    wl_commands += workload_commands(project, binary, [WorkloadCategory.SMALL])
-
-    wl_commands += workload_commands(project, binary, [WorkloadCategory.MEDIUM])
-
-    return wl_commands
-
-
 def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
     """Uniformly select the binaries that should be analyzed."""
     if project.name == "DunePerfRegression":
@@ -278,37 +306,13 @@ def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
     return [project.binaries[0]]
 
 
-def get_extra_cflags(project: VProject) -> tp.List[str]:
-    if project.name in ["DunePerfRegression", "HyTeg"]:
-        # Disable phasar for dune as the analysis cannot handle dunes size
-        return ["-fvara-disable-phasar"]
-
-    return []
-
-
-def get_threshold(project: VProject) -> int:
-    if project.DOMAIN is ProjectDomains.TEST:
-        if project.name in [
-            "SynthSAFieldSensitivity", "SynthIPRuntime", "SynthIPTemplate",
-            "SynthIPTemplate2", "SynthIPCombined"
-        ]:
-            print("Don't instrument everything")
-            return 10
-
-        return 0
-
-    if project.DOMAIN is ProjectDomains.HPC:
-        return 0
-
-    return 100
-
-
 def setup_actions_for_vara_experiment(
-        experiment: FeatureExperiment,
-        project: VProject,
-        instr_type: FeatureInstrType,
-        analysis_step: tp.Type[AnalysisProjectStepBase],
-        patch_selector=RQ1_patch_selector
+    experiment: FeatureExperiment,
+    project: VProject,
+    instr_type: FeatureInstrType,
+    analysis_step: tp.Type[AnalysisProjectStepBase],
+    patch_selector=RQ1_patch_selector,
+    reps: int = REPS
 ) -> tp.MutableSequence[actions.Step]:
     project.cflags += experiment.get_vara_feature_cflags(project)
 
@@ -378,14 +382,14 @@ def setup_actions_for_vara_experiment(
     analysis_actions.append(
         ZippedExperimentSteps(
             result_filepath, [
-                                 analysis_step(
-                                     project,
-                                     binary,
-                                     file_name=MultiPatchReport.
-                                     create_baseline_report_name("rep_measurements"),
-                                     reps=REPS
-                                 )
-                             ] + patch_steps
+                analysis_step(
+                    project,
+                    binary,
+                    file_name=MultiPatchReport.
+                    create_baseline_report_name("rep_measurements"),
+                    reps=reps
+                )
+            ] + patch_steps
         )
     )
     analysis_actions.append(actions.Clean(project))
@@ -406,7 +410,7 @@ class TEFProfileRunnerSeverity(FeatureExperiment, shorthand="TEFp-RQ1"):
     REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
 
     def actions_for_project(
-            self, project: VProject
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -416,7 +420,8 @@ class TEFProfileRunnerSeverity(FeatureExperiment, shorthand="TEFp-RQ1"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads, RQ1_patch_selector
+            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads,
+            RQ1_patch_selector
         )
 
 
@@ -428,7 +433,7 @@ class PIMProfileRunnerSeverity(FeatureExperiment, shorthand="PIMp-RQ1"):
     REPORT_SPEC = ReportSpecification(MPRPIMAggregate)
 
     def actions_for_project(
-            self, project: VProject
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -443,8 +448,10 @@ class PIMProfileRunnerSeverity(FeatureExperiment, shorthand="PIMp-RQ1"):
         )
 
 
-class EbpfTraceTEFProfileRunnerSeverity(FeatureExperiment, shorthand="ETEFp-RQ1"):
-    """Runs the EBPF trace profiler for the severity measurements"""
+class EbpfTraceTEFProfileRunnerSeverity(
+    FeatureExperiment, shorthand="ETEFp-RQ1"
+):
+    """Runs the EBPF trace profiler for the severity measurements."""
 
     NAME = "RunEBPFTraceTEFProfilerSeverity"
 
@@ -453,7 +460,7 @@ class EbpfTraceTEFProfileRunnerSeverity(FeatureExperiment, shorthand="ETEFp-RQ1"
     CONTAINER = ContainerImage().run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
-            self, project: VProject
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -463,7 +470,8 @@ class EbpfTraceTEFProfileRunnerSeverity(FeatureExperiment, shorthand="ETEFp-RQ1"
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads, RQ1_patch_selector
+            self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads,
+            RQ1_patch_selector
         )
 
 
@@ -475,7 +483,7 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
     REPORT_SPEC = ReportSpecification(MPRTimeReportAggregate)
 
     def actions_for_project(
-            self, project: VProject
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -543,14 +551,14 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                                     RunBackBoxBaseline(
-                                         project,
-                                         binary,
-                                         file_name=MPRTimeReportAggregate.
-                                         create_baseline_report_name("rep_measurements"),
-                                         reps=REPS
-                                     )
-                                 ] + patch_steps
+                    RunBackBoxBaseline(
+                        project,
+                        binary,
+                        file_name=MPRTimeReportAggregate.
+                        create_baseline_report_name("rep_measurements"),
+                        reps=REPS
+                    )
+                ] + patch_steps
             )
         )
         analysis_actions.append(actions.Clean(project))
@@ -564,6 +572,7 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
 #
 ########################################################################################################################
 
+
 class TEFProfileRunnerPrecision(FeatureExperiment, shorthand="TEFp-RQ2"):
     """Test runner for feature performance."""
 
@@ -572,7 +581,7 @@ class TEFProfileRunnerPrecision(FeatureExperiment, shorthand="TEFp-RQ2"):
     REPORT_SPEC = ReportSpecification(MPRTEFAggregate)
 
     def actions_for_project(
-            self, project: VProject
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -582,7 +591,8 @@ class TEFProfileRunnerPrecision(FeatureExperiment, shorthand="TEFp-RQ2"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads, RQ2_patch_selector
+            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads,
+            RQ2_patch_selector
         )
 
 
@@ -594,7 +604,7 @@ class PIMProfileRunnerPrecision(FeatureExperiment, shorthand="PIMp-RQ2"):
     REPORT_SPEC = ReportSpecification(MPRPIMAggregate)
 
     def actions_for_project(
-            self, project: VProject
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -609,8 +619,10 @@ class PIMProfileRunnerPrecision(FeatureExperiment, shorthand="PIMp-RQ2"):
         )
 
 
-class EbpfTraceTEFProfileRunnerPrecision(FeatureExperiment, shorthand="ETEFp-RQ2"):
-    """Runs the EBPF trace profiler for the severity measurements"""
+class EbpfTraceTEFProfileRunnerPrecision(
+    FeatureExperiment, shorthand="ETEFp-RQ2"
+):
+    """Runs the EBPF trace profiler for the severity measurements."""
 
     NAME = "RunEBPFTraceTEFProfilerPrecision"
 
@@ -619,7 +631,7 @@ class EbpfTraceTEFProfileRunnerPrecision(FeatureExperiment, shorthand="ETEFp-RQ2
     CONTAINER = ContainerImage().run('apt', 'install', '-y', 'bpftrace')
 
     def actions_for_project(
-            self, project: VProject
+        self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -629,5 +641,6 @@ class EbpfTraceTEFProfileRunnerPrecision(FeatureExperiment, shorthand="ETEFp-RQ2
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads, RQ2_patch_selector
+            self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads,
+            RQ2_patch_selector
         )
