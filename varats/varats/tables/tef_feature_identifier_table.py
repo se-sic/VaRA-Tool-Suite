@@ -2,10 +2,10 @@ import typing as tp
 
 import pandas as pd
 
-from varats.data.reports.tef_feature_identifier_report import TEFFeatureIdentifierReport
-
+from varats.data.reports.tef_feature_identifier_report import (
+    TEFFeatureIdentifierReport,
+)
 from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
-
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.revision.revisions import get_processed_revisions_files
@@ -23,22 +23,23 @@ class TEFFeatureIdentifierTable(Table, table_name="tef-feature-id"):
         cs = self.table_kwargs['case_study']
 
         report_files = get_processed_revisions_files(
-            cs,
+            project_name,
             TEFFeatureIdentifier,
             TEFFeatureIdentifierReport,
-            get_case_study_file_name_filter(cs)
+            get_case_study_file_name_filter(cs),
+            only_newest=False
         )
 
         table_rows = []
+
+        print(f"{project_name}")
+        print(f"{report_files=}")
 
         for report_path in report_files:
             report = TEFFeatureIdentifierReport(report_path.full_path())
             config_id = report_path.report_filename.config_id
 
-            new_row = {
-                'Name': "__Baseline",
-                'ConfigId' : config_id
-            }
+            new_row = {'Name': "__Baseline", 'ConfigId': config_id}
             for region in report.baseline_regions:
                 r = region[0].difference({"__VARA__DETECT__"})
                 new_row["*".join(r)] = region[1]
@@ -46,10 +47,7 @@ class TEFFeatureIdentifierTable(Table, table_name="tef-feature-id"):
             table_rows.append(new_row)
 
             for patch in report.patch_names:
-                new_row = {
-                    'Name': patch,
-                    'ConfigId': config_id
-                }
+                new_row = {'Name': patch, 'ConfigId': config_id}
                 for region in report.regions_for_patch(patch):
                     if "__VARA__DETECT__" in region[0]:
                         r = region[0].difference({"__VARA__DETECT__"})
@@ -59,12 +57,11 @@ class TEFFeatureIdentifierTable(Table, table_name="tef-feature-id"):
 
         df = pd.DataFrame(table_rows)
         df.sort_values(['ConfigId', 'Name'])
+        print(f"{df=}")
+        df.sort_values(['ConfigId', 'Name'])
 
         return dataframe_to_table(
-            df,
-            table_format,
-            wrap_table=wrap_table,
-            wrap_landscape=True
+            df, table_format, wrap_table=wrap_table, wrap_landscape=True
         )
 
 
@@ -75,6 +72,7 @@ class TEFFeatureIdentifierTableGenerator(
 
     def generate(self) -> tp.List[Table]:
         return [
-            TEFFeatureIdentifierTable(self.table_config, **self.table_kwargs, case_study=cs)
-            for cs in get_loaded_paper_config().get_all_case_studies()
+            TEFFeatureIdentifierTable(
+                self.table_config, **self.table_kwargs, case_study=cs
+            ) for cs in get_loaded_paper_config().get_all_case_studies()
         ]
