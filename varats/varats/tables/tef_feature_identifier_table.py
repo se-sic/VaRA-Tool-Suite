@@ -1,3 +1,4 @@
+import math
 import typing as tp
 
 import pandas as pd
@@ -11,7 +12,7 @@ from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
-from varats.table.tables import TableGenerator, TableFormat, TableConfig
+from varats.table.tables import TableGenerator, TableFormat
 
 
 class TEFFeatureIdentifierTable(Table, table_name="tef-feature-id"):
@@ -32,33 +33,24 @@ class TEFFeatureIdentifierTable(Table, table_name="tef-feature-id"):
 
         table_rows = []
 
-        print(f"{project_name}")
-        print(f"{report_files=}")
-
         for report_path in report_files:
             report = TEFFeatureIdentifierReport(report_path.full_path())
             config_id = report_path.report_filename.config_id
-
-            new_row = {'Name': "__Baseline", 'ConfigId': config_id}
-            for region in report.baseline_regions:
-                r = region[0].difference({"__VARA__DETECT__"})
-                new_row["*".join(r)] = region[1]
-
-            table_rows.append(new_row)
 
             for patch in report.patch_names:
                 new_row = {'Name': patch, 'ConfigId': config_id}
                 for region in report.regions_for_patch(patch):
                     if "__VARA__DETECT__" in region[0]:
-                        r = region[0].difference({"__VARA__DETECT__"})
+                        r = list(region[0].difference({"__VARA__DETECT__"}))
+                        if len(r) == 0:
+                            r.append("Base")
                         new_row["*".join(r)] = region[1]
 
                 table_rows.append(new_row)
 
         df = pd.DataFrame(table_rows)
-        df.sort_values(['ConfigId', 'Name'])
-        print(f"{df=}")
-        df.sort_values(['ConfigId', 'Name'])
+        df.sort_values(['Name', 'ConfigId'], inplace=True)
+        df.fillna(0, inplace=True)
 
         return dataframe_to_table(
             df, table_format, wrap_table=wrap_table, wrap_landscape=True
