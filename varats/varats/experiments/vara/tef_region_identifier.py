@@ -29,9 +29,9 @@ from varats.experiments.vara.feature_experiment import (
 from varats.experiments.vara.feature_perf_precision import (
     get_extra_cflags,
     MPRTEFAggregate,
-    select_project_binaries,
     RunGenTracedWorkloads,
 )
+from varats.experiments.vara.ma_abelt_utils import select_project_binaries
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider

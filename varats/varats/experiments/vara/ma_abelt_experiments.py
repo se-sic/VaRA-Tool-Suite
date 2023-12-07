@@ -5,11 +5,9 @@ from collections import defaultdict
 from itertools import chain, combinations
 
 import benchbuild.extensions as bb_ext
-from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils import actions
 
-from varats.base.configuration import PatchConfiguration
 from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
@@ -22,7 +20,6 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
-from varats.experiment.workload_util import WorkloadCategory, workload_commands
 from varats.experiments.vara.feature_experiment import (
     FeatureExperiment,
     FeatureInstrType,
@@ -38,17 +35,20 @@ from varats.experiments.vara.feature_perf_precision import (
     get_extra_cflags,
     get_threshold,
 )
+from varats.experiments.vara.ma_abelt_utils import (
+    get_tags_RQ1,
+    select_project_binaries,
+)
 from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import BinaryType, ProjectBinaryWrapper
+from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider, PatchSet
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.revision.revisions import get_processed_revisions_files
-from varats.utils.config import get_current_config_id, get_config
+from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
 
 REPS = 30
@@ -97,21 +97,17 @@ def RQ2_patch_selector(project: VProject):
 
     if len(report_files) != 1:
         print("Invalid number of reports from TEFIdentifier")
+        return []
 
     report_file = TEFFeatureIdentifierReport(report_files[0].full_path())
 
-    print(f"Selecting patches for {project.name}, Config {current_config}")
-
     patch_names = select_non_interacting_patches(report_file)
-    print(f"{patch_names=}")
     patch_names += select_interacting_patches(
         report_file, patch_names, MAX_PATCHES - len(patch_names)
     )
-    print(f"{patch_names=}")
     patch_names += greedily_select_patches(
         report_file, patch_names, MAX_PATCHES - len(patch_names)
     )
-    print(f"{patch_names=}")
 
     SEVERITY = "1000ms"
 
@@ -260,52 +256,6 @@ def get_affected_regions(
     return result
 
 
-def get_feature_tags(project):
-    config = get_config(project, PatchConfiguration)
-    if not config:
-        return []
-
-    result = {opt.value for opt in config.options()}
-
-    return result
-
-
-def get_tags_RQ1(project):
-    result = get_feature_tags(project)
-
-    to_remove = [
-        "SynthCTCRTP", "SynthCTPolicies", "SynthCTTraitBased",
-        "SynthCTTemplateSpecialization"
-    ]
-
-    for s in to_remove:
-        if s in result:
-            result.remove(s)
-
-    return result
-
-
-def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
-    """Uniformly select the binaries that should be analyzed."""
-    if project.name == "DunePerfRegression":
-        f_tags = get_feature_tags(project)
-
-        grid_binary_map = {
-            "YaspGrid": "poisson_yasp_q2_3d",
-            "UGGrid": "poisson_ug_pk_2d",
-            "ALUGrid": "poisson_alugrid"
-        }
-
-        for grid in grid_binary_map:
-            if grid in f_tags:
-                return [
-                    binary for binary in project.binaries
-                    if binary.name == grid_binary_map[grid]
-                ]
-
-    return [project.binaries[0]]
-
-
 def setup_actions_for_vara_experiment(
     experiment: FeatureExperiment,
     project: VProject,
@@ -355,12 +305,10 @@ def setup_actions_for_vara_experiment(
     )
 
     patchlists = patch_selector(project)
-    print(f"{patchlists=}")
 
     patch_steps = []
     for name, patches in patchlists:
         for patch in patches:
-            print(f"Got patch with path: {patch.path}")
             patch_steps.append(ApplyPatch(project, patch))
         patch_steps.append(ReCompile(project))
         patch_steps.append(
@@ -529,7 +477,7 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
         patch_steps = []
         for name, patches in patchlists:
             for patch in patches:
-                print(f"Got patch with path: {patch.path}")
+                #print(f"Got patch with path: {patch.path}")
                 patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
