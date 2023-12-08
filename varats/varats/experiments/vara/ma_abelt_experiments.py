@@ -1,4 +1,5 @@
 """Module for experiments run in the master thesis of Lukas Abelt."""
+import json
 import math
 import typing as tp
 from collections import defaultdict
@@ -16,7 +17,7 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
     get_default_compile_error_wrapped,
     ZippedExperimentSteps,
-    get_config_patch_steps,
+    get_config_patch_steps, get_varats_result_folder,
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
@@ -121,9 +122,9 @@ def RQ2_patch_selector(project: VProject):
     patch_provider = PatchProvider.get_provider_for_project(project)
 
     result = [(
-        '+'.join(p_tuple),
+        f"patchlist-{i}",
         [patch_provider.get_by_shortname(p_name) for p_name in p_tuple]
-    ) for p_tuple in patch_tuples]
+    ) for i, p_tuple in enumerate(patch_tuples)]
 
     return result
 
@@ -305,6 +306,11 @@ def setup_actions_for_vara_experiment(
     )
 
     patchlists = patch_selector(project)
+
+    # Save patch lists, so we can create a mapping from name <-> patches later if we need it
+    save_path = get_varats_result_folder(project) / f"{get_current_config_id(project)}-{experiment.shorthand()}.json"
+    with open(save_path, "w") as f:
+        json.dump(patchlists, f)
 
     patch_steps = []
     for name, patches in patchlists:
