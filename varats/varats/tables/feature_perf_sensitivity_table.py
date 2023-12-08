@@ -178,7 +178,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             new_row = {'CaseStudy': project_name}
 
             for k in total_num_patches:
-                new_row["# Regressions"] = total_num_patches[k]
+                new_row["# Regressions"] = int(total_num_patches[k])
                 new_row[k] = regressed_num_regressions[k] / total_num_patches[k]
 
             table_rows.append(new_row)

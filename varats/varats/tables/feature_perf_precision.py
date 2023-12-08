@@ -25,6 +25,7 @@ from varats.data.databases.feature_perf_precision_database import (
     load_overhead_data,
 )
 from varats.data.metrics import ConfusionMatrix
+from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path
