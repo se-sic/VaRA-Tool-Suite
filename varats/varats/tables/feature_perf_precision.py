@@ -280,20 +280,9 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
         for cs in case_studies:
             total_regressed_features = 0
             rev = cs.revisions[0]
-
-            new_row = {
-                'CaseStudy': cs.project_name,
-            }
+            cs_rows = []
 
             for profiler in profilers:
-
-                num_true_positives = 0
-                num_actual_positives = 0
-                num_predicted_positives = 0
-                # num_false_positives = 0
-                # num_true_negatives = 0
-                # num_false_negatives = 0
-
                 for config_id in cs.get_config_ids_for_revision(rev):
                     # Load ground truth data
                     ground_truth_report_files = get_processed_revisions_files(
@@ -332,6 +321,11 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
                     )
 
                     for list_name in get_patch_names(cs, config_id):
+                        new_row = {
+                            'CaseStudy': cs.project_name,
+                            'PatchList': list_name,
+                            'ConfigID': config_id
+                        }
                         # Get all patches contained in patch list
                         patches = patch_lists[list_name]
 
@@ -351,27 +345,35 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
                             map_to_negative(predicted)
                         )
 
-                        num_true_positives += results.TP
-                        # num_true_negatives += results.TN
-                        # num_false_positives += results.FP
-                        # num_false_negatives += results.FN
-                        num_actual_positives += len(
+                        new_row[f"{profiler.name}_precision"
+                               ] = results.precision()
+                        new_row[f"{profiler.name}_recall"] = results.recall()
+                        new_row[f"{profiler.name}_baccuracy"
+                               ] = results.balanced_accuracy()
+                        new_row[f"RegressedFeatures"] = len(
                             map_to_positive(ground_truth)
                         )
-                        num_predicted_positives += len(
-                            map_to_positive(predicted)
-                        )
 
-                total_regressed_features = num_actual_positives
-                precision = num_true_positives / num_predicted_positives
-                recall = num_true_positives / num_actual_positives
+                        cs_rows.append(new_row)
 
-                new_row['#Regressions'] = total_regressed_features
+            cs_df = pd.DataFrame(cs_rows)
 
-                new_row[f"{profiler.name}_precision"] = precision
-                new_row[f"{profiler.name}_recall"] = recall
+            new_row = {
+                'CaseStudy': cs.project_name,
+                '# f-Regressions': cs_df["RegressedFeatures"].sum()
+            }
+
+            for profiler in profilers:
+                new_row[f"{profiler.name}_precision"] = cs_df[
+                    f"{profiler.name}_precision"].mean()
+                new_row[f"{profiler.name}_recall"] = cs_df[
+                    f"{profiler.name}_recall"].mean()
+                new_row[f"{profiler.name}_baccuracy"] = cs_df[
+                    f"{profiler.name}_baccuracy"].mean()
 
             table_rows.append(new_row)
+
+        return pd.DataFrame(table_rows)
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -382,6 +384,13 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
         ]
 
         df = self._prepare_data_table(case_studies, profilers)
+        df.sort_values(["CaseStudy"], inplace=True)
+
+        print(f"{df=}")
+
+        return dataframe_to_table(
+            df, table_format, wrap_table=wrap_table, wrap_landscape=True
+        )
 
 
 class FeaturePerfWBPrecisionTableGenerator(
