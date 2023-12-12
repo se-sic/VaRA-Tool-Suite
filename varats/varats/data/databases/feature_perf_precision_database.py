@@ -16,6 +16,9 @@ from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReport,
     PerfInfluenceTraceReportAggregate,
 )
+from varats.data.reports.tef_feature_identifier_report import (
+    TEFFeatureIdentifierReport,
+)
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.jupyterhelper.file import load_mpr_time_report_aggregate
 from varats.paper.case_study import CaseStudy
@@ -205,7 +208,6 @@ def precise_pim_regression_check(
     """Compute if there was a regression in one of the feature terms of the
     model between the current and the baseline, using a Mann-Whitney U test."""
     is_regression = False
-    abs_cut_off = 100
 
     for feature, old_values in baseline_pim.items():
         if feature in current_pim:
@@ -290,7 +292,7 @@ def sum_pim_regression_check(
     Compute if there was a regression in the sum of the features in the model
     between the current and the baseline.
 
-    The comparision is done through a Mann-Whitney U test.
+    The comparison is done through a Mann-Whitney U test.
     """
     baseline_pim_totals: tp.List[tp.List[int]] = [
         old_values for feature, old_values in baseline_pim.items()
@@ -369,14 +371,23 @@ class Profiler():
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
 
+    @abc.abstractmethod
+    def get_feature_regressions(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> tp.Dict[str, bool]:
+        """Returns a list of features that regressed for a given patch."""
+
 
 class VXray(Profiler):
     """Profiler mapper implementation for the vara tef tracer."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        experiment=fpp.TEFProfileRunner,
+        overhead_experiment=fpp.TEFProfileOverheadRunner
+    ) -> None:
         super().__init__(
-            "WXray", fpp.TEFProfileRunner, fpp.TEFProfileOverheadRunner,
-            fpp.MPRTEFAggregate
+            "WXray", experiment, overhead_experiment, fpp.MPRTEFAggregate
         )
 
     def is_regression(
@@ -405,15 +416,60 @@ class VXray(Profiler):
 
         return pim_regression_check(old_acc_pim, new_acc_pim)
 
+    def get_feature_regressions(
+        self, report_path: ReportFilepath, patch_name: str
+    ):
+        multi_report = MultiPatchReport(
+            report_path.full_path(), TEFReportAggregate
+        )
+        old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for old_tef_report in multi_report.get_baseline_report().reports():
+            pim = get_feature_performance_from_tef_report(old_tef_report)
+            for feature, value in pim.items():
+                old_acc_pim[feature].append(value)
+
+        new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        opt_mr = multi_report.get_report_for_patch(patch_name)
+        if not opt_mr:
+            raise NotImplementedError()
+
+        for new_tef_report in opt_mr.reports():
+            pim = get_feature_performance_from_tef_report(new_tef_report)
+            for feature, value in pim.items():
+                new_acc_pim[feature].append(value)
+
+        regressed_regions = defaultdict(lambda x: False)
+        for feature, old_times in old_acc_pim:
+            new_times = new_acc_pim[feature]
+
+            if not new_times:
+                print(f"Feature not present in patched version: {feature}")
+                # TODO: How to handle this?
+                continue
+
+            t_test = ttest_ind(old_times, new_times)
+
+            if t_test.pvalue < 0.05:
+                regressed_regions[feature] = True
+            else:
+                regressed_regions[feature] = False
+
+        # TODO: Should we do another pass over new_acc_times to identify features only present in the patched version?
+
+        return regressed_regions
+
 
 class PIMTracer(Profiler):
     """Profiler mapper implementation for the vara performance-influence-model
     tracer."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        experiment=fpp.PIMProfileRunner,
+        overhead_experiment=fpp.PIMProfileOverheadRunner
+    ) -> None:
         super().__init__(
-            "PIMTracer", fpp.PIMProfileRunner, fpp.PIMProfileOverheadRunner,
-            fpp.MPRPIMAggregate
+            "PIMTracer", experiment, overhead_experiment, fpp.MPRPIMAggregate
         )
 
     @staticmethod
@@ -461,10 +517,13 @@ class PIMTracer(Profiler):
 class EbpfTraceTEF(Profiler):
     """Profiler mapper implementation for the vara tef tracer."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        experiment=fpp.EbpfTraceTEFProfileRunner,
+        overhead_experiment=fpp.EbpfTraceTEFOverheadRunner
+    ) -> None:
         super().__init__(
-            "eBPFTrace", fpp.EbpfTraceTEFProfileRunner,
-            fpp.TEFProfileOverheadRunner, fpp.MPRTEFAggregate
+            "eBPFTrace", experiment, overhead_experiment, fpp.MPRTEFAggregate
         )
 
     def is_regression(
@@ -576,11 +635,41 @@ def get_regressing_config_ids_gt(
     return ground_truth
 
 
-def map_to_positive_config_ids(reg_dict: tp.Dict[int, bool]) -> tp.List[int]:
+def get_regressed_features_gt(
+    base_reports: tp.Iterable[TEFReport],
+    ground_truth_report: TEFFeatureIdentifierReport, patches: tp.Iterable[str]
+) -> tp.Dict[str, bool]:
+    ground_truth = {}
+    for base_tef_report in base_reports:
+        pim = get_feature_performance_from_tef_report(base_tef_report)
+        for feature, _ in pim.items():
+            ground_truth[feature] = False
+
+    for patch_name in patches:
+        for regions, _ in ground_truth_report.regions_for_patch(patch_name):
+            if "__VARA__DETECT__" not in regions:
+                continue
+
+            actual_regions = regions - {"__VARA__DETECT__"}
+
+            interaction_string = get_interactions_from_fr_string(
+                ",".join(actual_regions)
+            )
+
+            # If this combination occured in the ground truth experiment this means it should regress
+            ground_truth[interaction_string] = True
+
+    return ground_truth
+
+
+T = tp.TypeVar('T')
+
+
+def map_to_positive(reg_dict: tp.Dict[T, bool]) -> tp.List[T]:
     return [config_id for config_id, value in reg_dict.items() if value is True]
 
 
-def map_to_negative_config_ids(reg_dict: tp.Dict[int, bool]) -> tp.List[int]:
+def map_to_negative(reg_dict: tp.Dict[T, bool]) -> tp.List[T]:
     return [
         config_id for config_id, value in reg_dict.items() if value is False
     ]
@@ -843,7 +932,7 @@ def load_precision_data(
                     'Configs':
                         len(case_study.get_config_ids_for_revision(rev)),
                     'RegressedConfigs':
-                        len(map_to_positive_config_ids(ground_truth))
+                        len(map_to_positive(ground_truth))
                         if ground_truth else -1
                 }
 
@@ -854,10 +943,9 @@ def load_precision_data(
 
                 if ground_truth and predicted:
                     results = ConfusionMatrix(
-                        map_to_positive_config_ids(ground_truth),
-                        map_to_negative_config_ids(ground_truth),
-                        map_to_positive_config_ids(predicted),
-                        map_to_negative_config_ids(predicted)
+                        map_to_positive(ground_truth),
+                        map_to_negative(ground_truth),
+                        map_to_positive(predicted), map_to_negative(predicted)
                     )
 
                     new_row['precision'] = results.precision()
