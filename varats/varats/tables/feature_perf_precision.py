@@ -268,7 +268,6 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
             vara_result_folder
         ) / f"{config_id}-{profiler.experiment.shorthand()}.json"
 
-        p_lists = []
         with open(json_path, "r") as f:
             p_lists = json.load(f)
 
@@ -281,7 +280,6 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
         table_rows = []
 
         for cs in case_studies:
-            total_regressed_features = 0
             rev = cs.revisions[0]
             cs_rows = []
 
@@ -384,8 +382,8 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
         case_studies = get_loaded_paper_config().get_all_case_studies()
         profilers: tp.List[Profiler] = [
             VXray(experiment=TEFProfileRunnerPrecision),
-            # PIMTracer(experiment=PIMProfileRunnerPrecision),
-            # EbpfTraceTEF(experiment=EbpfTraceTEFProfileRunnerPrecision)
+            PIMTracer(experiment=PIMProfileRunnerPrecision),
+            EbpfTraceTEF(experiment=EbpfTraceTEFProfileRunnerPrecision)
         ]
 
         df = self._prepare_data_table(case_studies, profilers)

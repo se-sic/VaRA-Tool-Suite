@@ -438,7 +438,7 @@ class VXray(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        regressed_regions = defaultdict(lambda x: False)
+        regressed_regions = {}
         for feature, old_times in old_acc_pim.items():
             new_times = new_acc_pim[feature]
 
@@ -462,6 +462,42 @@ class VXray(Profiler):
 class PIMTracer(Profiler):
     """Profiler mapper implementation for the vara performance-influence-model
     tracer."""
+
+    def get_feature_regressions(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> tp.Dict[str, bool]:
+        multi_report = MultiPatchReport(
+            report_path.full_path(), PerfInfluenceTraceReportAggregate
+        )
+
+        old_acc_pim = self.__aggregate_pim_data(
+            multi_report.get_baseline_report().reports()
+        )
+
+        opt_mr = multi_report.get_report_for_patch(patch_name)
+        if not opt_mr:
+            raise NotImplementedError()
+
+        new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
+
+        regressed_regions = {}
+
+        for feature, old_times in old_acc_pim.items():
+            new_times = new_acc_pim[feature]
+
+            if not new_times:
+                print(f"Feature not present in patched version: {feature}")
+                # TODO: How to handle this?
+                continue
+
+            t_test = ttest_ind(old_times, new_times)
+
+            if t_test.pvalue < 0.05:
+                regressed_regions[feature] = True
+            else:
+                regressed_regions[feature] = False
+
+        return regressed_regions
 
     def __init__(
         self,
@@ -551,6 +587,48 @@ class EbpfTraceTEF(Profiler):
                 new_acc_pim[feature].append(value)
 
         return pim_regression_check(old_acc_pim, new_acc_pim)
+
+    def get_feature_regressions(
+        self, report_path: ReportFilepath, patch_name: str
+    ):
+        multi_report = MultiPatchReport(
+            report_path.full_path(), TEFReportAggregate
+        )
+        old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        for old_tef_report in multi_report.get_baseline_report().reports():
+            pim = get_feature_performance_from_tef_report(old_tef_report)
+            for feature, value in pim.items():
+                old_acc_pim[feature].append(value)
+
+        new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+        opt_mr = multi_report.get_report_for_patch(patch_name)
+        if not opt_mr:
+            raise NotImplementedError()
+
+        for new_tef_report in opt_mr.reports():
+            pim = get_feature_performance_from_tef_report(new_tef_report)
+            for feature, value in pim.items():
+                new_acc_pim[feature].append(value)
+
+        regressed_regions = {}
+        for feature, old_times in old_acc_pim.items():
+            new_times = new_acc_pim[feature]
+
+            if not new_times:
+                print(f"Feature not present in patched version: {feature}")
+                # TODO: How to handle this?
+                continue
+
+            t_test = ttest_ind(old_times, new_times)
+
+            if t_test.pvalue < 0.05:
+                regressed_regions[feature] = True
+            else:
+                regressed_regions[feature] = False
+
+        # TODO: Should we do another pass over new_acc_times to identify features only present in the patched version?
+
+        return regressed_regions
 
 
 def get_patch_names(case_study: CaseStudy, config_id: int) -> tp.List[str]:
@@ -659,7 +737,7 @@ def get_regressed_features_gt(
                 ",".join(actual_regions)
             )
 
-            # If this combination occured in the ground truth experiment this means it should regress
+            # If this combination occurred in the ground truth experiment this means it should regress
             ground_truth[interaction_string] = True
 
     return ground_truth
