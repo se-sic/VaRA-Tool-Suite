@@ -17,7 +17,8 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
     get_default_compile_error_wrapped,
     ZippedExperimentSteps,
-    get_config_patch_steps, get_varats_result_folder,
+    get_config_patch_steps,
+    get_varats_result_folder,
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
@@ -308,9 +309,14 @@ def setup_actions_for_vara_experiment(
     patchlists = patch_selector(project)
 
     # Save patch lists, so we can create a mapping from name <-> patches later if we need it
-    save_path = get_varats_result_folder(project) / f"{get_current_config_id(project)}-{experiment.shorthand()}.json"
+    save_path = get_varats_result_folder(
+        project
+    ) / f"{get_current_config_id(project)}-{experiment.shorthand()}.json"
     with open(save_path, "w") as f:
-        json.dump(patchlists, f)
+        patch_name_list = [(name, [patch.shortname
+                                   for patch in p_list])
+                           for name, p_list in patchlists]
+        json.dump(patch_name_list, f)
 
     patch_steps = []
     for name, patches in patchlists:
@@ -545,8 +551,12 @@ class TEFProfileRunnerPrecision(FeatureExperiment, shorthand="TEFp-RQ2"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads,
-            RQ2_patch_selector
+            self,
+            project,
+            FeatureInstrType.TEF,
+            RunGenTracedWorkloads,
+            RQ2_patch_selector,
+            reps=3
         )
 
 
@@ -568,8 +578,12 @@ class PIMProfileRunnerPrecision(FeatureExperiment, shorthand="PIMp-RQ2"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.PERF_INFLUENCE_TRACE,
-            RunGenTracedWorkloads, RQ2_patch_selector
+            self,
+            project,
+            FeatureInstrType.PERF_INFLUENCE_TRACE,
+            RunGenTracedWorkloads,
+            RQ2_patch_selector,
+            reps=3
         )
 
 
@@ -595,6 +609,10 @@ class EbpfTraceTEFProfileRunnerPrecision(
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads,
-            RQ2_patch_selector
+            self,
+            project,
+            FeatureInstrType.USDT_RAW,
+            RunBPFTracedWorkloads,
+            RQ2_patch_selector,
+            reps=3
         )
