@@ -1,21 +1,25 @@
 """Module for the FeaturePerfPrecision tables."""
+import json
 import re
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from benchbuild.utils.cmd import git
+from benchbuild.utils.cmd import git, mkdir
 from matplotlib import colors
 from plumbum import local
 from pylatex import Document, Package
+from report.multi_patch_report import MultiPatchReport
+from report.tef_report import TEFReportAggregate
 
 from varats.data.databases.feature_perf_precision_database import (
     get_patch_names,
     get_regressing_config_ids_gt,
-    map_to_positive_config_ids,
-    map_to_negative_config_ids,
+    map_to_positive,
+    map_to_negative,
     Profiler,
     VXray,
     PIMTracer,
@@ -23,16 +27,28 @@ from varats.data.databases.feature_perf_precision_database import (
     compute_profiler_predictions,
     load_precision_data,
     load_overhead_data,
+    get_feature_performance_from_tef_report,
+    get_regressed_features_gt,
 )
 from varats.data.metrics import ConfusionMatrix
+from varats.data.reports.tef_feature_identifier_report import (
+    TEFFeatureIdentifierReport,
+)
+from varats.experiments.vara.ma_abelt_experiments import (
+    TEFProfileRunnerPrecision,
+)
+from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path
+from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc, ChurnConfig
+from varats.utils.settings import bb_cfg
 
 
 def cmap_map(
@@ -104,7 +120,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
                     'Configs':
                         len(case_study.get_config_ids_for_revision(rev)),
                     'RegressedConfigs':
-                        len(map_to_positive_config_ids(ground_truth))
+                        len(map_to_positive(ground_truth))
                         if ground_truth else -1
                 }
 
@@ -117,10 +133,10 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
 
                     if ground_truth and predicted:
                         results = ConfusionMatrix(
-                            map_to_positive_config_ids(ground_truth),
-                            map_to_negative_config_ids(ground_truth),
-                            map_to_positive_config_ids(predicted),
-                            map_to_negative_config_ids(predicted)
+                            map_to_positive(ground_truth),
+                            map_to_negative(ground_truth),
+                            map_to_positive(predicted),
+                            map_to_negative(predicted)
                         )
                         new_row[f"{profiler.name}_precision"
                                ] = results.precision()
@@ -229,6 +245,153 @@ class FeaturePerfPrecisionTableGenerator(
     def generate(self) -> tp.List[Table]:
         return [
             FeaturePerfPrecisionTable(self.table_config, **self.table_kwargs)
+        ]
+
+
+class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
+
+    @staticmethod
+    def _get_patches_for_patch_lists(
+        project_name: str, config_id: int, profiler: Profiler
+    ):
+        result_folder_template = "{result_dir}/{project_dir}"
+
+        vara_result_folder = result_folder_template.format(
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
+            project_dir=project_name
+        )
+
+        mkdir("-p", vara_result_folder)
+
+        json_path = Path(vara_result_folder)
+
+        p_lists = []
+        with open(json_path, "r") as f:
+            p_lists = json.load(f)
+
+        return {name: patches for name, patches in p_lists}
+
+    @staticmethod
+    def _prepare_data_table(
+        case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+    ):
+        table_rows = []
+
+        for cs in case_studies:
+            total_regressed_features = 0
+            rev = cs.revisions[0]
+
+            new_row = {
+                'CaseStudy': cs.project_name,
+            }
+
+            for profiler in profilers:
+
+                num_true_positives = 0
+                num_actual_positives = 0
+                num_predicted_positives = 0
+                # num_false_positives = 0
+                # num_true_negatives = 0
+                # num_false_negatives = 0
+
+                for config_id in cs.get_config_ids_for_revision(rev):
+                    # Load ground truth data
+                    ground_truth_report_files = get_processed_revisions_files(
+                        cs.project_name,
+                        TEFFeatureIdentifier,
+                        TEFFeatureIdentifierReport,
+                        get_case_study_file_name_filter(cs),
+                        config_id=config_id
+                    )
+
+                    if len(ground_truth_report_files) != 1:
+                        print("Invalid number of reports from TEFIdentifier")
+                        continue
+
+                    ground_truth_report = TEFFeatureIdentifierReport(
+                        ground_truth_report_files[0].full_path()
+                    )
+                    # Load the patch lists for current config and profiler
+                    patch_lists = FeaturePerfWBPrecisionTable._get_patches_for_patch_lists(
+                        cs.project_name, config_id, profiler
+                    )
+
+                    report_files = get_processed_revisions_files(
+                        cs.project_name,
+                        profiler.experiment,
+                        profiler.report_type,
+                        get_case_study_file_name_filter(cs),
+                        config_id=config_id
+                    )
+
+                    if len(report_files) > 1:
+                        raise AssertionError("Should only be one")
+
+                    report_file = MultiPatchReport(
+                        report_files[0].full_path(), profiler.report_type
+                    )
+
+                    for list_name in get_patch_names(cs, config_id):
+                        # Get all patches contained in patch list
+                        patches = patch_lists[list_name]
+
+                        ground_truth = get_regressed_features_gt(
+                            report_file.get_baseline_report().reports(),
+                            ground_truth_report, patches
+                        )
+
+                        predicted = profiler.get_feature_regressions(
+                            report_files[0], list_name
+                        )
+
+                        results = ConfusionMatrix(
+                            map_to_positive(ground_truth),
+                            map_to_negative(ground_truth),
+                            map_to_positive(predicted),
+                            map_to_negative(predicted)
+                        )
+
+                        num_true_positives += results.TP
+                        # num_true_negatives += results.TN
+                        # num_false_positives += results.FP
+                        # num_false_negatives += results.FN
+                        num_actual_positives += len(
+                            map_to_positive(ground_truth)
+                        )
+                        num_predicted_positives += len(
+                            map_to_positive(predicted)
+                        )
+
+                total_regressed_features = num_actual_positives
+                precision = num_true_positives / num_predicted_positives
+                recall = num_true_positives / num_actual_positives
+
+                new_row['#Regressions'] = total_regressed_features
+
+                new_row[f"{profiler.name}_precision"] = precision
+                new_row[f"{profiler.name}_recall"] = recall
+
+            table_rows.append(new_row)
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        profilers: tp.List[Profiler] = [
+            VXray(experiment=TEFProfileRunnerPrecision),
+            PIMTracer(experiment=TEFProfileRunnerPrecision),
+            EbpfTraceTEF(experiment=TEFProfileRunnerPrecision)
+        ]
+
+        df = self._prepare_data_table(case_studies, profilers)
+
+
+class FeaturePerfWBPrecisionTableGenerator(
+    TableGenerator, generator_name="fperf-wb-precision", options=[]
+):
+    """Generator for 'FeaturePerfWBPrecisionTable'."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            FeaturePerfWBPrecisionTable(self.table_config, **self.table_kwargs)
         ]
 
 
