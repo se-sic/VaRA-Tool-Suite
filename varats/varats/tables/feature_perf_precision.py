@@ -12,8 +12,6 @@ from benchbuild.utils.cmd import git, mkdir
 from matplotlib import colors
 from plumbum import local
 from pylatex import Document, Package
-from report.multi_patch_report import MultiPatchReport
-from report.tef_report import TEFReportAggregate
 
 from varats.data.databases.feature_perf_precision_database import (
     get_patch_names,
@@ -27,7 +25,6 @@ from varats.data.databases.feature_perf_precision_database import (
     compute_profiler_predictions,
     load_precision_data,
     load_overhead_data,
-    get_feature_performance_from_tef_report,
     get_regressed_features_gt,
 )
 from varats.data.metrics import ConfusionMatrix
@@ -35,6 +32,8 @@ from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
 from varats.experiments.vara.ma_abelt_experiments import (
+    PIMProfileRunnerPrecision,
+    EbpfTraceTEFProfileRunnerPrecision,
     TEFProfileRunnerPrecision,
 )
 from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
@@ -43,6 +42,8 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import get_local_project_git_path
+from varats.report.multi_patch_report import MultiPatchReport
+from varats.report.tef_report import TEFReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -263,7 +264,9 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
 
         mkdir("-p", vara_result_folder)
 
-        json_path = Path(vara_result_folder)
+        json_path = Path(
+            vara_result_folder
+        ) / f"{config_id}-{profiler.experiment.shorthand()}.json"
 
         p_lists = []
         with open(json_path, "r") as f:
@@ -313,14 +316,16 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
                         config_id=config_id
                     )
 
-                    if len(report_files) > 1:
-                        raise AssertionError("Should only be one")
+                    if len(report_files) != 1:
+                        print("Should only be one")
+                        continue
+                        #raise AssertionError("Should only be one")
 
                     report_file = MultiPatchReport(
-                        report_files[0].full_path(), profiler.report_type
+                        report_files[0].full_path(), TEFReportAggregate
                     )
 
-                    for list_name in get_patch_names(cs, config_id):
+                    for list_name in report_file.get_patch_names():
                         new_row = {
                             'CaseStudy': cs.project_name,
                             'PatchList': list_name,
@@ -379,8 +384,8 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
         case_studies = get_loaded_paper_config().get_all_case_studies()
         profilers: tp.List[Profiler] = [
             VXray(experiment=TEFProfileRunnerPrecision),
-            PIMTracer(experiment=TEFProfileRunnerPrecision),
-            EbpfTraceTEF(experiment=TEFProfileRunnerPrecision)
+            # PIMTracer(experiment=PIMProfileRunnerPrecision),
+            # EbpfTraceTEF(experiment=EbpfTraceTEFProfileRunnerPrecision)
         ]
 
         df = self._prepare_data_table(case_studies, profilers)

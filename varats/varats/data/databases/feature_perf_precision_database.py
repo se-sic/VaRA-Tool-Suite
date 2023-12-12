@@ -439,7 +439,7 @@ class VXray(Profiler):
                 new_acc_pim[feature].append(value)
 
         regressed_regions = defaultdict(lambda x: False)
-        for feature, old_times in old_acc_pim:
+        for feature, old_times in old_acc_pim.items():
             new_times = new_acc_pim[feature]
 
             if not new_times:
@@ -646,7 +646,10 @@ def get_regressed_features_gt(
             ground_truth[feature] = False
 
     for patch_name in patches:
-        for regions, _ in ground_truth_report.regions_for_patch(patch_name):
+        detect_patch_name = patch_name[:-len("1000ms")] + "detect"
+        for regions, _ in ground_truth_report.regions_for_patch(
+            detect_patch_name
+        ):
             if "__VARA__DETECT__" not in regions:
                 continue
 
