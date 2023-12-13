@@ -240,6 +240,47 @@ def precise_pim_regression_check(
     return is_regression
 
 
+def precise_pim_feature_regression_check(
+    baseline_pim: tp.DefaultDict[str, tp.List[int]],
+    current_pim: tp.DefaultDict[str, tp.List[int]],
+    rel_cut_off: float = 0.01,
+    abs_cut_off: int = 20
+) -> tp.DefaultDict[str, bool]:
+    is_regression = {}
+
+    for feature, old_values in baseline_pim.items():
+        if feature in current_pim:
+            if feature == "Base":
+                # The regression should be identified in actual feature code
+                is_regression[feature] = False
+                continue
+
+            new_values = current_pim[feature]
+
+            # Skip features that seem not to be relevant for regressions testing
+            if not is_feature_relevant(
+                old_values, new_values, rel_cut_off, abs_cut_off
+            ):
+                is_regression[feature] = False
+                continue
+
+            ttest_res = ttest_ind(old_values, new_values)
+
+            if ttest_res.pvalue < 0.05:
+                is_regression[feature] = True
+        else:
+            if np.mean(old_values) > abs_cut_off:
+                print(
+                    f"Could not find feature {feature} in new trace. "
+                    f"({np.mean(old_values)}us lost)"
+                )
+            # TODO: how to handle this?
+            # raise NotImplementedError()
+            # is_regression = True
+
+    return is_regression
+
+
 def cliffs_delta_pim_regression_check(
     baseline_pim: tp.DefaultDict[str, tp.List[int]],
     current_pim: tp.DefaultDict[str, tp.List[int]],
@@ -438,25 +479,7 @@ class VXray(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        regressed_regions = {}
-        for feature, old_times in old_acc_pim.items():
-            new_times = new_acc_pim[feature]
-
-            if not new_times:
-                print(f"Feature not present in patched version: {feature}")
-                # TODO: How to handle this?
-                continue
-
-            t_test = ttest_ind(old_times, new_times)
-
-            if t_test.pvalue < 0.05:
-                regressed_regions[feature] = True
-            else:
-                regressed_regions[feature] = False
-
-        # TODO: Should we do another pass over new_acc_times to identify features only present in the patched version?
-
-        return regressed_regions
+        return precise_pim_feature_regression_check(old_acc_pim, new_acc_pim)
 
 
 class PIMTracer(Profiler):
@@ -480,24 +503,7 @@ class PIMTracer(Profiler):
 
         new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
 
-        regressed_regions = {}
-
-        for feature, old_times in old_acc_pim.items():
-            new_times = new_acc_pim[feature]
-
-            if not new_times:
-                print(f"Feature not present in patched version: {feature}")
-                # TODO: How to handle this?
-                continue
-
-            t_test = ttest_ind(old_times, new_times)
-
-            if t_test.pvalue < 0.05:
-                regressed_regions[feature] = True
-            else:
-                regressed_regions[feature] = False
-
-        return regressed_regions
+        return precise_pim_feature_regression_check(old_acc_pim, new_acc_pim)
 
     def __init__(
         self,
@@ -610,25 +616,7 @@ class EbpfTraceTEF(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        regressed_regions = {}
-        for feature, old_times in old_acc_pim.items():
-            new_times = new_acc_pim[feature]
-
-            if not new_times:
-                print(f"Feature not present in patched version: {feature}")
-                # TODO: How to handle this?
-                continue
-
-            t_test = ttest_ind(old_times, new_times)
-
-            if t_test.pvalue < 0.05:
-                regressed_regions[feature] = True
-            else:
-                regressed_regions[feature] = False
-
-        # TODO: Should we do another pass over new_acc_times to identify features only present in the patched version?
-
-        return regressed_regions
+        return precise_pim_feature_regression_check(old_acc_pim, new_acc_pim)
 
 
 def get_patch_names(case_study: CaseStudy, config_id: int) -> tp.List[str]:
