@@ -283,54 +283,55 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
             rev = cs.revisions[0]
             cs_rows = []
 
-            for profiler in profilers:
-                for config_id in cs.get_config_ids_for_revision(rev):
-                    # Load ground truth data
-                    ground_truth_report_files = get_processed_revisions_files(
-                        cs.project_name,
-                        TEFFeatureIdentifier,
-                        TEFFeatureIdentifierReport,
-                        get_case_study_file_name_filter(cs),
-                        config_id=config_id
-                    )
+            for config_id in cs.get_config_ids_for_revision(rev):
+                # Load ground truth data
+                ground_truth_report_files = get_processed_revisions_files(
+                    cs.project_name,
+                    TEFFeatureIdentifier,
+                    TEFFeatureIdentifierReport,
+                    get_case_study_file_name_filter(cs),
+                    config_id=config_id
+                )
 
-                    if len(ground_truth_report_files) != 1:
-                        print("Invalid number of reports from TEFIdentifier")
-                        continue
+                if len(ground_truth_report_files) != 1:
+                    print("Invalid number of reports from TEFIdentifier")
+                    continue
 
-                    ground_truth_report = TEFFeatureIdentifierReport(
-                        ground_truth_report_files[0].full_path()
-                    )
-                    # Load the patch lists for current config and profiler
-                    patch_lists = FeaturePerfWBPrecisionTable._get_patches_for_patch_lists(
-                        cs.project_name, config_id, profiler
-                    )
+                ground_truth_report = TEFFeatureIdentifierReport(
+                    ground_truth_report_files[0].full_path()
+                )
 
-                    report_files = get_processed_revisions_files(
-                        cs.project_name,
-                        profiler.experiment,
-                        profiler.report_type,
-                        get_case_study_file_name_filter(cs),
-                        config_id=config_id
-                    )
+                # Load the patch lists. While we technically have different files for each profiler, the contents are identical. The patch selection only depends on the configuration and project
+                patch_lists = FeaturePerfWBPrecisionTable._get_patches_for_patch_lists(
+                    cs.project_name, config_id, profilers[0]
+                )
 
-                    if len(report_files) != 1:
-                        print("Should only be one")
-                        continue
-                        #raise AssertionError("Should only be one")
+                for list_name in patch_lists:
+                    new_row = {
+                        'CaseStudy': cs.project_name,
+                        'PatchList': list_name,
+                        'ConfigID': config_id
+                    }
+                    # Get all patches contained in patch list
+                    patches = patch_lists[list_name]
 
-                    report_file = MultiPatchReport(
-                        report_files[0].full_path(), TEFReportAggregate
-                    )
+                    for profiler in profilers:
+                        report_files = get_processed_revisions_files(
+                            cs.project_name,
+                            profiler.experiment,
+                            profiler.report_type,
+                            get_case_study_file_name_filter(cs),
+                            config_id=config_id
+                        )
 
-                    for list_name in report_file.get_patch_names():
-                        new_row = {
-                            'CaseStudy': cs.project_name,
-                            'PatchList': list_name,
-                            'ConfigID': config_id
-                        }
-                        # Get all patches contained in patch list
-                        patches = patch_lists[list_name]
+                        if len(report_files) != 1:
+                            print("Should only be one")
+                            continue
+                            # raise AssertionError("Should only be one")
+
+                        report_file = MultiPatchReport(
+                            report_files[0].full_path(), TEFReportAggregate
+                        )
 
                         ground_truth = get_regressed_features_gt(
                             report_file.get_baseline_report().reports(),
@@ -357,7 +358,7 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
                             map_to_positive(ground_truth)
                         )
 
-                        cs_rows.append(new_row)
+                    cs_rows.append(new_row)
 
             cs_df = pd.DataFrame(cs_rows)
 

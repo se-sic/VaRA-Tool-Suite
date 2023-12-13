@@ -153,6 +153,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                 patch_names = get_patch_names(case_study, config_id)
 
                 for patch_name in patch_names:
+                    # TODO: Refactor to use severity from PatchProvider
                     if '-' in patch_name and '_' not in patch_name:
                         severity = patch_name.split("-")[-1]
                     else:
