@@ -1,12 +1,15 @@
 """Shared data aggregation function for analyzing feature performance."""
 import abc
+import json
 import logging
 import traceback
 import typing as tp
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from benchbuild.utils.cmd import mkdir
 from cliffs_delta import cliffs_delta  # type: ignore
 from scipy.stats import ttest_ind
 
@@ -20,6 +23,7 @@ from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.jupyterhelper.file import load_mpr_time_report_aggregate
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -34,6 +38,7 @@ from varats.report.tef_report import (
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import FullCommitHash
+from varats.utils.settings import bb_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -1034,6 +1039,114 @@ def load_precision_data(
                 table_rows_plot.append(new_row)
 
     return pd.DataFrame(table_rows_plot)
+
+
+def _get_patches_for_patch_lists(
+    project_name: str, config_id: int, profiler: Profiler
+):
+    result_folder_template = "{result_dir}/{project_dir}"
+
+    vara_result_folder = result_folder_template.format(
+        result_dir=str(bb_cfg()["varats"]["outfile"]), project_dir=project_name
+    )
+
+    mkdir("-p", vara_result_folder)
+
+    json_path = Path(
+        vara_result_folder
+    ) / f"{config_id}-{profiler.experiment.shorthand()}.json"
+
+    with open(json_path, "r") as f:
+        p_lists = json.load(f)
+
+    return {name: patches for name, patches in p_lists}
+
+
+def load_precision_whitebox_data(
+    case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+) -> pd.DataFrame:
+    table_rows = []
+
+    for cs in case_studies:
+        rev = cs.revisions[0]
+
+        for config_id in cs.get_config_ids_for_revision(rev):
+            # Load ground truth data
+            ground_truth_report_files = get_processed_revisions_files(
+                cs.project_name,
+                TEFFeatureIdentifier,
+                TEFFeatureIdentifierReport,
+                get_case_study_file_name_filter(cs),
+                config_id=config_id
+            )
+
+            if len(ground_truth_report_files) != 1:
+                print("Invalid number of reports from TEFIdentifier")
+                continue
+
+            ground_truth_report = TEFFeatureIdentifierReport(
+                ground_truth_report_files[0].full_path()
+            )
+
+            # Load the patch lists. While we technically have different files for each profiler, the contents are
+            # identical. The patch selection only depends on the configuration and project
+            patch_lists = _get_patches_for_patch_lists(
+                cs.project_name, config_id, profilers[0]
+            )
+
+            for list_name in patch_lists:
+                new_row = {
+                    'CaseStudy': cs.project_name,
+                    'PatchList': list_name,
+                    'ConfigID': config_id
+                }
+                # Get all patches contained in patch list
+                patches = patch_lists[list_name]
+
+                for profiler in profilers:
+                    report_files = get_processed_revisions_files(
+                        cs.project_name,
+                        profiler.experiment,
+                        profiler.report_type,
+                        get_case_study_file_name_filter(cs),
+                        config_id=config_id
+                    )
+
+                    if len(report_files) != 1:
+                        print("Should only be one")
+                        continue
+                        # raise AssertionError("Should only be one")
+
+                    report_file = MultiPatchReport(
+                        report_files[0].full_path(), TEFReportAggregate
+                    )
+
+                    ground_truth = get_regressed_features_gt(
+                        report_file.get_baseline_report().reports(),
+                        ground_truth_report, patches
+                    )
+
+                    predicted = profiler.get_feature_regressions(
+                        report_files[0], list_name
+                    )
+
+                    results = ConfusionMatrix(
+                        map_to_positive(ground_truth),
+                        map_to_negative(ground_truth),
+                        map_to_positive(predicted), map_to_negative(predicted)
+                    )
+
+                    new_row[f"{profiler.name}_precision"] = results.precision()
+                    new_row[f"{profiler.name}_recall"] = results.recall()
+                    new_row[f"{profiler.name}_baccuracy"
+                           ] = results.balanced_accuracy()
+                    new_row[f"RegressedFeatures"] = len(
+                        map_to_positive(ground_truth)
+                    )
+
+                table_rows.append(new_row)
+
+    return pd.DataFrame(table_rows)
 
 
 def load_overhead_data(
