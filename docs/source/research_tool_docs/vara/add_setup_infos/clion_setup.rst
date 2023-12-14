@@ -5,7 +5,7 @@ How to set up VaRA/LLVM in CLion
 --------------------------------
 1. Use ``vara-buildsetup vara -i`` to correctly clone and checkout the VaRa/LLVM repos (cf. :ref:`How to setup VaRA`)
 
-2. Start CLion and from the menu select **File | Open** and point to ``<varats_root>/vara-llvm-project/llvm/CMakeLists.txt``.
+2. Start CLion and from the menu select **File | Open** and point to ``<varats_root>/tools_src/vara-llvm-project/llvm/CMakeLists.txt``.
    In the dialog that opens, click **Open as Project**.
 
 3. Go to **Settings/Preferences | Build, Execution, Deployment | CMake** to configure the CMake project.
@@ -20,8 +20,8 @@ How to set up VaRA/LLVM in CLion
 
            -DBUILD_CLAR=OFF
            -DBUILD_SHARED_LIBS=ON
-           -DCMAKE_C_FLAGS_DEBUG=-O2 -g -fno-omit-frame-pointer
-           -DCMAKE_CXX_FLAGS_DEBUG=-O2 -g -fno-omit-frame-pointer
+           -DCMAKE_C_FLAGS_DEBUG="-O2 -g -fno-omit-frame-pointer"
+           -DCMAKE_CXX_FLAGS_DEBUG="-O2 -g -fno-omit-frame-pointer"
            -DCMAKE_CXX_STANDARD=17
            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
            -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
@@ -55,8 +55,8 @@ How to set up VaRA/LLVM in CLion
 
            -DBUILD_CLAR=OFF
            -DBUILD_SHARED_LIBS=ON
-           -DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt
-           -DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt
+           -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt"
+           -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt"
            -DCMAKE_CXX_STANDARD=17
            -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
            -DLLVM_ENABLE_ASSERTIONS=OFF
