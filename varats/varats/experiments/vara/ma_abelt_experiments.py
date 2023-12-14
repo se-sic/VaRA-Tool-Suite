@@ -696,7 +696,7 @@ class BlackBoxBaselineRunnerAccuracy(FeatureExperiment, shorthand="BBBase-RQ3"):
                     create_custom_named_patched_report_name(
                         name, "rep_measurements"
                     ),
-                    reps=30
+                    reps=3
                 )
             )
             for patch in reversed(patches):
@@ -713,7 +713,7 @@ class BlackBoxBaselineRunnerAccuracy(FeatureExperiment, shorthand="BBBase-RQ3"):
                         binary,
                         file_name=MPRTimeReportAggregate.
                         create_baseline_report_name("rep_measurements"),
-                        reps=REPS
+                        reps=3
                     )
                 ] + patch_steps
             )

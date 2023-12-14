@@ -7,9 +7,6 @@ import benchbuild.extensions as bb_ext
 from benchbuild.utils import actions
 from benchbuild.utils.actions import Step, StepResult, ProjectStep
 
-from varats.data.databases.feature_perf_precision_database import (
-    get_feature_regions_from_tef_report,
-)
 from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
@@ -31,7 +28,10 @@ from varats.experiments.vara.feature_perf_precision import (
     MPRTEFAggregate,
     RunGenTracedWorkloads,
 )
-from varats.experiments.vara.ma_abelt_utils import select_project_binaries
+from varats.experiments.vara.ma_abelt_utils import (
+    select_project_binaries,
+    get_feature_regions_from_tef_report,
+)
 from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
