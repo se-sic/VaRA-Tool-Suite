@@ -259,8 +259,6 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
                     f"{profiler.name}_precision"].mean()
                 new_row[f"{profiler.name}_recall"] = cs_df[
                     f"{profiler.name}_recall"].mean()
-                new_row[f"{profiler.name}_baccuracy"] = cs_df[
-                    f"{profiler.name}_baccuracy"].mean()
 
             table_rows.append(new_row)
 
@@ -279,8 +277,62 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
 
         print(f"{df=}")
 
+        symb_regressed_features = "$\\mathbb{F}$"
+        symb_precision = "\\textsc{PPV}"
+        symb_recall = "\\textsc{TPR}"
+
+        column_setup = [(' ', "CaseStudy"), ('', symb_regressed_features)]
+
+        for p in profilers:
+            column_setup.append((p.name, symb_precision))
+            column_setup.append((p.name, symb_recall))
+
+        df.columns = pd.MultiIndex.from_tuples(column_setup)
+
+        # Table config
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            kwargs["convert_css"] = True
+            kwargs["column_format"] = "l|r" + ("|rr" * len(profilers))
+            kwargs["multicol_align"] = "|c"
+            # pylint: disable=line-too-long
+            kwargs[
+                "caption"
+            ] = f"""Summary of precision and recall of different white-box profilers
+            with regard to attributing feature-specific regressions to the correct features. For each case study, we
+            show the total number of regressed features ({symb_regressed_features}) across all configurations. For each profiler,
+            we list the means of precision ({symb_precision}) and recall ({symb_recall}) across all patch lists.
+            """
+            # pylint: enable=line-too-long
+            profiler_subset = [(p.name, s)
+                               for p in profilers
+                               for s in [symb_precision, symb_recall]]
+
+            style.format(precision=2, subset=profiler_subset)
+
+            ryg_map = plt.get_cmap('RdYlGn')
+            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
+
+            style.background_gradient(
+                cmap=ryg_map, subset=profiler_subset, vmin=0.0, vmax=1.0
+            )
+
+            style.hide()
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amsmath"))
+            doc.packages.append(Package("amssymb"))
+
         return dataframe_to_table(
-            df, table_format, wrap_table=wrap_table, wrap_landscape=True
+            df,
+            table_format,
+            style=style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            document_decorator=add_extras,
+            **kwargs
         )
 
 
