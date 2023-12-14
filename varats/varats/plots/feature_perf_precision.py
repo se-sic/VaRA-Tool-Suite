@@ -17,6 +17,12 @@ from varats.data.databases.feature_perf_precision_database import (
     EbpfTraceTEF,
     load_precision_data,
     load_overhead_data,
+    load_precision_whitebox_data,
+)
+from varats.experiments.vara.ma_abelt_experiments import (
+    TEFProfileRunnerPrecision,
+    EbpfTraceTEFProfileRunnerPrecision,
+    PIMProfileRunnerPrecision,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
@@ -80,14 +86,18 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
+        profilers: tp.List[Profiler] = [
+            VXray(experiment=TEFProfileRunnerPrecision),
+            PIMTracer(experiment=PIMProfileRunnerPrecision),
+            EbpfTraceTEF(experiment=EbpfTraceTEFProfileRunnerPrecision)
+        ]
 
         # Data aggregation
         df = pd.DataFrame()
-        df = load_precision_data(case_studies, profilers)
+        df = load_precision_whitebox_data(case_studies, profilers)
         df.sort_values(["CaseStudy"], inplace=True)
         df = df.melt(
-            id_vars=['CaseStudy', 'Patch', 'Profiler'],
+            id_vars=['CaseStudy', 'PatchList', 'ConfigID', 'Profiler'],
             value_vars=['precision', 'recall'],
             var_name='metric',
             value_name="value"
