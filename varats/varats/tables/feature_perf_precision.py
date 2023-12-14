@@ -256,7 +256,7 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
 
                 new_row[f"{profiler.name}_precision"] = prof_df[f"precision"
                                                                ].mean()
-                new_row[f"recall"] = cs_df[f"{profiler.name}_recall"].mean()
+                new_row[f"{profiler.name}_recall"] = cs_df[f"recall"].mean()
                 new_row['# f-Regressions'] = prof_df["RegressedFeatures"].sum()
 
             table_rows.append(new_row)

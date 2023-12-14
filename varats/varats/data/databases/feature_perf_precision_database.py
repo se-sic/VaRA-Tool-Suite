@@ -1080,6 +1080,27 @@ def load_precision_whitebox_data(
                 config_id=config_id
             )
 
+            profiler_report_files = {}
+
+            # Load these once so we don't have to do it for every patch list
+            for profiler in profilers:
+                report_files = get_processed_revisions_files(
+                    cs.project_name,
+                    profiler.experiment,
+                    profiler.report_type,
+                    get_case_study_file_name_filter(cs),
+                    config_id=config_id
+                )
+
+                if len(report_files) != 1:
+                    print("Should only be one")
+                    continue
+                    # raise AssertionError("Should only be one")
+
+                profiler_report_files[profiler] = MultiPatchReport(
+                    report_files[0].full_path(), TEFReportAggregate
+                )
+
             if len(ground_truth_report_files) != 1:
                 print("Invalid number of reports from TEFIdentifier")
                 continue
@@ -1106,22 +1127,10 @@ def load_precision_whitebox_data(
                         'Profiler': profiler.name
                     }
 
-                    report_files = get_processed_revisions_files(
-                        cs.project_name,
-                        profiler.experiment,
-                        profiler.report_type,
-                        get_case_study_file_name_filter(cs),
-                        config_id=config_id
-                    )
-
-                    if len(report_files) != 1:
-                        print("Should only be one")
+                    if profiler not in profiler_report_files:
                         continue
-                        # raise AssertionError("Should only be one")
 
-                    report_file = MultiPatchReport(
-                        report_files[0].full_path(), TEFReportAggregate
-                    )
+                    report_file = profiler_report_files[profiler]
 
                     ground_truth = get_regressed_features_gt(
                         report_file.get_baseline_report().reports(),
