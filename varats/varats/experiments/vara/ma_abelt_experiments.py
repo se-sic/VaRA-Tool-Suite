@@ -330,7 +330,8 @@ def setup_actions_for_vara_experiment(
                 file_name=MultiPatchReport.
                 create_custom_named_patched_report_name(
                     name, "rep_measurements"
-                )
+                ),
+                reps=reps
             )
         )
         for patch in reversed(patches):
@@ -380,8 +381,12 @@ class TEFProfileRunnerSeverity(FeatureExperiment, shorthand="TEFp-RQ1"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.TEF, RunGenTracedWorkloads,
-            RQ1_patch_selector
+            self,
+            project,
+            FeatureInstrType.TEF,
+            RunGenTracedWorkloads,
+            RQ1_patch_selector,
+            reps=REPS
         )
 
 
@@ -403,8 +408,12 @@ class PIMProfileRunnerSeverity(FeatureExperiment, shorthand="PIMp-RQ1"):
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.PERF_INFLUENCE_TRACE,
-            RunGenTracedWorkloads, RQ1_patch_selector
+            self,
+            project,
+            FeatureInstrType.PERF_INFLUENCE_TRACE,
+            RunGenTracedWorkloads,
+            RQ1_patch_selector,
+            reps=REPS
         )
 
 
@@ -430,8 +439,12 @@ class EbpfTraceTEFProfileRunnerSeverity(
             project: to analyze
         """
         return setup_actions_for_vara_experiment(
-            self, project, FeatureInstrType.USDT_RAW, RunBPFTracedWorkloads,
-            RQ1_patch_selector
+            self,
+            project,
+            FeatureInstrType.USDT_RAW,
+            RunBPFTracedWorkloads,
+            RQ1_patch_selector,
+            reps=REPS
         )
 
 
@@ -489,7 +502,7 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
         patch_steps = []
         for name, patches in patchlists:
             for patch in patches:
-                #print(f"Got patch with path: {patch.path}")
+                # print(f"Got patch with path: {patch.path}")
                 patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
@@ -499,7 +512,8 @@ class BlackBoxBaselineRunnerSeverity(FeatureExperiment, shorthand="BBBase-RQ1"):
                     file_name=MPRTimeReportAggregate.
                     create_custom_named_patched_report_name(
                         name, "rep_measurements"
-                    )
+                    ),
+                    reps=REPS
                 )
             )
             for patch in reversed(patches):
@@ -616,3 +630,94 @@ class EbpfTraceTEFProfileRunnerPrecision(
             RQ2_patch_selector,
             reps=3
         )
+
+
+class BlackBoxBaselineRunnerAccuracy(FeatureExperiment, shorthand="BBBase-RQ3"):
+    """Test runner for feature performance in RQ3."""
+
+    NAME = "GenBBBaselineAccuracy"
+
+    REPORT_SPEC = ReportSpecification(MPRTimeReportAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+        project.cflags += ["-flto", "-fuse-ld=lld", "-fno-omit-frame-pointer"]
+
+        project.cflags += get_extra_cflags(project)
+
+        project.ldflags += self.get_vara_tracing_ldflags()
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = bb_ext.run.RuntimeExtension(
+            project, self
+        ) << bb_ext.time.RunWithTime()
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = bb_ext.compiler.RunCompiler(
+            project, self
+        ) << WithUnlimitedStackSize()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        # TODO: change to multiple binaries
+        binary = select_project_binaries(project)[0]
+        if binary.type != BinaryType.EXECUTABLE:
+            raise AssertionError("Experiment only works with executables.")
+
+        result_filepath = create_new_success_result_filepath(
+            self.get_handle(),
+            self.get_handle().report_spec().main_report, project, binary,
+            get_current_config_id(project)
+        )
+
+        patchlists = RQ2_patch_selector(project)
+
+        patch_steps = []
+        for name, patches in patchlists:
+            for patch in patches:
+                patch_steps.append(ApplyPatch(project, patch))
+            patch_steps.append(ReCompile(project))
+            patch_steps.append(
+                RunBackBoxBaseline(
+                    project,
+                    binary,
+                    file_name=MPRTimeReportAggregate.
+                    create_custom_named_patched_report_name(
+                        name, "rep_measurements"
+                    ),
+                    reps=30
+                )
+            )
+            for patch in reversed(patches):
+                patch_steps.append(RevertPatch(project, patch))
+
+        analysis_actions = get_config_patch_steps(project)
+
+        analysis_actions.append(actions.Compile(project))
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_filepath, [
+                    RunBackBoxBaseline(
+                        project,
+                        binary,
+                        file_name=MPRTimeReportAggregate.
+                        create_baseline_report_name("rep_measurements"),
+                        reps=REPS
+                    )
+                ] + patch_steps
+            )
+        )
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
