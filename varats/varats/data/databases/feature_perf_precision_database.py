@@ -458,6 +458,48 @@ class EbpfTraceTEF(Profiler):
         return pim_regression_check(old_acc_pim, new_acc_pim)
 
 
+class Baseline(Profiler):
+    """Profiler mapper implementation for the black-box baseline."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
+            TimeReportAggregate
+        )
+
+    def is_regression(
+        self, report_path: ReportFilepath, patch_name: str
+    ) -> bool:
+        time_reports = load_mpr_time_report_aggregate(report_path)
+
+        old_time = time_reports.get_baseline_report()
+        new_time = time_reports.get_report_for_patch(patch_name)
+        if not new_time:
+            raise LookupError(f"Missing new time report in file {report_path}")
+
+        # Cut off regressions smaller than 100ms
+        req_diff = 0.1
+        if np.mean(old_time.measurements_wall_clock_time
+                  ) == np.mean(new_time.measurements_wall_clock_time):
+            return False
+
+        if abs(
+            np.mean(old_time.measurements_wall_clock_time) -
+            np.mean(new_time.measurements_wall_clock_time)
+        ) < req_diff:
+            return False
+
+        ttest_res = ttest_ind(
+            old_time.measurements_wall_clock_time,
+            new_time.measurements_wall_clock_time
+        )
+
+        if ttest_res.pvalue < 0.05:
+            return True
+
+        return False
+
+
 def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
     """Looks up all patch names from the given case study."""
     report_files = get_processed_revisions_files(
@@ -508,35 +550,10 @@ def get_regressing_config_ids_gt(
             )
             return None
 
-        time_reports = load_mpr_time_report_aggregate(
-            report_files[0].full_path()
+        baseline_prof = Baseline()
+        ground_truth[config_id] = baseline_prof.is_regression(
+            report_files[0], patch_name
         )
-
-        old_time = time_reports.get_baseline_report()
-        new_time = time_reports.get_report_for_patch(patch_name)
-        if not new_time:
-            return None
-
-        # Cut off regressions smaller than 100ms
-        req_diff = 0.1
-        if np.mean(old_time.measurements_wall_clock_time
-                  ) == np.mean(new_time.measurements_wall_clock_time):
-            ground_truth[config_id] = False
-        elif abs(
-            np.mean(old_time.measurements_wall_clock_time) -
-            np.mean(new_time.measurements_wall_clock_time)
-        ) < req_diff:
-            ground_truth[config_id] = False
-        else:
-            ttest_res = ttest_ind(
-                old_time.measurements_wall_clock_time,
-                new_time.measurements_wall_clock_time
-            )
-
-            if ttest_res.pvalue < 0.05:
-                ground_truth[config_id] = True
-            else:
-                ground_truth[config_id] = False
 
     return ground_truth
 
@@ -549,21 +566,6 @@ def map_to_negative_config_ids(reg_dict: tp.Dict[int, bool]) -> tp.List[int]:
     return [
         config_id for config_id, value in reg_dict.items() if value is False
     ]
-
-
-class Baseline(Profiler):
-    """Profiler mapper implementation for the black-box baseline."""
-
-    def __init__(self) -> None:
-        super().__init__(
-            "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
-            TimeReportAggregate
-        )
-
-    def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
-    ) -> bool:
-        raise NotImplementedError()
 
 
 def compute_profiler_predictions(
