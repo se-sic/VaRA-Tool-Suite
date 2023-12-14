@@ -1095,15 +1095,17 @@ def load_precision_whitebox_data(
             )
 
             for list_name in patch_lists:
-                new_row = {
-                    'CaseStudy': cs.project_name,
-                    'PatchList': list_name,
-                    'ConfigID': config_id
-                }
                 # Get all patches contained in patch list
                 patches = patch_lists[list_name]
 
                 for profiler in profilers:
+                    new_row = {
+                        'CaseStudy': cs.project_name,
+                        'PatchList': list_name,
+                        'ConfigID': config_id,
+                        'Profiler': profiler.name
+                    }
+
                     report_files = get_processed_revisions_files(
                         cs.project_name,
                         profiler.experiment,
@@ -1136,15 +1138,14 @@ def load_precision_whitebox_data(
                         map_to_positive(predicted), map_to_negative(predicted)
                     )
 
-                    new_row[f"{profiler.name}_precision"] = results.precision()
-                    new_row[f"{profiler.name}_recall"] = results.recall()
-                    new_row[f"{profiler.name}_baccuracy"
-                           ] = results.balanced_accuracy()
+                    new_row[f"precision"] = results.precision()
+                    new_row[f"recall"] = results.recall()
+                    new_row[f"baccuracy"] = results.balanced_accuracy()
                     new_row[f"RegressedFeatures"] = len(
                         map_to_positive(ground_truth)
                     )
 
-                table_rows.append(new_row)
+                    table_rows.append(new_row)
 
     return pd.DataFrame(table_rows)
 

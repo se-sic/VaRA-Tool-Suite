@@ -249,16 +249,15 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
 
         for cs in case_studies:
             cs_df = precision_df[precision_df["CaseStudy"] == cs.project_name]
-            new_row = {
-                'CaseStudy': cs.project_name,
-                '# f-Regressions': cs_df["RegressedFeatures"].sum()
-            }
+            new_row = {'CaseStudy': cs.project_name}
 
             for profiler in profilers:
-                new_row[f"{profiler.name}_precision"] = cs_df[
-                    f"{profiler.name}_precision"].mean()
-                new_row[f"{profiler.name}_recall"] = cs_df[
-                    f"{profiler.name}_recall"].mean()
+                prof_df = cs_df[cs_df["Profiler"] == profiler.name]
+
+                new_row[f"{profiler.name}_precision"] = prof_df[f"precision"
+                                                               ].mean()
+                new_row[f"recall"] = cs_df[f"{profiler.name}_recall"].mean()
+                new_row['# f-Regressions'] = prof_df["RegressedFeatures"].sum()
 
             table_rows.append(new_row)
 
