@@ -19,6 +19,7 @@ from varats.experiments.vara.feature_perf_precision import (
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.provider.patch.patch_provider import PatchProvider
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -119,6 +120,10 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             total_num_patches = defaultdict(int)
             regressed_num_regressions = defaultdict(int)
 
+            patch_provider = PatchProvider.get_provider_for_project(
+                case_study.project_cls
+            )
+
             for config_id in case_study.get_config_ids_for_revision(rev):
                 report_paths = {}
 
@@ -153,11 +158,12 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                 patch_names = get_patch_names(case_study, config_id)
 
                 for patch_name in patch_names:
-                    # TODO: Refactor to use severity from PatchProvider
-                    if '-' in patch_name and '_' not in patch_name:
-                        severity = patch_name.split("-")[-1]
-                    else:
-                        severity = patch_name.split("_")[-1]
+                    patch = patch_provider.get_by_shortname(patch_name)
+                    if patch is None:
+                        print("Could not load patch " + patch_name)
+                        continue
+
+                    severity = patch.regression_severity
 
                     for p in profilers:
                         total_num_patches[f"{p.name}_{severity}"] += 1
