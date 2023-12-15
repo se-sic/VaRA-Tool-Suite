@@ -274,7 +274,15 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
         df = self._prepare_data_table(case_studies, profilers)
         df.sort_values(["CaseStudy"], inplace=True)
 
-        print(f"{df=}")
+        column_names = ["CaseStudy", "# f-Regressions"]
+
+        for p in profilers:
+            column_names.append(f"{p.name}_precision")
+            column_names.append(f"{p.name}_recall")
+
+        df = df.reindex(columns=column_names)
+
+        print(f"{df.to_string()}")
 
         symb_regressed_features = "$\\mathbb{F}$"
         symb_precision = "\\textsc{PPV}"

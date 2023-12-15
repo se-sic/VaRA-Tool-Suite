@@ -1055,12 +1055,16 @@ def load_precision_whitebox_data(
                 )
 
                 if len(report_files) != 1:
-                    print("Should only be one")
+                    print(
+                        f"Should only be one ({profiler=},{cs.project_name=},{config_id=})"
+                    )
                     continue
                     # raise AssertionError("Should only be one")
 
-                profiler_report_files[profiler] = MultiPatchReport(
-                    report_files[0].full_path(), TEFReportAggregate
+                profiler_report_files[profiler] = (
+                    MultiPatchReport(
+                        report_files[0].full_path(), TEFReportAggregate
+                    ), report_files[0]
                 )
 
             if len(ground_truth_report_files) != 1:
@@ -1092,16 +1096,14 @@ def load_precision_whitebox_data(
                     if profiler not in profiler_report_files:
                         continue
 
-                    report_file = profiler_report_files[profiler]
+                    report_file, rf = profiler_report_files[profiler]
 
                     ground_truth = get_regressed_features_gt(
                         report_file.get_baseline_report().reports(),
                         ground_truth_report, patches
                     )
 
-                    predicted = profiler.get_feature_regressions(
-                        report_files[0], list_name
-                    )
+                    predicted = profiler.get_feature_regressions(rf, list_name)
 
                     results = ConfusionMatrix(
                         map_to_positive(ground_truth),
