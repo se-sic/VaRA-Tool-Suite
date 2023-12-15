@@ -716,10 +716,9 @@ def map_to_negative(reg_dict: tp.Dict[T, bool]) -> tp.List[T]:
 class Baseline(Profiler):
     """Profiler mapper implementation for the black-box baseline."""
 
-    def __init__(self) -> None:
+    def __init__(self, experiment=fpp.BlackBoxOverheadBaseline) -> None:
         super().__init__(
-            "Base", fpp.BlackBoxBaselineRunner, fpp.BlackBoxOverheadBaseline,
-            TimeReportAggregate
+            "Base", fpp.BlackBoxBaselineRunner, experiment, TimeReportAggregate
         )
 
     def is_regression(
@@ -1058,7 +1057,7 @@ def load_precision_whitebox_data(
 
                 if len(report_files) != 1:
                     print(
-                        f"Should only be one ({profiler=},{cs.project_name=},{config_id=})"
+                        f"Should only be one ({profiler.name=},{cs.project_name=},{config_id=})"
                     )
                     continue
                     # raise AssertionError("Should only be one")
@@ -1254,6 +1253,17 @@ def load_accuracy_data(
         "eBPFTrace": TEFReportAggregate
     }
 
+    def add_calcs_to_dict(row: tp.Dict, base_times, patch_times):
+        new_row["base_times"] = base_times
+        new_row["patch_times"] = patch_times
+
+        mean_delta = mean(patch_times) - mean(patch_report)
+        new_row["mean_delta"] = patch_times
+
+        epsilon = abs(mean_delta) / total_expected_severity
+
+        new_row["epsilon"] = epsilon
+
     for cs in case_studies:
         rev = cs.revisions[0]
         patch_provider = PatchProvider.get_provider_for_project(cs.project_cls)
@@ -1287,6 +1297,7 @@ def load_accuracy_data(
                 patches = patch_lists[list_name]
 
                 total_expected_severity = 0
+                expected_severity_by_feature = {}
 
                 # Calculate total expected regression
                 for patch in patches:
@@ -1306,6 +1317,13 @@ def load_accuracy_data(
                             continue
 
                         total_expected_severity += patch_severity * count
+                        relevant_features = features - {"__VARA__DETECT__"}
+
+                        interaction_str = get_interactions_from_fr_string(
+                            ",".join(relevant_features)
+                        )
+                        expected_severity_by_feature[interaction_str
+                                                    ] = patch_severity * count
 
                 for profiler in profilers:
                     new_row = {
@@ -1313,6 +1331,7 @@ def load_accuracy_data(
                         'PatchList': list_name,
                         'ConfigID': config_id,
                         'Profiler': profiler.name,
+                        'Features': "__ALL__",
                         'ExpectedDelta': total_expected_severity
                     }
 
@@ -1341,17 +1360,40 @@ def load_accuracy_data(
                     base_times = extract_measured_times(base_report)
                     patch_times = extract_measured_times(patch_report)
 
-                    new_row["base_times"] = base_times
-                    new_row["patch_times"] = patch_times
-
-                    mean_delta = mean(patch_times) - mean(patch_report)
-                    new_row["mean_delta"] = patch_times
-
-                    epsilon = abs(mean_delta) / total_expected_severity
-
-                    new_row["epsilon"] = epsilon
+                    add_calcs_to_dict(new_row, base_times, patch_times)
 
                     table_rows.append(new_row)
+
+                    # Following part is only relevant for Whitebox profilers
+                    if profiler.name == "Base":
+                        continue
+
+                    for feature in expected_severity_by_feature:
+                        new_row = {
+                            'CaseStudy':
+                                cs.project_name,
+                            'PatchList':
+                                list_name,
+                            'ConfigID':
+                                config_id,
+                            'Profiler':
+                                profiler.name,
+                            'Features':
+                                feature,
+                            'ExpectedDelta':
+                                expected_severity_by_feature[feature]
+                        }
+
+                        base_times = extract_measured_times(
+                            base_report, feature
+                        )
+                        patch_times = extract_measured_times(
+                            patch_report, feature
+                        )
+
+                        add_calcs_to_dict(new_row, base_times, patch_times)
+
+                        table_rows.append(new_row)
 
     return pd.DataFrame(table_rows)
 
