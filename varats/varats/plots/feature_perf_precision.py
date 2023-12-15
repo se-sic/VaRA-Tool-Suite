@@ -96,6 +96,10 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
         df = pd.DataFrame()
         df = load_precision_whitebox_data(case_studies, profilers)
         df.sort_values(["CaseStudy"], inplace=True)
+
+        if "case_study" in self.plot_kwargs:
+            df = df[df["CaseStudy"] == self.plot_kwargs["case_study"]]
+
         df = df.melt(
             id_vars=['CaseStudy', 'PatchList', 'ConfigID', 'Profiler'],
             value_vars=['precision', 'recall'],
@@ -170,6 +174,22 @@ class PerfProfDistPlotGenerator(
     def generate(self) -> tp.List[Plot]:
 
         return [PerfPrecisionDistPlot(self.plot_config, **self.plot_kwargs)]
+
+
+class PerfPrecisionDistPlotMultiGenerator(
+    PlotGenerator, generator_name="fperf-precision-dist-multi", options=[]
+):
+    """Generates performance distribution plot."""
+
+    def generate(self) -> tp.List[Plot]:
+
+        return [
+            PerfPrecisionDistPlot(
+                self.plot_config,
+                **self.plot_kwargs,
+                case_study=cs.project_name
+            ) for cs in get_loaded_paper_config().get_all_case_studies()
+        ]
 
 
 class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
