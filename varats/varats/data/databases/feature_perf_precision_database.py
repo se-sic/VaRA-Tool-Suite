@@ -1253,18 +1253,19 @@ def load_accuracy_data(
         "eBPFTrace": TEFReportAggregate
     }
 
-    def add_calcs_to_dict(row: tp.Dict, base_times, patch_times):
-        new_row["base_times"] = base_times
-        new_row["patch_times"] = patch_times
+    def add_calcs_to_dict(row: tp.Dict, old_times, new_times, expected_delta):
+        new_row["base_times"] = old_times
+        new_row["patch_times"] = new_times
 
-        mean_delta = mean(patch_times) - mean(patch_report)
-        new_row["mean_delta"] = patch_times
+        mean_delta = mean(new_times) - mean(old_times)
+        new_row["mean_delta"] = mean_delta
 
-        epsilon = abs(mean_delta) / total_expected_severity
+        epsilon = abs(mean_delta) / expected_delta
 
         new_row["epsilon"] = epsilon
 
     for cs in case_studies:
+        print(cs.project_name)
         rev = cs.revisions[0]
         patch_provider = PatchProvider.get_provider_for_project(cs.project_cls)
 
@@ -1280,6 +1281,7 @@ def load_accuracy_data(
 
             if len(ground_truth_report_files) != 1:
                 print("Invalid number of reports from TEFIdentifier")
+                print(f"{cs.project_name=},{config_id=},{len(ground_truth_report_files)}")
                 continue
 
             ground_truth_report = TEFFeatureIdentifierReport(
@@ -1289,7 +1291,7 @@ def load_accuracy_data(
             # Load the patch lists. While we technically have different files for each profiler, the contents are
             # identical. The patch selection only depends on the configuration and project
             patch_lists = _get_patches_for_patch_lists(
-                cs.project_name, config_id, profilers[0]
+                cs.project_name, config_id, profilers[1]
             )
 
             for list_name in patch_lists:
@@ -1345,7 +1347,7 @@ def load_accuracy_data(
                     )
 
                     if len(report_files) != 1:
-                        print("Should only be one")
+                        print(f"Should only be one ({profiler.name=},{cs.project_name=},{config_id=},{len(report_files)})")
                         continue
                         # raise AssertionError("Should only be one")
 
@@ -1360,7 +1362,7 @@ def load_accuracy_data(
                     base_times = extract_measured_times(base_report)
                     patch_times = extract_measured_times(patch_report)
 
-                    add_calcs_to_dict(new_row, base_times, patch_times)
+                    add_calcs_to_dict(new_row, base_times, patch_times, total_expected_severity)
 
                     table_rows.append(new_row)
 
@@ -1391,7 +1393,7 @@ def load_accuracy_data(
                             patch_report, feature
                         )
 
-                        add_calcs_to_dict(new_row, base_times, patch_times)
+                        add_calcs_to_dict(new_row, base_times, patch_times, expected_severity_by_feature[feature])
 
                         table_rows.append(new_row)
 
