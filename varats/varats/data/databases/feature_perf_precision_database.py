@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from benchbuild.utils.cmd import mkdir
 from cliffs_delta import cliffs_delta  # type: ignore
+from numpy import mean
 from scipy.stats import ttest_ind
 
 import varats.experiments.vara.feature_perf_precision as fpp
@@ -27,6 +28,7 @@ from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.jupyterhelper.file import load_mpr_time_report_aggregate
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.gnu_time_report import TimeReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportFilepath
@@ -1236,6 +1238,120 @@ def load_overhead_data(
                 new_row['overhead_fs_outputs'] = np.nan
 
             table_rows.append(new_row)
+
+    return pd.DataFrame(table_rows)
+
+
+def load_accuracy_data(
+    case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+) -> pd.DataFrame:
+    table_rows = []
+
+    single_report_types = {
+        "Base": TimeReportAggregate,
+        "WXray": TEFReportAggregate,
+        "PIMTracer": PerfInfluenceTraceReportAggregate,
+        "eBPFTrace": TEFReportAggregate
+    }
+
+    for cs in case_studies:
+        rev = cs.revisions[0]
+        patch_provider = PatchProvider.get_provider_for_project(cs.project_cls)
+
+        for config_id in cs.get_config_ids_for_revision(rev):
+            # Load ground truth data
+            ground_truth_report_files = get_processed_revisions_files(
+                cs.project_name,
+                TEFFeatureIdentifier,
+                TEFFeatureIdentifierReport,
+                get_case_study_file_name_filter(cs),
+                config_id=config_id
+            )
+
+            if len(ground_truth_report_files) != 1:
+                print("Invalid number of reports from TEFIdentifier")
+                continue
+
+            ground_truth_report = TEFFeatureIdentifierReport(
+                ground_truth_report_files[0].full_path()
+            )
+
+            # Load the patch lists. While we technically have different files for each profiler, the contents are
+            # identical. The patch selection only depends on the configuration and project
+            patch_lists = _get_patches_for_patch_lists(
+                cs.project_name, config_id, profilers[0]
+            )
+
+            for list_name in patch_lists:
+                # Get all patches contained in patch list
+                patches = patch_lists[list_name]
+
+                total_expected_severity = 0
+
+                # Calculate total expected regression
+                for patch in patches:
+                    patch_severity = patch_provider.get_by_shortname(
+                        patch
+                    ).regression_severity
+
+                    detect_patch_name = patch[:-len(f"{patch_severity}ms")
+                                             ] + "detect"
+                    affected_regions = ground_truth_report.regions_for_patch(
+                        detect_patch_name
+                    )
+
+                    for features, count in affected_regions:
+                        # Only count regions that have our detection feature
+                        if "__VARA__DETECT__" not in features:
+                            continue
+
+                        total_expected_severity += patch_severity * count
+
+                for profiler in profilers:
+                    new_row = {
+                        'CaseStudy': cs.project_name,
+                        'PatchList': list_name,
+                        'ConfigID': config_id,
+                        'Profiler': profiler.name,
+                        'ExpectedDelta': total_expected_severity
+                    }
+
+                    report_files = get_processed_revisions_files(
+                        cs.project_name,
+                        profiler.experiment,
+                        profiler.report_type if profiler.name != "Base" else
+                        fpp.MPRTimeReportAggregate,
+                        get_case_study_file_name_filter(cs),
+                        config_id=config_id
+                    )
+
+                    if len(report_files) != 1:
+                        print("Should only be one")
+                        continue
+                        # raise AssertionError("Should only be one")
+
+                    report_file = MultiPatchReport(
+                        report_files[0].full_path(),
+                        single_report_types[profiler.name]
+                    )
+
+                    base_report = report_file.get_baseline_report()
+                    patch_report = report_file.get_report_for_patch(list_name)
+
+                    base_times = extract_measured_times(base_report)
+                    patch_times = extract_measured_times(patch_report)
+
+                    new_row["base_times"] = base_times
+                    new_row["patch_times"] = patch_times
+
+                    mean_delta = mean(patch_times) - mean(patch_report)
+                    new_row["mean_delta"] = patch_times
+
+                    epsilon = abs(mean_delta) / total_expected_severity
+
+                    new_row["epsilon"] = epsilon
+
+                    table_rows.append(new_row)
 
     return pd.DataFrame(table_rows)
 
