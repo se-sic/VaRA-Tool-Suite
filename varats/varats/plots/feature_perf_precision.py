@@ -124,22 +124,22 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
                 ax=ax
             )
 
-            sns.stripplot(
-                data=data_slice,
-                x="Profiler",
-                y="value",
-                hue="metric",
-                jitter=0.15,
-                dodge=True,
-                linewidth=0.5,
-                marker='x',
-                palette=[
-                    mcolors.XKCD_COLORS['xkcd:dark grey'],
-                    mcolors.CSS4_COLORS['dimgrey']
-                ],
-                size=7,
-                ax=ax
-            )
+            # sns.stripplot(
+            #     data=data_slice,
+            #     x="Profiler",
+            #     y="value",
+            #     hue="metric",
+            #     jitter=0.15,
+            #     dodge=True,
+            #     linewidth=0.5,
+            #     marker='x',
+            #     palette=[
+            #         mcolors.XKCD_COLORS['xkcd:dark grey'],
+            #         mcolors.CSS4_COLORS['dimgrey']
+            #     ],
+            #     size=7,
+            #     ax=ax
+            # )
 
             ax.get_legend().remove()
 
