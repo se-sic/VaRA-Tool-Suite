@@ -718,7 +718,7 @@ class Baseline(Profiler):
 
     def __init__(
         self,
-        experiment=fpp.BlackBoxOverheadBaseline,
+        experiment=fpp.BlackBoxBaselineRunner,
         overhead_experiment=fpp.BlackBoxOverheadBaseline
     ) -> None:
         super().__init__(
@@ -1337,6 +1337,9 @@ def load_accuracy_data(
                         relevant_features = list(
                             features - {"__VARA__DETECT__"}
                         )
+                        if len(relevant_features) == 0:
+                            relevant_features.append("Base")
+
                         # Ensure same string representations as in other cases
                         relevant_features = list(set(relevant_features))
 
