@@ -65,7 +65,7 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
                     )
 
                 new_row[f"{profiler.name}_epsilon_acc"] = prof_df[
-                    prof_df["Features"] == "__ALL__"][f"epsilon"].mean()
+                    prof_df["Features"] == "__ALL__"][f"Epsilon"].mean()
 
                 if profiler.name == "Base":
                     continue

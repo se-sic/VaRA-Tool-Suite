@@ -1264,7 +1264,9 @@ def load_accuracy_data(
         "eBPFTrace": 1000.0,
     }
 
-    def add_calcs_to_dict(row: tp.Dict, old_times, new_times, expected_delta):
+    def add_calcs_to_dict(
+        row: tp.Dict, old_times, new_times, expected_delta, eps_key: str
+    ):
         row["base_times"] = old_times
         row["patch_times"] = new_times
 
@@ -1273,7 +1275,7 @@ def load_accuracy_data(
 
         epsilon = abs(1 - (abs(mean_delta) / expected_delta))
 
-        row["epsilon"] = epsilon
+        row[eps_key] = epsilon
 
     for cs in case_studies:
         print(cs.project_name)
@@ -1383,7 +1385,8 @@ def load_accuracy_data(
 
                     add_calcs_to_dict(
                         new_row, base_times, patch_times,
-                        total_expected_severity_ms * multipliers[profiler.name]
+                        total_expected_severity_ms * multipliers[profiler.name],
+                        "Epsilon"
                     )
 
                     table_rows.append(new_row)
@@ -1421,7 +1424,7 @@ def load_accuracy_data(
                         add_calcs_to_dict(
                             new_row, base_times, patch_times,
                             expected_severity_by_feature_ms[feature] *
-                            multipliers[profiler.name]
+                            multipliers[profiler.name], "epsilon"
                         )
 
                         table_rows.append(new_row)
