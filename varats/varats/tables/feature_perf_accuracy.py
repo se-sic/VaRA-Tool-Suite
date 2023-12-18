@@ -104,11 +104,14 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
         df = self._prepare_data_table(case_studies, profilers)
         df.sort_values(["CaseStudy"], inplace=True)
 
-        column_names = ["CaseStudy", "NumPatches", "Base_epsilon_acc"]
+        column_names = [
+            "CaseStudy", "NumPatchLists", "NumRegressedFeatures",
+            "Base_epsilon_acc"
+        ]
 
         for p in profilers[1:]:
-            column_names.append(f"{p.name}_precision")
-            column_names.append(f"{p.name}_recall")
+            column_names.append(f"{p.name}_epsilon_acc")
+            column_names.append(f"{p.name}_epsilon_features")
 
         df = df.reindex(columns=column_names)
 
@@ -156,11 +159,11 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
 
             style.format(precision=2, subset=profiler_subset)
 
-            ryg_map = plt.get_cmap('RdYlGn')
+            ryg_map = plt.get_cmap('RdYlGn_r')
             ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
 
             style.background_gradient(
-                cmap=ryg_map, subset=profiler_subset, vmin=0.0, vmax=1.0
+                cmap=ryg_map, subset=profiler_subset, vmin=0.0
             )
 
             style.hide()

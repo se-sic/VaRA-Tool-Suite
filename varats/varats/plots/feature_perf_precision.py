@@ -98,7 +98,9 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
         df.sort_values(["CaseStudy"], inplace=True)
 
         if "case_study" in self.plot_kwargs:
-            df = df[df["CaseStudy"] == self.plot_kwargs["case_study"]]
+            df = df[df["CaseStudy"] ==
+                    self.plot_kwargs["case_study"].project_name]
+            print(f"{df.to_string()}")
 
         df = df.melt(
             id_vars=['CaseStudy', 'PatchList', 'ConfigID', 'Profiler'],
@@ -160,6 +162,9 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
 
         plt.subplots_adjust(wspace=.0)
 
+        if "case_study" in self.plot_kwargs:
+            plt.title = self.plot_kwargs["case_study"].project_name
+
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
@@ -185,9 +190,7 @@ class PerfPrecisionDistPlotMultiGenerator(
 
         return [
             PerfPrecisionDistPlot(
-                self.plot_config,
-                **self.plot_kwargs,
-                case_study=cs.project_name
+                self.plot_config, **self.plot_kwargs, case_study=cs
             ) for cs in get_loaded_paper_config().get_all_case_studies()
         ]
 

@@ -29,7 +29,11 @@ class PerfAccuracyDistPlot(Plot, plot_name='fperf_accuracy_dist'):
     across all feature regions for different profilers."""
 
     def plot(self, view_mode: bool) -> None:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
+        if "case_study" in self.plot_kwargs:
+            case_studies = [self.plot_kwargs["case_study"]]
+        else:
+            case_studies = get_loaded_paper_config().get_all_case_studies()
+
         profilers: tp.List[Profiler] = [
             Baseline(experiment=BlackBoxBaselineRunnerAccuracy),
             VXray(experiment=TEFProfileRunnerPrecision),
@@ -40,6 +44,8 @@ class PerfAccuracyDistPlot(Plot, plot_name='fperf_accuracy_dist'):
         # Data aggregation
         df = load_accuracy_data(case_studies, profilers)
         df.sort_values(["CaseStudy"], inplace=True)
+
+        print(f"{df.to_string()}")
 
         g = sns.displot(
             data=df[df["Features"] == "__ALL__"],
@@ -106,4 +112,11 @@ class PerfWBAccuracyDistPlotGenerator(
 
     def generate(self) -> tp.List[Plot]:
 
-        return [PerfAccuracyDistPlot(self.plot_config, **self.plot_kwargs)]
+        return [
+            PerfAccuracyDistPlot(
+                self.plot_config,
+                **self.plot_kwargs,
+                plot_name='fperf-wb-accuracy-dist',
+                case_study=cs
+            ) for cs in get_loaded_paper_config().get_all_case_studies()
+        ]
