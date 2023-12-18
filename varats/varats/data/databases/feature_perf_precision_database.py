@@ -716,9 +716,13 @@ def map_to_negative(reg_dict: tp.Dict[T, bool]) -> tp.List[T]:
 class Baseline(Profiler):
     """Profiler mapper implementation for the black-box baseline."""
 
-    def __init__(self, experiment=fpp.BlackBoxOverheadBaseline) -> None:
+    def __init__(
+        self,
+        experiment=fpp.BlackBoxOverheadBaseline,
+        overhead_experiment=fpp.BlackBoxOverheadBaseline
+    ) -> None:
         super().__init__(
-            "Base", fpp.BlackBoxBaselineRunner, experiment, TimeReportAggregate
+            "Base", experiment, overhead_experiment, TimeReportAggregate
         )
 
     def is_regression(
@@ -1253,16 +1257,23 @@ def load_accuracy_data(
         "eBPFTrace": TEFReportAggregate
     }
 
+    multipliers = {
+        "Base": 0.001,
+        "WXray": 1000.0,
+        "PIMTracer": 1000.0,
+        "eBPFTrace": 1000.0,
+    }
+
     def add_calcs_to_dict(row: tp.Dict, old_times, new_times, expected_delta):
-        new_row["base_times"] = old_times
-        new_row["patch_times"] = new_times
+        row["base_times"] = old_times
+        row["patch_times"] = new_times
 
         mean_delta = mean(new_times) - mean(old_times)
-        new_row["mean_delta"] = mean_delta
+        row["mean_delta"] = mean_delta
 
-        epsilon = abs(mean_delta) / expected_delta
+        epsilon = abs(1 - (abs(mean_delta) / expected_delta))
 
-        new_row["epsilon"] = epsilon
+        row["epsilon"] = epsilon
 
     for cs in case_studies:
         print(cs.project_name)
@@ -1281,7 +1292,9 @@ def load_accuracy_data(
 
             if len(ground_truth_report_files) != 1:
                 print("Invalid number of reports from TEFIdentifier")
-                print(f"{cs.project_name=},{config_id=},{len(ground_truth_report_files)}")
+                print(
+                    f"{cs.project_name=},{config_id=},{len(ground_truth_report_files)}"
+                )
                 continue
 
             ground_truth_report = TEFFeatureIdentifierReport(
@@ -1298,8 +1311,8 @@ def load_accuracy_data(
                 # Get all patches contained in patch list
                 patches = patch_lists[list_name]
 
-                total_expected_severity = 0
-                expected_severity_by_feature = {}
+                total_expected_severity_ms = 0
+                expected_severity_by_feature_ms = {}
 
                 # Calculate total expected regression
                 for patch in patches:
@@ -1318,14 +1331,18 @@ def load_accuracy_data(
                         if "__VARA__DETECT__" not in features:
                             continue
 
-                        total_expected_severity += patch_severity * count
-                        relevant_features = features - {"__VARA__DETECT__"}
+                        total_expected_severity_ms += patch_severity * count
+                        relevant_features = list(
+                            features - {"__VARA__DETECT__"}
+                        )
+                        # Ensure same string representations as in other cases
+                        relevant_features = list(set(relevant_features))
 
                         interaction_str = get_interactions_from_fr_string(
                             ",".join(relevant_features)
                         )
-                        expected_severity_by_feature[interaction_str
-                                                    ] = patch_severity * count
+                        expected_severity_by_feature_ms[
+                            interaction_str] = patch_severity * count
 
                 for profiler in profilers:
                     new_row = {
@@ -1334,7 +1351,7 @@ def load_accuracy_data(
                         'ConfigID': config_id,
                         'Profiler': profiler.name,
                         'Features': "__ALL__",
-                        'ExpectedDelta': total_expected_severity
+                        'ExpectedDelta': total_expected_severity_ms
                     }
 
                     report_files = get_processed_revisions_files(
@@ -1347,7 +1364,9 @@ def load_accuracy_data(
                     )
 
                     if len(report_files) != 1:
-                        print(f"Should only be one ({profiler.name=},{cs.project_name=},{config_id=},{len(report_files)})")
+                        print(
+                            f"Should only be one ({profiler.name=},{cs.project_name=},{config_id=},{len(report_files)})"
+                        )
                         continue
                         # raise AssertionError("Should only be one")
 
@@ -1362,7 +1381,10 @@ def load_accuracy_data(
                     base_times = extract_measured_times(base_report)
                     patch_times = extract_measured_times(patch_report)
 
-                    add_calcs_to_dict(new_row, base_times, patch_times, total_expected_severity)
+                    add_calcs_to_dict(
+                        new_row, base_times, patch_times,
+                        total_expected_severity_ms * multipliers[profiler.name]
+                    )
 
                     table_rows.append(new_row)
 
@@ -1370,7 +1392,7 @@ def load_accuracy_data(
                     if profiler.name == "Base":
                         continue
 
-                    for feature in expected_severity_by_feature:
+                    for feature in expected_severity_by_feature_ms:
                         new_row = {
                             'CaseStudy':
                                 cs.project_name,
@@ -1383,7 +1405,7 @@ def load_accuracy_data(
                             'Features':
                                 feature,
                             'ExpectedDelta':
-                                expected_severity_by_feature[feature]
+                                expected_severity_by_feature_ms[feature]
                         }
 
                         base_times = extract_measured_times(
@@ -1393,7 +1415,14 @@ def load_accuracy_data(
                             patch_report, feature
                         )
 
-                        add_calcs_to_dict(new_row, base_times, patch_times, expected_severity_by_feature[feature])
+                        #if len(base_times) == 0 or len(patch_times) == 0:
+                        #    print("Empty stuff!")
+
+                        add_calcs_to_dict(
+                            new_row, base_times, patch_times,
+                            expected_severity_by_feature_ms[feature] *
+                            multipliers[profiler.name]
+                        )
 
                         table_rows.append(new_row)
 
@@ -1402,14 +1431,19 @@ def load_accuracy_data(
 
 def total_feature_time_from_pim(pim_data: tp.DefaultDict[str, tp.List[int]]):
     pim_totals: tp.List[tp.List[int]] = [
-        values for feature, values in pim_data.items() if feature != "Base"
+        values for feature, values in pim_data.items()
+        if feature != frozenset(["Base"])
     ]
 
     return [sum(values) for values in zip(*pim_totals)]
 
 
 def extract_measured_times(time_report, requested_features=None):
-    acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+
+    def feature_string_to_frozenset(features: str):
+        return frozenset(features.split("*"))
+
+    acc_pim: tp.DefaultDict[tp.FrozenSet, tp.List[int]] = defaultdict(list)
     if isinstance(time_report, TimeReportAggregate):
         return time_report.measurements_wall_clock_time
     elif isinstance(time_report, TEFReportAggregate):
@@ -1417,7 +1451,7 @@ def extract_measured_times(time_report, requested_features=None):
             pim = get_feature_performance_from_tef_report(report)
 
             for feature, value in pim.items():
-                acc_pim[feature].append(value)
+                acc_pim[feature_string_to_frozenset(feature)].append(value)
 
     elif isinstance(time_report, PerfInfluenceTraceReportAggregate):
         for old_pim_report in time_report.reports():
@@ -1426,18 +1460,18 @@ def extract_measured_times(time_report, requested_features=None):
                 name = get_interactions_from_fr_string(
                     old_pim_report._translate_interaction(
                         region_inter.interaction
-                    )
+                    ), '*'
                 )
                 per_report_acc_pim[name] += region_inter.time
 
             for name, time_value in per_report_acc_pim.items():
-                acc_pim[name].append(time_value)
+                acc_pim[feature_string_to_frozenset(name)].append(time_value)
 
     else:
         print(f"Uncovered report type: {type(time_report)}")
         return [np.nan]
 
     if requested_features:
-        return acc_pim[requested_features]
+        return acc_pim[feature_string_to_frozenset(requested_features)]
 
     return total_feature_time_from_pim(acc_pim)
