@@ -1,6 +1,7 @@
 """Report module to create and handle trace event format files, e.g., created
 with chrome tracing."""
 
+import logging
 import re
 import typing as tp
 from enum import Enum
@@ -10,6 +11,8 @@ import ijson
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
+
+LOG = logging.getLogger(__name__)
 
 
 class TraceEventType(Enum):
@@ -49,6 +52,8 @@ class TraceEvent():
     """Represents a trace event that was captured during the analysis of a
     target program."""
 
+    __uuid: int
+
     def __init__(
         self, json_trace_event: tp.Dict[str, tp.Any], name_id: int,
         name_id_mapper: 'TEFReport.NameIDMapper'
@@ -62,6 +67,14 @@ class TraceEvent():
         self.__tracing_clock_timestamp = int(json_trace_event["ts"])
         self.__pid = int(json_trace_event["pid"])
         self.__tid = int(json_trace_event["tid"])
+
+        if "UUID" in json_trace_event:
+            self.__uuid = int(json_trace_event["UUID"])
+        elif "ID" in json_trace_event:
+            self.__uuid = int(json_trace_event["ID"])
+        else:
+            LOG.critical("Could not parse UUID/ID from trace event")
+            self.__uuid: int = 0
 
     @property
     def name(self) -> str:
@@ -87,9 +100,14 @@ class TraceEvent():
     def tid(self) -> int:
         return self.__tid
 
+    @property
+    def uuid(self) -> int:
+        return self.__uuid
+
     def __str__(self) -> str:
         return f"""{{
     name: {self.name}
+    uuid: {self.uuid}
     cat: {self.category}
     ph: {self.event_type}
     ts: {self.timestamp}
@@ -99,7 +117,7 @@ class TraceEvent():
 """
 
     def __repr__(self) -> str:
-        return str(self)
+        return f"{{ name={self.name}, uuid={self.uuid} }}"
 
 
 class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
@@ -114,7 +132,11 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
     def __init__(self, path: Path) -> None:
         super().__init__(path)
         self.__name_id_mapper: TEFReport.NameIDMapper = TEFReport.NameIDMapper()
-        self._parse_json()
+        try:
+            self._parse_json()
+        except Exception as e:
+            print(f"Could not parse file: {self.path}")
+            raise e
         # Parsing stackFrames is currently not implemented
         # x = data["stackFrames"]
 
@@ -132,8 +154,26 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             "Stack frame parsing is currently not implemented!"
         )
 
+    def _patch_errors_from_file(self) -> None:
+        with open(self.path, "r") as f:
+            data = f.read()
+
+        with open(self.path, "w") as f:
+            remove_lost_events = re.compile('Lost \d+ events')
+            for line in data.splitlines():
+                if "Lost" in line:
+                    LOG.error(
+                        "Events where lost during tracing, patching json file."
+                    )
+                    line = remove_lost_events.sub("", line)
+
+                f.write(line)
+
     def _parse_json(self) -> None:
-        trace_events: tp.List[TraceEvent] = list()
+        trace_events: tp.List[TraceEvent] = []
+
+        self._patch_errors_from_file()
+
         with open(self.path, "rb") as f:
             parser = ijson.parse(f)
             trace_event: tp.Dict[str, str] = {}

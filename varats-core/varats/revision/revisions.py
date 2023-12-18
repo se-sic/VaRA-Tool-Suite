@@ -123,7 +123,8 @@ def __get_files_with_status(
     experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
-    only_newest: bool = True
+    only_newest: bool = True,
+    config_id: tp.Optional[int] = None
 ) -> tp.List[ReportFilepath]:
     """
     Find all file paths to result files with given file statuses.
@@ -148,7 +149,15 @@ def __get_files_with_status(
     result_files = __get_result_files_dict(
         project_name, experiment_type, report_type
     )
+
     for value in result_files.values():
+        if config_id is not None:
+            value = [
+                x for x in value if x.report_filename.config_id == config_id
+            ]
+            if not value:
+                continue
+
         sorted_res_files = sorted(
             value, key=lambda x: x.stat().st_mtime, reverse=True
         )
@@ -168,7 +177,8 @@ def get_all_revisions_files(
     experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
-    only_newest: bool = True
+    only_newest: bool = True,
+    config_id: tp.Optional[int] = None
 ) -> tp.List[ReportFilepath]:
     """
     Find all file paths to revision files.
@@ -188,8 +198,13 @@ def get_all_revisions_files(
         a list of file paths to correctly processed revision files
     """
     return __get_files_with_status(
-        project_name, list(FileStatusExtension.get_physical_file_statuses()),
-        experiment_type, report_type, file_name_filter, only_newest
+        project_name=project_name,
+        file_statuses=list(FileStatusExtension.get_physical_file_statuses()),
+        experiment_type=experiment_type,
+        report_type=report_type,
+        file_name_filter=file_name_filter,
+        only_newest=only_newest,
+        config_id=config_id
     )
 
 
@@ -198,7 +213,8 @@ def get_processed_revisions_files(
     experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
-    only_newest: bool = True
+    only_newest: bool = True,
+    config_id: tp.Optional[int] = None
 ) -> tp.List[ReportFilepath]:
     """
     Find all file paths to correctly processed revision files.
@@ -218,8 +234,13 @@ def get_processed_revisions_files(
         a list of file paths to correctly processed revision files
     """
     return __get_files_with_status(
-        project_name, [FileStatusExtension.SUCCESS], experiment_type,
-        report_type, file_name_filter, only_newest
+        project_name=project_name,
+        file_statuses=[FileStatusExtension.SUCCESS],
+        experiment_type=experiment_type,
+        report_type=report_type,
+        file_name_filter=file_name_filter,
+        only_newest=only_newest,
+        config_id=config_id
     )
 
 
@@ -228,7 +249,8 @@ def get_failed_revisions_files(
     experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     file_name_filter: tp.Callable[[str], bool] = lambda x: False,
-    only_newest: bool = True
+    only_newest: bool = True,
+    config_id: tp.Optional[int] = None
 ) -> tp.List[ReportFilepath]:
     """
     Find all file paths to failed revision files.
@@ -248,9 +270,15 @@ def get_failed_revisions_files(
         a list of file paths to failed revision files
     """
     return __get_files_with_status(
-        project_name,
-        [FileStatusExtension.FAILED, FileStatusExtension.COMPILE_ERROR],
-        experiment_type, report_type, file_name_filter, only_newest
+        project_name=project_name,
+        file_statuses=[
+            FileStatusExtension.FAILED, FileStatusExtension.COMPILE_ERROR
+        ],
+        experiment_type=experiment_type,
+        report_type=report_type,
+        file_name_filter=file_name_filter,
+        only_newest=only_newest,
+        config_id=config_id
     )
 
 
