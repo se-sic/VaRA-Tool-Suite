@@ -31,17 +31,18 @@ class HasInfluence(VProject):
     SOURCE = [
         PaperConfigSpecificGit(
             project_name="HasInfluence",
-            remote="https://github.com/TheOneAndOnlyTobi/HasInfluence",
+            remote="https://github.com/TheOneAndOnlyTobi/HasInfluence.git",
             local="HasInfluence",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="test-files",
             remote={
                 "1.0":
-                    "https://github.com/itsfoss/text-files/blob/master"
+                    "https://raw.githubusercontent.com/itsfoss/text-files/master/"
             },
             files=["agatha.txt", "sherlock.txt", "sample_log_file.txt", "agatha_complete.txt"]
         )
@@ -74,10 +75,10 @@ class HasInfluence(VProject):
         """Compile the example project."""
         source = local.path(self.source_of_primary)
 
-        self.cflags += ["-fno-exceptions"]
-
+        cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(source):
-            bb.watch(cxx_compiler)("main.cpp", "-o", "main")
+            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+                bb.watch(cxx_compiler)("main.cpp", "-o", "main")
 
             verify_binaries(self)
