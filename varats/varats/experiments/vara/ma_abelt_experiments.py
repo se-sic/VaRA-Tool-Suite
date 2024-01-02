@@ -570,7 +570,7 @@ class TEFProfileRunnerPrecision(FeatureExperiment, shorthand="TEFp-RQ2"):
             FeatureInstrType.TEF,
             RunGenTracedWorkloads,
             RQ2_patch_selector,
-            reps=3
+            reps=30
         )
 
 
@@ -597,7 +597,7 @@ class PIMProfileRunnerPrecision(FeatureExperiment, shorthand="PIMp-RQ2"):
             FeatureInstrType.PERF_INFLUENCE_TRACE,
             RunGenTracedWorkloads,
             RQ2_patch_selector,
-            reps=3
+            reps=30
         )
 
 
@@ -628,7 +628,7 @@ class EbpfTraceTEFProfileRunnerPrecision(
             FeatureInstrType.USDT_RAW,
             RunBPFTracedWorkloads,
             RQ2_patch_selector,
-            reps=3
+            reps=30
         )
 
 
@@ -696,7 +696,7 @@ class BlackBoxBaselineRunnerAccuracy(FeatureExperiment, shorthand="BBBase-RQ3"):
                     create_custom_named_patched_report_name(
                         name, "rep_measurements"
                     ),
-                    reps=3
+                    reps=30
                 )
             )
             for patch in reversed(patches):
@@ -713,7 +713,7 @@ class BlackBoxBaselineRunnerAccuracy(FeatureExperiment, shorthand="BBBase-RQ3"):
                         binary,
                         file_name=MPRTimeReportAggregate.
                         create_baseline_report_name("rep_measurements"),
-                        reps=3
+                        reps=30
                     )
                 ] + patch_steps
             )
