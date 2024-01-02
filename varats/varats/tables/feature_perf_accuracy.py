@@ -43,7 +43,7 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
                 # The number of patch lists is (or should be) the same for all profilers, so we just take
                 # then one from the first profiler
                 'NumPatchLists':
-                    cs_df[(cs_df["Profiler"] == 'Base') &
+                    cs_df[(cs_df["Profiler"] == 'Black-box') &
                           (cs_df["Features"] == '__ALL__')].shape[0],
                 'NumRegressedFeatures':
                     0
@@ -52,17 +52,6 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
             for profiler in profilers:
                 # First, load the accuracy for accumulated times
                 prof_df = cs_df[cs_df["Profiler"] == profiler.name]
-
-                # Sanity check:
-                num_patch_lists = prof_df[prof_df["Features"] == '__ALL__'
-                                         ].shape[0]
-                if new_row['NumPatchLists'] != num_patch_lists:
-                    print(
-                        f"CS {cs.project_name} had different number of patch lists for profiler {profiler.name}"
-                    )
-                    print(
-                        f"(Original:{new_row['NumPatchLists']}/New:{num_patch_lists})"
-                    )
 
                 new_row[f"{profiler.name}_epsilon_acc"] = prof_df[
                     prof_df["Features"] == "__ALL__"][f"Epsilon"].mean()
@@ -75,16 +64,6 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
 
                 num_regressed_features = prof_df[
                     prof_df["Features"] != "__ALL__"].shape[0]
-
-                # Sanity check:
-                if new_row["NumRegressedFeatures"] != 0 and new_row[
-                    "NumRegressedFeatures"] != num_regressed_features:
-                    print(
-                        f"CS {cs.project_name} had different number of regressed features for profiler {profiler.name}"
-                    )
-                    print(
-                        f"(Original:{new_row['NumRegressedFeatures']}/New:{num_patch_lists})"
-                    )
 
                 new_row[f"NumRegressedFeatures"] = num_regressed_features
 
@@ -106,7 +85,7 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
 
         column_names = [
             "CaseStudy", "NumPatchLists", "NumRegressedFeatures",
-            "Base_epsilon_acc"
+            "Black-box_epsilon_acc"
         ]
 
         for p in profilers[1:]:
@@ -119,12 +98,12 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
 
         symb_num_regressed_features = "$\\mathbb{F}$"
         symb_num_patches = "$\\mathbb{P}$"
-        symb_epsilon_acc = "$\\Epsilon$"
-        symb_epsilon_feature = "$\\epsilon$"
+        symb_epsilon_acc = "$\\Epsilon_f$"
+        symb_epsilon_feature = "$\\epsilon_f$"
 
         column_setup = [(' ', "CaseStudy"), ('', symb_num_patches),
                         ('  ', symb_num_regressed_features),
-                        ("Blackbox", symb_epsilon_acc)]
+                        ("Black-box", "$\\Epsilon_b$")]
 
         for p in profilers[1:]:
             column_setup.append((p.name, symb_epsilon_acc))
@@ -150,7 +129,7 @@ class FeaturePerfAccuracyTable(Table, table_name="fperf-accuracy"):
             and the mean of accuracies of regressions measured for each individual feature({symb_epsilon_feature}).
             """
             # pylint: enable=line-too-long
-            profiler_subset = [("Blackbox", symb_epsilon_acc)]
+            profiler_subset = [("Black-box", "$\\Epsilon_b$")]
             profiler_subset += [
                 (p.name, s)
                 for p in profilers[1:]
