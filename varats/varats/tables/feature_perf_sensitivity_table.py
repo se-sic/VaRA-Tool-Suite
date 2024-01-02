@@ -13,9 +13,16 @@ from varats.data.databases.feature_perf_precision_database import (
     VXray,
     PIMTracer,
     EbpfTraceTEF,
+    get_patch_names_RQ1,
 )
 from varats.experiments.vara.feature_perf_precision import (
     MPRTimeReportAggregate,
+)
+from varats.experiments.vara.ma_abelt_experiments import (
+    BlackBoxBaselineRunnerSeverity,
+    TEFProfileRunnerSeverity,
+    PIMProfileRunnerSeverity,
+    EbpfTraceTEFProfileRunnerSeverity,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -29,8 +36,10 @@ from varats.tables.feature_perf_precision import cmap_map
 
 class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
     PROFILERS: tp.List[Profiler] = [
-        Baseline(), VXray(), PIMTracer(),
-        EbpfTraceTEF()
+        Baseline(experiment=BlackBoxBaselineRunnerSeverity),
+        VXray(experiment=TEFProfileRunnerSeverity),
+        PIMTracer(experiment=PIMProfileRunnerSeverity),
+        EbpfTraceTEF(experiment=EbpfTraceTEFProfileRunnerSeverity)
     ]
     SEVERITIES: tp.List[str] = [
         "1 ms", "10 ms", "100 ms", "1000 ms", "10000 ms"
@@ -155,7 +164,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                         report_paths[p] = None
                         continue
 
-                patch_names = get_patch_names(case_study, config_id)
+                patch_names = get_patch_names_RQ1(case_study, config_id)
 
                 for patch_name in patch_names:
                     patch = patch_provider.get_by_shortname(patch_name)

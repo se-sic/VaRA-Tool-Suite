@@ -24,6 +24,9 @@ from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.experiments.vara.ma_abelt_experiments import (
+    BlackBoxBaselineRunnerSeverity,
+)
 from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.jupyterhelper.file import load_mpr_time_report_aggregate
 from varats.paper.case_study import CaseStudy
@@ -592,6 +595,29 @@ def get_patch_names(case_study: CaseStudy, config_id: int) -> tp.List[str]:
     report_files = get_processed_revisions_files(
         case_study.project_name,
         fpp.BlackBoxBaselineRunner,
+        fpp.MPRTimeReportAggregate,
+        get_case_study_file_name_filter(case_study),
+        config_id=config_id
+    )
+
+    if len(report_files) > 1:
+        raise AssertionError("Should only be one")
+    if not report_files:
+        print(
+            f"Could not find profiling data for {case_study.project_name}"
+            f". config_id={config_id}, profiler=Baseline"
+        )
+        return []
+
+    time_reports = load_mpr_time_report_aggregate(report_files[0].full_path())
+
+    return time_reports.get_patch_names()
+
+
+def get_patch_names_RQ1(case_study: CaseStudy, config_id: int) -> tp.List[str]:
+    report_files = get_processed_revisions_files(
+        case_study.project_name,
+        BlackBoxBaselineRunnerSeverity,
         fpp.MPRTimeReportAggregate,
         get_case_study_file_name_filter(case_study),
         config_id=config_id
@@ -1421,7 +1447,7 @@ def load_accuracy_data(
                             patch_report, feature
                         )
 
-                        #if len(base_times) == 0 or len(patch_times) == 0:
+                        # if len(base_times) == 0 or len(patch_times) == 0:
                         #    print("Empty stuff!")
 
                         add_calcs_to_dict(
