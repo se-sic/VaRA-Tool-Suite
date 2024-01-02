@@ -83,7 +83,7 @@ class Patch:
         project_git_path = get_local_project_git_path(project_name)
 
         # Update repository to have all upstream changes
-        # fetch_repository(project_git_path)
+        fetch_repository(project_git_path)
 
         def parse_revisions(
             rev_dict: tp.Dict[str, tp.Any]
@@ -372,7 +372,7 @@ class PatchProvider(Provider):
     @classmethod
     def _update_local_patches_repo(cls) -> None:
         # Disable temporarily
-        return
+        # return
         lock_path = Path(target_prefix()) / "patch_provider.lock"
 
         with lock_file(lock_path):
