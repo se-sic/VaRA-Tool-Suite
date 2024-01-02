@@ -100,7 +100,5 @@ class TEFFeatureIdentifierTableGenerator(
         return [
             TEFFeatureIdentifierTable(
                 self.table_config, **self.table_kwargs, case_study=cs
-            )
-            for cs in get_loaded_paper_config().get_all_case_studies()
-            if cs.project_name == "HyTeg"
+            ) for cs in get_loaded_paper_config().get_all_case_studies()
         ]
