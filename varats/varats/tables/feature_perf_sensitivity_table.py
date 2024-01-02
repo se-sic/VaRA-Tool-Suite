@@ -138,7 +138,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
                 # Load reports once in the beginning
                 for p in profilers:
-                    rep_type = p.report_type if p.name != "Base" else MPRTimeReportAggregate
+                    rep_type = p.report_type if p.name != "Black-box" else MPRTimeReportAggregate
 
                     report_files = get_processed_revisions_files(
                         project_name,

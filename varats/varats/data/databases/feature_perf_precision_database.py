@@ -400,7 +400,7 @@ class VXray(Profiler):
         overhead_experiment=fpp.TEFProfileOverheadRunner
     ) -> None:
         super().__init__(
-            "WXray", experiment, overhead_experiment, fpp.MPRTEFAggregate
+            "VXray", experiment, overhead_experiment, fpp.MPRTEFAggregate
         )
 
     def is_regression(
@@ -748,7 +748,7 @@ class Baseline(Profiler):
         overhead_experiment=fpp.BlackBoxOverheadBaseline
     ) -> None:
         super().__init__(
-            "Base", experiment, overhead_experiment, TimeReportAggregate
+            "Black-box", experiment, overhead_experiment, TimeReportAggregate
         )
 
     def is_regression(
@@ -1277,15 +1277,15 @@ def load_accuracy_data(
     table_rows = []
 
     single_report_types = {
-        "Base": TimeReportAggregate,
-        "WXray": TEFReportAggregate,
+        "Black-box": TimeReportAggregate,
+        "VXray": TEFReportAggregate,
         "PIMTracer": PerfInfluenceTraceReportAggregate,
         "eBPFTrace": TEFReportAggregate
     }
 
     multipliers = {
-        "Base": 0.001,
-        "WXray": 1000.0,
+        "Black-box": 0.001,
+        "VXray": 1000.0,
         "PIMTracer": 1000.0,
         "eBPFTrace": 1000.0,
     }
@@ -1388,8 +1388,8 @@ def load_accuracy_data(
                     report_files = get_processed_revisions_files(
                         cs.project_name,
                         profiler.experiment,
-                        profiler.report_type if profiler.name != "Base" else
-                        fpp.MPRTimeReportAggregate,
+                        profiler.report_type if profiler.name != "Black-box"
+                        else fpp.MPRTimeReportAggregate,
                         get_case_study_file_name_filter(cs),
                         config_id=config_id
                     )
@@ -1421,7 +1421,7 @@ def load_accuracy_data(
                     table_rows.append(new_row)
 
                     # Following part is only relevant for Whitebox profilers
-                    if profiler.name == "Base":
+                    if profiler.name == "Black-box":
                         continue
 
                     for feature in expected_severity_by_feature_ms:
