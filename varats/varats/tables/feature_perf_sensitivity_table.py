@@ -172,7 +172,14 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                         print("Could not load patch " + patch_name)
                         continue
 
-                    severity = patch.regression_severity
+                    severity = f"{patch.regression_severity}ms"
+
+                    abs_cut_off = 100
+                    if patch.regression_severity < 100:
+                        abs_cut_off = 1
+                        rel_cut_off = 0.0
+                    else:
+                        rel_cut_off = 0.01
 
                     for p in profilers:
                         total_num_patches[f"{p.name}_{severity}"] += 1
@@ -183,7 +190,9 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                             continue
 
                         try:
-                            if p.is_regression(path, patch_name):
+                            if p.is_regression(
+                                path, patch_name, rel_cut_off, abs_cut_off
+                            ):
                                 regressed_num_regressions[f"{p.name}_{severity}"
                                                          ] += 1
                         except IncompleteJSONError as e:

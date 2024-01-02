@@ -216,7 +216,7 @@ def precise_pim_feature_regression_check(
     baseline_pim: tp.DefaultDict[str, tp.List[int]],
     current_pim: tp.DefaultDict[str, tp.List[int]],
     rel_cut_off: float = 0.01,
-    abs_cut_off: int = 20
+    abs_cut_off: int = 100
 ) -> tp.DefaultDict[str, bool]:
     is_regression = {}
 
@@ -338,11 +338,15 @@ def sum_pim_regression_check(
 
 def pim_regression_check(
     baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
+    current_pim: tp.DefaultDict[str, tp.List[int]],
+    rel_cut_off: float = 0.01,
+    abs_cut_off: int = 20
 ) -> bool:
     """Compares two pims and determines if there was a regression between the
     baseline and current."""
-    return precise_pim_regression_check(baseline_pim, current_pim)
+    return precise_pim_regression_check(
+        baseline_pim, current_pim, rel_cut_off, abs_cut_off
+    )
 
 
 class Profiler():
@@ -380,7 +384,11 @@ class Profiler():
 
     @abc.abstractmethod
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+        self,
+        report_path: ReportFilepath,
+        patch_name: str,
+        rel_cut_off: float = 0.01,
+        abs_cut_off: int = 20
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
 
@@ -404,7 +412,11 @@ class VXray(Profiler):
         )
 
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+        self,
+        report_path: ReportFilepath,
+        patch_name: str,
+        rel_cut_off: float = 0.01,
+        abs_cut_off: int = 20
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
         multi_report = MultiPatchReport(
@@ -427,7 +439,9 @@ class VXray(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        return pim_regression_check(old_acc_pim, new_acc_pim)
+        return pim_regression_check(
+            old_acc_pim, new_acc_pim, rel_cut_off, abs_cut_off
+        )
 
     def get_feature_regressions(
         self, report_path: ReportFilepath, patch_name: str
@@ -508,7 +522,11 @@ class PIMTracer(Profiler):
         return acc_pim
 
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+        self,
+        report_path: ReportFilepath,
+        patch_name: str,
+        rel_cut_off: float = 0.01,
+        abs_cut_off: int = 20
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
         multi_report = MultiPatchReport(
@@ -525,7 +543,9 @@ class PIMTracer(Profiler):
 
         new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
 
-        return pim_regression_check(old_acc_pim, new_acc_pim)
+        return pim_regression_check(
+            old_acc_pim, new_acc_pim, rel_cut_off, abs_cut_off
+        )
 
 
 class EbpfTraceTEF(Profiler):
@@ -541,7 +561,11 @@ class EbpfTraceTEF(Profiler):
         )
 
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+        self,
+        report_path: ReportFilepath,
+        patch_name: str,
+        rel_cut_off: float = 0.01,
+        abs_cut_off: int = 20
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
         multi_report = MultiPatchReport(
@@ -564,7 +588,9 @@ class EbpfTraceTEF(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        return pim_regression_check(old_acc_pim, new_acc_pim)
+        return pim_regression_check(
+            old_acc_pim, new_acc_pim, rel_cut_off, abs_cut_off
+        )
 
     def get_feature_regressions(
         self, report_path: ReportFilepath, patch_name: str
@@ -752,7 +778,11 @@ class Baseline(Profiler):
         )
 
     def is_regression(
-        self, report_path: ReportFilepath, patch_name: str
+        self,
+        report_path: ReportFilepath,
+        patch_name: str,
+        rel_cut_off: float = 0.01,
+        abs_cut_off: int = 20
     ) -> bool:
         multi_report = fpp.MultiPatchReport(
             report_path.full_path(), fpp.TimeReportAggregate
