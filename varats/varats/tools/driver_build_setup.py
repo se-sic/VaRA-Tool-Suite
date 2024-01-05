@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 from plumbum import colors
+from trogon import tui
 
 from varats.containers.containers import (
     ImageBase,
@@ -89,6 +90,7 @@ def show_major_release_prompt(
         return
 
 
+@tui()
 @click.group(context_settings={"help_option_names": ['-h', '--help']})
 def main() -> None:
     """Build VaRA on cli."""
@@ -170,7 +172,7 @@ def update(research_tool: str) -> None:
 @click.option(
     "--build-type",
     type=EnumChoice(BuildType, case_sensitive=False),
-    default=BuildType.DEV,
+    default="DEV",
     help="Build type to use for the tool build configuration."
 )
 @click.option(
