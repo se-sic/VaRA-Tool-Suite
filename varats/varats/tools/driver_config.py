@@ -11,10 +11,12 @@ import typing as tp
 import click
 import yaml
 from benchbuild.utils.settings import ConfigDumper, Configuration
+from trogon import tui
 
 from varats.utils.settings import vara_cfg, save_config
 
 
+@tui()
 @click.group("vara-config")
 def main() -> None:
     """

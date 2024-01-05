@@ -3,6 +3,7 @@
 import typing as tp
 
 import click
+from trogon import tui
 
 from varats.tools.research_tools import development as dev
 from varats.tools.research_tools.research_tool import SubProject
@@ -13,6 +14,7 @@ from varats.tools.tool_util import (
 from varats.ts_utils.cli_util import initialize_cli_tool
 
 
+@tui()
 @click.group(context_settings={"help_option_names": ['-h', '--help']})
 @click.option(
     "-p",

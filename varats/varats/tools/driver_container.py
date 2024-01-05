@@ -8,6 +8,7 @@ import logging
 import typing as tp
 
 import click
+from trogon import tui
 
 from varats.containers.containers import (
     create_base_images,
@@ -26,6 +27,7 @@ from varats.utils.settings import vara_cfg, save_config, bb_cfg
 LOG = logging.Logger(__name__)
 
 
+@tui()
 @click.group(
     help="Manage base container images.",
     context_settings={"help_option_names": ['-h', '--help']}
@@ -144,7 +146,8 @@ def delete(
     "-t",
     "--tool",
     type=click.Choice([*get_supported_research_tool_names(), "none"]),
-    default=lambda: vara_cfg()["container"]["research_tool"].value or "none",
+    required=True,
+    # default=lambda: vara_cfg()["container"]["research_tool"].value or "none",
     prompt="Select a research tool to activate.",
     help="The research tool to activate."
 )
