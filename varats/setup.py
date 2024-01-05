@@ -42,6 +42,7 @@ setup(
         "scikit-learn>=1.2.2",
         "seaborn>=0.13.0",
         "tabulate>=0.9",
+        "trogon>=0.5.0",
         "varats-core>=13.0.5",
         "wllvm>=1.3.1",
     ],

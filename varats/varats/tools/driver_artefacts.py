@@ -13,6 +13,7 @@ from pathlib import Path
 import click
 import yaml
 from rich.progress import Progress
+from trogon import tui
 
 from varats.data.discover_reports import initialize_reports
 from varats.paper.paper_config import get_paper_config
@@ -36,6 +37,7 @@ from varats.ts_utils.html_util import (
 LOG = logging.getLogger(__name__)
 
 
+@tui()
 @click.group(
     help="Manage artefacts.",
     context_settings={"help_option_names": ['-h', '--help']}

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from plumbum import FG, colors, local
+from trogon import tui
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
@@ -86,6 +87,7 @@ def create_plot_type_choice() -> TypedChoice[tp.Type[Plot]]:
     return TypedChoice(Plot.PLOTS)
 
 
+@tui()
 @click.group()
 @configuration_lookup_error_handler
 def main() -> None:
