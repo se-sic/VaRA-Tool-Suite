@@ -187,9 +187,13 @@ def create_multi_experiment_type_choice(
 
 
 class ShortCommitHashParamType(ParamType):
+    """Click parameter type for commit hashes."""
     name = "ShortCommitHash"
 
-    def convert(self, value, param, ctx) -> ShortCommitHash:
+    def convert(
+        self, value: tp.Union[str, ShortCommitHash],
+        param: tp.Optional[click.Parameter], ctx: tp.Optional[click.Context]
+    ) -> ShortCommitHash:
         if isinstance(value, ShortCommitHash):
             return value
 
