@@ -401,7 +401,7 @@ class SmoothPlotCLI(click.MultiCommand):
 
         generator_cls = PlotGenerator.GENERATORS[cmd_name]
 
-        @click.pass_context
+        @click.pass_context  # type: ignore
         def command_template(context: click.Context, **kwargs: tp.Any) -> None:
             # extract common arguments and plot config from context
             plot_config: PlotConfig = PlotConfig(False)
