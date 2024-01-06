@@ -106,6 +106,7 @@ module = [
   "seaborn",
   "github.*",
   "ijson",
+  "trogon.*",
 ]
 ignore_missing_imports = true
 
