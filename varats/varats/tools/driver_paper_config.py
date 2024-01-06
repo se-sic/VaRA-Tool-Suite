@@ -69,7 +69,7 @@ def create_pc_choice() -> click.Choice:
 
 
 @main.command("select")  # type: ignore
-@click.option("--paper-config", type=create_pc_choice(), required=True)
+@click.option("--paper-config", type=create_pc_choice())
 def _pc_set(paper_config: tp.Optional[str]) -> None:
     if not paper_config:
         pc_folder_path = Path(vara_cfg()["paper_config"]["folder"].value)
