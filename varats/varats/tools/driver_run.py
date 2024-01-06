@@ -82,7 +82,7 @@ def __validate_project_parameters(
     return value
 
 
-@tui()
+@tui()  # type: ignore
 @click.command(context_settings={"help_option_names": ['-h', '--help']})
 @click.option('-v', '--verbose', count=True)
 @click.option("--slurm", is_flag=True, help="Run experiments on slurm.")

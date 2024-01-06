@@ -19,7 +19,7 @@ from varats.utils.settings import save_config, vara_cfg, save_bb_config, bb_cfg
 LOG = logging.getLogger(__name__)
 
 
-@tui()
+@tui()  # type: ignore
 @click.command()
 @click.option(
     "--bb-root",
