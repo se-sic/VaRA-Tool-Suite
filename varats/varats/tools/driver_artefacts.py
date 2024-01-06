@@ -82,15 +82,16 @@ def _create_artefact_choice() -> TypedChoice['Artefact']:
 
 
 @main.command(help="Show detailed information about artefacts.")  # type: ignore
-@click.argument("name", type=_create_artefact_choice())
-def show(name: Artefact) -> None:
+@click.argument("artefact", type=_create_artefact_choice())
+def show(artefact: Artefact) -> None:
     """
     Show detailed information about artefacts.
 
     Args:
-        name: the artefact to display
+        artefact: the artefact to display
     """
-    print(textwrap.indent(yaml.dump(name.get_dict()), '  '))
+    print(f"Artefact '{artefact.name}':")
+    print(textwrap.indent(yaml.dump(artefact.get_dict()), '  '))
 
 
 @main.command(  # type: ignore
