@@ -44,6 +44,7 @@ from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import (
     get_primary_project_source,
     get_local_project_repo,
+    get_loaded_vara_projects,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
@@ -83,17 +84,22 @@ def create_plot_type_choice() -> TypedChoice[tp.Type[Plot]]:
     return TypedChoice(Plot.PLOTS)
 
 
-@tui()
+def create_project_choice() -> click.Choice:
+    initialize_projects()
+    projects = [proj.NAME for proj in get_loaded_vara_projects()]
+    return click.Choice(projects)
+
+
+@tui()  # type: ignore
 @click.group()
 @configuration_lookup_error_handler
 def main() -> None:
     """Allow easier management of case studies."""
     initialize_cli_tool()
-    initialize_projects()
     initialize_reports()
 
 
-@main.command("status")
+@main.command("status")  # type: ignore
 @click.argument("experiment_type", type=create_experiment_type_choice())
 @click.option(
     "--filter-regex",
@@ -152,8 +158,8 @@ def __casestudy_status(
     )
 
 
-@main.group("gen")
-@click.option("--project", "-p", required=True)
+@main.group("gen")  # type: ignore
+@click.option("--project", "-p", type=create_project_choice(), required=True)
 @click.option(
     "--override",
     "-or",
@@ -192,7 +198,7 @@ def __casestudy_gen(
     ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool,
     update: bool
 ) -> None:
-    """Generate or extend a CaseStudy Sub commands can be chained to for example
+    """Generate or extend a CaseStudy subcommands can be chained to for example
     sample revisions but also add the latest."""
     ctx.ensure_object(dict)
     ctx.obj['project'] = project
@@ -264,7 +270,7 @@ def __casestudy_gen(
     ctx.obj['case_study'] = case_study
 
 
-@__casestudy_gen.command("select_latest")
+@__casestudy_gen.command("select_latest")  # type: ignore
 @click.pass_context
 def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
@@ -282,7 +288,7 @@ def __gen_latest(ctx: click.Context) -> None:
     store_case_study(case_study, ctx.obj['path'])
 
 
-@__casestudy_gen.command("select_specific")
+@__casestudy_gen.command("select_specific")  # type: ignore
 @click.argument("revisions", nargs=-1)
 @click.pass_context
 def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
@@ -298,7 +304,7 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
-@__casestudy_gen.command("select_sample")
+@__casestudy_gen.command("select_sample")  # type: ignore
 @click.argument(
     "distribution",
     type=click.Choice([
@@ -353,7 +359,7 @@ def __gen_sample(
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
-@__casestudy_gen.command("select_revs-per-year")
+@__casestudy_gen.command("select_revs-per-year")  # type: ignore
 @click.argument("revs-per-year", type=int)
 @click.option(
     "--separate", is_flag=True, help="Separate years into different Stages"
@@ -429,7 +435,7 @@ class SmoothPlotCLI(click.MultiCommand):
         return click.command(cmd_name)(command_definition)
 
 
-@__casestudy_gen.command("select_plot", cls=SmoothPlotCLI)
+@__casestudy_gen.command("select_plot", cls=SmoothPlotCLI)  # type: ignore
 @click.option(
     "--boundary-gradient",
     type=int,
@@ -447,7 +453,7 @@ def __gen_smooth_plot(ctx: click.Context, boundary_gradient: int) -> None:
     ctx.obj['boundary_gradient'] = boundary_gradient
 
 
-@__casestudy_gen.command("select_release")
+@__casestudy_gen.command("select_release")  # type: ignore
 @click.argument("release_type", type=EnumChoice(ReleaseType, False))
 @click.pass_context
 def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
@@ -465,7 +471,7 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
-@__casestudy_gen.command("select_bug")
+@__casestudy_gen.command("select_bug")  # type: ignore
 @click.option(
     "--experiment-type",
     type=TypedChoice({
@@ -492,7 +498,7 @@ def __gen_bug_commits(
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
-@main.command("package")
+@main.command("package")  # type: ignore
 @click.argument(
     "experiment_names", type=create_experiment_type_choice(), nargs=-1
 )
@@ -537,7 +543,7 @@ def __casestudy_package(
         )
 
 
-@main.command("view")
+@main.command("view")  # type: ignore
 @click.option(
     "--experiment-type",
     type=create_experiment_type_choice(),
@@ -695,7 +701,7 @@ def __init_commit_hash(
     return commit_hash
 
 
-@main.group()
+@main.group()  # type: ignore
 @click.option(
     "--case-studies",
     "-cs",
@@ -741,7 +747,7 @@ def __delete_report_file_paths(report_files: tp.List[ReportFilepath]) -> None:
             parent_dir.rmdir()
 
 
-@cleanup.command("all")
+@cleanup.command("all")  # type: ignore
 @click.option(
     "--error", is_flag=True, help="remove only reports from failed experiments"
 )
@@ -766,7 +772,7 @@ def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
         __delete_report_file_paths(revision_files)
 
 
-@cleanup.command("old")
+@cleanup.command("old")  # type: ignore
 @click.pass_context
 def _remove_old_result_files(ctx: click.Context) -> None:
     """Remove result files of wich a newer version exists."""
@@ -790,7 +796,7 @@ def _remove_old_result_files(ctx: click.Context) -> None:
         __delete_report_file_paths(old_revision_files)
 
 
-@cleanup.command("regex")
+@cleanup.command("regex")  # type: ignore
 @click.option(
     "--filter-regex",
     "-f",
