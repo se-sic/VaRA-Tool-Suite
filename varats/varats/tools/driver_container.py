@@ -27,7 +27,7 @@ from varats.utils.settings import vara_cfg, save_config, bb_cfg
 LOG = logging.Logger(__name__)
 
 
-@tui()
+@tui()  # type: ignore
 @click.group(
     help="Manage base container images.",
     context_settings={"help_option_names": ['-h', '--help']}
@@ -38,7 +38,9 @@ def main() -> None:
     bb_cfg()
 
 
-@main.command(help="Build base containers for the current research tool.")
+@main.command(
+    help="Build base containers for the current research tool."
+)  # type: ignore
 @click.option(
     "--debug", is_flag=True, help="Debug failed image builds interactively."
 )
@@ -103,7 +105,9 @@ def build(
             export_base_images()
 
 
-@main.command(help="Delete base containers for the current research tool.")
+@main.command(
+    help="Delete base containers for the current research tool."
+)  # type: ignore
 @click.option(
     "--build-type",
     type=EnumChoice(BuildType, case_sensitive=False),
@@ -141,7 +145,9 @@ def delete(
             delete_base_images()
 
 
-@main.command(help="Select the research tool to be used in base containers.")
+@main.command(
+    help="Select the research tool to be used in base containers."
+)  # type: ignore
 @click.option(
     "-t",
     "--tool",
