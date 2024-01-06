@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 
 
 @tui()  # type: ignore
-@click.command()
+@click.group(invoke_without_command=True)
 @click.option(
     "--bb-root",
     type=click.Path(),
