@@ -163,7 +163,9 @@ class RevisionImpactScatterLines(Plot, plot_name="revision_impact_lines"):
                 "project",
             )
             grid.set_axis_labels(
-                "Impact", "RelativeChurn", fontsize=self.plot_config.font_size
+                "Impact",
+                "RelativeChurn",
+                fontsize=self.plot_config.font_size()
             )
             plt.gcf().set_size_inches(10, 5)
             ymax = data["line_change"].max()

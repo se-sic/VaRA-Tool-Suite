@@ -46,7 +46,7 @@ class InteractionChangeDistribution(
                              copy=False,
                              join="inner")
         data_sub = data.groupby(["base_hash", "project"],
-                                sort=False)["interactions_diff"].max()
+                                sort=False)["interactions_diff"].sum()
 
         df = data_sub.to_frame().reset_index()
         df["interactions_diff"] = df["interactions_diff"].apply(lambda x: x + 1)
@@ -65,9 +65,9 @@ class InteractionChangeDistribution(
 
         axis.set_ylabel(
             "Change in $\\frac{interactions}{lines}$",
-            fontsize=self.plot_config.font_size
+            fontsize=self.plot_config.font_size()
         )
-        axis.set_xlabel("Projects", fontsize=self.plot_config.font_size)
+        axis.set_xlabel("Projects", fontsize=self.plot_config.font_size())
         plt.gcf().set_size_inches(10, 5)
         plt.yscale("asinh")
 
