@@ -65,7 +65,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
     YNAME = "Time"
 
     TAINT = "Taint"
-    TYPESTATE = "Typestate"
+    TYPESTATE = "TSA"
     LCA = "LCA"
     IIA = "IIA"
 
@@ -173,13 +173,13 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
 
     def _get_jf_name(self, jf: int) -> str:
         if jf == self.JF1:
-            return "JF[ND]"
+            return "JF$_{ND}$"
         elif jf == self.JF2:
-            return "JF[N]"
+            return "JF$_N$"
         elif jf == self.JF3:
-            return "JF[NE]"
+            return "JF$_{NE}$"
         elif jf == self.Nested:
-            return "JF[old]"
+            return "JF$_{old}$"
         elif jf == self.OLD:
             return "Old"
         else:
@@ -410,7 +410,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         return 100
 
     def analysis_order(self) -> tp.List[str]:
-        return ["IIA", "LCA", "Taint", "Typestate"]
+        return [self.IIA, self.LCA, self.TAINT, self.TYPESTATE]
 
     def make_phasar_violinplot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(self.compute_speedups)
@@ -425,6 +425,13 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             order=self.analysis_order(),
             # inner="point",
         )
+
+        _, xlabels = plt.xticks()
+        ax.set_xticklabels(xlabels, size=15)
+        ax.set_yticklabels(ax.get_yticks(), size=15)
+        ax.set_xlabel(ax.get_xlabel(), fontsize=15)
+        ax.set_ylabel(ax.get_ylabel(), fontsize=15)
+
         ax.axhline(1)
 
         data = self.make_dataframe(self.compute_mean_speedup)
@@ -485,6 +492,8 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         return ax
 
     def plot(self, view_mode: bool) -> None:
+        plt.rcParams["font.family"] = "Latin Modern Roman"
+        plt.rcParams["mathtext.fontset"] = "cm"
         ax = self.make_phasar_plot()
 
     def calc_missing_revisions(
@@ -571,6 +580,42 @@ class PhasarIterIDECombinedSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
             plot_name=plot_name, yname=yname, **kwargs
         )
 
+    @staticmethod
+    def compute_single_memory_savings(old: float, new: float) -> float:
+        if old > new:
+            return round(new / old - 1, 3)
+        else:
+            return -round(old / new - 1, 3)
+
+        # ---
+
+        # return round(new/old-1, 3)
+
+        # ---
+
+        # rel = new/old
+
+        # if old < new:
+        #     return round(rel - 1, 3)
+        # else:
+        #     return -round(1 - rel, 3)
+
+    @staticmethod
+    def compute_memory_savings(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        return [
+            np.mean(
+                list(
+                    map(
+                        lambda x: PhasarIterIDECombinedSpeedupPlot.
+                        compute_single_memory_savings(x[0], x[1]),
+                        itertools.product(old_measurements, new_measurements)
+                    )
+                )
+            )
+        ]
+
     def _get_data_entries(
         self, report: PhasarIterIDEStatsReport, cs: str,
         speedup_computer: tp.Callable[[tp.List[float], tp.List[float]], float]
@@ -593,10 +638,18 @@ class PhasarIterIDECombinedSpeedupPlotBase(PhasarIterIDEPlotBase, plot_name=""):
                     aggregates[jf].measurements_wall_clock_time
                 )
 
-                memory_speedups = speedup_computer(
+                # memory_speedups = speedup_computer(
+                #     aggregates[self.Nested].max_resident_sizes,
+                #     aggregates[jf].max_resident_sizes
+                # )
+                memory_speedups = PhasarIterIDECombinedSpeedupPlotBase.compute_memory_savings(
                     aggregates[self.Nested].max_resident_sizes,
                     aggregates[jf].max_resident_sizes
                 )
+                # memory_speedups = speedup_computer(
+                #     aggregates[jf].max_resident_sizes,
+                #     aggregates[self.Nested].max_resident_sizes,
+                # )
 
                 for s, m in zip(runtime_speedups, memory_speedups):
                     # print(f"> {s}")
@@ -881,6 +934,7 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSize(
             style="Analysis",
             linewidth=0,
             alpha=0.7,
+            s=70,
         )
 
         ax.axhline(1, linewidth=1, color='gray')
@@ -890,11 +944,181 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSize(
         ax.set_xticklabels(
             ax.get_xticklabels(), rotation=45, horizontalalignment='right'
         )
-        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+
+        h, l = ax.get_legend_handles_labels()
+        l1 = ax.legend(
+            h[:int(len(h) / 2)], l[:int(len(l) / 2)], loc='upper right'
+        )
+        l2 = ax.legend(
+            h[int(len(h) / 2):], l[int(len(l) / 2):], loc='upper center'
+        )
+        ax.add_artist(
+            l1
+        )  # we need this because the 2nd call to legend() erases the first
+
+        # ax.legend(ncol=2, title="")
+
+        # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 
         # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
         return ax
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
+    PhasarIterIDEPlotBase,
+    plot_name=
+    'phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-size-grid',
+    yname="Runtime Speedup vs Nested"
+):
+
+    def __init__(self, plot_config, **kwargs):
+        PhasarIterIDEPlotBase.__init__(self, plot_config, **kwargs)
+
+        self.runtime_plotter = PhasarIterIDETargetSpeedupVsNestedSortedSize(
+            plot_config, **kwargs
+        )
+        self.memory_plotter = PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
+            plot_config, **kwargs
+        )
+
+    def __init_subclass__(
+        cls,
+        *,
+        plot_name: str | None,
+        yname: str | None = None,
+        **kwargs
+    ) -> None:
+        return super().__init_subclass__(
+            plot_name=plot_name, yname=yname, **kwargs
+        )
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        runtime_data = self.runtime_plotter.make_dataframe(
+            PhasarIterIDEPlotBase.compute_mean_speedup
+        )
+        runtime_data = runtime_data.sort_values(by=["LOC"])
+
+        def compute_slowdown(x, y):
+            return PhasarIterIDEPlotBase.compute_mean_speedup(y, x)
+
+        memory_data = self.memory_plotter.make_dataframe(compute_slowdown)
+        memory_data = memory_data.sort_values(by=["LOC"])
+
+        print("MemoryUsage: ", memory_data.to_string())
+
+        for ana in ["Taint", "LCA", "IIA"]:
+            Filter = memory_data.loc[memory_data["Analysis"] == ana]
+            Rows = Filter[self.memory_plotter.YNAME]
+
+            MinIdx = Rows.idxmin()
+            MaxIdx = Rows.idxmax()
+
+            Min = Rows[MinIdx]
+            Max = Rows[MaxIdx]
+            Mean = Rows.mean()
+
+            ArgMin = (
+                Filter['JF'][MinIdx], Filter['Analysis'][MinIdx],
+                Filter['Target'][MinIdx]
+            )
+            ArgMax = (
+                Filter['JF'][MaxIdx], Filter['Analysis'][MaxIdx],
+                Filter['Target'][MaxIdx]
+            )
+
+            print(
+                f"[RelMemoryUsage]: {ana}: Min {Min}({ArgMin}), Max {Max}({ArgMax}), Mean {Mean}"
+            )
+
+        fig = plt.figure(figsize=(10, 4))
+        gs = GridSpec(1, 2)
+
+        ax1 = fig.add_subplot(gs.new_subplotspec((0, 0)))
+        ax2 = fig.add_subplot(gs.new_subplotspec((0, 1)))
+
+        ### Runtime Data
+        sns.scatterplot(
+            data=runtime_data,
+            x="Target",
+            y=self.runtime_plotter.YNAME,
+            hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+            s=70,
+            ax=ax1,
+            # palette=sns.color_palette('muted')
+        )
+
+        ax1.axhline(1)  #, linewidth=1, color='gray'
+
+        ax1.set_ylabel("Runtime Speedup")
+        ax1.set_xlabel("Target Program")
+        ax1.set_xticklabels(
+            ax1.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        ax1.set_yscale("log", base=2)
+        ax1.set_yticks([0.5, 0.625, 0.75, 0.875, 1, 1.25, 1.5])
+        ax1.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        # ax1.set_ylim(top=1.3)
+
+        ### Memory Data
+        sns.scatterplot(
+            data=memory_data,
+            x="Target",
+            y=self.memory_plotter.YNAME,
+            hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
+            style="Analysis",
+            linewidth=0,
+            alpha=0.7,
+            s=70,
+            ax=ax2,
+        )
+
+        ax2.axhline(1)  #, linewidth=1, color='gray'
+
+        ax2.set_ylabel("Relative Memory Usage")
+        ax2.set_xlabel("Target Program")
+        ax2.set_xticklabels(
+            ax2.get_xticklabels(), rotation=45, horizontalalignment='right'
+        )
+        ax2.set_yscale("log", base=2)
+
+        ax2.set_yticks([0.25, 0.33, 0.5, 0.75, 1, 1.25, 1.5])
+        ax2.get_yaxis().set_major_formatter(
+            matplotlib.ticker.PercentFormatter(xmax=1)
+        )  # , decimals=1
+        # ax2.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax2.set_ylim(top=1.55)
+
+        # ax2.yaxis.set_label_position("right")
+        # ax2.yaxis.tick_right()
+
+        ### Legend
+
+        # ax1.get_legend().remove()
+
+        h, l = ax1.get_legend_handles_labels()
+        ax1.legend(
+            h[int(len(h) / 2) + 1:],
+            l[int(len(l) / 2) + 1:],
+            loc='lower center',
+            bbox_to_anchor=(0.62, 0)
+        )  #, loc='upper center'
+
+        h, l = ax2.get_legend_handles_labels()
+        ax2.legend(
+            h[1:int(len(h) / 2)],
+            l[1:int(len(l) / 2)],
+            loc='lower center',
+            bbox_to_anchor=(0.52, 0)
+        )
+        # ax1.add_artist(l1) # we need this because the 2nd call to legend() erases the first
+
+        return ax1
 
 
 class PhasarIterIDETargetSpeedupVsNestedSortedTime(
@@ -1121,6 +1345,7 @@ class PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
             style="Analysis",
             linewidth=0,
             alpha=0.7,
+            s=70,
         )
 
         ax.axhline(1, linewidth=1, color='gray')
@@ -1130,7 +1355,19 @@ class PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
         ax.set_xticklabels(
             ax.get_xticklabels(), rotation=45, horizontalalignment='right'
         )
-        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+
+        h, l = ax.get_legend_handles_labels()
+        l1 = ax.legend(
+            h[:int(len(h) / 2)], l[:int(len(l) / 2)], loc='upper right'
+        )
+        l2 = ax.legend(
+            h[int(len(h) / 2):], l[int(len(l) / 2):], loc='upper center'
+        )
+        ax.add_artist(
+            l1
+        )  # we need this because the 2nd call to legend() erases the first
+
+        # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
         # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
         return ax
@@ -1343,44 +1580,45 @@ class PhasarIterIDECombinedSpeedupPlot(
         data = self.make_dataframe(
             PhasarIterIDECombinedSpeedupPlot.compute_sanitized_speedup
         )
+        data = data.sort_values(by=["Target"])
 
-        runtime_threshold = 5
-        memory_threshold = 100
+        # runtime_threshold = 5
+        # memory_threshold = 100
 
-        gray_data = data.loc[(data["Old Runtime"] < runtime_threshold) &
-                             (data["Old Memory"] < memory_threshold) &
-                             (data["New Runtime"] < runtime_threshold) &
-                             (data["New Memory"] < memory_threshold)]
-        colored_data = data.loc[(data["Old Runtime"] >= runtime_threshold) |
-                                (data["Old Memory"] >= memory_threshold) |
-                                (data["New Runtime"] >= runtime_threshold) |
-                                (data["New Memory"] >= memory_threshold)]
+        # gray_data = data.loc[(data["Old Runtime"] < runtime_threshold) &
+        #                      (data["Old Memory"] < memory_threshold) &
+        #                      (data["New Runtime"] < runtime_threshold) &
+        #                      (data["New Memory"] < memory_threshold)]
+        # colored_data = data.loc[(data["Old Runtime"] >= runtime_threshold) |
+        #                         (data["Old Memory"] >= memory_threshold) |
+        #                         (data["New Runtime"] >= runtime_threshold) |
+        #                         (data["New Memory"] >= memory_threshold)]
 
         #print(data)
 
-        ax = sns.scatterplot(
-            data=gray_data,
-            x="Runtime Speedup",
-            y="Memory Savings",
-            # x = "Old",
-            # y = "New",
-            # hue="Target",
-            hue="JF",
-            hue_order=self._get_hue_order(self._get_num_jf()),
-            # markers = markers,
-            # fillstyle="none",
-            # facecolors="none",
-            # edgecolor="face",
-            # c='none',
-            facecolor='lightgray',
-            linewidth=0,
-            alpha=0.5,
-            # s=25,
-            legend=False,
-        )
+        # ax = sns.scatterplot(
+        #     data=gray_data,
+        #     x="Runtime Speedup",
+        #     y="Memory Savings",
+        #     # x = "Old",
+        #     # y = "New",
+        #     # hue="Target",
+        #     hue="JF",
+        #     hue_order=self._get_hue_order(self._get_num_jf()),
+        #     # markers = markers,
+        #     # fillstyle="none",
+        #     # facecolors="none",
+        #     # edgecolor="face",
+        #     # c='none',
+        #     facecolor='lightgray',
+        #     linewidth=0,
+        #     alpha=0.5,
+        #     # s=25,
+        #     legend=False,
+        # )
 
         ax = sns.scatterplot(
-            data=colored_data,
+            data=data,
             x="Runtime Speedup",
             y="Memory Savings",
             # x = "Old",
@@ -1394,8 +1632,8 @@ class PhasarIterIDECombinedSpeedupPlot(
             # edgecolor="face",
             # c='none',
             linewidth=0,
-            alpha=0.5,
-            # s=25,
+            alpha=0.7,
+            s=70,
         )
 
         # Move left y-axis and bottom x-axis to centre, passing through (0,0)
@@ -1409,6 +1647,13 @@ class PhasarIterIDECombinedSpeedupPlot(
         # Show ticks in the left and lower axes only
         ax.xaxis.set_ticks_position('bottom')
         ax.yaxis.set_ticks_position('left')
+
+        # ax.set_yscale('log', base=2)
+        # ax.set_yticks([0.5, 0.625, 0.75, 0.875, 1])
+        ax.get_yaxis().set_major_formatter(
+            matplotlib.ticker.PercentFormatter(xmax=1)
+        )
+        # ax.set_ylim(top=1.1)
 
         runtime_means = [
             np.mean(
@@ -1441,7 +1686,7 @@ class PhasarIterIDECombinedSpeedupPlot(
                                                  width=2 * rt_std,
                                                  height=2 * mem_std,
                                                  facecolor=col,
-                                                 alpha=0.3)
+                                                 alpha=0.2)
             ax.add_patch(ellipse)
 
         for rt_mean, rt_std, mem_mean, mem_std, col in zip(
@@ -1473,7 +1718,19 @@ class PhasarIterIDECombinedSpeedupPlot(
         #                              color='r')
         # ax.add_patch(all_mean_circle)
 
-        sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+        # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+
+        h, l = ax.get_legend_handles_labels()
+        l1 = ax.legend(
+            h[1:4], l[1:4], loc='upper left'
+        )  #, loc='lower center', bbox_to_anchor=(0.52,0)
+        ax.legend(
+            h[5:], l[5:], loc='upper left', bbox_to_anchor=(1.03, 1)
+        )  #, loc='upper center'
+
+        ax.add_artist(
+            l1
+        )  # we need this because the 2nd call to legend() erases the first
 
         # ax.set_yticks(
         #     [
@@ -1501,13 +1758,10 @@ class PhasarIterIDECombinedSpeedupPlot(
 
         #ax.set_aspect('equal', adjustable='box')
 
-        # ax.set_xscale('log')
-        # ax.set_yscale('log')
-
         # ax.axline(xy1=(0, 0), slope=1)
 
-        ax.set_xlabel("Runtime Speedup")
-        ax.set_ylabel("Memory Savings")
+        ax.set_xlabel("Runtime Speedup", loc="left")
+        ax.set_ylabel("Relative Memory Usage", loc="bottom")
 
         return ax
 
@@ -1729,7 +1983,7 @@ class PhasarIterIDESpeedupTargetScatter(
 
         for j in [self.JF2, self.Nested]:
             jf = self._get_jf_name(j)
-            for ana in ["Taint", "LCA", "IIA", "Typestate"]:
+            for ana in [self.TAINT, self.LCA, self.IIA, self.TYPESTATE]:
                 Rows = data.loc[(data["Analysis"] == ana) &
                                 (data["JF"] == jf)][self.YNAME]
                 Min = Rows.min()
@@ -1817,7 +2071,7 @@ class PhasarIterIDEMemSpeedupTargetScatter(
 
         for j in [self.JF2, self.Nested]:
             jf = self._get_jf_name(j)
-            for ana in ["Taint", "LCA", "IIA", "Typestate"]:
+            for ana in [self.TAINT, self.LCA, self.IIA, self.TYPESTATE]:
                 Rows = data.loc[(data["Analysis"] == ana) &
                                 (data["JF"] == jf)][self.YNAME]
                 Min = Rows.min()
@@ -1916,8 +2170,89 @@ class PhasarIterIDESpeedupGCPlot(
 ):
     """Box plot of commit-author interaction commit node degrees."""
 
+    def make_dataframe(
+        self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
+                                            float]
+    ) -> pd.DataFrame:
+        data = PhasarIterIDESpeedupGCPlotBase.make_dataframe(
+            self, speedup_computer
+        )
+
+        for ana in [self.TAINT, self.LCA, self.TYPESTATE]:
+            Filter = data.loc[data["Analysis"] == ana]
+            Rows = Filter[self.YNAME]
+
+            MinIdx = Rows.idxmin()
+            MaxIdx = Rows.idxmax()
+
+            Min = Rows[MinIdx]
+            Max = Rows[MaxIdx]
+            Mean = Rows.mean()
+
+            ArgMin = (
+                Filter['JF'][MinIdx], Filter['Analysis'][MinIdx],
+                Filter['Target'][MinIdx]
+            )
+            ArgMax = (
+                Filter['JF'][MaxIdx], Filter['Analysis'][MaxIdx],
+                Filter['Target'][MaxIdx]
+            )
+
+            print(
+                f"[PhasarIterIDESpeedupGCPlot]: {ana}: Min {Min}({ArgMin}), Max {Max}({ArgMax}), Mean {Mean}"
+            )
+
+        return data
+
     def analysis_order(self) -> tp.List[str]:
-        return ["LCA", "Taint", "Typestate"]
+        return [self.LCA, self.TAINT, self.TYPESTATE]
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        ax = PhasarIterIDESpeedupGCPlotBase.make_phasar_plot(self)
+        ax.set_yscale("log", base=2)
+
+        ax.set_yticks([0.5, 0.625, 0.75, 0.875, 1])
+        ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.set_ylim(top=1.1)
+
+        return ax
+
+
+class PhasarIterIDESlowdownGCPlot(
+    PhasarIterIDESpeedupGCPlotBase,
+    plot_name='phasar-iter-ide-slowdown-gc',
+    yname="Runtime Slowdown /w GC"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def make_dataframe(
+        self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
+                                            float]
+    ) -> pd.DataFrame:
+
+        def _slowdown_computer(x: tp.List[float], y: tp.List[float]):
+            return speedup_computer(y, x)
+
+        data = PhasarIterIDESpeedupGCPlotBase.make_dataframe(
+            self, _slowdown_computer
+        )
+        return data
+
+    def analysis_order(self) -> tp.List[str]:
+        return [self.LCA, self.TAINT, self.TYPESTATE]
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        ax = PhasarIterIDESpeedupGCPlotBase.make_phasar_plot(self)
+        # ax.set_yscale("log", base=2)
+
+        # ax.set_yticks([0.25, 0.5, 0.7, 1])
+        # ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        # ax.set_ylim(top=1.2)
+
+        h, l = ax.get_legend_handles_labels()
+        ax.legend(h, l)
+
+        return ax
 
 
 class PhasarIterIDESpeedupGCScatterPlot(
@@ -2021,7 +2356,57 @@ class PhasarIterIDEMemSpeedupGCPlot(
     """Box plot of commit-author interaction commit node degrees."""
 
     def analysis_order(self) -> tp.List[str]:
-        return ["LCA", "Taint", "Typestate"]
+        return [self.LCA, self.TAINT, self.TYPESTATE]
+
+
+class PhasarIterIDEMemSlowdownGCPlot(
+    PhasarIterIDEMemSpeedupGCPlotBase,
+    plot_name='phasar-iter-ide-mem-slowdown-gc',
+    yname="Relative Memory Usage /w GC"
+):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    def make_dataframe(
+        self, speedup_computer: tp.Callable[[tp.List[float], tp.List[float]],
+                                            float]
+    ) -> pd.DataFrame:
+
+        def _slowdown_computer(x: tp.List[float], y: tp.List[float]):
+            return speedup_computer(y, x)
+
+        data = PhasarIterIDEMemSpeedupGCPlotBase.make_dataframe(
+            self, _slowdown_computer
+        )
+
+        for ana in [self.TAINT, self.LCA, self.TYPESTATE]:
+            Rows = data.loc[data["Analysis"] == ana][self.YNAME]
+            Min = Rows.min()
+            Max = Rows.max()
+            Mean = Rows.mean()
+            print(
+                f"[PhasarIterIDEMemSlowdownGCPlot]: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+            )
+
+        return data
+
+    def analysis_order(self) -> tp.List[str]:
+        return [self.LCA, self.TAINT, self.TYPESTATE]
+
+    def make_phasar_plot(self) -> matplotlib.axes.Axes:
+        ax = PhasarIterIDEMemSpeedupGCPlotBase.make_phasar_plot(self)
+        ax.set_yscale("log", base=2)
+
+        ax.set_yticks([0.5, 0.625, 0.75, 0.875, 1])
+        ax.get_yaxis().set_major_formatter(
+            matplotlib.ticker.PercentFormatter(xmax=1, decimals=1)
+        )
+        # ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.set_ylim(bottom=0.5, top=1.05)
+
+        h, l = ax.get_legend_handles_labels()
+        ax.legend(h, l, loc='lower right')
+
+        return ax
 
 
 class PhasarIterIDEMemSpeedupGCScatterPlot(
@@ -2855,8 +3240,15 @@ class CAIGViolinPlotGenerator(
             # PhasarIterIDEMemSpeedupHeatmap(
             #     self.plot_config, **self.plot_kwargs
             # ),
+            PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
+                self.plot_config, **self.plot_kwargs
+            ),
             PhasarIterIDESpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDESlowdownGCPlot(self.plot_config, **self.plot_kwargs),
             PhasarIterIDEMemSpeedupGCPlot(self.plot_config, **self.plot_kwargs),
+            PhasarIterIDEMemSlowdownGCPlot(
+                self.plot_config, **self.plot_kwargs
+            ),
             PhasarIterIDEEventsSankeyPlot(self.plot_config, **self.plot_kwargs),
             PhasarIterIDESpeedupHeatmapGrid(
                 self.plot_config, **self.plot_kwargs

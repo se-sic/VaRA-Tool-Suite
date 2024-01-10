@@ -174,9 +174,10 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                 cs_dict = {
                     latex_sanitize_project_name(project_name): {
                         "Revision":
-                            "\\scriptsize\\texttt{" + str(revision.short_hash) +
-                            "}",
+                            "\\scriptsize\\texttt{" +
+                            str(revision.short_hash[:8]) + "}",
                         "Domain":
+                            "\scriptsize " +
                             str(project_cls.DOMAIN)[0].upper() +
                             str(project_cls.DOMAIN)[1:],
                         #"LOC":
@@ -295,8 +296,8 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             #             ('LCA', '{Mem}'), ('IIA', '{Mem}')]
             # )
             # df.style.format('j')
-            kwargs["column_format"] = "lr|cr|rr|rr|rr|rr"
-            kwargs["multicol_align"] = "c|"
+            kwargs["column_format"] = "lr|crrrrrrrrr"
+            kwargs["multicol_align"] = "c"
             # kwargs["multicolumn"] = True
             kwargs['position'] = 't'
             kwargs[
