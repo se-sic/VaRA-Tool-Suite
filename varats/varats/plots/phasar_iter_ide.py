@@ -432,6 +432,9 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
         ax.set_xlabel(ax.get_xlabel(), fontsize=15)
         ax.set_ylabel(ax.get_ylabel(), fontsize=15)
 
+        h, l = ax.get_legend_handles_labels()
+        ax.legend(h, l)
+
         ax.axhline(1)
 
         data = self.make_dataframe(self.compute_mean_speedup)

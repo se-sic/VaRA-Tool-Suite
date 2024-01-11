@@ -1015,22 +1015,22 @@ class IDELinearConstantAnalysisExperiment(
             )
         )
 
-        reps = range(0, 1)
+        reps = range(0, 3)
 
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_file,
                 [
                     PhasarIDEStats(project, binary),
-                    *[
-                        IterIDECompareAnalysisResults(
-                            project, binary, analysis_type
-                        ) for analysis_type in _get_enabled_analyses()
-                    ],
-                    *[
-                        IterIDESolverStats(project, binary, analysis_type)
-                        for analysis_type in _get_enabled_analyses()
-                    ],
+                    # *[
+                    #     IterIDECompareAnalysisResults(
+                    #         project, binary, analysis_type
+                    #     ) for analysis_type in _get_enabled_analyses()
+                    # ],
+                    # *[
+                    #     IterIDESolverStats(project, binary, analysis_type)
+                    #     for analysis_type in _get_enabled_analyses()
+                    # ],
                     *[
                         IterIDETimeOld(project, rep, binary, analysis_type)
                         for analysis_type in _get_enabled_analyses()
