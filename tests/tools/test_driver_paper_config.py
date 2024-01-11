@@ -54,7 +54,7 @@ class TestDriverPaperConfig(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "foo"
         load_paper_config()
         result = runner.invoke(driver_paper_config.main, ["select"], input="1")
-        assert not result.exception
+        self.assertFalse(result.exception)
         self.assertEqual(
             "0. bar\n1. baz\n2. foo *\n"
             "Choose a number to select a paper config (default=0): ",

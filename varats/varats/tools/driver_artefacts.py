@@ -27,17 +27,25 @@ from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.tables.discover_tables import initialize_tables
 from varats.ts_utils.cli_util import initialize_cli_tool
+from varats.ts_utils.click_param_types import TypedChoice
 from varats.ts_utils.html_util import (
     CSS_IMAGE_MATRIX,
     CSS_COMMON,
     html_page,
     CSS_TABLE,
 )
+from varats.utils.exceptions import ConfigurationLookupError
 
 LOG = logging.getLogger(__name__)
 
+initialize_projects()
+initialize_reports()
+initialize_tables()
+initialize_plots()
+initialize_artefact_types()
 
-@tui()
+
+@tui()  # type: ignore
 @click.group(
     help="Manage artefacts.",
     context_settings={"help_option_names": ['-h', '--help']}
@@ -49,15 +57,10 @@ def main() -> None:
     `vara-art`
     """
     initialize_cli_tool()
-    initialize_projects()
-    initialize_reports()
-    initialize_tables()
-    initialize_plots()
-    initialize_artefact_types()
 
 
 # function name `list` would shadow built-in `list`
-@main.command(
+@main.command(  # type: ignore
     name="list", help="List all artefacts of the current paper config."
 )
 def list_() -> None:
@@ -68,49 +71,53 @@ def list_() -> None:
         print(f"{artefact.name} [{artefact.ARTEFACT_TYPE}]")
 
 
-@main.command(help="Show detailed information about artefacts.")
-@click.argument("name")
-def show(name: str) -> None:
+def _create_artefact_choice() -> TypedChoice['Artefact']:
+    try:
+        paper_config = get_paper_config()
+    except ConfigurationLookupError:
+        empty_art_dict: tp.Dict[str, 'Artefact'] = {}
+        return TypedChoice(empty_art_dict)
+    value_dict = {art.name: art for art in load_artefacts(paper_config)}
+    return TypedChoice(value_dict)
+
+
+@main.command(help="Show detailed information about artefacts.")  # type: ignore
+@click.argument("artefact", type=_create_artefact_choice())
+def show(artefact: Artefact) -> None:
     """
     Show detailed information about artefacts.
 
     Args:
-        name: the name of the artefact
+        artefact: the artefact to display
     """
-    paper_config = get_paper_config()
-    if (artefact := load_artefacts(paper_config).get_artefact(name)):
-        print(f"Artefact '{name}':")
-        print(textwrap.indent(yaml.dump(artefact.get_dict()), '  '))
-    else:
-        print(f"There is no artefact with the name {name}.")
+    print(f"Artefact '{artefact.name}':")
+    print(textwrap.indent(yaml.dump(artefact.get_dict()), '  '))
 
 
-@main.command(
+@main.command(  # type: ignore
     help="Generate artefacts. By default, all artefacts are generated."
 )
 @click.option(
     "--only",
+    type=_create_artefact_choice(),
     multiple=True,
     help="Only generate artefacts with the given names."
 )
-def generate(only: tp.Optional[str]) -> None:
+def generate(only: tp.List[Artefact]) -> None:
     """
     Generate artefacts.
 
     By default, all artefacts are generated.
 
     Args:
-        only: generate only this artefact
+        only: generate only these artefacts
     """
     if not Artefact.base_output_dir().exists():
         Artefact.base_output_dir().mkdir(parents=True)
     artefacts: tp.Iterable[Artefact]
 
     if only:
-        artefacts = [
-            art for art in load_artefacts(get_paper_config())
-            if art.name in only
-        ]
+        artefacts = only
     else:
         artefacts = load_artefacts(get_paper_config())
 
