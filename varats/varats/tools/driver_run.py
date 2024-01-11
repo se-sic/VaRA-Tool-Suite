@@ -19,7 +19,6 @@ from benchbuild.utils.cmd import benchbuild, sbatch
 from benchbuild.utils.settings import to_yaml
 from plumbum import local
 from plumbum.commands import ProcessExecutionError
-from trogon import tui
 
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
@@ -82,7 +81,6 @@ def __validate_project_parameters(
     return value
 
 
-@tui()
 @click.command(context_settings={"help_option_names": ['-h', '--help']})
 @click.option('-v', '--verbose', count=True)
 @click.option("--slurm", is_flag=True, help="Run experiments on slurm.")
