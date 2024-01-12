@@ -1040,22 +1040,43 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
         ax1 = fig.add_subplot(gs.new_subplotspec((0, 0)))
         ax2 = fig.add_subplot(gs.new_subplotspec((0, 1)))
 
+        markers = ['o', 'x', 's', '+']
+
         ### Runtime Data
-        sns.scatterplot(
-            data=runtime_data,
+
+        ax1 = sns.scatterplot(
+            data=runtime_data.loc[(runtime_data["Analysis"] == self.IIA) |
+                                  (runtime_data["Analysis"] == self.LCA)],
             x="Target",
             y=self.runtime_plotter.YNAME,
             hue="JF",
             hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
-            alpha=0.7,
+            alpha=0.6,
             s=70,
             ax=ax1,
+            markers=['o', 's'],
             # palette=sns.color_palette('muted')
         )
 
-        ax1.axhline(1)  #, linewidth=1, color='gray'
+        ax1 = sns.scatterplot(
+            data=runtime_data.loc[(runtime_data["Analysis"] == self.TYPESTATE) |
+                                  (runtime_data["Analysis"] == self.TAINT)],
+            x="Target",
+            y=self.runtime_plotter.YNAME,
+            hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
+            style="Analysis",
+            linewidth=1.3,
+            alpha=0.8,
+            s=70,
+            ax=ax1,
+            markers=['x', '+'],
+            # palette=sns.color_palette('muted')
+        )
+
+        ax1.axhline(1, linewidth=1.5)  #, linewidth=1, color='gray'
 
         ax1.set_ylabel("Runtime Speedup")
         ax1.set_xlabel("Target Program")
@@ -1068,20 +1089,36 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
         # ax1.set_ylim(top=1.3)
 
         ### Memory Data
-        sns.scatterplot(
-            data=memory_data,
+        ax2 = sns.scatterplot(
+            data=memory_data.loc[(memory_data["Analysis"] == self.IIA) |
+                                 (memory_data["Analysis"] == self.LCA)],
             x="Target",
             y=self.memory_plotter.YNAME,
             hue="JF",
             hue_order=self._get_hue_order(self._get_num_jf()),
             style="Analysis",
             linewidth=0,
-            alpha=0.7,
+            alpha=0.5,
             s=70,
             ax=ax2,
+            markers=['o', 's']
+        )
+        ax2 = sns.scatterplot(
+            data=memory_data.loc[(memory_data["Analysis"] == self.TYPESTATE) |
+                                 (memory_data["Analysis"] == self.TAINT)],
+            x="Target",
+            y=self.memory_plotter.YNAME,
+            hue="JF",
+            hue_order=self._get_hue_order(self._get_num_jf()),
+            style="Analysis",
+            linewidth=1.3,
+            alpha=0.8,
+            s=70,
+            ax=ax2,
+            markers=['x', '+']
         )
 
-        ax2.axhline(1)  #, linewidth=1, color='gray'
+        ax2.axhline(1, linewidth=1.5)  #, linewidth=1, color='gray'
 
         ax2.set_ylabel("Relative Memory Usage")
         ax2.set_xlabel("Target Program")
@@ -1105,20 +1142,21 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
         # ax1.get_legend().remove()
 
         h, l = ax1.get_legend_handles_labels()
+        # Order is IIA, LCA, TSA, TAINT
+        # We want: IIA, TAINT, LCA, TSA
+        ax1_handles = [h[5], h[13], h[6], h[12]]
+        # ax1_handles = [*h[5:7], *h[12:14]]
+        ax1_lables = [l[5], l[13], l[6], l[12]]
+        # ax1_lables = [*l[5:7], *l[12:14]]
         ax1.legend(
-            h[int(len(h) / 2) + 1:],
-            l[int(len(l) / 2) + 1:],
+            ax1_handles,
+            ax1_lables,
             loc='lower center',
             bbox_to_anchor=(0.62, 0)
         )  #, loc='upper center'
 
         h, l = ax2.get_legend_handles_labels()
-        ax2.legend(
-            h[1:int(len(h) / 2)],
-            l[1:int(len(l) / 2)],
-            loc='lower center',
-            bbox_to_anchor=(0.52, 0)
-        )
+        ax2.legend(h[1:4], l[1:4], loc='lower center', bbox_to_anchor=(0.52, 0))
         # ax1.add_artist(l1) # we need this because the 2nd call to legend() erases the first
 
         return ax1
