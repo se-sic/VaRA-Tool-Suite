@@ -138,162 +138,6 @@ def get_feature_performance_from_tef_report(
     return feature_performances
 
 
-def is_feature_relevant(
-    old_measurements: tp.List[int],
-    new_measurements: tp.List[int],
-    rel_cut_off: float = 0.01,
-    abs_cut_off: int = 20
-) -> bool:
-    """Check if a feature can be ignored for regression checking as it's time
-    measurements seem not relevant."""
-    old_mean = np.mean(old_measurements)
-    new_mean = np.mean(new_measurements)
-
-    if old_mean < abs_cut_off and new_mean < abs_cut_off:
-        return False
-
-    old_rel_cut_off = old_mean * rel_cut_off
-    abs_mean_diff = abs(old_mean - new_mean)
-    if abs_mean_diff < old_rel_cut_off:
-        return False
-
-    return True
-
-
-def precise_pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]],
-    rel_cut_off: float = 0.01,
-    abs_cut_off: int = 20
-) -> bool:
-    """Compute if there was a regression in one of the feature terms of the
-    model between the current and the baseline, using a Mann-Whitney U test."""
-    is_regression = False
-    abs_cut_off = 100
-
-    for feature, old_values in baseline_pim.items():
-        if feature in current_pim:
-            if feature == "Base":
-                # The regression should be identified in actual feature code
-                continue
-
-            new_values = current_pim[feature]
-
-            # Skip features that seem not to be relevant for regressions testing
-            if not is_feature_relevant(
-                old_values, new_values, rel_cut_off, abs_cut_off
-            ):
-                continue
-
-            ttest_res = ttest_ind(old_values, new_values)
-
-            if ttest_res.pvalue < 0.05:
-                is_regression = True
-        else:
-            if np.mean(old_values) > abs_cut_off:
-                print(
-                    f"Could not find feature {feature} in new trace. "
-                    f"({np.mean(old_values)}us lost)"
-                )
-            # TODO: how to handle this?
-            # raise NotImplementedError()
-            # is_regression = True
-
-    return is_regression
-
-
-def cliffs_delta_pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]],
-    rel_cut_off: float = 0.01,
-    abs_cut_off: int = 20
-) -> bool:
-    """Compute if there was a regression in one of the feature terms of the
-    model between the current and the baseline, using cliffs delta."""
-    is_regression = False
-
-    for feature, old_values in baseline_pim.items():
-        if feature in current_pim:
-            if feature == "Base":
-                # The regression should be identified in actual feature code
-                continue
-
-            new_values = current_pim[feature]
-
-            if not is_feature_relevant(
-                old_values, new_values, rel_cut_off, abs_cut_off
-            ):
-                continue
-
-            cdelta_val, _ = cliffs_delta(old_values, new_values)
-
-            # if res == "large":
-            if abs(cdelta_val) > 0.7:
-                is_regression = True
-        else:
-            if np.mean(old_values) > abs_cut_off:
-                print(
-                    f"Could not find feature {feature} in new trace. "
-                    f"({np.mean(old_values)}us lost)"
-                )
-            print(f"Could not find feature {feature} in new trace.")
-            # TODO: how to handle this?
-            # raise NotImplementedError()
-            # is_regression = True
-
-    return is_regression
-
-
-def sum_pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]],
-    rel_cut_off: float = 0.01,
-    abs_cut_off: int = 20
-) -> bool:
-    """
-    Compute if there was a regression in the sum of the features in the model
-    between the current and the baseline.
-
-    The comparision is done through a Mann-Whitney U test.
-    """
-    baseline_pim_totals: tp.List[tp.List[int]] = [
-        old_values for feature, old_values in baseline_pim.items()
-        if feature != "Base"
-    ]
-    current_pim_totals: tp.List[tp.List[int]] = [
-        current_values for feature, current_values in current_pim.items()
-        if feature != "Base"
-    ]
-
-    baseline_pim_total: tp.List[int] = [
-        sum(values) for values in zip(*baseline_pim_totals)
-    ]
-    current_pim_total: tp.List[int] = [
-        sum(values) for values in zip(*current_pim_totals)
-    ]
-
-    if not baseline_pim_total and not current_pim_total:
-        # How do we get here?
-        return False
-
-    mean_baseline = np.mean(baseline_pim_total)
-    mean_diff = abs(mean_baseline - np.mean(current_pim_total))
-    if mean_diff < abs_cut_off or mean_diff < mean_baseline * rel_cut_off:
-        return False
-
-    u_test = ttest_ind(baseline_pim_total, current_pim_total)
-    return u_test.pvalue < 0.05  # type: ignore
-
-
-def pim_regression_check(
-    baseline_pim: tp.DefaultDict[str, tp.List[int]],
-    current_pim: tp.DefaultDict[str, tp.List[int]]
-) -> bool:
-    """Compares two pims and determines if there was a regression between the
-    baseline and current."""
-    return precise_pim_regression_check(baseline_pim, current_pim)
-
-
 class Profiler():
     """Profiler interface to add different profilers to the evaluation."""
 
@@ -326,6 +170,161 @@ class Profiler():
     def report_type(self) -> tp.Type[BaseReport]:
         """Report type used to load this profilers information."""
         return self.__report_type
+
+    @property
+    def relative_cut_off(self) -> float:
+        """Returns the relative cut off in percent below which regressions
+        should not be considered."""
+        return 0.01
+
+    @property
+    def absolute_cut_off(self) -> int:
+        """Returns the absolute cut off in milliseconds below which regressions
+        should not be considered."""
+        return 100
+
+    def _is_significantly_different(
+        self, old_values: tp.Sequence[tp.Union[float, int]],
+        new_values: tp.Sequence[tp.Union[float, int]]
+    ) -> bool:
+        """Checks if there is a significant difference between old and new
+        values."""
+        return self.__ttest(old_values, new_values)
+
+    def __ttest(  # pylint: disable=W0238
+        self, old_values: tp.Sequence[tp.Union[float, int]],
+        new_values: tp.Sequence[tp.Union[float, int]]
+    ) -> bool:
+        """Implements t-test."""
+        ttest_res = ttest_ind(old_values, new_values)
+
+        if ttest_res.pvalue < 0.05:
+            return True
+
+        return False
+
+    def __cliffs_delta(  # pylint: disable=W0238
+        self, old_values: tp.Sequence[tp.Union[float, int]],
+        new_values: tp.Sequence[tp.Union[float, int]]
+    ) -> bool:
+        """Implements cliffs_delta test."""
+        cdelta_val, _ = cliffs_delta(old_values, new_values)
+
+        # if res == "large":
+        if abs(cdelta_val) > 0.7:
+            return True
+
+        return False
+
+    def _is_feature_relevant(
+        self, old_measurements: tp.List[int], new_measurements: tp.List[int]
+    ) -> bool:
+        """Check if a feature can be ignored for regression checking as it's
+        time measurements seem not relevant."""
+        old_mean = np.mean(old_measurements)
+        new_mean = np.mean(new_measurements)
+
+        if old_mean < self.absolute_cut_off and new_mean < self.absolute_cut_off:
+            return False
+
+        old_rel_cut_off = old_mean * self.relative_cut_off
+        abs_mean_diff = abs(old_mean - new_mean)
+        if abs_mean_diff < old_rel_cut_off:
+            return False
+
+        return True
+
+    def _precise_pim_regression_check(
+        self, baseline_pim: tp.DefaultDict[str, tp.List[int]],
+        current_pim: tp.DefaultDict[str, tp.List[int]]
+    ) -> bool:
+        """Compute if there was a regression in one of the feature terms of the
+        model between the current and the baseline, using a Mann-Whitney U
+        test."""
+        is_regression = False
+
+        for feature, old_values in baseline_pim.items():
+            if feature in current_pim:
+                if feature == "Base":
+                    # The regression should be identified in actual feature code
+                    continue
+
+                new_values = current_pim[feature]
+
+                # Skip features that seem not to be relevant for regressions testing
+                if not self._is_feature_relevant(old_values, new_values):
+                    continue
+
+                is_regression = is_regression or self._is_significantly_different(
+                    old_values, new_values
+                )
+            else:
+                if np.mean(old_values) > self.absolute_cut_off:
+                    print(
+                        f"Could not find feature {feature} in new trace. "
+                        f"({np.mean(old_values)}us lost)"
+                    )
+                # TODO: how to handle this?
+                # raise NotImplementedError()
+                # is_regression = True
+
+        return is_regression
+
+    def _sum_pim_regression_check(
+        self, baseline_pim: tp.DefaultDict[str, tp.List[int]],
+        current_pim: tp.DefaultDict[str, tp.List[int]]
+    ) -> bool:
+        """
+        Compute if there was a regression in the sum of the features in the
+        model between the current and the baseline.
+
+        The comparision is done through a Mann-Whitney U test.
+        """
+        baseline_pim_totals: tp.List[tp.List[int]] = [
+            old_values for feature, old_values in baseline_pim.items()
+            if feature != "Base"
+        ]
+        current_pim_totals: tp.List[tp.List[int]] = [
+            current_values for feature, current_values in current_pim.items()
+            if feature != "Base"
+        ]
+
+        baseline_pim_total: tp.List[int] = [
+            sum(values) for values in zip(*baseline_pim_totals)
+        ]
+        current_pim_total: tp.List[int] = [
+            sum(values) for values in zip(*current_pim_totals)
+        ]
+
+        if not baseline_pim_total and not current_pim_total:
+            # How did we get here?
+            return False
+
+        mean_baseline = np.mean(baseline_pim_total)
+        mean_diff = abs(mean_baseline - np.mean(current_pim_total))
+        if mean_diff < self.absolute_cut_off \
+                or mean_diff < mean_baseline * self.relative_cut_off:
+            return False
+
+        return self._is_significantly_different(
+            baseline_pim_total, current_pim_total
+        )
+
+    def pim_regression_check(
+        self, baseline_pim: tp.DefaultDict[str, tp.List[int]],
+        current_pim: tp.DefaultDict[str, tp.List[int]]
+    ) -> bool:
+        """Compares two pims and determines if there was a regression between
+        the baseline and current."""
+        return self._precise_pim_regression_check(baseline_pim, current_pim)
+
+    def default_regression_check(
+        self, old_values: tp.Sequence[tp.Union[float, int]],
+        new_values: tp.Sequence[tp.Union[float, int]]
+    ) -> bool:
+        """Checks if there is a significant difference between old and new
+        values."""
+        return self._is_significantly_different(old_values, new_values)
 
     @abc.abstractmethod
     def is_regression(
@@ -367,7 +366,7 @@ class VXray(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        return pim_regression_check(old_acc_pim, new_acc_pim)
+        return self.pim_regression_check(old_acc_pim, new_acc_pim)
 
 
 class PIMTracer(Profiler):
@@ -419,7 +418,7 @@ class PIMTracer(Profiler):
 
         new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
 
-        return pim_regression_check(old_acc_pim, new_acc_pim)
+        return self.pim_regression_check(old_acc_pim, new_acc_pim)
 
 
 class EbpfTraceTEF(Profiler):
@@ -455,7 +454,7 @@ class EbpfTraceTEF(Profiler):
             for feature, value in pim.items():
                 new_acc_pim[feature].append(value)
 
-        return pim_regression_check(old_acc_pim, new_acc_pim)
+        return self.pim_regression_check(old_acc_pim, new_acc_pim)
 
 
 class Baseline(Profiler):
@@ -478,7 +477,7 @@ class Baseline(Profiler):
             raise LookupError(f"Missing new time report in file {report_path}")
 
         # Cut off regressions smaller than 100ms
-        req_diff = 0.1
+        req_diff = self.absolute_cut_off / 1000
         if np.mean(old_time.measurements_wall_clock_time
                   ) == np.mean(new_time.measurements_wall_clock_time):
             return False
@@ -489,15 +488,10 @@ class Baseline(Profiler):
         ) < req_diff:
             return False
 
-        ttest_res = ttest_ind(
+        return self.default_regression_check(
             old_time.measurements_wall_clock_time,
             new_time.measurements_wall_clock_time
         )
-
-        if ttest_res.pvalue < 0.05:
-            return True
-
-        return False
 
 
 def get_patch_names(case_study: CaseStudy) -> tp.List[str]:
