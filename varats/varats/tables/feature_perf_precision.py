@@ -36,7 +36,8 @@ from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
 
 def cmap_map(
-    function, cmap: colors.LinearSegmentedColormap
+    function: tp.Callable[[np.ndarray[np.float64]], np.float64],
+    cmap: colors.LinearSegmentedColormap
 ) -> colors.LinearSegmentedColormap:
     """
     Applies function (which should operate on vectors of shape 3: [r, g, b]), on
@@ -44,7 +45,9 @@ def cmap_map(
 
     This routine will break any discontinuous points in a colormap.
     """
-    c_dict = cmap._segmentdata  # pylint: disable=protected-access  # type: ignore
+    # pylint: disable=protected-access,attr-defined
+    c_dict = cmap._segmentdata  # type: ignore
+    # pylint: enable=protected-access,attr-defined
     step_dict: tp.Dict[str, tp.List[tp.Any]] = {}
 
     # First get the list of points where the segments start or end
@@ -83,7 +86,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
     @staticmethod
     def _prepare_data_table(
         case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
-    ):
+    ) -> pd.DataFrame:
         df = pd.DataFrame()
         table_rows = []
 
@@ -109,7 +112,6 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
                 }
 
                 for profiler in profilers:
-                    # TODO: multiple patch cycles
                     predicted = compute_profiler_predictions(
                         profiler, project_name, case_study,
                         case_study.get_config_ids_for_revision(rev), patch_name
@@ -285,8 +287,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             "CaseStudy", "Profiler", "time", "memory", "overhead_time",
             "overhead_memory"
         ]]
-        # print(f"{overhead_df=}")
-        # TODO: double check and refactor
         overhead_df['overhead_time_rel'] = overhead_df['time'] / (
             overhead_df['time'] - overhead_df['overhead_time']
         ) * 100 - 100
@@ -354,7 +354,10 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             ]
             style.format({col: "{:.0f}" for col in mv_columns}, precision=2)
 
-            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, plt.get_cmap('RdYlGn'))
+            ryg_map = cmap_map(
+                lambda x: x / 1.2 + 0.2,
+                tp.cast(colors.LinearSegmentedColormap, plt.get_cmap('RdYlGn'))
+            )
 
             style.background_gradient(
                 cmap=ryg_map,
@@ -462,9 +465,7 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
 
         for sub_project in dune_sub_projects:
             sub_project_path = repo_path / sub_project
-            # TODO: get sub_rpoject hashes
             locs = calc_repo_loc(sub_project_path, "HEAD")
-            # print(f"Calculated {locs} for {sub_project_path}")
             total_locs += locs
 
         return total_locs

@@ -224,7 +224,8 @@ class Profiler():
         old_mean = np.mean(old_measurements)
         new_mean = np.mean(new_measurements)
 
-        if old_mean < self.absolute_cut_off and new_mean < self.absolute_cut_off:
+        if old_mean < self.absolute_cut_off and \
+                new_mean < self.absolute_cut_off:
             return False
 
         old_rel_cut_off = old_mean * self.relative_cut_off
@@ -251,22 +252,21 @@ class Profiler():
 
                 new_values = current_pim[feature]
 
-                # Skip features that seem not to be relevant for regressions testing
+                # Skip features that seem not to be relevant
+                # for regressions testing
                 if not self._is_feature_relevant(old_values, new_values):
                     continue
 
-                is_regression = is_regression or self._is_significantly_different(
-                    old_values, new_values
-                )
+                is_regression = is_regression or \
+                    self._is_significantly_different(
+                        old_values, new_values
+                    )
             else:
                 if np.mean(old_values) > self.absolute_cut_off:
                     print(
                         f"Could not find feature {feature} in new trace. "
                         f"({np.mean(old_values)}us lost)"
                     )
-                # TODO: how to handle this?
-                # raise NotImplementedError()
-                # is_regression = True
 
         return is_regression
 
@@ -302,8 +302,8 @@ class Profiler():
 
         mean_baseline = np.mean(baseline_pim_total)
         mean_diff = abs(mean_baseline - np.mean(current_pim_total))
-        if mean_diff < self.absolute_cut_off \
-                or mean_diff < mean_baseline * self.relative_cut_off:
+        if mean_diff < self.absolute_cut_off or \
+                mean_diff < mean_baseline * self.relative_cut_off:
             return False
 
         return self._is_significantly_different(
@@ -596,14 +596,13 @@ def compute_profiler_predictions(
                 report_files[0], patch_name
             )
         except Exception as exception:  # pylint: disable=W0718
+            # Print exception information but continue working on the plot/table
             print(
                 f"FAILURE: Skipping {config_id=} of {project_name=}, "
                 f"profiler={profiler.name}"
             )
             print(exception)
             print(traceback.format_exc())
-            # TODO: clean up
-            # raise exception
 
     return result_dict
 
