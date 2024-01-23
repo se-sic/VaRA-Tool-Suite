@@ -45,9 +45,9 @@ def cmap_map(
 
     This routine will break any discontinuous points in a colormap.
     """
-    # pylint: disable=protected-access,attr-defined
+    # pylint: disable=protected-access
     c_dict = cmap._segmentdata  # type: ignore
-    # pylint: enable=protected-access,attr-defined
+    # pylint: enable=protected-access
     step_dict: tp.Dict[str, tp.List[tp.Any]] = {}
 
     # First get the list of points where the segments start or end
