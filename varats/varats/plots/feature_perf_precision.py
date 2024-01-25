@@ -158,7 +158,6 @@ class PerfProfDistPlotGenerator(
     """Generates performance distribution plot."""
 
     def generate(self) -> tp.List[Plot]:
-
         return [PerfPrecisionDistPlot(self.plot_config, **self.plot_kwargs)]
 
 

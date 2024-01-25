@@ -153,7 +153,7 @@ class Profiler():
 
     @property
     def name(self) -> str:
-        """Hame of the profiler used."""
+        """Name of the profiler used."""
         return self.__name
 
     @property
