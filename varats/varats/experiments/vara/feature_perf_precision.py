@@ -101,7 +101,7 @@ def get_threshold(project: VProject) -> int:
             "SynthSAFieldSensitivity", "SynthIPRuntime", "SynthIPTemplate",
             "SynthIPTemplate2", "SynthIPCombined"
         ]:
-            print("Don't instrument everything")
+            # Don't instrument everything for these synthtic projects
             return 10
 
         return 0
@@ -571,7 +571,7 @@ class BCCTEFProfileRunner(FeatureExperiment, shorthand="BCCp"):
         )
 
 
-class RunBackBoxBaseline(OutputFolderStep):  # type: ignore
+class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -689,7 +689,7 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
             patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
-                RunBackBoxBaseline(
+                RunBlackBoxBaseline(
                     project,
                     binary,
                     file_name=MPRTimeReportAggregate.create_patched_report_name(
@@ -705,7 +705,7 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_filepath, [
-                    RunBackBoxBaseline(
+                    RunBlackBoxBaseline(
                         project,
                         binary,
                         file_name=MPRTimeReportAggregate.
@@ -1081,7 +1081,7 @@ class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
         )
 
 
-class RunBackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
+class RunBlackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -1189,7 +1189,7 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
             ZippedExperimentSteps(
                 result_filepath,
                 [
-                    RunBackBoxBaselineOverhead(  # type: ignore
+                    RunBlackBoxBaselineOverhead(  # type: ignore
                         project,
                         binary
                     ),

@@ -86,7 +86,6 @@ def get_feature_performance_from_tef_report(
     for trace_event in tef_report.trace_events:
         if trace_event.category == "Feature":
             if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
-                # open_events.append(trace_event)
                 # insert event at the top of the list
                 open_events.insert(0, trace_event)
             elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
@@ -163,7 +162,8 @@ class Profiler():
 
     @property
     def overhead_experiment(self) -> tp.Type[FeatureExperiment]:
-        """Experiment used to produce this profilers information."""
+        """Experiment used to produce overhead data that this profilers produced
+        when collecting information."""
         return self.__overhead_experiment
 
     @property
