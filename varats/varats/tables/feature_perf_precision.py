@@ -5,6 +5,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from benchbuild.utils.cmd import git
 from matplotlib import colors
@@ -36,7 +37,7 @@ from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
 
 def cmap_map(
-    function: tp.Callable[[np.ndarray[np.float64]], np.float64],
+    function: tp.Callable[[npt.NDArray[np.float64]], npt.NDArray[np.float64]],
     cmap: colors.LinearSegmentedColormap
 ) -> colors.LinearSegmentedColormap:
     """
@@ -57,7 +58,7 @@ def cmap_map(
     step_array = np.array(list(set(step_list)))
 
     # Then compute the LUT, and apply the function to the LUT
-    def reduced_cmap(step) -> np.ndarray:
+    def reduced_cmap(step: np.float64) -> npt.NDArray:
         return np.array(cmap(step)[0:3])
 
     old_lut = np.array(list(map(reduced_cmap, step_array)))

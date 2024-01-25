@@ -162,7 +162,10 @@ class MPRPIMAggregate(
     def __init__(self, path: Path) -> None:
         # TODO: clean up report handling, we currently parse it as a TEFReport
         # as the file looks similar
-        super().__init__(path, PerfInfluenceTraceReportAggregate)
+        super().__init__(
+            path,
+            PerfInfluenceTraceReportAggregate  # type: ignore
+        )
 
 
 class RunGenTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
