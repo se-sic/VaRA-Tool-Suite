@@ -18,6 +18,7 @@ class MultiPatchReport(
     def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
         super().__init__(path)
         self.__patched_reports: tp.Dict[str, ReportTy] = {}
+        self.__base = None
 
         with tempfile.TemporaryDirectory() as tmp_result_dir:
             shutil.unpack_archive(path, extract_dir=tmp_result_dir)
@@ -33,7 +34,7 @@ class MultiPatchReport(
 
             if not self.__base or not self.__patched_reports:
                 raise AssertionError(
-                    "Reports where missing in the file {report_path=}"
+                    f"Reports where missing in the file {path=}"
                 )
 
     def get_baseline_report(self) -> ReportTy:
