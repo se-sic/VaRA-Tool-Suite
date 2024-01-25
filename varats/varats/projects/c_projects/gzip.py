@@ -4,7 +4,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
-from benchbuild.source import HTTPMultiple
+from benchbuild.source import HTTPMultiple, HTTPUntar
 from benchbuild.utils.cmd import make, mkdir
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
@@ -78,6 +78,13 @@ class Gzip(VProject, ReleaseProviderHook):
                     "download/v0.6.0"
             },
             files=["countries-land-1km.geo.json", "countries-land-1m.geo.json"]
+        ),
+        HTTPUntar(
+            local="cantrbry.tar.gz",
+            remote={
+                "1.0":
+                    "http://corpus.canterbury.ac.nz/resources/cantrbry.tar.gz"
+            }
         )
     ]
 
@@ -86,7 +93,105 @@ class Gzip(VProject, ReleaseProviderHook):
         'gettext', 'texinfo', 'rsync'
     )
 
+    files = ["alice29.txt", "asyoulik.txt", "cp.html", "fields.c", "grammar.lsp", 
+             "kennedy.xls", "lcet10.txt", "plrabn12.txt", "ptt5", "sum", "xargs.1"]
+    
+    configs = [
+        ["-1"],
+        ["-5"],
+        ["-9"],
+        ["--recursive", "-1"],
+        ["--recursive", "-5"],
+        ["--recursive", "-9"],
+        ["--verbose", "-1"],
+        ["--verbose", "-5"],
+        ["--verbose", "-9"],
+        ["--quiet", "-1"],
+        ["--quiet", "-5"],
+        ["--quiet", "-9"],
+        ["-S", "-1"],
+        ["-S", "-5"],
+        ["-S", "-9"],
+        ["--test", "-1"],
+        ["--test", "-5"],
+        ["--test", "-9"],
+        ["--recursive", "--verbose", "-1"],
+        ["--recursive", "--verbose", "-5"],
+        ["--recursive", "--verbose", "-9"],
+        ["--recursive", "--quiet", "-1"],
+        ["--recursive", "--quiet", "-5"],
+        ["--recursive", "--quiet", "-9"],
+        ["--recursive", "-S", "-1"],
+        ["--recursive", "-S", "-5"],
+        ["--recursive", "-S", "-9"],
+        ["--recursive", "--test", "-1"],
+        ["--recursive", "--test", "-5"],
+        ["--recursive", "--test", "-9"],
+        ["--verbose", "--quiet", "-1"],
+        ["--verbose", "--quiet", "-5"],
+        ["--verbose", "--quiet", "-9"],
+        ["--verbose", "-S", "-1"],
+        ["--verbose", "-S", "-5"],
+        ["--verbose", "-S", "-9"],
+        ["--verbose", "--test", "-1"],
+        ["--verbose", "--test", "-5"],
+        ["--verbose", "--test", "-9"],
+        ["--quiet", "-S", "-1"],
+        ["--quiet", "-S", "-5"],
+        ["--quiet", "-S", "-9"],
+        ["--quiet", "--test", "-1"],
+        ["--quiet", "--test", "-5"],
+        ["--quiet", "--test", "-9"],
+        ["-S", "--test", "-1"],
+        ["-S", "--test", "-5"],
+        ["-S", "--test", "-9"]
+    ]
+    
+    commands = []
+
+
+    for file in files:
+        for i, config in enumerate(configs):
+            command = None
+            length = len(config)
+            if length == 1:
+                command = Command(
+                    SourceRoot("gzip") / RSBinary("gzip"),
+                    config[0],
+                    "--force",  # needed because BB creates symlinks for the inputs
+                    "--keep", # needed for repeating with the same workload
+                    "cantrbry.tar.gz/" + file,
+                    label=file + "-" + str(i) + ' '.join(config),
+                    creates=["cantrbry.tar.gz/" + file + ".gz"]
+                )
+            elif length == 2:
+                command = Command(
+                    SourceRoot("gzip") / RSBinary("gzip"),
+                    config[0],
+                    config[1],
+                    "--force",  # needed because BB creates symlinks for the inputs
+                    "--keep", # needed for repeating with the same workload
+                    "cantrbry.tar.gz/" + file,
+                    label=file + "-" + str(i) + ' '.join(config),
+                    creates=["cantrbry.tar.gz/" + file + ".gz"]
+                )
+            else:
+                command = Command(
+                    SourceRoot("gzip") / RSBinary("gzip"),
+                    config[0],
+                    config[1],
+                    config[2],
+                    "--force",  # needed because BB creates symlinks for the inputs
+                    "--keep", # needed for repeating with the same workload
+                    "cantrbry.tar.gz/" + file,
+                    label=file + "-" + str(i) + ' '.join(config),
+                    creates=["cantrbry.tar.gz/" + file + ".gz"]
+                )
+            
+            commands.append(command)
+
     WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): commands,
         WorkloadSet(WorkloadCategory.SMALL): [
             Command(
                 SourceRoot("gzip") / RSBinary("gzip"),

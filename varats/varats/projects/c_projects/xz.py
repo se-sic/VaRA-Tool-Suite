@@ -88,6 +88,7 @@ class Xz(VProject):
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
                 "-k",
+                "-z",
                 # Use output_param to ensure input file
                 # gets appended after all arguments.
                 output_param=["{output}"],
