@@ -304,6 +304,41 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
 
+        group_synthetic_categories = True
+        if group_synthetic_categories:
+
+            def compute_grouping(case_study_name: str) -> str:
+                if case_study_name.startswith("SynthSA"):
+                    return "Static Analysis"
+
+                if case_study_name.startswith(
+                    "SynthDA"
+                ) or case_study_name.startswith("SynthOV"):
+                    return "Dynamic Analysis"
+
+                if case_study_name.startswith("SynthFeature"):
+                    return "Configurability"
+
+                if case_study_name.startswith(
+                    "SynthCT"
+                ) or case_study_name.startswith("SynthIP"):
+                    return "Implementation Pattern"
+
+                return case_study_name
+
+            merged_df["CaseStudy"] = merged_df["CaseStudy"].apply(
+                compute_grouping
+            )
+            merged_df = merged_df.groupby(['CaseStudy', "Profiler"],
+                                          as_index=False).agg({
+                                              'precision': 'mean',
+                                              'recall': 'mean',
+                                              'overhead_time': 'mean',
+                                              'overhead_time_rel': 'mean',
+                                              'overhead_memory_rel': 'mean',
+                                              'overhead_memory': 'mean'
+                                          })
+
         pivot_df = merged_df.pivot(
             index='CaseStudy',
             columns='Profiler',
@@ -324,7 +359,23 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         ],
                                     axis=1)
 
-        pivot_df.loc["Total"] = pivot_df.mean()
+        # All means need to be computed before they are added as rows
+        overall_mean = pivot_df.mean()
+        if group_synthetic_categories:
+            synth_categories = [
+                "Static Analysis", "Dynamic Analysis", "Configurability",
+                "Implementation Pattern"
+            ]
+
+            synth_mean = pivot_df.loc[pivot_df.index.isin(synth_categories)
+                                     ].mean()
+            real_world_mean = pivot_df.loc[~pivot_df.index.
+                                           isin(synth_categories)].mean()
+
+            pivot_df.loc["SynthMean"] = synth_mean
+            pivot_df.loc["RealWorldMean"] = real_world_mean
+
+        pivot_df.loc["OverallMean"] = overall_mean
 
         # Rename columns
         # pylint: disable=anomalous-backslash-in-string
