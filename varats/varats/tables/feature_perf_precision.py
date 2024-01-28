@@ -35,6 +35,31 @@ from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
+group_synthetic_categories = True
+
+synth_categories = [
+    "Static Analysis", "Dynamic Analysis", "Configurability",
+    "Implementation Pattern"
+]
+
+
+def compute_cs_category_grouping(case_study_name: str) -> str:
+    if case_study_name.startswith("SynthSA"):
+        return "Static Analysis"
+
+    if case_study_name.startswith("SynthDA"
+                                 ) or case_study_name.startswith("SynthOV"):
+        return "Dynamic Analysis"
+
+    if case_study_name.startswith("SynthFeature"):
+        return "Configurability"
+
+    if case_study_name.startswith("SynthCT"
+                                 ) or case_study_name.startswith("SynthIP"):
+        return "Implementation Pattern"
+
+    return case_study_name
+
 
 def cmap_map(
     function: tp.Callable[[npt.NDArray[np.float64]], npt.NDArray[np.float64]],
@@ -304,30 +329,10 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
 
-        group_synthetic_categories = True
         if group_synthetic_categories:
 
-            def compute_grouping(case_study_name: str) -> str:
-                if case_study_name.startswith("SynthSA"):
-                    return "Static Analysis"
-
-                if case_study_name.startswith(
-                    "SynthDA"
-                ) or case_study_name.startswith("SynthOV"):
-                    return "Dynamic Analysis"
-
-                if case_study_name.startswith("SynthFeature"):
-                    return "Configurability"
-
-                if case_study_name.startswith(
-                    "SynthCT"
-                ) or case_study_name.startswith("SynthIP"):
-                    return "Implementation Pattern"
-
-                return case_study_name
-
             merged_df["CaseStudy"] = merged_df["CaseStudy"].apply(
-                compute_grouping
+                compute_cs_category_grouping
             )
             merged_df = merged_df.groupby(['CaseStudy', "Profiler"],
                                           as_index=False).agg({
@@ -362,11 +367,6 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         # All means need to be computed before they are added as rows
         overall_mean = pivot_df.mean()
         if group_synthetic_categories:
-            synth_categories = [
-                "Static Analysis", "Dynamic Analysis", "Configurability",
-                "Implementation Pattern"
-            ]
-
             synth_mean = pivot_df.loc[pivot_df.index.isin(synth_categories)
                                      ].mean()
             real_world_mean = pivot_df.loc[~pivot_df.index.
@@ -567,6 +567,16 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient='index'))
 
         df = pd.concat(cs_data).sort_index()
+        df.index.name = 'CaseStudy'
+
+        if group_synthetic_categories:
+            df.index = df.index.map(compute_cs_category_grouping)
+
+            df = df.groupby(df.index.name, as_index=True).agg({
+                'NumConfig': 'sum',
+                'Locs': 'sum',
+                'Regressions': 'sum'
+            })
 
         style = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
