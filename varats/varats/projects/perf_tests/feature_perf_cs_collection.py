@@ -1332,6 +1332,17 @@ class SynthFeatureLargeConfigSpace(VProject):
         FeatureSource()
     ]
 
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthFeatureLargeConfigSpace") /
+                RSBinary("LargeConfigSpace"),
+                ConfigParams(),
+                label="RestrictedConfigSpace-no-input"
+            )
+        ]
+    }
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
@@ -1378,6 +1389,17 @@ class SynthFeatureRestrictedConfigSpace(VProject):
         ),
         FeatureSource()
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthFeatureRestrictedConfigSpace") /
+                RSBinary("RestrictedConfigSpace"),
+                ConfigParams(),
+                label="RestrictedConfigSpace-no-input"
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
