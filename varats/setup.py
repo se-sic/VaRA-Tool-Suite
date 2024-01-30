@@ -30,7 +30,7 @@ setup(
         "pandas>=1.5.3",
         "plotly>=5.13.1",
         "plumbum>=1.6",
-        "pygit2>=1.10",
+        "pygit2>=1.10,<1.14.0",
         "PyGithub>=1.47",
         "pygraphviz>=1.7",
         "pygtrie>=2.3",

@@ -434,11 +434,9 @@ def setup_actions_for_vara_experiment(
     patches = patch_provider.get_patches_for_revision(
         ShortCommitHash(project.version_of_primary)
     )[IDENTIFIER_PATCH_TAG]
-    print(f"{patches=}")
 
     patch_steps = []
     for patch in patches:
-        print(f"Got patch with path: {patch.path}")
         patch_steps.append(ApplyPatch(project, patch))
         patch_steps.append(ReCompile(project))
         patch_steps.append(
