@@ -35,15 +35,17 @@ from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
-group_synthetic_categories = True
+GROUP_SYNTHETIC_CATEGORIES = True
 
-synth_categories = [
+SYNTH_CATEGORIES = [
     "Static Analysis", "Dynamic Analysis", "Configurability",
     "Implementation Pattern"
 ]
 
 
 def compute_cs_category_grouping(case_study_name: str) -> str:
+    """Mapping function to transform individual project names to their synthtic
+    categories."""
     if case_study_name.startswith("SynthSA"):
         return "Static Analysis"
 
@@ -329,7 +331,7 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
 
-        if group_synthetic_categories:
+        if GROUP_SYNTHETIC_CATEGORIES:
 
             merged_df["CaseStudy"] = merged_df["CaseStudy"].apply(
                 compute_cs_category_grouping
@@ -366,11 +368,11 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
         # All means need to be computed before they are added as rows
         overall_mean = pivot_df.mean()
-        if group_synthetic_categories:
-            synth_mean = pivot_df.loc[pivot_df.index.isin(synth_categories)
+        if GROUP_SYNTHETIC_CATEGORIES:
+            synth_mean = pivot_df.loc[pivot_df.index.isin(SYNTH_CATEGORIES)
                                      ].mean()
             real_world_mean = pivot_df.loc[~pivot_df.index.
-                                           isin(synth_categories)].mean()
+                                           isin(SYNTH_CATEGORIES)].mean()
 
             pivot_df.loc["SynthMean"] = synth_mean
             pivot_df.loc["RealWorldMean"] = real_world_mean
@@ -569,7 +571,7 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
         df = pd.concat(cs_data).sort_index()
         df.index.name = 'CaseStudy'
 
-        if group_synthetic_categories:
+        if GROUP_SYNTHETIC_CATEGORIES:
             df.index = df.index.map(compute_cs_category_grouping)
 
             df = df.groupby(df.index.name, as_index=True).agg({
