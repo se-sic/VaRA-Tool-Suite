@@ -195,7 +195,7 @@ class PicoSATVaRA(VProject, ReleaseProviderHook):
     """Adapted version of picoSAT that has been refactored, such that it does
     not require a field-sensitive analysis."""
 
-    NAME = 'picosat'
+    NAME = 'picosat-vara'
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.SOLVER
 
