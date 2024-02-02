@@ -1,0 +1,152 @@
+"""Module for BlameAnnotations, mapping instructions to blame information."""
+import typing as tp
+from pathlib import Path
+
+import yaml
+
+from varats.base.version_header import VersionHeader
+from varats.report.report import BaseReport
+
+
+class BlameInstruction():
+    """Collection of debug blame and VaRA blame."""
+
+    def __init__(self, dbghash: str, varahash: str) -> None:
+        self.__dbghash = dbghash
+        self.__varahash = varahash
+
+    @staticmethod
+    def create_blame_instruction(
+        raw_entry: tp.Dict[str, tp.Any]
+    ) -> 'BlameInstruction':
+        """Creates a :class`BlameInstrucion`from the corresponding yaml document
+        section."""
+        dbghash = str(raw_entry['dbghash'])
+        varahash = str(raw_entry['varahash'])
+        return BlameInstruction(dbghash, varahash)  #TODO name
+
+    @property
+    def name(self) -> str:
+        """Name of the instruction."""
+        return self.__name
+
+    @property
+    def dbghash(self) -> str:
+        """Blame based on debug information."""
+        return self.__dbghash
+
+    @property
+    def varahash(self) -> str:
+        """Blame based on IRegion."""
+        return self.__varahash
+
+
+class BlameAnnotations(BaseReport, shorthand="BA", file_type="yaml"):
+    """Report containing debug blame and blame annotations."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+        self.__blame_annotations = {}
+
+        with open(path, 'r') as stream:
+            documents = yaml.load_all(stream, Loader=yaml.CLoader)
+            version_header = VersionHeader(next(documents))
+            version_header.raise_if_not_type("BlameAnnotations")
+
+            raw_blame_report = next(documents)
+
+            for raw_entry in raw_blame_report['annotations']:
+                new_entry = (
+                    BlameInstruction.create_blame_instruction(
+                        raw_blame_report['annotations'][raw_entry]
+                    )
+                )
+                self.__blame_annotations[raw_entry] = new_entry
+
+    @property
+    def blame_annotations(self) -> tp.ValuesView[BlameInstruction]:
+        """Iterate over all blame annotations."""
+        return self.__blame_annotations.values()
+
+
+class ASTBlameReport(BaseReport, shorthand="BAST", file_type="yaml"):
+    """Report containing difference between AST-based and line-based blame."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
+        self.__diff_dbg_ast = 0
+        self.__eq_dbg_ast = 0
+        self.__diff_line_ast = 0
+        self.__eq_line_ast = 0
+
+    def print_yaml(self) -> None:
+        data = {
+            'dbg vs ast': {
+                'diff': self.__diff_dbg_ast,
+                'equal': self.__eq_dbg_ast
+            },
+            'line vs ast': {
+                'diff': self.__diff_line_ast,
+                'equal': self.__eq_line_ast
+            }
+        }
+        with open(self.path, 'w') as yaml_file:
+            yaml.dump(data, yaml_file, default_flow_style=False)
+
+    @property
+    def diff_dbg_ast(self) -> int:
+        """Count of different instructions between debug and ast blame."""
+        return self.__diff_dbg_ast
+
+    @diff_dbg_ast.setter
+    def diff_dbg_ast(self, value) -> None:
+        self.__diff_dbg_ast = value
+
+    @property
+    def eq_dbg_ast(self) -> int:
+        """Count of equal instructions between debug and ast blame."""
+        return self.__eq_dbg_ast
+
+    @eq_dbg_ast.setter
+    def eq_dbg_ast(self, value) -> None:
+        self.__eq_dbg_ast = value
+
+    @property
+    def diff_line_ast(self) -> int:
+        """Count of different instructions between line and ast blame."""
+        return self.__diff_line_ast
+
+    @diff_line_ast.setter
+    def diff_line_ast(self, value) -> None:
+        self.__diff_line_ast = value
+
+    @property
+    def eq_line_ast(self) -> int:
+        """Count of equal instructions between line and ast blame."""
+        return self.__eq_line_ast
+
+    @eq_line_ast.setter
+    def eq_line_ast(self, value) -> None:
+        self.__eq_line_ast = value
+
+
+def compare_blame_annotations(
+    line_ba: BlameAnnotations, ast_ba: BlameAnnotations, path: Path
+) -> ASTBlameReport:
+    ast_report = ASTBlameReport(path)
+
+    for entry in ast_ba.blame_annotations:
+        if entry.dbghash == entry.varahash:
+            ast_report.eq_dbg_ast += 1
+        else:
+            ast_report.diff_dbg_ast += 1
+
+    for line_entry, ast_entry in zip(
+        line_ba.blame_annotations, ast_ba.blame_annotations
+    ):
+        if line_entry.varahash == ast_entry.varahash:
+            ast_report.eq_line_ast += 1
+        else:
+            ast_report.diff_line_ast += 1
+
+    return ast_report
