@@ -7,6 +7,7 @@ The experiment compares AST based blame annotations to line based ones.
 import fnmatch
 import os
 import typing as tp
+from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -16,7 +17,6 @@ import varats.experiments.vara.blame_experiment as BE
 from varats.data.reports.blame_annotations import ASTBlameReport as BAST
 from varats.data.reports.blame_annotations import BlameAnnotations as BA
 from varats.data.reports.blame_annotations import compare_blame_annotations
-from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     VersionExperiment,
@@ -47,7 +47,8 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
     """Generate blame annotation report."""
 
     NAME = "BlameAnnotationGeneration"
-    DESCRIPTION = "Generates report with debug and IInfo blame with -vara-BA of VaRA."
+    DESCRIPTION = "Generates report with debug and IInfo blame "\
+                  "with -vara-BA of VaRA."
 
     project: VProject
 
@@ -129,7 +130,8 @@ class BlameASTComparison(actions.ProjectStep):  #type: ignore
     ones."""
 
     NAME = "BlameASTComparison"
-    DESCRIPTION = "Compares BlameAnnotation reports of AST based annotations to line based ones."
+    DESCRIPTION = "Compares BlameAnnotation reports of AST based "\
+                  "annotations to line based ones."
 
     project: VProject
 
@@ -145,14 +147,16 @@ class BlameASTComparison(actions.ProjectStep):  #type: ignore
         return self.analyze()
 
     def analyze(self) -> actions.StepResult:
+        """This step retrieves the two previously generated reports (with line
+        based and AST based blame annotations) and compares them."""
         for binary in self.project.binaries:
             varats_result_folder = get_varats_result_folder(self.project)
 
             for file in os.listdir(varats_result_folder):
                 if fnmatch.fnmatch(file, "linereport" + '*'):
-                    line_filepath = os.path.join(varats_result_folder, file)
+                    line_filepath = Path(varats_result_folder / file)
                 if fnmatch.fnmatch(file, "astreport" + '*'):
-                    ast_filepath = os.path.join(varats_result_folder, file)
+                    ast_filepath = Path(varats_result_folder / file)
 
             line_annotations = BA(line_filepath)
             ast_annotations = BA(ast_filepath)

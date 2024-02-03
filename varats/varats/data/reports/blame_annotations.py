@@ -23,12 +23,7 @@ class BlameInstruction():
         section."""
         dbghash = str(raw_entry['dbghash'])
         varahash = str(raw_entry['varahash'])
-        return BlameInstruction(dbghash, varahash)  #TODO name
-
-    @property
-    def name(self) -> str:
-        """Name of the instruction."""
-        return self.__name
+        return BlameInstruction(dbghash, varahash)
 
     @property
     def dbghash(self) -> str:
@@ -80,6 +75,7 @@ class ASTBlameReport(BaseReport, shorthand="BAST", file_type="yaml"):
         self.__eq_line_ast = 0
 
     def print_yaml(self) -> None:
+        """Writes the result of the comparison to a yaml file."""
         data = {
             'dbg vs ast': {
                 'diff': self.__diff_dbg_ast,
@@ -93,60 +89,56 @@ class ASTBlameReport(BaseReport, shorthand="BAST", file_type="yaml"):
         with open(self.path, 'w') as yaml_file:
             yaml.dump(data, yaml_file, default_flow_style=False)
 
+    def update_dbg_ast(self, diff: bool) -> None:
+        """Updates the metrics of the comparison between debug and AST based
+        information."""
+        if diff:
+            self.__diff_dbg_ast += 1
+        else:
+            self.__eq_dbg_ast += 1
+
+    def update_line_ast(self, diff: bool) -> None:
+        """Updates the metrics of the comparison between line based and AST
+        based information."""
+        if diff:
+            self.__diff_line_ast += 1
+        else:
+            self.__eq_line_ast += 1
+
     @property
     def diff_dbg_ast(self) -> int:
         """Count of different instructions between debug and ast blame."""
         return self.__diff_dbg_ast
-
-    @diff_dbg_ast.setter
-    def diff_dbg_ast(self, value) -> None:
-        self.__diff_dbg_ast = value
 
     @property
     def eq_dbg_ast(self) -> int:
         """Count of equal instructions between debug and ast blame."""
         return self.__eq_dbg_ast
 
-    @eq_dbg_ast.setter
-    def eq_dbg_ast(self, value) -> None:
-        self.__eq_dbg_ast = value
-
     @property
     def diff_line_ast(self) -> int:
         """Count of different instructions between line and ast blame."""
         return self.__diff_line_ast
-
-    @diff_line_ast.setter
-    def diff_line_ast(self, value) -> None:
-        self.__diff_line_ast = value
 
     @property
     def eq_line_ast(self) -> int:
         """Count of equal instructions between line and ast blame."""
         return self.__eq_line_ast
 
-    @eq_line_ast.setter
-    def eq_line_ast(self, value) -> None:
-        self.__eq_line_ast = value
-
 
 def compare_blame_annotations(
     line_ba: BlameAnnotations, ast_ba: BlameAnnotations, path: Path
 ) -> ASTBlameReport:
+    """Compares the debug based to the AST based annotations as well as the line
+    based to the AST based blame."""
     ast_report = ASTBlameReport(path)
 
     for entry in ast_ba.blame_annotations:
-        if entry.dbghash == entry.varahash:
-            ast_report.eq_dbg_ast += 1
-        else:
-            ast_report.diff_dbg_ast += 1
+        ast_report.update_dbg_ast(entry.dbghash != entry.varahash)
 
     for line_entry, ast_entry in zip(
         line_ba.blame_annotations, ast_ba.blame_annotations
     ):
-        if line_entry.varahash == ast_entry.varahash:
-            ast_report.eq_line_ast += 1
-        else:
-            ast_report.diff_line_ast += 1
+        ast_report.update_line_ast(line_entry.varahash != ast_entry.varahash)
 
     return ast_report
