@@ -134,11 +134,15 @@ def compare_blame_annotations(
     ast_report = ASTBlameReport(path)
 
     for entry in ast_ba.blame_annotations:
-        ast_report.update_dbg_ast(entry.dbghash != entry.varahash)
+        if entry.dbghash and entry.varahash:
+            ast_report.update_dbg_ast(entry.dbghash != entry.varahash)
 
     for line_entry, ast_entry in zip(
         line_ba.blame_annotations, ast_ba.blame_annotations
     ):
-        ast_report.update_line_ast(line_entry.varahash != ast_entry.varahash)
+        if line_entry.varahash and ast_entry.varahash:
+            ast_report.update_line_ast(
+                line_entry.varahash != ast_entry.varahash
+            )
 
     return ast_report
