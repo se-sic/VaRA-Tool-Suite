@@ -191,19 +191,19 @@ class PicoSAT(VProject, ReleaseProviderHook):
                 if re.match(release_regex, tag)]
 
 
-class PicoSATVaRA(VProject, ReleaseProviderHook):
+class PicoSATLT(VProject, ReleaseProviderHook):
     """Adapted version of picoSAT that has been refactored, such that it does
     not require a field-sensitive analysis."""
 
-    NAME = 'picosat-vara'
+    NAME = 'PicosatLT'
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.SOLVER
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="picosat-vara",
+            project_name="PicosatLT",
             remote="https://github.com/se-sic/picoSAT-vara",
-            local="picosat",
+            local="PicosatLT",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
@@ -259,7 +259,9 @@ class PicoSATVaRA(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(PicoSAT.NAME))
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(PicoSATLT.NAME)
+        )
         binary_map.specify_binary(
             'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]
         )
