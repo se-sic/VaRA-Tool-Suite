@@ -121,6 +121,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.instrumentation_verifier',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
+        'varats.experiments.vara.performance_interaction',
         'varats.experiments.vara.feature_region_verifier_experiment',
     ]
 
