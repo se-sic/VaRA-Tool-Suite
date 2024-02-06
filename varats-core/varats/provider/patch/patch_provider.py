@@ -82,9 +82,6 @@ class Patch:
 
         project_git_path = get_local_project_git_path(project_name)
 
-        # Update repository to have all upstream changes
-        fetch_repository(project_git_path)
-
         def parse_revisions(
             rev_dict: tp.Dict[str, tp.Any]
         ) -> tp.Set[CommitHash]:
@@ -299,6 +296,10 @@ class PatchProvider(Provider):
             )
 
         self.__patches: tp.Set[Patch] = set()
+
+        # Update repository to have all upstream changes
+        project_git_path = get_local_project_git_path(self.project.NAME)
+        fetch_repository(project_git_path)
 
         for root, _, files in os.walk(patches_project_dir):
             for filename in files:
