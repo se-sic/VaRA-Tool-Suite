@@ -3,7 +3,7 @@ import re
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, Command, SourceRoot
+from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.source import HTTP
 from benchbuild.source.http import HTTPUntar
 from benchbuild.utils.cmd import make
@@ -21,6 +21,7 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
     ReleaseProviderHook,
@@ -98,39 +99,39 @@ class PicoSAT(VProject, ReleaseProviderHook):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            Command(
+            VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "example.cnf",
                 label="example.cnf",
             )
         ],
         WorkloadSet(WorkloadCategory.SMALL): [
-            Command(
+            VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "aim-100-1_6-no-1.cnf",
                 label="aim-100-1-6-no-1.cnf",
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
-            Command(
+            VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
                 label="traffic-kkb-unknow.cnf",
             ),
-            Command(
+            VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "abw-N-bcsstk07.mtx-w44.cnf/abw-N-bcsstk07.mtx-w44.cnf",
                 label="abw-N-bcsstk07.mtx-w44.cnf",
             ),
         ],
         WorkloadSet(WorkloadCategory.LARGE): [
-            Command(
+            VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "UNSAT_H_instances_childsnack_p11.hddl_1.cnf/"
                 "UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
                 label="UNSAT-H-instances-childsnack-p11.hddl-1.cnf",
             ),
-            Command(
+            VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "UNSAT_H_instances_childsnack_p12.hddl_1.cnf/"
                 "UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
@@ -253,7 +254,15 @@ class PicoSATLT(VProject, ReleaseProviderHook):
         ),
     ]
 
-    WORKLOADS = PicoSAT.WORKLOADS
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("PicosatLT") / RSBinary("picosat"),
+                "abw-N-bcsstk07.mtx-w44.cnf/abw-N-bcsstk07.mtx-w44.cnf",
+                label="abw-N-bcsstk07.mtx-w44.cnf",
+            ),
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -291,6 +300,19 @@ class PicoSATLT(VProject, ReleaseProviderHook):
         with local.cwd(picosat_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 bb.watch(local[config_script_name])(["--trace", "--stats"])
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+        with local.cwd(picosat_source):
+            verify_binaries(self)
+
+    def recompile(self) -> None:
+        """Re-Compile the project."""
+        picosat_source = local.path(self.source_of(self.primary_source))
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        with local.cwd(picosat_source):
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(picosat_source):
