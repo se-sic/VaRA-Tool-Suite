@@ -40,7 +40,7 @@ class BlameFunctionAnnotations():
     """Contains all instruction annotations for one function."""
 
     def __init__(self) -> None:
-        self.__blame_annotations = {}
+        self.__blame_annotations: tp.Dict[str, BlameInstruction] = {}
 
     def add_annotation(self, name: str, inst: BlameInstruction) -> None:
         self.__blame_annotations[name] = inst
