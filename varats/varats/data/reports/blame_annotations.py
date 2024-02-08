@@ -36,12 +36,27 @@ class BlameInstruction():
         return self.__varahash
 
 
+class BlameFunctionAnnotations():
+    """Contains all instruction annotations for one function."""
+
+    def __init__(self) -> None:
+        self.__blame_annotations = {}
+
+    def add_annotation(self, name: str, inst: BlameInstruction) -> None:
+        self.__blame_annotations[name] = inst
+
+    @property
+    def blame_annotations(self) -> tp.Dict[str, BlameInstruction]:
+        """Iterate over all blame annotations."""
+        return self.__blame_annotations
+
+
 class BlameAnnotations(BaseReport, shorthand="BA", file_type="yaml"):
     """Report containing debug blame and blame annotations."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        self.__blame_annotations = {}
+        self.__functions = {}
 
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
@@ -50,18 +65,22 @@ class BlameAnnotations(BaseReport, shorthand="BA", file_type="yaml"):
 
             raw_blame_report = next(documents)
 
-            for raw_entry in raw_blame_report['annotations']:
-                new_entry = (
-                    BlameInstruction.create_blame_instruction(
-                        raw_blame_report['annotations'][raw_entry]
+            for func in raw_blame_report['functions']:
+                new_func = BlameFunctionAnnotations()
+                func_entry = raw_blame_report['functions'][func]
+                for raw_entry in func_entry['annotations']:
+                    new_entry = (
+                        BlameInstruction.create_blame_instruction(
+                            func_entry['annotations'][raw_entry]
+                        )
                     )
-                )
-                self.__blame_annotations[raw_entry] = new_entry
+                    new_func.add_annotation(raw_entry, new_entry)
+                self.__functions[func] = new_func
 
     @property
-    def blame_annotations(self) -> tp.ValuesView[BlameInstruction]:
+    def functions(self) -> tp.ValuesView[BlameFunctionAnnotations]:
         """Iterate over all blame annotations."""
-        return self.__blame_annotations.values()
+        return self.__functions.values()
 
 
 class ASTBlameReport(BaseReport, shorthand="BAST", file_type="yaml"):
@@ -133,16 +152,20 @@ def compare_blame_annotations(
     based to the AST based blame."""
     ast_report = ASTBlameReport(path)
 
-    for entry in ast_ba.blame_annotations:
-        if entry.dbghash and entry.varahash:
-            ast_report.update_dbg_ast(entry.dbghash != entry.varahash)
+    for func in ast_ba.functions:
+        for entry in func.blame_annotations.values():
+            if entry.dbghash and entry.varahash:
+                ast_report.update_dbg_ast(entry.dbghash != entry.varahash)
 
-    for line_entry, ast_entry in zip(
-        line_ba.blame_annotations, ast_ba.blame_annotations
-    ):
-        if line_entry.varahash and ast_entry.varahash:
-            ast_report.update_line_ast(
-                line_entry.varahash != ast_entry.varahash
-            )
+    for line_func, ast_func in zip(line_ba.functions, ast_ba.functions):
+        line_annotations = line_func.blame_annotations
+        ast_annotations = ast_func.blame_annotations
+        for inst in ast_annotations:
+            if line_annotations[inst].varahash and ast_annotations[inst
+                                                                  ].varahash:
+                ast_report.update_line_ast(
+                    line_annotations[inst].varahash !=
+                    ast_annotations[inst].varahash
+                )
 
     return ast_report

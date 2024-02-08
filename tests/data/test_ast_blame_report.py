@@ -21,120 +21,128 @@ Version:        1
 """
 
 YAML_DOC_BA_LINE = """---
-annotations:
-  0=bitcasti32*resulttoi8*,!dbg!23,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  1=loadi32,i32*x.addr,align4,!dbg!25,!tbaa!18,!BlameRegion!26:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-  2=loadi32,i32*result,align4,!dbg!31,!tbaa!18,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  3=bitcasti32*resulttoi8*,!dbg!32,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  add=addnswi321,42,!dbg!28,!BlameRegion!26:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-  call1=calli32(i8*,...)@printf(i8*noundefgetelementptrinbounds([3xi8],[3xi8]*@.str,i640,i640),i32noundefcall),!dbg!17,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  call=callnoundefi32@_Z19calculate_somethingi(i32noundef4),!dbg!16,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  callvoid@llvm.dbg.declare(metadatai32*result,metadata!17,metadata!DIExpression()),!dbg!24:
-    dbghash:         ''
-    varahash:        ''
-  callvoid@llvm.dbg.declare(metadatai32*x.addr,metadata!16,metadata!DIExpression()),!dbg!22:
-    dbghash:         ''
-    varahash:        ''
-  callvoid@llvm.lifetime.end.p0i8(i644,i8*3)#5,!dbg!32,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  callvoid@llvm.lifetime.start.p0i8(i644,i8*0)#5,!dbg!23,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  result=allocai32,align4,!BlameRegion!0:
-    dbghash:         ''
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  reti320,!dbg!18,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  reti322,!dbg!33,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  storei32sub,i32*result,align4,!dbg!30,!tbaa!18,!BlameRegion!26:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-  storei32x,i32*x.addr,align4,!tbaa!18,!BlameRegion!0:
-    dbghash:         ''
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  sub=subnswi32add,1,!dbg!29,!BlameRegion!26:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-  x.addr=allocai32,align4,!BlameRegion!0:
-    dbghash:         ''
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+functions:
+  _Z19calculate_somethingi:
+    annotations:
+      0=bitcasti32*resulttoi8*:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      1=loadi32,i32*x.addr,align4:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+      2=loadi32,i32*result,align4:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      3=bitcasti32*resulttoi8*:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      add=addnswi321,42:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+      callvoid@llvm.dbg.declare(metadatai32*result,metadata!17,metadata!DIExpression()):
+        dbghash:         ''
+        varahash:        ''
+      callvoid@llvm.dbg.declare(metadatai32*x.addr,metadata!16,metadata!DIExpression()):
+        dbghash:         ''
+        varahash:        ''
+      callvoid@llvm.lifetime.end.p0i8(i644,i8*3)#5:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      callvoid@llvm.lifetime.start.p0i8(i644,i8*0)#5:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      result=allocai32,align4:
+        dbghash:         ''
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      reti322:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      storei32sub,i32*result,align4:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+      storei32x,i32*x.addr,align4:
+        dbghash:         ''
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      sub=subnswi32add,1:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+      x.addr=allocai32,align4:
+        dbghash:         ''
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+  main:
+    annotations:
+      call1=calli32(i8*,...)@printf(i8*noundefgetelementptrinbounds([3xi8],[3xi8]*@.str,i640,i640),i32noundefcall):
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      call=callnoundefi32@_Z19calculate_somethingi(i32noundef4):
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      reti320:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
 ...
 """
 
 YAML_DOC_BA_AST = """---
-annotations:
-  0=bitcasti32*resulttoi8*,!dbg!23,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  1=loadi32,i32*x.addr,align4,!dbg!25,!tbaa!18,!BlameRegion!0:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  2=loadi32,i32*result,align4,!dbg!31,!tbaa!18,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  3=bitcasti32*resulttoi8*,!dbg!32,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  add=addnswi321,42,!dbg!26,!BlameRegion!0:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  call1=calli32(i8*,...)@printf(i8*noundefgetelementptrinbounds([3xi8],[3xi8]*@.str,i640,i640),i32noundefcall),!dbg!17,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  call=callnoundefi32@_Z19calculate_somethingi(i32noundef4),!dbg!16,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  callvoid@llvm.dbg.declare(metadatai32*result,metadata!17,metadata!DIExpression()),!dbg!24:
-    dbghash:         ''
-    varahash:        ''
-  callvoid@llvm.dbg.declare(metadatai32*x.addr,metadata!16,metadata!DIExpression()),!dbg!22:
-    dbghash:         ''
-    varahash:        ''
-  callvoid@llvm.lifetime.end.p0i8(i644,i8*3)#5,!dbg!32,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  callvoid@llvm.lifetime.start.p0i8(i644,i8*0)#5,!dbg!23,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  result=allocai32,align4,!BlameRegion!0:
-    dbghash:         ''
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  reti320,!dbg!18,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  reti322,!dbg!33,!BlameRegion!0:
-    dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  storei32sub,i32*result,align4,!dbg!30,!tbaa!18,!BlameRegion!0:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  storei32x,i32*x.addr,align4,!tbaa!18,!BlameRegion!0:
-    dbghash:         ''
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-  sub=subnswi32add,1,!dbg!27,!BlameRegion!28:
-    dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-    varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-  x.addr=allocai32,align4,!BlameRegion!0:
-    dbghash:         ''
-    varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+functions:
+  _Z19calculate_somethingi:
+    annotations:
+      0=bitcasti32*resulttoi8*:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      1=loadi32,i32*x.addr,align4:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      2=loadi32,i32*result,align4:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      3=bitcasti32*resulttoi8*:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      add=addnswi321,42:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      callvoid@llvm.dbg.declare(metadatai32*result,metadata!17,metadata!DIExpression()):
+        dbghash:         ''
+        varahash:        ''
+      callvoid@llvm.dbg.declare(metadatai32*x.addr,metadata!16,metadata!DIExpression()):
+        dbghash:         ''
+        varahash:        ''
+      callvoid@llvm.lifetime.end.p0i8(i644,i8*3)#5:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      callvoid@llvm.lifetime.start.p0i8(i644,i8*0)#5:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      result=allocai32,align4:
+        dbghash:         ''
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      reti322:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      storei32sub,i32*result,align4:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      storei32x,i32*x.addr,align4:
+        dbghash:         ''
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      sub=subnswi32add,1:
+        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
+      x.addr=allocai32,align4:
+        dbghash:         ''
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+  main:
+    annotations:
+      call1=calli32(i8*,...)@printf(i8*noundefgetelementptrinbounds([3xi8],[3xi8]*@.str,i640,i640),i32noundefcall):
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      call=callnoundefi32@_Z19calculate_somethingi(i32noundef4):
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      reti320:
+        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
+        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
 ...
 """
 
