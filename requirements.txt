@@ -31,6 +31,7 @@ rich>=12.6
 scikit-learn>=1.2.2
 seaborn>=0.13.0
 tabulate>=0.9
+trogon>=0.5.0
 types-PyYAML
 types-requests
 types-tabulate

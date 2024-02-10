@@ -6,6 +6,7 @@ import sys
 import typing as tp
 
 import click
+from trogon import tui
 
 from varats.tools.bb_config import (
     create_new_bb_config,
@@ -18,7 +19,8 @@ from varats.utils.settings import save_config, vara_cfg, save_bb_config, bb_cfg
 LOG = logging.getLogger(__name__)
 
 
-@click.command()
+@tui()  # type: ignore
+@click.group(invoke_without_command=True)
 @click.option(
     "--bb-root",
     type=click.Path(),

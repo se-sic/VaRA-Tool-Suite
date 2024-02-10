@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 from plumbum import colors
+from trogon import tui
 
 from varats.containers.containers import (
     ImageBase,
@@ -89,13 +90,14 @@ def show_major_release_prompt(
         return
 
 
+@tui()  # type: ignore
 @click.group(context_settings={"help_option_names": ['-h', '--help']})
 def main() -> None:
     """Build VaRA on cli."""
     initialize_cli_tool()
 
 
-@main.command()
+@main.command()  # type: ignore
 def config() -> None:
     """Only create a VaRA-TS config file."""
     save_config()
@@ -123,7 +125,7 @@ def config() -> None:
     required=False,
     help="Tool install folder."
 )
-@main.command()
+@main.command()  # type: ignore
 def init(
     version: tp.Optional[int], install_prefix: tp.Optional[Path],
     source_location: tp.Optional[Path], research_tool: str
@@ -136,7 +138,7 @@ def init(
 @click.argument(
     "research_tool", type=click.Choice(get_supported_research_tool_names())
 )
-@main.command()
+@main.command()  # type: ignore
 def update(research_tool: str) -> None:
     """Update a research tool and all its components."""
     tool = get_research_tool(research_tool)
@@ -170,7 +172,7 @@ def update(research_tool: str) -> None:
 @click.option(
     "--build-type",
     type=EnumChoice(BuildType, case_sensitive=False),
-    default=BuildType.DEV,
+    default="DEV",
     help="Build type to use for the tool build configuration."
 )
 @click.option(
@@ -178,7 +180,7 @@ def update(research_tool: str) -> None:
     default=True,
     help="Show a prompt to check for major version updates."
 )
-@main.command()
+@main.command()  # type: ignore
 def build(
     research_tool: str, build_type: BuildType,
     build_folder_suffix: tp.Optional[str], source_location: tp.Optional[Path],

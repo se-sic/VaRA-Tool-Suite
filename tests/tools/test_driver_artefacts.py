@@ -1,16 +1,16 @@
 """Test artefacts config tool."""
-import traceback
+import importlib
 import unittest
 
 from click.testing import CliRunner
 
+import varats.tools.driver_artefacts as driver_artefacts
 from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.data.discover_reports import initialize_reports
 from varats.paper.paper_config import get_paper_config, load_paper_config
 from varats.paper_mgmt.artefacts import Artefact, load_artefacts
 from varats.plots.discover_plots import initialize_plots
 from varats.tables.discover_tables import initialize_tables
-from varats.tools import driver_artefacts
 from varats.utils.settings import vara_cfg
 
 
@@ -32,6 +32,7 @@ class TestDriverArtefacts(unittest.TestCase):
         # setup config
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
         load_paper_config()
+        importlib.reload(driver_artefacts)
         artefacts = load_artefacts(get_paper_config()).artefacts
         base_output_dir = Artefact.base_output_dir()
 
@@ -59,8 +60,9 @@ class TestDriverArtefacts(unittest.TestCase):
         # setup config
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
         load_paper_config()
+        importlib.reload(driver_artefacts)
 
-        # vara-art generate
+        # vara-art list
         runner = CliRunner()
         result = runner.invoke(driver_artefacts.main, ["list"])
         self.assertEqual(0, result.exit_code, result.exception)
@@ -76,6 +78,16 @@ class TestDriverArtefacts(unittest.TestCase):
         # setup config
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
         load_paper_config()
+        importlib.reload(driver_artefacts)
+
+        # vara-art list
+        runner = CliRunner()
+        result = runner.invoke(driver_artefacts.main, ["list"])
+        self.assertEqual(0, result.exit_code, result.exception)
+        self.assertEqual(
+            "Paper Config Overview [plot]\nCorrelation Table [table]\n"
+            "CS Overview (xz) [plot]\nRepo Churn (all) [plot]\n", result.stdout
+        )
 
         expected = r"""Artefact 'Paper Config Overview':
   artefact_type: plot
@@ -91,7 +103,7 @@ class TestDriverArtefacts(unittest.TestCase):
 
 """
 
-        # vara-art generate
+        # vara-art show
         runner = CliRunner()
         result = runner.invoke(
             driver_artefacts.main, ["show", "Paper Config Overview"]

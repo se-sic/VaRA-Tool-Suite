@@ -8,6 +8,7 @@ import logging
 import typing as tp
 
 import click
+from trogon import tui
 
 from varats.containers.containers import (
     create_base_images,
@@ -26,6 +27,7 @@ from varats.utils.settings import vara_cfg, save_config, bb_cfg
 LOG = logging.Logger(__name__)
 
 
+@tui()  # type: ignore
 @click.group(
     help="Manage base container images.",
     context_settings={"help_option_names": ['-h', '--help']}
@@ -36,7 +38,9 @@ def main() -> None:
     bb_cfg()
 
 
-@main.command(help="Build base containers for the current research tool.")
+@main.command(
+    help="Build base containers for the current research tool."
+)  # type: ignore
 @click.option(
     "--debug", is_flag=True, help="Debug failed image builds interactively."
 )
@@ -101,7 +105,9 @@ def build(
             export_base_images()
 
 
-@main.command(help="Delete base containers for the current research tool.")
+@main.command(
+    help="Delete base containers for the current research tool."
+)  # type: ignore
 @click.option(
     "--build-type",
     type=EnumChoice(BuildType, case_sensitive=False),
@@ -139,12 +145,15 @@ def delete(
             delete_base_images()
 
 
-@main.command(help="Select the research tool to be used in base containers.")
+@main.command(
+    help="Select the research tool to be used in base containers."
+)  # type: ignore
 @click.option(
     "-t",
     "--tool",
     type=click.Choice([*get_supported_research_tool_names(), "none"]),
-    default=lambda: vara_cfg()["container"]["research_tool"].value or "none",
+    required=True,
+    # default=lambda: vara_cfg()["container"]["research_tool"].value or "none",
     prompt="Select a research tool to activate.",
     help="The research tool to activate."
 )
