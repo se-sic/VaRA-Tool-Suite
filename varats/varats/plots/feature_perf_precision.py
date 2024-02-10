@@ -158,7 +158,7 @@ class PerfProfDistPlotGenerator(
     generator_name="fperf-precision-dist",
     options=[REQUIRE_MULTI_CASE_STUDY]
 ):
-    """Generates performance distribution plot for a given amount of case
+    """Generates performance distribution plot for a given list of case
     studies."""
 
     def generate(self) -> tp.List[Plot]:
