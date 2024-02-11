@@ -69,11 +69,19 @@ class PerfInfluenceTraceReport(BaseReport, shorthand="PIT", file_type="json"):
 
         return stringify
 
+    def _translate_region_id(self, region_id) -> str:
+        """Translates the given region_id to a feature name."""
+        if region_id not in self.__region_name_map:
+            # TODO: Identify why this happens
+            return "Unknown"
+
+        return self.__region_name_map[region_id]
+
     def _translate_interaction(self, interaction: str) -> str:
         sub_terms = interaction.split('*')
         return "*".join(
             map(
-                lambda region_id: self.__region_name_map[int(region_id)],
+                lambda region_id: self._translate_region_id(int(region_id)),
                 sub_terms
             )
         )
