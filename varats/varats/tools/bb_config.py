@@ -117,6 +117,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.feature_perf_runner',
         'varats.experiments.vara.feature_perf_sampling',
         'varats.experiments.vara.feature_perf_tracing',
+        'varats.experiments.vara.feature_perf_precision',
         'varats.experiments.vara.feature_tracing_stats',
         'varats.experiments.vara.feature_instrumentation_points',
         'varats.experiments.vara.instrumentation_verifier',
