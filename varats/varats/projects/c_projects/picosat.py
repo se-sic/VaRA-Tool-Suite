@@ -218,6 +218,14 @@ class PicoSATLT(VProject, ReleaseProviderHook):
                     "download/picoSAT-965/example.cnf"
             }
         ),
+        HTTP(
+            local="ibm-2004-03-k70.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-vara/releases/"
+                    "download/workloads-sat-race-2006/ibm-2004-03-k70.cnf"
+            }
+        ),
         HTTPUntar(
             local="abw-N-bcsstk07.mtx-w44.cnf",
             remote={
@@ -255,11 +263,11 @@ class PicoSATLT(VProject, ReleaseProviderHook):
     ]
 
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.MEDIUM): [
+        WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
                 SourceRoot("PicosatLT") / RSBinary("picosat"),
-                "abw-N-bcsstk07.mtx-w44.cnf/abw-N-bcsstk07.mtx-w44.cnf",
-                label="abw-N-bcsstk07.mtx-w44.cnf",
+                "ibm-2004-03-k70.cnf",
+                label="ibm-2004-03-k70.cnf",
             ),
         ],
     }
