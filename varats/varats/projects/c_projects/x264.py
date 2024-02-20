@@ -120,7 +120,7 @@ class X264(VProject):
                 configure_flags = ["--disable-asm"]
                 if x264_version in ldflags_revisions:
                     configure_flags.append("--extra-ldflags=\"-static\"")
-                bb.watch(local["./configure"])(["--disable-asm"])
+                bb.watch(local["./configure"])(configure_flags)
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)

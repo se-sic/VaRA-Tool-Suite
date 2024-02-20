@@ -99,52 +99,114 @@ class Gzip(VProject, ReleaseProviderHook):
     configs = [
         ["-1"],
         ["-5"],
+        ["-3"],
         ["-9"],
+        ["-7"],
         ["--recursive", "-1"],
         ["--recursive", "-5"],
+        ["--recursive", "-3"],
         ["--recursive", "-9"],
+        ["--recursive", "-7"],
         ["--verbose", "-1"],
         ["--verbose", "-5"],
+        ["--verbose", "-3"],
         ["--verbose", "-9"],
+        ["--verbose", "-7"],
         ["--quiet", "-1"],
         ["--quiet", "-5"],
+        ["--quiet", "-3"],
         ["--quiet", "-9"],
+        ["--quiet", "-7"],
         ["-S", "-1"],
         ["-S", "-5"],
+        ["-S", "-3"],
         ["-S", "-9"],
+        ["-S", "-7"],
         ["--test", "-1"],
         ["--test", "-5"],
+        ["--test", "-3"],
         ["--test", "-9"],
+        ["--test", "-7"],
         ["--recursive", "--verbose", "-1"],
         ["--recursive", "--verbose", "-5"],
+        ["--recursive", "--verbose", "-3"],
         ["--recursive", "--verbose", "-9"],
+        ["--recursive", "--verbose", "-7"],
         ["--recursive", "--quiet", "-1"],
         ["--recursive", "--quiet", "-5"],
+        ["--recursive", "--quiet", "-3"],
         ["--recursive", "--quiet", "-9"],
+        ["--recursive", "--quiet", "-7"],
         ["--recursive", "-S", "-1"],
         ["--recursive", "-S", "-5"],
+        ["--recursive", "-S", "-3"],
         ["--recursive", "-S", "-9"],
+        ["--recursive", "-S", "-7"],
         ["--recursive", "--test", "-1"],
         ["--recursive", "--test", "-5"],
+        ["--recursive", "--test", "-3"],
         ["--recursive", "--test", "-9"],
+        ["--recursive", "--test", "-7"],
         ["--verbose", "--quiet", "-1"],
         ["--verbose", "--quiet", "-5"],
+        ["--verbose", "--quiet", "-3"],
         ["--verbose", "--quiet", "-9"],
+        ["--verbose", "--quiet", "-7"],
         ["--verbose", "-S", "-1"],
         ["--verbose", "-S", "-5"],
+        ["--verbose", "-S", "-3"],
         ["--verbose", "-S", "-9"],
+        ["--verbose", "-S", "-7"],
         ["--verbose", "--test", "-1"],
         ["--verbose", "--test", "-5"],
+        ["--verbose", "--test", "-3"],
         ["--verbose", "--test", "-9"],
+        ["--verbose", "--test", "-7"],
         ["--quiet", "-S", "-1"],
         ["--quiet", "-S", "-5"],
+        ["--quiet", "-S", "-3"],
         ["--quiet", "-S", "-9"],
+        ["--quiet", "-S", "-7"],
         ["--quiet", "--test", "-1"],
         ["--quiet", "--test", "-5"],
+        ["--quiet", "--test", "-3"],
         ["--quiet", "--test", "-9"],
+        ["--quiet", "--test", "-7"],
         ["-S", "--test", "-1"],
         ["-S", "--test", "-5"],
-        ["-S", "--test", "-9"]
+        ["-S", "--test", "-3"],
+        ["-S", "--test", "-9"],
+        ["-S", "--test", "-7"],
+        ["--recursive", "--verbose", "--quiet", "-S", "--test", "-1"],
+        ["--recursive", "--verbose", "--quiet", "-S", "--test", "-5"],
+        ["--recursive", "--verbose", "--quiet", "-S", "--test", "-3"],
+        ["--recursive", "--verbose", "--quiet", "-S", "--test", "-9"],
+        ["--recursive", "--verbose", "--quiet", "-S", "--test", "-7"],
+        ["--verbose", "--quiet", "-S", "--test", "-1"],
+        ["--verbose", "--quiet", "-S", "--test", "-5"],
+        ["--verbose", "--quiet", "-S", "--test", "-3"],
+        ["--verbose", "--quiet", "-S", "--test", "-9"],
+        ["--verbose", "--quiet", "-S", "--test", "-7"],
+        ["--recursive", "--quiet", "-S", "--test", "-1"],
+        ["--recursive", "--quiet", "-S", "--test", "-5"],
+        ["--recursive", "--quiet", "-S", "--test", "-3"],
+        ["--recursive", "--quiet", "-S", "--test", "-9"],
+        ["--recursive", "--quiet", "-S", "--test", "-7"],
+        ["--recursive", "--verbose", "-S", "--test", "-1"],
+        ["--recursive", "--verbose", "-S", "--test", "-5"],
+        ["--recursive", "--verbose", "-S", "--test", "-3"],
+        ["--recursive", "--verbose", "-S", "--test", "-9"],
+        ["--recursive", "--verbose", "-S", "--test", "-7"],
+        ["--recursive", "--verbose", "--quiet", "--test", "-1"],
+        ["--recursive", "--verbose", "--quiet", "--test", "-5"],
+        ["--recursive", "--verbose", "--quiet", "--test", "-3"],
+        ["--recursive", "--verbose", "--quiet", "--test", "-9"],
+        ["--recursive", "--verbose", "--quiet", "--test", "-7"],
+        ["--recursive", "--verbose", "--quiet", "-S", "-1"],
+        ["--recursive", "--verbose", "--quiet", "-S", "-5"],
+        ["--recursive", "--verbose", "--quiet", "-S", "-3"],
+        ["--recursive", "--verbose", "--quiet", "-S", "-9"],
+        ["--recursive", "--verbose", "--quiet", "-S", "-7"]
     ]
     
     commands = []
@@ -153,40 +215,16 @@ class Gzip(VProject, ReleaseProviderHook):
     for file in files:
         for i, config in enumerate(configs):
             command = None
-            length = len(config)
-            if length == 1:
-                command = Command(
-                    SourceRoot("gzip") / RSBinary("gzip"),
-                    config[0],
-                    "--force",  # needed because BB creates symlinks for the inputs
-                    "--keep", # needed for repeating with the same workload
-                    "cantrbry.tar.gz/" + file,
-                    label=file + "-" + str(i) + ' '.join(config),
-                    creates=["cantrbry.tar.gz/" + file + ".gz"]
-                )
-            elif length == 2:
-                command = Command(
-                    SourceRoot("gzip") / RSBinary("gzip"),
-                    config[0],
-                    config[1],
-                    "--force",  # needed because BB creates symlinks for the inputs
-                    "--keep", # needed for repeating with the same workload
-                    "cantrbry.tar.gz/" + file,
-                    label=file + "-" + str(i) + ' '.join(config),
-                    creates=["cantrbry.tar.gz/" + file + ".gz"]
-                )
-            else:
-                command = Command(
-                    SourceRoot("gzip") / RSBinary("gzip"),
-                    config[0],
-                    config[1],
-                    config[2],
-                    "--force",  # needed because BB creates symlinks for the inputs
-                    "--keep", # needed for repeating with the same workload
-                    "cantrbry.tar.gz/" + file,
-                    label=file + "-" + str(i) + ' '.join(config),
-                    creates=["cantrbry.tar.gz/" + file + ".gz"]
-                )
+            command = Command(
+                SourceRoot("gzip") / RSBinary("gzip"),
+                *config,
+                "--force",  # needed because BB creates symlinks for the inputs
+                "--keep", # needed for repeating with the same workload
+                "cantrbry.tar.gz/" + file,
+                label=file + "-config" + "{:04d}".format(i),
+                creates=["cantrbry.tar.gz/" + file + ".gz"]
+            )
+            
             
             commands.append(command)
 
