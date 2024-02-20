@@ -76,7 +76,8 @@ def update_projects(
         'varats.projects.cpp_projects.ect',
         'varats.projects.cpp_projects.lepton',
         'varats.projects.cpp_projects.hyteg',
-        'varats.projects.cpp_projects.dune'
+        'varats.projects.cpp_projects.dune',
+        'varats.projects.test_projects.has_influence'
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -94,6 +95,7 @@ def update_projects(
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection',
             'varats.projects.perf_tests.feature_perf_regression',
+            'varats.projects.test_projects.has_influence',
         ]
 
 

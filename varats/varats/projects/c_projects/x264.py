@@ -4,6 +4,9 @@ import typing as tp
 import benchbuild as bb
 from benchbuild.utils.cmd import make
 from benchbuild.utils.revision_ranges import block_revisions, GoodBadSubgraph
+from benchbuild.source import HTTP, HTTPUntar
+from benchbuild.command import Command, SourceRoot, WorkloadSet
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -46,8 +49,34 @@ class X264(VProject):
                 limit=None,
                 shallow=False
             )
+        ),
+        HTTP(
+            local="akiyo_cif.y4m",
+            remote={
+                "1.0":
+                    "https://media.xiph.org/video/derf/y4m/akiyo_cif.y4m"
+            }
+        ),
+        HTTPUntar(
+            local="subset1-y4m.tar.gz",
+            remote={
+                "1.0":
+                    "https://media.xiph.org/video/derf/subset1-y4m.tar.gz"
+            }
         )
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            Command(
+                SourceRoot("x264") / RSBinary("x264"),
+                "-o End_of_Show_3.mkv",
+                "subset1-y4m.tar.gz/subset1-y4m/End_of_Show_3.y4m",
+                label="End_of_Show_3",
+                creates=["End_of_Show_3.mkv"]
+            ),
+        ]
+    }
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
@@ -69,6 +98,8 @@ class X264(VProject):
         x264_version_source = local.path(self.source_of_primary)
         x264_version = ShortCommitHash(self.version_of_primary)
 
+        print(x264_version_source)
+
         fpic_revisions = get_all_revisions_between(
             "5dc0aae2f900064d1f58579929a2285ab289a436",
             "290de9638e5364c37316010ac648a6c959f6dd26", ShortCommitHash,
@@ -83,9 +114,9 @@ class X264(VProject):
         if x264_version in fpic_revisions:
             self.cflags += ["-fPIC"]
 
-        clang = bb.compiler.cc(self)
+        compiler = bb.compiler.cc(self)
         with local.cwd(x264_version_source):
-            with local.env(CC=str(clang)):
+            with local.env(CC=str(compiler)):
                 configure_flags = ["--disable-asm"]
                 if x264_version in ldflags_revisions:
                     configure_flags.append("--extra-ldflags=\"-static\"")
