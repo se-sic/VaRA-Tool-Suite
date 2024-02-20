@@ -82,7 +82,7 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
                 varats_result_folder,
                 ReportFilename(
                     self.__file_prefix + self.__experiment_handle.get_file_name(
-                        BAST.shorthand(),
+                        BA.shorthand(),
                         project_name=str(self.project.name),
                         binary_name=binary.name,
                         project_revision=ShortCommitHash(
@@ -118,7 +118,7 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project, BAST
+                    self.__experiment_handle, self.project, BA
                 )
             )
 
@@ -174,15 +174,15 @@ class BlameASTComparison(actions.ProjectStep):  #type: ignore
         return actions.StepResult.OK
 
 
-class BlameASTExperiment(VersionExperiment, shorthand="BASTE"):
-    """Compares AST based blame annotations to line based ones."""
+class LineBasedBlameAnnotations(VersionExperiment, shorthand="LBA"):
+    """Create a report containing all line based blame annotations."""
 
-    NAME = "CompareASTBlame"
+    NAME = "LineBasedBlameAnnotations"
 
-    REPORT_SPEC = ReportSpecification(BAST)
+    REPORT_SPEC = ReportSpecification(BA)
 
     def actions_for_project(
-        self, project: VProject
+        self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -202,7 +202,7 @@ class BlameASTExperiment(VersionExperiment, shorthand="BASTE"):
             BCFileExtensions.BLAME,
         ]
 
-        BE.setup_basic_blame_experiment(self, project, BAST)
+        BE.setup_basic_blame_experiment(self, project, BA)
         # Compile with line based blame annotations
         analysis_actions = _create_default_bc_file_creation_actions(
             project,
@@ -218,25 +218,75 @@ class BlameASTExperiment(VersionExperiment, shorthand="BASTE"):
             )
         )
 
+        return analysis_actions
+
+
+class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
+    """Create a report containing all line based blame annotations."""
+
+    NAME = "ASTBasedBlameAnnotations"
+
+    REPORT_SPEC = ReportSpecification(BA)
+
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+        # Try, to build the project without optimizations to get more precise
+        # blame annotations. Note: this does not guarantee that a project is
+        # build without optimizations because the used build tool/script can
+        # still add optimizations flags after the experiment specified cflags.
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+            BCFileExtensions.BLAME,
+        ]
+
+        BE.setup_basic_blame_experiment(self, project, BA)
         # Compile with AST based blame annotations
         project.cflags += ["-fvara-ast-GB"]
-        analysis_actions.extend(
-            _create_default_bc_file_creation_actions(
-                project,
-                bc_file_extensions if bc_file_extensions else [],
-                extraction_error_handler=create_default_compiler_error_handler(
-                    self.get_handle(), project, self.REPORT_SPEC.main_report
-                )
+        analysis_actions = _create_default_bc_file_creation_actions(
+            project,
+            bc_file_extensions if bc_file_extensions else [],
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
-
         # Generate blame annotation report
         analysis_actions.append(
             BlameAnnotationGeneration(project, self.get_handle(), "astreport-")
         )
 
+        return analysis_actions
+
+
+class BlameASTExperiment(VersionExperiment, shorthand="BASTE"):
+    """
+    Compares AST based blame annotations to line based ones.
+
+    Requires previous runs of experiments 'LineBasedBlameAnnotations' and
+    'ASTBasedBlameAnnotations'
+    """
+
+    NAME = "CompareASTBlame"
+
+    REPORT_SPEC = ReportSpecification(BAST)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+
         # Generate AST blame report (comparison)
-        analysis_actions.append(BlameASTComparison(project, self.get_handle()))
+        analysis_actions: tp.MutableSequence[actions.Step] = [
+            (BlameASTComparison(project, self.get_handle()))
+        ]
 
         analysis_actions.append(actions.Clean(project))
 
