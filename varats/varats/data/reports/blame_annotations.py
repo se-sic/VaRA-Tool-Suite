@@ -11,9 +11,9 @@ from varats.report.report import BaseReport
 class BlameInstruction():
     """Collection of debug blame and VaRA blame."""
 
-    def __init__(self, dbghash: str, varahash: str) -> None:
-        self.__dbghash = dbghash
-        self.__varahash = varahash
+    def __init__(self, dbg_hash: str, vara_computed_hash: str) -> None:
+        self.__dbg_hash = dbg_hash
+        self.__vara_computed_hash = vara_computed_hash
 
     @staticmethod
     def create_blame_instruction(
@@ -21,19 +21,23 @@ class BlameInstruction():
     ) -> 'BlameInstruction':
         """Creates a :class`BlameInstrucion`from the corresponding yaml document
         section."""
-        dbghash = str(raw_entry['dbghash'])
-        varahash = str(raw_entry['varahash'])
-        return BlameInstruction(dbghash, varahash)
+        dbg_hash = str(raw_entry['dbghash'])
+        vara_computed_hash = str(raw_entry['varahash'])
+        return BlameInstruction(dbg_hash, vara_computed_hash)
 
     @property
-    def dbghash(self) -> str:
+    def dbg_hash(self) -> str:
         """Blame based on debug information."""
-        return self.__dbghash
+        return self.__dbg_hash
 
     @property
-    def varahash(self) -> str:
-        """Blame based on IRegion."""
-        return self.__varahash
+    def vara_computed_hash(self) -> str:
+        """
+        Blame based on IRegion.
+
+        Can be produced in different ways, based on which flag is used.
+        """
+        return self.__vara_computed_hash
 
 
 class BlameFunctionAnnotations():
@@ -154,18 +158,20 @@ def compare_blame_annotations(
 
     for func in ast_ba.functions:
         for entry in func.blame_annotations.values():
-            if entry.dbghash and entry.varahash:
-                ast_report.update_dbg_ast(entry.dbghash != entry.varahash)
+            if entry.dbg_hash and entry.vara_computed_hash:
+                ast_report.update_dbg_ast(
+                    entry.dbg_hash != entry.vara_computed_hash
+                )
 
     for line_func, ast_func in zip(line_ba.functions, ast_ba.functions):
         line_annotations = line_func.blame_annotations
         ast_annotations = ast_func.blame_annotations
         for inst in ast_annotations:
-            if line_annotations[inst].varahash and ast_annotations[inst
-                                                                  ].varahash:
+            if line_annotations[inst].vara_computed_hash and ast_annotations[
+                inst].vara_computed_hash:
                 ast_report.update_line_ast(
-                    line_annotations[inst].varahash !=
-                    ast_annotations[inst].varahash
+                    line_annotations[inst].vara_computed_hash !=
+                    ast_annotations[inst].vara_computed_hash
                 )
 
     return ast_report
