@@ -34,13 +34,7 @@ from varats.experiment.wllvm import (
 )
 from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
-from varats.report.report import (
-    FileStatusExtension,
-    ReportFilename,
-    ReportFilepath,
-    ReportSpecification,
-)
-from varats.utils.git_util import ShortCommitHash
+from varats.report.report import ReportSpecification
 
 
 class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
@@ -52,13 +46,9 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
 
     project: VProject
 
-    def __init__(
-        self, project: Project, experiment_handle: ExperimentHandle,
-        file_prefix: str
-    ):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
-        self.__file_prefix = file_prefix
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
@@ -77,22 +67,8 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
             # Add to the user-defined path for saving the results of the
             # analysis also the name and the unique id of the project of every
             # run.
-            varats_result_folder = get_varats_result_folder(self.project)
-            result_filepath = ReportFilepath(
-                varats_result_folder,
-                ReportFilename(
-                    self.__file_prefix + self.__experiment_handle.get_file_name(
-                        BA.shorthand(),
-                        project_name=str(self.project.name),
-                        binary_name=binary.name,
-                        project_revision=ShortCommitHash(
-                            self.project.version_of_primary
-                        ),
-                        project_uuid=str(self.project.run_uuid),
-                        extension_type=FileStatusExtension.SUCCESS,
-                        config_id=None
-                    ).filename
-                )
+            result_file = create_new_success_result_filepath(
+                self.__experiment_handle, BA, self.project, binary
             )
 
             opt_params = [
@@ -101,8 +77,7 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
                 "-vara-git-mappings=" + ",".join([
                     f'{repo}:{path}' for repo, path in
                     get_local_project_git_paths(self.project.name).items()
-                ]), "-vara-use-phasar",
-                f"-vara-report-outfile={result_filepath}",
+                ]), "-vara-use-phasar", f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
                     self.project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
@@ -153,9 +128,9 @@ class BlameASTComparison(actions.ProjectStep):  #type: ignore
             varats_result_folder = get_varats_result_folder(self.project)
 
             for file in os.listdir(varats_result_folder):
-                if fnmatch.fnmatch(file, "linereport" + '*'):
+                if fnmatch.fnmatch(file, "LBA" + '*'):
                     line_filepath = Path(varats_result_folder / file)
-                if fnmatch.fnmatch(file, "astreport" + '*'):
+                if fnmatch.fnmatch(file, "ASTBA" + '*'):
                     ast_filepath = Path(varats_result_folder / file)
 
             line_annotations = BA(line_filepath)
@@ -213,9 +188,7 @@ class LineBasedBlameAnnotations(VersionExperiment, shorthand="LBA"):
         )
         # Generate blame annotation report
         analysis_actions.append(
-            BlameAnnotationGeneration(
-                project, self.get_handle(), "linereport-"
-            )
+            BlameAnnotationGeneration(project, self.get_handle())
         )
 
         return analysis_actions
@@ -261,7 +234,7 @@ class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
         )
         # Generate blame annotation report
         analysis_actions.append(
-            BlameAnnotationGeneration(project, self.get_handle(), "astreport-")
+            BlameAnnotationGeneration(project, self.get_handle())
         )
 
         return analysis_actions
