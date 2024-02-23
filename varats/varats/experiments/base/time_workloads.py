@@ -1,15 +1,18 @@
 """Implements an experiment that times the execution of all project binaries."""
 
 import typing as tp
+from copy import deepcopy
 from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
+from benchbuild.source import Revision, Variant
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import time
 from plumbum import local
 
+from varats.base.configuration import PlainCommandlineConfiguration
 from varats.experiment.experiment_util import (
     VersionExperiment,
     get_default_compile_error_wrapped,
@@ -22,10 +25,13 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
     create_workload_specific_filename,
 )
+from varats.paper.paper_config import get_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportSpecification
+from varats.utils.config import load_configuration_map_for_case_study
 
 
 class TimeProjectWorkloads(OutputFolderStep):
@@ -51,7 +57,7 @@ class TimeProjectWorkloads(OutputFolderStep):
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                self.project, self.__binary, [WorkloadCategory.MEDIUM]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
@@ -95,22 +101,44 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         binary = project.binaries[0]
 
         measurement_repetitions = 2
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary
-        )
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
 
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath, [
-                    TimeProjectWorkloads(project, rep_num, binary)
-                    for rep_num in range(0, measurement_repetitions)
-                ]
-            )
+        pc = get_paper_config()
+        cs = pc.get_case_studies(project.name)[0]
+        cm = load_configuration_map_for_case_study(
+            pc, cs, PlainCommandlineConfiguration
         )
+        project.active_revision.extend(Variant(FeatureSource(), str(0)))
+
+        for config_id in cm.ids()[:3]:
+            # update configuration in project
+            project = deepcopy(project)
+            project.active_revision.update(
+                Revision(
+                    project.__class__, project.active_revision.primary,
+                    Variant(FeatureSource(), str(config_id))
+                )
+            )
+
+            # create new output file name
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary,
+                config_id
+            )
+
+            # add actions for configuration
+            analysis_actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        TimeProjectWorkloads(project, rep_num, binary)
+                        for rep_num in range(0, measurement_repetitions)
+                    ]
+                )
+            )
+
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
