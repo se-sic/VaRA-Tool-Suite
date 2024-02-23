@@ -11,7 +11,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -47,6 +51,7 @@ class Bzip2(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -59,7 +64,6 @@ class Bzip2(VProject):
                 "countries-land-100m.geo.json"
             ]
         ),
-        FeatureSource(),
         HTTPMultiple(
             local="geo-maps-compr",
             remote={
@@ -98,37 +102,37 @@ class Bzip2(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
-                "--keep",
+                ConfigParams("-z", "-k"),
                 # bzip2 compresses very fast even on the best setting, so we
                 # need the three input files to get approximately 30 seconds
                 # total execution time
                 "geo-maps/countries-land-1m.geo.json",
                 "geo-maps/countries-land-10m.geo.json",
                 "geo-maps/countries-land-100m.geo.json",
-                label="med_geo",
+                label="medgeo",
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.bz2",
                     "geo-maps/countries-land-10m.geo.json.bz2",
                     "geo-maps/countries-land-100m.geo.json.bz2"
                 ],
-                requires_all_args={"--compress"}
+                requires_all_args={"-z", "-k"}
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
-                "--keep",
+                ConfigParams("-d", "-k"),
                 # bzip2 compresses very fast even on the best setting, so we
                 # need the three input files to get approximately 30 seconds
                 # total execution time
                 "geo-maps-compr/countries-land-1m.geo.json.bz2",
                 "geo-maps-compr/countries-land-10m.geo.json.bz2",
                 "geo-maps-compr/countries-land-100m.geo.json.bz2",
-                label="med_geo",
+                label="medgeo",
                 creates=[
                     "geo-maps-compr/countries-land-1m.geo.json",
                     "geo-maps-compr/countries-land-10m.geo.json",
                     "geo-maps-compr/countries-land-100m.geo.json"
                 ],
-                requires_all_args={"--decompress"}
+                requires_all_args={"-d", "-k"}
             )
         ],
     }
