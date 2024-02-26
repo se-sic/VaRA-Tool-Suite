@@ -5,6 +5,8 @@ import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from plumbum import local
+from benchbuild.utils.cmd import cmake
+from benchbuild.utils.settings import get_number_of_jobs
 
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.project.project_domain import ProjectDomains
@@ -19,6 +21,7 @@ from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.ts_utils.project_sources import VaraTestRepoSource
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.settings import bb_cfg
 
 
 class HasInfluence(VProject):
@@ -51,7 +54,10 @@ class HasInfluence(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             Command(
-                SourceRoot("HasInfluence") / RSBinary("main"),
+                SourceRoot("HasInfluence") / RSBinary("HasInfluence"),
+                "--f1",
+                "--f2",
+                "--f3",
                 "test-files/agatha.txt",
                 label="agatha"
             ),
@@ -64,7 +70,7 @@ class HasInfluence(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
             get_local_project_git_path(HasInfluence.NAME)
-        ).specify_binary("main", BinaryType.EXECUTABLE)
+        ).specify_binary("HasInfluence", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -79,6 +85,8 @@ class HasInfluence(VProject):
         cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(source):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cxx_compiler)("main.cpp", "-o", "main")
+                bb.watch(cmake)("./")
+
+            bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)

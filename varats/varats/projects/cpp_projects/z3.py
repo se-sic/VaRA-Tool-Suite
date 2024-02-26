@@ -11,6 +11,9 @@ from plumbum import local
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
+from benchbuild.source.http import HTTPUntar
+from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from benchbuild.command import WorkloadSet, Command, SourceRoot
 from varats.project.project_util import (
     BinaryType,
     ProjectBinaryWrapper,
@@ -46,10 +49,60 @@ class Z3(VProject, ReleaseProviderHook):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        HTTPUntar(
+            local="uf50-218",
+            remote={
+                "1.0":
+                    "https://www.cs.ubc.ca/~hoos/SATLIB/Benchmarks/SAT/RND3SAT/uf50-218.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="uf250-1065",
+            remote={
+                "2.0":
+                    "https://www.cs.ubc.ca/~hoos/SATLIB/Benchmarks/SAT/RND3SAT/uf250-1065.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="uf150-645",
+            remote={
+                "3.0":
+                    "https://www.cs.ubc.ca/~hoos/SATLIB/Benchmarks/SAT/RND3SAT/uf150-645.tar.gz"
+            }
+        ),
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+
+    commands = []
+
+    for i in range(1, 200):
+        name = "uf50-0" + str(i)
+        commands.append(Command(
+                SourceRoot("z3") / RSBinary("z3"),
+                "--keep",
+                "uf50-218/" + name + ".cnf",
+                label=name,
+            ))
+    
+    for i in range(1, 100):
+        name = "uf250-0" + str(i)
+        commands.append(Command(
+                SourceRoot("z3") / RSBinary("z3"),
+                "--keep",
+                "uf250-1065/ai/hoos/Shortcuts/UF250.1065.100/" + name + ".cnf",
+                label=name,
+            ))
+        
+    for i in range(1, 100):
+        name = "uf150-0" + str(i)
+        commands.append(Command(
+                SourceRoot("z3") / RSBinary("z3"),
+                "--keep",
+                "uf150-1065/ai/hoos/Research/SAT/Formulae/UF150.645.100/" + name + ".cnf",
+                label=name,
+            ))
 
     @staticmethod
     def binaries_for_revision(
