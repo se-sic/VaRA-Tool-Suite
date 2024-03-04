@@ -42,7 +42,7 @@ class Bzip2(VProject):
     SOURCE = [
         PaperConfigSpecificGit(
             project_name="bzip2",
-            remote="https://github.com/libarchive/bzip2.git",
+            remote="https://gitlab.com/bzip2/bzip2",
             local="bzip2",
             refspec="origin/HEAD",
             limit=None,
