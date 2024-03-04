@@ -5,7 +5,12 @@ import typing as tp
 import pandas as pd
 from pygtrie import CharTrie
 
-from varats.data.cache_helper import get_data_file_path
+from varats.data.cache_helper import (
+    get_data_file_path,
+    load_cached_df_or_none,
+    CACHE_ID_COL,
+    CACHE_TIMESTAMP_COL,
+)
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.utils.git_util import ShortCommitHash
@@ -64,11 +69,21 @@ class EvaluationDatabase(abc.ABC):
     @classmethod
     def __get_data_for_case_study(
         cls, project_name: str, columns: tp.List[str], commit_map: CommitMap,
-        case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
+        case_study: tp.Optional[CaseStudy], cached_only: bool, **kwargs: tp.Any
     ) -> pd.DataFrame:
-        data: pd.DataFrame = cls._load_dataframe(
-            project_name, commit_map, case_study, **kwargs
-        )
+        data: pd.DataFrame
+
+        if cached_only:
+            maybe_data = load_cached_df_or_none(
+                cls.CACHE_ID, project_name, cls.COLUMN_TYPES
+            )
+            if maybe_data is None:
+                raise ValueError("Requested cache does not exist.")
+            data = maybe_data.drop(columns=[CACHE_ID_COL, CACHE_TIMESTAMP_COL])
+        else:
+            data = cls._load_dataframe(
+                project_name, commit_map, case_study, **kwargs
+            )
 
         if not [*data] == cls.COLUMNS:
             raise AssertionError(
@@ -101,8 +116,13 @@ class EvaluationDatabase(abc.ABC):
 
     @classmethod
     def get_data_for_project(
-        cls, project_name: str, columns: tp.List[str], commit_map: CommitMap,
-        *case_studies: CaseStudy, **kwargs: tp.Any
+        cls,
+        project_name: str,
+        columns: tp.List[str],
+        commit_map: CommitMap,
+        *case_studies: CaseStudy,
+        cached_only: bool = False,
+        **kwargs: tp.Any
     ) -> pd.DataFrame:
         """
         Retrieve data for a given project and case study.
@@ -127,14 +147,15 @@ class EvaluationDatabase(abc.ABC):
 
         if not case_studies:
             return cls.__get_data_for_case_study(
-                project_name, columns, commit_map, None, **kwargs
+                project_name, columns, commit_map, None, cached_only, **kwargs
             )
 
         data_frames: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
             data_frames.append(
                 cls.__get_data_for_case_study(
-                    project_name, columns, commit_map, case_study, **kwargs
+                    project_name, columns, commit_map, case_study, cached_only,
+                    **kwargs
                 )
             )
         return pd.concat(data_frames)
