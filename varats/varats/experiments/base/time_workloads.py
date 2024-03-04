@@ -112,7 +112,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         )
         project.active_revision.extend(Variant(FeatureSource(), str(0)))
 
-        for config_id in cm.ids()[:3]:
+        for config_id in cm.ids():
             # update configuration in project
             project = deepcopy(project)
             project.active_revision.update(
