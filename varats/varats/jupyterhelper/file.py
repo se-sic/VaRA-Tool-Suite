@@ -21,6 +21,7 @@ from varats.data.reports.szz_report import (
 from varats.experiments.vara.feature_perf_precision import (
     MPRTimeReportAggregate,
 )
+from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.tef_report import TEFReport
 
 
@@ -139,3 +140,15 @@ def load_mpr_time_report_aggregate(
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, MPRTimeReportAggregate)
+
+
+def load_wl_time_report_aggregate(
+    file_path: PathLikeTy
+) -> WLTimeReportAggregate:
+    """
+    Load a WLTimeReportAggregate from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, WLTimeReportAggregate)
