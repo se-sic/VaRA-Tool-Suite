@@ -2,9 +2,12 @@
 
 import typing as tp
 
+import graphviz
+import matplotlib.pyplot as plt
 import pandas as pd
 import scipy
 import seaborn as sns
+from sklearn import tree
 
 from varats.base.configuration import PlainCommandlineConfiguration
 from varats.data.databases.performance_evolution_database import (
@@ -18,7 +21,7 @@ from varats.plot.plots import PlotGenerator
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.exceptions import UnsupportedOperation
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 
 def create_heatmap(
@@ -49,12 +52,28 @@ class PerformanceEvolutionPlot(Plot, plot_name="performance_evolution_plot"):
         commit_map: CommitMap = get_commit_map(project_name)
 
         heatmap = create_heatmap(case_study, project_name, commit_map)
-        ax = sns.heatmap(heatmap)
-        ax.set_title(
-            self.plot_config.fig_title("Performance Evolution Heatmap")
+        configs = load_configuration_map_for_case_study(
+            get_paper_config(), case_study, PlainCommandlineConfiguration
         )
-        fig = ax.get_figure()
-        fig.set_size_inches(20, 20)
+        config_flags = []
+        for id, config in configs.id_config_tuples():
+            for flag in config.options():
+                config_flags.append({"id": id, "flag": flag.name})
+        df = pd.DataFrame(config_flags)
+        feature_matrix = pd.crosstab(df["id"], df["flag"])
+        linkage = scipy.cluster.hierarchy.linkage(
+            feature_matrix, method="average", optimal_ordering=True
+        )
+
+        # ax = sns.heatmap(heatmap_diff, cmap="vlag", center=0, robust=True)
+        grid = sns.clustermap(
+            heatmap,
+            row_linkage=linkage,
+            col_cluster=False,
+        )
+        # grid.legend.set(loc="right")
+        fig = grid.figure
+        fig.set_size_inches(30, 20)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -97,7 +116,25 @@ class PerformanceEvolutionDiffPlot(
             feature_matrix, method="average", optimal_ordering=True
         )
 
-        # ax = sns.heatmap(heatmap_diff, cmap="vlag", center=0, robust=True)
+        # CART
+        # values = heatmap_diff[ShortCommitHash("795b859eee")]
+        # values = heatmap_diff[ShortCommitHash("a1d78c5501")]
+        values = heatmap_diff[ShortCommitHash("74de1e2e6f")]
+        # values = values.map(lambda x: -1 if x < -0.5 else 1 if x > 0.5 else 0)
+        clf = tree.DecisionTreeRegressor(min_impurity_decrease=0.01)
+        clf = clf.fit(feature_matrix, values)
+        dot_data = tree.export_graphviz(
+            clf,
+            out_file=None,
+            feature_names=feature_matrix.columns.values.tolist(),
+            # class_names=["FASTER", "NONE", "SLOWER"],
+            filled=True,
+            rounded=True,
+            special_characters=True
+        )
+        graph = graphviz.Source(dot_data)
+        graph.render("tree")
+
         grid = sns.clustermap(
             heatmap_diff,
             row_linkage=linkage,
