@@ -10,7 +10,11 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -267,6 +271,7 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
             VCommand(
                 SourceRoot("PicoSATLoadTime") / RSBinary("picosat"),
                 "ibm-2004-03-k70.cnf",
+                ConfigParams(),
                 label="ibm-2004-03-k70.cnf",
             ),
         ],
@@ -307,7 +312,8 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
 
         with local.cwd(picosat_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(local[config_script_name])(["--trace", "--stats"])
+                bb.watch(local[config_script_name]
+                        )(["--trace", "--stats", "-g"])
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(picosat_source):
