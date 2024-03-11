@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -21,6 +22,18 @@ class PerfProfileReportAggregate(
 ):
     """Context Manager for parsing multiple perf profile reports stored inside a
     zip file."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, PerfProfileReport)
+
+
+class WLPerfProfileReportAggregate(
+    WorkloadSpecificReportAggregate[PerfProfileReport],
+    shorthand="WL" + PerfProfileReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
+    """Context Manager for parsing multiple perf profile reports stored inside a
+    zip file and grouping them based on the workload they belong to."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, PerfProfileReport)
