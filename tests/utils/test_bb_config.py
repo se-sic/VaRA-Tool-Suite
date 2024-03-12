@@ -76,7 +76,7 @@ class BenchBuildConfig(unittest.TestCase):
             "varats.experiments.discover_experiments",
             "varats.experiments.vara.region_instrumentation",
             "varats.experiments.vara.commit_annotation_report",
-            "varats.experiments.vara.blame_experiment",
+            "varats.experiments.vara.vara_experiments",
             "varats.experiments.vara.feature_experiment"
         ]
 

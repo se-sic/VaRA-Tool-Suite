@@ -1,5 +1,6 @@
-"""Implements the base blame experiment, making it easier to create different
-blame experiments that have a similar experiment setup."""
+"""Implements the base blame and feature blame experiment, making it easier to
+create different blame and feature blame experiments that have a similar
+experiment setup."""
 
 import typing as tp
 
@@ -49,6 +50,37 @@ def setup_basic_blame_experiment(
     # This c-flag is provided by VaRA and it suggests to use the git-blame
     # annotation.
     project.cflags += ["-fvara-GB"]
+
+
+def setup_basic_feature_blame_experiment(
+    experiment: VersionExperiment, project: Project,
+    report_type: tp.Type[BaseReport]
+) -> None:
+    """
+    Setup the project for a feature blame experiment.
+
+    - run time extensions
+    - compile time extensions
+    - prepare compiler
+    - configure C/CXX flags
+    """
+    # Add the required runtime extensions to the project(s).
+    project.runtime_extension = run.RuntimeExtension(project, experiment) \
+        << time.RunWithTime()
+
+    # Add the required compiler extensions to the project(s).
+    project.compiler_extension = compiler.RunCompiler(project, experiment) \
+        << RunWLLVM() \
+        << run.WithTimeout()
+
+    # Add own error handler to compile step.
+    project.compile = get_default_compile_error_wrapped(
+        experiment.get_handle(), project, report_type
+    )
+
+    # These flags are provided by VaRA and suggest to use git-blame
+    # and feature annotations.
+    project.cflags += ["-fvara-GB", "-fvara-feature"]
 
 
 def generate_basic_blame_experiment_actions(

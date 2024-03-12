@@ -12,7 +12,7 @@ from benchbuild.project import Project
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt, timeout
 
-import varats.experiments.vara.blame_experiment as BE
+import varats.experiments.vara.vara_experiments as BE
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
