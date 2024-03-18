@@ -66,12 +66,22 @@ class Location:
     def to_xml(self) -> str:
         """Convert the location to SPLConqueror feature model format."""
         xml = f"<path>{self.file}</path>\n"
-        xml += f"<start><line>{self.start_line}</line><column>{self.start_col}</column></start>\n"
-        xml += f"<end><line>{self.end_line}</line><column>{self.end_col}</column></end>\n"
+        xml += (
+            f"<start><line>{self.start_line}</line>"
+            f"<column>{self.start_col}</column></start>\n"
+        )
+        xml += (
+            f"<end><line>{self.end_line}</line>"
+            f"<column>{self.end_col}</column></end>\n"
+        )
         return xml
 
     def __str__(self) -> str:
-        return f"{self.file} {self.start_line}:{self.start_col} {self.end_line}:{self.end_col}"
+        return (
+            f"{self.file} "
+            f"{self.start_line}:{self.start_col} "
+            f"{self.end_line}:{self.end_col}"
+        )
 
 
 class FeatureAnnotation:
@@ -119,7 +129,8 @@ def __prompt_location(
     return tp.cast(
         Location,
         click.prompt(
-            f"Enter location for feature {feature_name} @ {commit_hash.short_hash}",
+            f"Enter location for feature "
+            f"{feature_name} @ {commit_hash.short_hash}",
             value_proc=parse_location
         )
     )
@@ -196,7 +207,8 @@ def __annotate(
         last_annotation_targets[feature_name] = target
         tracked_features[feature_name] = []
         LOG.debug(
-            f"Tracking {feature_name} @ {location}: {last_annotation_targets[feature_name]}"
+            f"Tracking {feature_name} @ {location}: "
+            f"{last_annotation_targets[feature_name]}"
         )
 
     for commit in walker:
@@ -207,7 +219,8 @@ def __annotate(
             current_target = __get_location_content(commit, annotation.location)
             if current_target != last_annotation_targets[feature]:
                 LOG.debug(
-                    f"{feature}: {current_target} != {last_annotation_targets[feature]}"
+                    f"{feature}: "
+                    f"{current_target} != {last_annotation_targets[feature]}"
                 )
                 # set removed field for annotation and store it
                 tracked_features[feature].append(
@@ -229,7 +242,8 @@ def __annotate(
                 assert new_target is not None, "Target must not be None"
                 last_annotation_targets[feature] = new_target
                 LOG.debug(
-                    f"Tracking {feature} @ {new_location}: {last_annotation_targets[feature]}"
+                    f"Tracking {feature} @ {new_location}: "
+                    f"{last_annotation_targets[feature]}"
                 )
 
     # store remaining annotations
