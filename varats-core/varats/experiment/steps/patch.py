@@ -29,9 +29,7 @@ class ApplyPatch(actions.ProjectStep):
             apply_patch(Path(self.project.source_of_primary), self.__patch.path)
 
         except ProcessExecutionError:
-            self.status = StepResult.ERROR
-
-        self.status = StepResult.OK
+            return StepResult.ERROR
 
         return StepResult.OK
 
@@ -63,9 +61,7 @@ class RevertPatch(actions.ProjectStep):
             )
 
         except ProcessExecutionError:
-            self.status = StepResult.ERROR
-
-        self.status = StepResult.OK
+            return StepResult.ERROR
 
         return StepResult.OK
 
