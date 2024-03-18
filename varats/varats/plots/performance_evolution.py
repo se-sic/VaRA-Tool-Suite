@@ -2,12 +2,10 @@
 
 import typing as tp
 
-import graphviz
-import matplotlib.pyplot as plt
 import pandas as pd
 import scipy
 import seaborn as sns
-from sklearn import tree
+from scipy.stats import mannwhitneyu
 
 from varats.base.configuration import PlainCommandlineConfiguration
 from varats.data.databases.performance_evolution_database import (
@@ -21,7 +19,56 @@ from varats.plot.plots import PlotGenerator
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.exceptions import UnsupportedOperation
-from varats.utils.git_util import FullCommitHash, ShortCommitHash
+from varats.utils.git_util import FullCommitHash
+
+
+def rrs(
+    feature_matrix: pd.DataFrame,
+    values: pd.Series,
+    min_size: int = 10,
+    significance_level: float = 0.01,
+    min_effect_size: float = 0.8,
+    max_depth: tp.Optional[int] = None
+) -> tp.Set[str]:
+    if max_depth is not None:
+        max_depth -= 1
+        if max_depth < 0:
+            return set()
+
+    relevant_features: tp.Set[str] = set()
+    for feature in feature_matrix.columns:
+        selected = values[feature_matrix[feature] == 1]
+        deselected = values[feature_matrix[feature] == 0]
+        if len(selected) < min_size or len(deselected) < min_size:
+            continue
+
+        U1, p = mannwhitneyu(selected, deselected)
+        U2 = len(selected) * len(deselected) - U1
+
+        # common language effect size
+        e1 = U1 / (len(selected) * len(deselected))
+        e2 = U2 / (len(selected) * len(deselected))
+
+        if p < significance_level:
+            if e1 >= min_effect_size or e2 >= min_effect_size:
+                relevant_features.add(feature)
+
+            relevant_features.update(
+                rrs(
+                    feature_matrix[feature_matrix[feature] == 1
+                                  ].drop(feature, axis="columns"), selected,
+                    min_size, significance_level, min_effect_size, max_depth
+                )
+            )
+            relevant_features.update(
+                rrs(
+                    feature_matrix[feature_matrix[feature] == 0
+                                  ].drop(feature, axis="columns"), deselected,
+                    min_size, significance_level, min_effect_size, max_depth
+                )
+            )
+
+    return relevant_features
 
 
 def create_heatmap(
@@ -65,13 +112,12 @@ class PerformanceEvolutionPlot(Plot, plot_name="performance_evolution_plot"):
             feature_matrix, method="average", optimal_ordering=True
         )
 
-        # ax = sns.heatmap(heatmap_diff, cmap="vlag", center=0, robust=True)
         grid = sns.clustermap(
             heatmap,
             row_linkage=linkage,
             col_cluster=False,
         )
-        # grid.legend.set(loc="right")
+
         fig = grid.figure
         fig.set_size_inches(30, 20)
 
@@ -116,24 +162,11 @@ class PerformanceEvolutionDiffPlot(
             feature_matrix, method="average", optimal_ordering=True
         )
 
-        # CART
-        # values = heatmap_diff[ShortCommitHash("795b859eee")]
-        # values = heatmap_diff[ShortCommitHash("a1d78c5501")]
-        values = heatmap_diff[ShortCommitHash("74de1e2e6f")]
-        # values = values.map(lambda x: -1 if x < -0.5 else 1 if x > 0.5 else 0)
-        clf = tree.DecisionTreeRegressor(min_impurity_decrease=0.01)
-        clf = clf.fit(feature_matrix, values)
-        dot_data = tree.export_graphviz(
-            clf,
-            out_file=None,
-            feature_names=feature_matrix.columns.values.tolist(),
-            # class_names=["FASTER", "NONE", "SLOWER"],
-            filled=True,
-            rounded=True,
-            special_characters=True
-        )
-        graph = graphviz.Source(dot_data)
-        graph.render("tree")
+        # RRS
+        for commit in heatmap_diff.columns:
+            values = heatmap_diff[commit].fillna(0)
+            relevant_features = rrs(feature_matrix, values, max_depth=3)
+            print(f"{commit.hash}: {relevant_features}")
 
         grid = sns.clustermap(
             heatmap_diff,
@@ -143,7 +176,7 @@ class PerformanceEvolutionDiffPlot(
             center=0,
             robust=True
         )
-        # grid.legend.set(loc="right")
+
         fig = grid.figure
         fig.set_size_inches(30, 20)
 
