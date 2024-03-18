@@ -100,7 +100,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         # Only consider the main/first binary
         binary = project.binaries[0]
 
-        measurement_repetitions = 2
+        measurement_repetitions = 5
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
