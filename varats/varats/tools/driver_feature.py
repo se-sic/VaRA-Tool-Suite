@@ -19,6 +19,8 @@ LOG = logging.getLogger(__name__)
 
 
 class Location:
+    """A location in a source code file."""
+
     LOCATION_FORMAT = re.compile(
         r"(?P<file>[\w.]+)\s"
         r"(?P<start_line>\d+):(?P<start_col>\d+)\s"
@@ -40,6 +42,7 @@ class Location:
         s: str,
         old_location: tp.Optional["Location"] = None
     ) -> tp.Optional["Location"]:
+        """Create a location from a string."""
         if old_location is not None and s.isnumeric():
             new_line = int(s)
             return Location(
@@ -61,6 +64,7 @@ class Location:
         )
 
     def to_xml(self) -> str:
+        """Convert the location to SPLConqueror feature model format."""
         xml = f"<path>{self.file}</path>\n"
         xml += f"<start><line>{self.start_line}</line><column>{self.start_col}</column></start>\n"
         xml += f"<end><line>{self.end_line}</line><column>{self.end_col}</column></end>\n"
@@ -71,6 +75,7 @@ class Location:
 
 
 class FeatureAnnotation:
+    """A versioned feature source annotation."""
 
     def __init__(
         self,
@@ -85,6 +90,7 @@ class FeatureAnnotation:
         self.removed = removed
 
     def to_xml(self) -> str:
+        """Convert the annotation to SPLConqueror feature model format."""
         xml = "<sourceRange>\n"
         xml += "  <revisionRange>\n"
         xml += f"    <introduced>{self.introduced.hash}</introduced>\n"
@@ -97,7 +103,7 @@ class FeatureAnnotation:
         return xml
 
 
-def prompt_location(
+def __prompt_location(
     feature_name: str,
     commit_hash: FullCommitHash,
     old_location: tp.Optional[Location] = None
@@ -116,8 +122,8 @@ def prompt_location(
     )
 
 
-def get_location_content(commit: Commit,
-                         location: Location) -> tp.Optional[str]:
+def __get_location_content(commit: Commit,
+                           location: Location) -> tp.Optional[str]:
     assert location.start_line == location.end_line, \
         "Multiline locations are not supported yet."
     lines = tp.cast(Blob, commit.tree[location.file]).data.splitlines()
@@ -177,11 +183,11 @@ def __annotate(
     while click.confirm("Annotate another feature?"):
         feature_name = click.prompt("Enter feature name to annotate", type=str)
         commit_hash = FullCommitHash(str(first_commit.id))
-        location = prompt_location(feature_name, commit_hash)
+        location = __prompt_location(feature_name, commit_hash)
         last_annotations[feature_name] = FeatureAnnotation(
             feature_name, location, commit_hash
         )
-        last_annotation_targets[feature_name] = get_location_content(
+        last_annotation_targets[feature_name] = __get_location_content(
             first_commit, location
         )
         tracked_features[feature_name] = []
@@ -194,7 +200,7 @@ def __annotate(
         click.echo(f"Current revision: {commit_hash.hash}")
 
         for feature, annotation in last_annotations.items():
-            current_target = get_location_content(commit, annotation.location)
+            current_target = __get_location_content(commit, annotation.location)
             if current_target != last_annotation_targets[feature]:
                 LOG.debug(
                     f"{feature}: {current_target} != {last_annotation_targets[feature]}"
@@ -209,13 +215,13 @@ def __annotate(
 
                 # track new feature location
                 click.echo(f"Location of feature {feature} has changed.")
-                new_location = prompt_location(
+                new_location = __prompt_location(
                     feature, commit_hash, annotation.location
                 )
                 last_annotations[feature] = FeatureAnnotation(
                     feature, new_location, commit_hash
                 )
-                last_annotation_targets[feature] = get_location_content(
+                last_annotation_targets[feature] = __get_location_content(
                     commit, new_location
                 )
                 LOG.debug(
