@@ -100,6 +100,7 @@ import cryptography.exceptions  # isort:skip
 import click  # isort:skip
 import git  # isort:skip
 import github  # isort:skip
+import pygit2.branches  # isort:skip
 import urllib3.exceptions  # isort:skip
 
 # Some packages use new syntax for type checking that isn't available to us
