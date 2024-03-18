@@ -27,6 +27,7 @@ from varats.experiments.vara.blame_experiment import (
     generate_basic_blame_experiment_actions,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.mapping.commit_map import get_commit_map
 from varats.project.project_util import get_local_project_git_paths
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
@@ -34,8 +35,19 @@ from varats.report.report import ReportSpecification
 from varats.utils.git_util import ShortCommitHash, UNCOMMITTED_COMMIT_HASH
 
 
-def createCommitFilter() -> InteractionFilter:
-    return SingleCommitFilter(commit_hash=UNCOMMITTED_COMMIT_HASH.hash)
+def createCommitFilter(project: VProject) -> InteractionFilter:
+    cmap = get_commit_map(project.name)
+    commit = cmap.complete_c_hash(ShortCommitHash(project.version_of_primary))
+    return SingleCommitFilter(commit_hash=next(iter(commit)).hash)
+
+
+def get_function_annotations(project_name: str) -> tp.List[str]:
+    return {
+        "bzip2": [
+            "BZ2_decompress", "BZ2_bzDecompress", "BZ2_compressBlock",
+            "BZ2_blockSort", "mainGtU", "sendMTFValues", "handle_compress"
+        ],
+    }[project_name]
 
 
 class PerfInterReportGeneration(actions.ProjectStep):
@@ -46,30 +58,30 @@ class PerfInterReportGeneration(actions.ProjectStep):
 
     project: VProject
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(
+        self,
+        project: Project,
+        experiment_handle: ExperimentHandle,
+        interactionFilter: InteractionFilter = SingleCommitFilter(
+            commit_hash=UNCOMMITTED_COMMIT_HASH.hash
+        )
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.__interaction_filter = interactionFilter
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
 
     def analyze(self) -> actions.StepResult:
-        """
-        This step performs the actual analysis with the correct command line
-        flags.
-
-        Flags used:
-            * -vara-BR: to run a commit flow report
-            * -yaml-report-outfile=<path>: specify the path to store the results
-        """
-
-        interaction_filter = createCommitFilter()
         filter_file_path = Path(
             self.project.source_of_primary
         ).parent / "interaction_filter.yaml"
         with filter_file_path.open("w") as filter_file:
-            version_header = interaction_filter.getVersionHeader().get_dict()
-            yaml.dump_all([version_header, interaction_filter], filter_file)
+            version_header = self.__interaction_filter.getVersionHeader(
+            ).get_dict()
+            yaml.dump_all([version_header, self.__interaction_filter],
+                          filter_file)
 
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
@@ -89,7 +101,8 @@ class PerfInterReportGeneration(actions.ProjectStep):
                 get_cached_bc_file_path(
                     self.project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-                        BCFileExtensions.BLAME, BCFileExtensions.FEATURE
+                        BCFileExtensions.BLAME, BCFileExtensions.FEATURE,
+                        BCFileExtensions.HOT_CODE
                     ]
                 )
             ]
@@ -120,8 +133,10 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
             self, project, PerformanceInteractionReport
         )
         project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
-        project.cflags.append("-fvara-handleRM=High")
-        # project.cflags += ["-O1", "-g0"]
+        project.cflags.extend([
+            "-fvara-handleRM=High",
+            f"-fvara-highlight-function={','.join(get_function_annotations(project.name))}"
+        ])
         project.cflags += [
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fuse-ld=lld"
         ]
@@ -130,6 +145,55 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
             BCFileExtensions.TBAA,
             BCFileExtensions.BLAME,
             BCFileExtensions.FEATURE,
+            BCFileExtensions.HOT_CODE,
+        ]
+
+        analysis_actions = []
+
+        analysis_actions += generate_basic_blame_experiment_actions(
+            project,
+            bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
+            )
+        )
+        analysis_actions.append(
+            PerfInterReportGeneration(
+                project, self.get_handle(), createCommitFilter(project)
+            )
+        )
+
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+
+
+class PerformanceInteractionExperimentSynthetic(
+    VersionExperiment, shorthand="PIES"
+):
+    """"""
+
+    NAME = "PerfInteractionsSynth"
+
+    REPORT_SPEC = ReportSpecification(PerformanceInteractionReport)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        setup_basic_blame_experiment(
+            self, project, PerformanceInteractionReport
+        )
+        project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
+        project.cflags.extend(["-fvara-handleRM=High"])
+        project.cflags += [
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fuse-ld=lld"
+        ]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+            BCFileExtensions.BLAME,
+            BCFileExtensions.FEATURE,
+            BCFileExtensions.HOT_CODE,
         ]
 
         patch_provider = PatchProvider.get_provider_for_project(project)

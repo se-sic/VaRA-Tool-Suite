@@ -48,6 +48,7 @@ class BCFileExtensions(Enum):
     TBAA = "TBAA"
     FEATURE = 'feature'
     BLAME = "blame"
+    HOT_CODE = "hot"
 
     def __lt__(self, other: tp.Any) -> bool:
         if isinstance(other, BCFileExtensions):
