@@ -1,4 +1,4 @@
-"""Project file for xz."""
+"""Project file for bzip2."""
 import typing as tp
 from pathlib import Path
 
@@ -36,7 +36,7 @@ from varats.utils.settings import bb_cfg
 
 
 class Bzip2(VProject):
-    """Compression and decompression tool bzip2 (fetched by Git)"""
+    """Compression and decompression tool bzip2."""
 
     NAME = 'bzip2'
     GROUP = 'c_projects'
@@ -89,13 +89,13 @@ class Bzip2(VProject):
     CONTAINER = [
         (
             RevisionRange("ad723d6558718e9bbaca930e7e715c9ee754e90e",
-                          "HEAD"), get_base_image(ImageBase.DEBIAN_10)
+                          "HEAD"), get_base_image(ImageBase.DEBIAN_11)
         ),
         (
             _AUTOTOOLS_VERSIONS,
-            get_base_image(ImageBase.DEBIAN_10
+            get_base_image(ImageBase.DEBIAN_11
                           ).run('apt', 'install', '-y', 'autoconf', 'automake')
-        ), (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_10))
+        ), (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_11))
     ]
 
     WORKLOADS = {
@@ -175,7 +175,10 @@ class Bzip2(VProject):
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                    bb.watch(make)(
+                        f"CC={str(cc_compiler)}", "-j",
+                        get_number_of_jobs(bb_cfg())
+                    )
         elif bzip2_version in typed_revision_range(
             Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
         ):

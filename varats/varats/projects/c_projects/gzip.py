@@ -81,7 +81,7 @@ class Gzip(VProject, ReleaseProviderHook):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_11).run(
         'apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'autopoint',
         'gettext', 'texinfo', 'rsync'
     )

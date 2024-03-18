@@ -78,7 +78,7 @@ class Xz(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_11).run(
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
         'autotools-dev', 'libtool', 'pkg-config'
     )
