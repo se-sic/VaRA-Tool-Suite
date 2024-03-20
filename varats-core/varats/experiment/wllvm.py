@@ -48,7 +48,7 @@ class BCFileExtensions(Enum):
     TBAA = "TBAA"
     FEATURE = 'feature'
     BLAME = "blame"
-    ARCH = "fvara-arch"
+    ARCH = "architecture"
 
     def __lt__(self, other: tp.Any) -> bool:
         if isinstance(other, BCFileExtensions):
