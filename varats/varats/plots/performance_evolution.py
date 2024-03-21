@@ -2,6 +2,7 @@
 
 import typing as tp
 
+import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
@@ -80,6 +81,7 @@ def create_heatmap(
         case_study,
         cached_only=True
     )
+    df["wall_clock_time"] = df["wall_clock_time"].apply(np.average)
 
     def map_index(index: pd.Index) -> pd.Index:
         return pd.Index([commit_map.short_time_id(c) for c in index])

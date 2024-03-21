@@ -26,7 +26,7 @@ class PerformanceEvolutionDatabase(
     cache_id="performance_evolution_data",
     column_types={
         'config_id': 'int64',
-        'wall_clock_time': 'float64'
+        'wall_clock_time': 'object'
     }
 ):
 
@@ -50,19 +50,20 @@ class PerformanceEvolutionDatabase(
             workload = next(iter(report.workload_names()))
 
             commit_hash = report.filename.commit_hash
-            return pd.DataFrame({
-                'revision':
-                    commit_hash.hash,
-                'time_id':
-                    commit_map.short_time_id(commit_hash),
-                'config_id':
-                    report.filename.config_id,
-                'wall_clock_time':
-                    np.average(report.measurements_wall_clock_time(workload))
+            df = pd.DataFrame({
+                'revision': commit_hash.hash,
+                'time_id': commit_map.short_time_id(commit_hash),
+                'config_id': report.filename.config_id,
             },
-                                index=[0]), commit_hash.hash, str(
-                                    report_path.stat().st_mtime_ns
-                                )
+                              columns=cls.COLUMNS,
+                              index=[0])
+            df = df.astype(cls.COLUMN_TYPES)
+            # workaround to store a list in a data frame
+            df.loc[0, "wall_clock_time"] = report.measurements_wall_clock_time(
+                workload
+            )
+
+            return df, commit_hash.hash, str(report_path.stat().st_mtime_ns)
 
         configs = load_configuration_map_for_case_study(
             get_paper_config(), case_study, PlainCommandlineConfiguration
