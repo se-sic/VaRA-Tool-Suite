@@ -12,7 +12,7 @@ from benchbuild.utils import actions
 from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import (
     iteridebenchmark,
-    phasar_llvm,
+    phasar_cli,
     time,
     timeout,
     mkdir,
@@ -870,7 +870,7 @@ class PhasarIDEStats(actions.ProjectStep):  # type: ignore
             )
         ]
 
-        phasar_cmd = phasar_llvm[phasar_params]
+        phasar_cmd = phasar_cli[phasar_params]
 
         result_file = tmp_dir / "phasar_bc_stats.txt"
         run_cmd = phasar_cmd > str(result_file)
