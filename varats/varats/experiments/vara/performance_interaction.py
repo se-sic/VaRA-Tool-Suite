@@ -90,9 +90,9 @@ class PerfInterReportGeneration(actions.ProjectStep):
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-PTFDD", "-vara-HD", "-vara-BD",
-                "-vara-PIR", "-vara-init-commits", "-vara-rewriteMD",
-                "-vara-git-mappings=" + ",".join([
+                "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
+                "-vara-BD", "-vara-PIR", "-vara-init-commits",
+                "-vara-rewriteMD", "-vara-git-mappings=" + ",".join([
                     f'{repo}:{path}' for repo, path in
                     get_local_project_git_paths(self.project.name).items()
                 ]), "-vara-use-phasar",
