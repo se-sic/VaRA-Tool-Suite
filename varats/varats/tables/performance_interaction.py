@@ -1,0 +1,154 @@
+"""Performance interaction eval."""
+import ast
+import logging
+import typing as tp
+from itertools import pairwise
+
+import pandas as pd
+from scipy.stats import mannwhitneyu
+
+from varats.base.configuration import PlainCommandlineConfiguration
+from varats.data.databases.performance_evolution_database import (
+    PerformanceEvolutionDatabase,
+)
+from varats.data.metrics import ConfusionMatrix
+from varats.data.reports.performance_interaction_report import (
+    PerformanceInteractionReport,
+)
+from varats.experiments.vara.performance_interaction import (
+    PerformanceInteractionExperiment,
+)
+from varats.jupyterhelper.file import load_performance_interaction_report
+from varats.mapping.commit_map import get_commit_map
+from varats.paper.paper_config import get_loaded_paper_config, get_paper_config
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.project.project_util import (
+    get_project_cls_by_name,
+    get_local_project_git_path,
+)
+from varats.revision.revisions import get_processed_revisions_files
+from varats.table.table import Table
+from varats.table.table_utils import dataframe_to_table
+from varats.table.tables import TableFormat, TableGenerator
+from varats.utils.config import load_configuration_map_for_case_study
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
+
+LOG = logging.Logger(__name__)
+
+
+class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        significance_level: float = 0.05
+
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        data: tp.List[pd.DataFrame] = []
+        for case_study in case_studies:
+            project_name = case_study.project_name
+            commit_map = get_commit_map(project_name)
+
+            revisions = sorted(case_study.revisions, key=commit_map.time_id)
+
+            configs = load_configuration_map_for_case_study(
+                get_paper_config(), case_study, PlainCommandlineConfiguration
+            )
+
+            performance_data = PerformanceEvolutionDatabase.get_data_for_project(
+                project_name, ["revision", "config_id", "wall_clock_time"],
+                commit_map,
+                case_study,
+                cached_only=True
+            ).pivot(
+                index="config_id", columns="revision", values="wall_clock_time"
+            )
+
+            perf_inter_report_files = get_processed_revisions_files(
+                project_name,
+                PerformanceInteractionExperiment,
+                file_name_filter=get_case_study_file_name_filter(case_study)
+            )
+            perf_inter_reports = {
+                report_file.report_filename.commit_hash:
+                load_performance_interaction_report(report_file)
+                for report_file in perf_inter_report_files
+            }
+
+            actual_positive_values: tp.List[FullCommitHash] = []
+            actual_negative_values: tp.List[FullCommitHash] = []
+            predicted_positive_values: tp.List[FullCommitHash] = []
+            predicted_negative_values: tp.List[FullCommitHash] = []
+
+            for old_rev, new_rev in pairwise(revisions):
+                old_rev_short = old_rev.to_short_commit_hash()
+                new_rev_short = new_rev.to_short_commit_hash()
+                report = perf_inter_reports.get(
+                    new_rev.to_short_commit_hash(), None
+                )
+                if old_rev_short not in performance_data.columns or new_rev_short not in performance_data.columns or report is None:
+                    continue
+
+                # ground truth classification
+                is_regression = False
+                for cid in configs.ids():
+                    old_vals = ast.literal_eval(
+                        performance_data.loc[cid, old_rev_short]
+                    )
+                    new_vals = ast.literal_eval(
+                        performance_data.loc[cid, new_rev_short]
+                    )
+                    _, p = mannwhitneyu(old_vals, new_vals)
+                    if p < significance_level:
+                        is_regression = True
+                        break
+
+                if is_regression:
+                    actual_positive_values.append(new_rev)
+                else:
+                    actual_negative_values.append(new_rev)
+
+                # performance interaction classification
+                if report is not None and report.performance_interactions:
+                    predicted_positive_values.append(new_rev)
+                else:
+                    predicted_negative_values.append(new_rev)
+
+            confusion_matrix = ConfusionMatrix(
+                actual_positive_values,
+                actual_negative_values,
+                predicted_positive_values,
+                predicted_negative_values,
+            )
+            cs_data = {
+                project_name: {
+                    "Revisions": confusion_matrix.P + confusion_matrix.N,
+                    "Regressions": confusion_matrix.P,
+                    "Detected": confusion_matrix.PP,
+                    "Recall": confusion_matrix.recall(),
+                    "Precision": confusion_matrix.precision(),
+                }
+            }
+
+            data.append(pd.DataFrame.from_dict(cs_data, orient="index"))
+
+        df = pd.concat(data).sort_index()
+
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            style.format(thousands=r"\,")
+
+        return dataframe_to_table(df, table_format, style, wrap_table, **kwargs)
+
+
+class PerformanceRegressionClassification(
+    TableGenerator, generator_name="perf-reg", options=[]
+):
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PerformanceRegressionClassificationTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]

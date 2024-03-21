@@ -13,6 +13,9 @@ from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
 )
+from varats.data.reports.performance_interaction_report import (
+    PerformanceInteractionReport,
+)
 from varats.data.reports.szz_report import (
     SZZUnleashedReport,
     SZZReport,
@@ -152,3 +155,15 @@ def load_wl_time_report_aggregate(
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, WLTimeReportAggregate)
+
+
+def load_performance_interaction_report(
+    file_path: PathLikeTy
+) -> PerformanceInteractionReport:
+    """
+    Load a PerformanceInteractionReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, PerformanceInteractionReport)
