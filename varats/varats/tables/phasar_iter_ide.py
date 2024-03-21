@@ -1,4 +1,5 @@
 import itertools
+import math
 import typing as tp
 from math import isnan
 
@@ -70,12 +71,47 @@ class FormattedNumber:
         return self.value < other
 
 
+def minmaxavg(dat: tp.List[float]) -> tp.Tuple[float, float, float]:
+    Min = np.min(dat)
+    Max = np.max(dat)
+    Avg = np.average(dat)
+    return (Min, Max, Avg)
+
+
 class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
     TIMEOUT = "t/o"
     OUT_OF_MEMORY = "OOM"
 
+    def compute_variance(self, var_data: tp.List[dict], label: str):
+        taint_var = [x["Taint"] for x in var_data if not math.isnan(x["Taint"])]
+        typestate_var = [
+            x["Typestate"] for x in var_data if not math.isnan(x["Typestate"])
+        ]
+        lca_var = [x["LCA"] for x in var_data if not math.isnan(x["LCA"])]
+        iia_var = [x["IIA"] for x in var_data if not math.isnan(x["IIA"])]
+
+        print("Standard Deviations for", label)
+        print("> Taint MinMaxAvg:", minmaxavg(taint_var))
+        print("> Typestate MinMaxAvg:", minmaxavg(typestate_var))
+        print("> LCA MinMaxAvg:", minmaxavg(lca_var))
+        print("> IIA MinMaxAvg:", minmaxavg(iia_var))
+
+        print(
+            ">> Overall MinAmxAvg:",
+            minmaxavg([*taint_var, *iia_var, *typestate_var, *lca_var])
+        )
+
+        pass
+
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         cs_data: tp.List[pd.DataFrame] = []
+        old_var_data: tp.List[dict] = []
+        jf2_var_data: tp.List[dict] = []
+        jf1_var_data: tp.List[dict] = []
+        old_var_data_rel: tp.List[dict] = []
+        jf2_var_data_rel: tp.List[dict] = []
+        jf1_var_data_rel: tp.List[dict] = []
+        total_runtime: float = 0
 
         for case_study in get_loaded_paper_config().get_all_case_studies():
             print(f"Working on {case_study.project_name}")
@@ -111,7 +147,7 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
             for report_file, iia_report_file in itertools.zip_longest(
                 report_files, iia_report_files
             ):
-                report = load_phasar_iter_ide_stats_report(
+                report: PhasarIterIDEStatsReport = load_phasar_iter_ide_stats_report(
                     report_file
                 ) if report_file is not None else None
                 iia_report = load_phasar_iter_ide_stats_report(
@@ -133,6 +169,8 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                     # raise TableDataEmpty(
                     #     "Stats file was not present in the report."
                     # )
+
+                total_runtime += report.aggregate_total_runtime()
 
                 def handle_time_report(tr: tp.Optional[TimeReportAggregate]):
                     if tr is None:
@@ -161,6 +199,19 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
                             time = "<1"
 
                     return time, mem
+
+                def handle_variance(tr: tp.Optional[TimeReportAggregate]):
+                    if tr is None:
+                        return 0
+
+                    return np.std(tr.measurements_wall_clock_time)
+
+                def handle_rel_variance(tr: tp.Optional[TimeReportAggregate]):
+                    if tr is None:
+                        return 0
+
+                    return np.std(tr.measurements_wall_clock_time
+                                 ) / np.mean(tr.measurements_wall_clock_time)
 
                 typestate_time, typestate_mem = handle_time_report(
                     report.old_typestate
@@ -206,12 +257,62 @@ class PhasarIterIDEStats(Table, table_name="phasar-iter-ide-stats"):
 
                 cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
+                old_var_data.append({
+                    "Taint": handle_variance(report.old_taint),
+                    "Typestate": handle_variance(report.old_typestate),
+                    "LCA": handle_variance(report.old_lca),
+                    "IIA": handle_variance(report.old_iia),
+                })
+                jf2_var_data.append({
+                    "Taint": handle_variance(report.new_taint),
+                    "Typestate": handle_variance(report.new_typestate),
+                    "LCA": handle_variance(report.new_lca),
+                    "IIA": handle_variance(report.new_iia),
+                })
+                jf1_var_data.append({
+                    "Taint": handle_variance(report.new_taint_jf1),
+                    "Typestate": handle_variance(report.new_typestate_jf1),
+                    "LCA": handle_variance(report.new_lca_jf1),
+                    "IIA": handle_variance(report.new_iia_jf1),
+                })
+
+                old_var_data_rel.append({
+                    "Taint": handle_rel_variance(report.old_taint),
+                    "Typestate": handle_rel_variance(report.old_typestate),
+                    "LCA": handle_rel_variance(report.old_lca),
+                    "IIA": handle_rel_variance(report.old_iia),
+                })
+                jf2_var_data_rel.append({
+                    "Taint": handle_rel_variance(report.new_taint),
+                    "Typestate": handle_rel_variance(report.new_typestate),
+                    "LCA": handle_rel_variance(report.new_lca),
+                    "IIA": handle_rel_variance(report.new_iia),
+                })
+                jf1_var_data_rel.append({
+                    "Taint": handle_rel_variance(report.new_taint_jf1),
+                    "Typestate": handle_rel_variance(report.new_typestate_jf1),
+                    "LCA": handle_rel_variance(report.new_lca_jf1),
+                    "IIA": handle_rel_variance(report.new_iia_jf1),
+                })
+
         if len(cs_data) == 0:
             raise TableDataEmpty()
 
         df = pd.concat(cs_data).sort_index()
         print(df)
         print(df.columns)
+
+        self.compute_variance(old_var_data, "old")
+        self.compute_variance(jf2_var_data, "JF2")
+        self.compute_variance(jf1_var_data, "JF1")
+
+        self.compute_variance(old_var_data_rel, "old-rel")
+        self.compute_variance(jf2_var_data_rel, "JF2-rel")
+        self.compute_variance(jf1_var_data_rel, "JF1-rel")
+
+        print(
+            f"----------------\nTotal Runtime: {total_runtime}s; {total_runtime/60}m; {total_runtime/3600}h, {total_runtime/86400}d"
+        )
 
         df.columns = pd.MultiIndex.from_tuples([
             ('', '{Revision}'),

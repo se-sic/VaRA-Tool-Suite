@@ -914,6 +914,19 @@ class PhasarIterIDEStatsReport(
 
         return ret
 
+    def aggregate_total_runtime(self) -> float:
+        reports = self.time_reports_as_dict()
+        count = 0
+
+        def counter(x):
+            nonlocal count
+            count += np.sum(x.measurements_wall_clock_time)
+            return x
+
+        flatten_dict(reports, counter)
+
+        return count
+
     def aggregate_timeouts(self) -> dict:
         reports = self.time_reports_as_dict()
 

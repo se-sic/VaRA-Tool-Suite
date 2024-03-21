@@ -16,8 +16,13 @@ from varats.experiment.experiment_util import (
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
     get_current_config_id,
+    create_default_compiler_error_handler,
 )
-from varats.experiment.wllvm import RunWLLVM
+from varats.experiment.wllvm import (
+    RunWLLVM,
+    BCFileExtensions,
+    get_bc_cache_actions,
+)
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
@@ -88,9 +93,22 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+        ]
+
         analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
+
+        analysis_actions += get_bc_cache_actions(
+            project,
+            bc_file_extensions=bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
+                self.get_handle(), project, self.REPORT_SPEC.main_report
+            )
+        )
+        #analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
