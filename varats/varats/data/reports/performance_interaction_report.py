@@ -59,10 +59,12 @@ class PerformanceInteractionReport(
             raw_report = next(documents)
 
             for raw_inter in raw_report['perf-inters']:
-                self.__perf_inters += PerfInteraction(
-                    raw_inter['commit'],
-                    raw_inter['perf'],
-                    raw_inter['features'],
+                self.__perf_inters.append(
+                    PerfInteraction(
+                        raw_inter['commit'],
+                        raw_inter['perf'],
+                        raw_inter['features'],
+                    )
                 )
 
     @property
