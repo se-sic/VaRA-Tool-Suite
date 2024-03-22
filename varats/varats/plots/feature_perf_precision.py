@@ -22,6 +22,7 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
+from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
@@ -79,7 +80,7 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
     different profilers."""
 
     def plot(self, view_mode: bool) -> None:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
+        case_studies = self.plot_kwargs["case_studies"]
         profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
         # Data aggregation
@@ -153,12 +154,40 @@ class PerfPrecisionDistPlot(Plot, plot_name='fperf_precision_dist'):
 
 
 class PerfProfDistPlotGenerator(
-    PlotGenerator, generator_name="fperf-precision-dist", options=[]
+    PlotGenerator,
+    generator_name="fperf-precision-dist",
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
-    """Generates performance distribution plot."""
+    """Generates performance distribution plot for a given list of case
+    studies."""
 
     def generate(self) -> tp.List[Plot]:
-        return [PerfPrecisionDistPlot(self.plot_config, **self.plot_kwargs)]
+        case_studies = self.plot_kwargs.pop("case_study")
+        return [
+            PerfPrecisionDistPlot(
+                self.plot_config, case_studies=case_studies, **self.plot_kwargs
+            )
+        ]
+
+
+class PerfProfDistPlotGeneratorForEachCS(
+    PlotGenerator,
+    generator_name="fperf-precision-dist-cs",
+    options=[REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates performance distribution plot for each of the given case
+    studies."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies = self.plot_kwargs.pop("case_study")
+        return [
+            PerfPrecisionDistPlot(
+                self.plot_config,
+                case_study=case_study,
+                case_studies=[case_study],
+                **self.plot_kwargs
+            ) for case_study in case_studies
+        ]
 
 
 class PerfOverheadPlot(Plot, plot_name='fperf_overhead'):
