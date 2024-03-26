@@ -5,6 +5,7 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
+from utils.filesystem_util import lock_file
 
 from varats.provider.provider import Provider
 
@@ -90,6 +91,9 @@ class FeatureModelProvider(Provider):
             refspec="origin/HEAD",
             limit=1,
         )
-        fm_source.fetch()
+        lock_path = Path(target_prefix()) / "fm_provider.lock"
+
+        with lock_file(lock_path):
+            fm_source.fetch()
 
         return Path(Path(target_prefix()) / fm_source.local)
