@@ -478,7 +478,7 @@ class ChurnConfig():
         value: tp.Set[str]  # pylint: disable=invalid-name
 
         C = {"h", "c"}
-        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}
+        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc", "hh"}
 
     def __init__(self) -> None:
         self.__enabled_languages: tp.List[ChurnConfig.Language] = []
@@ -1163,3 +1163,56 @@ class RepositoryAtCommit():
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
         self.__repo.checkout(self.__initial_head)
+
+
+def calc_surviving_lines(project_name: str, revision: tp.Optional[FullCommitHash] = None) -> \
+tp.Dict[FullCommitHash, int]:
+    """
+    Get the surviving lines of older commits at a given revision.
+
+    Args:
+        project_name: project to analyze
+        revision: revision to analyze at
+
+    returns: number of lines per prior commit
+    """
+    churn_config = ChurnConfig.create_c_style_languages_config()
+    file_pattern = re.compile(
+        "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
+    )
+    if revision is not None:
+        hash = revision.hash
+    else:
+        hash = "HEAD"
+    lines_per_revision: tp.Dict[FullCommitHash, int] = {}
+    repo = pygit2.Repository(get_local_project_git_path(project_name))
+
+    initial_head: pygit2.Reference = repo.head
+    repo_folder = get_local_project_git_path(project_name)
+    git(__get_git_path_arg(repo_folder), "checkout", "-f", hash)
+    files = git(
+        __get_git_path_arg(repo_folder), "ls-tree", "-r", "--name-only", hash
+    ).splitlines()
+
+    for file in files:
+        if file_pattern.match(file):
+            lines = git(
+                __get_git_path_arg(repo_folder), "blame", "--root", "-l",
+                f"{file}"
+            ).splitlines()
+            for line in lines:
+                if line:
+                    last_change = line[:FullCommitHash.hash_length()]
+                    try:
+                        last_change = FullCommitHash(last_change)
+                    except ValueError:
+                        continue
+
+                    if lines_per_revision.keys().__contains__(last_change):
+                        lines_per_revision[
+                            last_change] = lines_per_revision[last_change] + 1
+                    else:
+                        lines_per_revision[last_change] = 1
+
+    git(__get_git_path_arg(repo_folder), "checkout", initial_head.name)
+    return lines_per_revision
