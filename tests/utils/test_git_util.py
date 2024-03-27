@@ -28,6 +28,7 @@ from varats.utils.git_util import (
     get_submodule_head,
     calc_code_churn_range,
     RepositoryAtCommit,
+    calc_surviving_lines,
 )
 
 
@@ -224,6 +225,24 @@ class TestGitInteractionHelpers(unittest.TestCase):
                 ShortCommitHash('4ec67035c0d97c270c1c73038cc66fc5fcdfc120'),
                 project_git_path, churn_conf
             )
+        )
+
+    def test_calc_surviving_lines(self):
+        lines = calc_surviving_lines(
+            "MutliMethodAuthorCoordination",
+            FullCommitHash("f2f294bdda48526915b5a018e7e91f9f80204269")
+        )
+        self.assertEqual(
+            lines[FullCommitHash("28f1624bda75a0c2da961e2572f9eebc31998346")], 3
+        )
+        self.assertEqual(
+            lines[FullCommitHash("9209cff2d5b6cf9b7b39020b43081bd840347be2")], 4
+        )
+        self.assertEqual(
+            lines[FullCommitHash("ffb0fb502072846e081ac9f63f1eb86667197b95")], 3
+        )
+        self.assertEqual(
+            lines[FullCommitHash("f2f294bdda48526915b5a018e7e91f9f80204269")], 9
         )
 
 
