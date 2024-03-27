@@ -1,0 +1,20 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthSAContextSensitivity
+stages:
+- revisions:
+  - commit_hash: 06eac0edb6886a7e487867c8d5629cb2409b54fd
+    commit_id: 57
+    config_ids:
+    - 0
+    - 1
+version: 0
+...
+---
+config_type: PlainCommandlineConfiguration
+0: '["--compress", "--mem", "10", "8"]'
+1: '["--compress", "--mem", "300", "8"]'
+...

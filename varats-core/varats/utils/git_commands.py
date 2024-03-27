@@ -52,11 +52,15 @@ def init_all_submodules(folder: Path) -> None:
     git("-C", folder.absolute(), "submodule", "init")
 
 
-def update_all_submodules(folder: Path, recursive: bool = True) -> None:
+def update_all_submodules(
+    folder: Path, recursive: bool = True, init: bool = False
+) -> None:
     """Updates all submodules."""
     git_params = ["submodule", "update"]
     if recursive:
         git_params.append("--recursive")
+    if init:
+        git_params.append("--init")
     git("-C", folder, git_params)
 
 
@@ -147,3 +151,13 @@ def download_repo(
     output = git("-C", dl_folder, args)
     for line in output.split("\n"):
         post_out(line)
+
+
+def apply_patch(repo_folder: Path, patch_file: Path) -> None:
+    """Applies a given patch file to the specified git repository."""
+    git("-C", repo_folder.absolute(), "apply", str(patch_file))
+
+
+def revert_patch(repo_folder: Path, patch_file: Path) -> None:
+    """Reverts a given patch file on the specified git repository."""
+    git("-C", repo_folder.absolute(), "apply", "-R", str(patch_file))

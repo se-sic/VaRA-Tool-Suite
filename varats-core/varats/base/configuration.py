@@ -414,3 +414,49 @@ class PlainCommandlineConfiguration(Configuration):
 
     def unfreeze(self) -> Configuration:
         return self
+
+
+class PatchConfiguration(Configuration):
+    """Configuration class for projects where configuring is done by applying a
+    patch."""
+
+    def __init__(self, patch_feature_tags: tp.Set[str]):
+        self.__patch_feature_tags: tp.Set[ConfigurationOption] = {
+            ConfigurationOptionImpl(tag, tag) for tag in patch_feature_tags
+        }
+
+    @staticmethod
+    def create_configuration_from_str(config_str: str) -> Configuration:
+        patch_feature_tags = json.loads(config_str)
+        return PatchConfiguration(patch_feature_tags)
+
+    def add_config_option(self, option: ConfigurationOption) -> None:
+        self.__patch_feature_tags.add(option)
+
+    def set_config_option(self, option_name: str, value: tp.Any) -> None:
+        self.__patch_feature_tags = {
+            option for option in self.__patch_feature_tags
+            if option.name != option_name
+        }
+        self.add_config_option(ConfigurationOptionImpl(option_name, value))
+
+    def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+        filtered_options = filter(
+            lambda option: (option.name == option_name),
+            self.__patch_feature_tags
+        )
+        return any(filtered_options)
+
+    def options(self) -> tp.List[ConfigurationOption]:
+        return list(self.__patch_feature_tags)
+
+    def dump_to_string(self) -> str:
+        return ", ".join(
+            map(lambda option: str(option.value), self.__patch_feature_tags)
+        )
+
+    def freeze(self) -> FrozenConfiguration:
+        return FrozenConfiguration(deepcopy(self))
+
+    def unfreeze(self) -> Configuration:
+        return self

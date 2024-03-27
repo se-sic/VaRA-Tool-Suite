@@ -87,6 +87,10 @@ import numpy.typing as npt  # isort:skip
 # modules that require this module before setting the type checking flag.
 import scipy.stats  # isort:skip
 
+# Matplotlib >=3.8 has a type-checking-flag-guarded import of a symbol that does
+# not exist in the shipped version.
+import matplotlib.pyplot  # isort:skip
+
 # The autodocs typehints plugin does not resolve circular imports caused by type
 # annotations, so we have to manually break the circles.
 import rich.console  # isort:skip
@@ -95,6 +99,7 @@ import cryptography.hazmat.backends.openssl.backend  # isort:skip
 import cryptography.exceptions  # isort:skip
 import click  # isort:skip
 import git  # isort:skip
+import github  # isort:skip
 import urllib3.exceptions  # isort:skip
 
 # Some packages use new syntax for type checking that isn't available to us

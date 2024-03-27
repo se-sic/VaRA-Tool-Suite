@@ -28,6 +28,7 @@
     <file>breeze/light/document-save.svg</file>
     <file>breeze/light/application-exit.svg</file>
     <file>breeze/light/document-open.svg</file>
+    <file>breeze/light/vcs-commit.svg</file>
     <file>operators/and-operator.svg</file>
     <file>operators/or-operator.svg</file>
     <file>operators/not-operator.svg</file>

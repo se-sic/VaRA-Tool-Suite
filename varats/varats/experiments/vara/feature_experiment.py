@@ -17,6 +17,7 @@ from benchbuild.utils.actions import (
     Compile,
     Clean,
 )
+from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import local
 
 from varats.experiment.experiment_util import (
@@ -24,9 +25,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ZippedReportFolder,
     create_new_success_result_filepath,
-    get_current_config_id,
     get_default_compile_error_wrapped,
-    get_extra_config_options,
     WithUnlimitedStackSize,
 )
 from varats.experiment.trace_util import merge_trace
@@ -39,6 +38,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
 )
 from varats.report.report import ReportSpecification
+from varats.utils.config import get_current_config_id, get_extra_config_options
 
 
 class FeatureInstrType(Enum):
@@ -72,6 +72,8 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
     NAME = "FeatureExperiment"
 
     REPORT_SPEC = ReportSpecification()
+
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
     @abstractmethod
     def actions_for_project(self,
@@ -181,18 +183,23 @@ class FeatureExperiment(VersionExperiment, shorthand=""):
         Returns: list of tracing specific cflags
         """
         c_flags = []
+
         if instr_type != FeatureInstrType.NONE:
             c_flags += ["-fsanitize=vara", f"-fvara-instr={instr_type.value}"]
+
         c_flags += [
             "-flto", "-fuse-ld=lld", "-flegacy-pass-manager",
             "-fno-omit-frame-pointer"
         ]
-        if instruction_threshold is not None:
+
+        if instruction_threshold is None:
             # For test projects, do not exclude small regions
             if project is not None and project.domain == ProjectDomains.TEST:
                 instruction_threshold = 1
 
+        if instruction_threshold is not None:
             c_flags += [f"-fvara-instruction-threshold={instruction_threshold}"]
+
         if save_temps:
             c_flags += ["-Wl,-plugin-opt=save-temps"]
 
@@ -231,7 +238,7 @@ class RunVaRATracedWorkloads(ProjectStep):  # type: ignore
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: Run instrumentation verifier", indent * " "
+            f"* {self.project.name}: Run instrumented code", indent * " "
         )
 
     def run_traced_code(self) -> StepResult:
@@ -335,6 +342,9 @@ class RunVaRATracedXRayWorkloads(ProjectStep):  # type: ignore
                                 flush=True
                             )
                             with cleanup(prj_command):
+                                pb_cmd = pb_cmd[get_extra_config_options(
+                                    self.project
+                                )]
                                 _, _, err = pb_cmd.run()
                             xray = re.findall(
                                 r"XRay: Log file in '(.+?)'",

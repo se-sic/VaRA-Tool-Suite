@@ -25,6 +25,7 @@ from varats.experiment.wllvm import (
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
+from varats.utils.config import get_current_config_id
 
 
 # Please take care when changing this file, see docs experiments/just_compile

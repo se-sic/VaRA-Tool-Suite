@@ -4,22 +4,22 @@ import logging
 import re
 import typing as tp
 from functools import reduce
-from pathlib import Path
 
-from benchbuild.utils.cmd import git, mkdir
+from benchbuild.utils.cmd import git
 
+from varats.project.project_util import get_local_project_git_path
 from varats.utils.git_util import __get_git_path_arg
 
 LOG = logging.getLogger(__name__)
 
-NAME_REGEX = re.compile("\s*\d+\t(.*) <(.*)>")
+NAME_REGEX = re.compile(r"\s*\d+\t(.*) <(.*)>")
 
 
 class Author():
     """Representation of one author."""
 
-    def __init__(self, id: int, name: str, email: str) -> None:
-        self.id = id
+    def __init__(self, author_id: int, name: str, email: str) -> None:
+        self.__id = author_id
         self.name = name
         self.__names = {name}
         self.mail = email
@@ -27,14 +27,20 @@ class Author():
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Author):
-            return self.id == other.id
+            return self.author_id == other.author_id
         return False
 
     def __str__(self) -> str:
-        return f"{self.id} {self.name} <{self.mail}>"
+        return f"{self.name} <{self.mail}>"
 
     def __repr__(self) -> str:
-        return f"{self.id} {self.name} <{self.mail}>; {self.names},{self.mail_addresses}"
+        return f"{self.name} <{self.mail}>; {self.names},{self.mail_addresses}"
+
+    def __lt__(self, other):
+        return self.author_id < other.author_id
+
+    def __le__(self, other):
+        return self.author_id <= other.author_id
 
     @property
     def names(self) -> tp.Set[str]:
@@ -44,21 +50,30 @@ class Author():
     def mail_addresses(self) -> tp.Set[str]:
         return self.__mail_addresses
 
+    @property
+    def author_id(self) -> int:
+        return self.__id
+
     def add_data(self, name: str, mail: str) -> None:
+        """Add additional name and mail to the author."""
         if not name in self.names:
             self.names.add(name)
         if not mail in self.mail:
             self.mail_addresses.add(mail)
 
     def merge(self, other: 'Author') -> 'Author':
-        if other.id < self.id:
-            other.names.union(self.names)
-            other.mail_addresses.union(self.mail_addresses)
+        """Merge two authors."""
+        if other.author_id < self.author_id:
+            other.names.update(self.names)
+            other.mail_addresses.update(self.mail_addresses)
             return other
 
-        self.names.union(other.names)
-        self.mail_addresses.union(other.mail_addresses)
+        self.names.update(other.names)
+        self.mail_addresses.update(other.mail_addresses)
         return self
+
+    def __hash__(self) -> int:
+        return hash(self.author_id)
 
 
 class AuthorMap():
@@ -70,7 +85,7 @@ class AuthorMap():
         self.current_id = 0
         self.mail_dict: tp.Dict[str, Author] = {}
         self.name_dict: tp.Dict[str, Author] = {}
-        self.__authors: tp.List[Author] = []
+        self.__authors: tp.Set[Author] = set()
 
     def get_author_by_name(self, name: str) -> tp.Optional[Author]:
         if self._look_up_invalid:
@@ -83,7 +98,7 @@ class AuthorMap():
         return self.mail_dict.get(email, None)
 
     @property
-    def authors(self) -> tp.List[Author]:
+    def authors(self) -> tp.Set[Author]:
         return self.__authors
 
     def get_author(self, name: str, mail: str) -> tp.Optional[Author]:
@@ -110,14 +125,14 @@ class AuthorMap():
 
     def add_entry(self, name: str, mail: str) -> None:
         """Add authors to the map and invalidate look up dicts."""
-        ambiguos_authors = [
+        ambiguos_authors = {
             author for author in self.__authors
             if name in author.names or mail in author.mail_addresses
-        ]
+        }
 
         if not ambiguos_authors:
-            self.__authors.append(Author(self.new_author_id(), name, mail))
-            self.look_up_invalid = True
+            self.__authors.add(Author(self.new_author_id(), name, mail))
+            self._look_up_invalid = True
             return
 
         if len(ambiguos_authors) > 1:
@@ -125,9 +140,11 @@ class AuthorMap():
                 lambda accu, author: accu.merge(author), ambiguos_authors
             )
         else:
-            existing_author = ambiguos_authors[0]
+            existing_author = ambiguos_authors.pop()
 
         existing_author.add_data(name, mail)
+        self.__authors = self.__authors.difference(ambiguos_authors)
+        self.__authors.add(existing_author)
         self._look_up_invalid = True
 
     def _gen_lookup_dicts(self) -> None:
@@ -144,8 +161,9 @@ class AuthorMap():
         return f"{self.name_dict} \n {self.mail_dict}"
 
 
-def generate_author_map(path: Path) -> AuthorMap:
+def generate_author_map(project_name: str) -> AuthorMap:
     """Generate an AuthorMap for the repository at the given path."""
+    path = get_local_project_git_path(project_name)
     author_map = AuthorMap()
     test = git[__get_git_path_arg(path), "shortlog", "-sne",
                "--all"]().strip().split("\n")

@@ -69,6 +69,7 @@ from varats.ts_utils.click_param_types import (
     TypedChoice,
     EnumChoice,
     create_multi_case_study_choice,
+    ShortCommitHashParamType,
 )
 from varats.utils.git_util import (
     get_initial_commit,
@@ -555,7 +556,11 @@ def __casestudy_package(
 @click.option(
     "--project", required=True, help="Project to view result files for."
 )
-@click.option("--commit-hash", help="Commit hash to view result files for.")
+@click.option(
+    "--commit-hash",
+    type=ShortCommitHashParamType(),
+    help="Commit hash to view result files for."
+)
 @click.option(
     "--newest-only",
     is_flag=True,

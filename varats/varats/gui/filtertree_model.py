@@ -18,6 +18,7 @@ from varats.data.filtertree_data import (
     OrOperator,
     SourceOperator,
     TargetOperator,
+    SingleCommitFilter,
 )
 
 
@@ -253,6 +254,12 @@ class FilterTreeModel(QAbstractItemModel):
     def addTargetNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
         return self.insertRows(TargetOperator, num_children, 1, self._selection)
+
+    def addSingleCommitFilterNode(self) -> bool:
+        num_children = self.getNode(self._selection).childCount()
+        return self.insertRows(
+            SingleCommitFilter, num_children, 1, self._selection
+        )
 
     def addCommitterFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()

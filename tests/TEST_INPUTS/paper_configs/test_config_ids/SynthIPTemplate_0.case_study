@@ -1,0 +1,25 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthIPTemplate
+stages:
+- revisions:
+  - commit_hash: 793035062810ea3a2d9a10f831cd199fbbb82090
+    commit_id: 64
+    config_ids:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+version: 0
+...
+---
+config_type: PatchConfiguration
+0: '["Decompress"]'
+1: '["Compress", "no_fastmode", "no_smallmode"]'
+2: '["Compress", "fastmode", "no_smallmode"]'
+3: '["Compress", "no_fastmode", "smallmode"]'
+4: '["Compress", "fastmode", "smallmode"]'

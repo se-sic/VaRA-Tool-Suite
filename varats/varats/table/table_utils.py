@@ -13,7 +13,7 @@ def wrap_table_in_latex_document(
     table: str,
     landscape: bool = False,
     margin: float = 1.5,
-    document_decorator: tp.Callable[[Document], None] = lambda x: x
+    document_decorator: tp.Callable[[Document], None] = lambda _: None
 ) -> str:
     """
     Wraps a table inside a proper latex document.
@@ -42,7 +42,7 @@ def wrap_table_in_latex_document(
         Package("hyperref"),
         Package("longtable"),
         Package("multirow"),
-        Package('multicol'),
+        Package("multicol"),
         Package("xcolor", options=["table", "dvipsnames"]),
     ])
 
@@ -63,7 +63,7 @@ def dataframe_to_table(
     wrap_table: bool = False,
     wrap_landscape: bool = False,
     margin: float = 1.5,
-    document_decorator: tp.Callable[[Document], None] = lambda x: x,
+    document_decorator: tp.Callable[[Document], None] = lambda _: None,
     **kwargs: tp.Any
 ) -> str:
     """
@@ -78,6 +78,9 @@ def dataframe_to_table(
                     document (latex only)
         wrap_landscape: whether to use landscape mode to wrap the
                         table (latex only)
+        margin: margin around the table in cm
+        document_decorator: callable function to decorate the document with
+                            additional things (e.g., packages, macros, etc.)
         **kwargs: kwargs that get passed to pandas' conversion functions
                   (``DataFrame.to_latex`` or ``DataFrame.to_html``)
 

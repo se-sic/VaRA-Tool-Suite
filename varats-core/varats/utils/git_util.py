@@ -3,8 +3,10 @@ import abc
 import logging
 import re
 import typing as tp
+from collections import defaultdict
 from enum import Enum
 from itertools import chain
+from operator import attrgetter
 from pathlib import Path
 from types import TracebackType
 
@@ -37,7 +39,9 @@ class CommitHash(abc.ABC):
 
     def __init__(self, short_commit_hash: str):
         if not len(short_commit_hash) >= self.hash_length():
-            raise ValueError("Commit hash too short")
+            raise ValueError(
+                f"Commit hash too short, only got {short_commit_hash}"
+            )
         self.__commit_hash = short_commit_hash[:self.hash_length()]
 
     @property
@@ -474,7 +478,7 @@ class ChurnConfig():
         value: tp.Set[str]  # pylint: disable=invalid-name
 
         C = {"h", "c"}
-        CPP = {"h", "hxx", "hpp", "cxx", "cpp"}
+        CPP = {"h", "hxx", "hpp", "cxx", "cpp", "cc"}
 
     def __init__(self) -> None:
         self.__enabled_languages: tp.List[ChurnConfig.Language] = []
@@ -1028,8 +1032,9 @@ class RevisionBinaryMap(tp.Container[str]):
 
     def __init__(self, repo_location: Path) -> None:
         self.__repo_location = repo_location
-        self.__revision_specific_mappings: tp.Dict['AbstractRevisionRange',
-                                                   ProjectBinaryWrapper] = {}
+        self.__revision_specific_mappings: tp.Dict[
+            'AbstractRevisionRange',
+            tp.List[ProjectBinaryWrapper]] = defaultdict(list)
         self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
 
     def specify_binary(
@@ -1058,7 +1063,9 @@ class RevisionBinaryMap(tp.Container[str]):
         override_entry_point = kwargs.get("override_entry_point", None)
         if override_entry_point:
             override_entry_point = Path(override_entry_point)
-        validity_range = kwargs.get("only_valid_in", None)
+        validity_range: AbstractRevisionRange = kwargs.get(
+            "only_valid_in", None
+        )
         valid_exit_codes = kwargs.get("valid_exit_codes", None)
 
         wrapped_binary = ProjectBinaryWrapper(
@@ -1067,7 +1074,10 @@ class RevisionBinaryMap(tp.Container[str]):
         )
 
         if validity_range:
-            self.__revision_specific_mappings[validity_range] = wrapped_binary
+            validity_range.init_cache(self.__repo_location)
+            self.__revision_specific_mappings[validity_range].append(
+                wrapped_binary
+            )
         else:
             self.__always_valid_mappings.append(wrapped_binary)
 
@@ -1078,23 +1088,22 @@ class RevisionBinaryMap(tp.Container[str]):
         revision = revision.to_short_commit_hash()
         revision_specific_binaries = []
 
-        for validity_range, wrapped_binary \
+        for validity_range, wrapped_binaries \
                 in self.__revision_specific_mappings.items():
-            if revision in get_all_revisions_between(
-                validity_range.id_start, validity_range.id_end, ShortCommitHash,
-                self.__repo_location
-            ):
-                revision_specific_binaries.append(wrapped_binary)
+            if revision in map(ShortCommitHash, validity_range):
+                revision_specific_binaries.extend(wrapped_binaries)
 
         revision_specific_binaries.extend(self.__always_valid_mappings)
 
-        return revision_specific_binaries
+        return sorted(
+            revision_specific_binaries, key=attrgetter("name", "path")
+        )
 
     def __contains__(self, binary_name: object) -> bool:
         if isinstance(binary_name, str):
             for binary in chain(
                 self.__always_valid_mappings,
-                self.__revision_specific_mappings.values()
+                *self.__revision_specific_mappings.values()
             ):
                 if binary.name == binary_name:
                     return True

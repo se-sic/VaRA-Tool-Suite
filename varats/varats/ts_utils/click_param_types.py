@@ -5,6 +5,7 @@ from enum import Enum
 
 import click
 from benchbuild.experiment import ExperimentRegistry
+from click import ParamType
 
 from varats.data.discover_reports import initialize_reports
 from varats.experiments.discover_experiments import initialize_experiments
@@ -17,6 +18,7 @@ from varats.ts_utils.artefact_util import (
 )
 from varats.ts_utils.cli_util import CLIOptionTy, convert_value, make_cli_option
 from varats.utils.exceptions import ConfigurationLookupError
+from varats.utils.git_util import ShortCommitHash
 
 if tp.TYPE_CHECKING:
     # pylint: disable=unused-import
@@ -184,8 +186,22 @@ def create_multi_experiment_type_choice(
     return TypedMultiChoice(value_dict)
 
 
+class ShortCommitHashParamType(ParamType):
+    """Click parameter type for commit hashes."""
+    name = "ShortCommitHash"
+
+    def convert(
+        self, value: tp.Union[str, ShortCommitHash],
+        param: tp.Optional[click.Parameter], ctx: tp.Optional[click.Context]
+    ) -> ShortCommitHash:
+        if isinstance(value, ShortCommitHash):
+            return value
+
+        return ShortCommitHash(value)
+
+
 # ------------------------------------------------------------------------------
-# Predefined CLI Options
+# Predefined plot/table CLI Options
 # ------------------------------------------------------------------------------
 
 REQUIRE_CASE_STUDY: CLIOptionTy = convert_value(

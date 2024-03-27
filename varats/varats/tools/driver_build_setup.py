@@ -270,6 +270,7 @@ def _build_in_container(
     install_mount = 'tools/'
 
     click.echo("Preparing container image.")
+    bb_cfg()  # Ensure that BB config is loaded
     image_name = create_dev_image(image_base, build_type)
 
     source_mount = str(StageBuilder.varats_root / source_mount)

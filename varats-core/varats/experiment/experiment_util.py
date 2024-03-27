@@ -10,23 +10,20 @@ from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
 from types import TracebackType
-from typing import Protocol, runtime_checkable
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import base
 from benchbuild.project import Project
 from benchbuild.source import enumerate_revisions
-from benchbuild.utils.actions import Step, MultiStep, StepResult
+from benchbuild.utils.actions import Step, MultiStep, StepResult, ProjectStep
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 from plumbum.commands.base import BoundCommand
 
 import varats.revision.revisions as revs
-from varats.base.configuration import PlainCommandlineConfiguration
-from varats.paper.paper_config import get_paper_config
+from varats.experiment.steps.patch import ApplyPatch
 from varats.project.project_util import ProjectBinaryWrapper
-from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
 from varats.report.report import (
     BaseReport,
@@ -35,7 +32,7 @@ from varats.report.report import (
     ReportSpecification,
     ReportFilename,
 )
-from varats.utils.config import load_configuration_map_for_case_study
+from varats.utils.config import get_config_patches
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
@@ -506,20 +503,27 @@ class ZippedReportFolder(TempDir):
         super().__exit__(exc_type, exc_value, exc_traceback)
 
 
-@runtime_checkable
-class NeedsOutputFolder(Protocol):
-
-    def __call__(self, tmp_folder: Path) -> StepResult:
-        ...
+class WrongStepCall(Exception):
+    """Throw if the common step method was called."""
 
 
-def run_child_with_output_folder(
-    child: NeedsOutputFolder, tmp_folder: Path
-) -> StepResult:
-    return child(tmp_folder)
+class OutputFolderStep(ProjectStep):  # type: ignore
+    """Special step class that needs an output folder to write to."""
+
+    def __call__(self) -> StepResult:
+        raise WrongStepCall()
+
+    @abstractmethod
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+        """Actual call implementation that gets a path to tmp_folder."""
 
 
-class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
+ZippedStepTy = tp.TypeVar(
+    "ZippedStepTy", bound=tp.Union[OutputFolderStep, ProjectStep]
+)
+
+
+class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
     """Runs multiple actions, providing them a shared tmp folder that afterwards
     is zipped into an archive."""
 
@@ -528,7 +532,7 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
 
     def __init__(
         self, output_filepath: ReportFilepath,
-        actions: tp.Optional[tp.List[NeedsOutputFolder]]
+        actions: tp.Optional[tp.List[ZippedStepTy]]
     ) -> None:
         super().__init__(actions)
         self.__output_filepath = output_filepath
@@ -537,22 +541,27 @@ class ZippedExperimentSteps(MultiStep[NeedsOutputFolder]):  #type: ignore
         results: tp.List[StepResult] = []
 
         for child in self.actions:
-            results.append(
-                run_child_with_output_folder(
-                    tp.cast(NeedsOutputFolder, child), tmp_folder
-                )
-            )
+            if isinstance(child, OutputFolderStep):
+                results.append(child.call_with_output_folder(tmp_folder))
+            else:
+                results.append(child())
 
         return results
 
     def __call__(self) -> StepResult:
         results: tp.List[StepResult] = []
 
+        exception_raised_during_exec = False
         with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
-            results = self.__run_children(Path(tmp_dir))
+            try:
+                results = self.__run_children(Path(tmp_dir))
+            except:  # noqa: E722
+                exception_raised_during_exec = True
+                raise
 
         overall_step_result = max(results) if results else StepResult.OK
-        if overall_step_result is not StepResult.OK:
+        if overall_step_result is not StepResult.OK \
+                or exception_raised_during_exec:
             error_filepath = self.__output_filepath.with_status(
                 FileStatusExtension.FAILED
             )
@@ -667,60 +676,19 @@ def create_new_failed_result_filepath(
     )
 
 
-def get_current_config_id(project: VProject) -> tp.Optional[int]:
+def get_config_patch_steps(project: VProject) -> tp.MutableSequence[Step]:
     """
-    Get, if available, the current config id of project. Should the project be
-    not configuration specific ``None`` is returned.
+    Get a list of actions that apply all configuration patches to the project.
 
     Args:
-        project: to extract the config id from
+        project: the project to be configured
 
     Returns:
-        config_id if available for the given project
+        the actions that configure the project
     """
-    if project.active_revision.has_variant(FeatureSource.LOCAL_KEY):
-        return int(
-            project.active_revision.variant_by_name(FeatureSource.LOCAL_KEY
-                                                   ).version
+    return list(
+        map(
+            lambda patch: ApplyPatch(project, patch),
+            get_config_patches(project)
         )
-
-    return None
-
-
-def get_extra_config_options(project: VProject) -> tp.List[str]:
-    """
-    Get extra program options that were specified in the particular
-    configuration of \a Project.
-
-    Args:
-        project: to get the extra options for
-
-    Returns:
-        list of command line options as string
-    """
-    config_id = get_current_config_id(project)
-    if config_id is None:
-        return []
-
-    paper_config = get_paper_config()
-    case_studies = paper_config.get_case_studies(cs_name=project.name)
-
-    if len(case_studies) > 1:
-        raise AssertionError(
-            "Cannot handle multiple case studies of the same project."
-        )
-
-    case_study = case_studies[0]
-
-    config_map = load_configuration_map_for_case_study(
-        paper_config, case_study, PlainCommandlineConfiguration
     )
-
-    config = config_map.get_configuration(config_id)
-
-    if config is None:
-        raise AssertionError(
-            "Requested config id was not in the map, but should be"
-        )
-
-    return list(map(lambda option: option.value, config.options()))
