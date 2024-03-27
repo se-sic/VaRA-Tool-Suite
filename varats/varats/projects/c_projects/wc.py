@@ -39,8 +39,20 @@ class WC(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -64,7 +76,7 @@ class WC(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -91,8 +103,20 @@ class LS(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -116,7 +140,7 @@ class LS(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -143,8 +167,20 @@ class CAT(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -168,7 +204,7 @@ class CAT(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -195,8 +231,20 @@ class CP(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -220,7 +268,7 @@ class CP(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -247,8 +295,20 @@ class WHOAMI(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -272,7 +332,7 @@ class WHOAMI(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -299,8 +359,20 @@ class DD(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -324,7 +396,7 @@ class DD(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -351,8 +423,20 @@ class FOLD(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -376,7 +460,7 @@ class FOLD(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -403,8 +487,20 @@ class JOIN(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -428,7 +524,7 @@ class JOIN(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -455,8 +551,20 @@ class KILL(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -480,7 +588,7 @@ class KILL(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
@@ -507,8 +615,20 @@ class UNIQ(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'apt',
+        'install',
+        '-y',
+        'autoconf',
+        'autopoint',
+        'wget',
+        'gettext',
+        'texinfo',
+        'rsync',
+        'automake',
+        'autotools-dev',
+        'pkg-config',
+        'gperf',
+        'bison',
     )
 
     @staticmethod
@@ -532,7 +652,7 @@ class UNIQ(VProject):
         with local.cwd(wc_source):
             git("submodule", "init")
             git("submodule", "update")
-            with local.env(CC=str(cc_compiler)):
+            with local.env(CC=str(cc_compiler), FORCE_UNSAFE_CONFIGURE=1):
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])("--disable-gcc-warnings")
 
