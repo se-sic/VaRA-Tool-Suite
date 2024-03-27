@@ -38,6 +38,7 @@ LOG = logging.getLogger(__name__)
 class ImageBase(Enum):
     """Container image bases that can be used by projects."""
     DEBIAN_10 = (Distro.DEBIAN, 10)
+    DEBIAN_11 = (Distro.DEBIAN, 11)
     DEBIAN_12 = (Distro.DEBIAN, 12)
 
     def __init__(self, distro: Distro, version_number: int):
@@ -222,13 +223,27 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .run('make', '-j', str(get_number_of_jobs(bb_cfg())))
             .run('make', 'install')
             .workingdir('/')
-            # install llvm 14
+            # install cmake
+            .run('pip3', 'install', 'cmake')
+            # install llvm 16
             .run('wget', 'https://apt.llvm.org/llvm.sh')
             .run('chmod', '+x', './llvm.sh')
-            .run('./llvm.sh', '14', 'all')
-            .run('ln', '-s', '/usr/bin/clang-14', '/usr/bin/clang')
-            .run('ln', '-s', '/usr/bin/clang++-14', '/usr/bin/clang++')
-            .run('ln', '-s', '/usr/bin/lld-14', '/usr/bin/lld')),
+            .run('./llvm.sh', '16', 'all')
+            .run('ln', '-s', '/usr/bin/clang-16', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-16', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-16', '/usr/bin/lld')),
+    ImageBase.DEBIAN_11:
+        _create_layers_helper(lambda ctx: ctx.layers
+            .from_("docker.io/library/debian:11")
+            .run('apt', 'update')
+            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+                 'software-properties-common', 'musl-dev', 'git', 'gcc',
+                 'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev',
+                 'python3', 'python3-pip', 'python3-virtualenv', 'clang-16',
+                 'lld-16', 'time')
+            .run('ln', '-s', '/usr/bin/clang-16', '/usr/bin/clang')
+            .run('ln', '-s', '/usr/bin/clang++-16', '/usr/bin/clang++')
+            .run('ln', '-s', '/usr/bin/lld-16', '/usr/bin/lld')),
     ImageBase.DEBIAN_12:
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:12")
@@ -463,6 +478,9 @@ def create_base_image(
         base, first_stage, _BASE_IMAGE_STAGES, image_name, force_rebuild
     )
 
+    def image_name(stage: ImageStage) -> str:
+        return get_image_name(base, stage, True)
+
 
 def create_base_images(
     images: tp.Iterable[ImageBase] = ImageBase,
@@ -549,6 +567,28 @@ def _delete_container_image(
                 f"(base={base.name}, stage={current_stage})"
             )
             publish(DeleteImage(name))
+
+
+def delete_base_images(
+    images: tp.Iterable[ImageBase] = ImageBase,
+    first_stage: ImageStage = _BASE_IMAGE_STAGES[0]
+) -> None:
+    """
+    Deletes the selected base images.
+
+    Args:
+        images: the base images to delete
+        first_stage: the first stage in the stack that should be deleted
+    """
+    for base in images:
+
+        def image_name(stage: ImageStage) -> str:
+            return get_image_name(base, stage, True)  # pylint: disable=W0640
+
+        LOG.info(f"Deleting base image {base}.")
+        _delete_container_image(
+            base, first_stage, _BASE_IMAGE_STAGES, image_name
+        )
 
 
 def delete_base_images(

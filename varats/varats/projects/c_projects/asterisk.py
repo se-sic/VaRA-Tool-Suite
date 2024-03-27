@@ -38,9 +38,10 @@ class Asterisk(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'libedit-dev', 'uuid-dev', 'libjansson-dev')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'libedit-dev', 'uuid-dev', 'libjansson-dev',
+        'libblocksruntime-dev'
+    )
 
     @staticmethod
     def binaries_for_revision(
