@@ -68,7 +68,7 @@ How to set up VaRA/LLVM in CLion
            -DCMAKE_CXX_STANDARD=17
            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
            -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
-           -DLLVM_ENABLE_ASSERTIONS=ON
+           -DLLVM_ENABLE_ASSERTIONS=OFF
            -DLLVM_ENABLE_BINDINGS=OFF
            -DLLVM_ENABLE_EH=ON
            -DLLVM_ENABLE_LLD=ON
