@@ -5,9 +5,9 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
-from utils.filesystem_util import lock_file
 
 from varats.provider.provider import Provider
+from varats.utils.filesystem_util import lock_file
 
 
 class FeatureModelNotFound(FileNotFoundError):
