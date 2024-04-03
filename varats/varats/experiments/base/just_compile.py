@@ -15,7 +15,6 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
     create_new_success_result_filepath,
-    get_current_config_id,
     create_default_compiler_error_handler,
 )
 from varats.experiment.wllvm import (

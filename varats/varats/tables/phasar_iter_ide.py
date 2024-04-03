@@ -418,6 +418,252 @@ The orange cells indicate that the memory of a usual developer machine ({dev_mem
         )
 
 
+class PhasarIterIDEMeanSpeedup(Table, table_name="phasar-iter-ide-jf1-jf2"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        cs_data: tp.List[pd.DataFrame] = []
+
+        for case_study in get_loaded_paper_config().get_all_case_studies():
+            print(f"Working on {case_study.project_name}")
+            project_name = case_study.project_name
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IDELinearConstantAnalysisExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+            iia_report_files = get_processed_revisions_files(
+                case_study.project_name, IterIDEBlameReportExperiment,
+                PhasarIterIDEStatsReport,
+                get_case_study_file_name_filter(case_study)
+            )
+            # print(f"{report_files=}")
+            # print(f"{iia_report_files=}")
+
+            revision = None
+            revisions = case_study.revisions
+            if len(revisions) == 1:
+                revision = revisions[0]
+
+            rev_range = revision.hash if revision else "HEAD"
+
+            if (len(report_files) == 0 and len(iia_report_files) == 0):
+                print(f"Skip {project_name}")
+                continue
+
+            project_cls = get_project_cls_by_name(project_name)
+
+            for report_file, iia_report_file in itertools.zip_longest(
+                report_files, iia_report_files
+            ):
+                report: PhasarIterIDEStatsReport = load_phasar_iter_ide_stats_report(
+                    report_file
+                ) if report_file is not None else None
+                iia_report = load_phasar_iter_ide_stats_report(
+                    iia_report_file
+                ) if iia_report_file is not None else None
+                # print(iia_report)
+                if report is None:
+                    # print("Have IIA report, but no regular report")
+                    report = iia_report
+                elif not (iia_report is None):
+                    # print("Have both reports")
+                    report.merge_with(iia_report)
+
+                # print(f"Report: {report}")
+
+                if not report.basic_bc_stats:
+                    print(f"No basic stats on {project_name}, skip")
+                    continue
+
+                cs_dict = {}
+                cs_dict.update(self.compute_typestate_stats(report))
+                cs_dict.update(self.compute_lca_stats(report))
+                cs_dict.update(self.compute_taint(report))
+                cs_dict.update(self.compute_iia_stats(report))
+                cs_data.append(pd.DataFrame.from_records([cs_dict]))
+
+        df = pd.concat(cs_data).sort_index()
+
+        print("DF:", df, sep='\n')
+
+        mean_df = df.mean()
+        print("Mean:", mean_df, sep='\n')
+
+        # (name, 'Runtime', 'JF1'): np.mean(time_speedup_jf1),
+        # (name, 'Memory', 'JF1'): np.mean(memory_speedup_jf1),
+        # (name, 'Runtime', 'JF2'): np.mean(time_speedup_jf2),
+        # (name, 'Memory', 'JF2'): np.mean(memory_speedup_jf2),
+        # (name, 'Runtime', 'JF3'): np.mean(time_speedup_jf3),
+        # (name, 'Memory', 'JF3'): np.mean(memory_speedup_jf3),
+        mindex = pd.MultiIndex.from_tuples([
+            ("Typestate", 'Runtime', 'JF1'),
+            ("Typestate", 'Memory', 'JF1'),
+            ("Typestate", 'Runtime', 'JF2'),
+            ("Typestate", 'Memory', 'JF2'),
+            ("Typestate", 'Runtime', 'JF3'),
+            ("Typestate", 'Memory', 'JF3'),
+            ("LCA", 'Runtime', 'JF1'),
+            ("LCA", 'Memory', 'JF1'),
+            ("LCA", 'Runtime', 'JF2'),
+            ("LCA", 'Memory', 'JF2'),
+            ("LCA", 'Runtime', 'JF3'),
+            ("LCA", 'Memory', 'JF3'),
+            ("Taint", 'Runtime', 'JF1'),
+            ("Taint", 'Memory', 'JF1'),
+            ("Taint", 'Runtime', 'JF2'),
+            ("Taint", 'Memory', 'JF2'),
+            ("Taint", 'Runtime', 'JF3'),
+            ("Taint", 'Memory', 'JF3'),
+            ("IIA", 'Runtime', 'JF1'),
+            ("IIA", 'Memory', 'JF1'),
+            ("IIA", 'Runtime', 'JF2'),
+            ("IIA", 'Memory', 'JF2'),
+            ("IIA", 'Runtime', 'JF3'),
+            ("IIA", 'Memory', 'JF3'),
+        ])
+        mean_df.index = mindex
+        print("Grouped Mean:", mean_df.reset_index(), sep='\n')
+
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            # kwargs["column_format"] = "l|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|"
+            kwargs["column_format"] = "l|rrrrrrr|rrrrrrr|rrrrrrr|rrrrrrr|"
+            kwargs["multicol_align"] = "c|"
+            # kwargs["multicolumn"] = True
+            kwargs['position'] = 't'
+            kwargs[
+                "caption"
+            ] = """Results of our overall comparision between the two jump-function representations within our newly updated iterative IDESolver. We report the mean runtime of both versions, as well as, the mean speedup $\mathcal{S}$ and it's standard deviation $s$.
+$\mathcal{S}$ was computed as the mean over all speedups in the cartesian product of all measurements.
+"""
+            style.format(precision=2)
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amssymb"))
+            doc.append(NoEscape("\setlength{\\tabcolsep}{4pt}"))
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            margin=0.0,
+            document_decorator=add_extras,
+            **kwargs
+        )
+
+    def compute_typestate_stats(self, report: PhasarIterIDEStatsReport):
+        return self.__compute_delta_comp(
+            "Typestate", report.new_typestate_nested, report.new_typestate_jf1,
+            report.new_typestate, report.new_typestate_jf3
+        )
+
+    def compute_taint(self, report: PhasarIterIDEStatsReport):
+        return self.__compute_delta_comp(
+            "Taint", report.new_taint_nested, report.new_taint_jf1,
+            report.new_taint, report.new_taint_jf3
+        )
+
+    def compute_lca_stats(self, report: PhasarIterIDEStatsReport):
+        return self.__compute_delta_comp(
+            "LCA", report.new_lca_nested, report.new_lca_jf1, report.new_lca,
+            report.new_lca_jf3
+        )
+
+    def compute_iia_stats(self, report: PhasarIterIDEStatsReport):
+        return self.__compute_delta_comp(
+            "IIA", report.new_iia_nested, report.new_iia_jf1, report.new_iia,
+            report.new_iia_jf3
+        )
+
+    @staticmethod
+    def __compute_speedups(
+        old_measurements: tp.List[float], new_measurements: tp.List[float]
+    ) -> tp.List[float]:
+        ret = list(
+            filter(
+                lambda x: not math.isnan(x),
+                map(
+                    lambda x: round(x[0] / x[1], 3),
+                    itertools.product(old_measurements, new_measurements)
+                )
+            )
+        )
+        if len(ret) == 0:
+            return [float("NaN")]
+        return ret
+
+    def __compute_delta_comp(
+        self, name: str, old_time_report: tp.Optional[TimeReportAggregate],
+        jf1_time_report: tp.Optional[TimeReportAggregate],
+        jf2_time_report: tp.Optional[TimeReportAggregate],
+        jf3_time_report: tp.Optional[TimeReportAggregate]
+    ):
+        time_speedup_jf1 = np.nan
+        time_speedup_jf2 = np.nan
+        time_speedup_jf3 = np.nan
+
+        memory_speedup_jf1 = np.nan
+        memory_speedup_jf2 = np.nan
+        memory_speedup_jf3 = np.nan
+
+        if old_time_report and jf1_time_report:
+            time_speedup_jf1 = PhasarIterIDEMeanSpeedup.__compute_speedups(
+                old_time_report.measurements_wall_clock_time,
+                jf1_time_report.measurements_wall_clock_time
+            )
+            memory_speedup_jf1 = PhasarIterIDEMeanSpeedup.__compute_speedups(
+                all_from_kbytes_to_mbytes(old_time_report.max_resident_sizes),
+                all_from_kbytes_to_mbytes(jf1_time_report.max_resident_sizes)
+            )
+
+        if old_time_report and jf2_time_report:
+            time_speedup_jf2 = PhasarIterIDEMeanSpeedup.__compute_speedups(
+                old_time_report.measurements_wall_clock_time,
+                jf2_time_report.measurements_wall_clock_time
+            )
+            memory_speedup_jf2 = PhasarIterIDEMeanSpeedup.__compute_speedups(
+                all_from_kbytes_to_mbytes(old_time_report.max_resident_sizes),
+                all_from_kbytes_to_mbytes(jf2_time_report.max_resident_sizes)
+            )
+
+        if old_time_report and jf3_time_report:
+            time_speedup_jf3 = PhasarIterIDEMeanSpeedup.__compute_speedups(
+                old_time_report.measurements_wall_clock_time,
+                jf3_time_report.measurements_wall_clock_time
+            )
+            memory_speedup_jf3 = PhasarIterIDEMeanSpeedup.__compute_speedups(
+                all_from_kbytes_to_mbytes(old_time_report.max_resident_sizes),
+                all_from_kbytes_to_mbytes(jf3_time_report.max_resident_sizes)
+            )
+
+        return {
+            (name, 'Runtime', 'JF1'): np.mean(time_speedup_jf1),
+            (name, 'Memory', 'JF1'): np.mean(memory_speedup_jf1),
+            (name, 'Runtime', 'JF2'): np.mean(time_speedup_jf2),
+            (name, 'Memory', 'JF2'): np.mean(memory_speedup_jf2),
+            (name, 'Runtime', 'JF3'): np.mean(time_speedup_jf3),
+            (name, 'Memory', 'JF3'): np.mean(memory_speedup_jf3),
+        }
+
+        # return {
+        #     (name, 'JF1'): {
+        #         'Runtime': np.mean(time_speedup_jf1),
+        #         'Memory': np.mean(memory_speedup_jf1),
+        #     },
+        #     (name, 'JF2'): {
+        #         'Runtime': np.mean(time_speedup_jf2),
+        #         'Memory': np.mean(memory_speedup_jf2),
+        #     },
+        #     (name, 'JF3'): {
+        #         'Runtime': np.mean(time_speedup_jf3),
+        #         'Memory': np.mean(memory_speedup_jf3),
+        #     },
+        # }
+
+
 class PhasarIterIDEStatsWL(Table, table_name="phasar-iter-ide-stats-wl"):
 
     def get_time_and_mem(self, report_entry):
@@ -1054,6 +1300,17 @@ class PhasarIterIDEStatsGenerator(
             PhasarIterIDEStats(self.table_config, **self.table_kwargs),
             # lca,
             # taint
+        ]
+
+
+class PhasarIterIDEStatsGenerator(
+    TableGenerator, generator_name="phasar-iter-ide-means", options=[]
+):
+    """TODO: """
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PhasarIterIDEMeanSpeedup(self.table_config, **self.table_kwargs),
         ]
 
 
