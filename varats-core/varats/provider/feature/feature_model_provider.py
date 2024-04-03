@@ -91,8 +91,8 @@ class FeatureModelProvider(Provider):
             refspec="origin/HEAD",
             limit=1,
         )
-        lock_path = Path(target_prefix()) / "fm_provider.lock"
 
+        lock_path = Path(target_prefix()) / "fm_provider.lock"
         with lock_file(lock_path):
             fm_source.fetch()
 
