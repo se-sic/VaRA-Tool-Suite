@@ -23,15 +23,15 @@ class PerfInteraction:
         self.__involved_features = involved_features
 
     @property
-    def commit(self):
+    def commit(self) -> CommitRepoPair:
         return self.__commit
 
     @property
-    def performance_region(self):
+    def performance_region(self) -> str:
         return self.__perf_region
 
     @property
-    def involved_features(self):
+    def involved_features(self) -> tp.List[str]:
         return self.__involved_features
 
     def __str__(self):
