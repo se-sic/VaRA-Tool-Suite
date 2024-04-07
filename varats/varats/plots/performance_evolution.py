@@ -1,24 +1,22 @@
 """Plot the performance evolution of a configurable software system."""
-
+import ast
 import typing as tp
 
 import numpy as np
 import pandas as pd
-import scipy
 import seaborn as sns
+from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import leaves_list, linkage
 from scipy.stats import mannwhitneyu
 
-from varats.base.configuration import PlainCommandlineConfiguration
 from varats.data.databases.performance_evolution_database import (
     PerformanceEvolutionDatabase,
 )
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
-from varats.paper.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
-from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
@@ -81,7 +79,9 @@ def create_heatmap(
         case_study,
         cached_only=True
     )
-    df["wall_clock_time"] = df["wall_clock_time"].apply(np.average)
+    df["wall_clock_time"] = df["wall_clock_time"].apply(
+        lambda x: np.average(ast.literal_eval(x))
+    )
 
     def map_index(index: pd.Index) -> pd.Index:
         return pd.Index([commit_map.short_time_id(c) for c in index])
@@ -101,27 +101,33 @@ class PerformanceEvolutionPlot(Plot, plot_name="performance_evolution_plot"):
         commit_map: CommitMap = get_commit_map(project_name)
 
         heatmap = create_heatmap(case_study, project_name, commit_map)
-        configs = load_configuration_map_for_case_study(
-            get_paper_config(), case_study, PlainCommandlineConfiguration
-        )
-        config_flags = []
-        for id, config in configs.id_config_tuples():
-            for flag in config.options():
-                config_flags.append({"id": id, "flag": flag.name})
-        df = pd.DataFrame(config_flags)
-        feature_matrix = pd.crosstab(df["id"], df["flag"])
-        linkage = scipy.cluster.hierarchy.linkage(
-            feature_matrix, method="average", optimal_ordering=True
-        )
-
-        grid = sns.clustermap(
+        heatmap_linkage = linkage(
             heatmap,
-            row_linkage=linkage,
-            col_cluster=False,
+            method="average",
+            metric="cityblock",
+            optimal_ordering=True
         )
 
-        fig = grid.figure
-        fig.set_size_inches(30, 20)
+        ax = sns.heatmap(
+            heatmap.iloc[reversed(leaves_list(heatmap_linkage))],
+            robust=True,
+            cmap="plasma"
+        )
+
+        ax.set_title(f"Performance – {project_name}", fontsize=28)
+        ax.set_xlabel("Revisions", fontsize=20)
+        ax.set_ylabel("Configurations", fontsize=20)
+        ax.tick_params(axis='x', labelsize=14)
+        plt.setp(
+            ax.get_xticklabels(),
+            rotation=45,
+            ha="right",
+            rotation_mode="anchor"
+        )
+        ax.set_yticks([])
+
+        fig = ax.get_figure()
+        fig.set_size_inches(20.92, 11.77)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -150,37 +156,38 @@ class PerformanceEvolutionDiffPlot(
 
         heatmap = create_heatmap(case_study, project_name, commit_map)
         heatmap_diff = heatmap.diff(axis="columns")
-
-        configs = load_configuration_map_for_case_study(
-            get_paper_config(), case_study, PlainCommandlineConfiguration
-        )
-        config_flags = []
-        for id, config in configs.id_config_tuples():
-            for flag in config.options():
-                config_flags.append({"id": id, "flag": flag.name})
-        df = pd.DataFrame(config_flags)
-        feature_matrix = pd.crosstab(df["id"], df["flag"])
-        linkage = scipy.cluster.hierarchy.linkage(
-            feature_matrix, method="average", optimal_ordering=True
+        heatmap_linkage = linkage(
+            heatmap,
+            method="average",
+            metric="cityblock",
+            optimal_ordering=True
         )
 
-        # RRS
-        for commit in heatmap_diff.columns:
-            values = heatmap_diff[commit].fillna(0)
-            relevant_features = rrs(feature_matrix, values, max_depth=3)
-            print(f"{commit.hash}: {relevant_features}")
-
-        grid = sns.clustermap(
-            heatmap_diff,
-            row_linkage=linkage,
-            col_cluster=False,
+        # plot
+        ax = sns.heatmap(
+            heatmap_diff.iloc[reversed(leaves_list(heatmap_linkage))],
             cmap="vlag",
             center=0,
             robust=True
         )
 
-        fig = grid.figure
-        fig.set_size_inches(30, 20)
+        ax.set_title(f"Performance Differences – {project_name}", fontsize=28)
+        ax.set_xlabel("Revisions", fontsize=20)
+        ax.set_ylabel("Configurations", fontsize=20)
+        xticklabels = ax.get_xticklabels()
+        ax.set_xticks([x + 0.5 for x in ax.get_xticks()])
+        ax.set_xticklabels(xticklabels)
+        ax.tick_params(axis='x', labelsize=14)
+        plt.setp(
+            ax.get_xticklabels(),
+            rotation=45,
+            ha="right",
+            rotation_mode="anchor"
+        )
+        ax.set_yticks([])
+
+        fig = ax.get_figure()
+        fig.set_size_inches(20.92, 11.77)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
