@@ -167,3 +167,80 @@ class PerformanceRegressionClassification(
                 self.table_config, **self.table_kwargs
             )
         ]
+
+
+class PerformanceFeaturesTable(Table, table_name="perf_feat"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        significance_level: float = 0.05
+
+        case_study: CaseStudy = self.table_kwargs["case_study"]
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
+
+        heatmap = create_heatmap(case_study, project_name, commit_map)
+        heatmap_diff = heatmap.diff(axis="columns")
+
+        perf_inter_report_files = get_processed_revisions_files(
+            project_name,
+            PerformanceInteractionExperiment,
+            file_name_filter=get_case_study_file_name_filter(case_study)
+        )
+        perf_inter_reports = {
+            report_file.report_filename.commit_hash:
+            load_performance_interaction_report(report_file)
+            for report_file in perf_inter_report_files
+        }
+
+        configs = load_configuration_map_for_case_study(
+            get_paper_config(), case_study, PlainCommandlineConfiguration
+        )
+        config_flags = []
+        for id, config in configs.id_config_tuples():
+            for flag in config.options():
+                config_flags.append({"id": id, "flag": flag.name})
+        df = pd.DataFrame(config_flags)
+        feature_matrix = pd.crosstab(df["id"], df["flag"])
+
+        data: tp.List[pd.DataFrame] = []
+
+        for commit in heatmap_diff.columns:
+            values = heatmap_diff[commit].fillna(0)
+            relevant_features = rrs(feature_matrix, values, max_depth=3)
+            detected_features = None
+            report = perf_inter_reports.get(commit.to_short_commit_hash(), None)
+            if report is not None and report.performance_interactions:
+                detected_features = {
+                    feature for inter in report.performance_interactions
+                    for feature in inter.involved_features
+                }
+
+            data.append(
+                pd.DataFrame.from_dict({
+                    commit: {
+                        "Base Features": str(relevant_features),
+                        "Detected Featuers": str(detected_features)
+                    }
+                },
+                                       orient="index")
+            )
+
+        df = pd.concat(data)
+
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            style.format(thousands=r"\,")
+
+        return dataframe_to_table(df, table_format, style, wrap_table, **kwargs)
+
+
+class PerformanceFeatures(
+    TableGenerator, generator_name="perf-feat", options=[REQUIRE_CASE_STUDY]
+):
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PerformanceFeaturesTable(self.table_config, **self.table_kwargs)
+        ]
