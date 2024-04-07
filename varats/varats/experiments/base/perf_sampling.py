@@ -97,7 +97,7 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
                                run_cmd]
 
                 with cleanup(workload):
-                    bb.watch(run_cmd)()
+                    bb.watch(run_cmd)(retcode=None)
         return StepResult.OK
 
 

@@ -68,7 +68,7 @@ class TimeProjectWorkloads(OutputFolderStep):
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
-                    run_cmd()
+                    run_cmd(retcode=None)
 
         return actions.StepResult.OK
 
