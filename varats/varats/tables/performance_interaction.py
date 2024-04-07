@@ -4,34 +4,30 @@ import logging
 import typing as tp
 from itertools import pairwise
 
+import numpy as np
 import pandas as pd
-from scipy.stats import mannwhitneyu
 
 from varats.base.configuration import PlainCommandlineConfiguration
 from varats.data.databases.performance_evolution_database import (
     PerformanceEvolutionDatabase,
 )
 from varats.data.metrics import ConfusionMatrix
-from varats.data.reports.performance_interaction_report import (
-    PerformanceInteractionReport,
-)
 from varats.experiments.vara.performance_interaction import (
     PerformanceInteractionExperiment,
 )
 from varats.jupyterhelper.file import load_performance_interaction_report
-from varats.mapping.commit_map import get_commit_map
+from varats.mapping.commit_map import get_commit_map, CommitMap
+from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.project.project_util import (
-    get_project_cls_by_name,
-    get_local_project_git_path,
-)
+from varats.plots.performance_evolution import create_heatmap, rrs
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.config import load_configuration_map_for_case_study
-from varats.utils.git_util import FullCommitHash, ShortCommitHash
+from varats.utils.git_util import FullCommitHash
 
 LOG = logging.Logger(__name__)
 
@@ -39,8 +35,6 @@ LOG = logging.Logger(__name__)
 class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
-        significance_level: float = 0.05
-
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
         data: tp.List[pd.DataFrame] = []
@@ -85,11 +79,12 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                 report = perf_inter_reports.get(
                     new_rev.to_short_commit_hash(), None
                 )
-                if old_rev_short not in performance_data.columns or new_rev_short not in performance_data.columns or report is None:
+                if old_rev_short not in performance_data.columns or new_rev_short not in performance_data.columns:
                     continue
 
                 # ground truth classification
                 is_regression = False
+                num_regressions = 0
                 for cid in configs.ids():
                     old_vals = ast.literal_eval(
                         performance_data.loc[cid, old_rev_short]
@@ -97,14 +92,34 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                     new_vals = ast.literal_eval(
                         performance_data.loc[cid, new_rev_short]
                     )
-                    _, p = mannwhitneyu(old_vals, new_vals)
-                    if p < significance_level:
-                        is_regression = True
-                        break
 
+                    old_vals += old_vals
+                    old_vals += old_vals
+                    new_vals += new_vals
+                    new_vals += new_vals
+
+                    threshold = 0.05
+                    old_avg = np.average(old_vals)
+                    new_avg = np.average(new_vals)
+                    diff = abs(old_avg - new_avg)
+                    percent_change = diff / old_avg
+
+                    if percent_change > threshold:
+                        # if diff > threshold:
+                        is_regression = True
+                        num_regressions += 1
+
+                    # _, p = mannwhitneyu(old_vals, new_vals)
+                    # if p < significance_level:
+                    #     is_regression = True
+                    #     num_regressions += 1
+                    #     # break
+
+                print(f"{new_rev}: {num_regressions} regressing configs found.")
                 if is_regression:
                     actual_positive_values.append(new_rev)
                 else:
+                    # print(f"{new_rev}: No regressing configs found.")
                     actual_negative_values.append(new_rev)
 
                 # performance interaction classification
