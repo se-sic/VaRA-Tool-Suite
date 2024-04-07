@@ -47,6 +47,10 @@ def get_function_annotations(project_name: str) -> tp.List[str]:
             "BZ2_decompress", "BZ2_bzDecompress", "BZ2_compressBlock",
             "BZ2_blockSort", "mainGtU", "sendMTFValues", "handle_compress"
         ],
+        "picosat": [
+            "propl", "prop2", "unassign", "analyze",
+            "should_disconnect_head_tail", "assign_phase", "collect_clauses"
+        ]
     }[project_name]
 
 
