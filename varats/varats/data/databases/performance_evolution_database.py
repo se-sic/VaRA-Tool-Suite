@@ -1,7 +1,6 @@
 """Database for evaluating performance evolution of configurable systems."""
 import typing as tp
 
-import numpy as np
 import pandas as pd
 
 from varats.base.configuration import PlainCommandlineConfiguration
@@ -59,7 +58,7 @@ class PerformanceEvolutionDatabase(
                               index=[0])
             df = df.astype(cls.COLUMN_TYPES)
             # workaround to store a list in a data frame
-            df.loc[0, "wall_clock_time"] = report.measurements_wall_clock_time(
+            df.at[0, "wall_clock_time"] = report.measurements_wall_clock_time(
                 workload
             )
 
