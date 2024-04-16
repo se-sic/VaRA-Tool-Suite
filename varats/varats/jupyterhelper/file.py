@@ -13,6 +13,7 @@ from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
 )
+from varats.data.reports.phasar_iter_ide import PhasarIterIDEStatsReport
 from varats.data.reports.szz_report import (
     SZZUnleashedReport,
     SZZReport,
@@ -139,3 +140,14 @@ def load_mpr_time_report_aggregate(
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, MPRTimeReportAggregate)
+
+
+def load_phasar_iter_ide_stats_report(file_path: PathLikeTy) -> \
+        PhasarIterIDEStatsReport:
+    """
+    Load a PhasarIterIDEStatsReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, PhasarIterIDEStatsReport)

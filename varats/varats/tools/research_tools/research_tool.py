@@ -2,6 +2,7 @@
 developers to setup and configure their own research tool by inheriting and
 implementing the base classes ``ResearchTool`` and ``CodeBase``."""
 import abc
+import sys
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -33,6 +34,11 @@ from varats.utils.git_util import (
     branch_has_upstream,
 )
 from varats.utils.logger_util import log_without_linesep
+
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol, runtime_checkable
+else:
+    from typing import Protocol, runtime_checkable
 
 if tp.TYPE_CHECKING:
     from varats.containers import containers  # pylint: disable=W0611

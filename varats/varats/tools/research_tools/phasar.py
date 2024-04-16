@@ -94,7 +94,9 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     })
 
     def __init__(self, base_dir: Path) -> None:
-        super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
+        super().__init__(
+            "phasar", [BuildType.DEV, BuildType.OPT], PhasarCodeBase(base_dir)
+        )
         vara_cfg()["phasar"]["source_dir"] = str(base_dir)
         save_config()
 
@@ -150,6 +152,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         self.code_base.clone(self.source_location())
         self.code_base.checkout_phasar_version(use_dev_branch)
         self.code_base.setup_submodules()
+
+    def is_up_to_date(self) -> bool:
+        """Returns true if Phasar's major release version is up to date."""
+        return True
 
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""

@@ -19,4 +19,6 @@ tmp/
 .tox/
 docs/source/.varats.yaml
 docs/**/*.inc
+.vscode/
+.cache/
 pre-commit-env

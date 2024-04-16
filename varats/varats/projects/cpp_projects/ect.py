@@ -42,7 +42,7 @@ class Ect(VProject):
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'nasm', 'git', 'cmake', 'make')
+    ).run('apt', 'install', '-y', 'nasm', 'git', 'cmake', 'make', 'g++')
 
     @staticmethod
     def binaries_for_revision(
