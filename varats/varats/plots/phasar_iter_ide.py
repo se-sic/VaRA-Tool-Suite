@@ -266,6 +266,14 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
 
                 for entry in entries:
                     entry["LOC"] = report.basic_bc_stats.num_instructions
+                    entry["Fun"] = report.basic_bc_stats.num_functions
+                    entry["AddrFun"
+                         ] = report.basic_bc_stats.num_address_taken_functions
+                    entry["Glob"] = report.basic_bc_stats.num_globals
+                    entry["Calls"] = report.basic_bc_stats.num_calls
+                    entry["IndCalls"] = report.basic_bc_stats.num_indirect_calls
+                    entry["Blocks"] = report.basic_bc_stats.num_basic_blocks
+
                     entry["Target"] = project_name
                     nodes.append(entry)
 
@@ -423,6 +431,7 @@ class PhasarIterIDEPlotBase(Plot, plot_name="phasar-iter-ide-plot"):
             cut=0,
             palette="pastel",
             order=self.analysis_order(),
+            density_norm="count"
             # inner="point",
         )
 
@@ -918,15 +927,29 @@ class PhasarIterIDETargetSpeedupVsNested(
         return ax
 
 
-class PhasarIterIDETargetSpeedupVsNestedSortedSize(
+class PhasarIterIDETargetSpeedupVsNestedSortedBase(
     PhasarIterIDESpeedupJFvsNestedPlotBase,
-    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-size',
+    plot_name="TODO",
     yname="Runtime Speedup vs Nested"
 ):
 
+    def __init_subclass__(
+        cls,
+        *,
+        plot_name: tp.Optional[str],
+        yname: tp.Optional[str] = None,
+        sort_target: str = None,
+        **kwargs: tp.Any
+    ) -> None:
+        if sort_target:
+            cls.SORT_TARGET = sort_target
+        return super().__init_subclass__(
+            plot_name=plot_name, yname=yname, **kwargs
+        )
+
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
-        data = data.sort_values(by=["LOC"])
+        data = data.sort_values(by=[self.SORT_TARGET])
 
         ax = sns.scatterplot(
             data=data,
@@ -966,6 +989,71 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSize(
         # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
         return ax
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedSize(
+    PhasarIterIDETargetSpeedupVsNestedSortedBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-size',
+    yname="Runtime Speedup vs Nested",
+    sort_target="LOC"
+):
+    pass
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedFun(
+    PhasarIterIDETargetSpeedupVsNestedSortedBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-fun',
+    yname="Runtime Speedup vs Nested",
+    sort_target="Fun"
+):
+    pass
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedAddrFun(
+    PhasarIterIDETargetSpeedupVsNestedSortedBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-addr-fun',
+    yname="Runtime Speedup vs Nested",
+    sort_target="AddrFun"
+):
+    pass
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedGlobal(
+    PhasarIterIDETargetSpeedupVsNestedSortedBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-global',
+    yname="Runtime Speedup vs Nested",
+    sort_target="Glob"
+):
+    pass
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedCalls(
+    PhasarIterIDETargetSpeedupVsNestedSortedBase,
+    plot_name='phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-calls',
+    yname="Runtime Speedup vs Nested",
+    sort_target="Calls"
+):
+    pass
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedIndCalls(
+    PhasarIterIDETargetSpeedupVsNestedSortedBase,
+    plot_name=
+    'phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-ind-calls',
+    yname="Runtime Speedup vs Nested",
+    sort_target="IndCalls"
+):
+    pass
+
+
+class PhasarIterIDETargetSpeedupVsNestedSortedBlocks(
+    PhasarIterIDETargetSpeedupVsNestedSortedBase,
+    plot_name=
+    'phasar-iter-ide-speedup-target-scatter-vs-nested-sorted-ind-blocks',
+    yname="Runtime Speedup vs Nested",
+    sort_target="Blocks"
+):
+    pass
 
 
 class PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
@@ -1084,7 +1172,7 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
             ax1.get_xticklabels(), rotation=45, horizontalalignment='right'
         )
         ax1.set_yscale("log", base=2)
-        ax1.set_yticks([0.5, 0.625, 0.75, 0.875, 1, 1.25, 1.5])
+        ax1.set_yticks([0.125, 0.25, 0.5, 0.75, 1, 1.25, 1.5])
         ax1.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
         # ax1.set_ylim(top=1.3)
 
@@ -1127,12 +1215,12 @@ class PhasarIterIDETargetSpeedupVsNestedSortedSizeGrid(
         )
         ax2.set_yscale("log", base=2)
 
-        ax2.set_yticks([0.25, 0.33, 0.5, 0.75, 1, 1.25, 1.5])
+        ax2.set_yticks([0.5, 0.75, 1, 1.25, 1.5])
         ax2.get_yaxis().set_major_formatter(
             matplotlib.ticker.PercentFormatter(xmax=1)
         )  # , decimals=1
         # ax2.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        ax2.set_ylim(top=1.55)
+        ax2.set_ylim(top=1.6, bottom=0.33)
 
         # ax2.yaxis.set_label_position("right")
         # ax2.yaxis.tick_right()
@@ -1367,15 +1455,29 @@ class PhasarIterIDETargetMemSpeedupVsNested(
         return ax
 
 
-class PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
+class PhasarIterIDETargetMemSpeedupVsNestedSortedBase(
     PhasarIterIDEMemSpeedupJFvsNestedPlotBase,
-    plot_name='phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-size',
+    plot_name="TODO",
     yname="Memory Savings vs Nested"
 ):
 
+    def __init_subclass__(
+        cls,
+        *,
+        plot_name: tp.Optional[str],
+        yname: tp.Optional[str] = None,
+        sort_target: str = None,
+        **kwargs: tp.Any
+    ) -> None:
+        if sort_target:
+            cls.SORT_TARGET = sort_target
+        return super().__init_subclass__(
+            plot_name=plot_name, yname=yname, **kwargs
+        )
+
     def make_phasar_plot(self) -> matplotlib.axes.Axes:
         data = self.make_dataframe(PhasarIterIDEPlotBase.compute_mean_speedup)
-        data = data.sort_values(by=["LOC"])
+        data = data.sort_values(by=[self.SORT_TARGET])
 
         ax = sns.scatterplot(
             data=data,
@@ -1412,6 +1514,74 @@ class PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
         # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
         return ax
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
+    PhasarIterIDETargetMemSpeedupVsNestedSortedBase,
+    plot_name='phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-size',
+    yname="Memory Savings vs Nested",
+    sort_target="LOC"
+):
+    pass
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedFun(
+    PhasarIterIDETargetMemSpeedupVsNestedSortedBase,
+    plot_name='phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-fun',
+    yname="Memory Savings vs Nested",
+    sort_target="Fun"
+):
+    pass
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedAddrFun(
+    PhasarIterIDETargetMemSpeedupVsNestedSortedBase,
+    plot_name=
+    'phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-addr-fun',
+    yname="Memory Savings vs Nested",
+    sort_target="AddrFun"
+):
+    pass
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedGlobal(
+    PhasarIterIDETargetMemSpeedupVsNestedSortedBase,
+    plot_name=
+    'phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-global',
+    yname="Memory Savings vs Nested",
+    sort_target="Glob"
+):
+    pass
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedCalls(
+    PhasarIterIDETargetMemSpeedupVsNestedSortedBase,
+    plot_name=
+    'phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-calls',
+    yname="Memory Savings vs Nested",
+    sort_target="Calls"
+):
+    pass
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedIndCalls(
+    PhasarIterIDETargetMemSpeedupVsNestedSortedBase,
+    plot_name=
+    'phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-ind-calls',
+    yname="Memory Savings vs Nested",
+    sort_target="IndCalls"
+):
+    pass
+
+
+class PhasarIterIDETargetMemSpeedupVsNestedSortedBlocks(
+    PhasarIterIDETargetMemSpeedupVsNestedSortedBase,
+    plot_name=
+    'phasar-iter-ide-mem-speedup-target-scatter-vs-nested-sorted-blocks',
+    yname="Memory Savings vs Nested",
+    sort_target="Blocks"
+):
+    pass
 
 
 class PhasarIterIDETargetMemSpeedupVsNestedSortedMem(
@@ -2219,6 +2389,8 @@ class PhasarIterIDESpeedupGCPlot(
             self, speedup_computer
         )
 
+        print(f"Foobar: {speedup_computer}")
+
         for ana in [self.TAINT, self.LCA, self.TYPESTATE]:
             Filter = data.loc[data["Analysis"] == ana]
             Rows = Filter[self.YNAME]
@@ -2229,6 +2401,7 @@ class PhasarIterIDESpeedupGCPlot(
             Min = Rows[MinIdx]
             Max = Rows[MaxIdx]
             Mean = Rows.mean()
+            Stddev = Rows.std()
 
             ArgMin = (
                 Filter['JF'][MinIdx], Filter['Analysis'][MinIdx],
@@ -2240,7 +2413,7 @@ class PhasarIterIDESpeedupGCPlot(
             )
 
             print(
-                f"[PhasarIterIDESpeedupGCPlot]: {ana}: Min {Min}({ArgMin}), Max {Max}({ArgMax}), Mean {Mean}"
+                f"[PhasarIterIDESpeedupGCPlot]: {ana}: Min {Min}({ArgMin}), Max {Max}({ArgMax}), Mean {Mean}, Stddev {Stddev}"
             )
 
         return data
@@ -2252,9 +2425,10 @@ class PhasarIterIDESpeedupGCPlot(
         ax = PhasarIterIDESpeedupGCPlotBase.make_phasar_plot(self)
         ax.set_yscale("log", base=2)
 
-        ax.set_yticks([0.5, 0.625, 0.75, 0.875, 1])
+        ax.set_yticks([0.625, 0.75, 0.875, 1, 1.25, 1.5])
         ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        ax.set_ylim(top=1.1)
+        ax.set_ylim(top=1.75)
+        sns.move_legend(ax, "upper left")
 
         return ax
 
@@ -2424,8 +2598,9 @@ class PhasarIterIDEMemSlowdownGCPlot(
             Min = Rows.min()
             Max = Rows.max()
             Mean = Rows.mean()
+            Stddev = Rows.std()
             print(
-                f"[PhasarIterIDEMemSlowdownGCPlot]: {ana}: Min {Min}, Max {Max}, Mean {Mean}"
+                f"[PhasarIterIDEMemSlowdownGCPlot]: {ana}: Min {Min}, Max {Max}, Mean {Mean}, Stddev {Stddev}"
             )
 
         return data
@@ -3334,6 +3509,42 @@ class CAIGViolinPlotGenerator(
                 self.plot_config, **self.plot_kwargs
             ),
             PhasarIterIDETargetMemSpeedupVsNestedSortedSize(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedFun(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedFun(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedAddrFun(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedAddrFun(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedGlobal(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedGlobal(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedCalls(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedCalls(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedIndCalls(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedIndCalls(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetSpeedupVsNestedSortedBlocks(
+                self.plot_config, **self.plot_kwargs
+            ),
+            PhasarIterIDETargetMemSpeedupVsNestedSortedBlocks(
                 self.plot_config, **self.plot_kwargs
             ),
             PhasarIterIDETargetSpeedupVsNestedSortedTime(
