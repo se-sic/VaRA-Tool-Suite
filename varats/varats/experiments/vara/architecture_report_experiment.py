@@ -7,7 +7,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import touch
 
-from varats.data.reports.md_report import MDReport
+from varats.data.reports.architecture_report import ArchitectureReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -44,21 +44,16 @@ class ArchitectureAnalysis(actions.ProjectStep):  # type: ignore
 
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle,
-                MDReport,
-                self.project, binary,
-                config_id
+                self.__experiment_handle, ArchitectureReport, self.project,
+                binary, config_id
             )
 
             opt_params = [
-                "-O0", "-g0", "-fvara-GB",
-                "-S", "-fvara-arch",
+                "-O0", "-g0", "-fvara-GB", "-S", "-fvara-arch",
                 f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
-                    self.project, binary, [
-                        BCFileExtensions.NO_OPT,
-                        BCFileExtensions.ARCH
-                    ]
+                    self.project, binary,
+                    [BCFileExtensions.NO_OPT, BCFileExtensions.ARCH]
                 )
             ]
 
@@ -67,7 +62,7 @@ class ArchitectureAnalysis(actions.ProjectStep):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project, MDReport
+                    self.__experiment_handle, self.project, ArchitectureReport
                 )
             )
 
@@ -80,7 +75,7 @@ class ArchitectureReport(VersionExperiment, shorthand="ARE"):
 
     NAME = "GenerateArchitectureReport"
 
-    REPORT_SPEC = ReportSpecification(MDReport)
+    REPORT_SPEC = ReportSpecification(ArchitectureReport)
 
     def actions_for_project(
         self, project: Project
@@ -107,6 +102,3 @@ class ArchitectureReport(VersionExperiment, shorthand="ARE"):
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
-
-
-
