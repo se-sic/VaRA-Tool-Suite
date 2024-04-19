@@ -1,11 +1,12 @@
-"""Implements an empty experiment that just compiles the project."""
+"""Implements an experiment which generates an architecture report for the
+project."""
 
 import typing as tp
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import touch
+from benchbuild.utils.cmd import opt
 
 from varats.data.reports.architecture_report import ArchitectureReport
 from varats.experiment.experiment_util import (
@@ -14,9 +15,14 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
+    create_default_compiler_error_handler,
     create_new_success_result_filepath,
 )
-from varats.experiment.wllvm import RunWLLVM
+from varats.experiment.wllvm import (
+    RunWLLVM,
+    BCFileExtensions,
+    get_bc_cache_actions,
+)
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
@@ -35,11 +41,6 @@ class ArchitectureAnalysis(actions.ProjectStep):  # type: ignore
         self.__experiment_handle = experiment_handle
 
     def __call__(self) -> actions.StepResult:
-        return self.analyze()
-
-    def analyze(self) -> actions.StepResult:
-        #
-
         config_id = get_current_config_id(self.project)
 
         for binary in self.project.binaries:
@@ -49,8 +50,9 @@ class ArchitectureAnalysis(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "-O0", "-g0", "-fvara-GB", "-S", "-fvara-arch",
+                "--enable-new-pm=0",
                 f"-vara-report-outfile={result_file}",
+                # TODO an option which enables the analysis pass on VaRA's side
                 get_cached_bc_file_path(
                     self.project, binary,
                     [BCFileExtensions.NO_OPT, BCFileExtensions.ARCH]
@@ -69,8 +71,7 @@ class ArchitectureAnalysis(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-# Please take care when changing this file, see docs experiments/just_compile
-class ArchitectureReport(VersionExperiment, shorthand="ARE"):
+class ArchitectureReportExperiment(VersionExperiment, shorthand="ARE"):
     """Generates an Architecture report file."""
 
     NAME = "GenerateArchitectureReport"
@@ -92,13 +93,26 @@ class ArchitectureReport(VersionExperiment, shorthand="ARE"):
             << RunWLLVM() \
             << run.WithTimeout()
 
+        project.cflags += [
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fvara-arch"
+        ]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
-        analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtentions.ARCH,
+        ]
+        extraction_error_handler = create_default_compiler_error_handler(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+        analysis_actions = get_bc_cache_actions(
+            project, bc_file_extensions, extraction_error_handler
+        )
+        analysis_actions.append(
+            ArchitectureAnalysis(project, self.get_handle())
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
