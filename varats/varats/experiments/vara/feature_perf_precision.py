@@ -16,6 +16,7 @@ from benchbuild.utils.cmd import time, cp, sudo, bpftrace
 from plumbum import local, BG
 from plumbum.commands.modifiers import Future
 
+from varats.base.configuration import PatchConfiguration
 from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReportAggregate,
 )
@@ -44,7 +45,7 @@ from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.report.tef_report import TEFReportAggregate
 from varats.tools.research_tools.vara import VaRA
-from varats.utils.config import get_current_config_id
+from varats.utils.config import get_current_config_id, get_config
 from varats.utils.git_util import ShortCommitHash
 
 REPS = 3
@@ -77,10 +78,24 @@ def perf_prec_workload_commands(
 def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
     """Uniformly select the binaries that should be analyzed."""
     if project.name == "DunePerfRegression":
-        return [
-            binary for binary in project.binaries
-            if binary.name == "poisson_yasp_q2_3d"
-        ]
+        config = get_config(project, PatchConfiguration)
+        if not config:
+            return []
+
+        f_tags = {opt.value for opt in config.options()}
+
+        grid_binary_map = {
+            "YaspGrid": "poisson_yasp_q2_3d",
+            "UGGrid": "poisson_ug_pk_2d",
+            "ALUGrid": "poisson_alugrid"
+        }
+
+        for grid in grid_binary_map:
+            if grid in f_tags:
+                return [
+                    binary for binary in project.binaries
+                    if binary.name == grid_binary_map[grid]
+                ]
 
     return [project.binaries[0]]
 
@@ -343,7 +358,7 @@ class RunBCCTracedWorkloads(AnalysisProjectStepBase):  # type: ignore
                                 f"Running example {prj_command.command.label}"
                             )
 
-                            bpf_runner = bpf_runner = self.attach_usdt_bcc(
+                            bpf_runner = self.attach_usdt_bcc(
                                 local_tracefile_path,
                                 self.project.source_of_primary /
                                 self._binary.path
