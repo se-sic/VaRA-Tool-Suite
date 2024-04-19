@@ -99,14 +99,14 @@ def get_threshold(project: VProject) -> int:
     if project.DOMAIN is ProjectDomains.TEST:
         if project.name in [
             "SynthSAFieldSensitivity", "SynthIPRuntime", "SynthIPTemplate",
-            "SynthIPTemplate2", "SynthIPCombined", "PicoSATLoadTime"
+            "SynthIPTemplate2", "SynthIPCombined"
         ]:
             # Don't instrument everything for these synthetic projects
             return 10
 
         return 0
 
-    if project.name in ["HyTeg"]:
+    if project.name in ["HyTeg", "PicoSATLoadTime"]:
         return 0
 
     return 100
