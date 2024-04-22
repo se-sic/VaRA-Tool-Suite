@@ -22,7 +22,6 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
-
 LOG = logging.getLogger(__name__)
 
 
