@@ -90,11 +90,11 @@ def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
             "ALUGrid": "poisson_alugrid"
         }
 
-        for grid, _ in grid_binary_map.items():
+        for grid, binary_name in grid_binary_map.items():
             if grid in f_tags:
                 return [
                     binary for binary in project.binaries
-                    if binary.name == grid_binary_map[grid]
+                    if binary.name == binary_name
                 ]
 
     return [project.binaries[0]]
