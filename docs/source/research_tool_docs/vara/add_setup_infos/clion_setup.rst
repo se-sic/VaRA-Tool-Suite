@@ -22,24 +22,31 @@ How to set up VaRA/LLVM in CLion
            -DBUILD_SHARED_LIBS=ON
            -DCMAKE_C_FLAGS_DEBUG="-O2 -g -fno-omit-frame-pointer"
            -DCMAKE_CXX_FLAGS_DEBUG="-O2 -g -fno-omit-frame-pointer"
+           -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--undefined-version"
            -DCMAKE_CXX_STANDARD=17
            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
            -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
            -DLLVM_ENABLE_ASSERTIONS=ON
            -DLLVM_ENABLE_BINDINGS=OFF
            -DLLVM_ENABLE_EH=ON
-           -DLLVM_ENABLE_LDD=ON
+           -DLLVM_ENABLE_LLD=ON
            -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
            -DLLVM_ENABLE_RTTI=ON
            -DLLVM_OPTIMIZED_TABLEGEN=ON
            -DLLVM_PARALLEL_LINK_JOBS=4
            -DLLVM_PHASAR_BUILD=ON
+           -DLLVM_TOOL_PHASAR_BUILD=ON
+           -DPHASAR_ENABLE_DYNAMIC_LOG=OFF
+           -DPHASAR_BUILD_IR=OFF
+           -DPHASAR_BUILD_UNITTESTS=OFF
            -DLLVM_TARGETS_TO_BUILD=X86
            -DLLVM_TOOL_PHASAR_BUILD=ON
-           -DLLVM_USE_NEWPM=ON
            -DUSE_HTTPS=OFF
            -DUSE_SSH=OFF
            -DVARA_BUILD_LIBGIT=ON
+           -DVARA_FEATURE_BUILD_PYTHON_BINDINGS=OFF
+           -DVARA_FEATURE_BUILD_Z3_SOLVER=ON
+           -DVARA_FEATURE_USE_Z3_SOLVER=ON
 
         Use ``-O0`` for debug builds and ``-O2`` for development builds.
 
@@ -57,22 +64,31 @@ How to set up VaRA/LLVM in CLion
            -DBUILD_SHARED_LIBS=ON
            -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt"
            -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt"
+           -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--undefined-version"
            -DCMAKE_CXX_STANDARD=17
+           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
            -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
            -DLLVM_ENABLE_ASSERTIONS=OFF
            -DLLVM_ENABLE_BINDINGS=OFF
            -DLLVM_ENABLE_EH=ON
-           -DLLVM_ENABLE_LDD=ON
+           -DLLVM_ENABLE_LLD=ON
            -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
            -DLLVM_ENABLE_RTTI=ON
+           -DLLVM_OPTIMIZED_TABLEGEN=ON
            -DLLVM_PARALLEL_LINK_JOBS=4
            -DLLVM_PHASAR_BUILD=ON
+           -DLLVM_TOOL_PHASAR_BUILD=ON
+           -DPHASAR_ENABLE_DYNAMIC_LOG=OFF
+           -DPHASAR_BUILD_IR=OFF
+           -DPHASAR_BUILD_UNITTESTS=OFF
            -DLLVM_TARGETS_TO_BUILD=X86
            -DLLVM_TOOL_PHASAR_BUILD=ON
-           -DLLVM_USE_NEWPM=ON
            -DUSE_HTTPS=OFF
            -DUSE_SSH=OFF
            -DVARA_BUILD_LIBGIT=ON
+           -DVARA_FEATURE_BUILD_PYTHON_BINDINGS=OFF
+           -DVARA_FEATURE_BUILD_Z3_SOLVER=ON
+           -DVARA_FEATURE_USE_Z3_SOLVER=ON
 
       - **Build directory:** ``<varats_root>/tools_src/vara-llvm-project/build/dev-clion``
       - **Build options:** leave empty
