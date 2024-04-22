@@ -102,7 +102,7 @@ class ArchitectureReportExperiment(VersionExperiment, shorthand="ARE"):
 
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
-            BCFileExtentions.ARCH,
+            BCFileExtensions.ARCH,
         ]
         extraction_error_handler = create_default_compiler_error_handler(
             self.get_handle(), project, self.REPORT_SPEC.main_report
