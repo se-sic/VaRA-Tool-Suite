@@ -534,9 +534,7 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                         file_path
                     ).ids()
                 else:
-                    config_ids = [
-                        int(x) for x in raw_hash_id_tuple['config_ids']
-                    ]
+                    config_ids = [int(x) for x in raw_config_ids]
             else:
                 config_ids = []
 
