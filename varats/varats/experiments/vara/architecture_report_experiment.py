@@ -22,6 +22,7 @@ from varats.experiment.wllvm import (
     RunWLLVM,
     BCFileExtensions,
     get_bc_cache_actions,
+    get_cached_bc_file_path,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
