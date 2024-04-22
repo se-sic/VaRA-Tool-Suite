@@ -105,6 +105,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.base.just_compile',
         'varats.experiments.base.time_workloads',
         'varats.experiments.base.perf_sampling',
+        'varats.experiments.base.precompile',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
