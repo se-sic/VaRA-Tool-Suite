@@ -43,12 +43,10 @@ class StoreBinaries(actions.ProjectStep):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """Store binaries as reports."""
 
-        config_id = get_current_config_id(self.project)
-
         for binary in self.project.binaries:
             report_path = create_new_success_result_filepath(
                 self.__experiment_handle, CompiledBinaryReport, self.project,
-                binary, config_id
+                binary
             )
 
             run_cmd = cp[Path(self.project.source_of_primary, binary.path),
@@ -82,12 +80,10 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """Restore binaries from reports."""
 
-        config_id = get_current_config_id(self.project)
-
         for binary in self.project.binaries:
             report_path = create_new_success_result_filepath(
                 self.__experiment_handle, CompiledBinaryReport, self.project,
-                binary, config_id
+                binary
             )
 
             if not report_path.full_path().exists():
