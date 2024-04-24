@@ -123,10 +123,15 @@ def main() -> None:
     help="Force colored output also when not connected to a terminal "
     "(e.g. when piping to less -r)."
 )
+@click.option(
+    "--ignore-configs",
+    is_flag=True,
+    help="Show status for configuration-independent results only."
+)
 def __casestudy_status(
     experiment_type: tp.Type[VersionExperiment], filter_regex: str, short: bool,
     list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
-    force_color: bool
+    force_color: bool, ignore_configs: bool
 ) -> None:
     """
     Show status of current case study.
@@ -146,7 +151,7 @@ def __casestudy_status(
         )
     PCM.show_status_of_case_studies(
         experiment_type, filter_regex, short, sort_revs, list_revs, with_stage,
-        legend
+        legend, ignore_configs
     )
 
 
