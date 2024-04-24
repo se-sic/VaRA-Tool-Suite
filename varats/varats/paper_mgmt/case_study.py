@@ -194,7 +194,8 @@ def get_revisions_status_for_case_study(
     experiment_type: tp.Type["VersionExperiment"],
     report_type: tp.Optional[tp.Type[BaseReport]] = None,
     stage_num: int = -1,
-    tag_blocked: bool = True
+    tag_blocked: bool = True,
+    ignore_configs: bool = False
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Computes the file status for all revisions in this case study.
@@ -206,6 +207,7 @@ def get_revisions_status_for_case_study(
                      defaults to experiment's main report
         stage_num: only consider a specific stage of the case study
         tag_blocked: if true, also blocked commits are tagged
+        ignore_configs: if true, ignore configuration for file status
 
     Returns:
         a list of (revision, status) tuples
@@ -229,7 +231,9 @@ def get_revisions_status_for_case_study(
             found = False
             for tagged_rev, conf_tag_map in tagged_revisions.items():
                 if short_rev == tagged_rev:
-                    if case_study.has_revision_configs_specified(tagged_rev):
+                    if case_study.has_revision_configs_specified(
+                        tagged_rev
+                    ) and not ignore_configs:
                         tag = __conf_specific_filestatus(
                             case_study, tagged_rev, conf_tag_map
                         )
