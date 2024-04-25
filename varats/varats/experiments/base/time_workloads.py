@@ -91,7 +91,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         # Only consider the main/first binary
         binary = project.binaries[0]
 
-        measurement_repetitions = 5
+        measurement_repetitions = 10
 
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
@@ -101,7 +101,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
 
         analysis_actions = [
             # use precompiled binaries
-            RestoreBinaries(project, self.get_handle()),
+            RestoreBinaries(project),
             ZippedExperimentSteps(
                 result_filepath, [
                     TimeProjectWorkloads(project, rep_num, binary)
