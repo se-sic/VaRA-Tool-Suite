@@ -3,6 +3,7 @@ import logging
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
@@ -19,8 +20,8 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.varats_project import VProject
-from varats.report.report import ReportSpecification
-from varats.utils.config import get_current_config_id
+from varats.report.report import ReportSpecification, ReportFilename
+from varats.revision.revisions import get_processed_revisions_files
 
 LOG = logging.getLogger(__name__)
 
@@ -70,9 +71,8 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(self, project: Project):
         super().__init__(project=project)
-        self.__experiment_handle = experiment_handle
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
@@ -81,24 +81,25 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
         """Restore binaries from reports."""
 
         for binary in self.project.binaries:
-            report_path = create_new_success_result_filepath(
-                self.__experiment_handle, CompiledBinaryReport, self.project,
-                binary
-            )
+
+            def filter_reports(file_name: str) -> bool:
+                return ReportFilename(
+                    file_name
+                ).commit_hash.hash != self.project.version_of_primary
+
+            report_path = get_processed_revisions_files(
+                self.project.name, PreCompile, file_name_filter=filter_reports
+            )[0]
 
             if not report_path.full_path().exists():
                 LOG.error("Could not find report file for binary.")
                 return actions.StepResult.ERROR
 
-            run_cmd = cp[report_path,
-                         Path(self.project.source_of_primary, binary.path)]
+            binary_path = Path(self.project.source_of_primary, binary.path)
+            if not binary_path.parent.exists():
+                binary_path.parent.mkdir(parents=True)
 
-            exec_func_with_pe_error_handler(
-                run_cmd,
-                create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project, CompiledBinaryReport
-                )
-            )
+            bb.watch(cp[report_path, binary_path])()
 
         return actions.StepResult.OK
 
