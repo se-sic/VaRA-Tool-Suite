@@ -35,6 +35,33 @@ from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
+GROUP_SYNTHETIC_CATEGORIES = True
+
+SYNTH_CATEGORIES = [
+    "Static Analysis", "Dynamic Analysis", "Configurability",
+    "Implementation Pattern"
+]
+
+
+def compute_cs_category_grouping(case_study_name: str) -> str:
+    """Mapping function to transform individual project names to their synthtic
+    categories."""
+    if case_study_name.startswith("SynthSA"):
+        return "Static Analysis"
+
+    if case_study_name.startswith("SynthDA"
+                                 ) or case_study_name.startswith("SynthOV"):
+        return "Dynamic Analysis"
+
+    if case_study_name.startswith("SynthFeature"):
+        return "Configurability"
+
+    if case_study_name.startswith("SynthCT"
+                                 ) or case_study_name.startswith("SynthIP"):
+        return "Implementation Pattern"
+
+    return case_study_name
+
 
 def cmap_map(
     function: tp.Callable[[npt.NDArray[np.float64]], npt.NDArray[np.float64]],
@@ -142,7 +169,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """Setup performance precision table."""
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
         # Data aggregation
         df = self._prepare_data_table(case_studies, profilers)
@@ -304,6 +331,21 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
 
+        if GROUP_SYNTHETIC_CATEGORIES:
+
+            merged_df["CaseStudy"] = merged_df["CaseStudy"].apply(
+                compute_cs_category_grouping
+            )
+            merged_df = merged_df.groupby(['CaseStudy', "Profiler"],
+                                          as_index=False).agg({
+                                              'precision': 'mean',
+                                              'recall': 'mean',
+                                              'overhead_time': 'mean',
+                                              'overhead_time_rel': 'mean',
+                                              'overhead_memory_rel': 'mean',
+                                              'overhead_memory': 'mean'
+                                          })
+
         pivot_df = merged_df.pivot(
             index='CaseStudy',
             columns='Profiler',
@@ -324,7 +366,18 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
         ],
                                     axis=1)
 
-        pivot_df.loc["Total"] = pivot_df.mean()
+        # All means need to be computed before they are added as rows
+        overall_mean = pivot_df.mean()
+        if GROUP_SYNTHETIC_CATEGORIES:
+            synth_mean = pivot_df.loc[pivot_df.index.isin(SYNTH_CATEGORIES)
+                                     ].mean()
+            real_world_mean = pivot_df.loc[~pivot_df.index.
+                                           isin(SYNTH_CATEGORIES)].mean()
+
+            pivot_df.loc["SynthMean"] = synth_mean
+            pivot_df.loc["RealWorldMean"] = real_world_mean
+
+        pivot_df.loc["OverallMean"] = overall_mean
 
         # Rename columns
         # pylint: disable=anomalous-backslash-in-string
@@ -516,6 +569,16 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient='index'))
 
         df = pd.concat(cs_data).sort_index()
+        df.index.name = 'CaseStudy'
+
+        if GROUP_SYNTHETIC_CATEGORIES:
+            df.index = df.index.map(compute_cs_category_grouping)
+
+            df = df.groupby(df.index.name, as_index=True).agg({
+                'NumConfig': 'sum',
+                'Locs': 'sum',
+                'Regressions': 'sum'
+            })
 
         style = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
