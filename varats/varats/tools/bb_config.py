@@ -125,6 +125,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.vara.performance_interaction',
         'varats.experiments.vara.feature_region_verifier_experiment',
+        'varats.experiments.vara.hot_function_experiment',
     ]
 
 
