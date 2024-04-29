@@ -89,13 +89,13 @@ class Bzip2(VProject):
     CONTAINER = [
         (
             RevisionRange("ad723d6558718e9bbaca930e7e715c9ee754e90e",
-                          "HEAD"), get_base_image(ImageBase.DEBIAN_11)
+                          "HEAD"), get_base_image(ImageBase.DEBIAN_12)
         ),
         (
             _AUTOTOOLS_VERSIONS,
-            get_base_image(ImageBase.DEBIAN_11
+            get_base_image(ImageBase.DEBIAN_12
                           ).run('apt', 'install', '-y', 'autoconf', 'automake')
-        ), (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_11))
+        ), (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_12))
     ]
 
     WORKLOADS = {
