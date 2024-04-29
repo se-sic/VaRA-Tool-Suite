@@ -72,7 +72,11 @@ def __validate_project_parameters(
             )
 
         if version:
-            commit_hash = ShortCommitHash(version)
+            versions = version.strip("'\"").split(",")
+            if versions[0] == "*":
+                continue
+
+            commit_hash = ShortCommitHash(versions[0])
             if not any(cs.has_revision(commit_hash) for cs in case_studies):
                 raise click.BadParameter(
                     f"Version '{version}' is not selected by any case study."
