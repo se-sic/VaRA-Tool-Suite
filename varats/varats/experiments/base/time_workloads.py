@@ -21,7 +21,7 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
     create_workload_specific_filename,
 )
-from varats.experiments.base.precompile import RestoreBinaries
+from varats.experiments.base.precompile import RestoreBinaries, PreCompile
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import WLTimeReportAggregate
@@ -101,7 +101,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
 
         analysis_actions = [
             # use precompiled binaries
-            RestoreBinaries(project),
+            RestoreBinaries(project, PreCompile),
             ZippedExperimentSteps(
                 result_filepath, [
                     TimeProjectWorkloads(project, rep_num, binary)
