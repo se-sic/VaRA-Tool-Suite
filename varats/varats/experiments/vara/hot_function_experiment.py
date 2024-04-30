@@ -7,13 +7,16 @@ from benchbuild.utils import actions
 from plumbum import local
 from plumbum.cmd import llvm_xray
 
+from varats.data.reports.compiled_binary_report import CompiledBinaryReport
 from varats.experiment.experiment_util import (
     ZippedReportFolder,
     create_new_success_result_filepath,
     get_default_compile_error_wrapped,
-    ExperimentHandle,
+    ExperimentHandle, VersionExperiment,
 )
+from varats.experiment.wllvm import RunWLLVM
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
+from varats.experiments.base.precompile import StoreBinaries, RestoreBinaries
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     select_project_binaries,
@@ -149,15 +152,37 @@ class XRayFindHotFunctions(FeatureExperiment, shorthand="HF"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
+        binary = select_project_binaries(project)[0]
+        if binary.type != BinaryType.EXECUTABLE:
+            raise AssertionError("Experiment only works with executables.")
+
+        return [
+            RestoreBinaries(project, PreCompileXRayFindHotFunctions),
+            RunXRayProfiler(project, self.get_handle()),
+            actions.Clean(project),
+        ]
+
+
+class PreCompileXRayFindHotFunctions(VersionExperiment, shorthand="PRECHF"):
+    """Stores binaries compiled for hot function detection as reports."""
+
+    NAME = "PreCompileDetermineHotFunctions"
+
+    REPORT_SPEC = ReportSpecification(CompiledBinaryReport)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
         project.cflags += [
             "-fxray-instrument",
             "-fxray-instruction-threshold=1",
         ]
 
         project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+                                    << time.RunWithTime()
 
-        project.compiler_extension = compiler.RunCompiler(project, self)
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << RunWLLVM()
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project,
@@ -168,8 +193,10 @@ class XRayFindHotFunctions(FeatureExperiment, shorthand="HF"):
         if binary.type != BinaryType.EXECUTABLE:
             raise AssertionError("Experiment only works with executables.")
 
-        return [
+        analysis_actions = [
             actions.Compile(project),
-            RunXRayProfiler(project, self.get_handle()),
-            actions.Clean(project),
+            StoreBinaries(project, self.get_handle()),
+            actions.Clean(project)
         ]
+
+        return analysis_actions
