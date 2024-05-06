@@ -71,7 +71,9 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
 
     project: VProject
 
-    def __init__(self, project: Project, experiment_type: tp.Type[VersionExperiment]):
+    def __init__(
+        self, project: Project, experiment_type: tp.Type[VersionExperiment]
+    ):
         super().__init__(project=project)
         self.__experiment_type = experiment_type
 
@@ -89,7 +91,9 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
                 ).commit_hash.hash != self.project.version_of_primary
 
             report_path = get_processed_revisions_files(
-                self.project.name, self.__experiment_type, file_name_filter=filter_reports
+                self.project.name,
+                self.__experiment_type,
+                file_name_filter=filter_reports
             )[0]
 
             if not report_path.full_path().exists():
