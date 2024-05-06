@@ -30,7 +30,7 @@ from varats.utils.settings import bb_cfg
 
 
 class Clasp(VProject, ReleaseProviderHook):
-    """clasp is an answer set solver for (extended) normal and disjunctive logic
+    """Clasp is an answer set solver for (extended) normal and disjunctive logic
     programs."""
 
     NAME = 'clasp'

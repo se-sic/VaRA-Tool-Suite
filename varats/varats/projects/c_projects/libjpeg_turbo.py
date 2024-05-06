@@ -21,7 +21,7 @@ from varats.utils.settings import bb_cfg
 
 
 class LibjpegTurbo(VProject):
-    """libjpeg-turbo is a JPEG image codec."""
+    """Libjpeg-turbo is a JPEG image codec."""
 
     NAME = 'libjpeg_turbo'
     GROUP = 'c_projects'

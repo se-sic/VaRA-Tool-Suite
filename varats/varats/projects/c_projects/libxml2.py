@@ -23,7 +23,7 @@ from varats.utils.settings import bb_cfg
 
 
 class Libxml2(VProject):
-    """libxml2 is a software library for parsing XML documents."""
+    """Libxml2 is a software library for parsing XML documents."""
 
     NAME = 'libxml2'
     GROUP = 'c_projects'

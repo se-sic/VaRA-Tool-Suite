@@ -51,7 +51,7 @@ class FeatureInstrType(Enum):
     """Print tracing information to stdout."""
 
     PERF_INFLUENCE_TRACE = "perf_infl_trace"
-    """Produce a performance influence trace file"""
+    """Produce a performance influence trace file."""
 
     TEF = "trace_event"
     """Produce a trace file."""
