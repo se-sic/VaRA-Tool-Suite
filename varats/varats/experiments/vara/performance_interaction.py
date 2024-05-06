@@ -1,5 +1,6 @@
 """Module for performance interaction detection experiments."""
 import typing as tp
+from itertools import pairwise
 from pathlib import Path
 
 import yaml
@@ -7,7 +8,11 @@ from benchbuild import Project
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
-from varats.data.filtertree_data import InteractionFilter, SingleCommitFilter
+from varats.data.filtertree_data import (
+    InteractionFilter,
+    SingleCommitFilter,
+    OrOperator,
+)
 from varats.data.reports.performance_interaction_report import (
     PerformanceInteractionReport,
 )
@@ -28,17 +33,42 @@ from varats.experiments.vara.blame_experiment import (
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.mapping.commit_map import get_commit_map
-from varats.project.project_util import get_local_project_git_paths
+from varats.paper.paper_config import get_loaded_paper_config
+from varats.project.project_util import (
+    get_local_project_git_paths,
+    get_local_project_git_path,
+)
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.report import ReportSpecification
-from varats.utils.git_util import ShortCommitHash, UNCOMMITTED_COMMIT_HASH
+from varats.utils.git_util import (
+    ShortCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
+    FullCommitHash,
+    get_all_revisions_between,
+)
 
 
 def createCommitFilter(project: VProject) -> InteractionFilter:
-    cmap = get_commit_map(project.name)
-    commit = cmap.complete_c_hash(ShortCommitHash(project.version_of_primary))
-    return SingleCommitFilter(commit_hash=next(iter(commit)).hash)
+    project_git_path = get_local_project_git_path(project.name)
+    case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
+    commit_map = get_commit_map(project.name)
+    revisions = sorted(case_study.revisions, key=commit_map.time_id)
+
+    def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
+        return pair[1].short_hash == project.version_of_primary
+
+    old_rev, new_rev = list(filter(rev_filter, pairwise(revisions)))[0]
+
+    commits = get_all_revisions_between(
+        old_rev.hash, new_rev.hash, FullCommitHash, project_git_path
+    )[1:]
+
+    return OrOperator(
+        children=[
+            SingleCommitFilter(commit_hash=commit.hash) for commit in commits
+        ]
+    )
 
 
 def get_function_annotations(project_name: str) -> tp.List[str]:
