@@ -13,7 +13,11 @@ class XRayFunctionWrapper:
     name: str
     count: int
     sum_time: float
+    self_time: float
 
+
+def _ns_to_seconds(ns: int) -> float:
+    return float(ns) / 1000000000
 
 class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
 
@@ -25,11 +29,14 @@ class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
 
     def top_n_functions(self, limit=10) -> tp.List[XRayFunctionWrapper]:
         self.__function_data.sort_values(
-            by='sum', ascending=False, inplace=True
+            by='self', ascending=False, inplace=True
         )
         return [
             XRayFunctionWrapper(
-                name=row["function"], count=row['count'], sum_time=row["sum"]
+                name=row["function"],
+                count=row['count'],
+                sum_time=_ns_to_seconds(row["sum"]),
+                self_time=_ns_to_seconds(row["self"])
             ) for _, row in self.__function_data.head(limit).iterrows()
         ]
 
@@ -45,23 +52,26 @@ class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
             )
 
         self.__function_data.sort_values(
-            by='sum', ascending=False, inplace=True
+            by='self', ascending=False, inplace=True
         )
         # The total time tracked only includes time spend in the top n
         # (MAX_TRACK_FUNCTIONS) functions
         total_time_tracked = self.__function_data["sum"].sum()
 
         if threshold == 0:
-            sum_time_cutoff = 0
+            self_time_cutoff = 0
         else:
-            sum_time_cutoff = (total_time_tracked * threshold) / 100
+            self_time_cutoff = (total_time_tracked * threshold) / 100
 
         return [
             XRayFunctionWrapper(
-                name=row["function"], count=row['count'], sum_time=row["sum"]
+                name=row["function"],
+                count=row['count'],
+                sum_time=_ns_to_seconds(row["sum"]),
+                self_time=_ns_to_seconds(row["self"])
             )
             for _, row in self.__function_data.iterrows()
-            if row["sum"] > sum_time_cutoff
+            if row["self"] > self_time_cutoff
         ]
 
     def print_full_dump(self) -> None:

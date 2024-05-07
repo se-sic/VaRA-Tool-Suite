@@ -4,6 +4,7 @@ from pathlib import Path
 from benchbuild.command import ProjectCommand, cleanup
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
+from perfetto.trace_processor import TraceProcessor
 from plumbum import local
 from plumbum.cmd import llvm_xray
 
@@ -12,7 +13,8 @@ from varats.experiment.experiment_util import (
     ZippedReportFolder,
     create_new_success_result_filepath,
     get_default_compile_error_wrapped,
-    ExperimentHandle, VersionExperiment,
+    ExperimentHandle,
+    VersionExperiment,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
@@ -45,8 +47,6 @@ def perf_prec_workload_commands(
         wl_commands += workload_commands(
             project, binary, [WorkloadCategory.EXAMPLE]
         )
-
-    wl_commands += workload_commands(project, binary, [WorkloadCategory.SMALL])
 
     wl_commands += workload_commands(project, binary, [WorkloadCategory.MEDIUM])
 
@@ -131,14 +131,44 @@ class RunXRayProfiler(actions.ProjectStep):
                                 self.project.primary_source
                             ) / binary.path
 
+                            # convert to trace event format
+                            tef_file = f"tef_{prj_command.command.label}_{rep}"
                             llvm_xray(
-                                "account", f"{xray_log_path}",
-                                "--deduce-sibling-calls",
+                                "convert", "--symbolize", "--no-demangle",
                                 f"--instr_map={instr_map_path}",
-                                f"--output={hot_function_report_file}",
-                                "--format=csv",
-                                f"--top={HotFunctionReport.MAX_TRACK_FUNCTIONS}"
+                                f"--output={tef_file}",
+                                "--output-format=trace_event",
+                                f"{xray_log_path}"
                             )
+
+                            # reconstruct self-time from trace
+                            trace = TraceProcessor(trace=tef_file)
+                            result = trace.query(
+                                f"""
+INCLUDE PERFETTO MODULE time.conversion;
+
+DROP VIEW IF EXISTS child_times;
+CREATE PERFETTO VIEW child_times(id INT, dur INT) as
+SELECT parent_id as id, SUM(dur) as dur FROM slice
+GROUP BY parent_id;
+
+SELECT
+    slice.id as funcid,
+    COUNT(slice.id) as count,
+    MIN(slice.dur) as min,
+    MAX(slice.dur) as max,
+    SUM(slice.dur) as sum,
+    SUM(slice.dur - IFNULL(child_times.dur, 0)) as self,
+    slice.name as function
+FROM slice
+LEFT JOIN child_times
+ON slice.id = child_times.id
+GROUP BY name
+ORDER BY funcid
+LIMIT {HotFunctionReport.MAX_TRACK_FUNCTIONS};
+                                """
+                            ).as_pandas_dataframe()
+                            result.to_csv(hot_function_report_file, index=False)
 
         return actions.StepResult.OK
 
