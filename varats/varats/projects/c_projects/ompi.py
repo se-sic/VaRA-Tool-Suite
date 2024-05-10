@@ -70,7 +70,7 @@ class Ompi(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Ompi.NAME))
 
-        binary_map.specify_binary("ompi/ompi", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("/opt/openmpi/", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -86,8 +86,8 @@ class Ompi(VProject):
                     bb.watch(local["./autogen.pl"])()
                     bb.watch(local["./configure"])("--disable-gcc-warnings")
                 except Exception as e:
-                    print(f"配置过程中出现错误: {e}")
-                    # 输出config.log的内容以便调试
+                    print(f"An error occurred during configuration: {e}")
+                    # Output the contents of config.log for debugging
                     config_log_path = ompi_source / "config.log"
                     if config_log_path.is_file():
                         with open(config_log_path, "r") as log_file:

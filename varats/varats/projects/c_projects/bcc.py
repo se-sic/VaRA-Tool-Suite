@@ -70,52 +70,27 @@ class Bcc(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Bcc.NAME))
 
-        binary_map.specify_binary("build/bcc", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("build/src/cc/libbcc.so.0.30.0", BinaryType.SHARED_LIBRARY)
 
         return binary_map[revision]
 
-    # def compile(self) -> None:
-    #     bcc_source = local.path(self.source_of_primary)
-    #     compiler = bb.compiler.cc(self)
-    #     with local.cwd(bcc_source):
-    #         with local.env(CC=str(compiler)):
-    #             # 使用 CMake 来配置项目
-    #             bb.watch(local["mkdir"])("-p", "build")  # 创建构建目录
-    #             with local.cwd("build"):
-    #                 bb.watch(local["cmake"])("..", "-DCMAKE_BUILD_TYPE=Release")
-    #                 # 根据需要添加其他CMake配置选项，如指定编译器或禁用特定特性
-    #
-    #         # 在构建目录下执行 make
-    #         with local.cwd("build"):
-    #             bb.watch(cmake)("-j", get_number_of_jobs(bb_cfg()))
-    #
-    #         # 校验编译后的二进制文件
-    #         verify_binaries(self)
-
     def compile(self) -> None:
+        """Compile the BCC project."""
         bcc_source = local.path(self.source_of_primary)
-        compiler = bb.compiler.cc(self)
-        with local.cwd(bcc_source):
-            with local.env(CC=str(compiler)):
-                # 创建构建目录
-                mkdir("-p", "build")
-                with local.cwd("build"):
-                    # 设置 LLVM 的路径
-                    llvm_path = "/lib/llvm-14/lib/cmake/llvm/"
-                    # 使用 CMake 配置项目，并指定 LLVM 的路径
-                    bb.watch(local["cmake"])("..", "-DCMAKE_BUILD_TYPE=Release", f"-DLLVM_DIR={llvm_path}")
-                    # 执行编译
-                    bb.watch(local["make"])("-j", get_number_of_jobs(bb_cfg()))
-                    # 执行安装（需要管理员权限）
-                    bb.watch(local["sudo"][local["make"]["install"]])()
+        mkdir("-p", bcc_source / "build")
 
-                    # 配置 Python 绑定
-                    bb.watch(local["cmake"])("..", "-DPYTHON_CMD=python3")
+        cc_compiler = bb.compiler.cc(self)
+        with local.cwd(bcc_source / 'build'):
+            with local.env(CC=str(cc_compiler)):
+                llvm_path = "/lib/llvm-14/lib/cmake/llvm/"
+                bb.watch(cmake)("..", "-DCMAKE_BUILD_TYPE=Release", f"-DLLVM_DIR={llvm_path}",
+                                "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
+                                "-DCMAKE_C_FLAGS=-fPIE", "-DCMAKE_CXX_FLAGS=-fPIE",
+                                "-DCMAKE_EXE_LINKER_FLAGS=-pie"
+                                )  # Configuring the project
 
-                    # 构建并安装 Python 绑定
-                with local.cwd("src/python"):
-                    bb.watch(local["make"])()
-                    bb.watch(local["sudo"][local["make"]["install"]])()
+            # Compiling the project with make, specifying the number of jobs
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
-                # 校验编译后的二进制文件
             verify_binaries(self)
+
