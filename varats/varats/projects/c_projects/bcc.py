@@ -70,7 +70,7 @@ class Bcc(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Bcc.NAME))
 
-        binary_map.specify_binary("build/src/cc/libbcc.so.0.30.0", BinaryType.SHARED_LIBRARY)
+        binary_map.specify_binary("build/src/cc/libbcc.so", BinaryType.SHARED_LIBRARY)
 
         return binary_map[revision]
 
@@ -83,14 +83,18 @@ class Bcc(VProject):
         with local.cwd(bcc_source / 'build'):
             with local.env(CC=str(cc_compiler)):
                 llvm_path = "/lib/llvm-14/lib/cmake/llvm/"
-                bb.watch(cmake)("..", "-DCMAKE_BUILD_TYPE=Release", f"-DLLVM_DIR={llvm_path}",
-                                "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
+                bb.watch(cmake)("..",
+                                # "-DCMAKE_BUILD_TYPE=Release",
+                                f"-DLLVM_DIR={llvm_path}",
+                                # "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
                                 "-DCMAKE_C_FLAGS=-fPIE", "-DCMAKE_CXX_FLAGS=-fPIE",
-                                "-DCMAKE_EXE_LINKER_FLAGS=-pie"
+                                # "-DCMAKE_EXE_LINKER_FLAGS=-pie"
                                 )  # Configuring the project
+                # Compiling the project with make, specifying the number of jobs
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
-            # Compiling the project with make, specifying the number of jobs
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
+        with local.cwd(bcc_source):
             verify_binaries(self)
+
+
 
