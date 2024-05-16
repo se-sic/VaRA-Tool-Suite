@@ -102,11 +102,16 @@ def select_project_binaries(project: VProject) -> tp.List[ProjectBinaryWrapper]:
 
 def get_extra_cflags(project: VProject) -> tp.List[str]:
     """Get additional cflags for some projects."""
+    extra_flags = []
+
+    if project.name == "DunePerfRegression":
+        extra_flags += ["-pthread"]
+
     if project.name in ["DunePerfRegression", "HyTeg"]:
         # Disable phasar for dune as the analysis cannot handle dunes size
-        return ["-fvara-disable-phasar"]
+        extra_flags += ["-fvara-disable-phasar"]
 
-    return []
+    return extra_flags
 
 
 def get_threshold(project: VProject) -> int:
@@ -661,7 +666,10 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         Args:
             project: to analyze
         """
-        project.cflags += ["-flto", "-fuse-ld=lld", "-fno-omit-frame-pointer"]
+        project.cflags += [
+            "-flto", "-fuse-ld=lld", "-flegacy-pass-manager",
+            "-fno-omit-frame-pointer"
+        ]
 
         project.cflags += get_extra_cflags(project)
 
@@ -1166,52 +1174,6 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
         Args:
             project: to analyze
         """
-        project.cflags += ["-flto", "-fuse-ld=lld", "-fno-omit-frame-pointer"]
-
-        project.cflags += get_extra_cflags(project)
-
-        project.ldflags += self.get_vara_tracing_ldflags()
-
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = bb_ext.run.RuntimeExtension(
-            project, self
-        ) << bb_ext.time.RunWithTime()
-
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = bb_ext.compiler.RunCompiler(
-            project, self
-        ) << WithUnlimitedStackSize()
-
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
+        return setup_actions_for_vara_overhead_experiment(
+            self, project, FeatureInstrType.NONE, RunGenTracedWorkloadsOverhead
         )
-
-        # TODO: change to multiple binaries
-        binary = select_project_binaries(project)[0]
-        if binary.type != BinaryType.EXECUTABLE:
-            raise AssertionError("Experiment only works with executables.")
-
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary,
-            get_current_config_id(project)
-        )
-
-        analysis_actions = get_config_patch_steps(project)
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath,
-                [
-                    RunBlackBoxBaselineOverhead(  # type: ignore
-                        project,
-                        binary
-                    ),
-                ]
-            )
-        )
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
