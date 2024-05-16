@@ -404,9 +404,11 @@ AnalysisProjectStepBaseTy = tp.TypeVar(
 
 
 def setup_actions_for_vara_experiment(
-    experiment: FeatureExperiment, project: VProject,
+    experiment: FeatureExperiment,
+    project: VProject,
     instr_type: FeatureInstrType,
-    analysis_step: tp.Type[AnalysisProjectStepBaseTy]
+    analysis_step: tp.Type[AnalysisProjectStepBaseTy],
+    report_type=MultiPatchReport
 ) -> tp.MutableSequence[actions.Step]:
     """Sets up actions for a given perf precision experiment."""
 
@@ -463,7 +465,7 @@ def setup_actions_for_vara_experiment(
             analysis_step(
                 project,
                 binary,
-                file_name=MultiPatchReport.create_patched_report_name(
+                file_name=report_type.create_patched_report_name(
                     patch, "rep_measurements"
                 )
             )
@@ -479,7 +481,7 @@ def setup_actions_for_vara_experiment(
                 analysis_step(
                     project,
                     binary,
-                    file_name=MultiPatchReport.
+                    file_name=report_type.
                     create_baseline_report_name("rep_measurements")
                 )
             ] + patch_steps
@@ -592,7 +594,7 @@ class BCCTEFProfileRunner(FeatureExperiment, shorthand="BCCp"):
         )
 
 
-class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
+class RunBlackBoxBaseline(AnalysisProjectStepBase):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -608,11 +610,7 @@ class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
         report_file_ending: str = "txt",
         reps: int = REPS
     ) -> None:
-        super().__init__(project=project)
-        self.__binary = binary
-        self.__report_file_ending = report_file_ending
-        self.__reps = reps
-        self.__file_name = file_name
+        super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -625,15 +623,15 @@ class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            zip_tmp_dir = tmp_dir / self.__file_name
+            zip_tmp_dir = tmp_dir / self._file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
-                for rep in range(0, self.__reps):
+                for rep in range(0, self._reps):
                     for prj_command in perf_prec_workload_commands(
-                        self.project, self.__binary
+                        self.project, self._binary
                     ):
                         time_report_file = Path(reps_tmp_dir) / (
                             f"baseline_{prj_command.command.label}_{rep}"
-                            f".{self.__report_file_ending}"
+                            f".{self._report_file_ending}"
                         )
 
                         print(f"Running example {prj_command.command.label}")
@@ -644,7 +642,7 @@ class RunBlackBoxBaseline(OutputFolderStep):  # type: ignore
                                     time["-v", "-o", time_report_file],
                                     project=self.project
                                 )
-                            pb_cmd(retcode=self.__binary.valid_exit_codes)
+                            pb_cmd(retcode=self._binary.valid_exit_codes)
 
         return StepResult.OK
 
@@ -666,81 +664,10 @@ class BlackBoxBaselineRunner(FeatureExperiment, shorthand="BBBase"):
         Args:
             project: to analyze
         """
-        project.cflags += [
-            "-flto", "-fuse-ld=lld", "-flegacy-pass-manager",
-            "-fno-omit-frame-pointer"
-        ]
-
-        project.cflags += get_extra_cflags(project)
-
-        project.ldflags += self.get_vara_tracing_ldflags()
-
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = bb_ext.run.RuntimeExtension(
-            project, self
-        ) << bb_ext.time.RunWithTime()
-
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = bb_ext.compiler.RunCompiler(
-            project, self
-        ) << WithUnlimitedStackSize()
-
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
+        return setup_actions_for_vara_experiment(
+            self, project, FeatureInstrType.NONE, RunBlackBoxBaseline,
+            MPRTimeReportAggregate
         )
-
-        # TODO: change to multiple binaries
-        binary = select_project_binaries(project)[0]
-        if binary.type != BinaryType.EXECUTABLE:
-            raise AssertionError("Experiment only works with executables.")
-
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary,
-            get_current_config_id(project)
-        )
-
-        patch_provider = PatchProvider.get_provider_for_project(project)
-        patches = patch_provider.get_patches_for_revision(
-            ShortCommitHash(project.version_of_primary)
-        )[IDENTIFIER_PATCH_TAG]
-        print(f"{patches=}")
-
-        patch_steps = []
-        for patch in patches:
-            print(f"Got patch with path: {patch.path}")
-            patch_steps.append(ApplyPatch(project, patch))
-            patch_steps.append(ReCompile(project))
-            patch_steps.append(
-                RunBlackBoxBaseline(
-                    project,
-                    binary,
-                    file_name=MPRTimeReportAggregate.create_patched_report_name(
-                        patch, "rep_measurements"
-                    )
-                )
-            )
-            patch_steps.append(RevertPatch(project, patch))
-
-        analysis_actions = get_config_patch_steps(project)
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath, [
-                    RunBlackBoxBaseline(
-                        project,
-                        binary,
-                        file_name=MPRTimeReportAggregate.
-                        create_baseline_report_name("rep_measurements")
-                    )
-                ] + patch_steps
-            )
-        )
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
 
 
 ################################################################################
@@ -1105,7 +1032,7 @@ class BccTraceTEFOverheadRunner(FeatureExperiment, shorthand="BCCo"):
         )
 
 
-class RunBlackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
+class RunBlackBoxBaselineOverhead(AnalysisProjectStepBase):  # type: ignore
     """Executes the traced project binaries on the specified workloads."""
 
     NAME = "VaRARunTracedBinaries"
@@ -1117,13 +1044,11 @@ class RunBlackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
         self,
         project: VProject,
         binary: ProjectBinaryWrapper,
+        file_name: str,
         report_file_ending: str = "txt",
         reps: int = REPS
     ) -> None:
-        super().__init__(project=project)
-        self.__binary = binary
-        self.__report_file_ending = report_file_ending
-        self.__reps = reps
+        super().__init__(project, binary, file_name, report_file_ending, reps)
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.run_traced_code(tmp_dir)
@@ -1136,13 +1061,13 @@ class RunBlackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
     def run_traced_code(self, tmp_dir: Path) -> StepResult:
         """Runs the binary with the embedded tracing code."""
         with local.cwd(local.path(self.project.builddir)):
-            for rep in range(0, self.__reps):
+            for rep in range(0, self._reps):
                 for prj_command in perf_prec_workload_commands(
-                    self.project, self.__binary
+                    self.project, self._binary
                 ):
                     time_report_file = tmp_dir / (
                         f"overhead_{prj_command.command.label}_{rep}"
-                        f".{self.__report_file_ending}"
+                        f".{self._report_file_ending}"
                     )
 
                     with cleanup(prj_command):
@@ -1152,7 +1077,7 @@ class RunBlackBoxBaselineOverhead(OutputFolderStep):  # type: ignore
                             project=self.project
                         )
 
-                        pb_cmd(retcode=self.__binary.valid_exit_codes)
+                        pb_cmd(retcode=self._binary.valid_exit_codes)
 
         return StepResult.OK
 
@@ -1175,5 +1100,5 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
             project: to analyze
         """
         return setup_actions_for_vara_overhead_experiment(
-            self, project, FeatureInstrType.NONE, RunGenTracedWorkloadsOverhead
+            self, project, FeatureInstrType.NONE, RunBlackBoxBaselineOverhead
         )
