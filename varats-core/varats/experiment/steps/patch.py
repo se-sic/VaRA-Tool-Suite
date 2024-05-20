@@ -21,6 +21,7 @@ class ApplyPatch(actions.ProjectStep):
         self.__patch = patch
 
     def __call__(self) -> StepResult:
+        self.status = StepResult.OK
         try:
             print(
                 f"Applying {self.__patch.shortname} to "
@@ -29,9 +30,9 @@ class ApplyPatch(actions.ProjectStep):
             apply_patch(Path(self.project.source_of_primary), self.__patch.path)
 
         except ProcessExecutionError:
-            return StepResult.ERROR
+            self.status = StepResult.ERROR
 
-        return StepResult.OK
+        return self.status
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
@@ -51,6 +52,7 @@ class RevertPatch(actions.ProjectStep):
         self.__patch = patch
 
     def __call__(self) -> StepResult:
+        self.status = StepResult.OK
         try:
             print(
                 f"Reverting {self.__patch.shortname} on "
@@ -61,9 +63,9 @@ class RevertPatch(actions.ProjectStep):
             )
 
         except ProcessExecutionError:
-            return StepResult.ERROR
+            self.status = StepResult.ERROR
 
-        return StepResult.OK
+        return self.status
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
