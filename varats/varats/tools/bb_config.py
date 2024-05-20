@@ -94,6 +94,7 @@ def update_projects(
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection',
             'varats.projects.perf_tests.feature_perf_regression',
+            'varats.projects.perf_tests.performance_interaction_case_studies',
         ]
 
 

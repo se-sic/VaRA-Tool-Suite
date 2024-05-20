@@ -1,15 +1,11 @@
 """Project file for the feature performance case study collection."""
 import typing as tp
-from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.project import Workloads, Sources
 from benchbuild.source import HTTPMultiple
-from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
-from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import (
@@ -23,45 +19,15 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     get_local_project_git_path,
-    verify_binaries,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_commands import init_all_submodules, update_all_submodules
+from varats.projects.perf_tests.feature_perf_cs_collection_utils import (
+    do_feature_perf_cs_collection_compile,
+    do_feature_perf_cs_collection_recompile,
+)
 from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
-from varats.utils.settings import bb_cfg
-
-
-def _do_feature_perf_cs_collection_compile(
-    project: VProject, cmake_flag: str
-) -> None:
-    """Common compile function for FeaturePerfCSCollection projects."""
-    feature_perf_source = local.path(project.source_of(project.primary_source))
-
-    cc_compiler = bb.compiler.cc(project)
-    cxx_compiler = bb.compiler.cxx(project)
-
-    mkdir("-p", feature_perf_source / "build")
-
-    init_all_submodules(Path(feature_perf_source))
-    update_all_submodules(Path(feature_perf_source))
-
-    with local.cwd(feature_perf_source / "build"):
-        with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
-
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
-    with local.cwd(feature_perf_source):
-        verify_binaries(project)
-
-
-def _do_feature_perf_cs_collection_recompile(project: VProject) -> None:
-    feature_perf_source = local.path(project.source_of(project.primary_source))
-
-    with local.cwd(feature_perf_source / "build"):
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
 
 class FeaturePerfCSCollection(VProject):
@@ -163,11 +129,11 @@ class FeaturePerfCSCollection(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(self, "FPCSC_ENABLE_SRC")
+        do_feature_perf_cs_collection_compile(self, "FPCSC_ENABLE_SRC")
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthSAFlowSensitivity(VProject):
@@ -222,13 +188,13 @@ class SynthSAFlowSensitivity(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAFLOWSENSITIVITY"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthSAContextSensitivity(VProject):
@@ -286,13 +252,13 @@ class SynthSAContextSensitivity(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSACONTEXTSENSITIVITY"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthSAWholeProgram(VProject):
@@ -347,13 +313,13 @@ class SynthSAWholeProgram(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAWHOLEPROGRAM"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthDADynamicDispatch(VProject):
@@ -410,13 +376,13 @@ class SynthDADynamicDispatch(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHDADYNAMICDISPATCH"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthDARecursion(VProject):
@@ -471,13 +437,13 @@ class SynthDARecursion(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHDARECURSION"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthOVInsideLoop(VProject):
@@ -532,13 +498,13 @@ class SynthOVInsideLoop(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHOVINSIDELOOP"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthFeatureInteraction(VProject):
@@ -595,13 +561,13 @@ class SynthFeatureInteraction(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHFEATUREINTERACTION"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthFeatureHigherOrderInteraction(VProject):
@@ -660,13 +626,13 @@ class SynthFeatureHigherOrderInteraction(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHFEATUREHIGHERORDERINTERACTION"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 def get_ip_workloads(project_source_name: str, binary_name: str) -> Workloads:
@@ -871,13 +837,13 @@ class SynthIPRuntime(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHIPRUNTIME"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthIPTemplate(VProject):
@@ -919,13 +885,13 @@ class SynthIPTemplate(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHIPTEMPLATE"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthIPTemplate2(VProject):
@@ -967,13 +933,13 @@ class SynthIPTemplate2(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHIPTEMPLATE2"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthIPCombined(VProject):
@@ -1015,13 +981,13 @@ class SynthIPCombined(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHIPCOMBINED"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthSAFieldSensitivity(VProject):
@@ -1069,13 +1035,13 @@ class SynthSAFieldSensitivity(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHSAFIELDSENSITIVITY"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthCTTraitBased(VProject):
@@ -1127,13 +1093,13 @@ class SynthCTTraitBased(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHCTTRAITBASED"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthCTPolicies(VProject):
@@ -1186,13 +1152,13 @@ class SynthCTPolicies(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHCTPOLICIES"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthCTCRTP(VProject):
@@ -1243,13 +1209,13 @@ class SynthCTCRTP(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHCTCRTP"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthCTTemplateSpecialization(VProject):
@@ -1302,13 +1268,13 @@ class SynthCTTemplateSpecialization(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHCTSPECIALIZATION"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthFeatureLargeConfigSpace(VProject):
@@ -1360,13 +1326,13 @@ class SynthFeatureLargeConfigSpace(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHFEATURELARGECONFIGSPACE"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
 
 
 class SynthFeatureRestrictedConfigSpace(VProject):
@@ -1418,10 +1384,10 @@ class SynthFeatureRestrictedConfigSpace(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        _do_feature_perf_cs_collection_compile(
+        do_feature_perf_cs_collection_compile(
             self, "FPCSC_ENABLE_PROJECT_SYNTHFEATURERESTRICTEDCONFIGSPACE"
         )
 
     def recompile(self) -> None:
         """Recompile the project."""
-        _do_feature_perf_cs_collection_recompile(self)
+        do_feature_perf_cs_collection_recompile(self)
