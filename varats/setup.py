@@ -28,6 +28,7 @@ setup(
         "numpy>=1.24.2",
         "packaging>=20.1",
         "pandas>=1.5.3",
+        "perfetto>=0.7",
         "plotly>=5.13.1",
         "plumbum>=1.6",
         "pygit2>=1.10,<1.14.0",
