@@ -206,7 +206,7 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:10")
             .run('apt', 'update')
-            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+            .run('apt', 'install', '-y', 'wget', 'curl', 'gnupg', 'lsb-release',
                  'software-properties-common', 'musl-dev', 'git', 'gcc',
                  'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev')
             # install python 3.10
@@ -236,7 +236,7 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:11")
             .run('apt', 'update')
-            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+            .run('apt', 'install', '-y', 'wget', 'curl', 'gnupg', 'lsb-release',
                  'software-properties-common', 'musl-dev', 'git', 'gcc',
                  'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev',
                  'python3', 'python3-pip', 'python3-virtualenv', 'clang-16',
@@ -248,7 +248,7 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:12")
             .run('apt', 'update')
-            .run('apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+            .run('apt', 'install', '-y', 'wget', 'curl', 'gnupg', 'lsb-release',
                  'software-properties-common', 'musl-dev', 'git', 'gcc',
                  'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev',
                  'python3', 'python3-pip', 'python3-virtualenv', 'clang',
