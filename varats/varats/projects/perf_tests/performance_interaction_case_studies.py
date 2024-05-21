@@ -1,9 +1,7 @@
 """Project file for the feature performance case study collection."""
 import typing as tp
-from abc import abstractmethod
 
 from benchbuild.command import SourceRoot, WorkloadSet
-from benchbuild.source import Git
 from benchbuild.utils.revision_ranges import RevisionRange
 
 from varats.experiment.workload_util import (
@@ -11,10 +9,7 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
     ConfigParams,
 )
-from varats.paper.paper_config import (
-    PaperConfigSpecificGit,
-    project_filter_generator,
-)
+from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -36,13 +31,13 @@ if tp.TYPE_CHECKING:
 
 def _perf_inter_cs_source(project_name: str) -> "Sources":
     return [
-        Git(
+        PaperConfigSpecificGit(
+            project_name,
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local="PerformanceInteractionCaseStudy",
             refspec="origin/f-PerformanceInteractionDetection",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator(project_name)
+            shallow=False
         ),
         FeatureSource(),
     ]
@@ -66,22 +61,34 @@ def _perf_inter_cs_binary(binary_name: str) -> RevisionBinaryMap:
     ).specify_binary(
         f"build/bin/{binary_name}",
         BinaryType.EXECUTABLE,
-        only_valid_in=RevisionRange("03307d23ab", "HEAD")
+        only_valid_in=RevisionRange("c80d170af4", "HEAD")
     )
 
 
-class PerformanceInteractionCaseStudy(VProject):
-    """Base class for performance interaction case studies."""
+################################################################################
+# Feature interaction pattern case studies
+################################################################################
 
+
+class InterStructural(VProject):
+    """
+    Feature interaction case study (Structural):
+
+    Feature F1 interacts structurally with performance-relevant code, i.e., code
+    from F1 is part of a performance-relevant code region.
+    """
+    NAME = "InterStructural"
     GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
+    SOURCE = _perf_inter_cs_source(NAME)
+    WORKLOADS = _perf_inter_cs_workload(NAME, "InterStructural")
+
     @staticmethod
-    @abstractmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        ...
+        return _perf_inter_cs_binary("InterStructural")[revision]
 
     def run_tests(self) -> None:
         pass
@@ -95,30 +102,7 @@ class PerformanceInteractionCaseStudy(VProject):
         do_feature_perf_cs_collection_recompile(self)
 
 
-################################################################################
-# Feature interaction pattern case studies
-################################################################################
-
-
-class InterStructural(PerformanceInteractionCaseStudy):
-    """
-    Feature interaction case study (Structural):
-
-    Feature F1 interacts structurally with performance-relevant code, i.e., code
-    from F1 is part of a performance-relevant code region.
-    """
-    NAME = "InterStructural"
-    SOURCE = _perf_inter_cs_source(NAME)
-    WORKLOADS = _perf_inter_cs_workload(NAME, "InteractionStructural")
-
-    @staticmethod
-    def binaries_for_revision(
-        revision: ShortCommitHash
-    ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("InteractionStructural")[revision]
-
-
-class InterDataFlow(PerformanceInteractionCaseStudy):
+class InterDataFlow(VProject):
     """
     Feature interaction case study (Data Flow):
 
@@ -126,17 +110,31 @@ class InterDataFlow(PerformanceInteractionCaseStudy):
     data flows from code from F1 to performance-relevant code.
     """
     NAME = "InterDataFlow"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
     SOURCE = _perf_inter_cs_source(NAME)
-    WORKLOADS = _perf_inter_cs_workload(NAME, "InteractionDataFlow")
+    WORKLOADS = _perf_inter_cs_workload(NAME, "InterDataFlow")
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("InteractionDataFlow")[revision]
+        return _perf_inter_cs_binary("InterDataFlow")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
 
 
-class InterImplicitFlow(PerformanceInteractionCaseStudy):
+class InterImplicitFlow(VProject):
     """
     Feature interaction case study (Implicit Flow):
 
@@ -144,14 +142,28 @@ class InterImplicitFlow(PerformanceInteractionCaseStudy):
     that flows to performance-relevant code.
     """
     NAME = "InterImplicitFlow"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
     SOURCE = _perf_inter_cs_source(NAME)
-    WORKLOADS = _perf_inter_cs_workload(NAME, "InteractionImplicitFlow")
+    WORKLOADS = _perf_inter_cs_workload(NAME, "InterImplicitFlow")
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("InteractionImplicitFlow")[revision]
+        return _perf_inter_cs_binary("InterImplicitFlow")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
 
 
 ################################################################################
