@@ -70,31 +70,24 @@ class Ompi(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_git_path(Ompi.NAME))
 
-        binary_map.specify_binary("/opt/openmpi/", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("build/ompi", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
 
     def compile(self) -> None:
         ompi_source = local.path(self.source_of_primary)
-        compiler = bb.compiler.cc(self)
+        mkdir("-p", ompi_source / "build")
+
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(ompi_source):
-            with local.env(CC=str(compiler)):
-                # bb.watch(local["./autogen.pl"])()
-                # bb.watch(local["./configure"])("--disable-gcc-warnings")
-                try:
-                    bb.watch(local["./autogen.pl"])()
-                    bb.watch(local["./configure"])("--disable-gcc-warnings")
-                except Exception as e:
-                    print(f"An error occurred during configuration: {e}")
-                    # Output the contents of config.log for debugging
-                    config_log_path = ompi_source / "config.log"
-                    if config_log_path.is_file():
-                        with open(config_log_path, "r") as log_file:
-                            print(log_file.read())
-                    return
+            with local.env(CC=str(cc_compiler), CXX=cxx_compiler):
+                bb.watch(local["./autogen.pl"])()
+                with local.cwd(ompi_source / "build"):
+                    bb.watch(local["../configure"])("--disable-mpi-fortran")
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
+        with local.cwd(ompi_source):
             verify_binaries(self)
 

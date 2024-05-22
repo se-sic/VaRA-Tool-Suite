@@ -80,12 +80,13 @@ class Bcc(VProject):
         mkdir("-p", bcc_source / "build")
 
         cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(bcc_source / 'build'):
-            with local.env(CC=str(cc_compiler)):
-                llvm_path = "/lib/llvm-14/lib/cmake/llvm/"
+            with local.env(CC=str(cc_compiler), CXX=cxx_compiler):
+                # llvm_path = "/lib/llvm-14/lib/cmake/llvm/"
                 bb.watch(cmake)("..",
                                 # "-DCMAKE_BUILD_TYPE=Release",
-                                f"-DLLVM_DIR={llvm_path}",
+                                # f"-DLLVM_DIR={llvm_path}",
                                 # "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
                                 "-DCMAKE_C_FLAGS=-fPIE", "-DCMAKE_CXX_FLAGS=-fPIE",
                                 # "-DCMAKE_EXE_LINKER_FLAGS=-pie"
