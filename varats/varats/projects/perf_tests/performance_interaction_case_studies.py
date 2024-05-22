@@ -61,7 +61,7 @@ def _perf_inter_cs_binary(binary_name: str) -> RevisionBinaryMap:
     ).specify_binary(
         f"build/bin/{binary_name}",
         BinaryType.EXECUTABLE,
-        only_valid_in=RevisionRange("c80d170af4", "HEAD")
+        only_valid_in=RevisionRange("2036239cdb", "HEAD")
     )
 
 
@@ -173,3 +173,96 @@ class InterImplicitFlow(VProject):
 ################################################################################
 # Performance-relevant code case studies
 ################################################################################
+
+
+class FunctionSingle(VProject):
+    """
+    Single hot function case study:
+
+    Regression triggers if function1 is affected.
+    """
+    NAME = "FunctionSingle"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = _perf_inter_cs_source(NAME)
+    WORKLOADS = _perf_inter_cs_workload(NAME, "FunctionSingle")
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _perf_inter_cs_binary("FunctionSingle")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
+
+
+class FunctionAccumulating(VProject):
+    """
+    Single hot function case study:
+
+    Regression triggers if function1 is affected.
+    """
+    NAME = "FunctionAccumulating"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = _perf_inter_cs_source(NAME)
+    WORKLOADS = _perf_inter_cs_workload(NAME, "FunctionAccumulating")
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _perf_inter_cs_binary("FunctionAccumulating")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
+
+
+class FunctionMultiple(VProject):
+    """
+    Single hot function case study:
+
+    Regression triggers if function1 is affected.
+    """
+    NAME = "FunctionMultiple"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = _perf_inter_cs_source(NAME)
+    WORKLOADS = _perf_inter_cs_workload(NAME, "FunctionMultiple")
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _perf_inter_cs_binary("FunctionMultiple")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
