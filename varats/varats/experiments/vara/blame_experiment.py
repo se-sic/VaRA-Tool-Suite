@@ -17,6 +17,7 @@ from varats.experiment.wllvm import (
     BCFileExtensions,
     get_bc_cache_actions,
 )
+from varats.provider.patch.patch_provider import Patch
 from varats.report.report import BaseReport
 
 
@@ -54,6 +55,7 @@ def setup_basic_blame_experiment(
 def generate_basic_blame_experiment_actions(
     project: Project,
     bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+    patches: tp.Optional[tp.List[Patch]] = None,
     extraction_error_handler: tp.Optional[PEErrorHandler] = None
 ) -> tp.List[actions.Step]:
     """
@@ -65,9 +67,10 @@ def generate_basic_blame_experiment_actions(
     Args:
         project: reference to the BB project
         bc_file_extensions: list of bitcode file extensions (e.g. opt, no opt)
+        patches: a list of patches applied to the project
         extraction_error_handler: handler to manage errors during the
                                   extraction process
     """
     return get_bc_cache_actions(
-        project, bc_file_extensions, extraction_error_handler
+        project, bc_file_extensions, patches, extraction_error_handler
     )
