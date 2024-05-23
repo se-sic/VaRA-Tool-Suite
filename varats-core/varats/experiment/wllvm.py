@@ -29,6 +29,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
+from varats.provider.patch.patch_provider import Patch
 from varats.utils.settings import bb_cfg
 
 
@@ -156,23 +157,25 @@ class Extract(actions.ProjectStep):  # type: ignore
         project_name: str,
         binary_name: str,
         project_version: str,
-        bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None
+        bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+        patches: tp.Optional[tp.List[Patch]] = None,
     ) -> str:
         """Parses parameter information into a filename template to name a
         bitcode file."""
 
-        if bc_file_extensions is None:
-            bc_file_extensions = []
+        experiment_bc_file_ext = ''
 
         if bc_file_extensions:
-            experiment_bc_file_ext = '-'
+            experiment_bc_file_ext += '-'
+            experiment_bc_file_ext += "_".join(
+                sorted([ext.value for ext in bc_file_extensions])
+            )
 
-            ext_sep = ""
-            for ext in sorted(bc_file_extensions):
-                experiment_bc_file_ext += (ext_sep + ext.value)
-                ext_sep = '_'
-        else:
-            experiment_bc_file_ext = ''
+        if patches:
+            experiment_bc_file_ext += '-'
+            experiment_bc_file_ext += "_".join(
+                sorted([patch.shortname for patch in patches])
+            )
 
         return f"{project_name}-{binary_name}-{project_version}" \
                f"{experiment_bc_file_ext}.bc"
@@ -181,6 +184,7 @@ class Extract(actions.ProjectStep):  # type: ignore
         self,
         project: Project,
         bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+        patches: tp.Optional[tp.List[Patch]] = None,
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
         super().__init__(project=project)
@@ -190,10 +194,8 @@ class Extract(actions.ProjectStep):  # type: ignore
             if handler else self.extract
         )
 
-        if bc_file_extensions is None:
-            bc_file_extensions = []
-
         self.bc_file_extensions = bc_file_extensions
+        self.patches = patches
 
     def __call__(self) -> actions.StepResult:
         return tp.cast(actions.StepResult, self.__action_fn())
@@ -214,7 +216,8 @@ class Extract(actions.ProjectStep):  # type: ignore
                 project_name=str(self.project.name),
                 binary_name=str(binary.name),
                 project_version=self.project.version_of_primary,
-                bc_file_extensions=self.bc_file_extensions
+                bc_file_extensions=self.bc_file_extensions,
+                patches=self.patches
             )
 
             target_binary = Path(self.project.source_of_primary) / binary.path
@@ -229,8 +232,9 @@ class Extract(actions.ProjectStep):  # type: ignore
 
 
 def project_bc_files_in_cache(
-    project: Project,
-    required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]]
+    project: VProject,
+    required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]],
+    patches: tp.Optional[tp.List[Patch]] = None
 ) -> bool:
     """
     Checks if all bc files, corresponding to the projects binaries, are in the
@@ -239,6 +243,7 @@ def project_bc_files_in_cache(
     Args:
         project: the project
         required_bc_file_extensions: list of required file extensions
+        patches: a list of patches applied to the project
 
     Returns: True, if all BC files are present, False otherwise.
     """
@@ -254,7 +259,8 @@ def project_bc_files_in_cache(
                     project_name=str(project.name),
                     binary_name=binary.name,
                     project_version=project.version_of_primary,
-                    bc_file_extensions=required_bc_file_extensions
+                    bc_file_extensions=required_bc_file_extensions,
+                    patches=patches
                 )
             )
         )
@@ -264,6 +270,7 @@ def project_bc_files_in_cache(
 
 def _create_default_bc_file_creation_actions(
     project: Project, required_bc_file_extensions: tp.List[BCFileExtensions],
+    patches: tp.Optional[tp.List[Patch]],
     extraction_error_handler: tp.Optional[PEErrorHandler]
 ) -> tp.List[actions.Step]:
     """
@@ -273,6 +280,7 @@ def _create_default_bc_file_creation_actions(
     Args:
         project: the project to compile
         required_bc_file_extensions: list of required file extensions
+        patches: a list of patches applied to the project
         extraction_error_handler: error handler to report errors during
                                   the extraction step
 
@@ -284,6 +292,7 @@ def _create_default_bc_file_creation_actions(
         Extract(
             project,
             required_bc_file_extensions,
+            patches,
             handler=extraction_error_handler
         )
     )
@@ -291,12 +300,14 @@ def _create_default_bc_file_creation_actions(
 
 
 def get_bc_cache_actions(
-    project: Project,
+    project: VProject,
     bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+    patches: tp.Optional[tp.List[Patch]] = None,
     extraction_error_handler: tp.Optional[PEErrorHandler] = None,
-    bc_action_creator: tp.Callable[
-        [Project, tp.List[BCFileExtensions], tp.Optional[PEErrorHandler]],
-        tp.List[actions.Step]] = _create_default_bc_file_creation_actions
+    bc_action_creator: tp.Callable[[
+        Project, tp.List[BCFileExtensions], tp.Optional[tp.List[Patch]], tp.
+        Optional[PEErrorHandler]
+    ], tp.List[actions.Step]] = _create_default_bc_file_creation_actions
 ) -> tp.List[actions.Step]:
     """
     Builds the action pipeline, if needed, to fill the BC file cache that
@@ -305,6 +316,7 @@ def get_bc_cache_actions(
     Args:
         project: the project to compile
         bc_file_extensions: list of bc file extensions
+        patches: a list of patches applied to the project
         extraction_error_handler: error handler to report errors during
                                   the extraction step
         bc_action_creator: alternative BC cache actions creation callback
@@ -312,9 +324,9 @@ def get_bc_cache_actions(
     Returns: required actions to populate the BC cache
     """
 
-    if not project_bc_files_in_cache(project, bc_file_extensions):
+    if not project_bc_files_in_cache(project, bc_file_extensions, patches):
         return bc_action_creator(
-            project, bc_file_extensions if bc_file_extensions else [],
+            project, bc_file_extensions if bc_file_extensions else [], patches,
             extraction_error_handler
         )
 
@@ -325,6 +337,7 @@ def get_cached_bc_file_path(
     project: Project,
     binary: ProjectBinaryWrapper,
     required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+    patches: tp.Optional[tp.List[Patch]] = None
 ) -> Path:
     """
     Look up the path to a BC file from the BC cache.
@@ -333,6 +346,7 @@ def get_cached_bc_file_path(
         project: the project
         binary: which corresponds to the BC file
         required_bc_file_extensions: list of required file extensions
+        patches: a list of patches applied to the project
 
     Returns: path to the cached BC file
     """
@@ -347,7 +361,8 @@ def get_cached_bc_file_path(
         project_name=project.name,
         binary_name=binary.name,
         project_version=project.version_of_primary,
-        bc_file_extensions=required_bc_file_extensions
+        bc_file_extensions=required_bc_file_extensions,
+        patches=patches
     )
     if not bc_file_path.exists():
         raise LookupError(
