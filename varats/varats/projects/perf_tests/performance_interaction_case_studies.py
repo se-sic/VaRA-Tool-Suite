@@ -34,7 +34,7 @@ def _perf_inter_cs_source(project_name: str) -> "Sources":
         PaperConfigSpecificGit(
             project_name,
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
-            local="PerformanceInteractionCaseStudy",
+            local="PerformanceInteractionCaseStudies",
             refspec="origin/f-PerformanceInteractionDetection",
             limit=None,
             shallow=False
@@ -61,7 +61,7 @@ def _perf_inter_cs_binary(binary_name: str) -> RevisionBinaryMap:
     ).specify_binary(
         f"build/bin/{binary_name}",
         BinaryType.EXECUTABLE,
-        only_valid_in=RevisionRange("2036239cdb", "HEAD")
+        only_valid_in=RevisionRange("e3c3ab43f2", "HEAD")
     )
 
 
@@ -169,6 +169,69 @@ class InterImplicitFlow(VProject):
 ################################################################################
 # Interaction degree case studies
 ################################################################################
+
+
+class DegreeLow(VProject):
+    """
+    Low interaction degree case study:
+
+    Regression is triggered by a single feature.
+    """
+    NAME = "DegreeLow"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = _perf_inter_cs_source(NAME)
+    WORKLOADS = _perf_inter_cs_workload(NAME, "DegreeLow")
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _perf_inter_cs_binary("DegreeLow")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
+
+
+class DegreeHigh(VProject):
+    """
+    High interaction degree case study:
+
+    Regression is triggered only if all 10 features are enabled.
+    """
+    NAME = "DegreeHigh"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = _perf_inter_cs_source(NAME)
+    WORKLOADS = _perf_inter_cs_workload(NAME, "DegreeHigh")
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _perf_inter_cs_binary("DegreeHigh")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
+
 
 ################################################################################
 # Performance-relevant code case studies
