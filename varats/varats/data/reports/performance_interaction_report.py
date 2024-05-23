@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 
 from varats.base.version_header import VersionHeader
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport
 from varats.utils.git_util import CommitRepoPair
 
@@ -74,3 +75,14 @@ class PerformanceInteractionReport(
 
     def __str__(self) -> str:
         return "\n".join(map(str, self.__perf_inters))
+
+
+class MPRPerformanceInteractionReport(
+    MultiPatchReport[PerformanceInteractionReport],
+    shorthand="MPRPIE",
+    file_type=".zip"
+):
+    """Multi-patch wrapper report for performance interaction reports."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, PerformanceInteractionReport)

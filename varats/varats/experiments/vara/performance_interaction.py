@@ -15,6 +15,7 @@ from varats.data.filtertree_data import (
 )
 from varats.data.reports.performance_interaction_report import (
     PerformanceInteractionReport,
+    MPRPerformanceInteractionReport,
 )
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -24,6 +25,8 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     exec_func_with_pe_error_handler,
     create_default_analysis_failure_handler,
+    ZippedExperimentSteps,
+    OutputFolderStep,
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
@@ -37,10 +40,11 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_git_paths,
     get_local_project_git_path,
+    ProjectBinaryWrapper,
 )
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider
-from varats.report.report import ReportSpecification
+from varats.provider.patch.patch_provider import PatchProvider, Patch
+from varats.report.report import ReportSpecification, ReportFilepath
 from varats.utils.git_util import (
     ShortCommitHash,
     UNCOMMITTED_COMMIT_HASH,
@@ -84,7 +88,7 @@ def get_function_annotations(project_name: str) -> tp.List[str]:
     }[project_name]
 
 
-class PerfInterReportGeneration(actions.ProjectStep):
+class PerfInterReportGeneration(OutputFolderStep):
     """Step for creating a performance interaction report."""
 
     NAME = "PerfInterReportGeneration"
@@ -95,19 +99,22 @@ class PerfInterReportGeneration(actions.ProjectStep):
     def __init__(
         self,
         project: Project,
+        binary: ProjectBinaryWrapper,
+        result_file: str,
         experiment_handle: ExperimentHandle,
+        patches: tp.Optional[tp.List[Patch]] = None,
         interactionFilter: InteractionFilter = SingleCommitFilter(
             commit_hash=UNCOMMITTED_COMMIT_HASH.hash
         )
     ):
         super().__init__(project=project)
+        self.__binary = binary
+        self.__result_file = result_file
         self.__experiment_handle = experiment_handle
+        self.__patches = patches
         self.__interaction_filter = interactionFilter
 
-    def __call__(self) -> actions.StepResult:
-        return self.analyze()
-
-    def analyze(self) -> actions.StepResult:
+    def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         filter_file_path = Path(
             self.project.source_of_primary
         ).parent / "interaction_filter.yaml"
@@ -117,44 +124,38 @@ class PerfInterReportGeneration(actions.ProjectStep):
             yaml.dump_all([version_header, self.__interaction_filter],
                           filter_file)
 
-        for binary in self.project.binaries:
-            result_file = create_new_success_result_filepath(
-                self.__experiment_handle, PerformanceInteractionReport,
-                self.project, binary
+        opt_params = [
+            "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
+            "-vara-BD", "-vara-PIR", "-vara-init-commits", "-vara-rewriteMD",
+            "-vara-git-mappings=" + ",".join([
+                f'{repo}:{path}' for repo, path in
+                get_local_project_git_paths(self.project.name).items()
+            ]), "-vara-use-phasar",
+            f"-vara-cf-interaction-filter={filter_file_path}",
+            f"-vara-report-outfile={tmp_dir / self.__result_file}",
+            get_cached_bc_file_path(
+                self.project, self.__binary, [
+                    BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                    BCFileExtensions.BLAME, BCFileExtensions.FEATURE,
+                    BCFileExtensions.HOT_CODE
+                ], self.__patches
             )
+        ]
 
-            opt_params = [
-                "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
-                "-vara-BD", "-vara-PIR", "-vara-init-commits",
-                "-vara-rewriteMD", "-vara-git-mappings=" + ",".join([
-                    f'{repo}:{path}' for repo, path in
-                    get_local_project_git_paths(self.project.name).items()
-                ]), "-vara-use-phasar",
-                f"-vara-cf-interaction-filter={filter_file_path}",
-                f"-vara-report-outfile={result_file}",
-                get_cached_bc_file_path(
-                    self.project, binary, [
-                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-                        BCFileExtensions.BLAME, BCFileExtensions.FEATURE,
-                        BCFileExtensions.HOT_CODE
-                    ]
-                )
-            ]
-
-            run_cmd = wrap_unlimit_stack_size(opt[opt_params])
-            exec_func_with_pe_error_handler(
-                run_cmd,
-                create_default_analysis_failure_handler(
-                    self.__experiment_handle, self.project,
-                    PerformanceInteractionReport
-                )
+        run_cmd = wrap_unlimit_stack_size(opt[opt_params])
+        exec_func_with_pe_error_handler(
+            run_cmd,
+            create_default_analysis_failure_handler(
+                self.__experiment_handle, self.project,
+                self.__experiment_handle.report_spec().main_report
             )
+        )
 
         return actions.StepResult.OK
 
 
 class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
-    """"""
+    """Performance interaction analysis for real-world projects."""
 
     NAME = "PerfInteractions"
 
@@ -191,11 +192,17 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
-        analysis_actions.append(
-            PerfInterReportGeneration(
-                project, self.get_handle(), createCommitFilter(project)
+        for binary in project.binaries:
+            result_file = create_new_success_result_filepath(
+                self.get_handle(), PerformanceInteractionReport, project, binary
             )
-        )
+
+            analysis_actions.append(
+                PerfInterReportGeneration(
+                    project, binary, str(result_file), self.get_handle(),
+                    createCommitFilter(project)
+                )
+            )
 
         analysis_actions.append(actions.Clean(project))
 
@@ -205,17 +212,17 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
 class PerformanceInteractionExperimentSynthetic(
     VersionExperiment, shorthand="PIES"
 ):
-    """"""
+    """Performance-interaction analysis for synthetic case studies."""
 
     NAME = "PerfInteractionsSynth"
 
-    REPORT_SPEC = ReportSpecification(PerformanceInteractionReport)
+    REPORT_SPEC = ReportSpecification(MPRPerformanceInteractionReport)
 
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         setup_basic_blame_experiment(
-            self, project, PerformanceInteractionReport
+            self, project, MPRPerformanceInteractionReport
         )
         project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
         project.cflags.extend(["-fvara-handleRM=High"])
@@ -243,20 +250,41 @@ class PerformanceInteractionExperimentSynthetic(
         for patch in perf_region_patches:
             analysis_actions.append(ApplyPatch(project, patch))
 
-        # apply regressions via patch
-        for patch in regression_patches:
-            analysis_actions.append(ApplyPatch(project, patch))
-            analysis_actions += generate_basic_blame_experiment_actions(
-                project,
-                bc_file_extensions,
-                extraction_error_handler=create_default_compiler_error_handler(
-                    self.get_handle(), project, self.REPORT_SPEC.main_report
+        for binary in project.binaries:
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary
+            )
+            # apply regressions via patch
+            patch_steps = []
+            for patch in regression_patches:
+                applied_patches = list(perf_region_patches)
+                applied_patches.append(patch)
+
+                patch_steps.append(ApplyPatch(project, patch))
+                patch_steps += generate_basic_blame_experiment_actions(
+                    project,
+                    bc_file_extensions,
+                    applied_patches,
+                    extraction_error_handler=
+                    create_default_compiler_error_handler(
+                        self.get_handle(), project, self.REPORT_SPEC.main_report
+                    )
                 )
-            )
+                patch_steps.append(
+                    PerfInterReportGeneration(
+                        project, binary,
+                        MPRPerformanceInteractionReport.
+                        create_patched_report_name(
+                            patch, "performance_interactions"
+                        ), self.get_handle(), applied_patches
+                    )
+                )
+                patch_steps.append(RevertPatch(project, patch))
+
             analysis_actions.append(
-                PerfInterReportGeneration(project, self.get_handle())
+                ZippedExperimentSteps(result_filepath, patch_steps)
             )
-            analysis_actions.append(RevertPatch(project, patch))
 
         analysis_actions.append(actions.Clean(project))
 
