@@ -47,7 +47,8 @@ def _perf_inter_cs_workload(project_name: str, binary_name: str) -> "Workloads":
     return {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(project_name) / RSBinary(binary_name),
+                SourceRoot("PerformanceInteractionCaseStudies") /
+                RSBinary(binary_name),
                 ConfigParams(),
                 label="default"
             )
@@ -55,9 +56,11 @@ def _perf_inter_cs_workload(project_name: str, binary_name: str) -> "Workloads":
     }
 
 
-def _perf_inter_cs_binary(binary_name: str) -> RevisionBinaryMap:
+def _perf_inter_cs_binary(
+    project_name: str, binary_name: str
+) -> RevisionBinaryMap:
     return RevisionBinaryMap(
-        get_local_project_git_path(InterStructural.NAME)
+        get_local_project_git_path(project_name)
     ).specify_binary(
         f"build/bin/{binary_name}",
         BinaryType.EXECUTABLE,
@@ -88,7 +91,8 @@ class InterStructural(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("InterStructural")[revision]
+        return _perf_inter_cs_binary(InterStructural.NAME,
+                                     "InterStructural")[revision]
 
     def run_tests(self) -> None:
         pass
@@ -120,7 +124,8 @@ class InterDataFlow(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("InterDataFlow")[revision]
+        return _perf_inter_cs_binary(InterDataFlow.NAME,
+                                     "InterDataFlow")[revision]
 
     def run_tests(self) -> None:
         pass
@@ -152,7 +157,9 @@ class InterImplicitFlow(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("InterImplicitFlow")[revision]
+        return _perf_inter_cs_binary(
+            InterImplicitFlow.NAME, "InterImplicitFlow"
+        )[revision]
 
     def run_tests(self) -> None:
         pass
@@ -188,7 +195,7 @@ class DegreeLow(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("DegreeLow")[revision]
+        return _perf_inter_cs_binary(DegreeLow.NAME, "DegreeLow")[revision]
 
     def run_tests(self) -> None:
         pass
@@ -219,7 +226,7 @@ class DegreeHigh(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("DegreeHigh")[revision]
+        return _perf_inter_cs_binary(DegreeHigh.NAME, "DegreeHigh")[revision]
 
     def run_tests(self) -> None:
         pass
@@ -255,7 +262,8 @@ class FunctionSingle(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("FunctionSingle")[revision]
+        return _perf_inter_cs_binary(FunctionSingle.NAME,
+                                     "FunctionSingle")[revision]
 
     def run_tests(self) -> None:
         pass
@@ -286,7 +294,9 @@ class FunctionAccumulating(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("FunctionAccumulating")[revision]
+        return _perf_inter_cs_binary(
+            FunctionAccumulating.NAME, "FunctionAccumulating"
+        )[revision]
 
     def run_tests(self) -> None:
         pass
@@ -317,7 +327,8 @@ class FunctionMultiple(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary("FunctionMultiple")[revision]
+        return _perf_inter_cs_binary(FunctionMultiple.NAME,
+                                     "FunctionMultiple")[revision]
 
     def run_tests(self) -> None:
         pass
