@@ -5,7 +5,7 @@ from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.command import cleanup
-from benchbuild.extensions import run
+from benchbuild.extensions import run, compiler
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import time
 from plumbum import local
@@ -15,7 +15,11 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
     ZippedExperimentSteps,
     OutputFolderStep,
+    ZippedReportFolder,
 )
+from varats.experiment.steps.patch import RevertPatch, ApplyPatch
+from varats.experiment.steps.recompile import ReCompile
+from varats.experiment.wllvm import RunWLLVM
 from varats.experiment.workload_util import (
     workload_commands,
     WorkloadCategory,
@@ -24,9 +28,14 @@ from varats.experiment.workload_util import (
 from varats.experiments.base.precompile import RestoreBinaries, PreCompile
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.report.gnu_time_report import WLTimeReportAggregate
+from varats.provider.patch.patch_provider import PatchProvider
+from varats.report.gnu_time_report import (
+    WLTimeReportAggregate,
+    MPRWLTimeReportAggregate,
+)
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
+from varats.utils.git_util import ShortCommitHash
 
 
 class TimeProjectWorkloads(OutputFolderStep):
@@ -84,8 +93,7 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
+        """"""
         project.runtime_extension = run.RuntimeExtension(project, self)
 
         # Only consider the main/first binary
@@ -110,5 +118,111 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
             ),
             actions.Clean(project)
         ]
+
+        return analysis_actions
+
+
+class TimeProjectWorkloadsSynth(OutputFolderStep):
+    """Times the execution of all project example workloads."""
+
+    NAME = ("TimeWorkloadsSynth")
+    DESCRIPTION = "Time the execution of all project example workloads."
+
+    project: VProject
+
+    def __init__(
+        self, project: Project, reps: int, file_name: str,
+        binary: ProjectBinaryWrapper
+    ):
+        super().__init__(project=project)
+        self.__reps = reps
+        self.__file_name = file_name
+        self.__binary = binary
+
+    def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
+        return self.analyze(tmp_dir)
+
+    def analyze(self, tmp_dir: Path) -> actions.StepResult:
+        """Only create a report file."""
+
+        with local.cwd(self.project.builddir):
+            zip_tmp_dir = tmp_dir / self.__file_name
+            with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
+                for rep in range(0, self.__reps):
+                    for prj_command in workload_commands(
+                        self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                    ):
+                        pb_cmd = prj_command.command.as_plumbum(
+                            project=self.project
+                        )
+
+                        run_report_name = reps_tmp_dir / create_workload_specific_filename(
+                            "time_report", prj_command.command, rep, ".txt"
+                        )
+
+                        run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
+
+                        with cleanup(prj_command):
+                            run_cmd(retcode=None)
+
+        return actions.StepResult.OK
+
+
+class TimeWorkloadsSynth(VersionExperiment, shorthand="TWLS"):
+    """Generates time report files."""
+
+    NAME = "TimeWorkloadsSynth"
+
+    REPORT_SPEC = ReportSpecification(MPRWLTimeReportAggregate)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        """"""
+        project.runtime_extension = run.RuntimeExtension(project, self)
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+                                     << RunWLLVM() \
+                                     << run.WithTimeout()
+
+        # Only consider the main/first binary
+        binary = project.binaries[0]
+
+        patch_provider = PatchProvider.get_provider_for_project(project)
+        patches = patch_provider.get_patches_for_revision(
+            ShortCommitHash(project.version_of_primary)
+        )
+        regression_patches = patches["regression"]
+
+        measurement_repetitions = 10
+
+        result_filepath = create_new_success_result_filepath(
+            self.get_handle(),
+            self.get_handle().report_spec().main_report, project, binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions = []
+        analysis_actions.append(actions.Compile(project))
+
+        patch_steps = []
+        for patch in regression_patches:
+            applied_patches = [patch]
+
+            patch_steps.append(ApplyPatch(project, patch))
+            patch_steps.append(ReCompile(project))
+            patch_steps.append(
+                TimeProjectWorkloadsSynth(
+                    project, measurement_repetitions,
+                    MPRWLTimeReportAggregate.create_patched_report_name(
+                        patch, "time_workloads"
+                    ), binary
+                )
+            )
+            patch_steps.append(RevertPatch(project, patch))
+
+        analysis_actions.append(
+            ZippedExperimentSteps(result_filepath, patch_steps)
+        )
+        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
