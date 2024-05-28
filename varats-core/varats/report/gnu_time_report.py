@@ -25,6 +25,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -392,3 +393,15 @@ class WLTimeReportAggregate(
             f"num_reports = {len(self.reports())}\n"
             f"num_workloads = {len(self.workload_names())}\n"
         )
+
+
+class MPRWLTimeReportAggregate(
+    MultiPatchReport[WLTimeReportAggregate],
+    shorthand="MPRWLTRAgg",
+    file_type=".zip"
+):
+    """Multi-patch wrapper report for workload specific time reports."""
+
+
+def __init__(self, path: Path) -> None:
+    super().__init__(path, WLTimeReportAggregate)
