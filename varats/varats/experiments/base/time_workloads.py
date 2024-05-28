@@ -69,7 +69,9 @@ class TimeProjectWorkloads(OutputFolderStep):
                     "time_report", prj_command.command, self.__num, ".txt"
                 )
 
-                run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
+                time_args: tp.List[str] = ['-v', '-o', f'{run_report_name}']
+                time_args += pb_cmd.formulate()
+                run_cmd = time[time_args]
 
                 with cleanup(prj_command):
                     run_cmd(retcode=None)
