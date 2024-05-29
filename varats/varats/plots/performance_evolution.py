@@ -21,55 +21,6 @@ from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 
-def rrs(
-    feature_matrix: pd.DataFrame,
-    values: pd.Series,
-    min_size: int = 10,
-    significance_level: float = 0.01,
-    min_effect_size: float = 0.8,
-    max_depth: tp.Optional[int] = None
-) -> tp.Set[str]:
-    if max_depth is not None:
-        max_depth -= 1
-        if max_depth < 0:
-            return set()
-
-    relevant_features: tp.Set[str] = set()
-    for feature in feature_matrix.columns:
-        selected = values[feature_matrix[feature] == 1]
-        deselected = values[feature_matrix[feature] == 0]
-        if len(selected) < min_size or len(deselected) < min_size:
-            continue
-
-        U1, p = mannwhitneyu(selected, deselected)
-        U2 = len(selected) * len(deselected) - U1
-
-        # common language effect size
-        e1 = U1 / (len(selected) * len(deselected))
-        e2 = U2 / (len(selected) * len(deselected))
-
-        if p < significance_level:
-            if e1 >= min_effect_size or e2 >= min_effect_size:
-                relevant_features.add(feature)
-
-            relevant_features.update(
-                rrs(
-                    feature_matrix[feature_matrix[feature] == 1
-                                  ].drop(feature, axis="columns"), selected,
-                    min_size, significance_level, min_effect_size, max_depth
-                )
-            )
-            relevant_features.update(
-                rrs(
-                    feature_matrix[feature_matrix[feature] == 0
-                                  ].drop(feature, axis="columns"), deselected,
-                    min_size, significance_level, min_effect_size, max_depth
-                )
-            )
-
-    return relevant_features
-
-
 def create_heatmap(
     case_study: CaseStudy, project_name: str, commit_map: CommitMap
 ) -> pd.DataFrame:
