@@ -402,6 +402,5 @@ class MPRWLTimeReportAggregate(
 ):
     """Multi-patch wrapper report for workload specific time reports."""
 
-
-def __init__(self, path: Path) -> None:
-    super().__init__(path, WLTimeReportAggregate)
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, WLTimeReportAggregate)
