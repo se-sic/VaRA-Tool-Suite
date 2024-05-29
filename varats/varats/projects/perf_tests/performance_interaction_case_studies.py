@@ -4,6 +4,7 @@ import typing as tp
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils.revision_ranges import RevisionRange
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import (
     RSBinary,
     WorkloadCategory,
@@ -85,6 +86,7 @@ class InterStructural(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "InterStructural")
 
     @staticmethod
@@ -118,6 +120,7 @@ class InterDataFlow(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "InterDataFlow")
 
     @staticmethod
@@ -151,6 +154,7 @@ class InterImplicitFlow(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "InterImplicitFlow")
 
     @staticmethod
@@ -189,6 +193,7 @@ class DegreeLow(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "DegreeLow")
 
     @staticmethod
@@ -220,6 +225,7 @@ class DegreeHigh(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "DegreeHigh")
 
     @staticmethod
@@ -256,6 +262,7 @@ class FunctionSingle(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "FunctionSingle")
 
     @staticmethod
@@ -288,6 +295,7 @@ class FunctionAccumulating(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "FunctionAccumulating")
 
     @staticmethod
@@ -321,6 +329,7 @@ class FunctionMultiple(VProject):
     DOMAIN = ProjectDomains.TEST
 
     SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
     WORKLOADS = _perf_inter_cs_workload(NAME, "FunctionMultiple")
 
     @staticmethod
