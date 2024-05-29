@@ -64,7 +64,7 @@ def _perf_inter_cs_binary(
     ).specify_binary(
         f"build/bin/{binary_name}",
         BinaryType.EXECUTABLE,
-        only_valid_in=RevisionRange("636737b6e1", "HEAD")
+        only_valid_in=RevisionRange("cf9a577906", "HEAD")
     )
 
 
