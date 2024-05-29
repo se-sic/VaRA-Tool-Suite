@@ -15,6 +15,7 @@ from varats.data.reports.globals_report import (
 )
 from varats.data.reports.performance_interaction_report import (
     PerformanceInteractionReport,
+    MPRPerformanceInteractionReport,
 )
 from varats.data.reports.szz_report import (
     SZZUnleashedReport,
@@ -24,7 +25,10 @@ from varats.data.reports.szz_report import (
 from varats.experiments.vara.feature_perf_precision import (
     MPRTimeReportAggregate,
 )
-from varats.report.gnu_time_report import WLTimeReportAggregate
+from varats.report.gnu_time_report import (
+    WLTimeReportAggregate,
+    MPRWLTimeReportAggregate,
+)
 from varats.report.tef_report import TEFReport
 
 
@@ -157,6 +161,18 @@ def load_wl_time_report_aggregate(
     return VDM.load_data_class_sync(file_path, WLTimeReportAggregate)
 
 
+def load_mpr_wl_time_report_aggregate(
+    file_path: PathLikeTy
+) -> MPRWLTimeReportAggregate:
+    """
+    Load a MPRWLTimeReportAggregate from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, MPRWLTimeReportAggregate)
+
+
 def load_performance_interaction_report(
     file_path: PathLikeTy
 ) -> PerformanceInteractionReport:
@@ -167,3 +183,15 @@ def load_performance_interaction_report(
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, PerformanceInteractionReport)
+
+
+def load_mpr_performance_interaction_report(
+    file_path: PathLikeTy
+) -> MPRPerformanceInteractionReport:
+    """
+    Load a MPRPerformanceInteractionReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, MPRPerformanceInteractionReport)
