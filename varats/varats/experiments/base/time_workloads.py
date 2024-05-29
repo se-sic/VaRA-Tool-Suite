@@ -206,10 +206,15 @@ class TimeWorkloadsSynth(VersionExperiment, shorthand="TWLS"):
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
 
-        patch_steps = []
-        for patch in regression_patches:
-            applied_patches = [patch]
+        patch_steps = [
+            TimeProjectWorkloadsSynth(
+                project, measurement_repetitions,
+                MPRWLTimeReportAggregate.
+                create_baseline_report_name("time_workloads"), binary
+            )
+        ]
 
+        for patch in regression_patches:
             patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
             patch_steps.append(
