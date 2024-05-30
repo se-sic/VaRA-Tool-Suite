@@ -31,7 +31,7 @@ def create_heatmap(
         cached_only=True
     )
     df["wall_clock_time"] = df["wall_clock_time"].apply(
-        lambda x: np.average(ast.literal_eval(x))
+        lambda x: np.average(ast.literal_eval(x) if isinstance(x, str) else x)
     )
 
     def map_index(index: pd.Index) -> pd.Index:
