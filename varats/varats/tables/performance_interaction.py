@@ -96,12 +96,8 @@ def get_performance_data(
 
 
 def is_regression(
-    performance_data: pd.DataFrame,
-    old_rev: Revision,
-    new_rev: Revision,
-    configs: ConfigurationMap,
-    threshold: float,
-    min_diff: float = 1
+    performance_data: pd.DataFrame, old_rev: Revision, new_rev: Revision,
+    configs: ConfigurationMap, threshold: float, sigma: float
 ) -> tp.Tuple[bool, int]:
     """
     Calculates if there is a regression between two revisions.
@@ -117,7 +113,7 @@ def is_regression(
         new_rev: new revision
         configs: configurations to consider
         threshold: percentage change that is considered a regression
-        min_diff: factor that controls the minimum difference to the standard
+        sigma: factor that controls the minimum difference to the standard
                   deviation of the measurements
 
     Returns:
@@ -134,10 +130,8 @@ def is_regression(
         old_avg = np.average(old_vals)
         new_avg = np.average(new_vals)
         diff = abs(old_avg - new_avg)
-        percent_change = diff / old_avg
-        # times_std = diff / std
 
-        if percent_change > threshold and diff > (min_diff * std):
+        if diff >= max(threshold * old_avg, sigma * std):
             num_regressions += 1
 
     return num_regressions > 0, num_regressions
