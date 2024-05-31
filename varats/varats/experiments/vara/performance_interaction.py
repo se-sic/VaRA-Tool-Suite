@@ -88,10 +88,79 @@ def get_function_annotations(project_name: str) -> tp.List[str]:
     }[project_name]
 
 
-class PerfInterReportGeneration(OutputFolderStep):
+class PerfInterReportGeneration(actions.ProjectStep):
     """Step for creating a performance interaction report."""
 
     NAME = "PerfInterReportGeneration"
+    DESCRIPTION = "Generate a performance interaction report."
+
+    project: VProject
+
+    def __init__(
+        self,
+        project: Project,
+        experiment_handle: ExperimentHandle,
+        interaction_filter: InteractionFilter = SingleCommitFilter(
+            commit_hash=UNCOMMITTED_COMMIT_HASH.hash
+        )
+    ):
+        super().__init__(project=project)
+        self.__experiment_handle = experiment_handle
+        self.__interaction_filter = interaction_filter
+
+    def __call__(self) -> actions.StepResult:
+        return self.analyze()
+
+    def analyze(self) -> actions.StepResult:
+        filter_file_path = Path(
+            self.project.source_of_primary
+        ).parent / "interaction_filter.yaml"
+        with filter_file_path.open("w") as filter_file:
+            version_header = self.__interaction_filter.getVersionHeader(
+            ).get_dict()
+            yaml.dump_all([version_header, self.__interaction_filter],
+                          filter_file)
+
+        for binary in self.project.binaries:
+            result_file = create_new_success_result_filepath(
+                self.__experiment_handle, PerformanceInteractionReport,
+                self.project, binary
+            )
+
+            opt_params = [
+                "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
+                "-vara-BD", "-vara-PIR", "-vara-init-commits",
+                "-vara-rewriteMD", "-vara-git-mappings=" + ",".join([
+                    f'{repo}:{path}' for repo, path in
+                    get_local_project_git_paths(self.project.name).items()
+                ]), "-vara-use-phasar",
+                f"-vara-cf-interaction-filter={filter_file_path}",
+                f"-vara-report-outfile={result_file}",
+                get_cached_bc_file_path(
+                    self.project, binary, [
+                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                        BCFileExtensions.BLAME, BCFileExtensions.FEATURE,
+                        BCFileExtensions.HOT_CODE
+                    ]
+                )
+            ]
+
+            run_cmd = wrap_unlimit_stack_size(opt[opt_params])
+            exec_func_with_pe_error_handler(
+                run_cmd,
+                create_default_analysis_failure_handler(
+                    self.__experiment_handle, self.project,
+                    PerformanceInteractionReport
+                )
+            )
+
+        return actions.StepResult.OK
+
+
+class PerfInterReportGenerationSynth(OutputFolderStep):
+    """Step for creating a performance interaction report."""
+
+    NAME = "PerfInterReportGenerationSynth"
     DESCRIPTION = "Generate a performance interaction report."
 
     project: VProject
@@ -103,7 +172,7 @@ class PerfInterReportGeneration(OutputFolderStep):
         result_file: str,
         experiment_handle: ExperimentHandle,
         patches: tp.Optional[tp.List[Patch]] = None,
-        interactionFilter: InteractionFilter = SingleCommitFilter(
+        interaction_filter: InteractionFilter = SingleCommitFilter(
             commit_hash=UNCOMMITTED_COMMIT_HASH.hash
         )
     ):
@@ -112,7 +181,7 @@ class PerfInterReportGeneration(OutputFolderStep):
         self.__result_file = result_file
         self.__experiment_handle = experiment_handle
         self.__patches = patches
-        self.__interaction_filter = interactionFilter
+        self.__interaction_filter = interaction_filter
 
     def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         filter_file_path = Path(
@@ -192,17 +261,11 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
-        for binary in project.binaries:
-            result_file = create_new_success_result_filepath(
-                self.get_handle(), PerformanceInteractionReport, project, binary
+        analysis_actions.append(
+            PerfInterReportGeneration(
+                project, self.get_handle(), createCommitFilter(project)
             )
-
-            analysis_actions.append(
-                PerfInterReportGeneration(
-                    project, binary, str(result_file), self.get_handle(),
-                    createCommitFilter(project)
-                )
-            )
+        )
 
         analysis_actions.append(actions.Clean(project))
 
@@ -272,7 +335,7 @@ class PerformanceInteractionExperimentSynthetic(
                     )
                 )
                 patch_steps.append(
-                    PerfInterReportGeneration(
+                    PerfInterReportGenerationSynth(
                         project, binary,
                         MPRPerformanceInteractionReport.
                         create_patched_report_name(
