@@ -14,7 +14,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -57,7 +61,7 @@ class Xz(VProject):
         ])(
             PaperConfigSpecificGit(
                 project_name='xz',
-                remote="https://github.com/xz-mirror/xz.git",
+                remote="https://github.com/tukaani-project/xz.git",
                 local="xz",
                 refspec="origin/HEAD",
                 limit=None,
@@ -73,12 +77,27 @@ class Xz(VProject):
                     "download/v0.6.0"
             },
             files=[
-                "countries-land-1km.geo.json", "countries-land-250m.geo.json"
+                "countries-land-1m.geo.json", "countries-land-10m.geo.json",
+                "countries-land-100m.geo.json", "countries-land-250m.geo.json",
+                "countries-land-1km.geo.json"
+            ]
+        ),
+        HTTPMultiple(
+            local="geo-maps-compr",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/compression-data/"
+                    "raw/master/xz/geo-maps/"
+            },
+            files=[
+                "countries-land-100m.geo.json.xz",
+                "countries-land-10m.geo.json.xz",
+                "countries-land-1m.geo.json.xz"
             ]
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_11).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
         'autotools-dev', 'libtool', 'pkg-config'
     )
@@ -87,11 +106,8 @@ class Xz(VProject):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
-                "-k",
-                # Use output_param to ensure input file
-                # gets appended after all arguments.
-                output_param=["{output}"],
-                output=SourceRoot("geo-maps/countries-land-1km.geo.json"),
+                ConfigParams("-z", "-k"),
+                "geo-maps/countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=["geo-maps/countries-land-1km.geo.json.xz"]
             )
@@ -99,19 +115,40 @@ class Xz(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
-                "-k",
-                "-9e",
-                "--compress",
-                "--threads=1",
-                "--format=xz",
-                "-vv",
-                # Use output_param to ensure input file
-                # gets appended after all arguments.
-                output_param=["{output}"],
-                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
-                label="countries-land-250m",
-                creates=["geo-maps/countries-land-250m.geo.json.xz"],
-                requires_all_args={"--compress"},
+                ConfigParams("-z", "-k"),
+                "geo-maps/countries-land-1m.geo.json",
+                "geo-maps/countries-land-10m.geo.json",
+                "geo-maps/countries-land-100m.geo.json",
+                label="medgeo",
+                creates=[
+                    "geo-maps/countries-land-1m.geo.json.xz",
+                    "geo-maps/countries-land-10m.geo.json.xz",
+                    "geo-maps/countries-land-100m.geo.json.xz"
+                ],
+                requires_all_args={"-z", "-k"}
+            ),
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                ConfigParams("-d", "-k"),
+                "geo-maps-compr/countries-land-1m.geo.json.xz",
+                "geo-maps-compr/countries-land-10m.geo.json.xz",
+                "geo-maps-compr/countries-land-100m.geo.json.xz",
+                label="medgeo",
+                creates=[
+                    "geo-maps-compr/countries-land-1m.geo.json",
+                    "geo-maps-compr/countries-land-10m.geo.json",
+                    "geo-maps-compr/countries-land-100m.geo.json"
+                ],
+                requires_all_args={"-d", "-k"}
+            ),
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                ConfigParams("-l"),
+                "geo-maps-compr/countries-land-1m.geo.json.xz",
+                "geo-maps-compr/countries-land-10m.geo.json.xz",
+                "geo-maps-compr/countries-land-100m.geo.json.xz",
+                label="medgeo",
+                requires_any_args={"-t", "-l"}
             )
         ],
     }
@@ -125,14 +162,6 @@ class Xz(VProject):
         binary_map.specify_binary(
             'src/xz/xz',
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("5d018dc035", "3f86532407")
-        )
-
-        binary_map.specify_binary(
-            'src/xz/.libs/xz',
-            BinaryType.EXECUTABLE,
-            override_entry_point='src/xz/xz',
-            only_valid_in=RevisionRange("880c330938", "master")
         )
 
         return binary_map[revision]
@@ -155,7 +184,7 @@ class Xz(VProject):
                 "fda4724d8114fccfa31c1839c15479f350c2fb4c", ShortCommitHash
             )
 
-        self.cflags += ["-fPIC"]
+        # self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
         with local.cwd(xz_version_source):
@@ -164,9 +193,9 @@ class Xz(VProject):
                 configure = bb.watch(local["./configure"])
 
                 if xz_version in revisions_wo_dynamic_linking:
-                    configure("--enable-dynamic=yes")
-                else:
                     configure()
+                else:
+                    configure("--disable-shared")
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
