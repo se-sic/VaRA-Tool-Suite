@@ -8,7 +8,10 @@ from itertools import pairwise
 import numpy as np
 import pandas as pd
 
-from varats.base.configuration import PlainCommandlineConfiguration
+from varats.base.configuration import (
+    PlainCommandlineConfiguration,
+    Configuration,
+)
 from varats.data.databases.performance_evolution_database import (
     PerformanceEvolutionDatabase,
 )
@@ -44,12 +47,49 @@ LOG = logging.Logger(__name__)
 Revision = tp.Union[ShortCommitHash, str]
 
 
+class FeatureLike(tp.Protocol):
+
+    def should_include_config(
+        self, config: Configuration, relevant_features: tp.Iterable[str]
+    ) -> bool:
+        ...
+
+
 class Feature:
 
     def __init__(self, name: str, flag: str, default_value: tp.Optional[str]):
         self.name = name
         self.flag = flag
         self.default_value = default_value
+
+    def should_include_config(
+        self, config: Configuration, relevant_features: tp.Iterable[str]
+    ) -> bool:
+        return self.is_relevant(relevant_features) or config.get_config_value(
+            self.flag
+        ) != self.default_value
+
+    def is_relevant(self, relevant_features: tp.Iterable[str]) -> bool:
+        return self.name in relevant_features
+
+
+class OneOf:
+
+    def __init__(self, *features: Feature):
+        self.features = features
+
+    def should_include_config(
+        self, config: Configuration, relevant_features: tp.Iterable[str]
+    ) -> bool:
+        if any(map(lambda x: x.is_relevant(relevant_features), self.features)):
+            return True
+
+        return len(
+            filter(
+                None,
+                map(lambda x: x.should_include_config(config), self.features)
+            )
+        ) == 1
 
 
 F1 = Feature("FR(F1)", "f1", None)
@@ -63,6 +103,7 @@ F8 = Feature("FR(F8)", "f8", None)
 F9 = Feature("FR(F9)", "f9", None)
 F10 = Feature("FR(F10)", "f10", None)
 
+# default values for features
 CONFIG_DATA = {
     "InterStructural": [F1],
     "InterDataFlow": [F1],
@@ -72,6 +113,60 @@ CONFIG_DATA = {
     "FunctionMultiple": [F1, F2, F3],
     "DegreeLow": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "DegreeHigh": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
+    "bzip2": [
+        Feature("FR(forceOverwrite)", "-f", None),
+        Feature("FR(keepInputFiles)", "-k", "-k"),
+        OneOf(
+            Feature("FR(compress)", "-z", "-z"),
+            Feature("FR(decompress)", "-d", "-d")
+        ),
+        Feature("FR(quiet)", "-q", None),
+        Feature("FR(smallMode)", "-s", None),
+        Feature("FR(stdout)", "-c", None),
+        Feature("FR(verbosity)", "-v", None),
+        Feature("FR(level)", "-0", None),
+        Feature("FR(level)", "-1", None),
+        Feature("FR(level)", "-2", None),
+        Feature("FR(level)", "-3", None),
+        Feature("FR(level)", "-4", None),
+        Feature("FR(level)", "-5", "-5"),
+        Feature("FR(level)", "-6", None),
+        Feature("FR(level)", "-7", None),
+        Feature("FR(level)", "-8", None),
+        Feature("FR(level)", "-9", None),
+    ],
+    "picosat": [
+        Feature("FR(Plain)", "--plain", None),
+        OneOf(
+            Feature("FR(AllSAT)", "--all", None),
+            Feature("FR(Partial)", "--partial", None)
+        ),
+        Feature("FR(CompactTrace)", "-t", None),
+        Feature("FR(ExtendedTrace)", "-T", None),
+        Feature("FR(ReverseUnitPropagationProof)", "-r", None),
+    ],
+    "xz": [
+        OneOf(
+            Feature("FR(compress)", "-z", "-z"),
+            Feature("FR(decompress)", "-d", "-d"),
+            Feature("FR(test)", "-t", "-t"), Feature("FR(list)", "-l", "-l")
+        ),
+        Feature("FR(keep)", "-k", "-k"),
+        Feature("FR(force)", "-f", None),
+        Feature("FR(stdout)", "-c", None),
+        Feature("FR(no-sparse)", "--no-sparse", None),
+        Feature("FR(extreme)", "-e", None),
+        Feature("FR(level)", "-0", None),
+        Feature("FR(level)", "-1", None),
+        Feature("FR(level)", "-2", None),
+        Feature("FR(level)", "-3", None),
+        Feature("FR(level)", "-4", None),
+        Feature("FR(level)", "-5", "-5"),
+        Feature("FR(level)", "-6", None),
+        Feature("FR(level)", "-7", None),
+        Feature("FR(level)", "-8", None),
+        Feature("FR(level)", "-9", None),
+    ]
 }
 
 
@@ -151,16 +246,13 @@ def get_relevant_configs(
     relevant_features = set()
     for inter in perf_inter_report.performance_interactions:
         relevant_features.update(inter.involved_features)
+
     relevant_configs: ConfigurationMap = ConfigurationMap()
-    default_features = [
-        feature for feature in CONFIG_DATA[project_name]
-        if feature.name not in relevant_features
-    ]
-    # collect all configs where the default features are set to their default value
+    # collect all configs where non-relevant features are set to their default value
     for config in configs.configurations():
         is_relevant_config = True
-        for feature in default_features:
-            if config.get_config_value(feature.flag) != feature.default_value:
+        for feature in CONFIG_DATA[project_name]:
+            if not feature.should_include_config(config, relevant_features):
                 is_relevant_config = False
                 break
 
@@ -186,13 +278,14 @@ def calculate_eval_data(
         eval_data["baseline_negatives"].append(new_rev)
 
     # performance interaction classification
-    if report is not None and report.performance_interactions:
+    detected_reg = report is not None and report.performance_interactions
+    if detected_reg:
         eval_data["rq1_predicted_positives"].append(new_rev)
     else:
         eval_data["rq1_predicted_negatives"].append(new_rev)
 
     # RQ2
-    if report is not None and is_reg:
+    if detected_reg:
         relevant_configs = get_relevant_configs(project_name, configs, report)
 
         is_reg2, _ = is_regression(
@@ -296,6 +389,10 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
         data: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
+
+            if project_name != "bzip2":
+                continue
+
             commit_map = get_commit_map(project_name)
 
             revisions = sorted(case_study.revisions, key=commit_map.time_id)
