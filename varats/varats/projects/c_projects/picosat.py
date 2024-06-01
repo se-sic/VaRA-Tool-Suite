@@ -42,7 +42,7 @@ from varats.utils.settings import bb_cfg
 
 
 class PicoSAT(VProject, ReleaseProviderHook):
-    """picoSAT is a SAT solver."""
+    """PicoSAT is a SAT solver."""
 
     NAME = 'picosat'
     GROUP = 'c_projects'

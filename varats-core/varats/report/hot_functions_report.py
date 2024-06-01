@@ -19,6 +19,7 @@ class XRayFunctionWrapper:
 def _ns_to_seconds(ns: int) -> float:
     return float(ns) / 1000000000
 
+
 class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
 
     MAX_TRACK_FUNCTIONS = 50
