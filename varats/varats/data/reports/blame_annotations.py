@@ -11,7 +11,10 @@ from varats.report.report import BaseReport
 class BlameInstruction():
     """Collection of debug blame and VaRA blame."""
 
-    def __init__(self, dbg_hash: str, vara_computed_hash: str) -> None:
+    def __init__(
+        self, inst: str, dbg_hash: str, vara_computed_hash: str
+    ) -> None:
+        self.__inst = inst
         self.__dbg_hash = dbg_hash
         self.__vara_computed_hash = vara_computed_hash
 
@@ -21,9 +24,15 @@ class BlameInstruction():
     ) -> 'BlameInstruction':
         """Creates a :class`BlameInstrucion`from the corresponding yaml document
         section."""
+        inst = str(raw_entry['inst'])
         dbg_hash = str(raw_entry['dbghash'])
         vara_computed_hash = str(raw_entry['varahash'])
-        return BlameInstruction(dbg_hash, vara_computed_hash)
+        return BlameInstruction(inst, dbg_hash, vara_computed_hash)
+
+    @property
+    def inst(self) -> str:
+        """Intermediate representation of LLVM instruction."""
+        return self.__inst
 
     @property
     def dbg_hash(self) -> str:
@@ -74,11 +83,9 @@ class BlameAnnotations(BaseReport, shorthand="BA", file_type="yaml"):
                 func_entry = raw_blame_report['functions'][func]
                 for raw_entry in func_entry['annotations']:
                     new_entry = (
-                        BlameInstruction.create_blame_instruction(
-                            func_entry['annotations'][raw_entry]
-                        )
+                        BlameInstruction.create_blame_instruction(raw_entry)
                     )
-                    new_func.add_annotation(raw_entry, new_entry)
+                    new_func.add_annotation(new_entry.inst, new_entry)
                 self.__functions[func] = new_func
 
     @property

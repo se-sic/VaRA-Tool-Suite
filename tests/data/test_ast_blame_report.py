@@ -24,62 +24,62 @@ YAML_DOC_BA_LINE = """---
 functions:
   _Z19calculate_somethingi:
     annotations:
-      0=bitcasti32*resulttoi8*:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      1=loadi32,i32*x.addr,align4:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-      2=loadi32,i32*result,align4:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      3=bitcasti32*resulttoi8*:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      add=addnswi321,42:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-      callvoid@llvm.dbg.declare(metadatai32*result,metadata!17,metadata!DIExpression()):
+      - inst:            '  %x.addr = alloca i32, align 4'
+        dbghash:         ''
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %result = alloca i32, align 4'
+        dbghash:         ''
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  store i32 %x, i32* %x.addr, align 4'
+        dbghash:         ''
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.dbg.declare(metadata i32* %x.addr, metadata !16, metadata !DIExpression())'
         dbghash:         ''
         varahash:        ''
-      callvoid@llvm.dbg.declare(metadatai32*x.addr,metadata!16,metadata!DIExpression()):
+      - inst:            '  %0 = bitcast i32* %result to i8*'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.lifetime.start.p0i8(i64 4, i8* %0) #5'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.dbg.declare(metadata i32* %result, metadata !17, metadata !DIExpression())'
         dbghash:         ''
         varahash:        ''
-      callvoid@llvm.lifetime.end.p0i8(i644,i8*3)#5:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      callvoid@llvm.lifetime.start.p0i8(i644,i8*0)#5:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      result=allocai32,align4:
-        dbghash:         ''
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      reti322:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      storei32sub,i32*result,align4:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-      storei32x,i32*x.addr,align4:
-        dbghash:         ''
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      sub=subnswi32add,1:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-      x.addr=allocai32,align4:
-        dbghash:         ''
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      - inst:            '  %1 = load i32, i32* %x.addr, align 4'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+      - inst:            '  %add = add nsw i32 %1, 42'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+      - inst:            '  %sub = sub nsw i32 %add, 1'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+      - inst:            '  store i32 %sub, i32* %result, align 4'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+      - inst:            '  %2 = load i32, i32* %result, align 4'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %3 = bitcast i32* %result to i8*'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.lifetime.end.p0i8(i64 4, i8* %3) #5'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  ret i32 %2'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
   main:
     annotations:
-      call1=calli32(i8*,...)@printf(i8*noundefgetelementptrinbounds([3xi8],[3xi8]*@.str,i640,i640),i32noundefcall):
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      call=callnoundefi32@_Z19calculate_somethingi(i32noundef4):
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      reti320:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      - inst:            '  %call = call noundef i32 @_Z19calculate_somethingi(i32 noundef 4)'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %call1 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([3 x i8], [3 x i8]* @.str, i64 0, i64 0), i32 noundef %call)'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  ret i32 0'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
 ...
 """
 
@@ -87,62 +87,62 @@ YAML_DOC_BA_AST = """---
 functions:
   _Z19calculate_somethingi:
     annotations:
-      0=bitcasti32*resulttoi8*:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      1=loadi32,i32*x.addr,align4:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      2=loadi32,i32*result,align4:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      3=bitcasti32*resulttoi8*:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      add=addnswi321,42:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      callvoid@llvm.dbg.declare(metadatai32*result,metadata!17,metadata!DIExpression()):
+      - inst:            '  %x.addr = alloca i32, align 4'
+        dbghash:         ''
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %result = alloca i32, align 4'
+        dbghash:         ''
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  store i32 %x, i32* %x.addr, align 4'
+        dbghash:         ''
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.dbg.declare(metadata i32* %x.addr, metadata !16, metadata !DIExpression())'
         dbghash:         ''
         varahash:        ''
-      callvoid@llvm.dbg.declare(metadatai32*x.addr,metadata!16,metadata!DIExpression()):
+      - inst:            '  %0 = bitcast i32* %result to i8*'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.lifetime.start.p0i8(i64 4, i8* %0) #5'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.dbg.declare(metadata i32* %result, metadata !17, metadata !DIExpression())'
         dbghash:         ''
         varahash:        ''
-      callvoid@llvm.lifetime.end.p0i8(i644,i8*3)#5:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      callvoid@llvm.lifetime.start.p0i8(i644,i8*0)#5:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      result=allocai32,align4:
-        dbghash:         ''
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      reti322:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      storei32sub,i32*result,align4:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      storei32x,i32*x.addr,align4:
-        dbghash:         ''
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      sub=subnswi32add,1:
-        dbghash:         2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-        varahash:        2b9a08d1adb63d2db9283811f79ac66e373ccfe9
-      x.addr=allocai32,align4:
-        dbghash:         ''
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      - inst:            '  %1 = load i32, i32* %x.addr, align 4'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %add = add nsw i32 %1, 42'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %sub = sub nsw i32 %add, 1'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+      - inst:            '  store i32 %sub, i32* %result, align 4'
+        dbghash:         73b69c2c4b1ab80e5e9dcf24c3280ca9f394f20f
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %2 = load i32, i32* %result, align 4'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %3 = bitcast i32* %result to i8*'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  call void @llvm.lifetime.end.p0i8(i64 4, i8* %3) #5'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  ret i32 %2'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
   main:
     annotations:
-      call1=calli32(i8*,...)@printf(i8*noundefgetelementptrinbounds([3xi8],[3xi8]*@.str,i640,i640),i32noundefcall):
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      call=callnoundefi32@_Z19calculate_somethingi(i32noundef4):
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
-      reti320:
-        dbghash:         2553b819d9434f3396727617438dc0d6ae39b056
-        varahash:        2553b819d9434f3396727617438dc0d6ae39b056
+      - inst:            '  %call = call noundef i32 @_Z19calculate_somethingi(i32 noundef 4)'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  %call1 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([3 x i8], [3 x i8]* @.str, i64 0, i64 0), i32 noundef %call)'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
+      - inst:            '  ret i32 0'
+        dbghash:         16c99ec75c6f40538f812b22f11ce69b54e58147
+        varahash:        16c99ec75c6f40538f812b22f11ce69b54e58147
 ...
 """
 
