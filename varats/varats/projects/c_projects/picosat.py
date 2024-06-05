@@ -77,8 +77,9 @@ class PicoSAT(VProject, ReleaseProviderHook):
             local="sr15bench",
             remote={
                 "1.0":
-                    "https://baldur.iti.kit.edu/sat-race-2015/downloads/sr15bench.zip"
-            }
+                    "http://baldur.iti.kit.edu/sat-race-2015/downloads/sr15bench.zip"
+            },
+            check_certificate=False
         ),
         HTTPUntar(
             local="abw-N-bcsstk07.mtx-w44.cnf",
@@ -116,7 +117,8 @@ class PicoSAT(VProject, ReleaseProviderHook):
         ),
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
+                              ).run("apt", "install", "-y", "zip")
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
@@ -136,8 +138,9 @@ class PicoSAT(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
                 "sr15bench/mrpp_8x8#16_12.cnf",
-                label="mrpp_8x8#16_12.cnf",
+                label="mrpp-8x8#16-12.cnf"
             )
         ],
         WorkloadSet(WorkloadCategory.LARGE): [
