@@ -1,0 +1,14 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: xz
+stages:
+- revisions:
+  - commit_hash: 74c3449d8b816a724b12ebce7417e00fb597309a
+    commit_id: 2726
+    config_ids:
+    - -1
+version: 0
+...

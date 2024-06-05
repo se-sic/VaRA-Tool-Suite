@@ -1,0 +1,161 @@
+artefacts:
+    artefacts_dir:
+        default: /home/marlow/VaRA-Tool-Suite/artefacts
+        desc: Folder for generated artefacts
+        value: /home/marlow/VaRA-Tool-Suite/artefacts
+benchbuild_root:
+    default: /home/marlow/VaRA-Tool-Suite/benchbuild
+    desc: Root folder to run BenchBuild in
+    value: /home/marlow/VaRA-Tool-Suite/benchbuild
+config_file:
+    default: null
+    desc: Config file path of varats. Not guaranteed to exist.
+    value: /home/marlow/VaRA-Tool-Suite/.varats.yaml
+container:
+    dev_mode:
+        default: false
+        desc: If enabled, install varats in editable mode.Implies `from_source=True`
+            and `varats_source` must be mountable inside the container.
+        value: false
+    from_source:
+        default: false
+        desc: Whether to install varats in the container from a local source checkout
+            or pip.
+        value: false
+    research_tool:
+        default: null
+        desc: The currently active research tool.Base containers come with this tool
+            preinstalled.
+        value: null
+    varats_source:
+        default: null
+        desc: Path to the local checkout of varats to use for the sourceinstall.
+        value: null
+data_cache:
+    default: /home/marlow/VaRA-Tool-Suite/data_cache
+    desc: Local data cache to store preprocessed files.
+    value: /home/marlow/VaRA-Tool-Suite/data_cache
+db:
+    connect_string:
+        default: sqlite://
+        desc: sqlalchemy connect string
+        value: sqlite://
+    create_functions:
+        default: false
+        desc: Should we recreate our SQL functions from scratch?
+        value: false
+    rollback:
+        default: false
+        desc: Rollback all operations after benchbuild completes.
+        value: false
+env:
+    default: &id001 {}
+    desc: The environment benchbuild's commands should operate in.
+    value: *id001
+experiment:
+    file_status_blacklist:
+        default: &id002
+        - Success
+        - Blocked
+        desc: Do not include revision with these file status for benchbuild processing
+        value: *id002
+    file_status_whitelist:
+        default: &id003 []
+        desc: Only include revision with these file status for benchbuild processing
+        value: *id003
+    only_missing:
+        default: true
+        desc: Only run missing version [Deprecated]This option is replaced by file_status_blacklist
+            = [Success]
+        value: true
+    random_order:
+        default: false
+        desc: Randomize the order of versions to explore.
+        value: false
+    sample_limit:
+        default: null
+        desc: Randomize the order of versions to explore.
+        value: null
+    workloads_base_location:
+        default: /home/marlow
+        desc: Location of directory containing workloads for binaries.
+        value: /home/marlow
+ml:
+    value: {}
+paper_config:
+    current_config:
+        default: null
+        desc: Paper config file to load.
+        value: tutorial
+    folder:
+        default: /home/marlow/VaRA-Tool-Suite/paper_configs
+        desc: Folder with paper configs.
+        value: /home/marlow/VaRA-Tool-Suite/paper_configs
+phasar:
+    developer_version:
+        default: true
+        desc: Setup phasar as development build.
+        value: true
+    install_dir:
+        default: null
+        desc: Phasar install directory
+        value: null
+    source_dir:
+        default: null
+        desc: Phasar source directory
+        value: null
+plots:
+    plot_dir:
+        default: /home/marlow/VaRA-Tool-Suite/plots
+        desc: Folder for generated plots
+        value: /home/marlow/VaRA-Tool-Suite/plots
+provider:
+    github_access_token:
+        default: null
+        desc: GitHub access token
+        value: null
+result_dir:
+    default: /home/marlow/VaRA-Tool-Suite/results
+    desc: Result folder for collected results
+    value: /home/marlow/VaRA-Tool-Suite/results
+sampling:
+    value: {}
+szzunleashed:
+    install_dir:
+        default: null
+        desc: SZZUnleashed install directory
+        value: null
+    source_dir:
+        default: null
+        desc: SZZUnleashed source directory
+        value: null
+tables:
+    table_dir:
+        default: /home/marlow/VaRA-Tool-Suite/tables
+        desc: Folder for generated tables
+        value: /home/marlow/VaRA-Tool-Suite/tables
+vara:
+    developer_version:
+        default: true
+        desc: Setup VaRA as development build.
+        value: true
+    llvm_install_dir:
+        default: null
+        desc: Install dir for LLVM and VaRA
+        value: null
+    llvm_source_dir:
+        default: null
+        desc: LLVM source dir
+        value: null
+    own_libgit2:
+        default: true
+        desc: Build own libgit2 [Deprecated]
+        value: true
+    version:
+        default: 140
+        desc: VaRA version.
+        value: 140
+    with_phasar:
+        default: true
+        desc: Include Phasar for static analysis [Deprecated]
+        value: true
