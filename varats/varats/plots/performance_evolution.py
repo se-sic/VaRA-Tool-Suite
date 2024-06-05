@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-from scipy.cluster.hierarchy import leaves_list, linkage
+from scipy.cluster.hierarchy import leaves_list, linkage, fcluster
 from scipy.stats import mannwhitneyu
 
 from varats.data.databases.performance_evolution_database import (
@@ -37,8 +37,11 @@ def create_heatmap(
     def map_index(index: pd.Index) -> pd.Index:
         return pd.Index([commit_map.short_time_id(c) for c in index])
 
-    heatmap = df.pivot(
-        index="config_id", columns="revision", values="wall_clock_time"
+    heatmap = df.pivot_table(
+        index="config_id",
+        columns="revision",
+        values="wall_clock_time",
+        sort=False,
     )
     heatmap.sort_index(axis="columns", inplace=True, key=map_index)
     return heatmap
