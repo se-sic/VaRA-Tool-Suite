@@ -127,11 +127,17 @@ class BlameASTComparison(actions.ProjectStep):  #type: ignore
         for binary in self.project.binaries:
             varats_result_folder = get_varats_result_folder(self.project)
 
+            line_filepath = None
+            ast_filepath = None
+
             for file in os.listdir(varats_result_folder):
                 if fnmatch.fnmatch(file, "LBA" + '*'):
                     line_filepath = Path(varats_result_folder / file)
                 if fnmatch.fnmatch(file, "ASTBA" + '*'):
                     ast_filepath = Path(varats_result_folder / file)
+
+            if not line_filepath or not ast_filepath:
+                return actions.StepResult.ERROR
 
             line_annotations = BA(line_filepath)
             ast_annotations = BA(ast_filepath)
@@ -255,6 +261,13 @@ class BlameASTExperiment(VersionExperiment, shorthand="BASTE"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
 
         # Generate AST blame report (comparison)
         analysis_actions: tp.MutableSequence[actions.Step] = [
