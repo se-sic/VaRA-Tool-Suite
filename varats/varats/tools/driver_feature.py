@@ -22,7 +22,7 @@ class Location:
     """A location in a source code file."""
 
     LOCATION_FORMAT = re.compile(
-        r"(?P<file>[\w.]+)\s"
+        r"(?P<file>[\w./]+)\s"
         r"(?P<start_line>\d+):(?P<start_col>\d+)\s"
         r"(?P<end_line>\d+):(?P<end_col>\d+)"
     )
@@ -194,7 +194,7 @@ def __annotate(
     last_annotations: dict[str, FeatureAnnotation] = {}
     last_annotation_targets: dict[str, str] = {}
 
-    click.echo(f"Current revision: {first_commit.oid}")
+    click.echo(f"Current revision: {first_commit.id}")
     while click.confirm("Annotate another feature?"):
         feature_name = click.prompt("Enter feature name to annotate", type=str)
         commit_hash = FullCommitHash(str(first_commit.id))
