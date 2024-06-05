@@ -252,7 +252,7 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
                  'software-properties-common', 'musl-dev', 'git', 'gcc',
                  'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev',
                  'python3', 'python3-pip', 'python3-virtualenv', 'clang',
-                 'lld', 'time'))
+                 'lld', 'libc++-dev', 'libc++abi-dev', 'time'))
 }
 
 _STAGE_LAYERS: tp.Dict[ImageStage,
