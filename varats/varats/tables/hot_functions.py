@@ -18,56 +18,51 @@ class HotFunctionsTable(Table, table_name="hot_functions"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        df = pd.DataFrame()
+        entries = []
 
         for case_study in case_studies:
+            cs_entries = []
             project_name = case_study.project_name
 
             experiment_type = XRayFindHotFunctions
             report_files = get_processed_revisions_files(
-                project_name, experiment_type, WLHotFunctionAggregate,
-                get_case_study_file_name_filter(case_study)
+                project_name,
+                experiment_type,
+                WLHotFunctionAggregate,
+                get_case_study_file_name_filter(case_study),
+                only_newest=False
             )
 
             for report_filepath in report_files:
                 agg_hot_functions_report = WLHotFunctionAggregate(
                     report_filepath.full_path()
                 )
+
                 report_file = agg_hot_functions_report.filename
 
                 hot_funcs = agg_hot_functions_report.hot_functions_per_workload(
-                    threshold=2
+                    threshold=5
                 )
 
-                entries = []
                 for workload_name in agg_hot_functions_report.workload_names():
+                    if "countries" in workload_name or "example" in workload_name:
+                        continue
+
                     hot_func_data = hot_funcs[workload_name]
                     for hf in hot_func_data:
-                        new_row = {
-                            "Project":
-                                project_name,
-                            "Binary":
-                                report_file.binary_name,
-                            "Revision":
-                                str(report_file.commit_hash),
-                            "Workload":
-                                workload_name,
-                            "FunctionName":
-                                hf.name,
-                            "TimeSpent":
-                                hf.sum_time,
-                            "Reps":
-                                len(
-                                    agg_hot_functions_report.
-                                    reports(workload_name)
-                                )
-                        }
+                        cs_entries.append({
+                            "Project": project_name,
+                            "Binary": report_file.binary_name,
+                            "Revision": str(report_file.commit_hash),
+                            "Workload": workload_name,
+                            "FunctionName": hf.name
+                        })
 
-                        # df = df.append(new_row, ignore_index=True)
-                        entries.append(pd.DataFrame([new_row]))
+            # funcs = {entry["FunctionName"] for entry in cs_entries}
+            # print(f"{project_name}: {funcs}")
+            entries += cs_entries
 
-                df = pd.concat(entries, ignore_index=True)
-
+        df = pd.DataFrame.from_records(entries).drop_duplicates()
         df.sort_values(["Project", "Binary"], inplace=True)
         df.set_index(
             ["Project", "Binary"],
