@@ -65,15 +65,42 @@ class Feature:
     def should_include_config(
         self, config: Configuration, relevant_features: tp.Iterable[str]
     ) -> bool:
-        return self.is_relevant(relevant_features) or config.get_config_value(
+        value = self.is_relevant(relevant_features) or config.get_config_value(
             self.flag
-        ) != self.default_value
+        ) == self.default_value
+        return value
 
     def is_relevant(self, relevant_features: tp.Iterable[str]) -> bool:
         return self.name in relevant_features
 
 
-class OneOf:
+class ExactlyOneOf:
+
+    def __init__(self, *features: Feature):
+        self.features = features
+
+    def should_include_config(
+        self, config: Configuration, relevant_features: tp.Iterable[str]
+    ) -> bool:
+        if any(map(lambda x: x.is_relevant(relevant_features), self.features)):
+            return True
+
+        value = len(
+            list(
+                filter(
+                    None,
+                    map(
+                        lambda x: x.
+                        should_include_config(config, relevant_features),
+                        self.features
+                    )
+                )
+            )
+        ) == 1
+        return value
+
+
+class AtMostOneOf:
 
     def __init__(self, *features: Feature):
         self.features = features
@@ -85,11 +112,17 @@ class OneOf:
             return True
 
         return len(
-            filter(
-                None,
-                map(lambda x: x.should_include_config(config), self.features)
+            list(
+                filter(
+                    None,
+                    map(
+                        lambda x: x.
+                        should_include_config(config, relevant_features),
+                        self.features
+                    )
+                )
             )
-        ) == 1
+        ) <= 1
 
 
 F1 = Feature("FR(F1)", "f1", None)
@@ -104,7 +137,7 @@ F9 = Feature("FR(F9)", "f9", None)
 F10 = Feature("FR(F10)", "f10", None)
 
 # default values for features
-CONFIG_DATA = {
+CONFIG_DATA: tp.Dict[str, tp.List[FeatureLike]] = {
     "InterStructural": [F1],
     "InterDataFlow": [F1],
     "InterImplicitFlow": [F1],
@@ -114,58 +147,56 @@ CONFIG_DATA = {
     "DegreeLow": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "DegreeHigh": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "bzip2": [
-        Feature("FR(forceOverwrite)", "-f", None),
-        Feature("FR(keepInputFiles)", "-k", "-k"),
-        OneOf(
-            Feature("FR(compress)", "-z", "-z"),
-            Feature("FR(decompress)", "-d", "-d")
+        Feature("FR(forceOverwrite)", "f", None),
+        Feature("FR(keepInputFiles)", "k", "-k"),
+        ExactlyOneOf(
+            Feature("FR(compress)", "z", "-z"),
+            Feature("FR(decompress)", "d", "-d")
         ),
-        Feature("FR(quiet)", "-q", None),
-        Feature("FR(smallMode)", "-s", None),
-        Feature("FR(stdout)", "-c", None),
-        Feature("FR(verbosity)", "-v", None),
-        Feature("FR(level)", "-0", None),
-        Feature("FR(level)", "-1", None),
-        Feature("FR(level)", "-2", None),
-        Feature("FR(level)", "-3", None),
-        Feature("FR(level)", "-4", None),
-        Feature("FR(level)", "-5", "-5"),
-        Feature("FR(level)", "-6", None),
-        Feature("FR(level)", "-7", None),
-        Feature("FR(level)", "-8", None),
-        Feature("FR(level)", "-9", None),
+        Feature("FR(quiet)", "q", None),
+        Feature("FR(smallMode)", "s", None),
+        Feature("FR(stdout)", "c", None),
+        Feature("FR(verbosity)", "v", None),
+        Feature("FR(level)", "0", None),
+        Feature("FR(level)", "1", None),
+        Feature("FR(level)", "2", None),
+        Feature("FR(level)", "3", None),
+        Feature("FR(level)", "4", None),
+        Feature("FR(level)", "5", "-5"),
+        Feature("FR(level)", "6", None),
+        Feature("FR(level)", "7", None),
+        Feature("FR(level)", "8", None),
+        Feature("FR(level)", "9", None),
     ],
     "picosat": [
-        Feature("FR(Plain)", "--plain", None),
-        OneOf(
-            Feature("FR(AllSAT)", "--all", None),
-            Feature("FR(Partial)", "--partial", None)
-        ),
-        Feature("FR(CompactTrace)", "-t", None),
-        Feature("FR(ExtendedTrace)", "-T", None),
-        Feature("FR(ReverseUnitPropagationProof)", "-r", None),
+        Feature("FR(Plain)", "plain", None),
+        Feature("FR(AllSAT)", "all", None),
+        Feature("FR(Partial)", "partial", None),
+        Feature("FR(CompactTrace)", "t", None),
+        Feature("FR(ExtendedTrace)", "T", None),
+        Feature("FR(ReverseUnitPropagationProof)", "r", None),
     ],
     "xz": [
-        OneOf(
-            Feature("FR(compress)", "-z", "-z"),
-            Feature("FR(decompress)", "-d", "-d"),
-            Feature("FR(test)", "-t", "-t"), Feature("FR(list)", "-l", "-l")
+        ExactlyOneOf(
+            Feature("FR(compress)", "z", "-z"),
+            Feature("FR(decompress)", "d", "-d"),
+            Feature("FR(test)", "t", "-t"), Feature("FR(list)", "l", "-l")
         ),
-        Feature("FR(keep)", "-k", "-k"),
-        Feature("FR(force)", "-f", None),
-        Feature("FR(stdout)", "-c", None),
-        Feature("FR(no-sparse)", "--no-sparse", None),
-        Feature("FR(extreme)", "-e", None),
-        Feature("FR(level)", "-0", None),
-        Feature("FR(level)", "-1", None),
-        Feature("FR(level)", "-2", None),
-        Feature("FR(level)", "-3", None),
-        Feature("FR(level)", "-4", None),
-        Feature("FR(level)", "-5", "-5"),
-        Feature("FR(level)", "-6", None),
-        Feature("FR(level)", "-7", None),
-        Feature("FR(level)", "-8", None),
-        Feature("FR(level)", "-9", None),
+        Feature("FR(keep)", "k", "-k"),
+        Feature("FR(force)", "f", None),
+        Feature("FR(stdout)", "c", None),
+        Feature("FR(no-sparse)", "no-sparse", None),
+        Feature("FR(extreme)", "e", None),
+        Feature("FR(level)", "0", None),
+        Feature("FR(level)", "1", None),
+        Feature("FR(level)", "2", None),
+        Feature("FR(level)", "3", None),
+        Feature("FR(level)", "4", None),
+        Feature("FR(level)", "5", None),
+        Feature("FR(level)", "6", "-6"),
+        Feature("FR(level)", "7", None),
+        Feature("FR(level)", "8", None),
+        Feature("FR(level)", "9", None),
     ]
 }
 
@@ -186,8 +217,8 @@ def get_performance_data(
     vals_raw = performance_data.loc[config_id, revision]
 
     if isinstance(vals_raw, str):
-        return ast.literal_eval(vals_raw)
-    return vals_raw
+        return tp.cast(tp.List[float], ast.literal_eval(vals_raw))
+    return tp.cast(tp.List[float], vals_raw)
 
 
 def is_regression(
@@ -225,6 +256,10 @@ def is_regression(
         old_avg = np.average(old_vals)
         new_avg = np.average(new_vals)
         diff = abs(old_avg - new_avg)
+
+        # 0 means old data not available for config -> skip
+        if old_avg == 0:
+            continue
 
         if diff >= max(threshold * old_avg, sigma * std):
             num_regressions += 1
@@ -338,10 +373,10 @@ def calculate_case_study_data(
     cs_data: tp.Dict[tp.Any, tp.Any] = {
         ("Project",): [project_name],
         (threshold_key, "Base"): [confusion_matrix.P],
-        (threshold_key, "RQ1 Pred."): [confusion_matrix.PP],
+        (threshold_key, "RQ1 Pred."): [f"{confusion_matrix.PP} ({confusion_matrix.TP})"],
         (threshold_key, "RQ1 Rec."): [confusion_matrix.recall()],
         (threshold_key, "RQ1 Prec."): [confusion_matrix.precision()],
-        (threshold_key, "RQ2 Pred."): [rq2_confusion_matrix.PP],
+        (threshold_key, "RQ2 Pred."): [f"{rq2_confusion_matrix.PP} / {rq2_confusion_matrix.PN}"],
         (threshold_key, "RQ2 bACC"): [rq2_confusion_matrix.balanced_accuracy()]
     }
 
@@ -359,8 +394,8 @@ def calculate_saved_costs(
     relevant_configs = get_relevant_configs(
         project_name, configs, perf_inter_report
     )
-    t_baseline = 0
-    t_rq3 = 0
+    t_baseline = 0.0
+    t_rq3 = 0.0
 
     for config_id in configs.ids():
         new_vals = get_performance_data(performance_data, revision, config_id)
@@ -389,9 +424,6 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
         data: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
-
-            if project_name != "bzip2":
-                continue
 
             commit_map = get_commit_map(project_name)
 
@@ -523,6 +555,7 @@ def load_synth_baseline_data(
 
         for patch_name in time_report.get_patch_names():
             patched_report = time_report.get_report_for_patch(patch_name)
+            assert patched_report is not None
             assert len(patched_report.workload_names()) == 1
             workload = next(iter(patched_report.workload_names()))
             data.append({
@@ -558,7 +591,7 @@ def load_synth_perf_inter_reports(
     assert len(report_files) == 1
     report = load_mpr_performance_interaction_report(report_files[0])
 
-    report_dict: tp.Dict[str:PerformanceInteractionReport] = {
+    report_dict: tp.Dict[str, PerformanceInteractionReport] = {
         "base": report.get_baseline_report()
     }
     for patch_name in report.get_patch_names():
