@@ -20,6 +20,10 @@ def _ns_to_seconds(ns: int) -> float:
     return float(ns) / 1000000000
 
 
+def _seconds_to_ns(seconds: int) -> float:
+    return float(seconds) * 1000000000
+
+
 class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
     """Report class to load and evaluate the hot function data."""
 
@@ -62,6 +66,10 @@ class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
         # The total time tracked only includes time spend in the top n
         # (MAX_TRACK_FUNCTIONS) functions
         total_time_tracked = self.__function_data["sum"].max()
+
+        if total_time_tracked < _seconds_to_ns(1):
+            print("Ignoring measurement with total time < 1s.")
+            return []
 
         if threshold == 0:
             self_time_cutoff = 0
