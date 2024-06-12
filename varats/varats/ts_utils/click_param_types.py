@@ -10,6 +10,8 @@ from click import ParamType
 from varats.data.discover_reports import initialize_reports
 from varats.experiments.discover_experiments import initialize_experiments
 from varats.paper.paper_config import get_paper_config
+from varats.project.project_util import get_loaded_vara_projects
+from varats.projects.discover_projects import initialize_projects
 from varats.report.report import BaseReport
 from varats.ts_utils.artefact_util import (
     CaseStudyConverter,
@@ -144,6 +146,12 @@ def create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     """Create a choice parameter type that allows selecting a report type."""
     initialize_reports()
     return TypedChoice(BaseReport.REPORT_TYPES)
+
+
+def create_project_choice() -> click.Choice:
+    initialize_projects()
+    projects = [proj.NAME for proj in get_loaded_vara_projects()]
+    return click.Choice(projects)
 
 
 def __is_experiment_excluded(experiment_name: str) -> bool:
