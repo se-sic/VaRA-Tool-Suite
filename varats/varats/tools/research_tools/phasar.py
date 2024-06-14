@@ -151,6 +151,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         self.code_base.checkout_phasar_version(use_dev_branch)
         self.code_base.setup_submodules()
 
+    def is_up_to_date(self) -> bool:
+        """Returns true if Phasar's major release version is up to date."""
+        return True
+
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
         self.code_base.pull()
