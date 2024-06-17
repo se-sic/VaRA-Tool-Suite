@@ -46,9 +46,13 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
 
     project: VProject
 
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
+    def __init__(
+        self, project: Project, experiment_handle: ExperimentHandle,
+        file_extensions: list[BCFileExtensions]
+    ):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
+        self.__file_extensions = file_extensions
 
     def __call__(self) -> actions.StepResult:
         return self.analyze()
@@ -79,10 +83,7 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
                     get_local_project_git_paths(self.project.name).items()
                 ]), "-vara-use-phasar", f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
-                    self.project, binary, [
-                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-                        BCFileExtensions.BLAME
-                    ]
+                    self.project, binary, self.__file_extensions
                 )
             ]
 
@@ -225,7 +226,7 @@ class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,
-            BCFileExtensions.BLAME,
+            BCFileExtensions.BLAME_AST,
         ]
 
         BE.setup_basic_blame_experiment(self, project, BA)
