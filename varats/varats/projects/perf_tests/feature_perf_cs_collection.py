@@ -254,7 +254,7 @@ class LongerCaller(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("CTCRTP"), label="CompileTime-CRTP"
+                SourceRoot(NAME) / RSBinary("LongerCaller"), label="CompileTime-CRTP"
             )
         ]
     }
@@ -264,11 +264,11 @@ class LongerCaller(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthCTCRTP.NAME)
+            get_local_project_git_path(LongerCaller.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/CTCRTP",
+            "build/bin/LongerCaller",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("6d50a6efd5", "master")
         )
@@ -1285,11 +1285,11 @@ class SynthCTCRTP(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(LongerCaller.NAME)
+            get_local_project_git_path(SynthCTCRTP.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/LongerCaller",
+            "build/bin/CTCRTP",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("6d50a6efd5", "master")
         )
