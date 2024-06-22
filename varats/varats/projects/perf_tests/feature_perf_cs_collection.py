@@ -231,6 +231,64 @@ class SynthSAFlowSensitivity(VProject):
         _do_feature_perf_cs_collection_recompile(self)
 
 
+# Create Longer Caller Project
+class LongerCaller(VProject):
+    """Main Class longer than function called."""
+
+    NAME = 'LongerCaller'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local=NAME,
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(NAME)
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot(NAME) / RSBinary("CTCRTP"), label="CompileTime-CRTP"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SynthCTCRTP.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/CTCRTP",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6d50a6efd5", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_LONGERCALLER"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
 class SynthSAContextSensitivity(VProject):
     """Synthetic case-study project for testing flow sensitivity."""
 
@@ -1227,11 +1285,11 @@ class SynthCTCRTP(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthCTCRTP.NAME)
+            get_local_project_git_path(LongerCaller.NAME)
         )
 
         binary_map.specify_binary(
-            "build/bin/CTCRTP",
+            "build/bin/LongerCaller",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("6d50a6efd5", "master")
         )
