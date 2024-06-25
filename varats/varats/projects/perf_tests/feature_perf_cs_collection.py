@@ -1425,3 +1425,59 @@ class SynthFeatureRestrictedConfigSpace(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
+
+
+class FeatureDependentHotCode(VProject):
+    """Synthetic case-study project for feature dependent hot code."""
+
+    NAME = 'FeatureDependentHotCode'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="FeatureDependentHotCode",
+            refspec="origin/f-FeatureDependentHotCode",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("FeatureDependentHotCode")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("FeatureDependentHotCode") /
+                RSBinary("FeatureDependentHotCode"),
+                ConfigParams(),
+                label="FeatureDependentHotCode"
+            )
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return RevisionBinaryMap(
+            get_local_project_git_path(SynthFeatureRestrictedConfigSpace.NAME)
+        ).specify_binary(
+            "build/bin/FeatureDependentHotCode",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6863c78c24", "HEAD")
+        )[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_FeatureDependentHotCode"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
