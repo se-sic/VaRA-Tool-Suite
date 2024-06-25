@@ -1457,6 +1457,8 @@ class FeatureDependentHotCode(VProject):
         ]
     }
 
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
