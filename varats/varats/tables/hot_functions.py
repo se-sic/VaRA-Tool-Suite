@@ -92,3 +92,80 @@ class HotFunctionsTableGenerator(
 
     def generate(self) -> tp.List[Table]:
         return [HotFunctionsTable(self.table_config, **self.table_kwargs)]
+
+
+class HotFunctionAggregation(Table, table_name="hot_function_agg"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        df = pd.DataFrame()
+
+        entries = []
+        for case_study in case_studies:
+            project_name = case_study.project_name
+
+            experiment_type = XRayFindHotFunctions
+
+            for config_id in case_study.get_config_ids_for_revision(
+                case_study.revisions[0]
+            ):
+                report_files = get_processed_revisions_files(
+                    project_name,
+                    experiment_type,
+                    WLHotFunctionAggregate,
+                    get_case_study_file_name_filter(case_study),
+                    config_id=config_id
+                )
+
+                for report_filepath in report_files:
+                    agg_hot_functions_report = WLHotFunctionAggregate(
+                        report_filepath.full_path()
+                    )
+                    report_file = agg_hot_functions_report.filename
+
+                    hot_funcs = agg_hot_functions_report.hot_functions_per_workload(
+                        threshold=2
+                    )
+
+                    for workload_name in agg_hot_functions_report.workload_names(
+                    ):
+                        hot_func_data = hot_funcs[workload_name]
+                        new_row = {
+                            "Project": project_name,
+                            "Binary": report_file.binary_name,
+                            "Config ID": config_id,
+                            "Workload": workload_name,
+                            "NumHotFunctions": len(hot_func_data),
+                            "HotFunctions": {hf.name for hf in hot_func_data}
+                        }
+
+                        # df = df.append(new_row, ignore_index=True)
+                        entries.append(new_row)
+
+        df = pd.DataFrame(entries)
+
+        df.sort_values(["Project", "Binary"], inplace=True)
+        df.set_index(
+            ["Project", "Binary"],
+            inplace=True,
+        )
+
+        kwargs: tp.Dict[str, tp.Any] = {}
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            **kwargs
+        )
+
+
+class HotFunctionAggregateTableGenerator(
+    TableGenerator, generator_name="hot-functions-agg", options=[]
+):
+    """Generator for `HotFunctionsTable`."""
+
+    def generate(self) -> tp.List[Table]:
+        return [HotFunctionAggregation(self.table_config, **self.table_kwargs)]
