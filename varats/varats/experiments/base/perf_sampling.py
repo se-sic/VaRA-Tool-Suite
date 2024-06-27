@@ -1,5 +1,6 @@
 """Implements an experiment that profiles the execution of a project binary."""
 
+import importlib.resources as resources
 import typing as tp
 
 import benchbuild as bb
@@ -98,6 +99,16 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
 
                 with cleanup(workload):
                     bb.watch(run_cmd)(retcode=None)
+
+                    perf_script_source = resources.files("varats").joinpath(
+                        "resources/perf_script_overhead_calculation.py"
+                    )
+                    with resources.as_file(perf_script_source) as perf_script:
+                        bb.watch(
+                            perf["script", "-s", perf_script, "-i",
+                                 perf_report_file]
+                        )()
+
         return StepResult.OK
 
 
