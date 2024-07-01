@@ -125,6 +125,7 @@ class PreCompile(VersionExperiment, shorthand="PREC"):
             << RunWLLVM() \
             << run.WithTimeout()
 
+        project.cflags += ["-fno-omit-frame-pointer"]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
