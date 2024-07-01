@@ -44,7 +44,6 @@ class FunctionData:
 
 
 irrelevant_comms = ["perf-exec", "time"]
-irrelevant_dsos = ["[kernel.kallsyms]", "[unknown]"]
 
 
 def is_irrelevant_comm(comm: str) -> bool:
@@ -57,7 +56,9 @@ def is_irrelevant_dso(dso: str) -> bool:
     if dso.startswith("/lib") or dso.startswith("/usr/lib"):
         return True
 
-    if dso in irrelevant_dsos:
+    # kernel module functions and some other irrelevant entries
+    # are encapsulated in brackets
+    if dso[0] == "[" and dso[-1] == "]":
         return True
 
     return False
@@ -79,9 +80,7 @@ def trace_end() -> None:
     ):
         print(f"    {func_data.name}:")
         print(f"        samples: {func_data.samples}")
-        print(
-            f"        overhead: {(func_data.samples / total_samples) * 100:.2f}%"
-        )
+        print(f"        overhead: {(func_data.samples / total_samples):.4f}")
         print(f"        command: {func_data.command}")
         print(f"        dso: {func_data.dso}")
 
@@ -89,7 +88,12 @@ def trace_end() -> None:
 def process_event(param_dict: tp.Dict[str, tp.Any]) -> None:
     global total_samples
 
-    func_name = param_dict["symbol"]
+    func_name = param_dict.get("symbol", None)
+
+    if func_name is None:
+        print(f"warning: unknown event format {param_dict}", file=sys.stderr)
+        return
+
     command = param_dict["comm"]
     raw_dso = param_dict["dso"]
     dso = Path(raw_dso).name
