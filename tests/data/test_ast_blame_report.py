@@ -5,12 +5,12 @@ from unittest import mock
 
 from varats.data.reports.blame_annotations import (
     BlameAnnotations,
-    ASTBlameReport,
+    BlameComparisonReport,
     compare_blame_annotations,
 )
 
 FAKE_REPORT_PATH = (
-    "BASTE-BAST-lz4-lz4-bdc9d3b0c1_a68da96a-e52e-4254-b45f-753d0205d3e7_"\
+    "BCE-BCR-lz4-lz4-bdc9d3b0c1_a68da96a-e52e-4254-b45f-753d0205d3e7_"\
       "success.yaml"
 )
 
@@ -146,7 +146,7 @@ functions:
 ...
 """
 
-YAML_DOC_BAST = """
+YAML_DOC_BCR = """
 dbg vs ast:
   diff: 3
   equal: 10
@@ -177,15 +177,15 @@ class TestBlameAnnotaions(unittest.TestCase):
         self.assertEqual(self.blame_annotations.path, Path("fake_file_path"))
 
 
-class TestASTBlameReport(unittest.TestCase):
+class TestBlameComparisonReport(unittest.TestCase):
     """Test if AST blame report is correctly reconstructed from yaml."""
 
-    report: ASTBlameReport
+    report: BlameComparisonReport
 
     @classmethod
     def setUpClass(cls) -> None:
-        """Create ASTBlameReport."""
-        cls.report = ASTBlameReport(Path('fake_file_path'))
+        """Create BlameComparisonReport."""
+        cls.report = BlameComparisonReport(Path('fake_file_path'))
 
     def test_path(self) -> None:
         """Test if the path is saved correctly."""

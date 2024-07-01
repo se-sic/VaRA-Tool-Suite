@@ -14,7 +14,7 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
 import varats.experiments.vara.blame_experiment as BE
-from varats.data.reports.blame_annotations import ASTBlameReport as BAST
+from varats.data.reports.blame_annotations import BlameComparisonReport as BCR
 from varats.data.reports.blame_annotations import BlameAnnotations as BA
 from varats.data.reports.blame_annotations import compare_blame_annotations
 from varats.experiment.experiment_util import (
@@ -59,18 +59,15 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
 
     def analyze(self) -> actions.StepResult:
         """
-        This step performs the actual analysis with the correct command line
-        flags.
+        This step generates a blame annotation report given a binary annotated
+        with blame informatin.
 
         Flags used:
-            * -vara-BA: to run a commit flow report
+            * -vara-BA: to run a blame annotation report
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
 
         for binary in self.project.binaries:
-            # Add to the user-defined path for saving the results of the
-            # analysis also the name and the unique id of the project of every
-            # run.
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, BA, self.project, binary
             )
@@ -144,7 +141,7 @@ class BlameASTComparison(actions.ProjectStep):  #type: ignore
             ast_annotations = BA(ast_filepath)
 
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, BAST, self.project, binary
+                self.__experiment_handle, BCR, self.project, binary
             )
 
             ast_report = compare_blame_annotations(
@@ -173,10 +170,6 @@ class LineBasedBlameAnnotations(VersionExperiment, shorthand="LBA"):
         Args:
             project: to analyze
         """
-        # Try, to build the project without optimizations to get more precise
-        # blame annotations. Note: this does not guarantee that a project is
-        # build without optimizations because the used build tool/script can
-        # still add optimizations flags after the experiment specified cflags.
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
@@ -193,7 +186,6 @@ class LineBasedBlameAnnotations(VersionExperiment, shorthand="LBA"):
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
-        # Generate blame annotation report
         analysis_actions.append(
             BlameAnnotationGeneration(project, self.get_handle())
         )
@@ -218,10 +210,6 @@ class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
         Args:
             project: to analyze
         """
-        # Try, to build the project without optimizations to get more precise
-        # blame annotations. Note: this does not guarantee that a project is
-        # build without optimizations because the used build tool/script can
-        # still add optimizations flags after the experiment specified cflags.
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
@@ -239,7 +227,6 @@ class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
-        # Generate blame annotation report
         analysis_actions.append(
             BlameAnnotationGeneration(project, self.get_handle())
         )
@@ -247,9 +234,9 @@ class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
         return analysis_actions
 
 
-class BlameASTExperiment(VersionExperiment, shorthand="BASTE"):
+class BlameComparisonExperiment(VersionExperiment, shorthand="BCE"):
     """
-    Compares AST based blame annotations to line based ones.
+    Compares AST-based blame annotations to line-based ones.
 
     Requires previous runs of experiments 'LineBasedBlameAnnotations' and
     'ASTBasedBlameAnnotations'
@@ -257,14 +244,14 @@ class BlameASTExperiment(VersionExperiment, shorthand="BASTE"):
 
     NAME = "CompareASTBlame"
 
-    REPORT_SPEC = ReportSpecification(BAST)
+    REPORT_SPEC = ReportSpecification(BCR)
 
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
         """
-        Returns the specified steps to run the project(s) specified in the call
-        in a fixed order.
+        Returns the step to compare the two blame annotation reports on the
+        project(s) specified in the call.
 
         Args:
             project: to analyze

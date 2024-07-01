@@ -9,7 +9,7 @@ from varats.report.report import BaseReport
 
 
 class BlameInstruction():
-    """Collection of debug blame and VaRA blame."""
+    """Debug-based and VaRA-based blame annotations for a single instruction."""
 
     def __init__(
         self, inst: str, dbg_hash: str, vara_computed_hash: str
@@ -22,8 +22,8 @@ class BlameInstruction():
     def create_blame_instruction(
         raw_entry: tp.Dict[str, tp.Any]
     ) -> 'BlameInstruction':
-        """Creates a :class`BlameInstrucion`from the corresponding yaml document
-        section."""
+        """Creates a :class:`BlameInstrucion` from the corresponding yaml
+        document section."""
         inst = str(raw_entry['inst'])
         dbg_hash = str(raw_entry['dbghash'])
         vara_computed_hash = str(raw_entry['varahash'])
@@ -31,7 +31,7 @@ class BlameInstruction():
 
     @property
     def inst(self) -> str:
-        """Intermediate representation of LLVM instruction."""
+        """Textual representation of LLVM-IR instruction."""
         return self.__inst
 
     @property
@@ -42,9 +42,10 @@ class BlameInstruction():
     @property
     def vara_computed_hash(self) -> str:
         """
-        Blame based on IRegion.
+        Blame based on VaRA's BlameRegion.
 
-        Can be produced in different ways, based on which flag is used.
+        Either line-based or AST-based depending on whether `-fvara-ast-GB` is
+        used or not.
         """
         return self.__vara_computed_hash
 
@@ -65,7 +66,7 @@ class BlameFunctionAnnotations():
 
 
 class BlameAnnotations(BaseReport, shorthand="BA", file_type="yaml"):
-    """Report containing debug blame and blame annotations."""
+    """Report containing debug-based blame and VaRA-based blame annotations."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
@@ -94,7 +95,7 @@ class BlameAnnotations(BaseReport, shorthand="BA", file_type="yaml"):
         return self.__functions.values()
 
 
-class ASTBlameReport(BaseReport, shorthand="BAST", file_type="yaml"):
+class BlameComparisonReport(BaseReport, shorthand="BCR", file_type="yaml"):
     """Report containing difference between AST-based and line-based blame."""
 
     def __init__(self, path: Path) -> None:
@@ -158,15 +159,15 @@ class ASTBlameReport(BaseReport, shorthand="BAST", file_type="yaml"):
 
 def compare_blame_annotations(
     line_ba: BlameAnnotations, ast_ba: BlameAnnotations, path: Path
-) -> ASTBlameReport:
-    """Compares the debug based to the AST based annotations as well as the line
-    based to the AST based blame."""
-    ast_report = ASTBlameReport(path)
+) -> BlameComparisonReport:
+    """Compares the debug-based to the AST-based blame annotations as well as
+    the line based to the AST based blame."""
+    comparison_report = BlameComparisonReport(path)
 
     for func in ast_ba.functions:
         for entry in func.blame_annotations.values():
             if entry.dbg_hash and entry.vara_computed_hash:
-                ast_report.update_dbg_ast(
+                comparison_report.update_dbg_ast(
                     entry.dbg_hash != entry.vara_computed_hash
                 )
 
@@ -176,9 +177,9 @@ def compare_blame_annotations(
         for inst in ast_annotations:
             if line_annotations[inst].vara_computed_hash and ast_annotations[
                 inst].vara_computed_hash:
-                ast_report.update_line_ast(
+                comparison_report.update_line_ast(
                     line_annotations[inst].vara_computed_hash !=
                     ast_annotations[inst].vara_computed_hash
                 )
 
-    return ast_report
+    return comparison_report
