@@ -49,7 +49,10 @@ def _do_feature_perf_cs_collection_compile(
 
     with local.cwd(feature_perf_source / "build"):
         with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
+            bb.watch(cmake)(
+                "..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON",
+                "-DFPCSC_USE_LIBCXX=OFF"
+            )
 
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -1468,7 +1471,7 @@ class FeatureDependentHotCode(VProject):
         ).specify_binary(
             "build/bin/FeatureDependentHotCode",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("6863c78c24", "HEAD")
+            only_valid_in=RevisionRange("6863c78c24", "0b21371d86")
         )[revision]
 
     def run_tests(self) -> None:
@@ -1477,7 +1480,7 @@ class FeatureDependentHotCode(VProject):
     def compile(self) -> None:
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_FeatureDependentHotCode"
+            self, "FPCSC_ENABLE_PROJECT_FEATUREDEPENDENTHOTCODE"
         )
 
     def recompile(self) -> None:
