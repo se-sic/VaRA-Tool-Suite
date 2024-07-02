@@ -133,9 +133,8 @@ class HotFunctionAggregation(Table, table_name="hot_function_agg"):
                         hot_func_data = hot_funcs[workload_name]
                         new_row = {
                             "Project": project_name,
-                            "Binary": report_file.binary_name,
                             "Config ID": config_id,
-                            "Workload": workload_name,
+                            #"Workload": workload_name,
                             "NumHotFunctions": len(hot_func_data),
                             "HotFunctions": {hf.name for hf in hot_func_data}
                         }
@@ -145,11 +144,17 @@ class HotFunctionAggregation(Table, table_name="hot_function_agg"):
 
         df = pd.DataFrame(entries)
 
-        df.sort_values(["Project", "Binary"], inplace=True)
+        df.sort_values(["Project", "Config ID"], inplace=True)
         df.set_index(
-            ["Project", "Binary"],
+            ["Project", "Config ID"],
             inplace=True,
         )
+
+        if table_format == TableFormat.LATEX or True:
+            df["HotFunctions"] = df["HotFunctions"].apply(
+                lambda functions:
+                {function.replace('_', "-") for function in functions}
+            )
 
         kwargs: tp.Dict[str, tp.Any] = {}
 
