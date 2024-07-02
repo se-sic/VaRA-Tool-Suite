@@ -1486,3 +1486,95 @@ class FeatureDependentHotCode(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
+
+
+class WorkloadFeatureIntensity(VProject):
+    """Synthetic case-study project for feature dependent hot code."""
+
+    NAME = 'WorkloadFeatureIntensity'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="WorkloadFeatureIntensity",
+            refspec="origin/f-WorkloadFeatureIntensity",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("WorkloadFeatureIntensity")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("WorkloadFeatureIntensity") /
+                RSBinary("WorkloadFeatureIntensity"),
+                ConfigParams(),
+                "--workload",
+                "1",
+                label="workload-1"
+            ),
+            VCommand(
+                SourceRoot("WorkloadFeatureIntensity") /
+                RSBinary("WorkloadFeatureIntensity"),
+                ConfigParams(),
+                "--workload",
+                "2",
+                label="workload-2"
+            ),
+            VCommand(
+                SourceRoot("WorkloadFeatureIntensity") /
+                RSBinary("WorkloadFeatureIntensity"),
+                ConfigParams(),
+                "--workload",
+                "3",
+                label="workload-3"
+            ),
+            VCommand(
+                SourceRoot("WorkloadFeatureIntensity") /
+                RSBinary("WorkloadFeatureIntensity"),
+                ConfigParams(),
+                "--workload",
+                "4",
+                label="workload-4"
+            ),
+            VCommand(
+                SourceRoot("WorkloadFeatureIntensity") /
+                RSBinary("WorkloadFeatureIntensity"),
+                ConfigParams(),
+                "--workload",
+                "5",
+                label="workload-5"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return RevisionBinaryMap(
+            get_local_project_git_path(SynthFeatureRestrictedConfigSpace.NAME)
+        ).specify_binary(
+            "build/bin/WorkloadFeatureIntensity",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("6863c78c24", "1198813c51")
+        )[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_WORKLOADFEATUREINTENSITY"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
