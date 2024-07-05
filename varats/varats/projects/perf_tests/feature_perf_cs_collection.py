@@ -297,7 +297,7 @@ class SimpleCall(VProject):
         binary_map.specify_binary(
             "build/bin/SimpleCall",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("master", "056870472452101e68536dd5140f99aeb6879fc9") #check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=RevisionRange("4b440e27e1edd034e19639fd3e3774f8a57fc2db", "4b440e27e1edd034e19639fd3e3774f8a57fc2db") #check the hash commit number on f-CalcualteDynamicWeight branch
         )
 
         return binary_map[revision]
