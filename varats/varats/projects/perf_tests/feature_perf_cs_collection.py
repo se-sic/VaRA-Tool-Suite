@@ -269,7 +269,7 @@ class LongerCaller(VProject):
         binary_map.specify_binary(
             "build/bin/LongerCaller",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("05687047", "master") #check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=RevisionRange("master", "056870472452101e68536dd5140f99aeb6879fc9") #check the hash commit number on f-CalcualteDynamicWeight branch
         )
 
         return binary_map[revision]
