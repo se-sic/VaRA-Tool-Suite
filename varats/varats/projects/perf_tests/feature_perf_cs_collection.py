@@ -232,10 +232,10 @@ class SynthSAFlowSensitivity(VProject):
 
 
 # Create Longer Caller Project
-class LongerCaller(VProject):
+class LongerCallee(VProject):
     """Main Class longer than function called."""
 
-    NAME = 'LongerCaller'
+    NAME = 'LongerCallee'
     GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
@@ -254,7 +254,7 @@ class LongerCaller(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("LongerCaller"), label="CompileTime-LongerCaller"
+                SourceRoot(NAME) / RSBinary("LongerCallee"), label="CompileTime-LongerCallee"
             )
         ]
     }
@@ -264,10 +264,10 @@ class LongerCaller(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(LongerCaller.NAME)
+            get_local_project_git_path(LongerCallee.NAME)
         )
         binary_map.specify_binary(
-            "build/bin/LongerCaller",
+            "build/bin/LongerCallee",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("master", "056870472452101e68536dd5140f99aeb6879fc9") #check the hash commit number on f-CalcualteDynamicWeight branch
         )
@@ -280,7 +280,7 @@ class LongerCaller(VProject):
     def compile(self) -> None:
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_LONGERCALLER"
+            self, "FPCSC_ENABLE_PROJECT_LONGERCALLEE"
         )
 
     def recompile(self) -> None:
