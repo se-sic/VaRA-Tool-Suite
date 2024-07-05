@@ -243,7 +243,7 @@ class LongerCaller(VProject):
         bb.source.Git(
             remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
             local=NAME,
-            refspec="origin/HEAD",
+            refspec="origin/f-calculatedynamicweight",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(NAME)
@@ -254,7 +254,7 @@ class LongerCaller(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("LongerCaller"), label="CompileTime-CRTP"
+                SourceRoot(NAME) / RSBinary("LongerCaller"), label="CompileTime-LongerCaller"
             )
         ]
     }
@@ -266,11 +266,10 @@ class LongerCaller(VProject):
         binary_map = RevisionBinaryMap(
             get_local_project_git_path(LongerCaller.NAME)
         )
-
         binary_map.specify_binary(
             "build/bin/LongerCaller",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("6d50a6efd5", "master")
+            only_valid_in=RevisionRange("05687047", "master") #check the hash commit number on f-CalcualteDynamicWeight branch
         )
 
         return binary_map[revision]
