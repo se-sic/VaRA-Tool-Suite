@@ -232,10 +232,10 @@ class SynthSAFlowSensitivity(VProject):
 
 
 # Create Longer Caller Project
-class LongerCallee(VProject):
+class SimpleCall(VProject):
     """Main Class longer than function called."""
 
-    NAME = 'LongerCallee'
+    NAME = 'SimpleCall'
     GROUP = 'perf_tests'
     DOMAIN = ProjectDomains.TEST
 
@@ -254,7 +254,7 @@ class LongerCallee(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("LongerCallee"), label="CompileTime-LongerCallee"
+                SourceRoot(NAME) / RSBinary("SimpleCall"), label="CompileTime-SimpleCall"
             )
         ]
     }
@@ -264,10 +264,10 @@ class LongerCallee(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(LongerCallee.NAME)
+            get_local_project_git_path(SimpleCall.NAME)
         )
         binary_map.specify_binary(
-            "build/bin/LongerCallee",
+            "build/bin/SimpleCall",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("master", "056870472452101e68536dd5140f99aeb6879fc9") #check the hash commit number on f-CalcualteDynamicWeight branch
         )
@@ -280,7 +280,35 @@ class LongerCallee(VProject):
     def compile(self) -> None:
         """Compile the project."""
         _do_feature_perf_cs_collection_compile(
-            self, "FPCSC_ENABLE_PROJECT_LONGERCALLEE"
+            self, "FPCSC_ENABLE_PROJECT_SIMPLECALL"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(SimpleCall.NAME)
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleCall",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("master", "056870472452101e68536dd5140f99aeb6879fc9") #check the hash commit number on f-CalcualteDynamicWeight branch
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SIMPLECALL"
         )
 
     def recompile(self) -> None:
