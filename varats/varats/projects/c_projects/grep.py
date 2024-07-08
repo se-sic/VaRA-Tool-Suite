@@ -1,12 +1,18 @@
-"""Project file for the GNU grep."""
+"""Project file for grep."""
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import (
     project_filter_generator,
     PaperConfigSpecificGit,
@@ -18,13 +24,15 @@ from varats.project.project_util import (
     verify_binaries,
     get_local_project_git_path,
 )
+from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
 
 class Grep(VProject):
-    """GNU Grep / UNIX command-line tools (fetched by Git)"""
+    """grep - print lines that match patterns"""
 
     NAME = 'grep'
     GROUP = 'c_projects'
@@ -39,6 +47,7 @@ class Grep(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         bb.source.GitSubmodule(
             remote="https://github.com/coreutils/gnulib.git",
             local="grep/gnulib",
@@ -46,13 +55,29 @@ class Grep(VProject):
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("grep")
+        ),
+        bb.source.HTTPUntar(
+            local="jrc-en",
+            remote={
+                "1.0": "https://wt-public.emm4u.eu/Acquis/JRC-Acquis.3.0/corpus/jrc-en.tgz"
+            }
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
         'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
     )
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("grep") / RSBinary("grep"),
+                "-r", ConfigParams(), "the", "jrc-en",
+                label="JRC-Acquis",
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
