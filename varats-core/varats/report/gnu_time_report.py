@@ -397,7 +397,7 @@ class WLTimeReportAggregate(
 
 class MPRWLTimeReportAggregate(
     MultiPatchReport[WLTimeReportAggregate],
-    shorthand="MPRWLTRAgg",
+    shorthand="MPR" + WLTimeReportAggregate.SHORTHAND,
     file_type=".zip"
 ):
     """Multi-patch wrapper report for workload specific time reports."""

@@ -7,6 +7,7 @@ import pandas as pd
 import yaml
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -54,7 +55,8 @@ class FunctionOverheadReport(BaseReport, shorthand="FOR", file_type=".yaml"):
     def function(self, function_name: str) -> FunctionOverheadData:
         return self.__function_data[function_name]
 
-    def hot_functions(self, threshold: float = 2) -> tp.List[FunctionOverheadData]:
+    def hot_functions(self,
+                      threshold: float = 2) -> tp.List[FunctionOverheadData]:
         """
         Retrieve hot functions.
 
@@ -79,7 +81,8 @@ class FunctionOverheadReport(BaseReport, shorthand="FOR", file_type=".yaml"):
 
 class WLFunctionOverheadReportAggregate(
     WorkloadSpecificReportAggregate[FunctionOverheadReport],
-    shorthand="WL" + FunctionOverheadReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    shorthand="WL" + FunctionOverheadReport.SHORTHAND +
+    ReportAggregate.SHORTHAND,
     file_type=ReportAggregate.FILE_TYPE
 ):
 
@@ -87,7 +90,8 @@ class WLFunctionOverheadReportAggregate(
         super().__init__(path, FunctionOverheadReport)
 
     def hot_functions_per_workload(
-        self, threshold=2
+        self,
+        threshold=2
     ) -> tp.Dict[str, tp.Dict[str, tp.List[FunctionOverheadData]]]:
         """
         Retrieve hot functions grouped by workload.
@@ -107,3 +111,15 @@ class WLFunctionOverheadReportAggregate(
             res[wl_name] = wl_hot_funcs
 
         return res
+
+
+class MPRWLFunctionOverheadReportAggregate(
+    MultiPatchReport[WLFunctionOverheadReportAggregate],
+    shorthand="MPR" + WLFunctionOverheadReportAggregate.SHORTHAND,
+    file_type=".zip"
+):
+    """Multi-patch wrapper report for workload specific function overhead
+    reports."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, WLFunctionOverheadReportAggregate)
