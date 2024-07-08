@@ -1,12 +1,16 @@
-"""Project file for openssl."""
+"""Project file for OpenSSL."""
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import git, make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import WorkloadCategory, RSBinary, \
+    ConfigParams
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -15,6 +19,8 @@ from varats.project.project_util import (
     get_local_project_git_path,
     verify_binaries,
 )
+from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
@@ -25,7 +31,7 @@ from varats.utils.settings import bb_cfg
 
 
 class OpenSSL(VProject):
-    """TLS-framework OpenSSL (fetched by Git)"""
+    """Cryptography toolkit OpenSSL"""
 
     NAME = 'openssl'
     GROUP = 'c_projects'
@@ -39,11 +45,38 @@ class OpenSSL(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        FeatureSource(),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=[
+                "countries-land-1m.geo.json"
+            ]
+        ),
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12
                               ).run('apt', 'install', '-y', 'perl')
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("openssl") / RSBinary("openssl"), "enc",
+                ConfigParams(),
+                "-provider", "default", "-provider", "legacy",
+                "-in", "geo-maps/countries-land-1m.geo.json",
+                "-out", "geo-maps/countries-land-1km.geo.json.enc",
+                "-pass", "pass:correcthorsebatterystaple",
+                label="countries-land-1m",
+                creates=["geo-maps/countries-land-1km.geo.json.enc"]
+            )
+        ]
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -79,7 +112,7 @@ class OpenSSL(VProject):
                     '09803e9ce3a8a555e7014ebd11b4c80f9d300cf0'
                 )
             with local.env(CC=str(compiler)):
-                bb.watch(local['./config'])("-static")
+                bb.watch(local['./config'])("no-shared", "zlib", "-static")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
