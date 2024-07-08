@@ -9,7 +9,7 @@ from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from benchbuild.utils.actions import ProjectStep, StepResult
 from benchbuild.utils.cmd import perf, time
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -70,7 +70,10 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
             return StepResult.OK
 
         # check if perf record works
-        perf["record", "-o", "/dev/null", "ls"]
+        try:
+            perf["record", "-o", "/dev/null", "ls"]
+        except ProcessExecutionError:
+            return StepResult.ERROR
 
         # report paths
         perf_report_agg = create_new_success_result_filepath(
@@ -103,10 +106,10 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
                         f"perf_{workload.command.label}_{repetition}.data"
 
                     run_cmd = workload.command.as_plumbum(project=self.project)
-                    run_cmd = time["-v", "-o", time_report_file, run_cmd]
+                    run_cmd = time["-v", "-o", f'{time_report_file}', run_cmd.formulate()]
                     run_cmd = perf["record", "-F", self.__sampling_rate, "-g",
-                                   "--user-callchains", "-o", perf_data_file,
-                                   run_cmd]
+                                   "--user-callchains", "-o", str(perf_data_file),
+                                   run_cmd.formulate()]
 
                     with cleanup(workload):
                         bb.watch(run_cmd)(retcode=None)
