@@ -187,7 +187,9 @@ class LineBasedBlameAnnotations(VersionExperiment, shorthand="LBA"):
             )
         )
         analysis_actions.append(
-            BlameAnnotationGeneration(project, self.get_handle())
+            BlameAnnotationGeneration(
+                project, self.get_handle(), bc_file_extensions
+            )
         )
 
         return analysis_actions
@@ -228,7 +230,9 @@ class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
             )
         )
         analysis_actions.append(
-            BlameAnnotationGeneration(project, self.get_handle())
+            BlameAnnotationGeneration(
+                project, self.get_handle(), bc_file_extensions
+            )
         )
 
         return analysis_actions
