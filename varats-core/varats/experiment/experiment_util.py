@@ -8,6 +8,7 @@ import traceback
 import typing as tp
 from abc import abstractmethod
 from collections import defaultdict
+from contextlib import ExitStack
 from pathlib import Path
 from types import TracebackType
 
@@ -513,7 +514,12 @@ class OutputFolderStep(ProjectStep):  # type: ignore
     def __call__(self) -> StepResult:
         raise WrongStepCall()
 
-    @abstractmethod
+    def call_with_output_folders(
+        self, tmp_dirs: tp.Dict[tp.Type[BaseReport], Path]
+    ) -> StepResult:
+        """Call implementation that gets a temp folder for each requested report
+        type."""
+
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         """Actual call implementation that gets a path to tmp_folder."""
 
@@ -531,18 +537,34 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
     DESCRIPTION = "Run multiple actions with a shared tmp folder"
 
     def __init__(
-        self, output_filepath: ReportFilepath,
+        self, output_filepaths: tp.Dict[tp.Type[BaseReport], ReportFilepath],
         actions: tp.Optional[tp.List[ZippedStepTy]]
     ) -> None:
         super().__init__(actions)
-        self.__output_filepath = output_filepath
+        if isinstance(output_filepaths, ReportFilepath):
+            # Use BaseReport as dummy key if only one path is given
+            # This key is never seen from the outside
+            self.__output_filepaths = {BaseReport: output_filepaths}
+        else:
+            self.__output_filepaths = output_filepaths
 
-    def __run_children(self, tmp_folder: Path) -> tp.List[StepResult]:
+    def __run_children(
+        self, tmp_folders: tp.Dict[tp.Type[BaseReport], Path]
+    ) -> tp.List[StepResult]:
         results: tp.List[StepResult] = []
 
         for child in self.actions:
             if isinstance(child, OutputFolderStep):
-                results.append(child.call_with_output_folder(tmp_folder))
+                # Backwards compatibility:
+                # use call_with_output_folder() if only one path is given
+                if len(tmp_folders) == 1:
+                    results.append(
+                        child.call_with_output_folder(
+                            next(iter(tmp_folders.values()))
+                        )
+                    )
+                else:
+                    results.append(child.call_with_output_folders(tmp_folders))
             else:
                 results.append(child())
 
@@ -552,9 +574,17 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
         results: tp.List[StepResult] = []
 
         exception_raised_during_exec = False
-        with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
+
+        with ExitStack() as stack:
+            tmp_folders = {
+                report_ty: Path(
+                    stack.enter_context(
+                        ZippedReportFolder(report_path.full_path())
+                    )
+                ) for report_ty, report_path in self.__output_filepaths.items()
+            }
             try:
-                results = self.__run_children(Path(tmp_dir))
+                results = self.__run_children(tmp_folders)
             except:  # noqa: E722
                 exception_raised_during_exec = True
                 raise
@@ -562,12 +592,11 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
         overall_step_result = max(results) if results else StepResult.OK
         if overall_step_result is not StepResult.OK \
                 or exception_raised_during_exec:
-            error_filepath = self.__output_filepath.with_status(
-                FileStatusExtension.FAILED
-            )
-            self.__output_filepath.full_path().rename(
-                error_filepath.full_path()
-            )
+            for report_filepath in self.__output_filepaths.values():
+                error_filepath = report_filepath.with_status(
+                    FileStatusExtension.FAILED
+                )
+                report_filepath.full_path().rename(error_filepath.full_path())
 
         return overall_step_result
 
