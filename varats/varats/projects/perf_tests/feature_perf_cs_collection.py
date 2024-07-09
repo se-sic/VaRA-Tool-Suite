@@ -1559,11 +1559,11 @@ class WorkloadFeatureIntensity(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         return RevisionBinaryMap(
-            get_local_project_git_path(SynthFeatureRestrictedConfigSpace.NAME)
+            get_local_project_git_path(WorkloadFeatureIntensity.NAME)
         ).specify_binary(
             "build/bin/WorkloadFeatureIntensity",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("6863c78c24", "1198813c51")
+            only_valid_in=RevisionRange("6863c78c24", "1e40d95903")
         )[revision]
 
     def run_tests(self) -> None:
