@@ -93,8 +93,9 @@ ConfigParams = specify_configuration_parameters
 
 
 def workload_commands(
-    project: VProject, binary: ProjectBinaryWrapper,
-    requested_workload_tags: tp.List[WorkloadCategory]
+    project: VProject,
+    binary: ProjectBinaryWrapper,
+    requested_workload_tags: tp.List[WorkloadCategory] = None
 ) -> tp.List[ProjectCommand]:
     """
     Generates a list of project commands for a project and the specified
