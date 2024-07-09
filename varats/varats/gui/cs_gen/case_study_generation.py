@@ -265,11 +265,11 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
     def show_revision_data(self, index: QModelIndex) -> None:
         """Update the revision data field."""
         commit = self.revision_list.model().data(index, Qt.WhatsThisRole)
-        commit_info = f"{commit.hex}:\n" \
+        commit_info = f"{commit.id}:\n" \
                       f"{commit.author.name}, " \
                       f"<{commit.author.email}>\n\n" \
                       f"{commit.message}"
-        self.selected_commit = commit.hex
+        self.selected_commit = commit.id
         self.revision_details.setText(commit_info)
         self.revision_details.update()
 
@@ -304,12 +304,18 @@ class CommitTableFilterModel(QSortFilterProxyModel):
     ) -> bool:
         commit_index = self.sourceModel().index(source_row, 0, source_parent)
         author_index = self.sourceModel().index(source_row, 1, source_parent)
-        return ((not self.cs_filter) or FullCommitHash(self.sourceModel().data(commit_index,Qt.WhatsThisRole).hex) in self._case_study.revisions) and (self.sourceModel().data(commit_index,
-                                       Qt.DisplayRole).lower() \
-                   .__contains__(self.filter_string.lower()) \
-               or self.sourceModel().data(author_index,
-                                          Qt.DisplayRole).lower() \
-                   .__contains__(self.filter_string.lower()))
+        hash_filter = self.sourceModel().data(
+            commit_index, Qt.DisplayRole
+        ).lower().__contains__(self.filter_string.lower())
+        author_filter = self.sourceModel().data(
+            author_index, Qt.DisplayRole
+        ).lower().__contains__(self.filter_string.lower())
+        case_study_filter = (
+            not self.cs_filter
+        ) or FullCommitHash.from_pygit_commit(
+            self.sourceModel().data(commit_index, Qt.WhatsThisRole)
+        ) in self._case_study.revisions
+        return case_study_filter and (hash_filter or author_filter)
 
 
 class CommitTableModel(QAbstractTableModel):
@@ -378,7 +384,7 @@ class CommitTableModel(QAbstractTableModel):
 
     def __split_commit_data(self, commit: pygit2.Commit, column: int) -> tp.Any:
         if column == 0:
-            return ShortCommitHash(commit.hex).hash
+            return ShortCommitHash.from_pygit_commit(commit).hash
         if column == 1:
             return commit.author.name
         if column == 2:
@@ -386,20 +392,21 @@ class CommitTableModel(QAbstractTableModel):
             date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
             return QDateTime(date)
         if column == 3:
-            return self._cmap.short_time_id(ShortCommitHash(commit.hex))
+            return self._cmap.time_id(FullCommitHash.from_pygit_commit(commit))
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> tp.Any:
         commit = self._data[index.row()]
+        chash = FullCommitHash.from_pygit_commit(commit)
         if role == Qt.DisplayRole:
             return self.__split_commit_data(commit, index.column())
-        if is_revision_blocked(FullCommitHash(commit.hex), self._project):
+        if is_revision_blocked(chash, self._project):
             if role == Qt.ForegroundRole:
                 return QColor(50, 100, 255)
             if role == Qt.ToolTipRole:
                 return "Blocked"
         if self._case_study and self._experiment_type:
             if role == Qt.ForegroundRole:
-                chash = ShortCommitHash(commit.hex)
+                chash = chash.to_short_commit_hash()
                 if chash in self._status_data.index:
                     if self._status_data.loc[
                         chash, "file_status"
