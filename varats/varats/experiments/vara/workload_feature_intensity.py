@@ -34,6 +34,7 @@ from varats.experiments.vara.feature_perf_precision import (
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
+from varats.report.tef_report import TEFReportAggregate
 from varats.utils.config import get_current_config_id
 
 
@@ -63,7 +64,7 @@ class WorkloadFeatureRegions(OutputFolderStep):
                 run_report_name = tmp_dir / create_workload_specific_filename(
                     "feature_intensity",
                     prj_command.command,
-                    file_suffix=".txt"
+                    file_suffix=".json"
                 )
 
                 print(f"Running workload command: {pb_cmd}")
@@ -81,7 +82,7 @@ class WorkloadFeatureIntensity(FeatureExperiment, shorthand="WFI"):
     NAME = "WorkloadFeatureIntensity"
     DESCRIPTION = "Collects feature intensity data for all project example workloads."
 
-    REPORT_SPEC = ReportSpecification(RunTimeFeatureInstrAggReport)
+    REPORT_SPEC = ReportSpecification(TEFReportAggregate)
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
