@@ -9,16 +9,14 @@ from benchbuild.utils import actions
 from benchbuild.utils.actions import Step, StepResult
 from plumbum import local
 
-from varats.data.reports.runtime_feature_instrumentation import (
-    RunTimeFeatureInstrAggReport,
-)
+from varats.data.reports.FeatureIntensity import WorkloadFeatureIntensityReport
 from varats.experiment.experiment_util import (
     WithUnlimitedStackSize,
     get_default_compile_error_wrapped,
     get_config_patch_steps,
-    create_new_success_result_filepath,
     OutputFolderStep,
     ZippedExperimentSteps,
+    get_varats_result_folder,
 )
 from varats.experiment.workload_util import (
     workload_commands,
@@ -33,9 +31,14 @@ from varats.experiments.vara.feature_perf_precision import (
 )
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.report.report import ReportSpecification
-from varats.report.tef_report import TEFReportAggregate
+from varats.report.report import (
+    ReportSpecification,
+    ReportFilename,
+    FileStatusExtension,
+    ReportFilepath,
+)
 from varats.utils.config import get_current_config_id
+from varats.utils.git_util import ShortCommitHash
 
 
 class WorkloadFeatureRegions(OutputFolderStep):
@@ -48,17 +51,29 @@ class WorkloadFeatureRegions(OutputFolderStep):
         )
 
     def __str__(self, indent: int = 0) -> str:
-        return textwrap.indent(
-            f"* WorkloadFeatureRegions for {len(self.__workload_commands)} workloads",
+        repr = textwrap.indent(
+            f"* WorkloadFeatureRegions: Run workloads for binary '{self.__binary.name}'\n",
             indent * " "
         )
+
+        for wl in self.__workload_commands:
+            repr += textwrap.indent(
+                f"* Collect feature regions for workload '{wl.command.label}'\n",
+                (indent + 2) * " "
+            )
+        return repr
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> StepResult:
+        # Create subfolder for the binary.
+        tmp_dir = tmp_dir / self.__binary.name
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+
         with local.cwd(self.project.builddir):
             for prj_command in self.__workload_commands:
+                print(f"Running workload:  {prj_command.command.label}")
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
                 run_report_name = tmp_dir / create_workload_specific_filename(
@@ -67,7 +82,7 @@ class WorkloadFeatureRegions(OutputFolderStep):
                     file_suffix=".json"
                 )
 
-                print(f"Running workload command: {pb_cmd}")
+                print(f"{run_report_name=}")
 
                 with cleanup(prj_command):
                     # noinspection PyStatementEffect
@@ -77,12 +92,11 @@ class WorkloadFeatureRegions(OutputFolderStep):
         return actions.StepResult.OK
 
 
-class WorkloadFeatureIntensity(FeatureExperiment, shorthand="WFI"):
-
+class WorkloadFeatureIntensityExperiment(FeatureExperiment, shorthand="WFI"):
     NAME = "WorkloadFeatureIntensity"
     DESCRIPTION = "Collects feature intensity data for all project example workloads."
 
-    REPORT_SPEC = ReportSpecification(TEFReportAggregate)
+    REPORT_SPEC = ReportSpecification(WorkloadFeatureIntensityReport)
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -117,20 +131,29 @@ class WorkloadFeatureIntensity(FeatureExperiment, shorthand="WFI"):
         analysis_actions = get_config_patch_steps(project)
         analysis_actions.append(actions.Compile(project))
 
-        for binary in select_project_binaries(project):
-            result_filepath = create_new_success_result_filepath(
-                self.get_handle(),
-                self.get_handle().report_spec().main_report, project, binary,
+        result_filepath = ReportFilepath(
+            get_varats_result_folder(project),
+            ReportFilename.get_file_name(
+                self.shorthand(),
+                self.report_spec().main_report.shorthand(), project.name, "all",
+                ShortCommitHash(project.version_of_primary),
+                str(project.run_uuid), FileStatusExtension.SUCCESS,
+                self.REPORT_SPEC.main_report.file_type(),
                 get_current_config_id(project)
             )
+        )
 
-            analysis_actions.append(
-                ZippedExperimentSteps(
-                    result_filepath,
-                    [WorkloadFeatureRegions(project=project, binary=binary)]
-                )
+        print(result_filepath.full_path())
+
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_filepath, [
+                    WorkloadFeatureRegions(project=project, binary=binary)
+                    for binary in select_project_binaries(project)
+                ]
             )
+        )
 
-            analysis_actions.append(actions.Clean(project))
+        analysis_actions.append(actions.Clean(project))
 
-            return analysis_actions
+        return analysis_actions

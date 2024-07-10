@@ -319,7 +319,7 @@ class ExperimentHandle():
             extension_type: to specify the status of the generated report
 
         Returns:
-            name for the report file that can later be uniquly identified
+            name for the report file that can later be uniquely identified
         """
         return self.__experiment.report_spec(
         ).get_report_type(report_shorthand).get_file_name(
@@ -495,7 +495,7 @@ class ZippedReportFolder(TempDir):
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
         # Don't create an empty zip archive.
-        if os.listdir(self.name):
+        if os.listdir(self.name) or True:
             shutil.make_archive(
                 str(self.__result_report_name), "zip", Path(self.name)
             )
