@@ -1,0 +1,511 @@
+benchbuild_ebuild:
+    default: ''
+    value: ''
+bootstrap:
+    install:
+        default: true
+        desc: Should we try to install packages automatically?
+        value: true
+    packages:
+        default: &id001
+        - mkdir
+        - git
+        - tar
+        - mv
+        - rm
+        - bash
+        - rmdir
+        - time
+        - chmod
+        - cp
+        - ln
+        - make
+        - unzip
+        - cat
+        - patch
+        - find
+        - echo
+        - grep
+        - sed
+        - sh
+        - autoreconf
+        - ruby
+        - curl
+        - tail
+        - kill
+        - virtualenv
+        - timeout
+        desc: List of packages that we require to be installed on the system.
+        value: *id001
+build_dir:
+    default: !create-if-needed '/home/marlow/VaRA-Tool-Suite/results'
+    desc: build directory of benchbuild. All intermediate projects will be placed
+        here
+    value: /home/marlow/VaRA-Tool-Suite/benchbuild/results
+clean:
+    default: true
+    desc: Clean temporary objects, after completion.
+    value: true
+compiler:
+    c:
+        default: clang
+        desc: The C compiler we should use.
+        value: clang
+    cxx:
+        default: clang++
+        desc: The C++ compiler we should use.
+        value: clang++
+config_file:
+    default: null
+    desc: Config file path of benchbuild. Not guaranteed to exist.
+    value: /home/marlow/VaRA-Tool-Suite/benchbuild/.benchbuild.yml
+container:
+    export:
+        default: !create-if-needed '/home/marlow/VaRA-Tool-Suite/containers/export'
+        desc: Export path for container images.
+        value: /home/marlow/VaRA-Tool-Suite/benchbuild/containers/export
+    from_source:
+        default: false
+        desc: Install benchbuild from source or from pip (default)
+        value: false
+    images:
+        default: &id002
+            gentoo: gentoo.tar.bz2
+            ubuntu: ubuntu.tar.bz2
+        value: *id002
+    import:
+        default: !create-if-needed '/home/marlow/VaRA-Tool-Suite/containers/export'
+        desc: Import path for container images.
+        value: /home/marlow/VaRA-Tool-Suite/benchbuild/containers/export
+    input:
+        default: container.tar.bz2
+        desc: Input container file/folder.
+        value: container.tar.bz2
+    interactive:
+        default: false
+        desc: Drop into an interactive shell for all container runs
+        value: false
+    keep:
+        default: false
+        desc: Keep failed image builds at their last known good state.
+        value: false
+    keep_suffix:
+        default: failed
+        desc: Suffix to add to failed image builds, if we keep them.
+        value: failed
+    known:
+        default: &id003 []
+        desc: 'List of known containers. Format: [{ ''path'': <path>,   ''hash'':
+            <hash> }]'
+        value: *id003
+    mounts:
+        default: []
+        desc: List of paths that will be mounted inside the container.
+        value:
+        -   - /home/marlow/VaRA-Tool-Suite/results
+            - /varats_root/results
+        -   - /home/marlow/VaRA-Tool-Suite/benchbuild/BC_files
+            - /varats_root/BC_files
+        -   - /home/marlow/VaRA-Tool-Suite/paper_configs
+            - /varats_root/paper_configs
+    output:
+        default: container-out.tar.bz2
+        desc: Output container file.
+        value: container-out.tar.bz2
+    prefered:
+        default: &id004 []
+        desc: 'List of containers of which the project can chose from.Format:[{ ''path'':
+            <path> }]'
+        value: *id004
+    prefixes:
+        default: &id005 []
+        desc: List of paths that will be treated as an existing prefix inside a container.
+        value: *id005
+    replace:
+        default: false
+        desc: Replace existing container images.
+        value: false
+    root:
+        default: !create-if-needed '/home/marlow/VaRA-Tool-Suite/containers/lib'
+        desc: Permanent storage for container images
+        value: /home/marlow/VaRA-Tool-Suite/benchbuild/containers/lib
+    runroot:
+        default: !create-if-needed '/home/marlow/VaRA-Tool-Suite/containers/run'
+        desc: Runtime storage for containers
+        value: /home/marlow/VaRA-Tool-Suite/benchbuild/containers/run
+    runtime:
+        default: /usr/bin/crun
+        desc: Default container runtime used by podman
+        value: /usr/bin/crun
+    shell:
+        default: /bin/bash
+        desc: Command string that should be used as shell command.
+        value: /bin/bash
+    source:
+        default: !create-if-needed '/home/marlow/VaRA-Tool-Suite'
+        desc: Path to benchbuild's source directory
+        value: null
+    storage_driver:
+        default: null
+        desc: Storage driver for containers.If 'null' use podman's default.
+        value: overlay
+    storage_opts:
+        default: []
+        desc: Storage options for containers.If 'null', ignore 'storage.conf'.
+        value:
+        - mount_program=/usr/bin/fuse-overlayfs
+    strategy:
+        dummy:
+            default: null
+            desc: dummy value
+            value: null
+        polyjit:
+            packages:
+                default: &id006
+                -   env:
+                        ACCEPT_KEYWORDS: ~amd64
+                        USE: -filecaps
+                    name: sys-devel/gcc:5.4.0
+                -   env: {}
+                    name: dev-db/postgresql:9.5
+                -   env: {}
+                    name: dev-python/pip
+                -   env: {}
+                    name: net-misc/curl
+                -   env:
+                        ACCEPT_KEYWORDS: ~amd64
+                        USE: -filecaps
+                    name: sys-apps/likwid
+                -   env:
+                        ACCEPT_KEYWORDS: ~amd64
+                        USE: static-libs
+                    name: dev-libs/libpfm
+                -   env: {}
+                    name: sys-process/time
+                -   env:
+                        ACCEPT_KEYWORDS: ~amd64
+                    name: =dev-util/boost-build-1.58.0
+                -   env:
+                        ACCEPT_KEYWORDS: ~amd64
+                    name: =dev-libs/boost-1.62-r1
+                -   env: {}
+                    name: dev-libs/libpqxx
+                -   env:
+                        ACCEPT_KEYWORDS: ~amd64
+                    name: dev-lang/python-3.5.3
+                -   env:
+                        ACCEPT_KEYWORDS: ~amd64
+                    name: dev-python/dill
+                desc: A list of gentoo package atoms that should be merged.
+                value: *id006
+            sync:
+                default: true
+                desc: Update portage tree?
+                value: true
+            upgrade:
+                default: true
+                desc: Upgrade all packages?
+                value: true
+coverage:
+    collect:
+        default: false
+        desc: Should benchuild collect coverage inside wrapped binaries.
+        value: false
+    config:
+        default: .coveragerc
+        desc: Where is the coverage config?
+        value: .coveragerc
+    path:
+        default: null
+        desc: Where should the coverage files be placed?
+        value: null
+db:
+    connect_string:
+        default: sqlite://
+        desc: sqlalchemy connect string
+        value: sqlite://
+    create_functions:
+        default: false
+        desc: Should we recreate our SQL functions from scratch?
+        value: false
+    enabled:
+        default: false
+        desc: Whether the database is enabled.
+        value: false
+    rollback:
+        default: false
+        desc: Rollback all operations after benchbuild completes.
+        value: false
+debug:
+    default: false
+    desc: Should debug logging be enabled?
+    value: false
+env:
+    default: {}
+    desc: The environment benchbuild's commands should operate in.
+    value:
+        PATH: []
+experiments:
+    default: &id007
+        empty: 79806fbb-544e-457a-83d6-46f034f91a60
+    desc: Dictionary of all experiments we want a defined uuid for.
+    value: *id007
+force_tty:
+    default: false
+    desc: Assume an active TTY.
+    value: false
+force_watch_unbuffered:
+    default: false
+    desc: Force watched commands to output unbuffered.
+    value: false
+gentoo:
+    autotest_lang:
+        default: &id008 []
+        desc: Language filter for ebuilds, like C or C++.
+        value: *id008
+    autotest_loc:
+        default: /tmp/gentoo-autotest
+        desc: Location for the list of auto generated ebuilds.
+        value: /tmp/gentoo-autotest
+    autotest_use:
+        default: &id009 []
+        desc: USE filter for ebuilds. Filters packages without the given use flags.
+        value: *id009
+    ftp_proxy:
+        default: null
+        desc: FTP Proxy to use for downloads.
+        value: null
+    http_proxy:
+        default: null
+        desc: HTTP Proxy to use for downloads.
+        value: null
+    rsync_proxy:
+        default: null
+        desc: RSYNC Proxy to use for downloads.
+        value: null
+jobs:
+    default: '4'
+    desc: Number of jobs that can be used for building and running.
+    value: '4'
+parallel_processes:
+    default: 1
+    desc: Proccesses use to work on execution plans.
+    value: 1
+plugins:
+    autoload:
+        default: true
+        desc: Should automatic load of plugins be enabled?
+        value: true
+    experiments:
+        default: &id010
+        - varats.experiments.base.just_compile
+        - varats.experiments.base.time_workloads
+        - varats.experiments.phasar.global_analysis_compare
+        - varats.experiments.phasar.ide_linear_constant_experiment
+        - varats.experiments.szz.pydriller_szz_experiment
+        - varats.experiments.szz.szz_unleashed_experiment
+        - varats.experiments.vara.agg_region_interaction_perf_runner
+        - varats.experiments.vara.blame_report_experiment
+        - varats.experiments.vara.blame_verifier_experiment
+        - varats.experiments.vara.commit_report_experiment
+        - varats.experiments.vara.feature_perf_runner
+        - varats.experiments.vara.feature_perf_sampling
+        - varats.experiments.vara.feature_perf_tracing
+        - varats.experiments.vara.feature_perf_precision
+        - varats.experiments.vara.feature_tracing_stats
+        - varats.experiments.vara.feature_instrumentation_points
+        - varats.experiments.vara.instrumentation_verifier
+        - varats.experiments.vara.marker_tester
+        - varats.experiments.vara.phasar_fta
+        - varats.experiments.vara.feature_region_verifier_experiment
+        desc: The experiment plugins we know about.
+        value: *id010
+    projects:
+        default: &id011
+        - varats.projects.c_projects.asterisk
+        - varats.projects.c_projects.bison
+        - varats.projects.c_projects.bitlbee
+        - varats.projects.c_projects.busybox
+        - varats.projects.c_projects.brotli
+        - varats.projects.c_projects.bzip2
+        - varats.projects.c_projects.coreutils
+        - varats.projects.c_projects.curl
+        - varats.projects.c_projects.file
+        - varats.projects.c_projects.gawk
+        - varats.projects.c_projects.git
+        - varats.projects.c_projects.glib
+        - varats.projects.c_projects.glibc
+        - varats.projects.c_projects.gravity
+        - varats.projects.c_projects.grep
+        - varats.projects.c_projects.gzip
+        - varats.projects.c_projects.htop
+        - varats.projects.c_projects.hypre
+        - varats.projects.c_projects.irssi
+        - varats.projects.c_projects.libjpeg_turbo
+        - varats.projects.c_projects.libpng
+        - varats.projects.c_projects.libsigrok
+        - varats.projects.c_projects.libssh
+        - varats.projects.c_projects.libtiff
+        - varats.projects.c_projects.libvpx
+        - varats.projects.c_projects.libxml2
+        - varats.projects.c_projects.lrzip
+        - varats.projects.c_projects.lz4
+        - varats.projects.c_projects.openssl
+        - varats.projects.c_projects.openvpn
+        - varats.projects.c_projects.opus
+        - varats.projects.c_projects.picosat
+        - varats.projects.c_projects.qemu
+        - varats.projects.c_projects.redis
+        - varats.projects.c_projects.tig
+        - varats.projects.c_projects.tmux
+        - varats.projects.c_projects.vim
+        - varats.projects.c_projects.x264
+        - varats.projects.c_projects.xz
+        - varats.projects.cpp_projects.clasp
+        - varats.projects.cpp_projects.fast_downward
+        - varats.projects.cpp_projects.libzmq
+        - varats.projects.cpp_projects.mongodb
+        - varats.projects.cpp_projects.opencv
+        - varats.projects.cpp_projects.poppler
+        - varats.projects.cpp_projects.z3
+        - varats.projects.cpp_projects.ect
+        - varats.projects.cpp_projects.lepton
+        - varats.projects.cpp_projects.hyteg
+        - varats.projects.cpp_projects.dune
+        - varats.projects.cpp_projects.doxygen
+        - varats.projects.cpp_projects.two_libs_one_project_interaction_discrete_libs_single_project
+        desc: The project plugins we know about.
+        value: *id011
+projects:
+    value:
+        polybench:
+            verify:
+                default: true
+                desc: Verify results with POLYBENCH_DUMP_ARRAYS.
+                value: true
+            workload:
+                default: EXTRALARGE_DATASET
+                desc: Control the dataset variable for polybench.
+                value: EXTRALARGE_DATASET
+regression_prefix:
+    default: /tmp/benchbuild-regressions
+    value: /tmp/benchbuild-regressions
+sequence:
+    default: no_preperation
+    desc: The name of the sequence that should be used for preoptimization.
+    value: no_preperation
+slurm:
+    account:
+        default: cl
+        desc: The SLURM account to use by default.
+        value: anywhere
+    container_root:
+        default: null
+        desc: Permanent storage for container images
+        value: null
+    container_runroot:
+        default: null
+        desc: Runtime storage for containers
+        value: null
+    cpus_per_task:
+        default: 10
+        desc: Number of CPUs that should be requested from SLURM. Used by external
+            tools.
+        value: 10
+    exclusive:
+        default: true
+        desc: Shall we reserve a node exclusively, or share it with others?
+        value: true
+    extra_log:
+        default: /tmp/.slurm
+        desc: Extra log file to be managed by SLURM
+        value: /tmp/.slurm
+    logs:
+        default: slurm.log
+        desc: Location the SLURM logs will be stored
+        value: /home/marlow/VaRA-Tool-Suite/benchbuild/slurm_logs
+    max_running:
+        default: 0
+        desc: Limit the number of concurrent running array jobs
+        value: 0
+    multithread:
+        default: false
+        desc: Hint SLURM to disable multithreading. False adds --hint=nomultithread.
+        value: false
+    nice:
+        default: 0
+        desc: Add a niceness value on our priority
+        value: 0
+    nice_clean:
+        default: 2500
+        desc: Add a niceness value on our cleanup job priority
+        value: 2500
+    node_dir:
+        default: /home/marlow/VaRA-Tool-Suite/results
+        desc: Node directory, when executing on a cluster node. This is not used by
+            benchbuild directly, but by external scripts.
+        value: /home/marlow/VaRA-Tool-Suite/benchbuild/results
+    node_image:
+        default: ./llvm.tar.gz
+        desc: Path to the archive we want on each cluster node.
+        value: ./llvm.tar.gz
+    partition:
+        default: chimaira
+        desc: The SLURM partition to use by default.
+        value: anywhere
+    script:
+        default: slurm.sh
+        desc: Name of the script that can be passed to SLURM. Used by external tools.
+        value: slurm.sh
+    template:
+        default: misc/slurm.sh.inc
+        desc: Template used to generate a SLURM script.
+        value: misc/slurm.sh.inc
+    timelimit:
+        default: '12:00:00'
+        desc: The timelimit we want to give to a job
+        value: '12:00:00'
+    turbo:
+        default: false
+        desc: Enable Intel Turbo Boost via SLURM. False adds --pstate-turbo=off.
+        value: false
+source_dir:
+    default: null
+    desc: Path to a benchbuild source directory. For developers only.
+    value: null
+tmp_dir:
+    default: !create-if-needed '/home/marlow/VaRA-Tool-Suite/tmp'
+    desc: Temporary dir. This will be used for caching downloads.
+    value: /home/marlow/VaRA-Tool-Suite/benchbuild/tmp
+uchroot:
+    repo:
+        default: https://github.com/PolyJIT/erlent.git/
+        desc: GIT Repo URL for erlent.
+        value: https://github.com/PolyJIT/erlent.git/
+unionfs:
+    enable:
+        default: false
+        desc: Wrap all project operations in a unionfs filesystem.
+        value: false
+    rw:
+        default: rw
+        desc: Name of the image directory
+        value: rw
+varats:
+    outfile:
+        default: ''
+        desc: Path to store results of VaRA CFR analysis.
+        value: /home/marlow/VaRA-Tool-Suite/results
+    result:
+        default: missingPath/annotatedResults
+        desc: Path to store already annotated projects.
+        value: /home/marlow/VaRA-Tool-Suite/benchbuild/BC_files
+verbosity:
+    default: 0
+    desc: 'The verbosity level of the logger. Range: 0-4'
+    value: 0
+versions:
+    full:
+        default: false
+        desc: Ignore default sampling and provide full version exploration.
+        value: true

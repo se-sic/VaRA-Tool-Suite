@@ -126,6 +126,72 @@ class SynthFeatureInteraction(VProject):
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
 
+class PrimeNumbers(VProject):
+    """Synthetic case-study project for testing detection of feature
+    interactions."""
+
+    NAME = 'PrimeNumbers'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="PrimeNumbers",
+            refspec="origin/f-perf-stat-example",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("PrimeNumbers")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("PrimeNumbers") /
+                RSBinary("PrimeNumbers"),
+                ConfigParams(),
+                label="PrimeNumbers-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(PrimeNumbers.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/PrimeNumbers",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("90cb6aec2a8abac249926a6bb4a1416ba65b550d", "f-perf-stat-example")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_PRIMENUMBERS"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+
+
+
 class FeaturePerfCSCollection(VProject):
     """Test project for feature performance case studies."""
 

@@ -86,7 +86,7 @@ paper_config:
     current_config:
         default: null
         desc: Paper config file to load.
-        value: tutorial
+        value: test_pc
     folder:
         default: /home/marlow/VaRA-Tool-Suite/paper_configs
         desc: Folder with paper configs.

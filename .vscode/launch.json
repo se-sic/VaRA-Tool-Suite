@@ -2,16 +2,38 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug TestDriverPlot",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/varats/varats/tools/driver_plot.py",
+            "args": [
+                "fperf-stat"
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Debug driver-run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/varats/varats/tools/driver_run.py",
+            "args": [
+                "-E PerfStat"
+            ],
+            "cwd": "~/vara",
+            "justMyCode": false,
+            "console": "integratedTerminal",
+        },
+        {
             "name": "benchbuild",
             "type": "python",
             "request": "launch",
             "program": "~/.local/bin/benchbuild",
-            "cwd": "${workspaceFolder}/../vara-root/benchbuild",
+            "cwd": "~/vara/benchbuild",
             "args": [
                 "run",
                 "-E",
-                "JustCompile",
-                "gzip"
+                "PerfStat",
             ],
             "justMyCode": false,
             "console": "integratedTerminal"
