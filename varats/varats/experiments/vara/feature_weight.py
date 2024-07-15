@@ -20,8 +20,8 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class WeightRegionsCount(FeatureExperiment, shorthand="WAR"):
-    """Generates Weight report files."""
+class WeightRegionsCountRec(FeatureExperiment, shorthand="WAR"):
+    """Generates Weight report files for Recursive weight function."""
 
     NAME = "WeightAnalysisRecursive"
 
