@@ -51,7 +51,7 @@ class WeightRegionsCount(VersionExperiment, shorthand="WRP"):
         )
 
         project.cflags += [
-            "-fvara-weight-opt=recursive",
+            "-fvara-weight-opt=default",
             "-01",
             "-g0",
             "-mllvm",
