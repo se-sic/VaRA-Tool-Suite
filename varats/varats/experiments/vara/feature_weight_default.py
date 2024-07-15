@@ -1,33 +1,23 @@
 """Implements an experiment that times the execution of all project binaries."""
-
 import typing as tp
-from pathlib import Path
 
-from benchbuild import Project
-from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import time
-from plumbum import local
 
+from varats.data.reports.instrumentation_verifier_report import (
+    InstrVerifierReport,
+)
 from varats.experiment.experiment_util import (
-    VersionExperiment,
     get_default_compile_error_wrapped,
-    create_new_success_result_filepath,
-    ZippedExperimentSteps,
-    OutputFolderStep,
+    WithUnlimitedStackSize,
 )
-from varats.experiment.workload_util import (
-    workload_commands,
-    WorkloadCategory,
-    create_workload_specific_filename,
+from varats.experiments.vara.feature_experiment import (
+    FeatureExperiment,
+    RunVaRATracedWorkloads,
+    FeatureInstrType,
 )
-from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportSpecification
-
-
 
 
 class WeightRegionsCount(VersionExperiment, shorthand="WAD"):
