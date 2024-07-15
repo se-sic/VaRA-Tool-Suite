@@ -30,10 +30,10 @@ from varats.report.report import ReportSpecification
 
 
 
-class WeightRegionsCount(VersionExperiment, shorthand="WRP"):
+class WeightRegionsCount(VersionExperiment, shorthand="WAR"):
     """Generates Weight report files."""
 
-    NAME = "WeightAnalysis"
+    NAME = "WeightAnalysisRecursive"
 
     REPORT_SPEC = ReportSpecification(InstrVerifierReport)
 
