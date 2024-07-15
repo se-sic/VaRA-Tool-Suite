@@ -20,7 +20,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
 
-class WeightRegionsCount(VersionExperiment, shorthand="WAD"):
+class WeightRegionsCount(FeatureExperiment, shorthand="WAD"):
     """Generates Weight report files."""
 
     NAME = "WeightAnalysisDefault"
