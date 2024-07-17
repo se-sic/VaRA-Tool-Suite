@@ -2,6 +2,8 @@ import logging
 import typing as tp
 from collections import defaultdict
 
+import click
+
 from varats.data.databases.feature_perf_precision_database import (
     get_interactions_from_fr_string,
 )
@@ -21,6 +23,7 @@ from varats.report.tef_report import (
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.cli_util import make_cli_option
 
 LOG = logging.getLogger(__name__)
 
