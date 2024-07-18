@@ -7,7 +7,9 @@ import click
 from varats.data.databases.feature_perf_precision_database import (
     get_interactions_from_fr_string,
 )
-from varats.data.reports.FeatureIntensity import WorkloadFeatureIntensityReport
+from varats.data.reports.workload_feature_intensity_report import (
+    WorkloadFeatureIntensityReport,
+)
 from varats.experiments.vara.workload_feature_intensity import (
     WorkloadFeatureIntensityExperiment,
 )
@@ -23,7 +25,6 @@ from varats.report.tef_report import (
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.ts_utils.cli_util import make_cli_option
 
 LOG = logging.getLogger(__name__)
 
@@ -34,8 +35,8 @@ def get_feature_regions_from_tef_report(
     """Extract feature regions from a TEFReport."""
     open_events: tp.List[TraceEvent] = []
 
-    feature_performances: tp.Dict[tp.Tuple[str, tp.Tuple[int, ...]],
-                                  int] = defaultdict(int)
+    feature_intensities: tp.Dict[tp.Tuple[str, tp.Tuple[int, ...]],
+                                 int] = defaultdict(int)
 
     def get_matching_event(
         open_events: tp.List[TraceEvent], closing_event: TraceEvent
@@ -74,7 +75,7 @@ def get_feature_regions_from_tef_report(
                     ",".join(interaction_names + [trace_event.name])
                 )
 
-                feature_performances[(interaction_string, region_ids)] += 1
+                feature_intensities[(interaction_string, region_ids)] += 1
 
     if open_events:
         LOG.error("Not all events have been correctly closed.")
@@ -83,7 +84,7 @@ def get_feature_regions_from_tef_report(
     if found_missing_open_event:
         LOG.error("Not all events have been correctly opened.")
 
-    return feature_performances
+    return feature_intensities
 
 
 class WorkloadIntensityTable(Table, table_name="workload_intensity"):

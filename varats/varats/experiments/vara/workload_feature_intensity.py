@@ -9,7 +9,9 @@ from benchbuild.utils import actions
 from benchbuild.utils.actions import Step, StepResult
 from plumbum import local
 
-from varats.data.reports.FeatureIntensity import WorkloadFeatureIntensityReport
+from varats.data.reports.workload_feature_intensity_report import (
+    WorkloadFeatureIntensityReport,
+)
 from varats.experiment.experiment_util import (
     WithUnlimitedStackSize,
     get_default_compile_error_wrapped,
