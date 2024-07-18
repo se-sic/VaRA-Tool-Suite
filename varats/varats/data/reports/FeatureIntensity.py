@@ -1,31 +1,36 @@
+from collections import defaultdict
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from zipfile import ZipFile
 
-from varats.report.report import ReportAggregate, KeyedReportAggregate
+from varats.report.report import BaseReport
 from varats.report.tef_report import TEFReport
 
 
 class WorkloadFeatureIntensityReport(
-    KeyedReportAggregate[str, TEFReport], shorthand="FI-AGG", file_type="zip"
+    BaseReport, shorthand="WFIR", file_type="zip"
 ):
     """Report that aggregates the feature intensities for different binaries and
     workloads."""
 
     def __init__(self, path: Path):
-        # TODO: Add key func per binary
-        def key_func(file: Path) -> str:
-            if file.is_dir():
-                return file.name
+        super().__init__(path)
 
-            raise ValueError(f"Expected a directory, got {file}")
+        self.__reports = defaultdict(list)
 
-        super().__init__(path, TEFReport, key_func=key_func)
+        # Unpack zip file to temporary directory
+        with ZipFile(path, "r") as archive:
+            for name in archive.namelist():
+                # Ignore directories
+                if name.endswith("/"):
+                    continue
 
-        for binary_folder in Path(self.__tmpdir.name).iterdir():
-            if not binary_folder.is_dir():
-                continue
+                # Extract binary name from file name
+                binary_name = name.split("/")[0]
 
-            binary_name = binary_folder.name
-
-            for file in binary_folder.iterdir():
-                if file.suffix == ".json":
-                    self.__reports[binary_name].append(TEFReport(file))
+                # Extract file to temporary directory and create report
+                with TemporaryDirectory() as tmpdir:
+                    archive.extract(name, tmpdir)
+                    self.__reports[binary_name].append(
+                        TEFReport(Path(tmpdir) / name)
+                    )
