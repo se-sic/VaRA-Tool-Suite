@@ -43,6 +43,6 @@ class WorkloadFeatureIntensityReport(
         # Extract workloads from report file names
         # Report filenames are in format "feature_intensity_<workload>_0.json"
         return [
-            report.filename.filename.split("_")[2]
+            report.filename.filename.split("/")[-1].split("_")[2]
             for report in self.__reports[binary]
         ]

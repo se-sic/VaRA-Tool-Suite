@@ -22,13 +22,15 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
             "results/SynthCTCRTP/WFI-WFIR-SynthCTCRTP-all-3bcb385a47/e0eee357-277e-4956-ab2b-2e5cf08ce5c0_config-0_success.zip"
         )
 
-        self.assertEqual(
+        self.assertListEqual(
             report.workloads_for_binary("binary1"),
-            [f"b1_workload{i}" for i in range(1, 9)]
+            [f"b1-workload{i}" for i in range(1, 9)],
+            f"Workloads for binary1: {report.workloads_for_binary('binary1')}"
         )
-        self.assertEqual(
+        self.assertListEqual(
             report.workloads_for_binary("binary2"),
-            [f"b2_workload{i}" for i in range(1, 9)]
+            [f"b2-workload{i}" for i in range(1, 9)],
+            f"Workloads for binary1: {report.workloads_for_binary('binary1')}"
         )
 
 
