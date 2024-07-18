@@ -1,3 +1,4 @@
+import typing as tp
 from collections import defaultdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -16,7 +17,7 @@ class WorkloadFeatureIntensityReport(
     def __init__(self, path: Path):
         super().__init__(path)
 
-        self.__reports = defaultdict(list)
+        self.__reports: tp.Dict[str, tp.List[TEFReport]] = defaultdict(list)
 
         # Unpack zip file to temporary directory
         with ZipFile(path, "r") as archive:
@@ -34,3 +35,14 @@ class WorkloadFeatureIntensityReport(
                     self.__reports[binary_name].append(
                         TEFReport(Path(tmpdir) / name)
                     )
+
+    def binaries(self) -> tp.List[str]:
+        return list(self.__reports.keys())
+
+    def workloads_for_binary(self, binary: str) -> tp.List[str]:
+        # Extract workloads from report file names
+        # Report filenames are in format "feature_intensity_<workload>_0.json"
+        return [
+            report.filename.filename.split("_")[2]
+            for report in self.__reports[binary]
+        ]
