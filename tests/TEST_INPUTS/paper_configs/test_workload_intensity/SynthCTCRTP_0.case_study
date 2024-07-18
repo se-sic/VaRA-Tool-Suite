@@ -1,0 +1,18 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: SynthCTCRTP
+stages:
+- revisions:
+  - commit_hash: 3bcb385a479e7e426e10f02f98e3a23823acf061
+    commit_id: 67
+    config_ids:
+    - 0
+version: 0
+...
+---
+config_type: PatchConfiguration
+0: '["CachingStorage", "SmoothingTransformer"]'
+...
