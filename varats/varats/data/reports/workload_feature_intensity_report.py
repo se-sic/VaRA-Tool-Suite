@@ -157,7 +157,7 @@ class WorkloadFeatureIntensityReport(
             feature sets to their intensities (Number of total occurences of said
             region combination in the workload).
         """
-        pass
+        return self.__feature_intensities[binary]
 
     def region_intensities_for_binary(
         self, binary: str
@@ -175,4 +175,4 @@ class WorkloadFeatureIntensityReport(
             feature sets to a dictionary that maps region combinations to their
             intensities.
         """
-        pass
+        return self.__region_intensities[binary]
