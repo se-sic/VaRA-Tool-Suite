@@ -121,10 +121,10 @@ class WorkloadFeatureIntensityReport(
 
     def feature_intensities_for_binary(
         self, binary: str
-    ) -> tp.Dict[str, tp.Dict[str, int]]:
+    ) -> tp.Dict[str, tp.Dict[tp.FrozenSet[str], int]]:
         pass
 
     def region_intensities_for_binary(
         self, binary: str
-    ) -> tp.Dict[tp.Tuple[str, tp.Tuple[int, ...]], int]:
+    ) -> tp.Dict[tp.Tuple[tp.FrozenSet[str], tp.FrozenSet[int]], int]:
         pass
