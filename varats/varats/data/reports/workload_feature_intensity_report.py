@@ -24,13 +24,14 @@ class WorkloadFeatureIntensityReport(
         return report.filename.filename.split("/")[-1].split("_")[2]
 
     def __get_feature_regions_from_tef_report(
+        self,
         tef_report: TEFReport,
-    ) -> tp.Dict[tp.Tuple[str, tp.Tuple[int, ...]], int]:
+    ) -> tp.Dict[tp.FrozenSet[str], tp.Dict[tp.FrozenSet[int], int]]:
         """Extract feature regions from a TEFReport."""
         open_events: tp.List[TraceEvent] = []
 
-        feature_intensities: tp.Dict[tp.Tuple[str, tp.Tuple[int, ...]],
-                                     int] = defaultdict(int)
+        feature_intensities: tp.Dict[tp.FrozenSet[str], tp.Dict[tp.FrozenSet[int], int]] \
+            = defaultdict(lambda: defaultdict(int))
 
         def get_matching_event(
             open_events: tp.List[TraceEvent], closing_event: TraceEvent
@@ -52,6 +53,10 @@ class WorkloadFeatureIntensityReport(
 
         found_missing_open_event = False
         for trace_event in tef_report.trace_events:
+            if trace_event.name == "Base":
+                # We ignore the base feature
+                continue
+
             if trace_event.category == "Feature":
                 if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
                     # insert event at the top of the list
@@ -62,14 +67,14 @@ class WorkloadFeatureIntensityReport(
                         found_missing_open_event = True
                         continue
 
-                    interaction_names = [event.name for event in open_events]
-                    region_ids = tuple([event.uuid for event in open_events])
+                    feature_names = frozenset([
+                        event.name for event in open_events
+                    ])
+                    region_ids = frozenset([
+                        event.uuid for event in open_events
+                    ])
 
-                    interaction_string = get_interactions_from_fr_string(
-                        ",".join(interaction_names + [trace_event.name])
-                    )
-
-                    feature_intensities[(interaction_string, region_ids)] += 1
+                    feature_intensities[feature_names][region_ids] += 1
 
         if open_events:
             LOG.error("Not all events have been correctly closed.")
@@ -84,6 +89,12 @@ class WorkloadFeatureIntensityReport(
         super().__init__(path)
 
         self.__reports: tp.Dict[str, tp.List[TEFReport]] = defaultdict(list)
+        self.__region_intensities: tp.Dict[str, tp.Dict[str, tp.Dict[
+            tp.FrozenSet[str],
+            tp.Dict[tp.FrozenSet[int],
+                    int]]]] = defaultdict(lambda: defaultdict(dict))
+        self.__feature_intensities: tp.Dict[str, tp.Dict[str, tp.Dict[
+            tp.FrozenSet[str], int]]] = defaultdict(lambda: defaultdict(dict))
 
         # Unpack zip file to temporary directory
         with ZipFile(path, "r") as archive:
@@ -101,6 +112,18 @@ class WorkloadFeatureIntensityReport(
                     self.__reports[binary_name].append(
                         TEFReport(Path(tmpdir) / name)
                     )
+
+                # Extract region and feature intensities from report
+                self.__region_intensities[binary_name][name] = \
+                    self.__get_feature_regions_from_tef_report(
+                        self.__reports[binary_name][-1]
+                    )
+
+                for feature, region_intensities in self.__region_intensities[
+                    binary_name][name].items():
+                    # Sum up all region intensities for a feature
+                    self.__feature_intensities[binary_name][name][
+                        feature] = sum(region_intensities.values())
 
     def binaries(self) -> tp.List[str]:
         return list(self.__reports.keys())
@@ -122,9 +145,34 @@ class WorkloadFeatureIntensityReport(
     def feature_intensities_for_binary(
         self, binary: str
     ) -> tp.Dict[str, tp.Dict[tp.FrozenSet[str], int]]:
+        """
+        Return the feature intensities for a given binary.
+
+        Args:
+            binary: The binary for which the feature intensities should be returned.
+
+        Returns:
+            A dictionary that maps workloads to feature intensities.
+            The key is the workload name and the value is a dictionary that maps
+            feature sets to their intensities (Number of total occurences of said
+            region combination in the workload).
+        """
         pass
 
     def region_intensities_for_binary(
         self, binary: str
-    ) -> tp.Dict[tp.Tuple[tp.FrozenSet[str], tp.FrozenSet[int]], int]:
+    ) -> tp.Dict[str, tp.Dict[tp.FrozenSet[str], tp.Dict[tp.FrozenSet[int],
+                                                         int]]]:
+        """
+        Return the region intensities for a given binary.
+
+        Args:
+            binary: The binary for which the region intensities should be returned.
+
+        Returns:
+            A dictionary that maps region combinations to their intensities.
+            The key is the workload name and the value is a dictionary that maps
+            feature sets to a dictionary that maps region combinations to their
+            intensities.
+        """
         pass
