@@ -33,6 +33,14 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
             f"Workloads for binary1: {report.workloads_for_binary('binary1')}"
         )
 
+    def test_workload_invalid_binary(self):
+        report = WorkloadFeatureIntensityReport(
+            TEST_INPUTS_DIR /
+            "results/SynthCTCRTP/WFI-WFIR-SynthCTCRTP-all-3bcb385a47/e0eee357-277e-4956-ab2b-2e5cf08ce5c0_config-0_success.zip"
+        )
+
+        self.assertEqual(report.workloads_for_binary("invalid_binary"), [])
+
 
 if __name__ == '__main__':
     unittest.main()
