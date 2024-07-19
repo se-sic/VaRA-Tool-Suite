@@ -20,7 +20,7 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
         self, workload: str, features: tp.List[str], expected_intensity: int
     ):
         intensities = self.__intensity_test_report.feature_intensities_for_binary(
-            "test_binary"
+            "test-binary"
         )
 
         self.assertIn(workload, intensities)

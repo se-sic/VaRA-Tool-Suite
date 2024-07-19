@@ -113,16 +113,20 @@ class WorkloadFeatureIntensityReport(
                         TEFReport(Path(tmpdir) / name)
                     )
 
+                workload_name = self.__extract_workload_name_from_report(
+                    self.__reports[binary_name][-1]
+                )
+
                 # Extract region and feature intensities from report
-                self.__region_intensities[binary_name][name] = \
+                self.__region_intensities[binary_name][workload_name] = \
                     self.__get_feature_regions_from_tef_report(
                         self.__reports[binary_name][-1]
                     )
 
                 for feature, region_intensities in self.__region_intensities[
-                    binary_name][name].items():
+                    binary_name][workload_name].items():
                     # Sum up all region intensities for a feature
-                    self.__feature_intensities[binary_name][name][
+                    self.__feature_intensities[binary_name][workload_name][
                         feature] = sum(region_intensities.values())
 
     def binaries(self) -> tp.List[str]:
