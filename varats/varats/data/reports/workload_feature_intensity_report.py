@@ -67,12 +67,14 @@ class WorkloadFeatureIntensityReport(
                         found_missing_open_event = True
                         continue
 
-                    feature_names = frozenset([
-                        event.name for event in open_events
-                    ])
-                    region_ids = frozenset([
-                        event.uuid for event in open_events
-                    ])
+                    feature_names = frozenset(
+                        [event.name for event in open_events] +
+                        [trace_event.name]
+                    )
+                    region_ids = frozenset(
+                        [event.uuid for event in open_events] +
+                        [trace_event.uuid]
+                    )
 
                     feature_intensities[feature_names][region_ids] += 1
 
