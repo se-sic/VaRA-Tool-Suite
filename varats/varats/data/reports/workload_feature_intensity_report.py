@@ -76,7 +76,16 @@ class WorkloadFeatureIntensityReport(
                         [trace_event.uuid]
                     )
 
+                    # Increase the intensity for the feature region combination that was just closed
                     feature_intensities[feature_names][region_ids] += 1
+
+                    if open_events:
+                        # Also increase the intensity for the remaining open feature regions, as it was "split" by
+                        # the closed region
+                        feature_intensities[frozenset([
+                            event.name for event in open_events
+                        ])][frozenset([event.uuid for event in open_events])
+                           ] += 1
 
         if open_events:
             LOG.error("Not all events have been correctly closed.")
