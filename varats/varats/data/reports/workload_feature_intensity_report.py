@@ -117,6 +117,11 @@ class WorkloadFeatureIntensityReport(
                     self.__reports[binary_name][-1]
                 )
 
+                self.__feature_intensities[binary_name][workload_name
+                                                       ] = defaultdict(int)
+                self.__region_intensities[binary_name][workload_name
+                                                      ] = defaultdict(dict)
+
                 # Extract region and feature intensities from report
                 self.__region_intensities[binary_name][workload_name] = \
                     self.__get_feature_regions_from_tef_report(
