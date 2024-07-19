@@ -96,13 +96,21 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
         self.assertEqual(True, False)
 
     def test_feature_intensity_overlapping_regions_single_id(self):
-        self.assertEqual(True, False)
+        self.__test_feature_intensity("AB-overlapping-OneID", ["FeatureA"], 7)
+        self.__test_feature_intensity("AB-overlapping-OneID", ["FeatureB"], 5)
+        self.__test_feature_intensity(
+            "AB-overlapping-OneID", ["FeatureA", "FeatureB"], 2
+        )
 
     def test_region_intensity_overlapping_regions_single_id(self):
         self.assertEqual(True, False)
 
     def test_feature_intensity_overlapping_regions_multiple_ids(self):
-        self.assertEqual(True, False)
+        self.__test_feature_intensity("AB-overlapping-MultIDs", ["FeatureA"], 7)
+        self.__test_feature_intensity("AB-overlapping-MultIDs", ["FeatureB"], 5)
+        self.__test_feature_intensity(
+            "AB-overlapping-MultIDs", ["FeatureA", "FeatureB"], 2
+        )
 
 
 if __name__ == '__main__':
