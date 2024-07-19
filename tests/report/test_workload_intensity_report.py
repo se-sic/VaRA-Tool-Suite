@@ -41,6 +41,39 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
 
         self.assertEqual(report.workloads_for_binary("invalid_binary"), [])
 
+    def test_feature_intensity_single_region_single_id(self):
+        self.assertEqual(True, False)
+
+    def test_region_intensity_single_region_single_id(self):
+        self.assertEqual(True, False)
+
+    def test_feature_intensity_single_region_multiple_ids(self):
+        self.assertEqual(True, False)
+
+    def test_region_intensity_single_region_multiple_ids(self):
+        self.assertEqual(True, False)
+
+    def test_feature_intensity_multiple_regions_single_ids(self):
+        self.assertEqual(True, False)
+
+    def test_region_intensity_multiple_regions_single_ids(self):
+        self.assertEqual(True, False)
+
+    def test_feature_intensity_multiple_regions_multiple_ids(self):
+        self.assertEqual(True, False)
+
+    def test_region_intensity_multiple_regions_multiple_ids(self):
+        self.assertEqual(True, False)
+
+    def test_feature_intensity_overlapping_regions_single_id(self):
+        self.assertEqual(True, False)
+
+    def test_region_intensity_overlapping_regions_single_id(self):
+        self.assertEqual(True, False)
+
+    def test_feature_intensity_overlapping_regions_multiple_ids(self):
+        self.assertEqual(True, False)
+
 
 if __name__ == '__main__':
     unittest.main()
