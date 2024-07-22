@@ -251,7 +251,7 @@ class PerfSampling(VersionExperiment, shorthand="PS"):
         return analysis_actions
 
 
-class TimeWorkloadsSynth(VersionExperiment, shorthand="PSS"):
+class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
     """Generates perf sampling files for synthetic case studies."""
 
     NAME = "PerfSamplingSynth"
