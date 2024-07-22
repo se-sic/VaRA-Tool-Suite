@@ -175,6 +175,7 @@ LIMIT {HotFunctionReport.MAX_TRACK_FUNCTIONS};
                                 """
                             ).as_pandas_dataframe()
                             result.to_csv(hot_function_report_file, index=False)
+                            trace.close()
 
         return actions.StepResult.OK
 
