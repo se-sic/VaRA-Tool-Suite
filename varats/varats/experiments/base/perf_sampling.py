@@ -1,5 +1,5 @@
 """Implements an experiment that profiles the execution of a project binary."""
-
+import logging
 import typing as tp
 from importlib import resources
 from pathlib import Path
@@ -51,6 +51,8 @@ if tp.TYPE_CHECKING:
     from varats.project.project_util import ProjectBinaryWrapper
     from varats.project.varats_project import VProject
     from varats.report.report import BaseReport, ReportFilepath
+
+LOG = logging.Logger(__name__)
 
 
 def _sample_with_perf_and_time(
@@ -278,6 +280,8 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
             ShortCommitHash(project.version_of_primary)
         )
         regression_patches = patches["regression"]
+        if not regression_patches:
+            LOG.warning("No regression patches found.")
 
         repetitions = 10
 
