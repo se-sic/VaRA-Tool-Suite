@@ -187,7 +187,7 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
 
                     self.assertEqual(
                         feature_intensity, sum(region_combinations.values()),
-                        f"Feature intensity for feature {feature} in workload {workload} does not match the sum of region intensities"
+                        f"Feature intensity for feature {feature} in workload {workload} does not match the sum of region intensities in binary {binary}"
                     )
 
 
