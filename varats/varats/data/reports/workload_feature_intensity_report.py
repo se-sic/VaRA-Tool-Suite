@@ -14,87 +14,84 @@ from varats.report.tef_report import TEFReport, TraceEvent, TraceEventType
 LOG = logging.getLogger(__name__)
 
 
+def _get_feature_regions_from_tef_report(
+    tef_report: TEFReport,
+) -> tp.Dict[tp.FrozenSet[str], tp.Dict[tp.FrozenSet[int], int]]:
+    """Extract feature regions from a TEFReport."""
+    open_events: tp.List[TraceEvent] = []
+
+    feature_intensities: tp.Dict[tp.FrozenSet[str], tp.Dict[tp.FrozenSet[int], int]] \
+        = defaultdict(lambda: defaultdict(int))
+
+    def get_matching_event(
+        open_events: tp.List[TraceEvent], closing_event: TraceEvent
+    ) -> tp.Optional[TraceEvent]:
+        for event in open_events:
+            if (
+                event.uuid == closing_event.uuid and
+                event.pid == closing_event.pid and
+                event.tid == closing_event.tid
+            ):
+                open_events.remove(event)
+                return event
+
+        LOG.debug(
+            f"Could not find matching start for Event {repr(closing_event)}."
+        )
+
+        return None
+
+    found_missing_open_event = False
+    for trace_event in tef_report.trace_events:
+        if trace_event.name == "Base":
+            # We ignore the base feature
+            continue
+
+        if trace_event.category == "Feature":
+            if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
+                # insert event at the top of the list
+                open_events.insert(0, trace_event)
+            elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
+                opening_event = get_matching_event(open_events, trace_event)
+                if not opening_event:
+                    found_missing_open_event = True
+                    continue
+
+                feature_names = frozenset([event.name
+                                           for event in open_events] +
+                                          [trace_event.name])
+                region_ids = frozenset([event.uuid for event in open_events] +
+                                       [trace_event.uuid])
+
+                # Increase the intensity for the feature region combination that was just closed
+                feature_intensities[feature_names][region_ids] += 1
+
+                if open_events:
+                    # Also increase the intensity for the remaining open feature regions, as it was "split" by
+                    # the closed region
+                    feature_intensities[frozenset([
+                        event.name for event in open_events
+                    ])][frozenset([event.uuid for event in open_events])] += 1
+
+    if open_events:
+        LOG.error("Not all events have been correctly closed.")
+        LOG.debug(f"Events = {open_events}.")
+
+    if found_missing_open_event:
+        LOG.error("Not all events have been correctly opened.")
+
+    return feature_intensities
+
+
 class WorkloadFeatureIntensityReport(
     BaseReport, shorthand="WFIR", file_type="zip"
 ):
     """Report that aggregates the feature intensities for different binaries and
     workloads."""
 
-    def __extract_workload_name_from_report(self, report: TEFReport) -> str:
+    @staticmethod
+    def __extract_workload_name_from_report(report: TEFReport) -> str:
         return report.filename.filename.split("/")[-1].split("_")[2]
-
-    def __get_feature_regions_from_tef_report(
-        self,
-        tef_report: TEFReport,
-    ) -> tp.Dict[tp.FrozenSet[str], tp.Dict[tp.FrozenSet[int], int]]:
-        """Extract feature regions from a TEFReport."""
-        open_events: tp.List[TraceEvent] = []
-
-        feature_intensities: tp.Dict[tp.FrozenSet[str], tp.Dict[tp.FrozenSet[int], int]] \
-            = defaultdict(lambda: defaultdict(int))
-
-        def get_matching_event(
-            open_events: tp.List[TraceEvent], closing_event: TraceEvent
-        ) -> tp.Optional[TraceEvent]:
-            for event in open_events:
-                if (
-                    event.uuid == closing_event.uuid and
-                    event.pid == closing_event.pid and
-                    event.tid == closing_event.tid
-                ):
-                    open_events.remove(event)
-                    return event
-
-            LOG.debug(
-                f"Could not find matching start for Event {repr(closing_event)}."
-            )
-
-            return None
-
-        found_missing_open_event = False
-        for trace_event in tef_report.trace_events:
-            if trace_event.name == "Base":
-                # We ignore the base feature
-                continue
-
-            if trace_event.category == "Feature":
-                if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
-                    # insert event at the top of the list
-                    open_events.insert(0, trace_event)
-                elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
-                    opening_event = get_matching_event(open_events, trace_event)
-                    if not opening_event:
-                        found_missing_open_event = True
-                        continue
-
-                    feature_names = frozenset(
-                        [event.name for event in open_events] +
-                        [trace_event.name]
-                    )
-                    region_ids = frozenset(
-                        [event.uuid for event in open_events] +
-                        [trace_event.uuid]
-                    )
-
-                    # Increase the intensity for the feature region combination that was just closed
-                    feature_intensities[feature_names][region_ids] += 1
-
-                    if open_events:
-                        # Also increase the intensity for the remaining open feature regions, as it was "split" by
-                        # the closed region
-                        feature_intensities[frozenset([
-                            event.name for event in open_events
-                        ])][frozenset([event.uuid for event in open_events])
-                           ] += 1
-
-        if open_events:
-            LOG.error("Not all events have been correctly closed.")
-            LOG.debug(f"Events = {open_events}.")
-
-        if found_missing_open_event:
-            LOG.error("Not all events have been correctly opened.")
-
-        return feature_intensities
 
     def __init__(self, path: Path):
         super().__init__(path)
@@ -135,7 +132,7 @@ class WorkloadFeatureIntensityReport(
 
                 # Extract region and feature intensities from report
                 self.__region_intensities[binary_name][workload_name] = \
-                    self.__get_feature_regions_from_tef_report(
+                    _get_feature_regions_from_tef_report(
                         self.__reports[binary_name][-1]
                     )
 

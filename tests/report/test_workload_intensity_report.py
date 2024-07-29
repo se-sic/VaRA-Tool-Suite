@@ -28,6 +28,22 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
             intensities[workload][frozenset(features)], expected_intensity
         )
 
+    def __test_region_intensity(
+        self, workload: str, features: tp.List[str],
+        expected_intensity: tp.List[tp.Tuple[tp.List[int], int]]
+    ):
+        region_intensities = self.__intensity_test_report.region_intensities_for_binary(
+            "test-binary"
+        )
+
+        self.assertIn(workload, region_intensities)
+
+        for region_combination, intensity in expected_intensity:
+            self.assertEqual(
+                region_intensities[workload][frozenset(features)][
+                    frozenset(region_combination)], intensity
+            )
+
     def test_binary_detection(self):
         report = WorkloadFeatureIntensityReport(
             TEST_INPUTS_DIR /
@@ -73,7 +89,13 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
         self.__test_feature_intensity("onlyA-OneID", ["FeatureA"], 10)
 
     def test_region_intensity_single_region_single_id(self):
-        self.assertEqual(True, False)
+        workload = "onlyA-OneID"
+        features = ["FeatureA"]
+        expected_intensity = [
+            ([1], 10),
+        ]
+
+        self.__test_region_intensity(workload, features, expected_intensity)
 
     def test_feature_intensity_single_region_multiple_ids(self):
         self.__test_feature_intensity("onlyA-TwoIDs", ["FeatureA"], 8)
