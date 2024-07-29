@@ -194,7 +194,7 @@ def __annotate(
     last_annotations: dict[str, FeatureAnnotation] = {}
     last_annotation_targets: dict[str, str] = {}
 
-    click.echo(f"Current revision: {first_commit.id}")
+    LOG.debug("Current revision: %s", first_commit.id)
     while click.confirm("Annotate another feature?"):
         feature_name = click.prompt("Enter feature name to annotate", type=str)
         commit_hash = FullCommitHash(str(first_commit.id))
@@ -213,7 +213,7 @@ def __annotate(
 
     for commit in walker:
         commit_hash = FullCommitHash(str(commit.id))
-        click.echo(f"Current revision: {commit_hash.hash}")
+        LOG.debug("Current revision: %s", commit_hash.hash)
 
         for feature, annotation in last_annotations.items():
             current_target = __get_location_content(commit, annotation.location)
@@ -232,6 +232,7 @@ def __annotate(
 
                 # track new feature location
                 click.echo(f"Location of feature {feature} has changed.")
+                click.echo(f"Old location was {annotation.location}")
                 new_location = __prompt_location(
                     feature, commit_hash, annotation.location
                 )
