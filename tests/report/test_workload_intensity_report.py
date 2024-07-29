@@ -170,6 +170,26 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
             workload, ["FeatureA", "FeatureB"], [([4, 2], 2)]
         )
 
+    def test_region_feature_count_consistency(self):
+        for binary in self.__intensity_test_report.binaries():
+
+            wl_region_intensities = self.__intensity_test_report.region_intensities_for_binary(
+                binary
+            )
+
+            feature_intensities = self.__intensity_test_report.feature_intensities_for_binary(
+                binary
+            )
+
+            for workload, region_intensities in wl_region_intensities.items():
+                for feature, region_combinations in region_intensities.items():
+                    feature_intensity = feature_intensities[workload][feature]
+
+                    self.assertEqual(
+                        feature_intensity, sum(region_combinations.values()),
+                        f"Feature intensity for feature {feature} in workload {workload} does not match the sum of region intensities"
+                    )
+
 
 if __name__ == '__main__':
     unittest.main()
