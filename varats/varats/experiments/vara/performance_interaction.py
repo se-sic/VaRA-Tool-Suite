@@ -30,12 +30,15 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
+from varats.experiments.base.perf_sampling import (
+    PerfSampling,
+    PerfSamplingSynth,
+)
 from varats.experiments.vara.blame_experiment import (
     setup_basic_blame_experiment,
     generate_basic_blame_experiment_actions,
 )
 from varats.experiments.vara.feature_experiment import FeatureExperiment
-from varats.experiments.vara.hot_function_experiment import XRayFindHotFunctions
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
@@ -45,8 +48,16 @@ from varats.project.project_util import (
 )
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider, Patch
-from varats.report.hot_functions_report import WLHotFunctionAggregate
-from varats.report.report import ReportSpecification, ReportFilename
+from varats.report.function_overhead_report import (
+    WLFunctionOverheadReportAggregate,
+    MPRWLFunctionOverheadReportAggregate,
+)
+from varats.report.report import (
+    ReportSpecification,
+    ReportFilename,
+    BaseReport,
+    ReportFilepath,
+)
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     ShortCommitHash,
@@ -78,7 +89,24 @@ def createCommitFilter(project: VProject) -> InteractionFilter:
     )
 
 
-def get_function_annotations(project: VProject) -> tp.List[str]:
+def get_function_overhead_report(
+    report_filepath: ReportFilepath
+) -> WLFunctionOverheadReportAggregate:
+    return WLFunctionOverheadReportAggregate(report_filepath.full_path())
+
+
+def get_function_overhead_report_synth(
+    report_filepath: ReportFilepath
+) -> WLFunctionOverheadReportAggregate:
+    return MPRWLFunctionOverheadReportAggregate(report_filepath.full_path()
+                                               ).get_baseline_report()
+
+
+def get_function_annotations(
+    project: VProject, experiment_type: tp.Type[VersionExperiment],
+    report_type: tp.Type[BaseReport],
+    get_report: tp.Callable[[ReportFilepath], WLFunctionOverheadReportAggregate]
+) -> tp.List[str]:
     case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
     commit_map = get_commit_map(project.name)
     revisions = sorted(case_study.revisions, key=commit_map.time_id)
@@ -93,11 +121,10 @@ def get_function_annotations(project: VProject) -> tp.List[str]:
             file_name
         ).commit_hash != old_rev.to_short_commit_hash()
 
-    experiment_type = XRayFindHotFunctions
     report_files = get_processed_revisions_files(
         project.name,
         experiment_type,
-        WLHotFunctionAggregate,
+        report_type,
         file_name_filter=old_reports_filter(),
         only_newest=False
     )
@@ -105,37 +132,16 @@ def get_function_annotations(project: VProject) -> tp.List[str]:
     hot_functions: tp.Set[str] = set()
 
     for report_filepath in report_files:
-        agg_hot_functions_report = WLHotFunctionAggregate(
-            report_filepath.full_path()
-        )
+        agg_function_overhead_report = get_report(report_filepath)
 
-        for _, funcs in agg_hot_functions_report.hot_functions_per_workload(
+        for _, funcs in agg_function_overhead_report.hot_functions_per_workload(
             threshold=5
         ).items():
-            for func in funcs:
-                hot_functions.add(func.name)
+            hot_functions.update(funcs.keys())
 
     print(f"Hot functions for {project.name}@{project.version_of_primary}:")
     print(hot_functions)
     return list(hot_functions)
-
-    # return {
-    #     "bzip2": [
-    #         'BZ2_blockSort', 'decompress', 'uncompressStream',
-    #         'uncompress', 'BZ2_bzDecompress', 'BZ2_bzRead', 'blockSort',
-    #         'bzDecompress', 'BZ2_decompress'
-    #     ],
-    #     "picosat": [
-    #         'backtrack', 'bcp', 'hup', 'hdown', 'sat', 'undo', 'assign_forced',
-    #         'propl', 'add_simplified_clause', 'decide', 'analyze', 'prop2',
-    #         'picosat_sat'
-    #     ],
-    #     "xz": [
-    #         'lzma_lzma_optimum_normal',
-    #         'crc_simd_body', 'lzma_lzma_encode', 'lzma_lzma_optimum_fast',
-    #         'stream_encode_mt'
-    #     ]
-    # }[project.name]
 
 
 class PerfInterReportGeneration(actions.ProjectStep):
@@ -283,13 +289,23 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
+        case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
+        commit_map = get_commit_map(project.name)
+        revisions = sorted(case_study.revisions, key=commit_map.time_id)
+        if project.version_of_primary == revisions[0].short_hash:
+            return []
+
         setup_basic_blame_experiment(
             self, project, PerformanceInteractionReport
         )
         project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
+        hot_funcs = get_function_annotations(
+            project, PerfSampling, WLFunctionOverheadReportAggregate,
+            get_function_overhead_report
+        )
         project.cflags.extend([
             "-fvara-handleRM=High",
-            f"-fvara-highlight-function={','.join(get_function_annotations(project))}"
+            f"-fvara-highlight-function={','.join(hot_funcs)}"
         ])
         project.cflags += [
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fuse-ld=lld"
@@ -338,7 +354,14 @@ class PerformanceInteractionExperimentSynthetic(
             self, project, MPRPerformanceInteractionReport
         )
         project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
-        project.cflags.extend(["-fvara-handleRM=High"])
+        hot_funcs = get_function_annotations(
+            project, PerfSamplingSynth, MPRWLFunctionOverheadReportAggregate,
+            get_function_overhead_report_synth
+        )
+        project.cflags.extend([
+            "-fvara-handleRM=High",
+            f"-fvara-highlight-function={','.join(hot_funcs)}"
+        ])
         project.cflags += [
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fuse-ld=lld"
         ]
