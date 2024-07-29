@@ -101,21 +101,38 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
         self.__test_feature_intensity("onlyA-TwoIDs", ["FeatureA"], 8)
 
     def test_region_intensity_single_region_multiple_ids(self):
-        self.assertEqual(True, False)
+        workload = "onlyA-TwoIDs"
+        features = ["FeatureA"]
+        expected_intensity = [
+            ([1], 4),
+            ([2], 4),
+        ]
+
+        self.__test_region_intensity(workload, features, expected_intensity)
 
     def test_feature_intensity_multiple_regions_single_ids(self):
         self.__test_feature_intensity("AB-OneID", ["FeatureA"], 8)
         self.__test_feature_intensity("AB-OneID", ["FeatureB"], 4)
 
     def test_region_intensity_multiple_regions_single_ids(self):
-        self.assertEqual(True, False)
+        workload = "AB-OneID"
+
+        self.__test_region_intensity(workload, ["FeatureA"], [([1], 8)])
+        self.__test_region_intensity(workload, ["FeatureB"], [([2], 4)])
 
     def test_feature_intensity_multiple_regions_multiple_ids(self):
         self.__test_feature_intensity("AB-MultIDs", ["FeatureA"], 8)
         self.__test_feature_intensity("AB-MultIDs", ["FeatureB"], 4)
 
     def test_region_intensity_multiple_regions_multiple_ids(self):
-        self.assertEqual(True, False)
+        workload = "AB-MultIDs"
+
+        self.__test_region_intensity(
+            workload, ["FeatureA"], [([1], 4), ([2], 3), ([6], 1)]
+        )
+        self.__test_region_intensity(
+            workload, ["FeatureB"], [([3], 1), ([4], 2), ([5], 1)]
+        )
 
     def test_feature_intensity_overlapping_regions_single_id(self):
         self.__test_feature_intensity("AB-overlapping-OneID", ["FeatureA"], 7)
@@ -125,13 +142,32 @@ class TestWorkloadFeatureIntensityReport(unittest.TestCase):
         )
 
     def test_region_intensity_overlapping_regions_single_id(self):
-        self.assertEqual(True, False)
+        workload = "AB-overlapping-OneID"
+
+        self.__test_region_intensity(workload, ["FeatureA"], [([1], 7)])
+        self.__test_region_intensity(workload, ["FeatureB"], [([2], 5)])
+        self.__test_region_intensity(
+            workload, ["FeatureA", "FeatureB"], [([1, 2], 2)]
+        )
 
     def test_feature_intensity_overlapping_regions_multiple_ids(self):
         self.__test_feature_intensity("AB-overlapping-MultIDs", ["FeatureA"], 7)
         self.__test_feature_intensity("AB-overlapping-MultIDs", ["FeatureB"], 5)
         self.__test_feature_intensity(
             "AB-overlapping-MultIDs", ["FeatureA", "FeatureB"], 2
+        )
+
+    def test_region_intensity_overlapping_regions_multiple_ids(self):
+        workload = "AB-overlapping-MultIDs"
+
+        self.__test_region_intensity(
+            workload, ["FeatureA"], [([1], 4), ([2], 3)]
+        )
+        self.__test_region_intensity(
+            workload, ["FeatureB"], [([3], 2), ([4], 3)]
+        )
+        self.__test_region_intensity(
+            workload, ["FeatureA", "FeatureB"], [([4, 2], 2)]
         )
 
 
