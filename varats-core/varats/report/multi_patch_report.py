@@ -1,5 +1,6 @@
 """MultiPatchReport to group together similar reports that where produced for
 differently patched projects."""
+import logging
 import shutil
 import tempfile
 import typing as tp
@@ -7,6 +8,8 @@ from pathlib import Path
 
 from varats.provider.patch.patch_provider import Patch
 from varats.report.report import ReportTy, BaseReport
+
+LOG = logging.Logger(__name__)
 
 
 class MultiPatchReport(
@@ -33,9 +36,7 @@ class MultiPatchReport(
                         )] = report_type(report)
 
             if not self.__base or not self.__patched_reports:
-                raise AssertionError(
-                    f"Reports where missing in the file {path=}"
-                )
+                LOG.warning(f"Potentially missing reports in file {path}")
 
     def get_baseline_report(self) -> ReportTy:
         return self.__base
