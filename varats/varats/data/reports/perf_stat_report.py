@@ -17,19 +17,8 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="csv"):
         parameters = []
         unique_parameters = set()
         line_counter = 0
-        if zipfile.is_zipfile(path):
-            print("zipped")
-
-        # Detect the encoding
-        with open(path, "rb") as file:
-            raw_data = file.read()
-            result = chardet.detect(raw_data)
-            encoding = result['encoding']
-            print(f"Detected encoding: {encoding}")
-
-        with open(path, "r", encoding=encoding) as file:
+        with open(path, "r") as file:
             for line in file:
-                print(line)
                 line_counter += 1
                 if line_counter <= 2:
                     continue
@@ -43,9 +32,9 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="csv"):
                 if elements[2] not in unique_parameters:
                     unique_parameters.add(elements[2])
                     parameters.append(elements[2])
-        print(data)
         self.data = data
         self.parameters = parameters
+
 
 class PerfStatReportAggregate(
     ReportAggregate[PerfStatReport],

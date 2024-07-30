@@ -26,7 +26,7 @@ from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportAggregate, ReportSpecification
-from varats.data.reports.perf_stat_report import PerfStatReport
+from varats.data.reports.perf_stat_report import PerfStatReport, PerfStatReportAggregate
 
 
 class PerfStat(OutputFolderStep):
@@ -60,9 +60,8 @@ class PerfStat(OutputFolderStep):
                     "perf_stat", prj_command.command, self.__num, ".csv"
                 )                
 
-                print(f"{pb_cmd}")
-
                 run_cmd = perf['stat', '-I 1', '-x',',','-o' f'{run_report_name}', pb_cmd]
+                print(run_cmd)
 
                 with cleanup(prj_command):
                     run_cmd()
@@ -75,7 +74,7 @@ class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
 
     NAME = "PerfStat"
 
-    REPORT_SPEC = ReportSpecification(PerfStatReport)
+    REPORT_SPEC = ReportSpecification(PerfStatReportAggregate)
     #REPORT_SPEC = ReportSpecification(ReportAggregate[PerfStatReport])
 
     def actions_for_project(
