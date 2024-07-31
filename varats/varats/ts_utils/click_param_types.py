@@ -154,7 +154,7 @@ def create_project_choice() -> click.Choice:
     return click.Choice(projects)
 
 
-def __is_experiment_excluded(experiment_name: str) -> bool:
+def is_experiment_excluded(experiment_name: str) -> bool:
     """Checks if an experiment should be excluded, as we don't want to show/use
     standard BB experiments."""
     if experiment_name in ('raw', 'empty', 'no-measurement'):
@@ -170,7 +170,7 @@ def create_experiment_type_choice(
     return TypedChoice({
         k: v
         for k, v in ExperimentRegistry.experiments.items()
-        if not __is_experiment_excluded(k)
+        if not is_experiment_excluded(k)
     })
 
 
@@ -186,7 +186,7 @@ def create_multi_experiment_type_choice(
     value_dict = {
         k: [v]  # make value a list to be consistent with entry for 'all'
         for k, v in ExperimentRegistry.experiments.items()
-        if not __is_experiment_excluded(k)
+        if not is_experiment_excluded(k)
     }
     value_dict["all"] = [
         experiment for value in value_dict.values() for experiment in value

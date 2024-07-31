@@ -7,6 +7,8 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
+from benchbuild import Experiment
+from benchbuild.experiment import ExperimentRegistry
 from PyQt5.QtCore import (
     QModelIndex,
     QDateTime,
@@ -17,7 +19,10 @@ from PyQt5.QtCore import (
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
 
+import varats.paper.paper_config as PC
 from varats.base.sampling_method import NormalSamplingMethod
+from varats.data.databases.file_status_database import FileStatusDatabase
+from varats.experiments.discover_experiments import initialize_experiments
 from varats.gui.cs_gen.case_study_generation_ui import Ui_MainWindow
 from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import CaseStudy, store_case_study
@@ -33,8 +38,10 @@ from varats.project.project_util import (
     get_primary_project_source,
 )
 from varats.projects.discover_projects import initialize_projects
+from varats.report.report import FileStatusExtension
 from varats.revision.revisions import is_revision_blocked
 from varats.tools.research_tools.vara_manager import ProcessManager
+from varats.ts_utils.click_param_types import is_experiment_excluded
 from varats.utils import settings
 from varats.utils.git_util import (
     get_initial_commit,
@@ -95,7 +102,16 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         self.commit_search.textChanged.connect(
             self.proxy_model.setFilterFixedString
         )
+        self.cs_filter.stateChanged.connect(self.proxy_model.setCsFilter)
+        self.case_study.currentIndexChanged.connect(
+            self.proxy_model.update_case_study
+        )
         self.show()
+        initialize_experiments()
+        self.experiment.addItems([
+            k for k, v in ExperimentRegistry.experiments.items()
+            if not is_experiment_excluded(k)
+        ])
 
     def update_project_list(self, filter_string: str = "") -> None:
         """Update the project list when a filter is applied."""
@@ -202,6 +218,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             GenerationStrategy.SELECT_REVISION.value
         )
         if self.selected_project != self.revision_list_project:
+            self.case_study.clear()
             self.revision_details.setText("Loading Revisions")
             self.revision_details.repaint()
             # Update the local project git
@@ -224,8 +241,22 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
 
             cmap = get_commit_map(self.selected_project)
             commit_model = CommitTableModel(
-                list(map(commit_lookup_helper, commits)), cmap, project
+                list(map(commit_lookup_helper, commits)), cmap, project,
+                ExperimentRegistry.experiments[self.experiment.currentText()]
             )
+            self.proxy_model.setProject(project)
+            self.case_study.currentIndexChanged.connect(
+                commit_model.update_case_study
+            )
+            self.experiment.currentTextChanged.connect(
+                commit_model.update_experiment
+            )
+            current_config = PC.get_paper_config()
+            case_studies = current_config.get_all_case_studies()
+            self.case_study.addItems([
+                f"{cs.project_name}_{cs.version}" for cs in case_studies
+                if cs.project_name == self.selected_project
+            ])
             self.proxy_model.setSourceModel(commit_model)
             self.revision_list_project = self.selected_project
             self.revision_details.clear()
@@ -234,11 +265,11 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
     def show_revision_data(self, index: QModelIndex) -> None:
         """Update the revision data field."""
         commit = self.revision_list.model().data(index, Qt.WhatsThisRole)
-        commit_info = f"{commit.hex}:\n" \
+        commit_info = f"{commit.id}:\n" \
                       f"{commit.author.name}, " \
                       f"<{commit.author.email}>\n\n" \
                       f"{commit.message}"
-        self.selected_commit = commit.hex
+        self.selected_commit = commit.id
         self.revision_details.setText(commit_info)
         self.revision_details.update()
 
@@ -246,9 +277,26 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
 class CommitTableFilterModel(QSortFilterProxyModel):
     """Filter Model for the revision table."""
     filter_string = ""
+    cs_filter = False
 
     def setFilterFixedString(self, pattern: str) -> None:
         self.filter_string = pattern
+        self.invalidate()
+
+    def update_case_study(self, index: int) -> None:
+        current_config = PC.get_paper_config()
+        case_studies = [
+            cs for cs in current_config.get_all_case_studies()
+            if cs.project_name == self._project.NAME
+        ]
+        self._case_study = case_studies[index]
+        self.invalidate()
+
+    def setProject(self, project: tp.Type['bb.Project']) -> None:
+        self._project = project
+
+    def setCsFilter(self, cs_filter: bool) -> None:
+        self.cs_filter = cs_filter
         self.invalidate()
 
     def filterAcceptsRow(
@@ -256,12 +304,18 @@ class CommitTableFilterModel(QSortFilterProxyModel):
     ) -> bool:
         commit_index = self.sourceModel().index(source_row, 0, source_parent)
         author_index = self.sourceModel().index(source_row, 1, source_parent)
-        return self.sourceModel().data(commit_index,
-                                       Qt.DisplayRole).lower() \
-                   .__contains__(self.filter_string.lower()) \
-               or self.sourceModel().data(author_index,
-                                          Qt.DisplayRole).lower() \
-                   .__contains__(self.filter_string.lower())
+        hash_filter = self.sourceModel().data(
+            commit_index, Qt.DisplayRole
+        ).lower().__contains__(self.filter_string.lower())
+        author_filter = self.sourceModel().data(
+            author_index, Qt.DisplayRole
+        ).lower().__contains__(self.filter_string.lower())
+        case_study_filter = (
+            not self.cs_filter
+        ) or FullCommitHash.from_pygit_commit(
+            self.sourceModel().data(commit_index, Qt.WhatsThisRole)
+        ) in self._case_study.revisions
+        return case_study_filter and (hash_filter or author_filter)
 
 
 class CommitTableModel(QAbstractTableModel):
@@ -270,12 +324,50 @@ class CommitTableModel(QAbstractTableModel):
 
     def __init__(
         self, data: tp.List[pygit2.Commit], cmap: CommitMap,
-        project: tp.Type['bb.Project']
+        project: tp.Type['bb.Project'], experiment_type: tp.Type[Experiment]
     ):
         super().__init__()
         self._project = project
         self._data = data
+        self._case_study: tp.Optional[CaseStudy] = None
+        self._experiment_type = experiment_type
         self._cmap = cmap
+
+    def update_case_study(self, index: int) -> None:
+        current_config = PC.get_paper_config()
+        case_studies = [
+            cs for cs in current_config.get_all_case_studies()
+            if cs.project_name == self._project.NAME
+        ]
+        self._case_study = case_studies[index]
+        if self._experiment_type:
+            self._status_data = FileStatusDatabase.get_data_for_project(
+                self._case_study.project_name, ["revision", "file_status"],
+                self._cmap,
+                self._case_study,
+                experiment_type=self._experiment_type,
+                tag_blocked=False
+            )
+            self._status_data.set_index("revision", inplace=True)
+        self.dataChanged.emit(
+            self.index(0, 0), self.index(self.rowCount(), self.columnCount())
+        )
+
+    def update_experiment(self, index: str) -> None:
+        self._experiment_type = ExperimentRegistry.experiments[index]
+        if self._case_study:
+            self._status_data = FileStatusDatabase.get_data_for_project(
+                self._case_study.project_name, ["revision", "file_status"],
+                self._cmap,
+                self._case_study,
+                experiment_type=self._experiment_type,
+                tag_blocked=False
+            )
+            self._status_data.set_index("revision", inplace=True)
+
+        self.dataChanged.emit(
+            self.index(0, 0), self.index(self.rowCount(), self.columnCount())
+        )
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
@@ -292,7 +384,7 @@ class CommitTableModel(QAbstractTableModel):
 
     def __split_commit_data(self, commit: pygit2.Commit, column: int) -> tp.Any:
         if column == 0:
-            return ShortCommitHash(commit.hex).hash
+            return ShortCommitHash.from_pygit_commit(commit).hash
         if column == 1:
             return commit.author.name
         if column == 2:
@@ -300,17 +392,40 @@ class CommitTableModel(QAbstractTableModel):
             date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
             return QDateTime(date)
         if column == 3:
-            return self._cmap.short_time_id(ShortCommitHash(commit.hex))
+            return self._cmap.time_id(FullCommitHash.from_pygit_commit(commit))
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> tp.Any:
         commit = self._data[index.row()]
+        chash = FullCommitHash.from_pygit_commit(commit)
         if role == Qt.DisplayRole:
             return self.__split_commit_data(commit, index.column())
-        if is_revision_blocked(FullCommitHash(commit.hex), self._project):
+        if is_revision_blocked(chash, self._project):
             if role == Qt.ForegroundRole:
                 return QColor(50, 100, 255)
             if role == Qt.ToolTipRole:
                 return "Blocked"
+        if self._case_study and self._experiment_type:
+            if role == Qt.ForegroundRole:
+                chash = chash.to_short_commit_hash()
+                if chash in self._status_data.index:
+                    if self._status_data.loc[
+                        chash, "file_status"
+                    ] == FileStatusExtension.SUCCESS.get_status_extension():
+                        return QColor(0, 255, 0)
+                    elif self._status_data.loc[
+                        chash, "file_status"
+                    ] == FileStatusExtension.FAILED.get_status_extension():
+                        return QColor(255, 0, 0)
+                    elif self._status_data.loc[
+                        chash, "file_status"
+                    ] == FileStatusExtension.COMPILE_ERROR.get_status_extension(
+                    ):
+                        return QColor(255, 0, 0)
+                    elif self._status_data.loc[
+                        chash, "file_status"
+                    ] == FileStatusExtension.MISSING.get_status_extension():
+                        return QColor(255, 255, 0)
+
         if role == Qt.WhatsThisRole:
             return commit
 
