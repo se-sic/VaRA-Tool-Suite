@@ -3,6 +3,7 @@
 import typing as tp
 
 import click
+from trogon import tui
 
 from varats.tools.research_tools import development as dev
 from varats.tools.research_tools.research_tool import SubProject
@@ -13,6 +14,7 @@ from varats.tools.tool_util import (
 from varats.ts_utils.cli_util import initialize_cli_tool
 
 
+@tui()  # type: ignore
 @click.group(context_settings={"help_option_names": ['-h', '--help']})
 @click.option(
     "-p",
@@ -55,7 +57,7 @@ def main(
     context.obj["project_list"] = project_list
 
 
-@main.command(help="Create a new branch.")
+@main.command(help="Create a new branch.")  # type: ignore
 @click.argument("branch_name", type=str)
 @click.pass_context
 def new_branch(context: click.Context, branch_name: str) -> None:
@@ -63,7 +65,7 @@ def new_branch(context: click.Context, branch_name: str) -> None:
     dev.create_new_branch_for_projects(branch_name, context.obj["project_list"])
 
 
-@main.command(help="Checkout a branch.")
+@main.command(help="Checkout a branch.")  # type: ignore
 @click.argument("branch_name", type=str)
 @click.pass_context
 def checkout(context: click.Context, branch_name: str) -> None:
@@ -73,28 +75,28 @@ def checkout(context: click.Context, branch_name: str) -> None:
     )
 
 
-@main.command(help="Git pull the research tool's repository.")
+@main.command(help="Git pull the research tool's repository.")  # type: ignore
 @click.pass_context
 def pull(context: click.Context) -> None:
     """Git pull the research tool's repository."""
     dev.pull_projects(context.obj["project_list"])
 
 
-@main.command(help="Git push the research tool's repository.")
+@main.command(help="Git push the research tool's repository.")  # type: ignore
 @click.pass_context
 def push(context: click.Context) -> None:
     """Git push the research tool's repository."""
     dev.push_projects(context.obj["project_list"])
 
 
-@main.command(help="Show git status for a research tool.")
+@main.command(help="Show git status for a research tool.")  # type: ignore
 @click.pass_context
 def status(context: click.Context) -> None:
     """Show git status for a research tool."""
     dev.show_status_for_projects(context.obj["project_list"])
 
 
-@main.command(help="List all remote feature branches.")
+@main.command(help="List all remote feature branches.")  # type: ignore
 @click.pass_context
 def f_branches(context: click.Context) -> None:
     """List all remote feature branches."""

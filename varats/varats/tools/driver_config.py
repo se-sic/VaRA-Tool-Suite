@@ -11,10 +11,12 @@ import typing as tp
 import click
 import yaml
 from benchbuild.utils.settings import ConfigDumper, Configuration
+from trogon import tui
 
 from varats.utils.settings import vara_cfg, save_config
 
 
+@tui()  # type: ignore
 @click.group("vara-config")
 def main() -> None:
     """
@@ -52,7 +54,7 @@ def __dump_config_to_string(config: Configuration) -> str:
     )
 
 
-@main.command("set")
+@main.command("set")  # type: ignore
 @click.argument("config_values", nargs=-1, metavar="KEY=VALUE")
 def __config_set(config_values: tp.List[str]) -> None:
     """
@@ -78,7 +80,7 @@ def __config_set(config_values: tp.List[str]) -> None:
     save_config()
 
 
-@main.command("show")
+@main.command("show")  # type: ignore
 @click.argument("config_options", nargs=-1)
 def __config_show(config_options: tp.Optional[tp.List[str]]) -> None:
     """
