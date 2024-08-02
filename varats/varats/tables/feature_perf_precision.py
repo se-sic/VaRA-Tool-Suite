@@ -169,7 +169,7 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         """Setup performance precision table."""
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        profilers: tp.List[Profiler] = [VXray(), PIMTracer()]
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
         # Data aggregation
         df = self._prepare_data_table(case_studies, profilers)
