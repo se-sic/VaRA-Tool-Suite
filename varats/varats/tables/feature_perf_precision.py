@@ -33,9 +33,8 @@ from varats.project.project_util import get_local_project_git_path
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
+from varats.ts_utils.cli_util import make_cli_option
 from varats.utils.git_util import calc_repo_loc, ChurnConfig
-
-GROUP_SYNTHETIC_CATEGORIES = True
 
 SYNTH_CATEGORIES = [
     "Static Analysis", "Dynamic Analysis", "Configurability",
@@ -251,8 +250,18 @@ Furthermore, the table depicts for each profiler, precision ({symb_precision}), 
         )
 
 
+GROUP_SYNTHETIC_OPTION = make_cli_option(
+    "--group-synth",
+    type=bool,
+    default=False,
+    help="Group synthetic case studies in tables."
+)
+
+
 class FeaturePerfPrecisionTableGenerator(
-    TableGenerator, generator_name="fperf-precision", options=[]
+    TableGenerator,
+    generator_name="fperf-precision",
+    options=[GROUP_SYNTHETIC_OPTION]
 ):
     """Generator for `FeaturePerfPrecisionTable`."""
 
@@ -331,7 +340,7 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
             precision_df, overhead_df, on=["CaseStudy", "Profiler"]
         )
 
-        if GROUP_SYNTHETIC_CATEGORIES:
+        if self.table_kwargs["group_synth"]:
 
             merged_df["CaseStudy"] = merged_df["CaseStudy"].apply(
                 compute_cs_category_grouping
@@ -368,7 +377,7 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
         # All means need to be computed before they are added as rows
         overall_mean = pivot_df.mean()
-        if GROUP_SYNTHETIC_CATEGORIES:
+        if self.table_kwargs["group_synth"]:
             synth_mean = pivot_df.loc[pivot_df.index.isin(SYNTH_CATEGORIES)
                                      ].mean()
             real_world_mean = pivot_df.loc[~pivot_df.index.
@@ -464,7 +473,9 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
 
 class FeaturePerfOverheadComparisionTableGenerator(
-    TableGenerator, generator_name="fperf-overhead-comp", options=[]
+    TableGenerator,
+    generator_name="fperf-overhead-comp",
+    options=[GROUP_SYNTHETIC_OPTION]
 ):
     """Generator for `FeaturePerfOverheadTable`."""
 
@@ -571,7 +582,7 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
         df = pd.concat(cs_data).sort_index()
         df.index.name = 'CaseStudy'
 
-        if GROUP_SYNTHETIC_CATEGORIES:
+        if self.table_kwargs["group_synth"]:
             df.index = df.index.map(compute_cs_category_grouping)
 
             df = df.groupby(df.index.name, as_index=True).agg({
