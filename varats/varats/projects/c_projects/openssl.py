@@ -9,8 +9,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import WorkloadCategory, RSBinary, \
-    ConfigParams
+from varats.experiment.workload_util import (
+    WorkloadCategory,
+    RSBinary,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -31,7 +34,7 @@ from varats.utils.settings import bb_cfg
 
 
 class OpenSSL(VProject):
-    """Cryptography toolkit OpenSSL"""
+    """Cryptography toolkit OpenSSL."""
 
     NAME = 'openssl'
     GROUP = 'c_projects'
@@ -54,9 +57,7 @@ class OpenSSL(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0"
             },
-            files=[
-                "countries-land-1m.geo.json"
-            ]
+            files=["countries-land-1m.geo.json"]
         ),
     ]
 
@@ -66,12 +67,19 @@ class OpenSSL(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
-                SourceRoot("openssl") / RSBinary("openssl"), "enc",
+                SourceRoot("openssl") / RSBinary("openssl"),
+                "enc",
                 ConfigParams(),
-                "-provider", "default", "-provider", "legacy",
-                "-in", "geo-maps/countries-land-1m.geo.json",
-                "-out", "geo-maps/countries-land-1km.geo.json.enc",
-                "-pass", "pass:correcthorsebatterystaple",
+                "-provider",
+                "default",
+                "-provider",
+                "legacy",
+                "-in",
+                "geo-maps/countries-land-1m.geo.json",
+                "-out",
+                "geo-maps/countries-land-1km.geo.json.enc",
+                "-pass",
+                "pass:correcthorsebatterystaple",
                 label="countries-land-1m",
                 creates=["geo-maps/countries-land-1km.geo.json.enc"]
             )
