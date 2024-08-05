@@ -59,21 +59,26 @@ class Grep(VProject):
         bb.source.HTTPUntar(
             local="jrc-en",
             remote={
-                "1.0": "https://wt-public.emm4u.eu/Acquis/JRC-Acquis.3.0/corpus/jrc-en.tgz"
+                "1.0":
+                    "https://wt-public.emm4u.eu/Acquis/JRC-Acquis.3.0/corpus/jrc-en.tgz"
             }
         )
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
+        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf',
+        'libpcre2-8-0', 'libpcre3'
     )
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("grep") / RSBinary("grep"),
-                "-r", ConfigParams(), "the", "jrc-en",
+                "-r",
+                ConfigParams(),
+                "the",
+                "jrc-en",
                 label="JRC-Acquis",
             )
         ]
