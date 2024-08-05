@@ -19,7 +19,7 @@ from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.performance_interaction_report import (
     PerformanceInteractionReport,
 )
-from varats.experiments.base.time_workloads import TimeWorkloadsSynth
+from varats.experiments.base.perf_sampling import PerfSamplingSynth
 from varats.experiments.vara.performance_interaction import (
     PerformanceInteractionExperiment,
     PerformanceInteractionExperimentSynthetic,
@@ -34,6 +34,7 @@ from varats.mapping.configuration_map import ConfigurationMap
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.report.gnu_time_report import MPRWLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -284,7 +285,7 @@ def get_relevant_configs(
 
     relevant_configs: ConfigurationMap = ConfigurationMap()
     # collect all configs where non-relevant features are set to their default value
-    for config in configs.configurations():
+    for config_id, config in configs.id_config_tuples():
         is_relevant_config = True
         for feature in CONFIG_DATA[project_name]:
             if not feature.should_include_config(config, relevant_features):
@@ -292,7 +293,7 @@ def get_relevant_configs(
                 break
 
         if is_relevant_config:
-            relevant_configs.add_configuration(config)
+            relevant_configs.add_configuration(config, config_id=config_id)
     return relevant_configs
 
 
@@ -373,10 +374,14 @@ def calculate_case_study_data(
     cs_data: tp.Dict[tp.Any, tp.Any] = {
         ("Project",): [project_name],
         (threshold_key, "Base"): [confusion_matrix.P],
-        (threshold_key, "RQ1 Pred."): [f"{confusion_matrix.PP} ({confusion_matrix.TP})"],
+        (threshold_key, "RQ1 Pred."): [
+            f"{confusion_matrix.PP} ({confusion_matrix.TP})"
+        ],
         (threshold_key, "RQ1 Rec."): [confusion_matrix.recall()],
         (threshold_key, "RQ1 Prec."): [confusion_matrix.precision()],
-        (threshold_key, "RQ2 Pred."): [f"{rq2_confusion_matrix.PP} / {rq2_confusion_matrix.PN}"],
+        (threshold_key, "RQ2 Pred."): [
+            f"{rq2_confusion_matrix.PP} / {rq2_confusion_matrix.PN}"
+        ],
         (threshold_key, "RQ2 bACC"): [rq2_confusion_matrix.balanced_accuracy()]
     }
 
@@ -526,7 +531,8 @@ def load_synth_baseline_data(
     for config_id in config_ids:
         time_report_files = get_processed_revisions_files(
             project_name,
-            TimeWorkloadsSynth,
+            PerfSamplingSynth,
+            MPRWLTimeReportAggregate,
             file_name_filter=get_case_study_file_name_filter(case_study),
             only_newest=True,
             config_id=config_id

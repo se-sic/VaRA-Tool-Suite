@@ -25,6 +25,10 @@ from varats.data.reports.szz_report import (
 from varats.experiments.vara.feature_perf_precision import (
     MPRTimeReportAggregate,
 )
+from varats.report.function_overhead_report import (
+    WLFunctionOverheadReportAggregate,
+    MPRWLFunctionOverheadReportAggregate,
+)
 from varats.report.gnu_time_report import (
     WLTimeReportAggregate,
     MPRWLTimeReportAggregate,
@@ -195,3 +199,31 @@ def load_mpr_performance_interaction_report(
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, MPRPerformanceInteractionReport)
+
+
+def load_wl_function_overhead_report_aggregate(
+    file_path: PathLikeTy
+) -> WLFunctionOverheadReportAggregate:
+    """
+    Load a WLFunctionOverheadReportAggregate from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(
+        file_path, WLFunctionOverheadReportAggregate
+    )
+
+
+def load_mpr_wl_function_overhead_report_aggregate(
+    file_path: PathLikeTy
+) -> MPRWLFunctionOverheadReportAggregate:
+    """
+    Load a MPRWLFunctionOverheadReportAggregate from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(
+        file_path, MPRWLFunctionOverheadReportAggregate
+    )

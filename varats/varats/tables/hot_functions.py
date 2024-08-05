@@ -2,11 +2,14 @@
 import typing as tp
 
 import pandas as pd
+from jinja2.nodes import Continue
 
-from varats.experiments.vara.hot_function_experiment import XRayFindHotFunctions
+from varats.experiments.base.perf_sampling import PerfSampling
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.hot_functions_report import WLHotFunctionAggregate
+from varats.report.function_overhead_report import (
+    WLFunctionOverheadReportAggregate,
+)
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -24,17 +27,16 @@ class HotFunctionsTable(Table, table_name="hot_functions"):
             cs_entries = []
             project_name = case_study.project_name
 
-            experiment_type = XRayFindHotFunctions
             report_files = get_processed_revisions_files(
                 project_name,
-                experiment_type,
-                WLHotFunctionAggregate,
+                PerfSampling,
+                WLFunctionOverheadReportAggregate,
                 get_case_study_file_name_filter(case_study),
                 only_newest=False
             )
 
             for report_filepath in report_files:
-                agg_hot_functions_report = WLHotFunctionAggregate(
+                agg_hot_functions_report = WLFunctionOverheadReportAggregate(
                     report_filepath.full_path()
                 )
 
@@ -55,7 +57,7 @@ class HotFunctionsTable(Table, table_name="hot_functions"):
                             "Binary": report_file.binary_name,
                             "Revision": str(report_file.commit_hash),
                             "Workload": workload_name,
-                            "FunctionName": hf.name
+                            "FunctionName": hf
                         })
 
             # funcs = {entry["FunctionName"] for entry in cs_entries}

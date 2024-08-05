@@ -6,12 +6,14 @@ import pandas as pd
 from varats.base.configuration import PlainCommandlineConfiguration
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
+from varats.experiments.base.perf_sampling import PerfSampling
 from varats.experiments.base.time_workloads import TimeWorkloads
 from varats.jupyterhelper.file import load_wl_time_report_aggregate
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_processed_revisions_files,
@@ -72,7 +74,8 @@ class PerformanceEvolutionDatabase(
             report_files.extend(
                 get_processed_revisions_files(
                     project_name,
-                    TimeWorkloads,
+                    PerfSampling,
+                    WLTimeReportAggregate,
                     file_name_filter=get_case_study_file_name_filter(
                         case_study
                     ),
@@ -85,7 +88,8 @@ class PerformanceEvolutionDatabase(
             failed_report_files.extend(
                 get_failed_revisions_files(
                     project_name,
-                    TimeWorkloads,
+                    PerfSampling,
+                    WLTimeReportAggregate,
                     file_name_filter=get_case_study_file_name_filter(
                         case_study
                     ),

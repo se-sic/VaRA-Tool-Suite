@@ -1,14 +1,17 @@
+import logging
+import re
 import typing as tp
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-import pandas as pd
 import yaml
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportAggregate
+
+LOG = logging.Logger(__name__)
 
 
 @dataclass
@@ -32,21 +35,42 @@ class FunctionOverheadReport(BaseReport, shorthand="FOR", file_type=".yaml"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        with open(path, 'r') as stream:
-            raw_report = next(yaml.load_all(stream, Loader=yaml.CLoader))
 
-            self.__total_samples = int(raw_report["total_samples"])
-            self.__function_data: tp.Dict[str, FunctionOverheadData] = {}
+        self.__function_data: tp.Dict[str, FunctionOverheadData] = {}
+        self.__total_samples = 0
 
-            for raw_function_data in raw_report["functions"]:
-                func_data = FunctionOverheadData(
-                    function_name=raw_function_data["function"],
-                    samples=int(raw_function_data["samples"]),
-                    overhead=raw_function_data["overhead"],
-                    command=raw_function_data["command"],
-                    dso=raw_function_data["dso"],
-                )
-                self.__function_data[func_data.function_name] = func_data
+        # fix some non-yaml compliant function names
+        with open(path, "r+t") as stream:
+            text = stream.read()
+            replaced_text = re.sub("\s*.*@plt:\n.*\n.*\n.*\n.*", "", text)
+            stream.seek(0)
+            stream.write(replaced_text)
+            stream.truncate()
+
+        with open(path, "r") as stream:
+            try:
+                raw_report = next(yaml.load_all(stream, Loader=yaml.CLoader))
+                self.__total_samples = int(raw_report["total_samples"])
+
+                if raw_functions := raw_report["functions"]:
+                    for function_name, raw_function_data in raw_functions.items(
+                    ):
+                        func_data = FunctionOverheadData(
+                            function_name=function_name,
+                            samples=int(raw_function_data["samples"]),
+                            overhead=raw_function_data["overhead"],
+                            command=raw_function_data["command"],
+                            dso=raw_function_data["dso"],
+                        )
+                        self.__function_data[func_data.function_name
+                                            ] = func_data
+                # else:
+                #     LOG.warning(
+                #         "No function data found in report file %s.", path
+                #     )
+
+            except StopIteration | yaml.scanner.ScannerError:
+                LOG.warning("Empty report file: %s.", path)
 
     @property
     def total_samples(self) -> int:
@@ -69,7 +93,7 @@ class FunctionOverheadReport(BaseReport, shorthand="FOR", file_type=".yaml"):
                 f"but was {threshold}"
             )
 
-        threshold *= 100
+        threshold /= 100
         hot_functions: tp.List[FunctionOverheadData] = []
 
         for function in self.__function_data.values():
