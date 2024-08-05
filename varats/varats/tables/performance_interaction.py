@@ -169,6 +169,42 @@ CONFIG_DATA: tp.Dict[str, tp.List[FeatureLike]] = {
         Feature("FR(level)", "8", None),
         Feature("FR(level)", "9", None),
     ],
+    "grep": [
+        Feature("FR(ignore_case)", "i", None),
+        Feature("FR(invert_match)", "v", None),
+        Feature("FR(count)", "c", None),
+        Feature("FR(only_matching)", "o", None),
+        AtMostOneOf(
+            Feature("FR(word_regex)", "w", "-w"),
+            Feature("FR(line_regex)", "x", "-x")
+        ),
+        AtMostOneOf(
+            Feature("FR(files_with_match)", "l", "-l"),
+            Feature("FR(files_without_match)", "L", "-L")
+        ),
+        AtMostOneOf(
+            Feature("FR(context_5)", "C5", "-C5"),
+            Feature("FR(context_10)", "C10", "-C10")
+        )
+    ],
+    "openssl": [
+        Feature("FR(base64)", "a", None),
+        Feature("FR(one Line)", "A", None),
+        Feature("FR(PBKDF2)", "pbkdf2", None),
+        Feature("FR(print)", "p", None),
+        Feature("FR(print and exit)", "P", None),
+        Feature("FR(compress)", "z", None),
+        ExactlyOneOf(
+            Feature("FR(MD5)", "md=md5", "-md=md5"),
+            Feature("FR(SHA-256)", "md=sha-256", "-md=sha-256")
+        ),
+        ExactlyOneOf(
+            Feature("FR(AES-128-CBC)", "aes-128-cbc", "-aes-128-cbc"),
+            Feature("FR(AES-128-OFB)", "aes-128-ofb", "-aes-128-ofb"),
+            Feature("FR(AES-256-CBC)", "aes-256-cbc", "-aes-256-cbc"),
+            Feature("FR(Blowfish-CBC)", "bf-cbc", "-bf-cbc"),
+        )
+    ],
     "picosat": [
         Feature("FR(Plain)", "plain", None),
         Feature("FR(AllSAT)", "all", None),
@@ -443,7 +479,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                 project_name, ["revision", "config_id", "wall_clock_time"],
                 commit_map,
                 case_study,
-                cached_only=True
+                # cached_only=True
             ).pivot(
                 index="config_id", columns="revision", values="wall_clock_time"
             )
