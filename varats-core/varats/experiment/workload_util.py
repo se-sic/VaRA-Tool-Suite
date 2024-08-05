@@ -137,13 +137,13 @@ def create_workload_specific_filename(
     return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
 
 
-__WORKLOAD_FILE_REGEX = re.compile(r".*\_(?P<label>.+)\_\d+$")
+__WORKLOAD_FILE_REGEX = re.compile(r".*\_(?P<label>.+)\_\d+(\.?\w*)?$")
 
 
 def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
     if (
         match :=
-        __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
+        __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.name)
     ):
         return str(match.group("label"))
 
@@ -167,7 +167,7 @@ class WorkloadSpecificReportAggregate(
             path, report_type,
             auto_unwrap(
                 "Files contained in a WorkloadSpecificReportAggregate should"
-                "always be formatted correctly by the"
+                "always be formatted correctly by the "
                 "create_workload_specific_filename function."
             )(label_method)
         )
