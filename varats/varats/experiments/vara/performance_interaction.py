@@ -95,6 +95,16 @@ def get_function_overhead_report(
     return WLFunctionOverheadReportAggregate(report_filepath.full_path())
 
 
+def get_old_rev(
+    revisions: tp.List[FullCommitHash], project_version: ShortCommitHash
+) -> ShortCommitHash:
+
+    def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
+        return pair[1].to_short_commit_hash() == project_version
+
+    return list(filter(rev_filter, pairwise(revisions)))[0][0]
+
+
 def get_function_overhead_report_synth(
     report_filepath: ReportFilepath
 ) -> WLFunctionOverheadReportAggregate:
@@ -102,19 +112,32 @@ def get_function_overhead_report_synth(
                                                ).get_baseline_report()
 
 
+def get_old_rev_synth(
+    revisions: tp.List[FullCommitHash], project_version: ShortCommitHash
+) -> ShortCommitHash:
+
+    def rev_filter(rev: FullCommitHash) -> bool:
+        return rev.to_short_commit_hash() == project_version
+
+    return list(filter(rev_filter, revisions))[0]
+
+
 def get_function_annotations(
-    project: VProject, experiment_type: tp.Type[VersionExperiment],
+    project: VProject,
+    experiment_type: tp.Type[VersionExperiment],
     report_type: tp.Type[BaseReport],
-    get_report: tp.Callable[[ReportFilepath], WLFunctionOverheadReportAggregate]
+    get_report: tp.Callable[[ReportFilepath],
+                            WLFunctionOverheadReportAggregate],
+    get_old_revision: tp.Callable[[tp.List[FullCommitHash], ShortCommitHash],
+                                  ShortCommitHash],
 ) -> tp.List[str]:
     case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
     commit_map = get_commit_map(project.name)
     revisions = sorted(case_study.revisions, key=commit_map.time_id)
 
-    def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
-        return pair[1].short_hash == project.version_of_primary
-
-    old_rev, _ = list(filter(rev_filter, pairwise(revisions)))[0]
+    old_rev = get_old_revision(
+        revisions, ShortCommitHash(project.version_of_primary)
+    )
 
     def old_reports_filter():
         return lambda file_name: ReportFilename(
@@ -301,7 +324,7 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
         project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
         hot_funcs = get_function_annotations(
             project, PerfSampling, WLFunctionOverheadReportAggregate,
-            get_function_overhead_report
+            get_function_overhead_report, get_old_rev
         )
         project.cflags.extend([
             "-fvara-handleRM=High",
@@ -356,7 +379,7 @@ class PerformanceInteractionExperimentSynthetic(
         project.cflags += FeatureExperiment.get_vara_feature_cflags(project)
         hot_funcs = get_function_annotations(
             project, PerfSamplingSynth, MPRWLFunctionOverheadReportAggregate,
-            get_function_overhead_report_synth
+            get_function_overhead_report_synth, get_old_rev_synth
         )
         project.cflags.extend([
             "-fvara-handleRM=High",
