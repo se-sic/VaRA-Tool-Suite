@@ -537,7 +537,9 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
     DESCRIPTION = "Run multiple actions with a shared tmp folder"
 
     def __init__(
-        self, output_filepaths: tp.Dict[tp.Type[BaseReport], ReportFilepath],
+        self, output_filepaths: tp.Union[tp.Dict[tp.Type[BaseReport],
+                                                 ReportFilepath],
+                                         ReportFilepath],
         actions: tp.Optional[tp.List[ZippedStepTy]]
     ) -> None:
         super().__init__(actions)
