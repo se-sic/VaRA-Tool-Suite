@@ -190,73 +190,98 @@ def __annotate(
         while first_commit != commit:
             first_commit = next(walker)
 
-    tracked_features: dict[str, list[FeatureAnnotation]] = {}
-    last_annotations: dict[str, FeatureAnnotation] = {}
-    last_annotation_targets: dict[str, str] = {}
+    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]] = {}
+    last_annotations: dict[str, dict[int, FeatureAnnotation]] = {}
+    last_annotation_targets: dict[str, dict[int, str]] = {}
 
     LOG.debug("Current revision: %s", first_commit.id)
     while click.confirm("Annotate another feature?"):
         feature_name = click.prompt("Enter feature name to annotate", type=str)
         commit_hash = FullCommitHash(str(first_commit.id))
-        location = __prompt_location(feature_name, commit_hash)
-        last_annotations[feature_name] = FeatureAnnotation(
-            feature_name, location, commit_hash
-        )
-        target = __get_location_content(first_commit, location)
-        assert target is not None, "Target must not be None"
-        last_annotation_targets[feature_name] = target
-        tracked_features[feature_name] = []
-        LOG.debug(
-            f"Tracking {feature_name} @ {location}: "
-            f"{last_annotation_targets[feature_name]}"
-        )
+        tracked_features[feature_name] = {}
+        last_annotations[feature_name] = {}
+        last_annotation_targets[feature_name] = {}
+
+        while click.confirm(
+            f"Track another location for feature {feature_name}?"
+        ):
+            annotation_id = len(tracked_features[feature_name])
+            location = __prompt_location(feature_name, commit_hash)
+            target = __get_location_content(first_commit, location)
+            assert target is not None, "Target must not be None"
+
+            tracked_features[feature_name][annotation_id] = []
+            last_annotations[feature_name][annotation_id] = FeatureAnnotation(
+                feature_name, location, commit_hash
+            )
+            last_annotation_targets[feature_name][annotation_id] = target
+
+            LOG.debug(
+                f"Tracking {feature_name} @ ({annotation_id}, {location}): "
+                f"{last_annotation_targets[feature_name][annotation_id]}"
+            )
 
     for commit in walker:
         commit_hash = FullCommitHash(str(commit.id))
         LOG.debug("Current revision: %s", commit_hash.hash)
 
-        for feature, annotation in last_annotations.items():
-            current_target = __get_location_content(commit, annotation.location)
-            if current_target != last_annotation_targets[feature]:
-                LOG.debug(
-                    f"{feature}: "
-                    f"{current_target} != {last_annotation_targets[feature]}"
-                )
-                # set removed field for annotation and store it
-                tracked_features[feature].append(
-                    FeatureAnnotation(
-                        annotation.feature_name, annotation.location,
-                        annotation.introduced, commit_hash
-                    )
+        for feature, annotations in last_annotations.items():
+            for annotation_id, annotation in annotations.items():
+                current_target = __get_location_content(
+                    commit, annotation.location
                 )
 
-                # track new feature location
-                click.echo(f"Location of feature {feature} has changed.")
-                click.echo(f"Old location was {annotation.location}")
-                new_location = __prompt_location(
-                    feature, commit_hash, annotation.location
-                )
-                last_annotations[feature] = FeatureAnnotation(
-                    feature, new_location, commit_hash
-                )
-                new_target = __get_location_content(commit, new_location)
-                assert new_target is not None, "Target must not be None"
-                last_annotation_targets[feature] = new_target
-                LOG.debug(
-                    f"Tracking {feature} @ {new_location}: "
-                    f"{last_annotation_targets[feature]}"
-                )
+                if current_target != last_annotation_targets[feature][
+                    annotation_id]:
+                    LOG.debug(
+                        f"{feature} @ ({annotation_id}, {annotation.location}): "
+                        f"{current_target} != {last_annotation_targets[feature][annotation_id]}"
+                    )
+                    # set removed field for annotation and store it
+                    tracked_features[feature][annotation_id].append(
+                        FeatureAnnotation(
+                            annotation.feature_name, annotation.location,
+                            annotation.introduced, commit_hash
+                        )
+                    )
+
+                    # track new feature location
+                    click.echo(
+                        f"Location {annotation_id} of feature "
+                        f"{feature} has changed."
+                    )
+                    click.echo(
+                        f"Old location was "
+                        f"({annotation_id}, {annotation.location})"
+                    )
+
+                    new_location = __prompt_location(
+                        feature, commit_hash, annotation.location
+                    )
+                    new_target = __get_location_content(commit, new_location)
+                    assert new_target is not None, "Target must not be None"
+
+                    last_annotations[feature][annotation_id] = \
+                        FeatureAnnotation(feature, new_location, commit_hash)
+                    last_annotation_targets[feature][annotation_id] = new_target
+
+                    LOG.debug(
+                        f"Tracking {feature} @ ({annotation_id}, {new_location}): "
+                        f"{last_annotation_targets[feature][annotation_id]}"
+                    )
 
     # store remaining annotations
-    for feature, annotation in last_annotations.items():
-        tracked_features[feature].append(annotation)
+    for feature, annotations in last_annotations.items():
+        for annotation_id, annotation in annotations.items():
+            tracked_features[feature][annotation_id].append(annotation)
 
     click.echo(f"Final annotations written to {outfile.name}.")
     for feature, annotations in tracked_features.items():
         outfile.write(f"Annotations for feature {feature}:\n")
-        for annotation in annotations:
-            outfile.write(annotation.to_xml())
-            outfile.write("\n")
+        for annotation_id, locations in annotations.items():
+            for location in locations:
+                outfile.write(location.to_xml())
+                outfile.write("\n")
         outfile.write("\n\n")
 
 
