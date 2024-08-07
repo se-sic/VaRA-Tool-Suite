@@ -6,7 +6,6 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from perfetto.trace_processor import TraceProcessor
 from plumbum import local
-from plumbum.cmd import llvm_xray
 
 from varats.data.reports.compiled_binary_report import CompiledBinaryReport
 from varats.experiment.experiment_util import (
@@ -133,7 +132,7 @@ class RunXRayProfiler(actions.ProjectStep):
 
                             # convert to trace event format
                             tef_file = f"tef_{prj_command.command.label}_{rep}"
-                            llvm_xray(
+                            local["llvm_xray"](
                                 "convert", "--symbolize", "--no-demangle",
                                 f"--instr_map={instr_map_path}",
                                 f"--output={tef_file}",
