@@ -117,6 +117,7 @@ module = [
   "varats.gui.views.*",
   "varats.gui.ui_MainWindow",
   "varats.gui.*",
+  "varats.resources.perf_script_overhead_calculation",
 ]
 ignore_errors = true
 
