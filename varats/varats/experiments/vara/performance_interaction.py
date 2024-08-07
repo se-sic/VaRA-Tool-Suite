@@ -74,7 +74,7 @@ def createCommitFilter(project: VProject) -> InteractionFilter:
     revisions = sorted(case_study.revisions, key=commit_map.time_id)
 
     def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
-        return pair[1].short_hash == project.version_of_primary
+        return bool(pair[1].short_hash == project.version_of_primary)
 
     old_rev, new_rev = list(filter(rev_filter, pairwise(revisions)))[0]
 
@@ -102,7 +102,8 @@ def get_old_rev(
     def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
         return pair[1].to_short_commit_hash() == project_version
 
-    return list(filter(rev_filter, pairwise(revisions)))[0][0]
+    return list(filter(rev_filter,
+                       pairwise(revisions)))[0][0].to_short_commit_hash()
 
 
 def get_function_overhead_report_synth(
@@ -119,7 +120,7 @@ def get_old_rev_synth(
     def rev_filter(rev: FullCommitHash) -> bool:
         return rev.to_short_commit_hash() == project_version
 
-    return list(filter(rev_filter, revisions))[0]
+    return list(filter(rev_filter, revisions))[0].to_short_commit_hash()
 
 
 def get_function_annotations(
@@ -139,7 +140,7 @@ def get_function_annotations(
         revisions, ShortCommitHash(project.version_of_primary)
     )
 
-    def old_reports_filter():
+    def old_reports_filter() -> tp.Callable[[str], bool]:
         return lambda file_name: ReportFilename(
             file_name
         ).commit_hash != old_rev.to_short_commit_hash()
@@ -167,7 +168,7 @@ def get_function_annotations(
     return list(hot_functions)
 
 
-class PerfInterReportGeneration(actions.ProjectStep):
+class PerfInterReportGeneration(actions.ProjectStep):  # type: ignore
     """Step for creating a performance interaction report."""
 
     NAME = "PerfInterReportGeneration"
