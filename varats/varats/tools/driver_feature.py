@@ -13,7 +13,7 @@ from varats.project.project_util import get_local_project_git
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.ts_utils.click_param_types import create_project_choice
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import CommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -39,21 +39,22 @@ class Location:
 
     @staticmethod
     def parse_string(
-        s: str,
+        raw_location: str,
         old_location: tp.Optional["Location"] = None
-    ) -> tp.Optional["Location"]:
+    ) -> "Location":
         """Create a location from a string."""
-        if old_location is not None and s.isnumeric():
-            new_line = int(s)
+        if old_location and raw_location.isnumeric():
+            new_line = int(raw_location)
             return Location(
                 old_location.file, new_line, old_location.start_col, new_line,
                 old_location.end_col
             )
 
-        match = Location.LOCATION_FORMAT.match(s)
+        match = Location.LOCATION_FORMAT.match(raw_location)
         if match is None:
             raise click.UsageError(
-                f"Could not parse location: {s}.\nLocation format is "
+                f"Could not parse location: {raw_location}.\n"
+                f"Location format is "
                 f"'<file> <start_line>:<start_col> <end_line>:<end_col>'"
             )
 
@@ -115,25 +116,40 @@ class FeatureAnnotation:
 
 def __prompt_location(
     feature_name: str,
-    commit_hash: FullCommitHash,
-    old_location: tp.Optional[Location] = None
-) -> Location:
-    parse_location: tp.Callable[[str], tp.Optional[Location]]
-    if old_location is not None:
-        parse_location = partial(
-            Location.parse_string, old_location=old_location
-        )
-    else:
-        parse_location = Location.parse_string
+    commit: Commit,
+    old_location: tp.Optional[Location] = None,
+    old_content: tp.Optional[str] = None
+) -> tp.Tuple[Location, str]:
+    commit_hash = CommitHash.from_pygit_commit(commit)
+
+    prompt = f"Enter location for feature {feature_name} @ {commit_hash.short_hash}"
+    if old_content:
+        prompt += f" ({old_content})"
+
+    parse_location = partial(
+        __get_and_check_location, commit=commit, old_location=old_location
+    )
 
     return tp.cast(
-        Location,
-        click.prompt(
-            f"Enter location for feature "
-            f"{feature_name} @ {commit_hash.short_hash}",
-            value_proc=parse_location
-        )
+        tp.Tuple[Location, str],
+        click.prompt(prompt, value_proc=parse_location)
     )
+
+
+def __get_and_check_location(
+    raw_location: str,
+    commit: Commit,
+    old_location: tp.Optional["Location"] = None
+) -> tp.Tuple[Location, str]:
+    location = Location.parse_string(raw_location, old_location)
+    location_content = __get_location_content(commit, location)
+
+    if not location_content:
+        raise click.UsageError(
+            f"The provided location does not exist or is empty."
+        )
+
+    return location, location_content
 
 
 def __get_location_content(commit: Commit,
@@ -197,45 +213,41 @@ def __annotate(
     LOG.debug("Current revision: %s", first_commit.id)
     while click.confirm("Annotate another feature?"):
         feature_name = click.prompt("Enter feature name to annotate", type=str)
-        commit_hash = FullCommitHash(str(first_commit.id))
+        commit_hash = CommitHash.from_pygit_commit(first_commit)
         tracked_features[feature_name] = {}
         last_annotations[feature_name] = {}
         last_annotation_targets[feature_name] = {}
 
         while click.confirm(
-            f"Track another location for feature {feature_name}?"
+            f"Track another location for feature '{feature_name}'?"
         ):
             annotation_id = len(tracked_features[feature_name])
-            location = __prompt_location(feature_name, commit_hash)
-            target = __get_location_content(first_commit, location)
-            assert target is not None, "Target must not be None"
+            location, target = __prompt_location(feature_name, first_commit)
 
             tracked_features[feature_name][annotation_id] = []
             last_annotations[feature_name][annotation_id] = FeatureAnnotation(
                 feature_name, location, commit_hash
             )
             last_annotation_targets[feature_name][annotation_id] = target
+            click.echo(f"Tracking '{target}' at location {location}")
 
-            LOG.debug(
-                f"Tracking {feature_name} @ ({annotation_id}, {location}): "
-                f"{last_annotation_targets[feature_name][annotation_id]}"
-            )
+        click.echo()
 
     for commit in walker:
-        commit_hash = FullCommitHash(str(commit.id))
+        commit_hash = CommitHash.from_pygit_commit(commit)
         LOG.debug("Current revision: %s", commit_hash.hash)
 
         for feature, annotations in last_annotations.items():
             for annotation_id, annotation in annotations.items():
+                old_target = last_annotation_targets[feature][annotation_id]
                 current_target = __get_location_content(
                     commit, annotation.location
                 )
 
-                if current_target != last_annotation_targets[feature][
-                    annotation_id]:
+                if current_target != old_target:
                     LOG.debug(
                         f"{feature} @ ({annotation_id}, {annotation.location}): "
-                        f"{current_target} != {last_annotation_targets[feature][annotation_id]}"
+                        f"{current_target} != {old_target}"
                     )
                     # set removed field for annotation and store it
                     tracked_features[feature][annotation_id].append(
@@ -247,28 +259,22 @@ def __annotate(
 
                     # track new feature location
                     click.echo(
-                        f"Location {annotation_id} of feature "
-                        f"{feature} has changed."
+                        f"({commit_hash.short_hash}) Annotation '{old_target}' "
+                        f"of feature '{feature}' has changed."
                     )
-                    click.echo(
-                        f"Old location was "
-                        f"({annotation_id}, {annotation.location})"
-                    )
+                    click.echo(f"Old location was {annotation.location}")
 
-                    new_location = __prompt_location(
-                        feature, commit_hash, annotation.location
+                    new_location, new_target = __prompt_location(
+                        feature, commit, annotation.location, old_target
                     )
-                    new_target = __get_location_content(commit, new_location)
-                    assert new_target is not None, "Target must not be None"
 
                     last_annotations[feature][annotation_id] = \
                         FeatureAnnotation(feature, new_location, commit_hash)
                     last_annotation_targets[feature][annotation_id] = new_target
-
-                    LOG.debug(
-                        f"Tracking {feature} @ ({annotation_id}, {new_location}): "
-                        f"{last_annotation_targets[feature][annotation_id]}"
+                    click.echo(
+                        f"Tracking '{new_target}' at location {new_location}"
                     )
+            click.echo()
 
     # store remaining annotations
     for feature, annotations in last_annotations.items():
