@@ -139,7 +139,7 @@ class RunXRayProfiler(actions.ProjectStep):  # type: ignore
 
                             # convert to trace event format
                             tef_file = f"tef_{prj_command.command.label}_{rep}"
-                            llvm_xray(
+                            local["llvm_xray"](
                                 "convert", "--symbolize", "--no-demangle",
                                 f"--instr_map={instr_map_path}",
                                 f"--output={tef_file}",
