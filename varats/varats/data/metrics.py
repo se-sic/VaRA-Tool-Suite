@@ -255,8 +255,8 @@ class ConfusionMatrix(tp.Generic[T]):
         Balanced accuracy (BA)/(bACC)
 
         Balanced accuracy can serve as an overall performance metric for a
-        model, whether or not the true labels are imbalanced in the data,
-        assuming the cost of FN is the same as FP.
+        model, whether the true labels are imbalanced in the data, assuming the
+        cost of FN is the same as FP.
         """
         return (self.recall() + self.specificity()) / 2
 

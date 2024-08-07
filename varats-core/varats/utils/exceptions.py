@@ -31,7 +31,7 @@ T = tp.TypeVar('T')
 
 def unwrap(maybe_t: tp.Optional[T], conversion_reason: str) -> T:
     """
-    Unwrap an optional `T` to the underlying type, thowring an exception should
+    Unwrap an optional `T` to the underlying type, throwing an exception should
     a conversion not be possible.
 
     Args:
@@ -55,12 +55,12 @@ def auto_unwrap(
     """
     Wraps a function with an automatic unwrap call, so a function that normally
     returns an optional is declared to always return a concrete value. Should no
-    value be returned, an exception is raised mentioning the reason/assumtion
+    value be returned, an exception is raised mentioning the reason/assumption
     why it was thought that the function always returns a value.
 
     Args:
         conversion_reason: why maybe_t should contain a value and unwrapping
-                           should be save
+                           should be saved
     """
 
     def decorator(
