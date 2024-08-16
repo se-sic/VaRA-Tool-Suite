@@ -1,3 +1,4 @@
+"""Experiment that detects the hot functions of a project."""
 import typing as tp
 from pathlib import Path
 
@@ -75,6 +76,8 @@ class RunXRayProfiler(actions.ProjectStep):
         )
 
     def run_instrumented_code(self) -> actions.StepResult:
+        """Run the instrumented code to detect hot functions."""
+        # pylint: disable=import-outside-toplevel
         from plumbum.cmd import llvm_xray
 
         for binary in self.project.binaries:
