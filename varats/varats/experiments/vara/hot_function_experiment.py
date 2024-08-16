@@ -5,7 +5,6 @@ from benchbuild.command import ProjectCommand, cleanup
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
-from plumbum.cmd import llvm_xray
 
 from varats.experiment.experiment_util import (
     ZippedReportFolder,
@@ -76,6 +75,8 @@ class RunXRayProfiler(actions.ProjectStep):
         )
 
     def run_instrumented_code(self) -> actions.StepResult:
+        from plumbum.cmd import llvm_xray
+
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 # Skip libraries as we cannot run them
