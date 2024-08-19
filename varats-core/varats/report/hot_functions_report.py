@@ -36,7 +36,8 @@ class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
     def hot_functions(self, threshold=2) -> tp.List[XRayFunctionWrapper]:
         """
         Args:
-            threshold: min percentage a function needs as self time to count as hot
+            threshold: min percentage a function needs as total
+                        time to count as hot
         """
         if threshold < 0 or threshold > 100:
             raise ValueError(
@@ -87,7 +88,8 @@ class WLHotFunctionAggregate(
     ) -> tp.Dict[str, tp.List[XRayFunctionWrapper]]:
         """
         Args:
-            threshold: min percentage a function needs as self time to count as hot
+            threshold: min percentage a function needs as
+                        total time to count as hot
         """
         res: tp.Dict[str, tp.List[XRayFunctionWrapper]] = {}
         for wl_name in self.workload_names():
