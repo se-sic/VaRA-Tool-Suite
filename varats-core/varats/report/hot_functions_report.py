@@ -49,7 +49,7 @@ class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
         )
         # The total time tracked only includes time spend in the top n
         # (MAX_TRACK_FUNCTIONS) functions
-        total_time_tracked = self.__function_data["sum"].sum()
+        total_time_tracked = self.__function_data["sum"].max()
 
         if threshold == 0:
             sum_time_cutoff = 0
