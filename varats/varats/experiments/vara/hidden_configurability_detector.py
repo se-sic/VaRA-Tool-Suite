@@ -1,4 +1,5 @@
 import re
+import textwrap
 import typing as tp
 
 from benchbuild.utils import actions
@@ -14,6 +15,7 @@ from varats.experiment.experiment_util import (
     create_new_success_result_filepath,
 )
 from varats.project.varats_project import VProject
+from varats.report.report import ReportSpecification
 from varats.tools.research_tools.vara import VaRA
 from varats.utils.git_util import ChurnConfig
 
@@ -32,8 +34,16 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
     def __call__(self) -> actions.StepResult:
         return self.analyze()
 
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Find Hidden Configuration Points",
+            " " * indent
+        )
+
     def analyze(self) -> actions.StepResult:
         """This step detects hidden configurability points in the project."""
+        print("Running HiddenConfigurabilityDetector")
+
         binary = self.project.binaries[0]
 
         result_file = create_new_success_result_filepath(
@@ -61,8 +71,15 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
                 ).splitlines() if file_pattern.match(file)
             ]
 
+        print(f"Found {len(files)} files to analyze")
+        print(files)
+
+        print(f"{result_file=}")
+        print(f"{project_directory=}")
+
         # Run the HiddenConfigurabilityDetector
-        hvf = local[VaRA.install_location() / "bin" / "hidden-variable-finder"]
+        hvf = local[VaRA.install_location() / "bin" /
+                    "hidden-variability-finder"]
 
         with local.cwd(project_directory):
             run_cmd = hvf[f"--report-file={result_file}",
@@ -78,6 +95,7 @@ class FindHiddenConfigurationPoints(VersionExperiment, shorthand="HCP"):
     """Detects hidden configurability points in the project."""
 
     NAME = "FindHiddenConfigurationPoints"
+    REPORT_SPEC = ReportSpecification(HiddenConfigurabilityReport)
 
     def actions_for_project(self, project: VProject) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
