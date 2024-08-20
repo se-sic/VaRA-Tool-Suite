@@ -71,6 +71,25 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
                 ).splitlines() if file_pattern.match(file)
             ]
 
+            submodule_files = [
+                line for line in git(
+                    "submodule",
+                    "foreach",
+                    "--recursive",
+                    "git ls-tree -r --name-only HEAD",
+                ).splitlines()
+            ]
+
+            sm_path = ""
+            for line in submodule_files:
+                if line.startswith("Entering"):
+                    sm_path = line.split(" ")[1].strip("' ")
+
+                if not file_pattern.match(line):
+                    continue
+
+                files.append(sm_path + "/" + line)
+
         print(f"Found {len(files)} files to analyze")
         print(files)
 
