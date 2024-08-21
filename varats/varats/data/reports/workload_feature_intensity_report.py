@@ -57,21 +57,32 @@ def _get_feature_regions_from_tef_report(
                     found_missing_open_event = True
                     continue
 
-                feature_names = frozenset([event.name
-                                           for event in open_events] +
-                                          [trace_event.name])
+                feature_names = {
+                    feature for event in open_events for feature in
+                    extract_feature_region_set_from_string(event.name)
+                }
+                feature_names.update(
+                    extract_feature_region_set_from_string(trace_event.name)
+                )
+
                 region_ids = frozenset([event.uuid for event in open_events] +
                                        [trace_event.uuid])
 
                 # Increase the intensity for the feature region combination that was just closed
-                feature_intensities[feature_names][region_ids] += 1
+                feature_intensities[frozenset(feature_names)][region_ids] += 1
 
                 if open_events:
                     # Also increase the intensity for the remaining open feature regions, as it was "split" by
                     # the closed region
-                    feature_intensities[frozenset([
-                        event.name for event in open_events
-                    ])][frozenset([event.uuid for event in open_events])] += 1
+
+                    feature_names = {
+                        feature for event in open_events for feature in
+                        extract_feature_region_set_from_string(event.name)
+                    }
+
+                    feature_intensities[frozenset(feature_names)][frozenset([
+                        event.uuid for event in open_events
+                    ])] += 1
 
     if open_events:
         LOG.error("Not all events have been correctly closed.")
@@ -81,6 +92,35 @@ def _get_feature_regions_from_tef_report(
         LOG.error("Not all events have been correctly opened.")
 
     return feature_intensities
+
+
+def feature_region_string_from_set(
+    feature_region_set: tp.FrozenSet[str]
+) -> str:
+    """
+    Convert a feature region set to a string representation.
+
+    The string representation is a comma separated list of feature region names, enclosed by 'FR(' and ')'.
+    @param feature_region_set: The feature region set to convert.
+    @return: The string representation of the feature region set.
+    """
+    return "FR(" + ",".join(feature_region_set) + ")"
+
+
+def extract_feature_region_set_from_string(
+    feature_region_string: str
+) -> tp.Set[str]:
+    """
+    Extract a feature region set from a string representation.
+
+    The string representation is a comma separated list of feature region names, enclosed by 'FR(' and ')'.
+    @param feature_region_string: The string representation of the feature region set.
+    @return: The feature region set.
+    """
+    feature_region_string = feature_region_string.replace("FR", "").replace(
+        "(", ""
+    ).replace(")", "")
+    return set(feature_region_string.split(","))
 
 
 class WorkloadFeatureIntensityReport(
@@ -193,3 +233,19 @@ class WorkloadFeatureIntensityReport(
             intensities.
         """
         return self.__region_intensities[binary]
+
+    def feature_region_names(self) -> tp.Set[str]:
+        """
+        Return a list of all feature region names that are present in the
+        report.
+
+        @return:
+        """
+        feature_region_names = set()
+        for binary in self.__feature_intensities:
+            for workload in self.__feature_intensities[binary]:
+                for feature in self.__feature_intensities[binary][workload]:
+                    feature_region_names.add(
+                        feature_region_string_from_set(feature)
+                    )
+        return feature_region_names
