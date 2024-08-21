@@ -91,7 +91,7 @@ class Xz(VProject):
                 # Use output_param to ensure input file
                 # gets appended after all arguments.
                 output_param=["{output}"],
-                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                output=SourceRoot("geo-maps/countries-land-1km.geo.json"),
                 label="countries-land-1km",
                 creates=["geo-maps/countries-land-1km.geo.json.xz"]
             )
