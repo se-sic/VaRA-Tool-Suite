@@ -2,6 +2,7 @@ import re
 import textwrap
 import typing as tp
 
+import benchbuild.extensions as bb_ext
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import git
 from plumbum import local
@@ -13,6 +14,8 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
     create_new_success_result_filepath,
+    WithUnlimitedStackSize,
+    get_default_compile_error_wrapped,
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
@@ -123,5 +126,30 @@ class FindHiddenConfigurationPoints(VersionExperiment, shorthand="HCP"):
         # In a later improvement, one could compile the project once and use the
         # generated compile_commands.json to run the HiddenConfigurabilityDetector
         # only on the files that are actually compiled.
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = bb_ext.run.RuntimeExtension(
+            project, self
+        ) << bb_ext.time.RunWithTime()
 
-        return [HiddenConfigurabilityDetector(project, self.get_handle())]
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = bb_ext.compiler.RunCompiler(
+            project, self
+        ) << WithUnlimitedStackSize()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        # Wrap compile action such that we can continue, even if it fails.
+        # While it helps us to have a compile_commands.json, some projects might
+        # not compile but the HiddenConfigurabilityDetector might still work.
+        experiment_steps = [
+            actions.Any([
+                actions.Compile(project),
+                HiddenConfigurabilityDetector(project, self.get_handle()),
+                actions.Clean(project)
+            ])
+        ]
+
+        return experiment_steps
