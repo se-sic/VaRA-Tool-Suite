@@ -114,6 +114,26 @@ def fetch_repository(repo: RepositoryHandle) -> None:
     repo("fetch")
 
 
+def add(repo_folder: Path, *git_add_args: str) -> None:
+    """Runs `git add` with the given arguments."""
+    git("-C", repo_folder.absolute(), "add", *git_add_args)
+
+
+def commit(
+    repo_folder: Path,
+    message: tp.Optional[str] = None,
+    allow_empty: bool = False
+) -> None:
+    """Commits the repository."""
+    args = ["--allow-empty-message"]
+    if message:
+        args = ["-m", message]
+    if allow_empty:
+        args += ["--allow-empty"]
+
+    git("-C", repo_folder.absolute(), "commit", *args)
+
+
 def checkout_branch_or_commit(
     repo: RepositoryHandle, target: tp.Union[str, CommitHash]
 ) -> None:
