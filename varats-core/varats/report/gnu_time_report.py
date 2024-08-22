@@ -18,7 +18,7 @@ Examples to produce a ``TimeReport``:
             command_to_measure = sleep["2"]
             time("-v", "-o", f"{report_file}", command_to_measure)
 """
-
+import logging
 import re
 import typing as tp
 from datetime import timedelta
@@ -27,6 +27,8 @@ from pathlib import Path
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportAggregate
+
+LOG = logging.Logger(__name__)
 
 
 class WrongTimeReportFormat(Exception):
@@ -38,7 +40,10 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
+
+        self.__wall_clock_time = timedelta(seconds=-1)
         self.__filesystem_io = (-1, -1)
+
         with open(self.path, 'r') as stream:
             for line in stream:
                 line = line.strip()
@@ -61,7 +66,7 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
                     continue
 
                 if line.startswith("Elapsed (wall clock) time"):
-                    self.__wall_clock_time: timedelta = \
+                    self.__wall_clock_time = \
                         TimeReport._parse_wall_clock_time(line)
                     continue
 
@@ -117,6 +122,17 @@ class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
     @property
     def wall_clock_time(self) -> timedelta:
         """Elapsed wall clock time."""
+        if self.__wall_clock_time < timedelta():
+            if LOG.isEnabledFor(logging.WARNING):
+                project_revision = (
+                    f"{self.filename.project_name} @ "
+                    f"{self.filename.commit_hash}"
+                )
+                if config_id := self.filename.config_id:
+                    project_revision += f",{config_id}"
+                LOG.warning(f"No wall clock time for {project_revision}")
+            return timedelta()
+
         return self.__wall_clock_time
 
     @property
