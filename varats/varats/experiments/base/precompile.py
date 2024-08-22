@@ -86,9 +86,10 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
         for binary in self.project.binaries:
 
             def filter_reports(file_name: str) -> bool:
-                return ReportFilename(
-                    file_name
-                ).commit_hash.hash != self.project.version_of_primary
+                return bool(
+                    ReportFilename(file_name).commit_hash.hash !=
+                    self.project.version_of_primary
+                )
 
             report_path = get_processed_revisions_files(
                 self.project.name,

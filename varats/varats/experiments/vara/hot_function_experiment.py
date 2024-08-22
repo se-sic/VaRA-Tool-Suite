@@ -81,10 +81,6 @@ class RunXRayProfiler(actions.ProjectStep):  # type: ignore
         )
 
     def run_instrumented_code(self) -> actions.StepResult:
-        """Run the instrumented code to detect hot functions."""
-        # pylint: disable=import-outside-toplevel
-        from plumbum.cmd import llvm_xray
-
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 # Skip libraries as we cannot run them

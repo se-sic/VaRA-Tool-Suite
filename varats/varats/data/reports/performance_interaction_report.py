@@ -35,7 +35,7 @@ class PerfInteraction:
     def involved_features(self) -> tp.List[str]:
         return self.__involved_features
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"{self.__commit} -> {self.__perf_region} "
             f"[{', '.join(self.__involved_features)}]"
