@@ -1,0 +1,401 @@
+BEGIN instrumentation points.
+FeatureRegion
+  UUID: 1729382256910565379
+  Name: FR(C)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2038
+    projects/WorkloadFeatureIntensity/main.cpp:148:9
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2038
+    projects/WorkloadFeatureIntensity/main.cpp:148:9
+  }
+  Exits:
+  {
+    original
+    br label %if.end62, !dbg !2040
+    projects/WorkloadFeatureIntensity/main.cpp:149:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2038
+    projects/WorkloadFeatureIntensity/main.cpp:148:9
+  }
+FeatureRegion
+  UUID: 1729382256910548995
+  Name: FR(D)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 60), !dbg !2016
+    projects/WorkloadFeatureIntensity/main.cpp:140:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 60), !dbg !2016
+    projects/WorkloadFeatureIntensity/main.cpp:140:5
+  }
+  Exits:
+  {
+    original
+    br label %if.end53, !dbg !2018
+    projects/WorkloadFeatureIntensity/main.cpp:141:3
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 60), !dbg !2016
+    projects/WorkloadFeatureIntensity/main.cpp:140:5
+  }
+FeatureRegion
+  UUID: 1729382256910532611
+  Name: FR(C)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2001
+    projects/WorkloadFeatureIntensity/main.cpp:131:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2001
+    projects/WorkloadFeatureIntensity/main.cpp:131:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end50, !dbg !2003
+    projects/WorkloadFeatureIntensity/main.cpp:132:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2001
+    projects/WorkloadFeatureIntensity/main.cpp:131:7
+  }
+FeatureRegion
+  UUID: 1729382256910516227
+  Name: FR(B)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1985
+    projects/WorkloadFeatureIntensity/main.cpp:124:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1985
+    projects/WorkloadFeatureIntensity/main.cpp:124:5
+  }
+  Exits:
+  {
+    original
+    br label %if.end47, !dbg !1987
+    projects/WorkloadFeatureIntensity/main.cpp:125:3
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1985
+    projects/WorkloadFeatureIntensity/main.cpp:124:5
+  }
+FeatureRegion
+  UUID: 1729382256910499843
+  Name: FR(B)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1976
+    projects/WorkloadFeatureIntensity/main.cpp:117:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1976
+    projects/WorkloadFeatureIntensity/main.cpp:117:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end, !dbg !1978
+    projects/WorkloadFeatureIntensity/main.cpp:118:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1976
+    projects/WorkloadFeatureIntensity/main.cpp:117:7
+  }
+FeatureRegion
+  UUID: 1729382256910401539
+  Name: FR(C)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1980
+    projects/WorkloadFeatureIntensity/main.cpp:75:9
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1980
+    projects/WorkloadFeatureIntensity/main.cpp:75:9
+  }
+  Exits:
+  {
+    original
+    br label %if.end12, !dbg !1982
+    projects/WorkloadFeatureIntensity/main.cpp:76:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1980
+    projects/WorkloadFeatureIntensity/main.cpp:75:9
+  }
+FeatureRegion
+  UUID: 1729382256910352387
+  Name: FR(C)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2012
+    projects/WorkloadFeatureIntensity/main.cpp:51:9
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2012
+    projects/WorkloadFeatureIntensity/main.cpp:51:9
+  }
+  Exits:
+  {
+    original
+    br label %if.end28, !dbg !2014
+    projects/WorkloadFeatureIntensity/main.cpp:52:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !2012
+    projects/WorkloadFeatureIntensity/main.cpp:51:9
+  }
+FeatureRegion
+  UUID: 1729382256910385155
+  Name: FR(D)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1954
+    projects/WorkloadFeatureIntensity/main.cpp:68:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1954
+    projects/WorkloadFeatureIntensity/main.cpp:68:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end3, !dbg !1956
+    projects/WorkloadFeatureIntensity/main.cpp:69:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1954
+    projects/WorkloadFeatureIntensity/main.cpp:68:7
+  }
+FeatureRegion
+  UUID: 1729382256910336003
+  Name: FR(D)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1992
+    projects/WorkloadFeatureIntensity/main.cpp:45:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1992
+    projects/WorkloadFeatureIntensity/main.cpp:45:5
+  }
+  Exits:
+  {
+    original
+    br label %if.end19, !dbg !1994
+    projects/WorkloadFeatureIntensity/main.cpp:46:3
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1992
+    projects/WorkloadFeatureIntensity/main.cpp:45:5
+  }
+FeatureRegion
+  UUID: 1729382256910368771
+  Name: FR(B)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 20), !dbg !1948
+    projects/WorkloadFeatureIntensity/main.cpp:64:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 20), !dbg !1948
+    projects/WorkloadFeatureIntensity/main.cpp:64:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end, !dbg !1950
+    projects/WorkloadFeatureIntensity/main.cpp:65:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 20), !dbg !1948
+    projects/WorkloadFeatureIntensity/main.cpp:64:7
+  }
+FeatureRegion
+  UUID: 1729382256910319619
+  Name: FR(D)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1981
+    projects/WorkloadFeatureIntensity/main.cpp:40:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1981
+    projects/WorkloadFeatureIntensity/main.cpp:40:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end13, !dbg !1983
+    projects/WorkloadFeatureIntensity/main.cpp:41:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1981
+    projects/WorkloadFeatureIntensity/main.cpp:40:7
+  }
+FeatureRegion
+  UUID: 1729382256910303235
+  Name: FR(A)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 10), !dbg !1975
+    projects/WorkloadFeatureIntensity/main.cpp:36:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 10), !dbg !1975
+    projects/WorkloadFeatureIntensity/main.cpp:36:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end10, !dbg !1977
+    projects/WorkloadFeatureIntensity/main.cpp:37:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 10), !dbg !1975
+    projects/WorkloadFeatureIntensity/main.cpp:36:7
+  }
+FeatureRegion
+  UUID: 1729382256910286851
+  Name: FR(C)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1952
+    projects/WorkloadFeatureIntensity/main.cpp:30:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1952
+    projects/WorkloadFeatureIntensity/main.cpp:30:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end3, !dbg !1954
+    projects/WorkloadFeatureIntensity/main.cpp:31:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 30), !dbg !1952
+    projects/WorkloadFeatureIntensity/main.cpp:30:7
+  }
+FeatureRegion
+  UUID: 1729382256910270467
+  Name: FR(B)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 50), !dbg !1937
+    projects/WorkloadFeatureIntensity/main.cpp:25:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 50), !dbg !1937
+    projects/WorkloadFeatureIntensity/main.cpp:25:5
+  }
+  Exits:
+  {
+    original
+    br label %if.end, !dbg !1939
+    projects/WorkloadFeatureIntensity/main.cpp:26:3
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 50), !dbg !1937
+    projects/WorkloadFeatureIntensity/main.cpp:25:5
+  }
+FeatureRegion
+  UUID: 1729382256910417923
+  Name: FR(D)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1986
+    projects/WorkloadFeatureIntensity/main.cpp:79:9
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1986
+    projects/WorkloadFeatureIntensity/main.cpp:79:9
+  }
+  Exits:
+  {
+    original
+    br label %if.end15, !dbg !1988
+    projects/WorkloadFeatureIntensity/main.cpp:80:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !1986
+    projects/WorkloadFeatureIntensity/main.cpp:79:9
+  }
+FeatureRegion
+  UUID: 1729382256910434307
+  Name: FR(A)
+  Entries:
+  {
+    original
+    store i32 7, i32* %repetitions, align 4, !dbg !2000
+    projects/WorkloadFeatureIntensity/main.cpp:87:17
+    optimized
+    store i32 7, i32* %repetitions, align 4, !dbg !2000
+    projects/WorkloadFeatureIntensity/main.cpp:87:17
+  }
+  Exits:
+  {
+    original
+    br label %if.end22, !dbg !2002
+    projects/WorkloadFeatureIntensity/main.cpp:88:3
+    optimized
+    store i32 7, i32* %repetitions, align 4, !dbg !2000
+    projects/WorkloadFeatureIntensity/main.cpp:87:17
+  }
+FeatureRegion
+  UUID: 1729382256910450691
+  Name: FR(B)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 20), !dbg !2016
+    projects/WorkloadFeatureIntensity/main.cpp:92:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 20), !dbg !2016
+    projects/WorkloadFeatureIntensity/main.cpp:92:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end29, !dbg !2018
+    projects/WorkloadFeatureIntensity/main.cpp:93:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 20), !dbg !2016
+    projects/WorkloadFeatureIntensity/main.cpp:92:7
+  }
+FeatureRegion
+  UUID: 1729382256910467075
+  Name: FR(D)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !2022
+    projects/WorkloadFeatureIntensity/main.cpp:96:7
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !2022
+    projects/WorkloadFeatureIntensity/main.cpp:96:7
+  }
+  Exits:
+  {
+    original
+    br label %if.end32, !dbg !2024
+    projects/WorkloadFeatureIntensity/main.cpp:97:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 15), !dbg !2022
+    projects/WorkloadFeatureIntensity/main.cpp:96:7
+  }
+FeatureRegion
+  UUID: 1729382256910483459
+  Name: FR(A)
+  Entries:
+  {
+    original
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 50), !dbg !1971
+    projects/WorkloadFeatureIntensity/main.cpp:114:5
+    optimized
+    call void @_ZN7fp_util24busy_sleep_for_millisecsEj(i32 noundef 50), !dbg !1971
+    projects/WorkloadFeatureIntensity/main.cpp:114:5
+  }
+  Exits:
+  {
+    original
+    br label %if.end44, !dbg !1980
+    projects/WorkloadFeatureIntensity/main.cpp:119:3
+    optimized
+    br label %if.end44, !dbg !1980
+    projects/WorkloadFeatureIntensity/main.cpp:119:3
+  }
+END instrumentation points.
