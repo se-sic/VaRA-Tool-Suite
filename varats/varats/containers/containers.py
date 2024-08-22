@@ -635,7 +635,7 @@ def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
 
 def run_container(
     image_tag: str, container_name: str, build_dir: tp.Optional[str],
-    args: tp.Sequence[str]
+    tmp_dir: tp.Optional[str], args: tp.Sequence[str]
 ) -> None:
     """
     Run a podman container.
@@ -644,7 +644,12 @@ def run_container(
         image_tag: tag of the image to use for the container
         container_name: name for the spawned container
         build_dir: benchbuild's build directory
+        tmp_dir: benchbuild's tmp directory
         args: arguments that get passed to the container's entry point
     """
     publish = bootstrap.bus()
-    publish(RunProjectContainer(image_tag, container_name, build_dir, args))
+    publish(
+        RunProjectContainer(
+            image_tag, container_name, build_dir, tmp_dir, False, False, args
+        )
+    )

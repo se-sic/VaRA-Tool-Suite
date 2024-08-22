@@ -290,7 +290,7 @@ def _build_in_container(
     )
 
     run_container(
-        image_name, f"build_{tool.name}", None, [
+        image_name, f"build_{tool.name}", None, None, [
             "build",
             tool.name.lower(),
             "--no-update-prompt",
