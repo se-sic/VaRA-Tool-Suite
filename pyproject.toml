@@ -99,6 +99,7 @@ module = [
   "matplotlib.*",
   "networkx.*",
   "pandas",
+  "perfetto.*",
   "plotly.*",
   "pydriller",
   "pygtrie",
