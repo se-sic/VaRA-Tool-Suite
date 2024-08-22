@@ -1,4 +1,5 @@
 """Module for performance interaction detection experiments."""
+import textwrap
 import typing as tp
 from itertools import pairwise
 from pathlib import Path
@@ -28,6 +29,7 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     OutputFolderStep,
 )
+from varats.experiment.steps.git import GitAdd, GitCommit, GitCheckout
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.experiments.base.perf_sampling import (
@@ -47,7 +49,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
 )
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider, Patch
+from varats.provider.patch.patch_provider import PatchProvider, Patch, PatchSet
 from varats.report.function_overhead_report import (
     WLFunctionOverheadReportAggregate,
     MPRWLFunctionOverheadReportAggregate,
@@ -91,7 +93,7 @@ def createCommitFilter(project: VProject) -> InteractionFilter:
 
 def get_function_overhead_report(
     report_filepath: ReportFilepath
-) -> WLFunctionOverheadReportAggregate:
+) -> tp.Optional[WLFunctionOverheadReportAggregate]:
     return WLFunctionOverheadReportAggregate(report_filepath.full_path())
 
 
@@ -108,7 +110,7 @@ def get_old_rev(
 
 def get_function_overhead_report_synth(
     report_filepath: ReportFilepath
-) -> WLFunctionOverheadReportAggregate:
+) -> tp.Optional[WLFunctionOverheadReportAggregate]:
     return MPRWLFunctionOverheadReportAggregate(report_filepath.full_path()
                                                ).get_baseline_report()
 
@@ -128,7 +130,7 @@ def get_function_annotations(
     experiment_type: tp.Type[VersionExperiment],
     report_type: tp.Type[BaseReport],
     get_report: tp.Callable[[ReportFilepath],
-                            WLFunctionOverheadReportAggregate],
+                            tp.Optional[WLFunctionOverheadReportAggregate]],
     get_old_revision: tp.Callable[[tp.List[FullCommitHash], ShortCommitHash],
                                   ShortCommitHash],
 ) -> tp.List[str]:
@@ -157,6 +159,9 @@ def get_function_annotations(
 
     for report_filepath in report_files:
         agg_function_overhead_report = get_report(report_filepath)
+        if agg_function_overhead_report is None:
+            #TODO: log warning
+            continue
 
         for _, funcs in agg_function_overhead_report.hot_functions_per_workload(
             threshold=5
@@ -236,6 +241,12 @@ class PerfInterReportGeneration(actions.ProjectStep):  # type: ignore
 
         return actions.StepResult.OK
 
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run performance interaction analysis",
+            " " * indent
+        )
+
 
 class PerfInterReportGenerationSynth(OutputFolderStep):
     """Step for creating a performance interaction report."""
@@ -301,6 +312,12 @@ class PerfInterReportGenerationSynth(OutputFolderStep):
         )
 
         return actions.StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run performance interaction analysis",
+            " " * indent
+        )
 
 
 class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
@@ -398,30 +415,54 @@ class PerformanceInteractionExperimentSynthetic(
         ]
 
         patch_provider = PatchProvider.get_provider_for_project(project)
-        patches = patch_provider.get_patches_for_revision(
+        patches: PatchSet = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
         )
         perf_region_patches = patches["perf_region"]
-        regression_patches = patches["regression"]
-        print(f"{regression_patches=}")
+        regression_patches = patches.all_of("perf_inter", "regression")
+        change_patches = patches.all_of("perf_inter", "change")
 
         analysis_actions = []
-        # highlight performance regions via patch
-        for patch in perf_region_patches:
-            analysis_actions.append(ApplyPatch(project, patch))
 
         for binary in project.binaries:
             result_filepath = create_new_success_result_filepath(
                 self.get_handle(),
                 self.get_handle().report_spec().main_report, project, binary
             )
-            # apply regressions via patch
-            patch_steps = []
-            for patch in regression_patches:
-                applied_patches = list(perf_region_patches)
-                applied_patches.append(patch)
 
-                patch_steps.append(ApplyPatch(project, patch))
+            # simulate regressions via patches
+            patch_steps = []
+            for change_patch in change_patches:
+                # apply performance region patches
+                applied_patches = list(perf_region_patches)
+                for perf_region_patch in perf_region_patches:
+                    patch_steps.append(ApplyPatch(project, perf_region_patch))
+
+                # apply separate regression simulating patch if available
+                #TODO: use tags to match patches
+                id = change_patch.shortname[-1]
+                filtered_regression_patches = list(
+                    filter(
+                        lambda patch: patch.shortname[-1] == id,
+                        regression_patches
+                    )
+                )
+                if filtered_regression_patches:
+                    assert len(filtered_regression_patches) == 1
+                    regression_patch = filtered_regression_patches[0]
+                    applied_patches.append(regression_patch)
+                    patch_steps.append(ApplyPatch(project, regression_patch))
+
+                # commit patches to not interfere with the change patch
+                patch_steps.append(GitAdd(project, "-u"))
+                patch_steps.append(
+                    GitCommit(
+                        project, message="Hot code and regression patches"
+                    )
+                )
+
+                # apply change patch
+                patch_steps.append(ApplyPatch(project, change_patch))
                 patch_steps += generate_basic_blame_experiment_actions(
                     project,
                     bc_file_extensions,
@@ -436,11 +477,18 @@ class PerformanceInteractionExperimentSynthetic(
                         project, binary,
                         MPRPerformanceInteractionReport.
                         create_patched_report_name(
-                            patch, "performance_interactions"
+                            change_patch, "performance_interactions"
                         ), self.get_handle(), applied_patches
                     )
                 )
-                patch_steps.append(RevertPatch(project, patch))
+                patch_steps.append(RevertPatch(project, change_patch))
+
+                # checkout original project revision
+                patch_steps.append(
+                    GitCheckout(
+                        project, ShortCommitHash(project.version_of_primary)
+                    )
+                )
 
             analysis_actions.append(
                 ZippedExperimentSteps(result_filepath, patch_steps)
