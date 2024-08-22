@@ -25,6 +25,7 @@ def _seconds_to_ns(seconds: int) -> float:
 
 
 class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
+    """Report class to load and evaluate the hot function data."""
 
     MAX_TRACK_FUNCTIONS = 50
 
@@ -32,7 +33,9 @@ class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
         super().__init__(path)
         self.__function_data = read_csv(path)
 
-    def top_n_functions(self, limit=10) -> tp.List[XRayFunctionWrapper]:
+    def top_n_functions(self, limit: int = 10) -> tp.List[XRayFunctionWrapper]:
+        """Determines the `n` hottest functions in which the most time was
+        spent."""
         self.__function_data.sort_values(
             by='self', ascending=False, inplace=True
         )
@@ -45,7 +48,7 @@ class HotFunctionReport(BaseReport, shorthand="HFR", file_type=".csv"):
             ) for _, row in self.__function_data.head(limit).iterrows()
         ]
 
-    def hot_functions(self, threshold=2) -> tp.List[XRayFunctionWrapper]:
+    def hot_functions(self, threshold: int = 2) -> tp.List[XRayFunctionWrapper]:
         """
         Args:
             threshold: min percentage a function needs as self time to count as hot
@@ -96,12 +99,13 @@ class WLHotFunctionAggregate(
         super().__init__(path, HotFunctionReport)
 
     def dump_all_reports(self) -> None:
+        """Dumps the contents of all loaded hot functions reports."""
         for wl_name in self.workload_names():
             for report in self.reports(wl_name):
                 report.print_full_dump()
 
     def hot_functions_per_workload(
-        self, threshold=2
+        self, threshold: int = 2
     ) -> tp.Dict[str, tp.List[XRayFunctionWrapper]]:
         """
         Args:

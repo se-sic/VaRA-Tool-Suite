@@ -1,3 +1,4 @@
+"""Experiment that detects the hot functions of a project."""
 import typing as tp
 from pathlib import Path
 
@@ -47,6 +48,8 @@ def perf_prec_workload_commands(
             project, binary, [WorkloadCategory.EXAMPLE]
         )
 
+    wl_commands += workload_commands(project, binary, [WorkloadCategory.SMALL])
+
     wl_commands += workload_commands(project, binary, [WorkloadCategory.MEDIUM])
 
     return wl_commands
@@ -74,12 +77,16 @@ class RunXRayProfiler(actions.ProjectStep):  # type: ignore
     def __str__(self, indent: int = 0) -> str:
         return str(
             actions.textwrap.indent(
-                f"* {self.project.name}: Run VaRA measurements together with XRay",
-                indent * " "
+                f"* {self.project.name}: Run VaRA "
+                "measurements together with XRay", indent * " "
             )
         )
 
     def run_instrumented_code(self) -> actions.StepResult:
+        """Run the instrumented code to detect hot functions."""
+        # pylint: disable=import-outside-toplevel
+        from plumbum.cmd import llvm_xray
+
         for binary in self.project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 # Skip libraries as we cannot run them
@@ -134,7 +141,7 @@ class RunXRayProfiler(actions.ProjectStep):  # type: ignore
 
                             # convert to trace event format
                             tef_file = f"tef_{prj_command.command.label}_{rep}"
-                            local["llvm_xray"](
+                            llvm_xray(
                                 "convert", "--symbolize", "--no-demangle",
                                 f"--instr_map={instr_map_path}",
                                 f"--output={tef_file}",
@@ -211,10 +218,9 @@ class PreCompileXRayFindHotFunctions(VersionExperiment, shorthand="PRECHF"):
         ]
 
         project.runtime_extension = run.RuntimeExtension(project, self) \
-                                    << time.RunWithTime()
+            << time.RunWithTime()
 
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM()
+        project.compiler_extension = compiler.RunCompiler(project, self)
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project,

@@ -16,6 +16,8 @@ from varats.table.tables import TableFormat, TableGenerator
 
 
 class HotFunctionsTable(Table, table_name="hot_functions"):
+    """A concise table that provides a quick overview of all the detected hot
+    functions."""
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
