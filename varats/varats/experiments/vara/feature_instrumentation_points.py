@@ -30,6 +30,7 @@ from varats.experiments.vara.feature_experiment import (
 )
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
+from varats.utils.config import get_current_config_id
 
 
 class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
@@ -51,8 +52,11 @@ class CollectInstrumentationPoints(actions.ProjectStep):  # type: ignore
     def __call__(self) -> actions.StepResult:
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
-                self.__experiment_handle, FeatureInstrumentationPointsReport,
-                self.project, binary
+                self.__experiment_handle,
+                FeatureInstrumentationPointsReport,
+                self.project,
+                binary,
+                config_id=get_current_config_id(self.project)
             )
 
             opt_params = [
