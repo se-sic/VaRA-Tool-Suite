@@ -2,7 +2,6 @@
 import typing as tp
 
 import pandas as pd
-from jinja2.nodes import Continue
 
 from varats.experiments.base.perf_sampling import PerfSampling
 from varats.paper.paper_config import get_loaded_paper_config
@@ -60,8 +59,6 @@ class HotFunctionsTable(Table, table_name="hot_functions"):
                             "FunctionName": hf
                         })
 
-            # funcs = {entry["FunctionName"] for entry in cs_entries}
-            # print(f"{project_name}: {funcs}")
             entries += cs_entries
 
         df = pd.DataFrame.from_records(entries).drop_duplicates()

@@ -38,7 +38,7 @@ class MultiPatchReport(
             if not self.__base or not self.__patched_reports:
                 LOG.warning(f"Potentially missing reports in file {path}")
 
-    def get_baseline_report(self) -> ReportTy:
+    def get_baseline_report(self) -> tp.Optional[ReportTy]:
         return self.__base
 
     def get_report_for_patch(self,

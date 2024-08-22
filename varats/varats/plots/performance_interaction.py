@@ -1,6 +1,7 @@
 """Performance interaction eval."""
 import typing as tp
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -49,10 +50,13 @@ class PerformanceInteractionSavingsPlot(Plot, plot_name="perf_inter_cost"):
             for revision in revisions:
                 perf_inter_report = perf_inter_reports.get(revision, None)
 
-                savings = calculate_saved_costs(
-                    project_name, revision, configs, perf_inter_report,
-                    performance_data
-                )
+                if perf_inter_report:
+                    savings = calculate_saved_costs(
+                        project_name, revision, configs, perf_inter_report,
+                        performance_data
+                    )
+                else:
+                    savings = np.nan, np.nan, np.nan
 
                 data.append({
                     "project": project_name,

@@ -52,7 +52,7 @@ def perf_prec_workload_commands(
     return wl_commands
 
 
-class RunXRayProfiler(actions.ProjectStep):
+class RunXRayProfiler(actions.ProjectStep):  # type: ignore
     """Profiling step that runs a XRay instrumented binary to extract function-
     level measurement data."""
 
@@ -72,9 +72,11 @@ class RunXRayProfiler(actions.ProjectStep):
         return self.run_instrumented_code()
 
     def __str__(self, indent: int = 0) -> str:
-        return actions.textwrap.indent(
-            f"* {self.project.name}: Run VaRA measurements together with XRay",
-            indent * " "
+        return str(
+            actions.textwrap.indent(
+                f"* {self.project.name}: Run VaRA measurements together with XRay",
+                indent * " "
+            )
         )
 
     def run_instrumented_code(self) -> actions.StepResult:
