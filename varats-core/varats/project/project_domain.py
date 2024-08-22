@@ -31,6 +31,8 @@ class ProjectDomains(Enum):
     UNIX_TOOLS = "UNIX utils"
     VERSION_CONTROL = "Version control"
     WEB_TOOLS = "Web tools"
+    RUNTIME = "Runtime"
+    MPI = "Message Passing Interface"
 
     def __str__(self) -> str:
         return str(self.value)
