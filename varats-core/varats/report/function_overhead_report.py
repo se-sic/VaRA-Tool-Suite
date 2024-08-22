@@ -64,12 +64,8 @@ class FunctionOverheadReport(BaseReport, shorthand="FOR", file_type=".yaml"):
                         )
                         self.__function_data[func_data.function_name
                                             ] = func_data
-                # else:
-                #     LOG.warning(
-                #         "No function data found in report file %s.", path
-                #     )
 
-            except StopIteration | yaml.scanner.ScannerError:
+            except (StopIteration, yaml.scanner.ScannerError):
                 LOG.warning("Empty report file: %s.", path)
 
     @property
@@ -115,7 +111,7 @@ class WLFunctionOverheadReportAggregate(
 
     def hot_functions_per_workload(
         self,
-        threshold=2
+        threshold: float = 2
     ) -> tp.Dict[str, tp.Dict[str, tp.List[FunctionOverheadData]]]:
         """
         Retrieve hot functions grouped by workload.
