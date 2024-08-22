@@ -58,6 +58,9 @@ class PerformanceInteractionReport(
             version_header.raise_if_version_is_less_than(1)
 
             raw_report = next(documents)
+            self.change_insts = raw_report['change-insts']
+            self.feature_insts = raw_report['feature-insts']
+            self.perf_insts = raw_report['perf-insts']
 
             for raw_inter in raw_report['perf-inters']:
                 self.__perf_inters.append(
