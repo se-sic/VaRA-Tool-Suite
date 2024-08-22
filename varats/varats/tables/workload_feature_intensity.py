@@ -2,9 +2,15 @@ import typing as tp
 
 import pandas as pd
 
+from varats.data.reports.feature_instrumentation_points_report import (
+    FeatureInstrumentationPointsReport,
+)
 from varats.data.reports.workload_feature_intensity_report import (
     WorkloadFeatureIntensityReport,
     feature_region_string_from_set,
+)
+from varats.experiments.vara.feature_instrumentation_points import (
+    FeatureInstrumentationPoints,
 )
 from varats.experiments.vara.workload_feature_intensity import (
     WorkloadFeatureIntensityExperiment,
@@ -29,7 +35,7 @@ class WorkloadIntensityTable(Table, table_name="workload_intensity"):
             case_study.revisions[0]
         ):
             project_name = case_study.project_name
-            report_files = get_processed_revisions_files(
+            intensity_report_files = get_processed_revisions_files(
                 project_name,
                 WorkloadFeatureIntensityExperiment,
                 WorkloadFeatureIntensityReport,
@@ -37,19 +43,47 @@ class WorkloadIntensityTable(Table, table_name="workload_intensity"):
                 config_id=config_id
             )
 
-            if len(report_files) > 1:
+            instrumentation_points_report_files = get_processed_revisions_files(
+                project_name,
+                FeatureInstrumentationPoints,
+                FeatureInstrumentationPointsReport,
+                get_case_study_file_name_filter(case_study),
+                config_id=config_id
+            )
+
+            if len(intensity_report_files) > 1:
                 raise AssertionError("Should only be one")
-            if not report_files:
+            if not intensity_report_files or not instrumentation_points_report_files:
                 print(
                     f"Could not find workload intensity data for {project_name=}"
                     f". {config_id=}"
                 )
                 return None
 
-            report = WorkloadFeatureIntensityReport(report_files[0].full_path())
+            intensity_report = WorkloadFeatureIntensityReport(
+                intensity_report_files[0].full_path()
+            )
 
-            for binary in report.binaries():
-                for workload, intensities in report.feature_intensities_for_binary(
+            for binary in intensity_report.binaries():
+                if not any([
+                    ipr.report_filename.binary_name == binary
+                    for ipr in instrumentation_points_report_files
+                ]):
+                    print(
+                        f"Could not find a matching instrumentation points report for {binary=} ({config_id=}).\n"
+                        f"Skipping binary."
+                    )
+                    continue
+
+                ipr_file = [
+                    ipr for ipr in instrumentation_points_report_files
+                    if ipr.report_filename.binary_name == binary
+                ][0]
+                instrumentation_points_report = FeatureInstrumentationPointsReport(
+                    ipr_file.full_path()
+                )
+
+                for workload, intensities in intensity_report.feature_intensities_for_binary(
                     binary
                 ).items():
                     new_row = {
@@ -63,9 +97,44 @@ class WorkloadIntensityTable(Table, table_name="workload_intensity"):
                         for feature, intensity in intensities.items()
                     })
 
+                    for feature in instrumentation_points_report.feature_names(
+                    ):
+                        all_region_uuids = instrumentation_points_report.regions_for_feature(
+                            feature
+                        )
+                        region_intensities = intensity_report.region_intensities_for_binary(
+                            binary
+                        )[workload]
+
+                        encountered_region_uuids = set()
+
+                        for feature_names in region_intensities:
+                            if not feature in feature_names:
+                                continue
+
+                            for region_uuids in region_intensities[feature_names
+                                                                  ]:
+                                encountered_region_uuids.update([
+                                    uuid for uuid in region_uuids
+                                    if instrumentation_points_report.
+                                    feature_name_for_region(uuid) == feature
+                                ])
+
+                        new_row[
+                            f"ER({feature})"
+                        ] = f"{len(encountered_region_uuids)} / {len(all_region_uuids)}"
+
                     table_rows.append(new_row)
 
         df = pd.DataFrame(table_rows)
+
+        # Rearrange columns for better readability
+        column_names = ["Binary", "Workload", "Config"]
+        column_names += [col for col in df.columns if col.startswith("FR(")]
+        column_names += sorted([
+            col for col in df.columns if col.startswith("ER(")
+        ])
+        df = df[column_names]
 
         # Use MultiIndex to group by binary and workload
         df.set_index(["Binary", "Workload"], inplace=True)
