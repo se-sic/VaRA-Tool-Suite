@@ -61,7 +61,6 @@ class PerfStat(OutputFolderStep):
                 )                
 
                 run_cmd = perf['stat', '-I 1', '-x',',','-o' f'{run_report_name}', pb_cmd]
-                print(run_cmd)
 
                 with cleanup(prj_command):
                     run_cmd()

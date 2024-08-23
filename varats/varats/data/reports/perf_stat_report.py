@@ -2,6 +2,7 @@ import re
 import typing as tp
 import chardet
 import zipfile
+import pandas as pd
 
 from varats.report.report import BaseReport, ReportAggregate
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
@@ -13,9 +14,7 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="csv"):
     Converts perf stat output to a dictionary of data
     """
     def __init__(self, path: Path):
-        data = {}
-        parameters = []
-        unique_parameters = set()
+        df = pd.DataFrame() 
         line_counter = 0
         with open(path, "r") as file:
             for line in file:
@@ -23,17 +22,24 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="csv"):
                 if line_counter <= 2:
                     continue
                 line = line.strip()
-                elements = line.split('\t')
+                elements = line.split(',')
                 elements = [elem for elem in elements if elem]
-                if elements[0] in data.keys():
-                    data[elements[0]].append(elements[1])
-                else:
-                    data[elements[0]] = [elements[1]]
-                if elements[2] not in unique_parameters:
-                    unique_parameters.add(elements[2])
-                    parameters.append(elements[2])
-        self.data = data
-        self.parameters = parameters
+                try:
+                    int(elements[2])
+                    parameter = elements[3]
+                except ValueError:
+                    parameter = elements[2]
+                value = elements[1]
+                timestemp = elements[0]
+                if parameter not in df.columns:
+                    df[parameter] = None
+                if timestemp not in df.index:
+                    df.loc[timestemp] = None
+                df.at[timestemp, parameter] = value
+
+        self.df = df
+        self.parameters = df.columns
+        print(self.parameters)
 
 
 class PerfStatReportAggregate(

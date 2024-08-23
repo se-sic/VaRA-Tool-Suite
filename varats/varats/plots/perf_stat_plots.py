@@ -52,26 +52,18 @@ class PerfStatPlot(Plot, plot_name='fperf_stat'):
 
                 reports = agg_perfstat_report.reports()
                 for report in reports:
-                    data = report.data
-                    print(data)
                     parameters = report.parameters
+                    df = report.df
                 
-                    i = 0
-                    #for i in range(len(parameters)):
-                    x=[]
-                    y=[]
-                    for key, value in data.items():
-                        x.append(key)
-                        y.append(value[i])
-                    # Create a plot
+                    i = 1
+                    x = df.index
+                    y = df[parameters[i]]
                     plt.plot(x, y)
 
                     # Add a title and labels
-                    plt.title("Example Plot")
+                    plt.title("Plot")
                     plt.xlabel("time")
                     plt.ylabel(parameters[i])
-
-                #plt.savefig(f"plot_{i}_{parameters[i]}.png")
 
 class PerfStatPlotGenerator(
     PlotGenerator, generator_name="fperf-stat", options=[]
