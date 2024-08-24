@@ -2,6 +2,7 @@
 import logging
 import os
 import typing as tp
+import warnings
 from enum import Enum
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from benchbuild.utils.cmd import git
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
+from varats.utils.git_util import RepositoryHandle
 from varats.utils.settings import bb_cfg
 
 LOG = logging.getLogger(__name__)
@@ -52,6 +54,52 @@ def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
     return bb.source.primary(*project_cls.SOURCE)
 
 
+def get_local_project_repo(
+    project_name: str, git_name: tp.Optional[str] = None
+) -> RepositoryHandle:
+    if git_name:
+        source = get_extended_commit_lookup_source(project_name, git_name)
+    else:
+        source = get_primary_project_source(project_name)
+
+    if not is_git_source(source):
+        raise AssertionError(f"Project {project_name} does not use git.")
+
+    base = Path(str(bb_cfg()["tmp_dir"]))
+    git_path: Path = base / source.local
+    if not git_path.exists():
+        git_path = base / source.local.replace(os.sep, "-")
+    if not git_path.exists():
+        git_path = Path(source.fetch())
+    return RepositoryHandle(git_path)
+
+
+def get_local_project_repos(
+    project_name: str
+) -> tp.Dict[str, RepositoryHandle]:
+    """
+    Get the all git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the repository handles for the project's git sources
+    """
+    repos: tp.Dict[str, RepositoryHandle] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        if isinstance(source, Git):
+            source_name = os.path.basename(source.local)
+            repos[source_name] = get_local_project_repo(
+                project_name, source_name
+            )
+
+    return repos
+
+
+@warnings.deprecated("Use get_local_project_repo instead.")
 def get_local_project_git_path(
     project_name: str, git_name: tp.Optional[str] = None
 ) -> Path:
@@ -111,6 +159,7 @@ def get_extended_commit_lookup_source(
     )
 
 
+@warnings.deprecated("Use get_local_project_repo instead.")
 def get_local_project_git(
     project_name: str, git_name: tp.Optional[str] = None
 ) -> pygit2.Repository:
@@ -129,6 +178,7 @@ def get_local_project_git(
     return pygit2.Repository(repo_path)
 
 
+@warnings.deprecated("Use get_local_project_repos instead.")
 def get_local_project_gits(
     project_name: str
 ) -> tp.Dict[str, pygit2.Repository]:
@@ -154,6 +204,7 @@ def get_local_project_gits(
     return repos
 
 
+@warnings.deprecated("Use get_local_project_repos instead.")
 def get_local_project_git_paths(project_name: str) -> tp.Dict[str, Path]:
     """
     Get the all paths to the git repositories for a given benchbuild project.
