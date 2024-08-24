@@ -137,6 +137,49 @@ def full_commit_hashes_sorted_by_time_id(
 # Git interaction helpers
 
 
+class RepositoryHandle:
+    """Wrapper class providing access to a git repository using either pygit2 or
+    commandline-git."""
+
+    def __init__(self, repo_path: Path):
+        self.__repo_path = pygit2.discover_repository(str(repo_path))
+
+        if self.__repo_path is None:
+            raise AssertionError(f"{repo_path} is not a git repository")
+
+        self.__git = git["-C", self.__repo_path]
+        self.__libgit_repo: tp.Optional[pygit2.Repository] = None
+
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        return self.__git(*args, **kwargs)
+
+    @property
+    def repo_name(self) -> str:
+        return self.repo_path.parent.name
+
+    @property
+    def repo_path(self) -> Path:
+        return Path(self.__repo_path)
+
+    @property
+    def pygit_repo(self) -> pygit2.Repository:
+        if self.__libgit_repo is None:
+            self.__libgit_repo = pygit2.Repository(self.__repo_path)
+
+        return self.__libgit_repo
+
+    def __eq__(self, other: tp.Any) -> bool:
+        if not isinstance(other, RepositoryHandle):
+            return False
+        return self.repo_path == other.repo_path
+
+    def __repr__(self) -> str:
+        return f"RepositoryHandle({self.repo_path})"
+
+    def __str__(self) -> str:
+        return self.repo_name
+
+
 def is_commit_hash(value: str) -> bool:
     """
     Checks if a string is a valid git (sha1) hash.
