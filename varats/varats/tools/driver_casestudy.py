@@ -41,8 +41,8 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import (
-    get_local_project_git_path,
     get_primary_project_source,
+    get_local_project_repo,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
@@ -211,7 +211,7 @@ def __casestudy_gen(
     ctx.obj['path'] = Path(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
-    ctx.obj['git_path'] = get_local_project_git_path(project)
+    ctx.obj['git_path'] = get_local_project_repo(project).repo_path
     if update:
         get_primary_project_source(project).fetch()
 
@@ -337,7 +337,7 @@ def __gen_sample(
         distribution
     )()
 
-    project_repo_path = get_local_project_git_path(ctx.obj['project'])
+    project_repo_path = get_local_project_repo(ctx.obj['project']).repo_path
     if end != "HEAD" and not is_commit_hash(end):
         end = get_commits_before_timestamp(end, project_repo_path)[0].hash
 

@@ -9,7 +9,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
@@ -493,7 +493,7 @@ class SVFPointsToAnalysisBenchmark(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SVFPointsToAnalysisBenchmark.NAME)
+            get_local_project_repo(SVFPointsToAnalysisBenchmark.NAME)
         )
 
         for file_name in SVFPointsToAnalysisBenchmark.FILE_PATHS:

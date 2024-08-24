@@ -4,7 +4,7 @@ from typing import Protocol, runtime_checkable
 
 from benchbuild.project import Project
 
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.provider.cve.cve import CVE
 from varats.provider.cve.cve_map import generate_cve_map, CVEDict
 from varats.provider.provider import Provider
@@ -38,7 +38,7 @@ class CVEProvider(Provider):
         project_name = project.NAME
         if issubclass(project, CVEProviderHook):
             self.__cve_map: CVEDict = generate_cve_map(
-                get_local_project_git_path(project_name),
+                get_local_project_repo(project_name).repo_path,
                 project.get_cve_product_info()
             )
         else:

@@ -8,7 +8,7 @@ from varats.mapping.commit_map import get_commit_map
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_project_cls_by_name,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
@@ -35,7 +35,7 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
             project_name = case_study.project_name
             commit_map = get_commit_map(project_name)
             project_cls = get_project_cls_by_name(project_name)
-            project_git_path = get_local_project_git_path(project_name)
+            project_git_path = get_local_project_repo(project_name).repo_path
 
             revisions = sorted(
                 case_study.revisions, key=commit_map.time_id, reverse=True

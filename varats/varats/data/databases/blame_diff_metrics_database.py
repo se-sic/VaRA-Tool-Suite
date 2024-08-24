@@ -26,7 +26,7 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import get_local_project_repo
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_processed_revisions_files,
@@ -300,7 +300,7 @@ class BlameDiffMetricsDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
-        repo = get_local_project_git(project_name)
+        repo = get_local_project_repo(project_name).pygit_repo
         commit_lookup = create_commit_lookup_helper(project_name)
 
         def create_dataframe_layout() -> pd.DataFrame:

@@ -19,7 +19,7 @@ from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
 )
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import get_local_project_repo
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
@@ -124,10 +124,10 @@ def filter_non_code_changes(
     Returns:
         filtered data frame without rows related to non code changes
     """
-    repo = get_local_project_git(project_name)
+    repo = get_local_project_repo(project_name)
     code_related_changes = [
         x.hash for x in calc_repo_code_churn(
-            repo, ChurnConfig.create_c_style_languages_config()
+            repo.repo_path, ChurnConfig.create_c_style_languages_config()
         )
     ]
     return blame_data[blame_data.apply(

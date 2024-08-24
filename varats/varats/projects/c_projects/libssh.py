@@ -16,7 +16,7 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
 )
@@ -65,7 +65,7 @@ class Libssh(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Libssh.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Libssh.NAME))
 
         binary_map.specify_binary(
             'build/src/libssh.so',

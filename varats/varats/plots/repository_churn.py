@@ -14,7 +14,7 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
@@ -54,7 +54,7 @@ def build_repo_churn_table(
         df_layout.changed_files = df_layout.changed_files.astype('int64')
         return df_layout
 
-    repo_path = get_local_project_git_path(project_name)
+    repo_path = get_local_project_repo(project_name).repo_path
     # By default, we only look at c-style code files
     code_churn = calc_repo_code_churn(
         repo_path, ChurnConfig.create_c_style_languages_config()
@@ -105,7 +105,7 @@ def build_revisions_churn_table(
         df_layout.changed_files = df_layout.changed_files.astype('int64')
         return df_layout
 
-    repo_path = get_local_project_git_path(project_name)
+    repo_path = get_local_project_repo(project_name).repo_path
 
     revision_pairs = zip(*(islice(revisions, i, None) for i in range(2)))
     code_churn = [(0, 0, 0)]

@@ -17,7 +17,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -66,7 +66,7 @@ class Brotli(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Brotli.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Brotli.NAME))
 
         binary_map.specify_binary(
             "out/brotli",
@@ -107,7 +107,7 @@ class Brotli(VProject):
     def compile(self) -> None:
         """Compile the project."""
         brotli_version_source = local.path(self.source_of_primary)
-        brotli_git_path = get_local_project_git_path(self.NAME)
+        brotli_git_path = get_local_project_repo(self.NAME).repo_path
         brotli_version = ShortCommitHash(self.version_of_primary)
         with local.cwd(brotli_git_path):
             configure_revisions = get_all_revisions_between(

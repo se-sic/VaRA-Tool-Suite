@@ -17,7 +17,7 @@ from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
@@ -32,7 +32,7 @@ def _generate_graph_table(
     degree_data: tp.List[pd.DataFrame] = []
     for case_study in get_paper_config().get_all_case_studies():
         project_name = case_study.project_name
-        project_git_path = get_local_project_git_path(project_name)
+        project_git_path = get_local_project_repo(project_name).repo_path
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReportExperiment
         )

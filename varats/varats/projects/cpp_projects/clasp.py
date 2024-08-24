@@ -13,7 +13,7 @@ from varats.project.project_util import (
     BinaryType,
     get_tagged_commits,
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -30,7 +30,7 @@ from varats.utils.settings import bb_cfg
 
 
 class Clasp(VProject, ReleaseProviderHook):
-    """clasp is an answer set solver for (extended) normal and disjunctive logic
+    """Clasp is an answer set solver for (extended) normal and disjunctive logic
     programs."""
 
     NAME = 'clasp'
@@ -52,7 +52,7 @@ class Clasp(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Clasp.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Clasp.NAME))
         binary_map.specify_binary('build/bin/clasp', BinaryType.EXECUTABLE)
 
         return binary_map[revision]

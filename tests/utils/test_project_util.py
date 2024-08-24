@@ -14,7 +14,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     get_tagged_commits,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.projects.c_projects.gravity import Gravity
 from varats.projects.discover_projects import initialize_projects
@@ -277,8 +277,8 @@ class TestTaggedCommits(unittest.TestCase):
         """Check if we can get list of tagged commits from a project when
         lightweight tags are used."""
         fast_downward_tagged_commits = set(get_tagged_commits("FastDownward"))
-        fast_downward_repo_loc = get_local_project_git_path("FastDownward")
-        with local.cwd(fast_downward_repo_loc):
+        fast_downward_repo = get_local_project_repo("FastDownward")
+        with local.cwd(fast_downward_repo.repo_path):
             for (hash_value, _) in fast_downward_tagged_commits:
                 self.assertTrue(self.hash_belongs_to_commit(hash_value))
 
@@ -298,8 +298,8 @@ class TestTaggedCommits(unittest.TestCase):
         """Check if we can get list of tagged commits from a project when
         annotated tags are used."""
         xz_tagged_commits = set(get_tagged_commits("xz"))
-        xz_repo_loc = get_local_project_git_path("xz")
-        with local.cwd(xz_repo_loc):
+        xz_repo = get_local_project_repo("xz")
+        with local.cwd(xz_repo.repo_path):
             for (hash_value, _) in xz_tagged_commits:
                 self.assertTrue(self.hash_belongs_to_commit(hash_value))
 

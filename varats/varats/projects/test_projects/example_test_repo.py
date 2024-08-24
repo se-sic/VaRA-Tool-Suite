@@ -8,7 +8,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.project.varats_project import VProject
 from varats.ts_utils.project_sources import VaraTestRepoSource
@@ -38,7 +38,7 @@ class ExampleTestRepo(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(ExampleTestRepo.NAME)
+            get_local_project_repo(ExampleTestRepo.NAME)
         ).specify_binary("main", BinaryType.EXECUTABLE)
 
         return binary_map[revision]

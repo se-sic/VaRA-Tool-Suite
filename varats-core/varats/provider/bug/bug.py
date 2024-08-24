@@ -9,8 +9,8 @@ from github import Github
 from github.IssueEvent import IssueEvent
 
 from varats.project.project_util import (
-    get_local_project_git,
     get_project_cls_by_name,
+    get_local_project_repo,
 )
 from varats.utils.git_util import FullCommitHash
 from varats.utils.github_util import (
@@ -294,7 +294,7 @@ def _find_corresponding_pygit_suspect_tuple(
         A PygitSuspectTuple if the issue event represents the closing of a bug,
         None otherwise
     """
-    pygit_repo: pygit2.Repository = get_local_project_git(project_name)
+    pygit_repo = get_local_project_repo(project_name).pygit_repo
     pydrill_repo = pydriller.Git(pygit_repo.path)
 
     if _has_closed_a_bug(issue_event) and issue_event.commit_id:
@@ -400,7 +400,7 @@ def _filter_commit_message_bugs(
         the set of bugs created by the given filter
     """
     filtered_bugs = set()
-    project_repo = get_local_project_git(project_name)
+    project_repo = get_local_project_repo(project_name).pygit_repo
 
     for commit in project_repo.walk(
         project_repo.head.target, pygit2.GIT_SORT_TIME

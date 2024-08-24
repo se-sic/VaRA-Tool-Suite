@@ -18,7 +18,7 @@ from varats.utils.settings import add_vara_experiment_options
 def update_projects(
     bb_cfg: s.Configuration, include_test_projects: bool = False
 ) -> None:
-    """update the projects entry in the benchbuild config to contain our
+    """Update the projects entry in the benchbuild config to contain our
     projects."""
     projects_conf = bb_cfg["plugins"]["projects"]
     # If we want later to use default BB projects
@@ -98,7 +98,7 @@ def update_projects(
 
 
 def update_experiments(bb_cfg: s.Configuration) -> None:
-    """update the given benchbuild config to contain our experiments."""
+    """Update the given benchbuild config to contain our experiments."""
     projects_conf = bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [

@@ -29,7 +29,7 @@ from varats.data.metrics import ConfusionMatrix
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
@@ -545,7 +545,7 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
         for case_study in case_studies:
             project_name = case_study.project_name
             rev = case_study.revisions[0]
-            project_git_path = get_local_project_git_path(project_name)
+            project_git_path = get_local_project_repo(project_name).repo_path
 
             cs_precision_data = df_precision[df_precision['CaseStudy'] ==
                                              project_name]

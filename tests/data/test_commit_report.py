@@ -16,7 +16,7 @@ from varats.data.reports.commit_report import (
     generate_interactions,
 )
 from varats.mapping.commit_map import CommitMap
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
@@ -355,9 +355,9 @@ def testing_gen_commit_map() -> CommitMap:
     """Generate a local commit map for testing."""
 
     initialize_projects()
-    xz_repo_path = get_local_project_git_path("xz")
+    xz_repo = get_local_project_repo("xz")
     return CommitMap(
-        xz_repo_path,
+        xz_repo.repo_path,
         start="923bf96b55e5216a6c8df9d8331934f54784390e",
         end="80a1a8bb838842a2be343bd88ad1462c21c5e2c9"
     )

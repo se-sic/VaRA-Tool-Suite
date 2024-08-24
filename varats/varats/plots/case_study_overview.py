@@ -15,7 +15,7 @@ from varats.plot.plot_utils import find_missing_revisions
 from varats.plot.plots import PlotGenerator
 from varats.project.project_util import (
     get_project_cls_by_name,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
@@ -204,9 +204,9 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
             return ShortCommitHash(str(row["revision"]))
 
         return find_missing_revisions(
-            revision_df.iterrows(), get_local_project_git_path(project_name),
-            commit_map, should_insert_revision, get_commit_hash,
-            head_cm_neighbours
+            revision_df.iterrows(),
+            get_local_project_repo(project_name).repo_path, commit_map,
+            should_insert_revision, get_commit_hash, head_cm_neighbours
         )
 
 

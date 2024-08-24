@@ -15,7 +15,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
@@ -48,7 +48,7 @@ class Git(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Git.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Git.NAME))
 
         binary_map.specify_binary("git", BinaryType.EXECUTABLE)
 

@@ -2,12 +2,10 @@
 import logging
 import os
 import typing as tp
-import warnings
 from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-import pygit2
 from benchbuild.source import Git
 from benchbuild.utils.cmd import git
 from plumbum import local
@@ -99,41 +97,6 @@ def get_local_project_repos(
     return repos
 
 
-@warnings.deprecated("Use get_local_project_repo instead.")
-def get_local_project_git_path(
-    project_name: str, git_name: tp.Optional[str] = None
-) -> Path:
-    """
-    Get the path to the local download location of a git repository for a given
-    benchbuild project.
-
-    Args:
-        project_name: name of the given benchbuild project
-        git_name: name of the git repository, i.e., the name of the repository
-                  folder. If no git_name is provided, the name of the primary
-                  source is used.
-
-    Returns:
-        Path to the local download location of the git repository.
-    """
-
-    if git_name:
-        source = get_extended_commit_lookup_source(project_name, git_name)
-    else:
-        source = get_primary_project_source(project_name)
-
-    if not is_git_source(source):
-        raise AssertionError(f"Project {project_name} does not use git.")
-
-    base = Path(str(bb_cfg()["tmp_dir"]))
-    git_path: Path = base / source.local
-    if not git_path.exists():
-        git_path = base / source.local.replace(os.sep, "-")
-    if not git_path.exists():
-        git_path = Path(source.fetch())
-    return git_path
-
-
 def get_extended_commit_lookup_source(
     project_name: str, git_name: str
 ) -> bb.source.FetchableSource:
@@ -159,78 +122,9 @@ def get_extended_commit_lookup_source(
     )
 
 
-@warnings.deprecated("Use get_local_project_repo instead.")
-def get_local_project_git(
-    project_name: str, git_name: tp.Optional[str] = None
-) -> pygit2.Repository:
-    """
-    Get the git repository for a given benchbuild project.
-
-    Args:
-        project_name: name of the given benchbuild project
-        git_name: name of the git repository
-
-    Returns:
-        git repository that matches the given git_name.
-    """
-    git_path = get_local_project_git_path(project_name, git_name)
-    repo_path = pygit2.discover_repository(str(git_path))
-    return pygit2.Repository(repo_path)
-
-
-@warnings.deprecated("Use get_local_project_repos instead.")
-def get_local_project_gits(
-    project_name: str
-) -> tp.Dict[str, pygit2.Repository]:
-    """
-    Get the all git repositories for a given benchbuild project.
-
-    Args:
-        project_name: name of the given benchbuild project
-
-    Returns:
-        dict with the git repositories for the project's sources
-    """
-    repos: tp.Dict[str, pygit2.Repository] = {}
-    project_cls = get_project_cls_by_name(project_name)
-
-    for source in project_cls.SOURCE:
-        if isinstance(source, Git):
-            source_name = os.path.basename(source.local)
-            repos[source_name] = get_local_project_git(
-                project_name, source_name
-            )
-
-    return repos
-
-
-@warnings.deprecated("Use get_local_project_repos instead.")
-def get_local_project_git_paths(project_name: str) -> tp.Dict[str, Path]:
-    """
-    Get the all paths to the git repositories for a given benchbuild project.
-
-    Args:
-        project_name: name of the given benchbuild project
-
-    Returns:
-        dict with the paths to the git repositories for the project's sources
-    """
-    repos: tp.Dict[str, Path] = {}
-    project_cls = get_project_cls_by_name(project_name)
-
-    for source in project_cls.SOURCE:
-        if isinstance(source, Git):
-            source_name = os.path.basename(source.local)
-            repos[source_name] = get_local_project_git_path(
-                project_name, source_name
-            )
-
-    return repos
-
-
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
     """Get a list of all tagged commits along with their respective tags."""
-    repo_loc = get_local_project_git_path(project_name)
+    repo_loc = get_local_project_repo(project_name).repo_path
     with local.cwd(repo_loc):
         # --dereference resolves tag IDs into commits for annotated tags
         # These lines are indicated by the suffix '^{}' (see man git-show-ref)

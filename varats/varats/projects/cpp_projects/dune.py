@@ -12,7 +12,7 @@ from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     ProjectBinaryWrapper,
 )
@@ -130,7 +130,7 @@ class DunePerfRegression(VProject):
         revision: ShortCommitHash
     ) -> tp.List['ProjectBinaryWrapper']:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(DunePerfRegression.NAME)
+            get_local_project_repo(DunePerfRegression.NAME)
         )
 
         rev_range = RevisionRange(

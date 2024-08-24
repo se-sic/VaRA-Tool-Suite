@@ -11,7 +11,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     verify_binaries,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
@@ -51,7 +51,7 @@ class FeatureTestRepo(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(FeatureTestRepo.NAME)
+            get_local_project_repo(FeatureTestRepo.NAME)
         ).specify_binary("main", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
@@ -95,7 +95,7 @@ class CommitFeatureInteractionExample(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(CommitFeatureInteractionExample.NAME)
+            get_local_project_repo(CommitFeatureInteractionExample.NAME)
         ).specify_binary("main", BinaryType.EXECUTABLE)
 
         return binary_map[revision]

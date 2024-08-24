@@ -15,12 +15,11 @@ from benchbuild.utils.cmd import git, grep
 from plumbum import local, TF, RETCODE
 
 from varats.project.project_util import (
-    get_local_project_gits,
     get_primary_project_source,
-    get_local_project_git_path,
     BinaryType,
     ProjectBinaryWrapper,
-    get_local_project_git_paths,
+    get_local_project_repo,
+    get_local_project_repos,
 )
 
 if tp.TYPE_CHECKING:
@@ -452,16 +451,17 @@ def num_project_commits(project_name: str, revision: FullCommitHash) -> int:
     Returns:
         the number of commits in the project
     """
-    project_repos = get_local_project_git_paths(project_name)
-    main_repo = get_local_project_git_path(project_name)
+    project_repos = get_local_project_repos(project_name)
+    main_repo = get_local_project_repo(project_name)
 
-    commits = num_commits(revision.hash, main_repo)
-    for submodule, sub_rev in get_submodule_commits(revision.hash,
-                                                    main_repo).items():
+    commits = num_commits(revision.hash, main_repo.repo_path)
+    for submodule, sub_rev in get_submodule_commits(
+        revision.hash, main_repo.repo_path
+    ).items():
         if submodule not in project_repos:
             LOG.warning("Ignoring unknown submodule {}", submodule)
             continue
-        commits += num_commits(sub_rev.hash, project_repos[submodule])
+        commits += num_commits(sub_rev.hash, project_repos[submodule].repo_path)
     return commits
 
 
@@ -488,16 +488,19 @@ def num_project_authors(project_name: str, revision: FullCommitHash) -> int:
                 result.add(match.group("author"))
         return result
 
-    project_repos = get_local_project_git_paths(project_name)
-    main_repo = get_local_project_git_path(project_name)
+    project_repos = get_local_project_repos(project_name)
+    main_repo = get_local_project_repo(project_name)
 
-    authors = get_authors(main_repo, revision.hash)
-    for submodule, sub_rev in get_submodule_commits(revision.hash,
-                                                    main_repo).items():
+    authors = get_authors(main_repo.repo_path, revision.hash)
+    for submodule, sub_rev in get_submodule_commits(
+        revision.hash, main_repo.repo_path
+    ).items():
         if submodule not in project_repos:
             LOG.warning("Ignoring unknown submodule {}", submodule)
             continue
-        authors.update(get_authors(project_repos[submodule], sub_rev.hash))
+        authors.update(
+            get_authors(project_repos[submodule].repo_path, sub_rev.hash)
+        )
     return len(authors)
 
 
@@ -695,7 +698,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         corresponding commit.
     """
 
-    repos = get_local_project_gits(project_name)
+    repos = get_local_project_repos(project_name)
 
     def get_commit(crp: CommitRepoPair) -> pygit2.Commit:
         """
@@ -708,7 +711,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         Returns:
             the commit corresponding to the given CommitRepoPair
         """
-        commit = repos[crp.repository_name].get(crp.commit_hash.hash)
+        commit = repos[crp.repository_name].pygit_repo.get(crp.commit_hash.hash)
         if not commit:
             raise LookupError(
                 f"Could not find commit {crp} for project {project_name}."
@@ -736,8 +739,10 @@ def get_submodule_head(
     if submodule_name == get_primary_project_source(project_name).local:
         return commit
 
-    main_repo = get_local_project_git_path(project_name)
-    submodule_status = git(__get_git_path_arg(main_repo), "ls-tree", commit)
+    main_repo = get_local_project_repo(project_name)
+    submodule_status = git(
+        __get_git_path_arg(main_repo.repo_path), "ls-tree", commit
+    )
     commit_pattern = re.compile(
         r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
     )
@@ -1052,16 +1057,17 @@ def calc_project_loc(project_name: str, revision: FullCommitHash) -> int:
     Returns:
         the LOC in the project
     """
-    project_repos = get_local_project_git_paths(project_name)
-    main_repo = get_local_project_git_path(project_name)
+    project_repos = get_local_project_repos(project_name)
+    main_repo = get_local_project_repo(project_name)
 
-    loc = calc_repo_loc(main_repo, revision.hash)
-    for submodule, sub_rev in get_submodule_commits(revision.hash,
-                                                    main_repo).items():
+    loc = calc_repo_loc(main_repo.repo_path, revision.hash)
+    for submodule, sub_rev in get_submodule_commits(
+        revision.hash, main_repo.repo_path
+    ).items():
         if submodule not in project_repos:
             LOG.warning("Ignoring unknown submodule {}", submodule)
             continue
-        loc += calc_repo_loc(project_repos[submodule], sub_rev.hash)
+        loc += calc_repo_loc(project_repos[submodule].repo_path, sub_rev.hash)
     return loc
 
 
@@ -1073,8 +1079,8 @@ class RevisionBinaryMap(tp.Container[str]):
     """A special map that specifies for which revision ranges a binaries is
     valid."""
 
-    def __init__(self, repo_location: Path) -> None:
-        self.__repo_location = repo_location
+    def __init__(self, repo: RepositoryHandle) -> None:
+        self.__repo_location = repo.repo_path
         self.__revision_specific_mappings: tp.Dict[
             'AbstractRevisionRange',
             tp.List[ProjectBinaryWrapper]] = defaultdict(list)
@@ -1106,7 +1112,7 @@ class RevisionBinaryMap(tp.Container[str]):
         override_entry_point = kwargs.get("override_entry_point", None)
         if override_entry_point:
             override_entry_point = Path(override_entry_point)
-        validity_range: AbstractRevisionRange = kwargs.get(
+        validity_range: tp.Optional[AbstractRevisionRange] = kwargs.get(
             "only_valid_in", None
         )
         valid_exit_codes = kwargs.get("valid_exit_codes", None)
@@ -1117,7 +1123,7 @@ class RevisionBinaryMap(tp.Container[str]):
         )
 
         if validity_range:
-            validity_range.init_cache(self.__repo_location)
+            validity_range.init_cache(str(self.__repo_location))
             self.__revision_specific_mappings[validity_range].append(
                 wrapped_binary
             )
@@ -1190,9 +1196,7 @@ class RepositoryAtCommit():
     duplicating the repository."""
 
     def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
-        self.__repo = pygit2.Repository(
-            get_local_project_git_path(project_name)
-        )
+        self.__repo = get_local_project_repo(project_name).pygit_repo
         self.__initial_head = self.__repo.head
         self.__revision = self.__repo.get(revision.hash)
 

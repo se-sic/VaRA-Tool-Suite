@@ -19,7 +19,7 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
 )
@@ -120,7 +120,7 @@ class Xz(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Xz.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Xz.NAME))
 
         binary_map.specify_binary(
             'src/xz/xz',
@@ -142,7 +142,7 @@ class Xz(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        xz_git_path = get_local_project_git_path(self.NAME)
+        xz_git_path = get_local_project_repo(self.NAME).repo_path
         xz_version_source = local.path(self.source_of_primary)
         xz_version = self.version_of_primary
 

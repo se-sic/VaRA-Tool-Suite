@@ -14,9 +14,9 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
     verify_binaries,
     get_tagged_commits,
+    get_local_project_repo,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
@@ -66,7 +66,7 @@ class FeaturePerfRegression(VProject, ReleaseProviderHook):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(FeaturePerfRegression.NAME)
+            get_local_project_repo(FeaturePerfRegression.NAME)
         )
         binary_map.specify_binary(
             'build/bin/CompressionTool', BinaryType.EXECUTABLE

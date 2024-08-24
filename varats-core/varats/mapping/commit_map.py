@@ -9,8 +9,8 @@ from plumbum import local
 from pygtrie import CharTrie
 
 from varats.project.project_util import (
-    get_local_project_git_path,
     get_primary_project_source,
+    get_local_project_repo,
 )
 from varats.utils.git_util import (
     get_current_branch,
@@ -222,7 +222,7 @@ def get_commit_map(
 
     Returns: a bidirectional commit map from commits to time IDs
     """
-    project_git_path = get_local_project_git_path(project_name)
+    project_git_path = get_local_project_repo(project_name).repo_path
     primary_source = get_primary_project_source(project_name)
     if refspec is None and hasattr(primary_source, "refspec"):
         refspec = primary_source.refspec

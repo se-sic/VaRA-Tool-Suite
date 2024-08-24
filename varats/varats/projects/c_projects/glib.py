@@ -13,7 +13,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
@@ -53,7 +53,7 @@ class Glib(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Glib.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Glib.NAME))
 
         binary_map.specify_binary(
             'build/glib/libglib-2.0.so', BinaryType.SHARED_LIBRARY

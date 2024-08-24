@@ -133,9 +133,9 @@ class CLIOptionConverter(abc.ABC, tp.Generic[ConversionTy_co]):
     Converter for CLI option declarations.
 
     Converters are required for CLI options that are converted to complex types
-    by click so that they can still be properly stored in an artefact file.
-    In general, a converter should implement a mapping from the complex type to
-    a string value as it would be provided on the command line.
+    by click so that they can still be properly stored in an artefact file. In
+    general, a converter should implement a mapping from the complex type to a
+    string value as it would be provided on the command line.
 
     A converter can be attached to a CLI option using the function/decorator
     :func:`convert_value()`.

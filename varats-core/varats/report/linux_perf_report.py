@@ -87,9 +87,9 @@ class LinuxPerfReport(BaseReport, shorthand="LPR", file_type="txt"):
 
     def __str__(self) -> str:
         return f"""LPR ({self.path})
-  ├─ ElapsedTime:  {self.elapsed_time}
-  ├─ CtxSwitches:  {self.ctx_switches}
-  └─ BranchMisses: {self.branch_misses}
+  ├─ ElapsedTime:  {sel{self.elapsed_time}
+  ├─ CtxSwitches:  {sel{self.ctx_switches}
+  └─ BranchMisses: {sel{self.branch_misses}
 """
 
 

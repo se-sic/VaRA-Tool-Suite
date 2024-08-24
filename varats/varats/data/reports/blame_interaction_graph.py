@@ -18,8 +18,8 @@ from varats.data.reports.blame_report import (
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.project.project_util import (
-    get_local_project_git_path,
-    get_local_project_gits,
+    get_local_project_repo,
+    get_local_project_repos,
 )
 from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
@@ -415,7 +415,7 @@ class FileBasedInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
-            repos = get_local_project_gits(self.project_name)
+            repos = get_local_project_repos(self.project_name)
             interaction_graph = nx.DiGraph()
             churn_config = ChurnConfig.create_c_style_languages_config()
             file_pattern = re.compile(
@@ -427,9 +427,9 @@ class FileBasedInteractionGraph(InteractionGraph):
             blame_regex = re.compile(r"^([0-9a-f]+)\s+(?:.+\s+)?[\d]+\) ?(.*)$")
 
             for repo_name in repos:
-                repo_path = get_local_project_git_path(
+                repo_path = get_local_project_repo(
                     self.project_name, repo_name
-                )
+                ).repo_path
                 project_git = git["-C", str(repo_path)]
                 head_commit = get_submodule_head(
                     self.project_name, repo_name, self.__head_commit

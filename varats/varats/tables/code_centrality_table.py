@@ -16,7 +16,7 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.project.project_util import get_local_project_gits
+from varats.project.project_util import get_local_project_repos
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
@@ -43,7 +43,7 @@ def _collect_cig_node_data(
         project_name, revision, experiment_type
     ).commit_interaction_graph()
     commit_lookup = create_commit_lookup_helper(project_name)
-    repo_lookup = get_local_project_gits(project_name)
+    repo_lookup = get_local_project_repos(project_name)
 
     def filter_nodes(node: CommitRepoPair) -> bool:
         if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
@@ -57,8 +57,8 @@ def _collect_cig_node_data(
         if not filter_nodes(commit):
             continue
         _, insertions, _ = calc_commit_code_churn(
-            Path(repo_lookup[commit.repository_name].path), commit.commit_hash,
-            churn_config
+            Path(repo_lookup[commit.repository_name].repo_path),
+            commit.commit_hash, churn_config
         )
         if insertions == 0:
             LOG.warning(f"Churn for commit {commit} is 0.")

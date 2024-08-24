@@ -16,7 +16,7 @@ from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
 from yaml import YAMLError
 
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import pull_current_branch, fetch_repository
@@ -80,7 +80,7 @@ class Patch:
         tags = yaml_dict.get("tags")
         feature_tags = yaml_dict.get("feature_tags")
 
-        project_git_path = get_local_project_git_path(project_name)
+        project_git_path = get_local_project_repo(project_name).repo_path
 
         def parse_revisions(
             rev_dict: tp.Dict[str, tp.Any]
@@ -298,7 +298,7 @@ class PatchProvider(Provider):
         self.__patches: tp.Set[Patch] = set()
 
         # Update repository to have all upstream changes
-        project_git_path = get_local_project_git_path(self.project.NAME)
+        project_git_path = get_local_project_repo(self.project.NAME).repo_path
         fetch_repository(project_git_path)
 
         for root, _, files in os.walk(patches_project_dir):

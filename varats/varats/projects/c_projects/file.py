@@ -12,7 +12,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -47,7 +47,7 @@ class File(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(File.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(File.NAME))
 
         binary_map.specify_binary("src/.libs/file", BinaryType.EXECUTABLE)
 

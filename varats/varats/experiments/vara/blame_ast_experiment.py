@@ -14,8 +14,8 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
 
 import varats.experiments.vara.blame_experiment as BE
-from varats.data.reports.blame_annotations import BlameComparisonReport as BCR
 from varats.data.reports.blame_annotations import BlameAnnotations as BA
+from varats.data.reports.blame_annotations import BlameComparisonReport as BCR
 from varats.data.reports.blame_annotations import compare_blame_annotations
 from varats.experiment.experiment_util import (
     ExperimentHandle,
@@ -32,7 +32,7 @@ from varats.experiment.wllvm import (
     _create_default_bc_file_creation_actions,
     get_cached_bc_file_path,
 )
-from varats.project.project_util import get_local_project_git_paths
+from varats.project.project_util import get_local_project_repos
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 
@@ -76,8 +76,8 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
                 "--enable-new-pm=0", "-vara-BD", "-vara-BA",
                 "-vara-init-commits", "-vara-rewriteMD",
                 "-vara-git-mappings=" + ",".join([
-                    f'{repo}:{path}' for repo, path in
-                    get_local_project_git_paths(self.project.name).items()
+                    f'{repo_name}:{repo.repo_path}' for repo_name, repo in
+                    get_local_project_repos(self.project.name).items()
                 ]), "-vara-use-phasar", f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
                     self.project, binary, self.__file_extensions

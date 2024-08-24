@@ -12,7 +12,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -49,7 +49,7 @@ class OpenSSL(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(OpenSSL.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(OpenSSL.NAME))
 
         binary_map.specify_binary("apps/openssl", BinaryType.EXECUTABLE)
         # binary_map.specify_binary("libssl.so", BinaryType.SHARED_LIBRARY)
@@ -61,7 +61,7 @@ class OpenSSL(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        openssl_git_path = get_local_project_git_path(self.NAME)
+        openssl_git_path = get_local_project_repo(self.NAME).repo_path
         openssl_version = ShortCommitHash(self.version_of_primary)
         openssl_source = local.path(self.source_of_primary)
 

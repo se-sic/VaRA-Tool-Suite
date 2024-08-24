@@ -17,7 +17,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -111,7 +111,7 @@ class Libtiff(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Libtiff.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Libtiff.NAME))
 
         binary_map.specify_binary(
             "libtiff/.libs/libtiff.so", BinaryType.SHARED_LIBRARY

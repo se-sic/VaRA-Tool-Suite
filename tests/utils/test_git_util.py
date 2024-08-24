@@ -4,11 +4,7 @@ from pathlib import Path
 
 from benchbuild.utils.revision_ranges import RevisionRange, SingleRevision
 
-from varats.project.project_util import (
-    get_local_project_git,
-    get_local_project_git_path,
-    BinaryType,
-)
+from varats.project.project_util import BinaryType, get_local_project_repo
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.git_util import (
     ChurnConfig,
@@ -56,7 +52,7 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
     def test_get_current_branch(self):
         """Check if we can correctly retrieve the current branch of a repo."""
-        repo = get_local_project_git("brotli")
+        repo = get_local_project_repo("brotli").pygit_repo
 
         repo.checkout(repo.lookup_branch('master'))
 
@@ -64,9 +60,9 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
     def test_get_initial_commit(self) -> None:
         """Check if we can correctly retrieve the inital commit of a repo."""
-        repo_path = get_local_project_git_path("FeaturePerfCSCollection")
+        repo = get_local_project_repo("FeaturePerfCSCollection")
 
-        inital_commit = get_initial_commit(repo_path)
+        inital_commit = get_initial_commit(repo.repo_path)
 
         self.assertEqual(
             FullCommitHash("4d84c8f80ec2db3aaa880d323f7666752c4be51d"),
@@ -76,7 +72,7 @@ class TestGitInteractionHelpers(unittest.TestCase):
     def test_get_initial_commit_with_specified_path(self) -> None:
         """Check if we can correctly retrieve the inital commit of a repo."""
         inital_commit = get_initial_commit(
-            get_local_project_git_path("FeaturePerfCSCollection")
+            get_local_project_repo("FeaturePerfCSCollection").repo_path
         )
 
         self.assertEqual(
@@ -86,11 +82,11 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
     def test_get_all_revisions_between_full(self):
         """Check if the correct all revisions are correctly found."""
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
         revs = get_all_revisions_between(
             '5692e422da6af1e991f9182345d58df87866bc5e',
             '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', FullCommitHash,
-            repo_path
+            repo.repo_path
         )
 
         self.assertSetEqual(
@@ -104,11 +100,11 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
     def test_get_all_revisions_between_short(self):
         """Check if the correct all revisions are correctly found."""
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
         revs = get_all_revisions_between(
             '5692e422da6af1e991f9182345d58df87866bc5e',
             '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', ShortCommitHash,
-            repo_path
+            repo.repo_path
         )
 
         self.assertSetEqual(
@@ -142,9 +138,9 @@ class TestGitInteractionHelpers(unittest.TestCase):
     def test_get_commits_before_timestamp(self) -> None:
         """Check if we can correctly determine the commits before a specific
         timestamp."""
-        project_repo = get_local_project_git_path('brotli')
+        repo = get_local_project_repo('brotli')
         brotli_commits_after = get_commits_before_timestamp(
-            '2013-10-24', project_repo
+            '2013-10-24', repo.repo_path
         )
 
         # newest found commit should be
@@ -161,9 +157,9 @@ class TestGitInteractionHelpers(unittest.TestCase):
     def test_get_commits_after_timestamp(self) -> None:
         """Check if we can correctly determine the commits after a specific
         timestamp."""
-        project_repo = get_local_project_git_path('brotli')
+        repo = get_local_project_repo('brotli')
         brotli_commits_after = get_commits_after_timestamp(
-            '2021-01-01', project_repo
+            '2021-01-01', repo.repo_path
         )
 
         # oldest found commit should be
@@ -180,49 +176,49 @@ class TestGitInteractionHelpers(unittest.TestCase):
     def test_contains_source_code_without(self) -> None:
         """Check if we can correctly identify commits with source code."""
         churn_conf = ChurnConfig.create_c_style_languages_config()
-        project_git_path = get_local_project_git_path('brotli')
+        repo_path = get_local_project_repo('brotli').repo_path
 
         self.assertFalse(
             contains_source_code(
                 ShortCommitHash('f4153a09f87cbb9c826d8fc12c74642bb2d879ea'),
-                project_git_path, churn_conf
+                repo_path, churn_conf
             )
         )
         self.assertFalse(
             contains_source_code(
                 ShortCommitHash('e83c7b8e8fb8b696a1df6866bc46cbb76d7e0348'),
-                project_git_path, churn_conf
+                repo_path, churn_conf
             )
         )
         self.assertFalse(
             contains_source_code(
                 ShortCommitHash('698e3a7f9d3000fa44174f5be415bf713f71bd0e'),
-                project_git_path, churn_conf
+                repo_path, churn_conf
             )
         )
 
     def test_contains_source_code_with(self) -> None:
         """Check if we can correctly identify commits without source code."""
         churn_conf = ChurnConfig.create_c_style_languages_config()
-        project_git_path = get_local_project_git_path('brotli')
+        repo_path = get_local_project_repo('brotli').repo_path
 
         self.assertTrue(
             contains_source_code(
                 ShortCommitHash('62662f87cdd96deda90ac817de94e3c4af75226a'),
-                project_git_path, churn_conf
+                repo_path, churn_conf
             )
         )
         self.assertTrue(
             contains_source_code(
                 ShortCommitHash('27dd7265403d8e8fed99a854b9c3e1db7d79525f'),
-                project_git_path, churn_conf
+                repo_path, churn_conf
             )
         )
         # Merge commit of the previous one
         self.assertTrue(
             contains_source_code(
                 ShortCommitHash('4ec67035c0d97c270c1c73038cc66fc5fcdfc120'),
-                project_git_path, churn_conf
+                repo_path, churn_conf
             )
         )
 
@@ -405,10 +401,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo_path,
+            repo.repo_path,
             FullCommitHash("0c5603e07bed1d5fbb45e38f9bdf0e4560fde3f0"),
             ChurnConfig.create_c_style_languages_config()
         )
@@ -420,10 +416,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff_2(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo_path,
+            repo.repo_path,
             FullCommitHash("fc823290a76a260b7ba6f47ab5f52064a0ce19ff"),
             ChurnConfig.create_c_style_languages_config()
         )
@@ -435,10 +431,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff_3(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo_path,
+            repo.repo_path,
             FullCommitHash("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
             ChurnConfig.create_c_style_languages_config()
         )
@@ -451,10 +447,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
         """Check if we get the correct code churn for a single commit but only
         consider code changes."""
 
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo_path,
+            repo.repo_path,
             FullCommitHash("f503cb709ca181dbf5c73986ebac1b18ac5c9f63"),
             ChurnConfig.create_c_style_languages_config()
         )
@@ -466,10 +462,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_start_with_initial_commit(self):
         """Check if the initial commit is handled correctly."""
 
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
 
         churn = calc_code_churn_range(
-            repo_path, ChurnConfig.create_c_style_languages_config(),
+            repo.repo_path, ChurnConfig.create_c_style_languages_config(),
             FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0"),
             FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0")
         )
@@ -483,10 +479,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_end_only(self):
         """Check if churn is correct if only end range is set."""
 
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
 
         churn = calc_code_churn_range(
-            repo_path, ChurnConfig.create_c_style_languages_config(), None,
+            repo.repo_path, ChurnConfig.create_c_style_languages_config(), None,
             FullCommitHash("645552217219c2877780ba4d7030044ec62d8255")
         )
 
@@ -506,10 +502,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_commit_range(self):
         """Check if we get the correct code churn for commit range."""
 
-        repo_path = get_local_project_git_path("brotli")
+        repo = get_local_project_repo("brotli")
 
         files_changed, insertions, deletions = calc_code_churn(
-            repo_path,
+            repo.repo_path,
             FullCommitHash("36ac0feaf9654855ee090b1f042363ecfb256f31"),
             FullCommitHash("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
             ChurnConfig.create_c_style_languages_config()
@@ -527,7 +523,7 @@ class TestRevisionBinaryMap(unittest.TestCase):
 
     def setUp(self) -> None:
         self.rv_map = RevisionBinaryMap(
-            get_local_project_git_path("FeaturePerfCSCollection")
+            get_local_project_repo("FeaturePerfCSCollection").repo_path
         )
 
     def test_specification_of_always_valid_binaries(self) -> None:

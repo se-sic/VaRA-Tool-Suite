@@ -21,7 +21,7 @@ from varats.project.project_util import (
     BinaryType,
     get_tagged_commits,
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.sources import FeatureSource
@@ -41,7 +41,7 @@ from varats.utils.settings import bb_cfg
 
 
 class PicoSAT(VProject, ReleaseProviderHook):
-    """picoSAT is a SAT solver."""
+    """PicoSAT is a SAT solver."""
 
     NAME = 'picosat'
     GROUP = 'c_projects'
@@ -148,7 +148,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(PicoSAT.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(PicoSAT.NAME))
         binary_map.specify_binary(
             'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]
         )
@@ -282,7 +282,7 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(PicoSATLoadTime.NAME)
+            get_local_project_repo(PicoSATLoadTime.NAME)
         )
         binary_map.specify_binary(
             'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]

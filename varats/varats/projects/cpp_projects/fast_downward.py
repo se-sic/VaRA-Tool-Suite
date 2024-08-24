@@ -13,7 +13,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     get_tagged_commits,
     verify_binaries,
 )
@@ -57,7 +57,7 @@ class FastDownward(VProject, ReleaseProviderHook):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(FastDownward.NAME)
+            get_local_project_repo(FastDownward.NAME)
         )
         binary_map.specify_binary('build/bin/downward', BinaryType.EXECUTABLE)
 
@@ -88,7 +88,7 @@ class FastDownward(VProject, ReleaseProviderHook):
     def get_release_revisions(
         cls, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
-        repo_loc = get_local_project_git_path(cls.NAME)
+        repo_loc = get_local_project_repo(cls.NAME)
         with local.cwd(repo_loc):
             # Before 2019_07, there were no real releases, but the following
             # commits were identified as suitable.

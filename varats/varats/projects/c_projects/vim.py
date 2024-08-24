@@ -11,7 +11,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -41,7 +41,7 @@ class Vim(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Vim.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Vim.NAME))
 
         binary_map.specify_binary("src/vim", BinaryType.EXECUTABLE)
 

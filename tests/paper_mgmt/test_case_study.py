@@ -17,7 +17,7 @@ from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config, load_paper_config
 from varats.plot.plots import PlotConfig
 from varats.plots.case_study_overview import CaseStudyOverviewPlot
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
@@ -342,12 +342,14 @@ class TestCaseStudyExtenders(unittest.TestCase):
         random.seed(42)
 
         cs = CaseStudy("xz", 0)
-        git_path = get_local_project_git_path("xz")
+        repo = get_local_project_repo("xz")
         cmap = get_commit_map(
             "xz", end="c5c7ceb08a011b97d261798033e2c39613a69eb7"
         )
 
-        MCS.extend_with_revs_per_year(cs, cmap, 0, True, str(git_path), 2, True)
+        MCS.extend_with_revs_per_year(
+            cs, cmap, 0, True, str(repo.repo_path), 2, True
+        )
         self.assertEqual(cs.num_stages, 17)
         self.assertEqual(len(cs.revisions), 31)
         self.assertEqual(

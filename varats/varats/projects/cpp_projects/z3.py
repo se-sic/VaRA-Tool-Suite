@@ -14,7 +14,7 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     BinaryType,
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
     get_tagged_commits,
 )
@@ -55,7 +55,7 @@ class Z3(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Z3.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Z3.NAME))
         binary_map.specify_binary('build/z3', BinaryType.EXECUTABLE)
 
         return binary_map[revision]

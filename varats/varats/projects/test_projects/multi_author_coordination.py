@@ -11,7 +11,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     verify_binaries,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.project.varats_project import VProject
 from varats.ts_utils.project_sources import VaraTestRepoSource
@@ -42,7 +42,7 @@ class MultiAuthorCoordination(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(MultiAuthorCoordination.NAME)
+            get_local_project_repo(MultiAuthorCoordination.NAME)
         ).specify_binary("build/computeService", BinaryType.EXECUTABLE)
 
         return binary_map[revision]

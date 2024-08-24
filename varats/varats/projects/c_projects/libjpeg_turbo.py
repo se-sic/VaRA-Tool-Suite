@@ -13,7 +13,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
@@ -21,7 +21,7 @@ from varats.utils.settings import bb_cfg
 
 
 class LibjpegTurbo(VProject):
-    """libjpeg-turbo is a JPEG image codec."""
+    """Libjpeg-turbo is a JPEG image codec."""
 
     NAME = 'libjpeg_turbo'
     GROUP = 'c_projects'
@@ -46,7 +46,7 @@ class LibjpegTurbo(VProject):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(LibjpegTurbo.NAME)
+            get_local_project_repo(LibjpegTurbo.NAME)
         )
 
         binary_map.specify_binary("libjpeg.so", BinaryType.SHARED_LIBRARY)

@@ -29,7 +29,7 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.project.project_util import (
     get_project_cls_by_name,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
@@ -572,10 +572,10 @@ def extend_with_distrib_sampling(
     is_code_commit: tp.Callable[[ShortCommitHash], bool] = lambda rev: True
     if only_code_commits:
         churn_conf = ChurnConfig.create_c_style_languages_config()
-        project_git_path = get_local_project_git_path(case_study.project_name)
+        repo_path = get_local_project_repo(case_study.project_name).repo_path
 
         def is_c_cpp_code_commit(commit: ShortCommitHash) -> bool:
-            return contains_source_code(commit, project_git_path, churn_conf)
+            return contains_source_code(commit, repo_path, churn_conf)
 
         is_code_commit = is_c_cpp_code_commit
 
