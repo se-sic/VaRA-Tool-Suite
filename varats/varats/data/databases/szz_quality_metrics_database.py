@@ -29,12 +29,14 @@ from varats.experiments.vara.blame_report_experiment import (
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
-from varats.project.project_util import get_primary_project_source
+from varats.project.project_util import (
+    get_primary_project_source,
+    create_project_commit_lookup_helper,
+)
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
-    create_commit_lookup_helper,
     ShortCommitHash,
     FullCommitHash,
 )
@@ -111,7 +113,7 @@ def _load_dataframe_for_report(
     project_name: str, cache_id: str, columns: tp.List[str],
     commit_map: CommitMap, szz_report: SZZReport
 ) -> pd.DataFrame:
-    commit_lookup = create_commit_lookup_helper(project_name)
+    commit_lookup = create_project_commit_lookup_helper(project_name)
     commit_map = get_commit_map(project_name)
     prj_src = get_primary_project_source(project_name)
 

@@ -38,7 +38,7 @@ class CVEProvider(Provider):
         project_name = project.NAME
         if issubclass(project, CVEProviderHook):
             self.__cve_map: CVEDict = generate_cve_map(
-                get_local_project_repo(project_name).repo_path,
+                get_local_project_repo(project_name),
                 project.get_cve_product_info()
             )
         else:

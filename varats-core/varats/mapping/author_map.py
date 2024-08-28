@@ -5,10 +5,7 @@ import re
 import typing as tp
 from functools import reduce
 
-from benchbuild.utils.cmd import git
-
 from varats.project.project_util import get_local_project_repo
-from varats.utils.git_util import __get_git_path_arg
 
 LOG = logging.getLogger(__name__)
 
@@ -163,10 +160,9 @@ class AuthorMap():
 
 def generate_author_map(project_name: str) -> AuthorMap:
     """Generate an AuthorMap for the repository at the given path."""
-    repo_path = get_local_project_repo(project_name).repo_path
+    repo = get_local_project_repo(project_name)
     author_map = AuthorMap()
-    test = git[__get_git_path_arg(repo_path), "shortlog", "-sne",
-               "--all"]().strip().split("\n")
+    test = repo("shortlog", "-sne", "--all").strip().split("\n")
     for line in test:
         match = NAME_REGEX.match(line)
         if not match:

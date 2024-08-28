@@ -16,12 +16,13 @@ from varats.project.project_util import (
     get_local_project_repo,
     BinaryType,
     ProjectBinaryWrapper,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 
 LOG = logging.getLogger(__name__)
 

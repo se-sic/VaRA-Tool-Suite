@@ -357,7 +357,7 @@ def testing_gen_commit_map() -> CommitMap:
     initialize_projects()
     xz_repo = get_local_project_repo("xz")
     return CommitMap(
-        xz_repo.repo_path,
+        xz_repo,
         start="923bf96b55e5216a6c8df9d8331934f54784390e",
         end="80a1a8bb838842a2be343bd88ad1462c21c5e2c9"
     )

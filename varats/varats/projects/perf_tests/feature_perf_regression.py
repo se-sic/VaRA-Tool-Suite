@@ -17,6 +17,7 @@ from varats.project.project_util import (
     verify_binaries,
     get_tagged_commits,
     get_local_project_repo,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
@@ -24,11 +25,7 @@ from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.utils.git_util import (
-    RevisionBinaryMap,
-    ShortCommitHash,
-    FullCommitHash,
-)
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 from varats.utils.settings import bb_cfg
 
 

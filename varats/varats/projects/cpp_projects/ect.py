@@ -13,9 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 
 
 class Ect(VProject):

@@ -51,16 +51,16 @@ class VaRACodeBase(CodeBase):
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
             SubProject(
-                self, "vara-llvm-project",
+                base_dir, "vara-llvm-project",
                 "https://github.com/llvm/llvm-project.git", "upstream",
                 "vara-llvm-project"
             ),
             SubProject(
-                self, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
+                base_dir, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
                 "vara-llvm-project/vara"
             ),
             SubProject(
-                self,
+                base_dir,
                 "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin",

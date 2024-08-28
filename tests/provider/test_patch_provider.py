@@ -4,7 +4,6 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.source.base import target_prefix
-from benchbuild.utils.revision_ranges import _get_git_for_path
 
 from tests.helper_utils import TEST_INPUTS_DIR
 from varats.projects.perf_tests.feature_perf_cs_collection import (
@@ -15,6 +14,7 @@ from varats.utils.git_util import (
     ShortCommitHash,
     get_all_revisions_between,
     get_initial_commit,
+    RepositoryHandle,
 )
 
 
@@ -76,12 +76,14 @@ class TestPatchRevisionRanges(unittest.TestCase):
 
         project_git_source.fetch()
 
-        repo_git_path = Path(target_prefix() + "/FeaturePerfCSCollection")
+        repo = RepositoryHandle(
+            Path(target_prefix() + "/FeaturePerfCSCollection")
+        )
 
         cls.all_revisions = set(
             get_all_revisions_between(
-                get_initial_commit(repo_git_path).hash, "", ShortCommitHash,
-                repo_git_path
+                repo,
+                get_initial_commit(repo).hash, "", ShortCommitHash
             )
         )
 

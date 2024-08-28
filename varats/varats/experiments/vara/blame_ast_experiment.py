@@ -60,7 +60,7 @@ class BlameAnnotationGeneration(actions.ProjectStep):  #type: ignore
     def analyze(self) -> actions.StepResult:
         """
         This step generates a blame annotation report given a binary annotated
-        with blame informatin.
+        with blame information.
 
         Flags used:
             * -vara-BA: to run a blame annotation report

@@ -19,13 +19,10 @@ from varats.project.project_util import (
     BinaryType,
     get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    ShortCommitHash,
-    RevisionBinaryMap,
-    get_all_revisions_between,
-)
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 
 
@@ -107,17 +104,16 @@ class Brotli(VProject):
     def compile(self) -> None:
         """Compile the project."""
         brotli_version_source = local.path(self.source_of_primary)
-        brotli_git_path = get_local_project_repo(self.NAME).repo_path
+        brotli_repo = get_local_project_repo(self.NAME)
         brotli_version = ShortCommitHash(self.version_of_primary)
-        with local.cwd(brotli_git_path):
-            configure_revisions = get_all_revisions_between(
-                "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
-                "5814438791fb2d4394b46e5682a96b68cd092803", ShortCommitHash
-            )
-            simple_make_revisions = get_all_revisions_between(
-                "e1739826c04a9944672b99b98249dda021bdeb36",
-                "378485b097fd7b80a5e404a3cb912f7b18f78cdb", ShortCommitHash
-            )
+        configure_revisions = get_all_revisions_between(
+            brotli_repo, "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
+            "5814438791fb2d4394b46e5682a96b68cd092803", ShortCommitHash
+        )
+        simple_make_revisions = get_all_revisions_between(
+            brotli_repo, "e1739826c04a9944672b99b98249dda021bdeb36",
+            "378485b097fd7b80a5e404a3cb912f7b18f78cdb", ShortCommitHash
+        )
         c_compiler = bb.compiler.cc(self)
 
         if brotli_version in simple_make_revisions:

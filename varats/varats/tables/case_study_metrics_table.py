@@ -9,16 +9,14 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_repo,
+    num_project_commits,
+    num_project_authors,
+    calc_project_loc,
 )
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.utils.git_util import (
-    calc_project_loc,
-    num_project_commits,
-    num_project_authors,
-    calc_repo_loc,
-)
+from varats.utils.git_util import calc_repo_loc
 
 LOG = logging.Logger(__name__)
 
@@ -35,14 +33,14 @@ class CaseStudyMetricsTable(Table, table_name="cs_metrics_table"):
             project_name = case_study.project_name
             commit_map = get_commit_map(project_name)
             project_cls = get_project_cls_by_name(project_name)
-            project_git_path = get_local_project_repo(project_name).repo_path
+            project_repo = get_local_project_repo(project_name)
 
             revisions = sorted(
                 case_study.revisions, key=commit_map.time_id, reverse=True
             )
             revision = revisions[0]
 
-            repo_loc = calc_repo_loc(project_git_path, revision.hash)
+            repo_loc = calc_repo_loc(project_repo, revision.hash)
             project_loc = calc_project_loc(project_name, revision)
             commits = num_project_commits(project_name, revision)
             authors = num_project_authors(project_name, revision)

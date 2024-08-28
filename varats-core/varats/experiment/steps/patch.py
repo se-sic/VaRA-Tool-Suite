@@ -8,6 +8,7 @@ from plumbum import ProcessExecutionError
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import Patch
 from varats.utils.git_commands import apply_patch, revert_patch
+from varats.utils.git_util import RepositoryHandle
 
 
 class ApplyPatch(actions.ProjectStep):
@@ -27,7 +28,10 @@ class ApplyPatch(actions.ProjectStep):
                 f"Applying {self.__patch.shortname} to "
                 f"{self.project.source_of_primary}"
             )
-            apply_patch(Path(self.project.source_of_primary), self.__patch.path)
+            apply_patch(
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                self.__patch.path
+            )
 
         except ProcessExecutionError:
             self.status = StepResult.ERROR
@@ -59,7 +63,8 @@ class RevertPatch(actions.ProjectStep):
                 f"{self.project.source_of_primary}"
             )
             revert_patch(
-                Path(self.project.source_of_primary), self.__patch.path
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                self.__patch.path
             )
 
         except ProcessExecutionError:

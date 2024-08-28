@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import TypedDict
 
 import networkx as nx
-from benchbuild.utils.cmd import git
 
 from varats.data.cache_helper import build_cached_graph
 from varats.data.reports.blame_report import (
@@ -20,12 +19,12 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.project.project_util import (
     get_local_project_repo,
     get_local_project_repos,
+    create_project_commit_lookup_helper,
 )
 from varats.report.report import ReportFilename, ReportFilepath
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
-    create_commit_lookup_helper,
     ChurnConfig,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
@@ -181,7 +180,7 @@ class InteractionGraph(abc.ABC):
             the author interaction graph
         """
         interaction_graph = self._interaction_graph()
-        commit_lookup = create_commit_lookup_helper(self.project_name)
+        commit_lookup = create_project_commit_lookup_helper(self.project_name)
 
         def partition(node_u: BIGNodeTy, node_v: BIGNodeTy) -> bool:
             if UNCOMMITTED_COMMIT_HASH in (
@@ -256,7 +255,7 @@ class InteractionGraph(abc.ABC):
             the commit-author interaction graph
         """
         commit_interaction_graph = self.commit_interaction_graph()
-        commit_lookup = create_commit_lookup_helper(self.project_name)
+        commit_lookup = create_project_commit_lookup_helper(self.project_name)
 
         commit_author_mapping = {
             commit: commit_lookup(commit).author.name
@@ -415,6 +414,7 @@ class FileBasedInteractionGraph(InteractionGraph):
     def _interaction_graph(self) -> nx.DiGraph:
 
         def create_graph() -> nx.DiGraph:
+            main_repo = get_local_project_repo(self.project_name)
             repos = get_local_project_repos(self.project_name)
             interaction_graph = nx.DiGraph()
             churn_config = ChurnConfig.create_c_style_languages_config()
@@ -426,28 +426,24 @@ class FileBasedInteractionGraph(InteractionGraph):
 
             blame_regex = re.compile(r"^([0-9a-f]+)\s+(?:.+\s+)?[\d]+\) ?(.*)$")
 
-            for repo_name in repos:
-                repo_path = get_local_project_repo(
-                    self.project_name, repo_name
-                ).repo_path
-                project_git = git["-C", str(repo_path)]
+            for repo_name, repo in repos.items():
                 head_commit = get_submodule_head(
-                    self.project_name, repo_name, self.__head_commit
+                    main_repo, repo, self.__head_commit
                 )
 
-                file_names = project_git(
+                file_names = repo(
                     "ls-tree", "--full-tree", "--name-only", "-r", head_commit
                 ).split("\n")
                 files: tp.List[Path] = [
-                    repo_path / path
+                    repo.worktree_path / path
                     for path in file_names
                     if file_pattern.search(path)
                 ]
                 for file in files:
                     nodes: tp.Set[BIGNodeTy] = set()
-                    blame_lines: str = project_git(
+                    blame_lines: str = repo(
                         "blame", "-w", "-s", "-l", "--root", head_commit, "--",
-                        str(file.relative_to(repo_path))
+                        str(file.relative_to(repo.worktree_path))
                     )
 
                     for line in blame_lines.strip().split("\n"):

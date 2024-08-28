@@ -32,7 +32,7 @@ def _generate_graph_table(
     degree_data: tp.List[pd.DataFrame] = []
     for case_study in get_paper_config().get_all_case_studies():
         project_name = case_study.project_name
-        project_git_path = get_local_project_repo(project_name).repo_path
+        project_repo = get_local_project_repo(project_name)
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReportExperiment
         )
@@ -54,9 +54,9 @@ def _generate_graph_table(
             pd.DataFrame.from_dict({
                 project_name: {
                     ("commits", ""):
-                        num_commits(revision.hash, project_git_path),
+                        num_commits(project_repo, revision.hash),
                     ("authors", ""):
-                        num_authors(revision.hash, project_git_path),
+                        num_authors(project_repo, revision.hash),
                     ("nodes", ""):
                         len(graph.nodes),
                     ("edges", ""):

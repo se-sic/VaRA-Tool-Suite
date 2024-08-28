@@ -2,10 +2,7 @@
 import logging
 import typing as tp
 from collections.abc import ItemsView
-from pathlib import Path
 
-from benchbuild.utils.cmd import git, mkdir
-from plumbum import local
 from pygtrie import CharTrie
 
 from varats.project.project_util import (
@@ -16,6 +13,7 @@ from varats.utils.git_util import (
     get_current_branch,
     FullCommitHash,
     ShortCommitHash,
+    RepositoryHandle,
 )
 
 LOG = logging.getLogger(__name__)
@@ -30,12 +28,12 @@ class CommitMap():
 
     def __init__(
         self,
-        git_path: Path,
+        repo: RepositoryHandle,
         end: str = "HEAD",
         start: tp.Optional[str] = None,
         refspec: str = "HEAD"
     ) -> None:
-        self.git_path = git_path
+        self.repo = repo
         self.end = end
         self.start = start
         self.refspec = refspec
@@ -60,38 +58,39 @@ class CommitMap():
             search_range += self.start + ".."
         search_range += self.end
 
-        with local.cwd(self.git_path):
-            old_head = get_current_branch()
-            git("checkout", self.refspec)
-            full_out = git("--no-pager", "log", "--all", "--pretty=format:'%H'")
-            if master:
-                wanted_out = git(
-                    "--no-pager", "log", "--pretty=format:'%H'", search_range
-                )
-            else:
-                wanted_out = git(
-                    "--no-pager", "log", "--all", "--pretty=format:'%H'",
-                    search_range
-                )
+        old_head = get_current_branch(self.repo)
+        self.repo("checkout", self.refspec)
+        full_out = self.repo(
+            "--no-pager", "log", "--all", "--pretty=format:'%H'"
+        )
+        if master:
+            wanted_out = self.repo(
+                "--no-pager", "log", "--pretty=format:'%H'", search_range
+            )
+        else:
+            wanted_out = self.repo(
+                "--no-pager", "log", "--all", "--pretty=format:'%H'",
+                search_range
+            )
 
-            def format_stream() -> tp.Generator[str, None, None]:
-                wanted_cm = set()
-                for line in wanted_out.split('\n'):
-                    wanted_cm.add(line[1:-1])
+        def format_stream() -> tp.Generator[str, None, None]:
+            wanted_cm = set()
+            for line in wanted_out.split('\n'):
+                wanted_cm.add(line[1:-1])
 
-                for number, line in enumerate(reversed(full_out.split('\n'))):
-                    line = line[1:-1]
-                    if line in wanted_cm:
-                        yield f"{number}, {line}\n"
+            for number, line in enumerate(reversed(full_out.split('\n'))):
+                line = line[1:-1]
+                if line in wanted_cm:
+                    yield f"{number}, {line}\n"
 
-            hash_to_id: CharTrie = CharTrie()
-            for line in format_stream():
-                slices = line.strip().split(', ')
-                hash_to_id[slices[1]] = int(slices[0])
+        hash_to_id: CharTrie = CharTrie()
+        for line in format_stream():
+            slices = line.strip().split(', ')
+            hash_to_id[slices[1]] = int(slices[0])
 
-            git("checkout", old_head)
+        self.repo("checkout", old_head)
 
-            return hash_to_id
+        return hash_to_id
 
     def convert_to_full_or_warn(
         self, short_commit: ShortCommitHash
@@ -222,11 +221,11 @@ def get_commit_map(
 
     Returns: a bidirectional commit map from commits to time IDs
     """
-    project_git_path = get_local_project_repo(project_name).repo_path
+    project_repo = get_local_project_repo(project_name)
     primary_source = get_primary_project_source(project_name)
     if refspec is None and hasattr(primary_source, "refspec"):
         refspec = primary_source.refspec
     elif refspec is None:
         refspec = "HEAD"
 
-    return CommitMap(project_git_path, end, start, refspec)
+    return CommitMap(project_repo, end, start, refspec)

@@ -26,7 +26,10 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.project.project_util import get_local_project_repo
+from varats.project.project_util import (
+    get_local_project_repo,
+    create_project_commit_lookup_helper,
+)
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_processed_revisions_files,
@@ -36,7 +39,6 @@ from varats.revision.revisions import (
 from varats.utils.git_util import (
     ChurnConfig,
     calc_code_churn,
-    create_commit_lookup_helper,
     ShortCommitHash,
     FullCommitHash,
 )
@@ -300,8 +302,9 @@ class BlameDiffMetricsDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
-        repo = get_local_project_repo(project_name).pygit_repo
-        commit_lookup = create_commit_lookup_helper(project_name)
+        repo = get_local_project_repo(project_name)
+        pygit_repo = repo.pygit_repo
+        commit_lookup = create_project_commit_lookup_helper(project_name)
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
@@ -314,15 +317,15 @@ class BlameDiffMetricsDatabase(
             # Look-up commit and infos about the HEAD commit of the report
             head_report = load_blame_report(report_paths[0])
             pred_report = load_blame_report(report_paths[1])
-            commit = repo.get(head_report.head_commit.hash)
+            commit = pygit_repo.get(head_report.head_commit.hash)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
-            pred_commit = repo.get(pred_report.head_commit.hash)
+            pred_commit = pygit_repo.get(pred_report.head_commit.hash)
 
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)
 
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn(
-                Path(repo.path), FullCommitHash.from_pygit_commit(pred_commit),
+                repo, FullCommitHash.from_pygit_commit(pred_commit),
                 FullCommitHash.from_pygit_commit(commit),
                 ChurnConfig.create_c_style_languages_config()
             )

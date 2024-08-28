@@ -23,6 +23,7 @@ from varats.provider.bug.bug import (
     _filter_commit_message_bugs,
 )
 from varats.provider.bug.bug_provider import BugProvider
+from varats.utils.git_util import RepositoryHandle
 
 
 class DummyIssueData:
@@ -164,8 +165,10 @@ class TestBugDetectionStrategies(unittest.TestCase):
             return mock_commit
 
         # pygit2 dummy repo
-        self.mock_repo = mock.create_autospec(pygit2.Repository)
-        self.mock_repo.get = get
+        self.mock_pygit = mock.create_autospec(pygit2.Repository)
+        self.mock_pygit.get = get
+        self.mock_repo_handle = mock.create_autospec(RepositoryHandle)
+        self.mock_repo_handle.pygit_repo = self.mock_pygit
 
     def test_issue_events_closing_bug(self) -> None:
         """Test identifying issue events that close a bug related issue, with
@@ -257,7 +260,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
         mock_pydriller_git.return_value = DummyPydrillerRepo("")
 
         pybug = _create_corresponding_bug(
-            self.mock_repo.get(issue_event.commit_id), self.mock_repo,
+            self.mock_pygit.get(issue_event.commit_id), self.mock_pygit,
             issue_event.issue.number
         )
 
@@ -265,9 +268,9 @@ class TestBugDetectionStrategies(unittest.TestCase):
         self.assertEqual(issue_event.issue.number, pybug.issue_id)
 
     @mock.patch('varats.provider.bug.bug.pydriller.Git')
-    @mock.patch('varats.provider.bug.bug.get_local_project_git')
+    @mock.patch('varats.provider.bug.bug.get_local_project_repo')
     def test_filter_issue_bugs(
-        self, mock_get_local_project_git, mock_pydriller_git
+        self, mock_get_local_project_repo, mock_pydriller_git
     ) -> None:
         """Test on a set of IssueEvents whether the corresponding set of bugs is
         created correctly."""
@@ -302,7 +305,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
             event_close_second, event_close_first
         ]
 
-        mock_get_local_project_git.return_value = self.mock_repo
+        mock_get_local_project_repo.return_value = self.mock_repo_handle
         mock_pydriller_git.return_value = DummyPydrillerRepo("")
 
         # issue filter method for pygit bugs
@@ -346,9 +349,9 @@ class TestBugDetectionStrategies(unittest.TestCase):
         self.assertEqual(expected_second_bug_intro_ids, intro_second_bug)
 
     @mock.patch('varats.provider.bug.bug.pydriller.Git')
-    @mock.patch('varats.provider.bug.bug.get_local_project_git')
+    @mock.patch('varats.provider.bug.bug.get_local_project_repo')
     def test_filter_commit_message_bugs(
-        self, mock_get_local_project_git, mock_pydriller_git
+        self, mock_get_local_project_repo, mock_pydriller_git
     ) -> None:
         """Test on the commit history of a project whether the corresponding set
         of bugs is created correctly."""
@@ -377,18 +380,18 @@ class TestBugDetectionStrategies(unittest.TestCase):
             ])
 
         # customize walk method of mock repo
-        self.mock_repo.walk = mock.create_autospec(
+        self.mock_pygit.walk = mock.create_autospec(
             pygit2.Repository.walk, side_effect=mock_walk
         )
 
-        mock_get_local_project_git.return_value = self.mock_repo
+        mock_get_local_project_repo.return_value = self.mock_repo_handle
         mock_pydriller_git.return_value = DummyPydrillerRepo("")
 
         # commit filter method for pygit bugs
         def accept_pybugs(repo: pygit2.Repository,
                           commit: pygit2.Commit) -> tp.Optional[PygitBug]:
             if _is_closing_message(commit.message):
-                return _create_corresponding_bug(commit, self.mock_repo)
+                return _create_corresponding_bug(commit, self.mock_pygit)
             return None
 
         pybug_ids = set(

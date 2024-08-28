@@ -16,13 +16,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
     get_local_project_repo,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    ShortCommitHash,
-    RevisionBinaryMap,
-    typed_revision_range,
-)
+from varats.utils.git_util import ShortCommitHash, typed_revision_range
 from varats.utils.settings import bb_cfg
 
 

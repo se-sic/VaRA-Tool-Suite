@@ -23,6 +23,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -32,7 +33,6 @@ from varats.provider.release.release_provider import (
     ReleaseType,
 )
 from varats.utils.git_util import (
-    RevisionBinaryMap,
     ShortCommitHash,
     FullCommitHash,
     get_all_revisions_between,
@@ -160,15 +160,16 @@ class PicoSAT(VProject, ReleaseProviderHook):
 
     def compile(self) -> None:
         """Compile the project."""
+        picosat_repo = get_local_project_repo(self.NAME)
         picosat_source = local.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        with local.cwd(picosat_source):
-            revisions_with_new_config_name = get_all_revisions_between(
-                "33c685e82213228726364980814f0183e435de78", "", ShortCommitHash
-            )
+        revisions_with_new_config_name = get_all_revisions_between(
+            picosat_repo, "33c685e82213228726364980814f0183e435de78", "",
+            ShortCommitHash
+        )
         picosat_version = ShortCommitHash(self.version_of_primary)
         if picosat_version in revisions_with_new_config_name:
             config_script_name = "./configure.sh"
@@ -295,15 +296,16 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
 
     def compile(self) -> None:
         """Compile the project."""
-        picosat_source = local.path(self.source_of(self.primary_source))
+        picosat_repo = get_local_project_repo(self.NAME)
+        picosat_source = local.path(self.source_of_primary)
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        with local.cwd(picosat_source):
-            revisions_with_new_config_name = get_all_revisions_between(
-                "33c685e82213228726364980814f0183e435de78", "", ShortCommitHash
-            )
+        revisions_with_new_config_name = get_all_revisions_between(
+            picosat_repo, "33c685e82213228726364980814f0183e435de78", "",
+            ShortCommitHash
+        )
         picosat_version = ShortCommitHash(self.version_of_primary)
         if picosat_version in revisions_with_new_config_name:
             config_script_name = "./configure.sh"

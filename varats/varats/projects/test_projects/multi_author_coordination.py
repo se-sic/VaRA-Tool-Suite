@@ -12,10 +12,11 @@ from varats.project.project_util import (
     verify_binaries,
     BinaryType,
     get_local_project_repo,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
 from varats.ts_utils.project_sources import VaraTestRepoSource
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 

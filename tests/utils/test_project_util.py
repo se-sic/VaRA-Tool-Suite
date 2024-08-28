@@ -278,7 +278,7 @@ class TestTaggedCommits(unittest.TestCase):
         lightweight tags are used."""
         fast_downward_tagged_commits = set(get_tagged_commits("FastDownward"))
         fast_downward_repo = get_local_project_repo("FastDownward")
-        with local.cwd(fast_downward_repo.repo_path):
+        with local.cwd(fast_downward_repo.worktree_path):
             for (hash_value, _) in fast_downward_tagged_commits:
                 self.assertTrue(self.hash_belongs_to_commit(hash_value))
 
@@ -299,7 +299,7 @@ class TestTaggedCommits(unittest.TestCase):
         annotated tags are used."""
         xz_tagged_commits = set(get_tagged_commits("xz"))
         xz_repo = get_local_project_repo("xz")
-        with local.cwd(xz_repo.repo_path):
+        with local.cwd(xz_repo.worktree_path):
             for (hash_value, _) in xz_tagged_commits:
                 self.assertTrue(self.hash_belongs_to_commit(hash_value))
 

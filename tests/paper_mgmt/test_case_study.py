@@ -347,9 +347,7 @@ class TestCaseStudyExtenders(unittest.TestCase):
             "xz", end="c5c7ceb08a011b97d261798033e2c39613a69eb7"
         )
 
-        MCS.extend_with_revs_per_year(
-            cs, cmap, 0, True, str(repo.repo_path), 2, True
-        )
+        MCS.extend_with_revs_per_year(cs, cmap, 0, True, repo, 2, True)
         self.assertEqual(cs.num_stages, 17)
         self.assertEqual(len(cs.revisions), 31)
         self.assertEqual(

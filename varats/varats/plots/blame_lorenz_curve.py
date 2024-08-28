@@ -127,7 +127,7 @@ def filter_non_code_changes(
     repo = get_local_project_repo(project_name)
     code_related_changes = [
         x.hash for x in calc_repo_code_churn(
-            repo.repo_path, ChurnConfig.create_c_style_languages_config()
+            repo, ChurnConfig.create_c_style_languages_config()
         )
     ]
     return blame_data[blame_data.apply(
