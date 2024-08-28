@@ -74,7 +74,6 @@ class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
     NAME = "PerfStat"
 
     REPORT_SPEC = ReportSpecification(PerfStatReportAggregate)
-    #REPORT_SPEC = ReportSpecification(ReportAggregate[PerfStatReport])
 
     def actions_for_project(
         self, project: VProject

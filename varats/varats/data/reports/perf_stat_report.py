@@ -38,8 +38,6 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="csv"):
                 df.at[timestemp, parameter] = value
 
         self.df = df
-        self.parameters = df.columns
-        print(self.parameters)
 
 
 class PerfStatReportAggregate(
