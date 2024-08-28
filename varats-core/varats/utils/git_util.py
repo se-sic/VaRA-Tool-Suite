@@ -12,15 +12,10 @@ from types import TracebackType
 
 import pygit2
 from benchbuild.utils.cmd import git, grep
-from plumbum import local, TF, RETCODE
+from plumbum import TF, RETCODE
+from plumbum.commands.base import BoundCommand
 
-from varats.project.project_util import (
-    get_primary_project_source,
-    BinaryType,
-    ProjectBinaryWrapper,
-    get_local_project_repo,
-    get_local_project_repos,
-)
+from varats.utils.exceptions import unwrap
 
 if tp.TYPE_CHECKING:
     from benchbuild.utils.revision_ranges import AbstractRevisionRange
@@ -140,30 +135,50 @@ class RepositoryHandle:
     """Wrapper class providing access to a git repository using either pygit2 or
     commandline-git."""
 
-    def __init__(self, repo_path: Path):
-        self.__repo_path = pygit2.discover_repository(str(repo_path))
+    def __init__(self, worktree_path: Path):
+        self.__worktree_path = worktree_path
+        self.__git: BoundCommand = git["-C", str(self.__worktree_path)]
 
-        if self.__repo_path is None:
-            raise AssertionError(f"{repo_path} is not a git repository")
-
-        self.__git = git["-C", self.__repo_path]
+        self.__repo_path: tp.Optional[Path] = None
         self.__libgit_repo: tp.Optional[pygit2.Repository] = None
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        """Call git with the given arguments."""
         return self.__git(*args, **kwargs)
+
+    def __getitem__(self, *args: tp.Any) -> BoundCommand:
+        """Get a bound git command with the given arguments."""
+        return self.__git.bound_command(*args)
 
     @property
     def repo_name(self) -> str:
-        return self.repo_path.parent.name
+        """Name of the repository, i.e., name of the worktree folder."""
+        return self.worktree_path.name
+
+    @property
+    def worktree_path(self) -> Path:
+        """Path to the main worktree of the repository, typically the parent of
+        the .git folder."""
+        return self.__worktree_path
 
     @property
     def repo_path(self) -> Path:
-        return Path(self.__repo_path)
+        """Path to the git repository, i.e., the .git folder."""
+        if self.__repo_path is None:
+            self.__repo_path = Path(
+                unwrap(
+                    pygit2.discover_repository(str(self.worktree_path)),
+                    f"No git repository found."
+                )
+            )
+
+        return self.__repo_path
 
     @property
     def pygit_repo(self) -> pygit2.Repository:
+        """A pygit2 repository instance for the repository."""
         if self.__libgit_repo is None:
-            self.__libgit_repo = pygit2.Repository(self.__repo_path)
+            self.__libgit_repo = pygit2.Repository(str(self.repo_path))
 
         return self.__libgit_repo
 
