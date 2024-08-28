@@ -12,11 +12,12 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -45,7 +46,7 @@ class Libvpx(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Libvpx.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Libvpx.NAME))
 
         binary_map.specify_binary("vpxdec", BinaryType.EXECUTABLE)
         binary_map.specify_binary("vpxenc", BinaryType.EXECUTABLE)

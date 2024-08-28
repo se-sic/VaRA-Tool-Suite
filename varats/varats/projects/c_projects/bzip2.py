@@ -20,18 +20,15 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    ShortCommitHash,
-    RevisionBinaryMap,
-    typed_revision_range,
-)
+from varats.utils.git_util import ShortCommitHash, typed_revision_range
 from varats.utils.settings import bb_cfg
 
 
@@ -141,7 +138,7 @@ class Bzip2(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Bzip2.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Bzip2.NAME))
 
         binary_map.specify_binary(
             'build/bzip2',

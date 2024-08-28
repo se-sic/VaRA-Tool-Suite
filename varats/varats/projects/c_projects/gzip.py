@@ -21,19 +21,16 @@ from varats.project.project_util import (
     get_tagged_commits,
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.utils.git_util import (
-    FullCommitHash,
-    ShortCommitHash,
-    RevisionBinaryMap,
-)
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -116,7 +113,7 @@ class Gzip(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Gzip.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Gzip.NAME))
 
         binary_map.specify_binary("build/gzip", BinaryType.EXECUTABLE)
 

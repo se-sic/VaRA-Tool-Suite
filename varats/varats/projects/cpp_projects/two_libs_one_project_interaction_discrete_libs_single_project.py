@@ -12,16 +12,17 @@ from varats.paper.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
 from varats.ts_utils.project_sources import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
 )
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -92,7 +93,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(VProject):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(
+            get_local_project_repo(
                 TwoLibsOneProjectInteractionDiscreteLibsSingleProject.NAME
             )
         )

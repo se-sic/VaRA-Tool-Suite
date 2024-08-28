@@ -15,7 +15,7 @@ from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import get_local_project_repo
 from varats.report.report import FileStatusExtension
 # colors taken from seaborn's default palette
 from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
@@ -48,7 +48,7 @@ def _load_projects_ordered_by_year(
             case_study, experiment_type
         )
 
-        repo = get_local_project_git(case_study.project_name)
+        repo = get_local_project_repo(case_study.project_name).pygit_repo
         revisions: tp.Dict[int, tp.List[tp.Tuple[
             ShortCommitHash, FileStatusExtension]]] = defaultdict(list)
 

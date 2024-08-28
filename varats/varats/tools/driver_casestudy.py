@@ -42,18 +42,12 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import (
-    get_local_project_git_path,
     get_primary_project_source,
-    get_loaded_vara_projects,
+    get_local_project_repo,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import (
-    FileStatusExtension,
-    BaseReport,
-    ReportFilename,
-    ReportFilepath,
-)
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilepath
 from varats.revision.revisions import (
     get_all_revisions_files,
     get_failed_revisions_files,
@@ -224,7 +218,7 @@ def __casestudy_gen(
     ctx.obj['path'] = Path(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
-    ctx.obj['git_path'] = get_local_project_git_path(project)
+    ctx.obj['repo'] = get_local_project_repo(project)
     if update:
         get_primary_project_source(project).fetch()
 
@@ -293,7 +287,7 @@ def __gen_latest(ctx: click.Context) -> None:
         cmap,
         merge_stage=ctx.obj['merge_stage'],
         ignore_blocked=ctx.obj['ignore_blocked'],
-        git_path=ctx.obj["git_path"]
+        repo=ctx.obj["repo"]
     )
     store_case_study(case_study, ctx.obj['path'])
 
@@ -350,16 +344,16 @@ def __gen_sample(
         distribution
     )()
 
-    project_repo_path = get_local_project_git_path(ctx.obj['project'])
+    project_repo = get_local_project_repo(ctx.obj['project'])
     if end != "HEAD" and not is_commit_hash(end):
-        end = get_commits_before_timestamp(end, project_repo_path)[0].hash
+        end = get_commits_before_timestamp(project_repo, end)[0].hash
 
     if start is not None and not is_commit_hash(start):
-        commits_before = get_commits_before_timestamp(start, project_repo_path)
+        commits_before = get_commits_before_timestamp(project_repo, start)
         if commits_before:
             start = commits_before[0].hash
         else:
-            start = get_initial_commit(project_repo_path).hash
+            start = get_initial_commit(project_repo).hash
 
     cmap = get_commit_map(ctx.obj['project'], end, start)
     extend_with_distrib_sampling(
@@ -386,7 +380,7 @@ def __gen_per_year(
     cmap = get_commit_map(ctx.obj['project'], refspec='HEAD')
     extend_with_revs_per_year(
         ctx.obj['case_study'], cmap, ctx.obj['merge_stage'],
-        ctx.obj['ignore_blocked'], ctx.obj['git_path'], revs_per_year, separate
+        ctx.obj['ignore_blocked'], ctx.obj['repo'], revs_per_year, separate
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 

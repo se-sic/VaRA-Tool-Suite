@@ -1,7 +1,6 @@
 """Module for code centrality plots."""
 import logging
 import typing as tp
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -18,12 +17,14 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator
-from varats.project.project_util import get_local_project_gits
+from varats.project.project_util import (
+    get_local_project_repos,
+    create_project_commit_lookup_helper,
+)
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     CommitRepoPair,
-    create_commit_lookup_helper,
     ChurnConfig,
     calc_commit_code_churn,
     UNCOMMITTED_COMMIT_HASH,
@@ -58,8 +59,8 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
         cig = create_blame_interaction_graph(
             project_name, revision, BlameReportExperiment
         ).commit_interaction_graph()
-        commit_lookup = create_commit_lookup_helper(project_name)
-        repo_lookup = get_local_project_gits(project_name)
+        commit_lookup = create_project_commit_lookup_helper(project_name)
+        repo_lookup = get_local_project_repos(project_name)
 
         def filter_nodes(node: CommitRepoPair) -> bool:
             if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
@@ -73,8 +74,8 @@ class CodeCentralityPlot(Plot, plot_name='code_centrality'):
             if not filter_nodes(commit):
                 continue
             _, insertions, _ = calc_commit_code_churn(
-                Path(repo_lookup[commit.repository_name].path),
-                commit.commit_hash, churn_config
+                repo_lookup[commit.repository_name], commit.commit_hash,
+                churn_config
             )
             if insertions == 0:
                 LOG.warning(f"Churn for commit {commit} is 0.")

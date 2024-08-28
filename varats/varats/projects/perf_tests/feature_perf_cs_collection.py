@@ -18,7 +18,9 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
+    verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -89,7 +91,7 @@ class FeaturePerfCSCollection(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(FeaturePerfCSCollection.NAME)
+            get_local_project_repo(FeaturePerfCSCollection.NAME)
         )
 
         binary_map.specify_binary(
@@ -172,7 +174,7 @@ class SynthSAFlowSensitivity(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAFlowSensitivity.NAME)
+            get_local_project_repo(SynthSAFlowSensitivity.NAME)
         )
 
         binary_map.specify_binary(
@@ -236,7 +238,7 @@ class SynthSAContextSensitivity(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAContextSensitivity.NAME)
+            get_local_project_repo(SynthSAContextSensitivity.NAME)
         )
 
         binary_map.specify_binary(
@@ -297,7 +299,7 @@ class SynthSAWholeProgram(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAWholeProgram.NAME)
+            get_local_project_repo(SynthSAWholeProgram.NAME)
         )
 
         binary_map.specify_binary(
@@ -360,7 +362,7 @@ class SynthDADynamicDispatch(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthDADynamicDispatch.NAME)
+            get_local_project_repo(SynthDADynamicDispatch.NAME)
         )
 
         binary_map.specify_binary(
@@ -421,7 +423,7 @@ class SynthDARecursion(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthDARecursion.NAME)
+            get_local_project_repo(SynthDARecursion.NAME)
         )
 
         binary_map.specify_binary(
@@ -482,7 +484,7 @@ class SynthOVInsideLoop(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthOVInsideLoop.NAME)
+            get_local_project_repo(SynthOVInsideLoop.NAME)
         )
 
         binary_map.specify_binary(
@@ -545,7 +547,7 @@ class SynthFeatureInteraction(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthFeatureInteraction.NAME)
+            get_local_project_repo(SynthFeatureInteraction.NAME)
         )
 
         binary_map.specify_binary(
@@ -610,7 +612,7 @@ class SynthFeatureHigherOrderInteraction(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthFeatureHigherOrderInteraction.NAME)
+            get_local_project_repo(SynthFeatureHigherOrderInteraction.NAME)
         )
 
         binary_map.specify_binary(
@@ -825,7 +827,7 @@ class SynthIPRuntime(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         return RevisionBinaryMap(
-            get_local_project_git_path(SynthIPRuntime.NAME)
+            get_local_project_repo(SynthIPRuntime.NAME)
         ).specify_binary(
             "build/bin/Runtime",
             BinaryType.EXECUTABLE,
@@ -873,7 +875,7 @@ class SynthIPTemplate(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         return RevisionBinaryMap(
-            get_local_project_git_path(SynthIPTemplate.NAME)
+            get_local_project_repo(SynthIPTemplate.NAME)
         ).specify_binary(
             "build/bin/Template",
             BinaryType.EXECUTABLE,
@@ -921,7 +923,7 @@ class SynthIPTemplate2(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         return RevisionBinaryMap(
-            get_local_project_git_path(SynthIPTemplate2.NAME)
+            get_local_project_repo(SynthIPTemplate2.NAME)
         ).specify_binary(
             "build/bin/Template2",
             BinaryType.EXECUTABLE,
@@ -969,7 +971,7 @@ class SynthIPCombined(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         return RevisionBinaryMap(
-            get_local_project_git_path(SynthIPCombined.NAME)
+            get_local_project_repo(SynthIPCombined.NAME)
         ).specify_binary(
             "build/bin/Combined",
             BinaryType.EXECUTABLE,
@@ -1019,7 +1021,7 @@ class SynthSAFieldSensitivity(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthSAFieldSensitivity.NAME)
+            get_local_project_repo(SynthSAFieldSensitivity.NAME)
         )
 
         binary_map.specify_binary(
@@ -1077,7 +1079,7 @@ class SynthCTTraitBased(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthCTTraitBased.NAME)
+            get_local_project_repo(SynthCTTraitBased.NAME)
         )
 
         binary_map.specify_binary(
@@ -1136,7 +1138,7 @@ class SynthCTPolicies(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthCTPolicies.NAME)
+            get_local_project_repo(SynthCTPolicies.NAME)
         )
 
         binary_map.specify_binary(
@@ -1192,9 +1194,7 @@ class SynthCTCRTP(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthCTCRTP.NAME)
-        )
+        binary_map = RevisionBinaryMap(get_local_project_repo(SynthCTCRTP.NAME))
 
         binary_map.specify_binary(
             "build/bin/CTCRTP",
@@ -1252,7 +1252,7 @@ class SynthCTTemplateSpecialization(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthCTTemplateSpecialization.NAME)
+            get_local_project_repo(SynthCTTemplateSpecialization.NAME)
         )
 
         binary_map.specify_binary(
@@ -1314,7 +1314,7 @@ class SynthFeatureLargeConfigSpace(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         return RevisionBinaryMap(
-            get_local_project_git_path(SynthFeatureLargeConfigSpace.NAME)
+            get_local_project_repo(SynthFeatureLargeConfigSpace.NAME)
         ).specify_binary(
             "build/bin/LargeConfigSpace",
             BinaryType.EXECUTABLE,
@@ -1372,7 +1372,7 @@ class SynthFeatureRestrictedConfigSpace(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         return RevisionBinaryMap(
-            get_local_project_git_path(SynthFeatureRestrictedConfigSpace.NAME)
+            get_local_project_repo(SynthFeatureRestrictedConfigSpace.NAME)
         ).specify_binary(
             "build/bin/RestrictedConfigSpace",
             BinaryType.EXECUTABLE,

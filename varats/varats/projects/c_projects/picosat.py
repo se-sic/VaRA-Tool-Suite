@@ -22,8 +22,9 @@ from varats.project.project_util import (
     BinaryType,
     get_tagged_commits,
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource, HTTPUnzip
 from varats.project.varats_command import VCommand
@@ -33,7 +34,6 @@ from varats.provider.release.release_provider import (
     ReleaseType,
 )
 from varats.utils.git_util import (
-    RevisionBinaryMap,
     ShortCommitHash,
     FullCommitHash,
     get_all_revisions_between,
@@ -175,7 +175,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(PicoSAT.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(PicoSAT.NAME))
         binary_map.specify_binary(
             'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]
         )
@@ -187,15 +187,152 @@ class PicoSAT(VProject, ReleaseProviderHook):
 
     def compile(self) -> None:
         """Compile the project."""
+        picosat_repo = get_local_project_repo(self.NAME)
         picosat_source = local.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
+        revisions_with_new_config_name = get_all_revisions_between(
+            picosat_repo, "63a74c25dfadc447b7eea07773ef40f589ca1ed5", "",
+            ShortCommitHash
+        )
+        picosat_version = ShortCommitHash(self.version_of_primary)
+        if picosat_version in revisions_with_new_config_name:
+            config_script_name = "./configure.sh"
+        else:
+            config_script_name = "./configure"
+
         with local.cwd(picosat_source):
-            revisions_with_new_config_name = get_all_revisions_between(
-                "63a74c25dfadc447b7eea07773ef40f589ca1ed5", "", ShortCommitHash
-            )
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                bb.watch(local[config_script_name])(["--trace", "--stats"])
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+        with local.cwd(picosat_source):
+            verify_binaries(self)
+
+    @classmethod
+    def get_release_revisions(
+        cls, release_type: ReleaseType
+    ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
+        release_regex = "^picoSAT-[0-9]+$"
+
+        tagged_commits = get_tagged_commits(cls.NAME)
+
+        return [(FullCommitHash(h), tag)
+                for h, tag in tagged_commits
+                if re.match(release_regex, tag)]
+
+
+class PicoSATLoadTime(VProject, ReleaseProviderHook):
+    """Adapted version of picoSAT that has been refactored, such that it does
+    not require a field-sensitive analysis."""
+
+    NAME = 'PicoSATLoadTime'
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.SOLVER
+
+    SOURCE = [
+        PaperConfigSpecificGit(
+            project_name="PicoSATLoadTime",
+            remote="https://github.com/se-sic/picoSAT-vara",
+            local="PicoSATLoadTime",
+            refspec="origin/HEAD",
+            limit=None,
+            shallow=False
+        ),
+        FeatureSource(),
+        HTTP(
+            local="example.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/example.cnf"
+            }
+        ),
+        HTTP(
+            local="ibm-2004-03-k70.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-vara/releases/"
+                    "download/workloads-sat-race-2006/ibm-2004-03-k70.cnf"
+            }
+        ),
+        HTTPUntar(
+            local="abw-N-bcsstk07.mtx-w44.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/abw-N-bcsstk07.mtx-w44.cnf.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="traffic_kkb_unknown.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/traffic_kkb_unknown.cnf.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/"
+                    "UNSAT_H_instances_childsnack_p11.hddl_1.cnf.tar.gz"
+            }
+        ),
+        HTTPUntar(
+            local="UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-mirror/releases/"
+                    "download/picoSAT-965/"
+                    "UNSAT_H_instances_childsnack_p12.hddl_1.cnf.tar.gz"
+            }
+        ),
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot("PicoSATLoadTime") / RSBinary("picosat"),
+                "ibm-2004-03-k70.cnf",
+                ConfigParams(),
+                label="ibm-2004-03-k70.cnf",
+            ),
+        ],
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_repo(PicoSATLoadTime.NAME)
+        )
+        binary_map.specify_binary(
+            'picosat', BinaryType.EXECUTABLE, valid_exit_codes=[0, 10, 20]
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        picosat_repo = get_local_project_repo(self.NAME)
+        picosat_source = local.path(self.source_of_primary)
+
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        revisions_with_new_config_name = get_all_revisions_between(
+            picosat_repo, "33c685e82213228726364980814f0183e435de78", "",
+            ShortCommitHash
+        )
         picosat_version = ShortCommitHash(self.version_of_primary)
         if picosat_version in revisions_with_new_config_name:
             config_script_name = "./configure.sh"

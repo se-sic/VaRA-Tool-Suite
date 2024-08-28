@@ -4,39 +4,46 @@ from pathlib import Path
 
 from benchbuild.utils.cmd import git
 
-from varats.utils.git_util import get_current_branch, CommitHash
+from varats.utils.git_util import (
+    get_current_branch,
+    CommitHash,
+    RepositoryHandle,
+)
 
 
-def add_remote(repo_folder: Path, remote: str, url: str) -> None:
+def add_remote(repo: RepositoryHandle, remote: str, url: str) -> None:
     """Adds new remote to the repository."""
-    git(["-C", repo_folder.absolute(), "remote", "add", remote, url])
+    repo("remote", "add", remote, url)
 
 
-def show_status(repo_folder: Path) -> None:
+def show_status(repo: RepositoryHandle) -> None:
     """Show git status."""
-    git["-C", repo_folder.absolute(), "status"].run_fg()
+    repo("status")
 
 
 def get_branches(
-    repo_folder: Path, extra_args: tp.Optional[tp.List[str]] = None
+    repo: RepositoryHandle,
+    extra_args: tp.Optional[tp.List[str]] = None
 ) -> str:
     """Show git branches."""
     args = ["branch"]
     if extra_args:
         args += extra_args
 
-    return tp.cast(str, git("-C", repo_folder.absolute(), args))
+    return tp.cast(str, repo(*args))
 
 
-def get_tags(repo_folder: Path,
-             extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
+def get_tags(
+    repo: RepositoryHandle,
+    extra_args: tp.Optional[tp.List[str]] = None
+) -> tp.List[str]:
     """Get the list of available git tags."""
 
     args = ["tag"]
     if extra_args:
         args += extra_args
 
-    git_tag_string: str = git("-C", repo_folder.absolute(), args)
+    git_tag_string: str = repo(*args)
     git_tag_list: tp.List[str] = []
 
     if git_tag_string:
@@ -47,13 +54,13 @@ def get_tags(repo_folder: Path,
     return git_tag_list
 
 
-def init_all_submodules(folder: Path) -> None:
+def init_all_submodules(repo: RepositoryHandle) -> None:
     """Inits all submodules."""
-    git("-C", folder.absolute(), "submodule", "init")
+    repo("submodule", "init")
 
 
 def update_all_submodules(
-    folder: Path, recursive: bool = True, init: bool = False
+    repo: RepositoryHandle, recursive: bool = True, init: bool = False
 ) -> None:
     """Updates all submodules."""
     git_params = ["submodule", "update"]
@@ -61,12 +68,12 @@ def update_all_submodules(
         git_params.append("--recursive")
     if init:
         git_params.append("--init")
-    git("-C", folder, git_params)
+    repo(*git_params)
 
 
 def fetch_remote(
+    repo: RepositoryHandle,
     remote: tp.Optional[str] = None,
-    repo_folder: tp.Optional[Path] = None,
     extra_args: tp.Optional[tp.List[str]] = None
 ) -> None:
     """Fetches the new changes from the remote."""
@@ -75,16 +82,16 @@ def fetch_remote(
         args += extra_args
     if remote:
         args.append(remote)
-    git("-C", repo_folder, args)
+    repo(*args)
 
 
-def pull_current_branch(repo_folder: Path) -> None:
+def pull_current_branch(repo: RepositoryHandle) -> None:
     """Pull in changes in a certain branch."""
-    git("-C", repo_folder.absolute(), "pull")
+    repo("pull")
 
 
 def push_current_branch(
-    repo_folder: tp.Optional[Path] = None,
+    repo: RepositoryHandle,
     upstream: tp.Optional[str] = None,
     branch_name: tp.Optional[str] = None
 ) -> None:
@@ -97,17 +104,14 @@ def push_current_branch(
         if branch_name is not None:
             cmd_args.append(branch_name)
         else:
-            cmd_args.append(get_current_branch(repo_folder))
+            cmd_args.append(get_current_branch(repo))
 
-    if repo_folder is None or repo_folder == Path(""):
-        git(cmd_args)
-    else:
-        git("-C", repo_folder.absolute(), cmd_args)
+    repo(*cmd_args)
 
 
-def fetch_repository(repo_folder: tp.Optional[Path] = None) -> None:
+def fetch_repository(repo: RepositoryHandle) -> None:
     """Pull in changes in a certain branch."""
-    git("-C", repo_folder, "fetch")
+    repo("fetch")
 
 
 def add(repo_folder: Path, *git_add_args: str) -> None:
@@ -131,14 +135,14 @@ def commit(
 
 
 def checkout_branch_or_commit(
-    repo_folder: Path, target: tp.Union[str, CommitHash]
+    repo: RepositoryHandle, target: tp.Union[str, CommitHash]
 ) -> None:
     """Checks out a branch or commit in the repository."""
-    git("-C", repo_folder.absolute(), "checkout", str(target))
+    repo("checkout", str(target))
 
 
 def checkout_new_branch(
-    repo_folder: Path,
+    repo: RepositoryHandle,
     branch: str,
     remote_branch: tp.Optional[str] = None
 ) -> None:
@@ -146,7 +150,7 @@ def checkout_new_branch(
     args = ["checkout", "-b", branch]
     if remote_branch is not None:
         args.append(remote_branch)
-    git("-C", repo_folder.absolute(), args)
+    repo(*args)
 
 
 def download_repo(
@@ -173,11 +177,11 @@ def download_repo(
         post_out(line)
 
 
-def apply_patch(repo_folder: Path, patch_file: Path) -> None:
+def apply_patch(repo: RepositoryHandle, patch_file: Path) -> None:
     """Applies a given patch file to the specified git repository."""
-    git("-C", repo_folder.absolute(), "apply", str(patch_file))
+    repo("apply", str(patch_file))
 
 
-def revert_patch(repo_folder: Path, patch_file: Path) -> None:
+def revert_patch(repo: RepositoryHandle, patch_file: Path) -> None:
     """Reverts a given patch file on the specified git repository."""
-    git("-C", repo_folder.absolute(), "apply", "-R", str(patch_file))
+    repo("apply", "-R", str(patch_file))
