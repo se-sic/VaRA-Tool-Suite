@@ -201,13 +201,6 @@ def is_commit_hash(value: str) -> bool:
     return re.search("^[a-fA-F0-9]{1,40}$", value) is not None
 
 
-def __get_git_path_arg(repo_folder: tp.Optional[Path] = None) -> tp.List[str]:
-    if repo_folder is None or repo_folder == Path(''):
-        return []
-
-    return ["-C", f"{repo_folder}"]
-
-
 def get_current_branch(repo: RepositoryHandle) -> str:
     """
     Get the current branch of a repository, e.g., HEAD.
