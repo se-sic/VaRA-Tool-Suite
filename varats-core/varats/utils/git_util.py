@@ -369,8 +369,13 @@ def contains_source_code(
     if not churn_config:
         churn_config = ChurnConfig.create_c_style_languages_config()
 
-    return_code = repo["show", "--exit-code", "-m", "--quiet", commit.hash,
-                       "--", *churn_config.get_extensions_repr('*.')] & RETCODE
+    git_show_args = ["show", "--exit-code", "-m", "--quiet", commit.hash, "--"]
+    git_show_args += churn_config.get_extensions_repr('*.')
+    # There should be a '*' in front of 'git_show_args' to unpack the list.
+    # However, yapf and sphinx are unable to parse this.
+    # Fortunately, plumbum seems to unpack this correctly before running.
+    # Still: fix when possible.
+    return_code = repo[git_show_args] & RETCODE
 
     if return_code == 0:
         return False
