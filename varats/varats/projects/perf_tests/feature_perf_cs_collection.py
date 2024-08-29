@@ -19,7 +19,6 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     get_local_project_repo,
-    verify_binaries,
     RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
@@ -29,7 +28,7 @@ from varats.projects.perf_tests.feature_perf_cs_collection_utils import (
     do_feature_perf_cs_collection_compile,
     do_feature_perf_cs_collection_recompile,
 )
-from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
+from varats.utils.git_util import ShortCommitHash
 
 
 class FeaturePerfCSCollection(VProject):

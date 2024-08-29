@@ -44,6 +44,7 @@ from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import (
     get_primary_project_source,
     get_local_project_repo,
+    get_loaded_vara_projects,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
@@ -401,7 +402,9 @@ class SmoothPlotCLI(click.MultiCommand):
         generator_cls = PlotGenerator.GENERATORS[cmd_name]
 
         @click.pass_context
-        def command_template(context: click.Context, **kwargs: tp.Any) -> None:
+        def command_template(
+            context: click.Context, /, **kwargs: tp.Any
+        ) -> None:
             # extract common arguments and plot config from context
             plot_config: PlotConfig = PlotConfig(False)
             try:

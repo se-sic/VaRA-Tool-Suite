@@ -44,8 +44,8 @@ from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
-    get_local_project_git_paths,
-    get_local_project_git_path,
+    get_local_project_repos,
+    get_local_project_repo,
     ProjectBinaryWrapper,
 )
 from varats.project.varats_project import VProject
@@ -70,7 +70,7 @@ from varats.utils.git_util import (
 
 
 def createCommitFilter(project: VProject) -> InteractionFilter:
-    project_git_path = get_local_project_git_path(project.name)
+    project_repo = get_local_project_repo(project.name)
     case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
     commit_map = get_commit_map(project.name)
     revisions = sorted(case_study.revisions, key=commit_map.time_id)
@@ -81,7 +81,7 @@ def createCommitFilter(project: VProject) -> InteractionFilter:
     old_rev, new_rev = list(filter(rev_filter, pairwise(revisions)))[0]
 
     commits = get_all_revisions_between(
-        old_rev.hash, new_rev.hash, FullCommitHash, project_git_path
+        project_repo, old_rev.hash, new_rev.hash, FullCommitHash
     )[1:]
 
     return OrOperator(
@@ -216,8 +216,8 @@ class PerfInterReportGeneration(actions.ProjectStep):  # type: ignore
                 "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
                 "-vara-BD", "-vara-PIR", "-vara-init-commits",
                 "-vara-rewriteMD", "-vara-git-mappings=" + ",".join([
-                    f'{repo}:{path}' for repo, path in
-                    get_local_project_git_paths(self.project.name).items()
+                    f'{repo_name}:{repo.repo_path}' for repo_name, repo in
+                    get_local_project_repos(self.project.name).items()
                 ]), "-vara-use-phasar",
                 f"-vara-cf-interaction-filter={filter_file_path}",
                 f"-vara-report-outfile={result_file}",
@@ -288,8 +288,8 @@ class PerfInterReportGenerationSynth(OutputFolderStep):
             "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
             "-vara-BD", "-vara-PIR", "-vara-init-commits", "-vara-rewriteMD",
             "-vara-git-mappings=" + ",".join([
-                f'{repo}:{path}' for repo, path in
-                get_local_project_git_paths(self.project.name).items()
+                f'{repo_name}:{repo.repo_path}' for repo_name, repo in
+                get_local_project_repos(self.project.name).items()
             ]), "-vara-use-phasar",
             f"-vara-cf-interaction-filter={filter_file_path}",
             f"-vara-report-outfile={tmp_dir / self.__result_file}",
