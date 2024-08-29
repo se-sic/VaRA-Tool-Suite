@@ -1,5 +1,6 @@
 """Implements an experiment that stores compiled binaries."""
 import logging
+import textwrap
 import typing as tp
 from pathlib import Path
 
@@ -39,9 +40,6 @@ class StoreBinaries(actions.ProjectStep):  # type: ignore
         self.__experiment_handle = experiment_handle
 
     def __call__(self) -> actions.StepResult:
-        return self.analyze()
-
-    def analyze(self) -> actions.StepResult:
         """Store binaries as reports."""
 
         for binary in self.project.binaries:
@@ -62,6 +60,11 @@ class StoreBinaries(actions.ProjectStep):  # type: ignore
 
         return actions.StepResult.OK
 
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Store compiled binaries", " " * indent
+        )
+
 
 class RestoreBinaries(actions.ProjectStep):  # type: ignore
     """Restore compiled binaries to the current experiment context."""
@@ -78,11 +81,7 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
         self.__experiment_type = experiment_type
 
     def __call__(self) -> actions.StepResult:
-        return self.analyze()
-
-    def analyze(self) -> actions.StepResult:
         """Restore binaries from reports."""
-
         for binary in self.project.binaries:
 
             def filter_reports(file_name: str) -> bool:
@@ -108,6 +107,11 @@ class RestoreBinaries(actions.ProjectStep):  # type: ignore
             bb.watch(cp[report_path, binary_path])()
 
         return actions.StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Restore compiled binaries", " " * indent
+        )
 
 
 class PreCompile(VersionExperiment, shorthand="PREC"):
