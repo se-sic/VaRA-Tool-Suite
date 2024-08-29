@@ -15,7 +15,8 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    RevisionBinaryMap,
+    get_local_project_repo,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -24,7 +25,7 @@ from varats.projects.perf_tests.feature_perf_cs_collection_utils import (
     do_feature_perf_cs_collection_compile,
     do_feature_perf_cs_collection_recompile,
 )
-from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
+from varats.utils.git_util import ShortCommitHash
 
 if tp.TYPE_CHECKING:
     from benchbuild.project import Workloads, Sources
@@ -61,7 +62,7 @@ def _perf_inter_cs_binary(
     project_name: str, binary_name: str
 ) -> RevisionBinaryMap:
     return RevisionBinaryMap(
-        get_local_project_git_path(project_name)
+        get_local_project_repo(project_name)
     ).specify_binary(
         f"build/bin/{binary_name}",
         BinaryType.EXECUTABLE,

@@ -28,7 +28,7 @@ from varats.projects.perf_tests.feature_perf_cs_collection_utils import (
     do_feature_perf_cs_collection_compile,
     do_feature_perf_cs_collection_recompile,
 )
-from varats.utils.git_util import ShortCommitHash, RepositoryHandle
+from varats.utils.git_util import ShortCommitHash
 
 
 class FeaturePerfCSCollection(VProject):
