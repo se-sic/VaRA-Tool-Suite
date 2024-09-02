@@ -253,9 +253,7 @@ def get_performance_data(
 ) -> tp.List[float]:
     vals_raw = performance_data.loc[config_id, revision]
 
-    if isinstance(vals_raw, str):
-        return tp.cast(tp.List[float], ast.literal_eval(vals_raw))
-    return tp.cast(tp.List[float], vals_raw)
+    return tp.cast(tp.List[float], ast.literal_eval(vals_raw))
 
 
 def is_regression(
