@@ -27,7 +27,7 @@ class PerformanceEvolutionDatabase(
     cache_id="performance_evolution_data",
     column_types={
         'config_id': 'int64',
-        'wall_clock_time': 'object'
+        'wall_clock_time': 'str'
     }
 ):
 
@@ -37,6 +37,12 @@ class PerformanceEvolutionDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Dict[str, tp.Any]
     ) -> pd.DataFrame:
         assert case_study is not None
+
+        def get_entry_id(report_path: ReportFilepath) -> str:
+            return (
+                f"{report_path.report_filename.commit_hash.hash}_"
+                f"{report_path.report_filename.config_id}"
+            )
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
@@ -60,11 +66,13 @@ class PerformanceEvolutionDatabase(
                               index=[0])
             df = df.astype(cls.COLUMN_TYPES)
             # workaround to store a list in a data frame
-            df.at[0, "wall_clock_time"] = report.measurements_wall_clock_time(
-                workload
+            df.at[0, "wall_clock_time"] = str(
+                report.measurements_wall_clock_time(workload)
             )
 
-            return df, commit_hash.hash, str(report_path.stat().st_mtime_ns)
+            return df, get_entry_id(report_path), str(
+                report_path.stat().st_mtime_ns
+            )
 
         configs = load_configuration_map_for_case_study(
             get_paper_config(), case_study, PlainCommandlineConfiguration
@@ -101,8 +109,7 @@ class PerformanceEvolutionDatabase(
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
-            create_dataframe_layout, create_data_frame_for_report,
-            lambda path: path.report_filename.commit_hash.hash,
+            create_dataframe_layout, create_data_frame_for_report, get_entry_id,
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
