@@ -87,7 +87,7 @@ def _sample_with_perf_and_time(
                                run_cmd.formulate()]
 
                 with cleanup(workload):
-                    bb.watch(run_cmd)(retcode=None)
+                    run_cmd(retcode=None)
                     perf_script_source = resources.files("varats").joinpath(
                         "resources"
                     ).joinpath("perf_script_overhead_calculation.py")
