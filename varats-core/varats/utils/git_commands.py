@@ -8,6 +8,7 @@ from varats.utils.git_util import (
     get_current_branch,
     CommitHash,
     RepositoryHandle,
+    FullCommitHash,
 )
 
 
@@ -69,6 +70,29 @@ def update_all_submodules(
     if init:
         git_params.append("--init")
     repo(*git_params)
+
+
+def get_submodules(repo: RepositoryHandle) -> tp.List[RepositoryHandle]:
+    submodule_paths = repo("submodule", "--quiet", "foreach", "echo $path")
+    return [
+        RepositoryHandle(repo.worktree_path / path)
+        for path in submodule_paths.splitlines()
+    ]
+
+
+def get_submodule_updates(repo: RepositoryHandle,
+                          submodule_path: str) -> tp.List[FullCommitHash]:
+    """
+    Get all commits that update the given submodule.
+
+    Args:
+        repo: repository handle
+        submodule_name: the submodule to find upgrades for
+    Returns:
+        a list of submodule upgrading commits
+    """
+    submodule_log = repo("log", "--pretty=%H", "--", submodule_path)
+    return [FullCommitHash(c) for c in submodule_log.strip().split()]
 
 
 def fetch_remote(

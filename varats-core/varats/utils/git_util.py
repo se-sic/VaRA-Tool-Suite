@@ -225,6 +225,22 @@ def get_head_commit(repo: RepositoryHandle) -> FullCommitHash:
     return FullCommitHash(repo("rev-parse", "HEAD").strip())
 
 
+def get_parent_commit(
+    repo: RepositoryHandle, commit: CommitHash
+) -> FullCommitHash:
+    """
+    Get the parent of a given commit.
+
+    Args:
+        commit:      commit to get the parent for
+        repo_folder: where the git repository is located
+    Returns: parent commit hash
+    """
+    return FullCommitHash(
+        repo("log", "--pretty=%P", "-1", commit.hash).strip().split(" ")[0]
+    )
+
+
 def get_initial_commit(repo: RepositoryHandle) -> FullCommitHash:
     """
     Get the initial commit of a repository, i.e., the first commit made.
@@ -260,6 +276,33 @@ def get_submodule_commits(repo: RepositoryHandle,
         if match:
             result[match.group("name")] = FullCommitHash(match.group("hash"))
     return result
+
+
+def get_submodule_update_commits(
+    repo: RepositoryHandle, submodule: RepositoryHandle,
+    update_commit: FullCommitHash
+) -> tp.List[FullCommitHash]:
+    """
+    Get all new submodule commits that were introduced by the given submodule
+    update.
+
+    Args:
+        repo: main repository handle
+        submodule: submodule repository handle
+        update_commit: the commit that upgraded the submodule
+    Returns:
+        a list of submodule commits
+    """
+    new_submodule_head = get_submodule_head(repo, submodule, update_commit)
+    old_submodule_head = get_submodule_head(
+        repo, submodule, get_parent_commit(repo, update_commit)
+    )
+    return get_all_revisions_between(
+        submodule,
+        old_submodule_head.hash,
+        new_submodule_head.hash,
+        FullCommitHash,
+    )
 
 
 def get_all_revisions_between(
