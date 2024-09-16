@@ -16,7 +16,6 @@ from varats.experiment.experiment_util import (
     ExperimentHandle,
     VersionExperiment,
 )
-from varats.experiment.wllvm import RunWLLVM
 from varats.experiment.workload_util import WorkloadCategory, workload_commands
 from varats.experiments.base.precompile import StoreBinaries, RestoreBinaries
 from varats.experiments.vara.feature_experiment import FeatureExperiment
