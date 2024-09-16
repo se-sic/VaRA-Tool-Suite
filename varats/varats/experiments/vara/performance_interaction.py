@@ -45,8 +45,8 @@ from varats.mapping.commit_map import get_commit_map
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import (
     get_local_project_repos,
-    get_local_project_repo,
     ProjectBinaryWrapper,
+    get_local_project_repo,
 )
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider, Patch, PatchSet
@@ -61,11 +61,13 @@ from varats.report.report import (
     ReportFilepath,
 )
 from varats.revision.revisions import get_processed_revisions_files
+from varats.utils.git_commands import get_submodules, get_submodule_updates
 from varats.utils.git_util import (
     ShortCommitHash,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
     get_all_revisions_between,
+    get_submodule_update_commits,
 )
 
 
@@ -83,6 +85,22 @@ def createCommitFilter(project: VProject) -> InteractionFilter:
     commits = get_all_revisions_between(
         project_repo, old_rev.hash, new_rev.hash, FullCommitHash
     )[1:]
+
+    submodules = get_submodules(project_repo)
+    submodule_commits: tp.List[FullCommitHash] = []
+
+    for submodule in submodules:
+        submodule_updates = get_submodule_updates(
+            project_repo,
+            str(
+                submodule.worktree_path.relative_to(project_repo.worktree_path)
+            )
+        )
+        for update in submodule_updates:
+            if update in commits:
+                submodule_commits += get_submodule_update_commits(
+                    project_repo, submodule, update
+                )
 
     return OrOperator(
         children=[
