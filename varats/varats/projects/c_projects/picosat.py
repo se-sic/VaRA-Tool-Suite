@@ -73,13 +73,13 @@ class PicoSAT(VProject, ReleaseProviderHook):
                     "https://people.sc.fsu.edu/~jburkardt/data/cnf/aim-100-1_6-no-1.cnf"
             }
         ),
-        HTTPUnzip(
-            local="sr15bench",
+        HTTP(
+            local="mrpp_8x8#16_12.cnf",
             remote={
                 "1.0":
-                    "http://baldur.iti.kit.edu/sat-race-2015/downloads/sr15bench.zip"
-            },
-            check_certificate=False
+                    "https://github.com/se-sic/vara-workload-data/"
+                    "raw/master/solver/mrpp_8x8%2316_12.cnf"
+            }
         ),
         HTTPUntar(
             local="abw-N-bcsstk07.mtx-w44.cnf",
@@ -139,7 +139,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 ConfigParams(),
-                "sr15bench/mrpp_8x8#16_12.cnf",
+                "mrpp_8x8#16_12.cnf",
                 label="mrpp-8x8#16-12.cnf"
             )
         ],
