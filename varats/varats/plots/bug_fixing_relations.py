@@ -20,7 +20,7 @@ from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import (
     get_project_cls_by_name,
-    get_local_project_git,
+    get_local_project_repo,
 )
 from varats.provider.bug.bug import PygitBug, as_pygit_bug
 from varats.provider.bug.bug_provider import BugProvider
@@ -502,7 +502,7 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
     def plot(self, view_mode: bool) -> None:
         """Plots bug plot for the whole project."""
         project_name = self.plot_kwargs['case_study'].project_name
-        project_repo = get_local_project_git(project_name)
+        project_repo = get_local_project_repo(project_name).pygit_repo
 
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)

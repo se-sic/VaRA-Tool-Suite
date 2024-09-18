@@ -35,6 +35,7 @@ from varats.plots.chord_plot_utils import (
     ArcPlotEdgeInfo,
     ArcPlotNodeInfo,
 )
+from varats.project.project_util import create_project_commit_lookup_helper
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import (
     REQUIRE_REVISION,
@@ -43,7 +44,6 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
     CommitRepoPair,
-    create_commit_lookup_helper,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
     ShortCommitHash,
@@ -107,7 +107,7 @@ def _prepare_cig_plotly(
                                   EdgeInfoTy]
 ) -> tp.Tuple[tp.List[tp.Tuple[NodeTy, NodeInfoTy]], tp.List[tp.Tuple[
     NodeTy, NodeTy, EdgeInfoTy]]]:
-    commit_lookup = create_commit_lookup_helper(project_name)
+    commit_lookup = create_project_commit_lookup_helper(project_name)
     cig = create_blame_interaction_graph(
         project_name, revision, BlameReportExperiment
     ).commit_interaction_graph()
@@ -314,7 +314,9 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
         cig = create_blame_interaction_graph(
             case_study.project_name, revision, BlameReportExperiment
         ).commit_interaction_graph()
-        commit_lookup = create_commit_lookup_helper(case_study.project_name)
+        commit_lookup = create_project_commit_lookup_helper(
+            case_study.project_name
+        )
 
         def filter_nodes(node: CommitRepoPair) -> bool:
             if node.commit_hash == UNCOMMITTED_COMMIT_HASH:

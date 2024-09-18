@@ -11,12 +11,13 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -46,7 +47,7 @@ class Tig(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Tig.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Tig.NAME))
 
         binary_map.specify_binary("src/tig", BinaryType.EXECUTABLE)
 

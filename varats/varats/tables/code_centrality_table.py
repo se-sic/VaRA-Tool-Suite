@@ -16,7 +16,10 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.project.project_util import get_local_project_gits
+from varats.project.project_util import (
+    get_local_project_repos,
+    create_project_commit_lookup_helper,
+)
 from varats.table.table import Table, TableDataEmpty
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
@@ -25,7 +28,6 @@ from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.git_util import (
     ChurnConfig,
     calc_commit_code_churn,
-    create_commit_lookup_helper,
     CommitRepoPair,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
@@ -42,8 +44,8 @@ def _collect_cig_node_data(
     cig = create_blame_interaction_graph(
         project_name, revision, experiment_type
     ).commit_interaction_graph()
-    commit_lookup = create_commit_lookup_helper(project_name)
-    repo_lookup = get_local_project_gits(project_name)
+    commit_lookup = create_project_commit_lookup_helper(project_name)
+    repo_lookup = get_local_project_repos(project_name)
 
     def filter_nodes(node: CommitRepoPair) -> bool:
         if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
@@ -57,7 +59,7 @@ def _collect_cig_node_data(
         if not filter_nodes(commit):
             continue
         _, insertions, _ = calc_commit_code_churn(
-            Path(repo_lookup[commit.repository_name].path), commit.commit_hash,
+            repo_lookup[commit.repository_name], commit.commit_hash,
             churn_config
         )
         if insertions == 0:

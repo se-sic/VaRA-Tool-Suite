@@ -19,18 +19,15 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    ShortCommitHash,
-    get_all_revisions_between,
-    RevisionBinaryMap,
-)
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 
 
@@ -120,7 +117,7 @@ class Xz(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Xz.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Xz.NAME))
 
         binary_map.specify_binary(
             'src/xz/xz',
@@ -142,18 +139,17 @@ class Xz(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        xz_git_path = get_local_project_git_path(self.NAME)
+        xz_repo = get_local_project_repo(self.NAME)
         xz_version_source = local.path(self.source_of_primary)
         xz_version = self.version_of_primary
 
         # dynamic linking is off by default until
         # commit f9907503f882a745dce9d84c2968f6c175ba966a
         # (fda4724 is its parent)
-        with local.cwd(xz_git_path):
-            revisions_wo_dynamic_linking = get_all_revisions_between(
-                "5d018dc03549c1ee4958364712fb0c94e1bf2741",
-                "fda4724d8114fccfa31c1839c15479f350c2fb4c", ShortCommitHash
-            )
+        revisions_wo_dynamic_linking = get_all_revisions_between(
+            xz_repo, "5d018dc03549c1ee4958364712fb0c94e1bf2741",
+            "fda4724d8114fccfa31c1839c15479f350c2fb4c", ShortCommitHash
+        )
 
         self.cflags += ["-fPIC"]
 

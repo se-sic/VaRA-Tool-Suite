@@ -21,14 +21,14 @@ from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plots import PlotGenerator
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.project.project_util import (
-    get_local_project_gits,
-    get_local_project_git_path,
+    get_local_project_repos,
+    get_local_project_repo,
+    create_project_commit_lookup_helper,
 )
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import (
-    create_commit_lookup_helper,
     CommitRepoPair,
     ChurnConfig,
     calc_repo_code_churn,
@@ -67,11 +67,11 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
             project_name, revision, BlameReportExperiment
         ).commit_interaction_graph()
 
-        commit_lookup = create_commit_lookup_helper(project_name)
-        repo_lookup = get_local_project_gits(project_name)
+        commit_lookup = create_project_commit_lookup_helper(project_name)
+        repo_lookup = get_local_project_repos(project_name)
         code_churn_lookup = {
             repo_name: calc_repo_code_churn(
-                get_local_project_git_path(project_name, repo_name),
+                get_local_project_repo(project_name, repo_name),
                 ChurnConfig.create_c_style_languages_config()
             ) for repo_name, _ in repo_lookup.items()
         }

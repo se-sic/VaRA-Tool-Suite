@@ -25,7 +25,8 @@ class CVE:
     CVE representation with the major fields.
 
     Mainly a data object to store everything. Uses the API at
-    https://cve.circl.lu/api/search/ to find entries.
+    https://cve.circl.lu/api/search/
+    to find entries.
     """
 
     def __init__(

@@ -13,15 +13,16 @@ from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     ProjectBinaryWrapper,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ class HyTeg(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List['ProjectBinaryWrapper']:
-        binaries = RevisionBinaryMap(get_local_project_git_path(HyTeg.NAME))
+        binaries = RevisionBinaryMap(get_local_project_repo(HyTeg.NAME))
 
         binaries.specify_binary(
             "ProfilingApp",

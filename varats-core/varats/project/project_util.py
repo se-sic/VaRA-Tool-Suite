@@ -2,16 +2,31 @@
 import logging
 import os
 import typing as tp
+from collections import defaultdict
 from enum import Enum
+from itertools import chain
 from pathlib import Path
 
 import benchbuild as bb
 import pygit2
+from _operator import attrgetter
 from benchbuild.source import Git
-from benchbuild.utils.cmd import git
+from benchbuild.utils.revision_ranges import AbstractRevisionRange
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
+from varats.utils.git_util import (
+    RepositoryHandle,
+    FullCommitHash,
+    num_commits,
+    get_submodule_commits,
+    get_authors,
+    calc_repo_loc,
+    CommitHash,
+    ShortCommitHash,
+    CommitRepoPair,
+    CommitLookupTy,
+)
 from varats.utils.settings import bb_cfg
 
 LOG = logging.getLogger(__name__)
@@ -52,23 +67,9 @@ def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
     return bb.source.primary(*project_cls.SOURCE)
 
 
-def get_local_project_git_path(
+def get_local_project_repo(
     project_name: str, git_name: tp.Optional[str] = None
-) -> Path:
-    """
-    Get the path to the local download location of a git repository for a given
-    benchbuild project.
-
-    Args:
-        project_name: name of the given benchbuild project
-        git_name: name of the git repository, i.e., the name of the repository
-                  folder. If no git_name is provided, the name of the primary
-                  source is used.
-
-    Returns:
-        Path to the local download location of the git repository.
-    """
-
+) -> RepositoryHandle:
     if git_name:
         source = get_extended_commit_lookup_source(project_name, git_name)
     else:
@@ -83,7 +84,32 @@ def get_local_project_git_path(
         git_path = base / source.local.replace(os.sep, "-")
     if not git_path.exists():
         git_path = Path(source.fetch())
-    return git_path
+    return RepositoryHandle(git_path)
+
+
+def get_local_project_repos(
+    project_name: str
+) -> tp.Dict[str, RepositoryHandle]:
+    """
+    Get the all git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the repository handles for the project's git sources
+    """
+    repos: tp.Dict[str, RepositoryHandle] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        if isinstance(source, Git):
+            source_name = os.path.basename(source.local)
+            repos[source_name] = get_local_project_repo(
+                project_name, source_name
+            )
+
+    return repos
 
 
 def get_extended_commit_lookup_source(
@@ -111,91 +137,132 @@ def get_extended_commit_lookup_source(
     )
 
 
-def get_local_project_git(
-    project_name: str, git_name: tp.Optional[str] = None
-) -> pygit2.Repository:
+def create_project_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     """
-    Get the git repository for a given benchbuild project.
-
-    Args:
-        project_name: name of the given benchbuild project
-        git_name: name of the git repository
-
-    Returns:
-        git repository that matches the given git_name.
-    """
-    git_path = get_local_project_git_path(project_name, git_name)
-    repo_path = pygit2.discover_repository(str(git_path))
-    return pygit2.Repository(repo_path)
-
-
-def get_local_project_gits(
-    project_name: str
-) -> tp.Dict[str, pygit2.Repository]:
-    """
-    Get the all git repositories for a given benchbuild project.
+    Creates a commit lookup function for project repositories.
 
     Args:
         project_name: name of the given benchbuild project
 
     Returns:
-        dict with the git repositories for the project's sources
+        a Callable that maps a commit hash and repository name to the
+        corresponding commit.
     """
-    repos: tp.Dict[str, pygit2.Repository] = {}
-    project_cls = get_project_cls_by_name(project_name)
 
-    for source in project_cls.SOURCE:
-        if isinstance(source, Git):
-            source_name = os.path.basename(source.local)
-            repos[source_name] = get_local_project_git(
-                project_name, source_name
+    repos = get_local_project_repos(project_name)
+
+    def get_commit(crp: CommitRepoPair) -> pygit2.Commit:
+        """
+        Gets the commit from a given ``CommitRepoPair``.
+
+        Args:
+            crp: the ``CommitRepoPair`` for the commit to get
+
+        Returns:
+            the commit corresponding to the given CommitRepoPair
+        """
+        commit = repos[crp.repository_name].pygit_repo.get(crp.commit_hash.hash)
+        if not commit:
+            raise LookupError(
+                f"Could not find commit {crp} for project {project_name}."
             )
 
-    return repos
+        return commit
 
-
-def get_local_project_git_paths(project_name: str) -> tp.Dict[str, Path]:
-    """
-    Get the all paths to the git repositories for a given benchbuild project.
-
-    Args:
-        project_name: name of the given benchbuild project
-
-    Returns:
-        dict with the paths to the git repositories for the project's sources
-    """
-    repos: tp.Dict[str, Path] = {}
-    project_cls = get_project_cls_by_name(project_name)
-
-    for source in project_cls.SOURCE:
-        if isinstance(source, Git):
-            source_name = os.path.basename(source.local)
-            repos[source_name] = get_local_project_git_path(
-                project_name, source_name
-            )
-
-    return repos
+    return get_commit
 
 
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
     """Get a list of all tagged commits along with their respective tags."""
-    repo_loc = get_local_project_git_path(project_name)
-    with local.cwd(repo_loc):
-        # --dereference resolves tag IDs into commits for annotated tags
-        # These lines are indicated by the suffix '^{}' (see man git-show-ref)
-        ref_list: tp.List[str] = git("show-ref", "--tags",
-                                     "--dereference").strip().split("\n")
+    repo = get_local_project_repo(project_name)
+    # --dereference resolves tag IDs into commits for annotated tags
+    # These lines are indicated by the suffix '^{}' (see man git-show-ref)
+    ref_list: tp.List[str] = repo("show-ref", "--tags",
+                                  "--dereference").strip().split("\n")
 
-        # Only keep dereferenced or leightweight tags (i.e., only keep commits)
-        # and strip suffix, if necessary
-        refs: tp.List[tp.Tuple[str, str]] = [
-            (ref_split[0], ref_split[1][10:].replace('^{}', ''))
-            for ref_split in [ref.strip().split() for ref in ref_list]
-            if git("cat-file", "-t", ref_split[1][10:]).replace('\n', ''
-                                                               ) == 'commit'
-        ]
+    # Only keep dereferenced or leightweight tags (i.e., only keep commits)
+    # and strip suffix, if necessary
+    refs: tp.List[tp.Tuple[str, str]] = [
+        (ref_split[0], ref_split[1][10:].replace('^{}', ''))
+        for ref_split in [ref.strip().split() for ref in ref_list]
+        if repo("cat-file", "-t", ref_split[1][10:]).replace('\n', ''
+                                                            ) == 'commit'
+    ]
 
-        return refs
+    return refs
+
+
+def num_project_commits(project_name: str, revision: FullCommitHash) -> int:
+    """
+    Calculate the number of commits of a project including submodules.
+
+    Args:
+        project_name: name of the project to calculate commits for
+        revision: revision to calculate commits at
+
+    Returns:
+        the number of commits in the project
+    """
+    project_repos = get_local_project_repos(project_name)
+    main_repo = get_local_project_repo(project_name)
+
+    commits = num_commits(main_repo, revision.hash)
+    for submodule, sub_rev in get_submodule_commits(main_repo,
+                                                    revision.hash).items():
+        if submodule not in project_repos:
+            LOG.warning("Ignoring unknown submodule %s",)
+            continue
+        commits += num_commits(project_repos[submodule], sub_rev.hash)
+    return commits
+
+
+def num_project_authors(project_name: str, revision: FullCommitHash) -> int:
+    """
+    Calculate the number of authors of a project including submodules.
+
+    Args:
+        project_name: name of the project to calculate authors for
+        revision: revision to authors commits at
+
+    Returns:
+        the number of authors in the project
+    """
+
+    project_repos = get_local_project_repos(project_name)
+    main_repo = get_local_project_repo(project_name)
+
+    authors = get_authors(main_repo, revision.hash)
+    for submodule, sub_rev in get_submodule_commits(main_repo,
+                                                    revision.hash).items():
+        if submodule not in project_repos:
+            LOG.warning("Ignoring unknown submodule %s", submodule)
+            continue
+        authors.update(get_authors(project_repos[submodule], sub_rev.hash))
+    return len(authors)
+
+
+def calc_project_loc(project_name: str, revision: FullCommitHash) -> int:
+    """
+    Calculate the LOC for a project including submodules at the given revision.
+
+    Args:
+        project_name: name of the project to calculate LOC for
+        revision: revision to calculate LOC at
+
+    Returns:
+        the LOC in the project
+    """
+    project_repos = get_local_project_repos(project_name)
+    main_repo = get_local_project_repo(project_name)
+
+    loc = calc_repo_loc(main_repo, revision.hash)
+    for submodule, sub_rev in get_submodule_commits(main_repo,
+                                                    revision.hash).items():
+        if submodule not in project_repos:
+            LOG.warning("Ignoring unknown submodule %s", submodule)
+            continue
+        loc += calc_repo_loc(project_repos[submodule], sub_rev.hash)
+    return loc
 
 
 def is_git_source(source: bb.source.FetchableSource) -> bool:
@@ -338,6 +405,91 @@ def verify_binaries(project: bb.Project) -> None:
     for binary in project.binaries:
         if not binary.path.exists():
             raise BinaryNotFound.create_error_for_binary(binary)
+
+
+class RevisionBinaryMap(tp.Container[str]):
+    """A special map that specifies for which revision ranges a binaries is
+    valid."""
+
+    def __init__(self, repo: RepositoryHandle) -> None:
+        self.__repo_location = repo.worktree_path
+        self.__revision_specific_mappings: tp.Dict[
+            'AbstractRevisionRange',
+            tp.List[ProjectBinaryWrapper]] = defaultdict(list)
+        self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
+
+    def specify_binary(
+        self, location: str, binary_type: BinaryType, **kwargs: tp.Any
+    ) -> 'RevisionBinaryMap':
+        """
+        Add a binary to the map.
+
+        Args:
+            location: where the binary can be found, relative to the
+                      project-source root
+            binary_type: the type of binary that is produced
+            override_binary_name: overrides the used binary name
+            override_entry_point: overrides the executable entry point
+            only_valid_in: additionally specifies a validity range that
+                           specifies in which revision range this binary is
+                           produced
+
+        Returns:
+            self for builder-style usage
+        """
+        binary_location_path = Path(location)
+        binary_name: str = kwargs.get(
+            "override_binary_name", binary_location_path.stem
+        )
+        override_entry_point = kwargs.get("override_entry_point", None)
+        if override_entry_point:
+            override_entry_point = Path(override_entry_point)
+        validity_range: tp.Optional[AbstractRevisionRange] = kwargs.get(
+            "only_valid_in", None
+        )
+        valid_exit_codes = kwargs.get("valid_exit_codes", None)
+
+        wrapped_binary = ProjectBinaryWrapper(
+            binary_name, binary_location_path, binary_type,
+            override_entry_point, valid_exit_codes
+        )
+
+        if validity_range:
+            validity_range.init_cache(str(self.__repo_location))
+            self.__revision_specific_mappings[validity_range].append(
+                wrapped_binary
+            )
+        else:
+            self.__always_valid_mappings.append(wrapped_binary)
+
+        return self
+
+    def __getitem__(self,
+                    revision: CommitHash) -> tp.List[ProjectBinaryWrapper]:
+        revision = revision.to_short_commit_hash()
+        revision_specific_binaries = []
+
+        for validity_range, wrapped_binaries \
+                in self.__revision_specific_mappings.items():
+            if revision in map(ShortCommitHash, validity_range):
+                revision_specific_binaries.extend(wrapped_binaries)
+
+        revision_specific_binaries.extend(self.__always_valid_mappings)
+
+        return sorted(
+            revision_specific_binaries, key=attrgetter("name", "path")
+        )
+
+    def __contains__(self, binary_name: object) -> bool:
+        if isinstance(binary_name, str):
+            for binary in chain(
+                self.__always_valid_mappings,
+                *self.__revision_specific_mappings.values()
+            ):
+                if binary.name == binary_name:
+                    return True
+
+        return False
 
 
 def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:

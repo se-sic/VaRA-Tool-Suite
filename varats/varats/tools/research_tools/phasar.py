@@ -35,7 +35,7 @@ class PhasarCodeBase(CodeBase):
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
             SubProject(
-                self, "phasar",
+                base_dir, "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin", "phasar"
             )

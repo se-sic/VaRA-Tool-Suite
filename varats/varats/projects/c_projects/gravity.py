@@ -17,16 +17,13 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    ShortCommitHash,
-    RevisionBinaryMap,
-    get_all_revisions_between,
-)
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 
 
@@ -83,7 +80,7 @@ class Gravity(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Gravity.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Gravity.NAME))
 
         binary_map.specify_binary("gravity", BinaryType.EXECUTABLE)
 
@@ -94,16 +91,15 @@ class Gravity(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        gravity_git_path = get_local_project_git_path(self.NAME)
+        gravity_repo = get_local_project_repo(self.NAME)
         gravity_version = self.version_of_primary
 
         # commit 46133fb47d6da1f0dec27ae23db1d633bc72e9e3 introduced
         # cmake as build system
-        with local.cwd(gravity_git_path):
-            cmake_revisions = get_all_revisions_between(
-                "dbb4d61fc2ebb9aca44e8e6bb978efac4a6def87", "master",
-                ShortCommitHash
-            )
+        cmake_revisions = get_all_revisions_between(
+            gravity_repo, "dbb4d61fc2ebb9aca44e8e6bb978efac4a6def87", "master",
+            ShortCommitHash
+        )
 
         if gravity_version in cmake_revisions:
             self.__compile_cmake()

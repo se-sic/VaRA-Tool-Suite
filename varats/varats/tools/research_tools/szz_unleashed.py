@@ -29,7 +29,7 @@ class SZZUnleashedCodeBase(CodeBase):
         super().__init__(
             base_dir, [
                 SubProject(
-                    self, "SZZUnleashed",
+                    base_dir, "SZZUnleashed",
                     "https://github.com/boehmseb/SZZUnleashed.git", "origin",
                     "szzunleashed"
                 )

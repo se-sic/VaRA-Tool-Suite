@@ -16,7 +16,7 @@ from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
 from yaml import YAMLError
 
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import pull_current_branch, fetch_repository
@@ -25,6 +25,7 @@ from varats.utils.git_util import (
     ShortCommitHash,
     get_all_revisions_between,
     get_initial_commit,
+    RepositoryHandle,
 )
 
 
@@ -80,7 +81,7 @@ class Patch:
         tags = yaml_dict.get("tags")
         feature_tags = yaml_dict.get("feature_tags")
 
-        project_git_path = get_local_project_git_path(project_name)
+        project_repo = get_local_project_repo(project_name)
 
         def parse_revisions(
             rev_dict: tp.Dict[str, tp.Any]
@@ -106,8 +107,8 @@ class Patch:
                         end_rev = ""
                     res.update(
                         get_all_revisions_between(
-                            rev_range["start"], end_rev, ShortCommitHash,
-                            project_git_path
+                            project_repo, rev_range["start"], end_rev,
+                            ShortCommitHash
                         )
                     )
 
@@ -119,8 +120,8 @@ class Patch:
         else:
             include_revisions = set(
                 get_all_revisions_between(
-                    get_initial_commit(project_git_path).hash, "",
-                    ShortCommitHash, project_git_path
+                    project_repo,
+                    get_initial_commit(project_repo).hash, "", ShortCommitHash
                 )
             )
 
@@ -285,9 +286,9 @@ class PatchProvider(Provider):
         super().__init__(project)
 
         self._update_local_patches_repo()
-        repo_path = self._get_patches_repository_path()
+        repo = self._get_patches_repository()
 
-        patches_project_dir = repo_path / self.project.NAME
+        patches_project_dir = repo.worktree_path / self.project.NAME
 
         if not patches_project_dir.is_dir():
             warnings.warn(
@@ -298,8 +299,8 @@ class PatchProvider(Provider):
         self.__patches: tp.Set[Patch] = set()
 
         # Update repository to have all upstream changes
-        project_git_path = get_local_project_git_path(self.project.NAME)
-        fetch_repository(project_git_path)
+        project_repo = get_local_project_repo(self.project.NAME)
+        fetch_repository(project_repo)
 
         for root, _, files in os.walk(patches_project_dir):
             for filename in files:
@@ -364,9 +365,10 @@ class PatchProvider(Provider):
         )
 
     @classmethod
-    def _get_patches_repository_path(cls) -> Path:
-        # pathlib doesn't have type annotations for '/'
-        return tp.cast(Path, Path(target_prefix()) / cls.patches_source.local)
+    def _get_patches_repository(cls) -> RepositoryHandle:
+        return RepositoryHandle(
+            Path(target_prefix()) / cls.patches_source.local
+        )
 
     @classmethod
     def _update_local_patches_repo(cls) -> None:
@@ -374,4 +376,4 @@ class PatchProvider(Provider):
 
         with lock_file(lock_path):
             cls.patches_source.fetch()
-            pull_current_branch(cls._get_patches_repository_path())
+            pull_current_branch(cls._get_patches_repository())
