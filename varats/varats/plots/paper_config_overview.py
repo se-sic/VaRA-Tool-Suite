@@ -48,13 +48,13 @@ def _load_projects_ordered_by_year(
             case_study, experiment_type
         )
 
-        repo = get_local_project_repo(case_study.project_name).pygit_repo
+        pygit_repo = get_local_project_repo(case_study.project_name).pygit_repo
         revisions: tp.Dict[int, tp.List[tp.Tuple[
             ShortCommitHash, FileStatusExtension]]] = defaultdict(list)
 
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
-            commit = repo.get(rev.hash)
+            commit = pygit_repo.get(rev.hash)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
             revisions[commit_date.year].append((rev, status))
 
