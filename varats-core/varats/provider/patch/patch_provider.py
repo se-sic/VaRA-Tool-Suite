@@ -183,29 +183,13 @@ class PatchSet:
     def __len__(self) -> int:
         return len(self.__patches)
 
-    def __getitem__(self, tags: tp.Union[str, tp.Iterable[str]]) -> 'PatchSet':
+    def __getitem__(self, *tags: str) -> 'PatchSet':
         """
-        Overrides the bracket operator of a PatchSet.
+        Returns a patch set with patches containing all the given tags.
 
-        Returns a PatchSet, such that all patches include all the tags given
+        This is equivalent to :func:`all_of`.
         """
-        # TODO: Discuss if we really want this. Currently this is an "all_of"
-        # access We could consider to remove the bracket operator and only
-        # provide the all_of/any_of accessors as it would be clearer what the
-        # exact behavior is
-
-        # Trick to handle correct set construction if just a single tag is given
-        if isinstance(tags, str):
-            tags = [tags]
-
-        tag_set = set(tags)
-        res_set = set()
-
-        for patch in self.__patches:
-            if patch.tags and tag_set.issubset(patch.tags):
-                res_set.add(patch)
-
-        return PatchSet(res_set)
+        return self.all_of(*tags)
 
     def __and__(self, rhs: "PatchSet") -> "PatchSet":
         return PatchSet(self.__patches.intersection(rhs.__patches))
@@ -214,13 +198,9 @@ class PatchSet:
         """Implementing the union of two sets."""
         return PatchSet(self.__patches.union(rhs.__patches))
 
-    def any_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+    def any_of(self, *tags: str) -> "PatchSet":
         """Returns a patch set with patches containing at least one of the given
         tags."""
-        # Trick to handle just a single tag being passed
-        if isinstance(tags, str):
-            tags = [tags]
-
         result: tp.Set[Patch] = set()
         for patch in self:
             if patch.tags and any(tag in patch.tags for tag in tags):
@@ -228,13 +208,16 @@ class PatchSet:
 
         return PatchSet(result)
 
-    def all_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
-        """
-        Returns a patch set with patches containing all the given tags.
+    def all_of(self, *tags: str) -> "PatchSet":
+        """Returns a patch set with patches containing all the given tags."""
+        tag_set = set(tags)
+        res_set = set()
 
-        Equivalent to bracket operator (__getitem__)
-        """
-        return self[tags]
+        for patch in self.__patches:
+            if patch.tags and tag_set.issubset(patch.tags):
+                res_set.add(patch)
+
+        return PatchSet(res_set)
 
     def any_of_features(self, feature_tags: tp.Iterable[str]) -> "PatchSet":
         """Returns a patch set with patches containing at least one of the given
@@ -277,7 +260,7 @@ class PatchProvider(Provider):
     patches_source = bb.source.Git(
         remote=patches_repository,
         local="patch-configurations",
-        refspec="origin/HEAD",
+        refspec="origin/f-SyntheticRegressions",
         limit=None,
         shallow=False
     )
