@@ -15,6 +15,7 @@ from benchbuild.utils.revision_ranges import AbstractRevisionRange
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
+from varats.utils.git_commands import get_submodule_updates
 from varats.utils.git_util import (
     RepositoryHandle,
     FullCommitHash,
@@ -26,6 +27,8 @@ from varats.utils.git_util import (
     ShortCommitHash,
     CommitRepoPair,
     CommitLookupTy,
+    get_all_revisions_between,
+    get_submodule_update_commits,
 )
 from varats.utils.settings import bb_cfg
 
@@ -93,6 +96,10 @@ def get_local_project_repos(
     """
     Get the all git repositories for a given benchbuild project.
 
+    CAUTION: Do not use in experiments!
+    BenchBuild modifies the projects sources during the experiment run.
+    Therefore, submodules will not show up here.
+
     Args:
         project_name: name of the given benchbuild project
 
@@ -119,6 +126,10 @@ def get_extended_commit_lookup_source(
     Get benchbuild FetchableSource specified by the git_name or raise a
     LookupError if no match was found within the given benchbuild project.
 
+    CAUTION: Do not use in experiments!
+    BenchBuild modifies the projects sources during the experiment run.
+    Therefore, submodules will not show up here.
+
     Args:
         project_name: name of the given benchbuild project
         git_name: name of the git repository
@@ -140,6 +151,10 @@ def get_extended_commit_lookup_source(
 def create_project_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     """
     Creates a commit lookup function for project repositories.
+
+    CAUTION: Do not use in experiments!
+    BenchBuild modifies the projects sources during the experiment run.
+    Therefore, submodules will not show up here.
 
     Args:
         project_name: name of the given benchbuild project
@@ -180,7 +195,7 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
     ref_list: tp.List[str] = repo("show-ref", "--tags",
                                   "--dereference").strip().split("\n")
 
-    # Only keep dereferenced or leightweight tags (i.e., only keep commits)
+    # Only keep dereferenced or lightweight tags (i.e., only keep commits)
     # and strip suffix, if necessary
     refs: tp.List[tp.Tuple[str, str]] = [
         (ref_split[0], ref_split[1][10:].replace('^{}', ''))
