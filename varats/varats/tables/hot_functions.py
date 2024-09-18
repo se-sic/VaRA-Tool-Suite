@@ -1,6 +1,7 @@
 """Module for the HotFunctionsTable."""
 import typing as tp
 
+import numpy as np
 import pandas as pd
 
 from varats.experiments.base.perf_sampling import PerfSampling
@@ -52,19 +53,22 @@ class HotFunctionsTable(Table, table_name="hot_functions"):
                         continue
 
                     hot_func_data = hot_funcs[workload_name]
-                    for hf in hot_func_data:
+                    for hf_name, hf in hot_func_data.items():
                         cs_entries.append({
                             "Project": project_name,
                             "Binary": report_file.binary_name,
                             "Revision": str(report_file.commit_hash),
-                            "Workload": workload_name,
-                            "FunctionName": hf
+                            "FunctionName": hf_name,
+                            "Overhead": np.average([hf.overhead for hf in hf]),
                         })
 
             entries += cs_entries
 
-        df = pd.DataFrame.from_records(entries).drop_duplicates()
-        df.sort_values(["Project", "Binary"], inplace=True)
+        df = pd.DataFrame.from_records(entries)
+        df = df.groupby(["Project", "Binary", "Revision", "FunctionName"],
+                        as_index=False).mean()
+        df.sort_values(["Project", "Binary", "Revision", "Overhead"],
+                       inplace=True)
         df.set_index(
             ["Project", "Binary"],
             inplace=True,
