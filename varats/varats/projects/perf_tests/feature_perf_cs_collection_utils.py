@@ -19,6 +19,9 @@ def do_feature_perf_cs_collection_compile(
     """Common compile function for FeaturePerfCSCollection projects."""
     feature_perf_repo = RepositoryHandle(Path(project.source_of_primary))
 
+    if cmake_flag is None:
+        cmake_flag = f"FPCSC_ENABLE_PROJECT_{project.name.upper()}"
+
     cc_compiler = bb.compiler.cc(project)
     cxx_compiler = bb.compiler.cxx(project)
 
