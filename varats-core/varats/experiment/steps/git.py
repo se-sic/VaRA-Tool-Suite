@@ -9,7 +9,7 @@ from plumbum import ProcessExecutionError
 
 import varats.utils.git_commands as git
 from varats.project.varats_project import VProject
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import CommitHash, RepositoryHandle
 
 
 class GitAdd(ProjectStep):
@@ -25,7 +25,10 @@ class GitAdd(ProjectStep):
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
         try:
-            git.add(Path(self.project.source_of_primary), *self.__git_add_args)
+            git.add(
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                *self.__git_add_args
+            )
         except ProcessExecutionError:
             self.status = StepResult.ERROR
 
@@ -58,8 +61,8 @@ class GitCommit(ProjectStep):
         self.status = StepResult.OK
         try:
             git.commit(
-                Path(self.project.source_of_primary), self.__message,
-                self.__allow_empty
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                self.__message, self.__allow_empty
             )
         except ProcessExecutionError:
             self.status = StepResult.ERROR
@@ -87,7 +90,8 @@ class GitCheckout(ProjectStep):
         self.status = StepResult.OK
         try:
             git.checkout_branch_or_commit(
-                Path(self.project.source_of_primary), self.__commit
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                self.__commit
             )
         except ProcessExecutionError:
             self.status = StepResult.ERROR
