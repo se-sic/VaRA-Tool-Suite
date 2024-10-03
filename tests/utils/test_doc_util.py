@@ -35,13 +35,14 @@ class TestProjectOverviewGeneration(unittest.TestCase):
 
         self.assertEqual(
             cleaned_first_row[0],
-            ":class:`~varats.projects.c_projects.glibc.Glibc`"
+            ":class:`~varats.projects.c_projects.capstone.Capstone`"
         )
         self.assertEqual(cleaned_first_row[1], "c_projects")
-        self.assertEqual(cleaned_first_row[2], "C Library")
+        self.assertEqual(cleaned_first_row[2], "Binary Analysis Framework")
         self.assertEqual(cleaned_first_row[3], "")
         self.assertEqual(
-            cleaned_first_row[4], "git://sourceware.org/git/glibc.git"
+            cleaned_first_row[4],
+            "https://github.com/capstone-engine/capstone.git"
         )
 
     def test_construct_feature_model_link(self) -> None:
