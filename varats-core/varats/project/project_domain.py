@@ -7,6 +7,7 @@ class ProjectDomains(Enum):
     """Defines a set of project domains."""
     value: str
 
+    ARCHITECTURE = "Architecture"
     CHAT_CLIENT = "Chat client"
     CODEC = "Codec"
     COMPRESSION = "Compression"
