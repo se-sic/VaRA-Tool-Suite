@@ -16,7 +16,10 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
+from varats.ts_utils.click_param_types import (
+    REQUIRE_CASE_STUDY,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
@@ -30,6 +33,9 @@ def create_heatmap(
         case_study,
         cached_only=True
     )
+
+    config_ids = case_study.get_config_ids_for_revision(case_study.revisions[0])
+    df = df[df["config_id"].apply(lambda x: x in config_ids)]
     df["wall_clock_time"] = df["wall_clock_time"].apply(
         lambda x: np.average(ast.literal_eval(x))
     )
@@ -92,11 +98,16 @@ class PerformanceEvolutionPlot(Plot, plot_name="performance_evolution_plot"):
 class PerformanceEvolutionGenerator(
     PlotGenerator,
     generator_name="performance-evolution-plot",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
-        return [PerformanceEvolutionPlot(self.plot_config, **self.plot_kwargs)]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+        return [
+            PerformanceEvolutionPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class PerformanceEvolutionDiffPlot(
@@ -109,7 +120,7 @@ class PerformanceEvolutionDiffPlot(
         commit_map: CommitMap = get_commit_map(project_name)
 
         heatmap = create_heatmap(case_study, project_name, commit_map)
-        heatmap_diff = heatmap.diff(axis="columns")
+        heatmap_diff = heatmap.transpose().pct_change().transpose()
         heatmap_linkage = linkage(
             heatmap,
             method="average",
@@ -152,10 +163,13 @@ class PerformanceEvolutionDiffPlot(
 class PerformanceEvolutionDiffGenerator(
     PlotGenerator,
     generator_name="performance-evolution-diff-plot",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
 
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
         return [
-            PerformanceEvolutionDiffPlot(self.plot_config, **self.plot_kwargs)
+            PerformanceEvolutionDiffPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
         ]

@@ -253,19 +253,23 @@ def get_performance_data(
 ) -> tp.List[float]:
     vals_raw = performance_data.loc[config_id, revision]
 
+    if isinstance(vals_raw, list):
+        return vals_raw
+
     return tp.cast(tp.List[float], ast.literal_eval(vals_raw))
 
 
 def is_regression(
     performance_data: pd.DataFrame, old_rev: Revision, new_rev: Revision,
-    configs: ConfigurationMap, threshold: float, sigma: float
+    configs: ConfigurationMap, threshold: float, sigma: float, min_diff: float
 ) -> tp.Tuple[bool, int]:
     """
     Calculates if there is a regression between two revisions.
 
     A regression exists if for at least one configuration the performance
-    difference exceeds the threshold and is at least min_diff times greater than
-    the standard deviation of the performance measurements.
+    difference exceeds the `threshold` and is at least `sigma` times greater
+    than the standard deviation of the performance measurements.
+    Ignore regressions with a smaller absolute value than `min_diff`.
 
     Args:
         performance_data: dataframe with the performance measurements for both
@@ -275,7 +279,8 @@ def is_regression(
         configs: configurations to consider
         threshold: percentage change that is considered a regression
         sigma: factor that controls the minimum difference to the standard
-                  deviation of the measurements
+               deviation of the measurements
+        min_diff: minimum absolute difference to be considered a regression
 
     Returns:
     """
@@ -296,7 +301,7 @@ def is_regression(
         if old_avg == 0:
             continue
 
-        if diff >= max(threshold * old_avg, sigma * std):
+        if diff >= max(threshold * old_avg, sigma * std, min_diff):
             num_regressions += 1
 
     return num_regressions > 0, num_regressions
@@ -334,12 +339,12 @@ def get_relevant_configs(
 def calculate_eval_data(
     project_name: str, performance_data: pd.DataFrame, old_rev: Revision,
     new_rev: Revision, configs: ConfigurationMap,
-    report: PerformanceInteractionReport, threshold: float, sigma: int,
-    eval_data: EvalData
+    report: tp.Optional[PerformanceInteractionReport], threshold: float,
+    sigma: float, min_diff: float, eval_data: EvalData
 ) -> None:
     # RQ1
     is_reg, _ = is_regression(
-        performance_data, old_rev, new_rev, configs, threshold, sigma
+        performance_data, old_rev, new_rev, configs, threshold, sigma, min_diff
     )
 
     if is_reg:
@@ -348,7 +353,7 @@ def calculate_eval_data(
         eval_data["baseline_negatives"].append(new_rev)
 
     # performance interaction classification
-    detected_reg = report is not None and report.performance_interactions
+    detected_reg = report and report.performance_interactions
     if detected_reg:
         eval_data["rq1_predicted_positives"].append(new_rev)
     else:
@@ -356,11 +361,14 @@ def calculate_eval_data(
 
     # RQ2
     if detected_reg:
-        relevant_configs = get_relevant_configs(project_name, configs, report)
+        relevant_configs = get_relevant_configs(
+            project_name, configs,
+            tp.cast(PerformanceInteractionReport, report)
+        )
 
         is_reg2, _ = is_regression(
             performance_data, old_rev, new_rev, relevant_configs, threshold,
-            sigma
+            sigma, min_diff
         )
 
         if is_reg2:
@@ -370,12 +378,13 @@ def calculate_eval_data(
 
 
 def calculate_case_study_data(
-    project_name: str, performance_data: pd.DataFrame, revision_pairs,
-    configs: ConfigurationMap,
+    project_name: str, performance_data: pd.DataFrame,
+    revision_pairs: tp.Iterable[tp.Tuple[Revision,
+                                         Revision]], configs: ConfigurationMap,
     perf_inter_reports: tp.Dict[Revision, PerformanceInteractionReport],
-    threshold: float, sigma: int
+    threshold: float, sigma: float, min_diff: float
 ) -> pd.DataFrame:
-    eval_data: EvalData = defaultdict(list)
+    eval_data: EvalData = tp.cast(EvalData, defaultdict(list))
 
     for old_rev, new_rev in revision_pairs:
         if (
@@ -387,7 +396,7 @@ def calculate_case_study_data(
         report = perf_inter_reports.get(new_rev, None)
         calculate_eval_data(
             project_name, performance_data, old_rev, new_rev, configs, report,
-            threshold, sigma, eval_data
+            threshold, sigma, min_diff, eval_data
         )
 
     confusion_matrix = ConfusionMatrix(
@@ -398,25 +407,38 @@ def calculate_case_study_data(
     )
 
     rq2_confusion_matrix = ConfusionMatrix(
-        eval_data["baseline_positives"],
-        eval_data["baseline_negatives"],
+        list(
+            set(eval_data["baseline_positives"]
+               ).intersection(set(eval_data["rq1_predicted_positives"]))
+        ),
+        list(
+            set(eval_data["baseline_negatives"]
+               ).intersection(set(eval_data["rq1_predicted_positives"]))
+        ),
         eval_data["rq2_predicted_positives"],
         eval_data["rq2_predicted_negatives"],
     )
+    assert rq2_confusion_matrix.FP == 0, f"{project_name}: encountered FP in RQ2. This should not be possible!"
 
     threshold_key = f"Threshold = {threshold}"
     cs_data: tp.Dict[tp.Any, tp.Any] = {
-        ("Project",): [project_name],
-        (threshold_key, "Base"): [confusion_matrix.P],
-        (threshold_key, "RQ1 Pred."): [
-            f"{confusion_matrix.PP} ({confusion_matrix.TP})"
+        ("Project", "", ""): [project_name],
+        # RQ1
+        (threshold_key, "RQ1", "Revs"): [
+            confusion_matrix.P + confusion_matrix.N
         ],
-        (threshold_key, "RQ1 Rec."): [confusion_matrix.recall()],
-        (threshold_key, "RQ1 Prec."): [confusion_matrix.precision()],
-        (threshold_key, "RQ2 Pred."): [
-            f"{rq2_confusion_matrix.PP} / {rq2_confusion_matrix.PN}"
+        (threshold_key, "RQ1", "P"): [confusion_matrix.P],
+        (threshold_key, "RQ1", "PP"): [confusion_matrix.PP],
+        (threshold_key, "RQ1", "TP"): [confusion_matrix.TP],
+        (threshold_key, "RQ1", "Prec."): [confusion_matrix.precision()],
+        (threshold_key, "RQ1", "Rec."): [confusion_matrix.recall()],
+        # RQ2
+        (threshold_key, "RQ2", "Revs"): [
+            rq2_confusion_matrix.P + rq2_confusion_matrix.N
         ],
-        (threshold_key, "RQ2 bACC"): [rq2_confusion_matrix.balanced_accuracy()]
+        (threshold_key, "RQ2", "P"): [rq2_confusion_matrix.P],
+        (threshold_key, "RQ2", "PP"): [rq2_confusion_matrix.PP],
+        (threshold_key, "RQ2", "Rec."): [rq2_confusion_matrix.recall()]
     }
 
     cs_df = pd.DataFrame.from_dict(cs_data)
@@ -438,11 +460,11 @@ def calculate_saved_costs(
 
     for config_id in configs.ids():
         new_vals = get_performance_data(performance_data, revision, config_id)
-        t_baseline += np.average(new_vals)
+        t_baseline += float(np.average(new_vals))
 
     for config_id in relevant_configs.ids():
         new_vals = get_performance_data(performance_data, revision, config_id)
-        t_rq3 += np.average(new_vals)
+        t_rq3 += float(np.average(new_vals))
 
     absolute_savings = len(configs.ids()) - len(relevant_configs.ids())
     relative_savings = 1 - len(relevant_configs.ids()) / len(configs.ids())
@@ -457,6 +479,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         threshold = self.table_kwargs["threshold"]  # % diff
         sigma = self.table_kwargs["sigma"]  # times std
+        min_diff = self.table_kwargs["min_diff"]
 
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
@@ -477,7 +500,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                 project_name, ["revision", "config_id", "wall_clock_time"],
                 commit_map,
                 case_study,
-                # cached_only=True
+                cached_only=True
             ).pivot(
                 index="config_id", columns="revision", values="wall_clock_time"
             )
@@ -487,11 +510,13 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                 PerformanceInteractionExperiment,
                 file_name_filter=get_case_study_file_name_filter(case_study)
             )
-            perf_inter_reports = {
-                report_file.report_filename.commit_hash:
-                load_performance_interaction_report(report_file)
-                for report_file in perf_inter_report_files
-            }
+            perf_inter_reports: tp.Dict[
+                Revision, PerformanceInteractionReport] = {
+                    report_file.report_filename.commit_hash:
+                    load_performance_interaction_report(report_file)
+                    for report_file in perf_inter_report_files
+                }
+
             revision_pairs = pairwise([
                 rev.to_short_commit_hash() for rev in revisions
             ])
@@ -499,7 +524,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
             data.append(
                 calculate_case_study_data(
                     project_name, performance_data, revision_pairs, configs,
-                    perf_inter_reports, threshold, sigma
+                    perf_inter_reports, threshold, sigma, min_diff
                 )
             )
 
@@ -509,7 +534,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
-            kwargs["column_format"] = "lr|rrr|rr"
+            kwargs["column_format"] = "lrr|rrr|rr"
             kwargs["multicol_align"] = "c"
             style.format(precision=2, thousands=r"\,")
 
@@ -538,11 +563,20 @@ OPTIONAL_SIGMA: CLIOptionTy = make_cli_option(
     "the standard deviation of the measurements."
 )
 
+OPTIONAL_MIN_DIFF: CLIOptionTy = make_cli_option(
+    "--min-diff",
+    type=float,
+    default=0,
+    required=False,
+    metavar="MIN_DIFF",
+    help="Only consider regressions that are at least MIN_DIFF large."
+)
+
 
 class PerformanceRegressionClassification(
     TableGenerator,
     generator_name="perf-reg",
-    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA]
+    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA, OPTIONAL_MIN_DIFF],
 ):
     """Generates a table that does a precision/recall analysis for performance
     regression detection for multiple thresholds."""
@@ -582,6 +616,7 @@ def load_synth_baseline_data(
         time_report = load_mpr_wl_time_report_aggregate(time_report_files[0])
 
         baseline_report = time_report.get_baseline_report()
+        assert baseline_report is not None
         assert len(baseline_report.workload_names()) == 1
         workload = next(iter(baseline_report.workload_names()))
         data.append({
@@ -612,7 +647,7 @@ def load_synth_baseline_data(
 
 def load_synth_perf_inter_reports(
     case_study: CaseStudy
-) -> tp.Dict[str, PerformanceInteractionReport]:
+) -> tp.Dict[Revision, PerformanceInteractionReport]:
     project_name = case_study.project_name
 
     report_files = get_processed_revisions_files(
@@ -630,12 +665,12 @@ def load_synth_perf_inter_reports(
 
     assert len(report_files) == 1
     report = load_mpr_performance_interaction_report(report_files[0])
+    report_dict: tp.Dict[Revision, PerformanceInteractionReport] = {}
 
-    report_dict: tp.Dict[str, PerformanceInteractionReport] = {
-        "base": report.get_baseline_report()
-    }
     for patch_name in report.get_patch_names():
-        report_dict[patch_name] = report.get_report_for_patch(patch_name)
+        patch_report = report.get_report_for_patch(patch_name)
+        assert patch_report is not None
+        report_dict[patch_name] = patch_report
 
     return report_dict
 
@@ -649,6 +684,7 @@ class PerformanceRegressionClassificationTableSynth(
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         threshold = self.table_kwargs["threshold"]  # % diff
         sigma = self.table_kwargs["sigma"]  # times std
+        min_diff = self.table_kwargs["min_diff"]
 
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
@@ -678,7 +714,7 @@ class PerformanceRegressionClassificationTableSynth(
             data.append(
                 calculate_case_study_data(
                     project_name, performance_data, revision_pairs, configs,
-                    perf_inter_reports, threshold, sigma
+                    perf_inter_reports, threshold, sigma, min_diff
                 )
             )
 
@@ -688,7 +724,7 @@ class PerformanceRegressionClassificationTableSynth(
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
-            kwargs["column_format"] = "lr|rrr|rr"
+            kwargs["column_format"] = "l|rrrrrr|rrrr"
             kwargs["multicol_align"] = "c"
             style.format(precision=2, thousands=r"\,")
 
@@ -700,7 +736,7 @@ class PerformanceRegressionClassificationTableSynth(
 class PerformanceRegressionClassificationSynth(
     TableGenerator,
     generator_name="perf-reg-synth",
-    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA]
+    options=[OPTIONAL_THRESHOLD, OPTIONAL_SIGMA, OPTIONAL_MIN_DIFF]
 ):
     """Generates a table that does a precision/recall analysis for performance
     regression detection for multiple thresholds."""
