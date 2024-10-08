@@ -33,6 +33,7 @@ def update_projects(
         'varats.projects.c_projects.brotli',
         'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.bzip2',
+        'varats.projects.c_projects.capstone',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.file',

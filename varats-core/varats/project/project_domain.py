@@ -7,12 +7,12 @@ class ProjectDomains(Enum):
     """Defines a set of project domains."""
     value: str
 
+    BINARY_ANALYSIS_FRAMEWORK = "Binary Analysis Framework"
     CHAT_CLIENT = "Chat client"
     CODEC = "Codec"
     COMPRESSION = "Compression"
     CPP_LIBRARY = "C++ Library"
     C_LIBRARY = "C Library"
-    MALWARE_ANALYSIS = "Malware Analysis"
     DATABASE = "Database"
     DATA_STRUCTURES = "Data structures"
     DOCUMENTATION = "Documentation"
@@ -20,6 +20,7 @@ class ProjectDomains(Enum):
     FILE_FORMAT = "File format"
     HPC = "High Performance Applications"
     HW_EMULATOR = "Hardware emulator"
+    MALWARE_ANALYSIS = "Malware Analysis"
     PARSER = "Parser"
     PLANNING = "Planning"
     PROG_LANG = "Programming language"
