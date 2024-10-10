@@ -433,7 +433,7 @@ class PerformanceInteractionExperimentSynthetic(
         ]
 
         patch_provider = PatchProvider.get_provider_for_project(project)
-        patches: PatchSet = patch_provider.get_patches_for_revision(
+        patches = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
         )
         perf_region_patches = patches["perf_region"]
@@ -458,10 +458,10 @@ class PerformanceInteractionExperimentSynthetic(
 
                 # apply separate regression simulating patch if available
                 #TODO: use tags to match patches
-                id = change_patch.shortname[-1]
+                patch_id = change_patch.shortname[-1]
                 filtered_regression_patches = list(
                     filter(
-                        lambda patch: patch.shortname[-1] == id,
+                        lambda patch: patch.shortname[-1] == patch_id,
                         regression_patches
                     )
                 )
@@ -481,6 +481,9 @@ class PerformanceInteractionExperimentSynthetic(
 
                 # apply change patch
                 patch_steps.append(ApplyPatch(project, change_patch))
+                applied_patches.append(change_patch)
+
+                # experiment steps
                 patch_steps += generate_basic_blame_experiment_actions(
                     project,
                     bc_file_extensions,
