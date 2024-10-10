@@ -247,6 +247,38 @@ class DegreeHigh(VProject):
         do_feature_perf_cs_collection_recompile(self)
 
 
+class DegreeComplex(VProject):
+    """
+    Interaction degree case study with complex configuration space:
+
+    Regression is triggered only if all 5/10 features are enabled.
+    """
+    NAME = "DegreeComplex"
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = _perf_inter_cs_source(NAME)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    WORKLOADS = _perf_inter_cs_workload(NAME, "DegreeHigh")
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _perf_inter_cs_binary(DegreeHigh.NAME, "DegreeHigh")[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        do_feature_perf_cs_collection_compile(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        do_feature_perf_cs_collection_recompile(self)
+
+
 ################################################################################
 # Performance-relevant code case studies
 ################################################################################
