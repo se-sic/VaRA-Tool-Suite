@@ -1,10 +1,10 @@
 """Implements an experiment that profiles the execution of a project binary."""
 import logging
+import textwrap
 import typing as tp
 from importlib import resources
 from pathlib import Path
 
-import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
@@ -159,6 +159,12 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
 
         return StepResult.OK
 
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Measure with time and sample with perf ({self.__repetitions} reps)",
+            " " * indent
+        )
+
 
 class SampleWithPerfAndTimeSynth(OutputFolderStep):
     """Step to sample call stack with perf and measure total execution using GNU
@@ -166,7 +172,7 @@ class SampleWithPerfAndTimeSynth(OutputFolderStep):
 
     NAME = "SampleWithPerfAndTimeSynth"
     DESCRIPTION = (
-        "Sample call stack using perf and measure total execution time"
+        "Sample call stack using perf and measure total execution time."
     )
 
     project: "VProject"
@@ -220,6 +226,12 @@ class SampleWithPerfAndTimeSynth(OutputFolderStep):
 
         return StepResult.OK
 
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Measure with time and sample with perf ({self.__repetitions} reps)",
+            " " * indent
+        )
+
 
 class PerfSampling(VersionExperiment, shorthand="PS"):
     """Generates perf sampling files."""
@@ -265,7 +277,6 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
     def actions_for_project(
         self, project: "VProject"
     ) -> tp.MutableSequence[actions.Step]:
-        """"""
         project.runtime_extension = run.RuntimeExtension(project, self)
         project.compiler_extension = compiler.RunCompiler(project, self) \
                                      << RunWLLVM() \
@@ -279,9 +290,8 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
         patches = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
         )
-        regression_patches = patches["regression"]
-        if not regression_patches:
-            LOG.warning("No regression patches found.")
+        regression_patches = patches.all_of("perf_inter", "regression")
+        change_patches = patches.all_of("perf_inter", "change")
 
         repetitions = 10
 
@@ -304,24 +314,45 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
             )
         ]
 
-        for patch in regression_patches:
-            patch_steps.append(ApplyPatch(project, patch))
+        for change_patch in change_patches:
+            applied_patches = [change_patch]
+
+            # apply separate regression simulating patch if available
+            # TODO: use tags to match patches
+            patch_id = change_patch.shortname[-1]
+            filtered_regression_patches = list(
+                filter(
+                    lambda p: p.shortname[-1] == patch_id, regression_patches
+                )
+            )
+            if filtered_regression_patches:
+                assert len(filtered_regression_patches) == 1
+                regression_patch = filtered_regression_patches[0]
+                applied_patches.append(regression_patch)
+
+            for patch in applied_patches:
+                patch_steps.append(ApplyPatch(project, patch))
+
             patch_steps.append(ReCompile(project))
             patch_steps.append(
                 SampleWithPerfAndTimeSynth(
                     project, binary,
                     Path(
                         MPRWLFunctionOverheadReportAggregate.
-                        create_patched_report_name(patch, "overhead_reports")
+                        create_patched_report_name(
+                            change_patch, "overhead_reports"
+                        )
                     ),
                     Path(
                         MPRWLTimeReportAggregate.create_patched_report_name(
-                            patch, "time_reports"
+                            change_patch, "time_reports"
                         )
                     ), repetitions, 997
                 )
             )
-            patch_steps.append(RevertPatch(project, patch))
+
+            for patch in reversed(applied_patches):
+                patch_steps.append(RevertPatch(project, patch))
 
         result_filepaths: tp.Dict[tp.Type["BaseReport"], "ReportFilepath"] = {
             MPRWLFunctionOverheadReportAggregate:
