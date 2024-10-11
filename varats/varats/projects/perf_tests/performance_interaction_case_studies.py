@@ -259,13 +259,14 @@ class DegreeComplex(VProject):
 
     SOURCE = _perf_inter_cs_source(NAME)
     CONTAINER = get_base_image(ImageBase.DEBIAN_12)
-    WORKLOADS = _perf_inter_cs_workload(NAME, "DegreeHigh")
+    WORKLOADS = _perf_inter_cs_workload(NAME, "DegreeComplex")
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return _perf_inter_cs_binary(DegreeHigh.NAME, "DegreeHigh")[revision]
+        return _perf_inter_cs_binary(DegreeComplex.NAME,
+                                     "DegreeComplex")[revision]
 
     def run_tests(self) -> None:
         pass
