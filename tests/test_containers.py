@@ -13,8 +13,6 @@ from benchbuild.environments.domain.model import (
     RunLayer,
     EntryPoint,
 )
-
-from tests.helper_utils import run_in_test_environment
 from varats.containers.containers import (
     ImageBase,
     StageBuilder,
@@ -24,6 +22,8 @@ from varats.containers.containers import (
 )
 from varats.tools.research_tools.research_tool import Distro
 from varats.utils.settings import vara_cfg, bb_cfg
+
+from tests.helper_utils import run_in_test_environment
 
 
 class TestImageBase(unittest.TestCase):
@@ -101,10 +101,8 @@ class TestContainerSupport(unittest.TestCase):
 
         varats_core_install_layer = self.check_layer_type(layers[2], RunLayer)
         self.assertEqual("pip", varats_core_install_layer.command)
-        self.assertTupleEqual(
-            ("install", "--ignore-installed", "varats-core", "varats"),
-            varats_core_install_layer.args
-        )
+        self.assertTupleEqual(("install", "--ignore-installed", "varats"),
+                              varats_core_install_layer.args)
 
     @run_in_test_environment()
     def test_create_stage_10_from_source(self) -> None:
@@ -126,20 +124,9 @@ class TestContainerSupport(unittest.TestCase):
         layers = stage_builder.layers
         self.check_layer_type(layers[0], FromLayer)
 
-        varats_core_install_layer = self.check_layer_type(layers[4], RunLayer)
-        self.assertEqual("pip", varats_core_install_layer.command)
-        self.assertTupleEqual(("install", "/varats/varats-core"),
-                              varats_core_install_layer.args)
-        mounting_parameters = "type=bind,src=varats_src,target=/varats"
-        if buildah_version() >= (1, 24, 0):
-            mounting_parameters += ",rw"
-        self.assertIn(("mount", mounting_parameters),
-                      varats_core_install_layer.kwargs)
-
-        varats_install_layer = self.check_layer_type(layers[5], RunLayer)
+        varats_install_layer = self.check_layer_type(layers[4], RunLayer)
         self.assertEqual("pip", varats_install_layer.command)
-        self.assertTupleEqual(("install", "/varats/varats"),
-                              varats_install_layer.args)
+        self.assertTupleEqual(("install", "/varats"), varats_install_layer.args)
         mounting_parameters = "type=bind,src=varats_src,target=/varats"
         if buildah_version() >= (1, 24, 0):
             mounting_parameters += ",rw"
