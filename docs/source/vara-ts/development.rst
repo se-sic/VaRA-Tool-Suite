@@ -131,8 +131,7 @@ Ensure that all branches are in the correct state.
 .. code-block:: console
 
     git checkout vara-dev
-    # Update varats/setup.py and varats-core/setup.py to the next version
-    # Update varats/setup.py to depend on the new core version
+    # Update pyproject.toml to the new version
     git commit -m "Bump version to $NEW_VERSION"
     git push origin vara-dev
 
