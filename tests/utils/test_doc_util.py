@@ -35,13 +35,13 @@ class TestProjectOverviewGeneration(unittest.TestCase):
 
         self.assertEqual(
             cleaned_first_row[0],
-            ":class:`~varats.projects.c_projects.glibc.Glibc`"
+            ":class:`~varats.projects.c_projects.open62541.Open62541`"
         )
         self.assertEqual(cleaned_first_row[1], "c_projects")
-        self.assertEqual(cleaned_first_row[2], "C Library")
+        self.assertEqual(cleaned_first_row[2], "Architecture")
         self.assertEqual(cleaned_first_row[3], "")
         self.assertEqual(
-            cleaned_first_row[4], "git://sourceware.org/git/glibc.git"
+            cleaned_first_row[4], "https://github.com/open62541/open62541.git"
         )
 
     def test_construct_feature_model_link(self) -> None:
