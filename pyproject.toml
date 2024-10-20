@@ -1,0 +1,181 @@
+[project]
+name = "varats"
+version = "14.0.0"
+dependencies = [
+  "Jinja2>=3.1.2",
+  "PyDriller>=2.4.1",
+  "PyGithub>=1.58",
+  "PyQt5-stubs>=5.10.0",
+  "PyQt5>=5.10.0",
+  "PyYAML>=6.0",
+  "benchbuild>=6.8",
+  "click>=8.1.3",
+  "cliffs-delta>=1.0.0",
+  "distro>=1.5.0",
+  "graphviz>=0.14.2",
+  "ijson>=3.1.4",
+  "kaleido>=0.2.1",
+  "matplotlib>=3.8.2",
+  "networkx>=3.0",
+  "numpy>=1.24.2",
+  "packaging>=20.1",
+  "pandas>=1.5.3",
+  "plotly>=5.13.1",
+  "plumbum>=1.6",
+  "pygit2>=1.10,<1.14.0",
+  "pygraphviz>=1.7",
+  "pygtrie>=2.3",
+  "pylatex>=1.4.1",
+  "requests>=2.28.2",
+  "rich>=12.6",
+  "scikit-learn>=1.2.2",
+  "seaborn>=0.13.0",
+  "tabulate>=0.9",
+  "wllvm>=1.3.1",
+]
+requires-python = ">=3.9"
+maintainers = [
+  { name = "Florian Sattler", email = "sattlerf@cs.uni-saarland.de" }
+]
+readme = "README.md"
+license = { text = "BSD 2-Clause"}
+
+[project.scripts]
+vara-art = "varats.tools.driver_artefacts:main"
+vara-buildsetup = "varats.tools.driver_build_setup:main"
+vara-config = "varats.tools.driver_config:main"
+vara-container = "varats.tools.driver_container:main"
+vara-cs = "varats.tools.driver_casestudy:main"
+vara-cs-gui = "varats.tools.driver_casestudy_gui:main"
+vara-develop = "varats.tools.driver_develop:main"
+vd = "varats.tools.driver_develop:main"
+vara-gen-bbconfig = "varats.tools.driver_gen_benchbuild_config:main"
+vara-pc = "varats.tools.driver_paper_config:main"
+vara-plot = "varats.tools.driver_plot:main"
+vara-run = "varats.tools.driver_run:main"
+vara-table = "varats.tools.driver_table:main"
+vara-cve = "varats.tools.driver_cve:main"
+
+[project.gui-scripts]
+vara-graphview = "varats.tools.driver_graph_view:main"
+vara-buildsetup-gui = "varats.tools.driver_build_setup_gui:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["varats", "varats-core"]
+include = ["varats.*"]
+
+[tool.pytest.ini_options]
+testpaths = ["varats", "varats-core", "tests"]
+addopts = "--doctest-modules --doctest-continue-on-failure --ignore=varats/projects/c_projects/gzip.py"
+markers = [
+    "slow: this test is slow."
+]
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+namespace_packages = true
+mypy_path = "varats/:varats-core/"
+no_implicit_optional = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unreachable = true
+plugins = [
+  "numpy.typing.mypy_plugin"
+]
+
+[[tool.mypy.overrides]]
+module = [
+  "pylatex",
+  "benchbuild.*",
+  "plumbum",
+  "matplotlib",
+  "networkx",
+  "pandas",
+  "plotly",
+  "pydriller",
+  "pygtrie",
+  "pygit2",
+  "scipy",
+  "sklearn",
+  "PyQt5",
+  "argparse_utils",
+  "seaborn",
+  "github",
+  "distro",
+  "ijson",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+  "varats.gui.views.*",
+  "varats.gui.ui_MainWindow",
+  "varats.gui.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+  "rich",
+]
+ignore_missing_imports = true
+ignore_errors = true
+
+[tool.coverage.run]
+source = [
+  "tests/",
+  "varats/varats/",
+  "varats-core/varats/"
+]
+source_pkgs = "varats"
+parallel = true
+
+[tool.coverage.report]
+ignore_errors = true
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+minversion=3.0.0
+skipsdist=True
+distdir={toxworkdir}/wheel_output
+
+[testenv]
+deps =
+  -rrequirements.txt
+  pytest
+  coverage
+commands =
+  coverage run -m pytest varats/varats/
+  coverage report -m --skip-covered
+
+[testenv:mypy]
+deps =
+  -rrequirements.txt
+  mypy
+commands =
+  mypy --strict -p varats
+
+[testenv:release]
+deps =
+  -rrequirements.txt
+  wheel
+  twine
+commands =
+  pip3 wheel --no-deps -w {distdir} .
+  twine upload --skip-existing -r pypi {distdir}/varats*
+
+[testenv:test-release]
+deps =
+  -rrequirements.txt
+  wheel
+  twine
+commands =
+  pip3 wheel --no-deps -w {distdir} .
+  twine upload --skip-existing -r testpypi {distdir}/varats*
+"""

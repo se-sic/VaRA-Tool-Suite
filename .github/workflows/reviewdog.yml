@@ -27,8 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install ./varats-core
-        pip install ./varats
+        pip install .
         pip install -r requirements.txt
         pip install mypy
         pip install pylint
