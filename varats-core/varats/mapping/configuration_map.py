@@ -168,7 +168,9 @@ def create_configuration_map_from_yaml_doc(
             yaml_doc[config_id]
         )
 
-        actual_id = new_config_map.add_configuration(parsed_config)
+        actual_id = new_config_map.add_configuration(
+            parsed_config, int(config_id)
+        )
         if actual_id != int(config_id):
             raise ConfigurationMapConfigIDMissmatch
 
