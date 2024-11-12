@@ -67,6 +67,9 @@ vara-buildsetup-gui = "varats.tools.driver_build_setup_gui:main"
 requires = ["setuptools>=61.0", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["varats", "varats-core"]
 include = ["varats.*"]
