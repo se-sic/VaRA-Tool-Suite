@@ -72,7 +72,7 @@ class ArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-class ArchitectureReportExperiment(VersionExperiment, shorthand="ARE"):
+class ArchitectureTaintReportExperiment(VersionExperiment, shorthand="ATRE"):
     """Generates an Architecture report file."""
 
     NAME = "GenerateArchitectureTaintReport"

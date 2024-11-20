@@ -84,6 +84,7 @@ def update_projects(
     ]
     if include_test_projects:
         projects_conf.value[:] += [
+            'varats.projects.test_projects.architecture_test_repo',
             'varats.projects.test_projects.basic_tests',
             'varats.projects.test_projects.bug_provider_test_repos',
             'varats.projects.test_projects.example_test_repo',
@@ -110,11 +111,12 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.vara.agg_region_interaction_perf_runner',
         'varats.experiments.vara.architecture_report_experiment',
-        'varats.experiments.vara.architecture_interactions_experiment'
+        'varats.experiments.vara.architecture_interactions_experiment',
         'varats.experiments.vara.blame_ast_experiment',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
+        'varats.experiments.vara.feature_architecture_taint_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
         'varats.experiments.vara.feature_perf_sampling',
         'varats.experiments.vara.feature_perf_tracing',
