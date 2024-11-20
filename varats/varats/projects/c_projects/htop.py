@@ -62,7 +62,6 @@ class Htop(VProject):
     def compile(self) -> None:
         """Compile the project."""
         htop_source = local.path(self.source_of_primary)
-        htop_version_source = Path(self.source_of_primary)
         htop_version = ShortCommitHash(self.version_of_primary)
 
         configure_flags: tp.List[str] = []
@@ -72,7 +71,7 @@ class Htop(VProject):
                                    ["dfd9279f87791e36a5212726781c31fbe7110361"],
                                    "Needs CFLAGS=-fcommon")
         if htop_version in typed_revision_range(
-            old_revs, htop_version_source, ShortCommitHash
+            get_local_project_repo(Htop.NAME), old_revs, ShortCommitHash
         ):
             configure_flags += ["CFLAGS=-fcommon"]
 
