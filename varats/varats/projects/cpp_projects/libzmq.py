@@ -2,11 +2,13 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import SourceRoot
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -16,6 +18,7 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
@@ -46,6 +49,14 @@ class Libzmq(VProject):
         'libsodium-dev', 'pkg-config'
     )
 
+    WORKLOADS = {
+        WorkloadCategory.EXAMPLE: [
+            VCommand(SourceRoot("libzmq_git") / RSBinary(f"{binary}"),
+                     message_size, "100000", label=f"bench_{binary}_{message_size}")
+            for message_size in [2**e for e in range(3, 20)] for binary in ["inproc_thr", "inproc_lat"]
+        ]
+    }
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -54,6 +65,18 @@ class Libzmq(VProject):
 
         binary_map.specify_binary(
             "build/lib/libzmq.so", BinaryType.SHARED_LIBRARY
+        )
+
+        binary_map.specify_binary(
+            "build/bin/inproc_thr", BinaryType.EXECUTABLE
+        )
+
+        binary_map.specify_binary(
+            "build/bin/inproc_lat", BinaryType.EXECUTABLE
+        )
+
+        binary_map.specify_binary(
+            "build/bin/benchmark_radix_tree", BinaryType.EXECUTABLE
         )
 
         return binary_map[revision]
