@@ -155,7 +155,7 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
         for patch in patches:
             patch_steps.append(ApplyPatch(project, patch))
             patch_steps.append(ReCompile(project))
-            patch_steps.append(
+            patch_steps.extend(
                 [ RunAllWorkloads(
                     project, binary, self, self.NUM_REPETITIONS,
                     file_name=MPRBinAggregate.create_patched_report_name(patch, binary.name)
