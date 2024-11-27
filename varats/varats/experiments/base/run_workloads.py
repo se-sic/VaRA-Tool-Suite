@@ -1,12 +1,12 @@
+import textwrap
 from pathlib import Path
 
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from plumbum import local
-import typing as tp
 
-from varats.experiment.experiment_util import VersionExperiment, get_default_compile_error_wrapped, \
+from varats.experiment.experiment_util import get_default_compile_error_wrapped, \
     get_config_patch_steps, ZippedExperimentSteps, create_new_success_result_filepath, OutputFolderStep, \
     ZippedReportFolder
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
@@ -19,7 +19,6 @@ from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportSpecification, ReportAggregate
-from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
 
 class RunAllWorkloads(OutputFolderStep):
@@ -35,17 +34,18 @@ class RunAllWorkloads(OutputFolderStep):
         self.__experiment = experiment
         self.__file_name = file_name
 
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run all workload for binary {self.__binary.name} ({self.__repetitions} repetitions)",
+            indent * ' '
+        )
+
     def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
         return self.analyze(tmp_dir)
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
         with local.cwd(self.project.builddir):
-            binary_report_name = create_new_success_result_filepath(
-                self.__experiment.get_handle(),
-                MultiWLAggregate,
-                self.project, self.__binary, get_current_config_id(self.project)
-            )
-            zip_tmp_dir = tmp_dir / binary_report_name.report_filename.filename
+            zip_tmp_dir = tmp_dir / self.__file_name
 
             with ZippedReportFolder(zip_tmp_dir) as binary_report_folder:
                 for prj_command in workload_commands(
@@ -158,7 +158,7 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
             patch_steps.append(
                 [ RunAllWorkloads(
                     project, binary, self, self.NUM_REPETITIONS,
-                    result_paths[binary.name].report_filename.filename
+                    file_name=MPRBinAggregate.create_patched_report_name(patch, binary.name)
                 ) for binary in project.binaries ]
             )
             patch_steps.append(RevertPatch(project, patch))
@@ -172,7 +172,7 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
                 [
                     RunAllWorkloads(
                         project, binary, self, self.NUM_REPETITIONS,
-                        result_paths[binary.name].report_filename.filename
+                        file_name=MPRBinAggregate.create_baseline_report_name(binary.name)
                     ) for binary in project.binaries
                 ] + patch_steps
             )
