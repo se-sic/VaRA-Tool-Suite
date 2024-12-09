@@ -12,13 +12,13 @@ from varats.experiment.experiment_util import get_default_compile_error_wrapped,
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate, workload_commands, \
-    create_workload_specific_filename
+    create_workload_specific_filename, WorkloadCategory
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
-from varats.report.report import BaseReport, ReportSpecification, ReportAggregate
+from varats.report.report import BaseReport, ReportSpecification, ReportAggregate, FileStatusExtension
 from varats.utils.git_util import ShortCommitHash
 
 class RunAllWorkloads(OutputFolderStep):
@@ -47,30 +47,29 @@ class RunAllWorkloads(OutputFolderStep):
         with local.cwd(self.project.builddir):
             zip_tmp_dir = tmp_dir / self.__file_name
 
+            wla_name_base = SimpleWLAggregate.get_file_name(
+                self.__experiment.shorthand(), self.project.name, self.__binary.name,
+                ShortCommitHash(self.project.version_of_primary), str(self.project.run_uuid),
+                FileStatusExtension.SUCCESS, None
+            )
+
             with ZippedReportFolder(zip_tmp_dir) as binary_report_folder:
                 for prj_command in workload_commands(
-                        self.project, self.__binary, None
+                        self.project, self.__binary, [WorkloadCategory.EXAMPLE]
                 ):
                     pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
-                    experiment = self.__experiment
-
                     # Create report name for workload aggregate
-                    wla_name = create_new_success_result_filepath(
-                        experiment.get_handle(),
-                        SimpleWLAggregate, self.project, self.__binary
-                    ).report_filename.filename
+                    wla_name = create_workload_specific_filename(wla_name_base.filename[:-4], prj_command.command, None, ".zip")
 
-                    wla_zip = binary_report_folder / wla_name
+                    wla_zip = Path(binary_report_folder) / wla_name
 
                     with ZippedReportFolder(wla_zip) as workload_report_folder:
                         for i in range(self.__repetitions):
                             run_report_name = workload_report_folder / create_workload_specific_filename("text_report", prj_command.command, i, ".txt")
 
-                            run_cmd = (pb_cmd > run_report_name)
-
                             with cleanup(prj_command):
-                                run_cmd()
+                                (pb_cmd > str(run_report_name))()
 
         return actions.StepResult.OK
 

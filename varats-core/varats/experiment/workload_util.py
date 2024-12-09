@@ -127,14 +127,17 @@ def workload_commands(
 def create_workload_specific_filename(
     filename_base: str,
     cmd: Command,
-    repetition: int = 0,
+    repetition: tp.Optional[int] = 0,
     file_suffix: str = ".txt"
 ) -> Path:
     if '_' in cmd.label:
         raise AssertionError(
             "Workload/Command labels must not contain underscores '_'!"
         )
-    return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
+    if repetition:
+        return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
+
+    return Path(f"{filename_base}_{cmd.label}{file_suffix}")
 
 
 __WORKLOAD_FILE_REGEX = re.compile(r".*\_(?P<label>.+)\_\d+$")
