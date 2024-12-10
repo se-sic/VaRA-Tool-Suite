@@ -17,7 +17,7 @@ from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
-from varats.report.multi_patch_report import MultiPatchReport
+from varats.report.multi_patch_report import MultiBinaryMultiPatchReport
 from varats.report.report import BaseReport, ReportSpecification, ReportAggregate, FileStatusExtension
 from varats.utils.git_util import ShortCommitHash
 
@@ -47,45 +47,27 @@ class RunAllWorkloads(OutputFolderStep):
         with local.cwd(self.project.builddir):
             zip_tmp_dir = tmp_dir / self.__file_name
 
-            wla_name_base = SimpleWLAggregate.get_file_name(
-                self.__experiment.shorthand(), self.project.name, self.__binary.name,
-                ShortCommitHash(self.project.version_of_primary), str(self.project.run_uuid),
-                FileStatusExtension.SUCCESS, None
-            )
-
             with ZippedReportFolder(zip_tmp_dir) as binary_report_folder:
                 for prj_command in workload_commands(
                         self.project, self.__binary, [WorkloadCategory.EXAMPLE]
                 ):
                     pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
-                    # Create report name for workload aggregate
-                    wla_name = create_workload_specific_filename(wla_name_base.filename[:-4], prj_command.command, None, ".zip")
+                    for i in range(self.__repetitions):
+                        run_report_name = binary_report_folder / create_workload_specific_filename("text-report", prj_command.command, i, ".txt")
 
-                    wla_zip = Path(binary_report_folder) / wla_name
-
-                    with ZippedReportFolder(wla_zip) as workload_report_folder:
-                        for i in range(self.__repetitions):
-                            run_report_name = workload_report_folder / create_workload_specific_filename("text_report", prj_command.command, i, ".txt")
-
-                            with cleanup(prj_command):
-                                (pb_cmd > str(run_report_name))()
+                        with cleanup(prj_command):
+                            (pb_cmd > str(run_report_name))()
 
         return actions.StepResult.OK
 
-class SimpleWLAggregate(WorkloadSpecificReportAggregate[BaseReport], shorthand="WLA", file_type=".zip"):
-    """Simple workload report aggregate."""
+class MultiWLAggregate(WorkloadSpecificReportAggregate[BaseReport], shorthand="MWLA", file_type=".zip"):
+    """Multi-workload report aggregate."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, BaseReport)
 
-class MultiWLAggregate(ReportAggregate[SimpleWLAggregate], shorthand="MWLA", file_type=".zip"):
-    """Multi-workload report aggregate."""
-
-    def __init__(self, path: Path) -> None:
-        super().__init__(path, SimpleWLAggregate)
-
-class MPRBinAggregate(MultiPatchReport[MultiWLAggregate], shorthand="MPBA", file_type=".zip"):
+class MPRBinAggregate(MultiBinaryMultiPatchReport[MultiWLAggregate], shorthand="MPBA", file_type=".zip"):
     """Multi-patch report aggregate."""
 
     def __init__(self, path: Path) -> None:
@@ -111,7 +93,7 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
     """
 
     NAME = "RunWorkloads"
-    NUM_REPETITIONS = 3
+    NUM_REPETITIONS = 30
 
     REPORT_SPEC = ReportSpecification(MPRBinAggregate)
 

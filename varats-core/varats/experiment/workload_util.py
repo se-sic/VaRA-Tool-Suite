@@ -134,7 +134,7 @@ def create_workload_specific_filename(
         raise AssertionError(
             "Workload/Command labels must not contain underscores '_'!"
         )
-    if repetition:
+    if repetition is not None:
         return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
 
     return Path(f"{filename_base}_{cmd.label}{file_suffix}")
@@ -172,7 +172,8 @@ class WorkloadSpecificReportAggregate(
                 "Files contained in a WorkloadSpecificReportAggregate should"
                 "always be formatted correctly by the"
                 "create_workload_specific_filename function."
-            )(label_method)
+            )(label_method),
+            default_key=label_method(path)
         )
 
     def workload_names(self) -> tp.Collection[str]:
