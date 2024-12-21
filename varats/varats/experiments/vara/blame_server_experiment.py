@@ -26,6 +26,8 @@ from varats.report.report import ReportSpecification
 
 
 class BlameServerSteps(actions.Compile):  # type: ignore
+    """"Start blame server before and kill server after compilation."""
+
     NAME = "BlameServerSteps"
     DESCRIPTION = "Start server before and kill server after compilation."
 
@@ -37,6 +39,7 @@ class BlameServerSteps(actions.Compile):  # type: ignore
         server_cmd = local["vara-blamed"][
             f"--blame-server=0.0.0.0:{self.__port}"]
         server_proc = server_cmd.popen()
+        steps = actions.StepResult(3)
         try:
             steps = super().__call__()
         finally:
@@ -44,7 +47,7 @@ class BlameServerSteps(actions.Compile):  # type: ignore
             return steps
 
     @staticmethod
-    def find_open_port():
+    def find_open_port() -> int:
         """Finds and returns an available port on the local machine."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('', 0))  # Bind to a free port provided by the OS
