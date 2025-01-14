@@ -42,7 +42,7 @@ class WeightRegionsCountDef(FeatureExperiment, shorthand="WAD"):
 
         project.cflags += [
             "-fvara-weight-opt=default",
-            "-01",
+            "-O1",
             "-g0",
             "-mllvm",
             "--vara-use-phasar"
@@ -63,8 +63,6 @@ class WeightRegionsCountDef(FeatureExperiment, shorthand="WAD"):
         )
 
         analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             RunVaRATracedWorkloads(

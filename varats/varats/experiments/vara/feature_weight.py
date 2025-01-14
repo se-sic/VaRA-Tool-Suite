@@ -42,7 +42,7 @@ class WeightRegionsCountRec(FeatureExperiment, shorthand="WAR"):
 
         project.cflags += [
             "-fvara-weight-opt=recursive",
-            "-01",
+            "-O1",
             "-g0",
             "-mllvm",
             "--vara-use-phasar"
@@ -63,8 +63,6 @@ class WeightRegionsCountRec(FeatureExperiment, shorthand="WAR"):
         )
 
         analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(
             RunVaRATracedWorkloads(

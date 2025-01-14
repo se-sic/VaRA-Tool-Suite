@@ -49,7 +49,7 @@ def _do_feature_perf_cs_collection_compile(
 
     with local.cwd(feature_perf_source / "build"):
         with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
+            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON", "-DFPCSC_USE_LIBCXX=OFF")
 
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -269,7 +269,7 @@ class LongerCallee(VProject):
         binary_map.specify_binary(
             "build/bin/LongerCallee",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "0214ccd4cebac656449ce232a69e3b385d5e63e9") #check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "f-calculatedynamicweight") #check the hash commit number on f-CalcualteDynamicWeight branch
         )
 
         return binary_map[revision]
@@ -326,7 +326,7 @@ class LongerCaller(VProject):
         binary_map.specify_binary(
             "build/bin/LongerCaller",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "0214ccd4cebac656449ce232a69e3b385d5e63e9") #check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "f-calculatedynamicweight") #check the hash commit number on f-CalcualteDynamicWeight branch
         )
 
         return binary_map[revision]
@@ -383,7 +383,7 @@ class SimpleCall(VProject):
         binary_map.specify_binary(
             "build/bin/SimpleCall",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "0214ccd4cebac656449ce232a69e3b385d5e63e9") #check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "f-calculatedynamicweight"          ) #check the hash commit number on f-CalcualteDynamicWeight branch
         )
 
         return binary_map[revision]
