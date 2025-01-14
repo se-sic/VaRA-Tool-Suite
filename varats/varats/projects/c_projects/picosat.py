@@ -53,7 +53,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
             project_name="picosat",
             remote="https://github.com/se-sic/picoSAT-vara",
             local="picosat",
-            refspec="origin/version-history",
+            refspec="origin/version-history-new",
             limit=None,
             shallow=False
         ),
@@ -195,7 +195,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
 
         with local.cwd(picosat_source):
             revisions_with_new_config_name = get_all_revisions_between(
-                picosat_repo, "63a74c25dfadc447b7eea07773ef40f589ca1ed5", "",
+                picosat_repo, "cc872137c2837adcb662456f02ee0b210e744f14", "",
                 ShortCommitHash
             )
         picosat_version = ShortCommitHash(self.version_of_primary)
