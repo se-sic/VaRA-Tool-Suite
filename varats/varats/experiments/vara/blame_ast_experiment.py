@@ -182,6 +182,8 @@ class LineBasedBlameAnnotations(VersionExperiment, shorthand="LBA"):
         analysis_actions = _create_default_bc_file_creation_actions(
             project,
             bc_file_extensions if bc_file_extensions else [],
+            None,
+            False,
             extraction_error_handler=create_default_compiler_error_handler(
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
@@ -225,6 +227,8 @@ class ASTBasedBlameAnnotations(VersionExperiment, shorthand="ASTBA"):
         analysis_actions = _create_default_bc_file_creation_actions(
             project,
             bc_file_extensions if bc_file_extensions else [],
+            None,
+            False,
             extraction_error_handler=create_default_compiler_error_handler(
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )

@@ -139,8 +139,9 @@ class GlobalsComparision(VersionExperiment, shorthand="GAC"):
         )
 
         analysis_actions = get_bc_cache_actions(
-            project, bc_file_extensions,
-            create_default_compiler_error_handler(
+            project,
+            bc_file_extensions,
+            extraction_error_handler=create_default_compiler_error_handler(
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )

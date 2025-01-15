@@ -169,8 +169,9 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         )
 
         analysis_actions = get_bc_cache_actions(
-            project, self.REQUIRED_EXTENSIONS,
-            create_default_compiler_error_handler(
+            project,
+            self.REQUIRED_EXTENSIONS,
+            extraction_error_handler=create_default_compiler_error_handler(
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )

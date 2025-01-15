@@ -89,18 +89,18 @@ def createCommitFilter(project: VProject) -> InteractionFilter:
     submodules = get_submodules(project_repo)
     submodule_commits: tp.List[FullCommitHash] = []
 
-    for submodule in submodules:
-        submodule_updates = get_submodule_updates(
-            project_repo,
-            str(
-                submodule.worktree_path.relative_to(project_repo.worktree_path)
-            )
-        )
-        for update in submodule_updates:
-            if update in commits:
-                submodule_commits += get_submodule_update_commits(
-                    project_repo, submodule, update
-                )
+    # for submodule in submodules:
+    #     submodule_updates = get_submodule_updates(
+    #         project_repo,
+    #         str(
+    #             submodule.worktree_path.relative_to(project_repo.worktree_path)
+    #         )
+    #     )
+    #     for update in submodule_updates:
+    #         if update in commits:
+    #             submodule_commits += get_submodule_update_commits(
+    #                 project_repo, submodule, update
+    #             )
 
     return OrOperator(
         children=[
@@ -382,6 +382,7 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
         analysis_actions += generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
+            use_blame_server=True,
             extraction_error_handler=create_default_compiler_error_handler(
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
@@ -488,6 +489,7 @@ class PerformanceInteractionExperimentSynthetic(
                     project,
                     bc_file_extensions,
                     applied_patches,
+                    use_blame_server=True,
                     extraction_error_handler=
                     create_default_compiler_error_handler(
                         self.get_handle(), project, self.REPORT_SPEC.main_report

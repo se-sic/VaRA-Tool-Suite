@@ -27,6 +27,7 @@ from varats.experiment.experiment_util import (
     FunctionPEErrorWrapper,
     PEErrorHandler,
 )
+from varats.experiment.steps.blame_server import CompileWithBlameServer
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import Patch
@@ -270,7 +271,7 @@ def project_bc_files_in_cache(
 
 def _create_default_bc_file_creation_actions(
     project: Project, required_bc_file_extensions: tp.List[BCFileExtensions],
-    patches: tp.Optional[tp.List[Patch]],
+    patches: tp.Optional[tp.List[Patch]], use_blame_server: bool,
     extraction_error_handler: tp.Optional[PEErrorHandler]
 ) -> tp.List[actions.Step]:
     """
@@ -287,7 +288,14 @@ def _create_default_bc_file_creation_actions(
     Returns: default compile and extract action steps
     """
     analysis_actions = []
-    analysis_actions.append(actions.Compile(project))
+
+    if use_blame_server:
+        blamed_port = CompileWithBlameServer.find_open_port()
+        project.cflags += [f"-fvara-blame-server=0.0.0.0:{blamed_port}"]
+        analysis_actions.append(CompileWithBlameServer(project, blamed_port))
+    else:
+        analysis_actions.append(actions.Compile(project))
+
     analysis_actions.append(
         Extract(
             project,
@@ -303,10 +311,11 @@ def get_bc_cache_actions(
     project: VProject,
     bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
     patches: tp.Optional[tp.List[Patch]] = None,
+    use_blame_server: bool = False,
     extraction_error_handler: tp.Optional[PEErrorHandler] = None,
     bc_action_creator: tp.Callable[[
-        Project, tp.List[BCFileExtensions], tp.Optional[tp.List[Patch]], tp.
-        Optional[PEErrorHandler]
+        Project, tp.List[BCFileExtensions], tp.
+        Optional[tp.List[Patch]], bool, tp.Optional[PEErrorHandler]
     ], tp.List[actions.Step]] = _create_default_bc_file_creation_actions
 ) -> tp.List[actions.Step]:
     """
@@ -317,6 +326,7 @@ def get_bc_cache_actions(
         project: the project to compile
         bc_file_extensions: list of bc file extensions
         patches: a list of patches applied to the project
+        use_blame_server: whether to use a blame server during compilation
         extraction_error_handler: error handler to report errors during
                                   the extraction step
         bc_action_creator: alternative BC cache actions creation callback
@@ -327,7 +337,7 @@ def get_bc_cache_actions(
     if not project_bc_files_in_cache(project, bc_file_extensions, patches):
         return bc_action_creator(
             project, bc_file_extensions if bc_file_extensions else [], patches,
-            extraction_error_handler
+            use_blame_server, extraction_error_handler
         )
 
     return []

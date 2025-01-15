@@ -56,6 +56,7 @@ def generate_basic_blame_experiment_actions(
     project: Project,
     bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
     patches: tp.Optional[tp.List[Patch]] = None,
+    use_blame_server: bool = False,
     extraction_error_handler: tp.Optional[PEErrorHandler] = None
 ) -> tp.List[actions.Step]:
     """
@@ -68,9 +69,11 @@ def generate_basic_blame_experiment_actions(
         project: reference to the BB project
         bc_file_extensions: list of bitcode file extensions (e.g. opt, no opt)
         patches: a list of patches applied to the project
+        use_blame_server: whether to use a blame server during compilation
         extraction_error_handler: handler to manage errors during the
                                   extraction process
     """
     return get_bc_cache_actions(
-        project, bc_file_extensions, patches, extraction_error_handler
+        project, bc_file_extensions, patches, use_blame_server,
+        extraction_error_handler
     )
