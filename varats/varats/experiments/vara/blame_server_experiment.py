@@ -44,7 +44,8 @@ class BlameServerSteps(actions.Compile):  # type: ignore
             steps = super().__call__()
         finally:
             kill[str(server_proc.pid)]()
-            return steps
+
+        return steps
 
     @staticmethod
     def find_open_port() -> tp.Any:
