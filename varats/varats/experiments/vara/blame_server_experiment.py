@@ -25,7 +25,7 @@ from varats.experiments.vara.blame_ast_experiment import (
 from varats.report.report import ReportSpecification
 
 
-class BlameServerSteps(actions.Compile):  # type: ignore
+class CompileWithBlameServer(actions.Compile):  # type: ignore
     """Start blame server before and kill server after compilation."""
 
     NAME = "BlameServerSteps"
@@ -39,13 +39,13 @@ class BlameServerSteps(actions.Compile):  # type: ignore
         server_cmd = local["vara-blamed"][
             f"--blame-server=0.0.0.0:{self.__port}"]
         server_proc = server_cmd.popen()
-        steps = actions.StepResult(3)
+        step_result = actions.StepResult.ERROR
         try:
-            steps = super().__call__()
+            step_result = super().__call__()
         finally:
             kill[str(server_proc.pid)]()
 
-        return steps
+        return step_result
 
     @staticmethod
     def find_open_port() -> tp.Any:
@@ -77,14 +77,14 @@ class BlameServerExperiment(VersionExperiment, shorthand="BSE"):
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,
-            BCFileExtensions.BLAME  #TODO: add extension for blame server ?
+            BCFileExtensions.BLAME
         ]
 
         BE.setup_basic_blame_experiment(self, project, BA)
-        open_port = BlameServerSteps.find_open_port()
+        open_port = CompileWithBlameServer.find_open_port()
         project.cflags += [f"-fvara-blame-server=0.0.0.0:{open_port}"]
         analysis_actions = []
-        analysis_actions.append(BlameServerSteps(project, open_port))
+        analysis_actions.append(CompileWithBlameServer(project, open_port))
         analysis_actions.append(
             Extract(
                 project,
