@@ -8,6 +8,7 @@ import yaml
 from benchbuild import Project
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
+from benchbuild.utils.requirements import Requirement, SlurmMem, SlurmExclusive
 
 from varats.data.filtertree_data import (
     InteractionFilter,
@@ -344,6 +345,7 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
     NAME = "PerfInteractions"
 
     REPORT_SPEC = ReportSpecification(PerformanceInteractionReport)
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G"), SlurmExclusive()]
 
     def actions_for_project(
         self, project: VProject
