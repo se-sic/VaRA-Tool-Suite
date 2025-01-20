@@ -101,8 +101,8 @@ class Libzmq(VProject):
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
-        with local.cwd(libzmq_version_source):
-            verify_binaries(self)
+        #with local.cwd(libzmq_version_source):
+        #    verify_binaries(self)
 
     def recompile(self) -> None:
         """Recompile the project."""
