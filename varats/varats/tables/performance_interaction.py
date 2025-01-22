@@ -147,6 +147,8 @@ CONFIG_DATA: tp.Dict[str, tp.List[FeatureLike]] = {
     "FunctionMultiple": [F1, F2, F3],
     "DegreeLow": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "DegreeHigh": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
+    "DegreeComplex": [F1, F2, F3, F4, F5, F6,
+                      AtMostOneOf(F7, F8), F9, F10],
     "bzip2": [
         Feature("FR(forceOverwrite)", "f", None),
         Feature("FR(keepInputFiles)", "k", "-k"),
@@ -308,8 +310,7 @@ def is_regression(
 
 
 def get_relevant_configs(
-    project_name: str, configs: ConfigurationMap,
-    perf_inter_report: PerformanceInteractionReport
+    project_name: str, configs: ConfigurationMap, relevant_features: tp.Set[str]
 ) -> ConfigurationMap:
     """
     Computes relevant configurations according to a performance interaction
@@ -318,10 +319,6 @@ def get_relevant_configs(
     We include all configurations where only relevant features vary and all
     other features are set to their default value.
     """
-    relevant_features = set()
-    for inter in perf_inter_report.performance_interactions:
-        relevant_features.update(inter.involved_features)
-
     relevant_configs: ConfigurationMap = ConfigurationMap()
     # collect all configs where non-relevant features are set to their default value
     for config_id, config in configs.id_config_tuples():
@@ -361,9 +358,13 @@ def calculate_eval_data(
 
     # RQ2
     if detected_reg:
+        relevant_features: tp.Set[str] = set()
+
+        for inter in report.performance_interactions:
+            relevant_features.update(inter.involved_features)
+
         relevant_configs = get_relevant_configs(
-            project_name, configs,
-            tp.cast(PerformanceInteractionReport, report)
+            project_name, configs, relevant_features
         )
 
         is_reg2, _ = is_regression(
@@ -446,19 +447,38 @@ def calculate_case_study_data(
     return cs_df
 
 
+class SavingsData(tp.TypedDict):
+    project_name: str
+    revision: Revision
+    configs: int
+    relevant_configs: int
+    features: int
+    relevant_features: int
+    relative_savings: float
+    absolute_savings: float
+    time_savings: float
+
+
 def calculate_saved_costs(
     project_name: str, revision: Revision, configs: ConfigurationMap,
     perf_inter_report: PerformanceInteractionReport,
     performance_data: pd.DataFrame
-) -> tp.Tuple[float, float, float]:
+) -> SavingsData:
     # RQ3
+    features: tp.Set[str] = set()
+    relevant_features: tp.Set[str] = set()
+
+    for inter in perf_inter_report.performance_interactions:
+        relevant_features.update(inter.involved_features)
+
     relevant_configs = get_relevant_configs(
-        project_name, configs, perf_inter_report
+        project_name, configs, relevant_features
     )
     t_baseline = 0.0
     t_rq3 = 0.0
 
-    for config_id in configs.ids():
+    for config_id, config in configs.id_config_tuples():
+        features.update([option.name for option in config.options()])
         new_vals = get_performance_data(performance_data, revision, config_id)
         t_baseline += float(np.average(new_vals))
 
@@ -470,7 +490,17 @@ def calculate_saved_costs(
     relative_savings = 1 - len(relevant_configs.ids()) / len(configs.ids())
     time_savings = t_baseline - t_rq3
 
-    return absolute_savings, relative_savings, time_savings
+    return {
+        "project_name": project_name,
+        "revision": revision,
+        "configs": len(configs.ids()),
+        "relevant_configs": len(relevant_configs.ids()),
+        "features": len(features),
+        "relevant_features": len(relevant_features),
+        "relative_savings": relative_savings,
+        "absolute_savings": absolute_savings,
+        "time_savings": time_savings
+    }
 
 
 class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
@@ -584,6 +614,114 @@ class PerformanceRegressionClassification(
     def generate(self) -> tp.List[Table]:
         return [
             PerformanceRegressionClassificationTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
+
+
+class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
+    """Table showing potential cost savings from performance interaction
+    analysis."""
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        data: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for case_study in case_studies:
+            project_name = case_study.project_name
+            commit_map = get_commit_map(project_name)
+            revisions = sorted(case_study.revisions, key=commit_map.time_id)
+
+            configs = load_configuration_map_for_case_study(
+                get_paper_config(), case_study, PlainCommandlineConfiguration
+            )
+            features = {
+                option.name
+                for config in configs.configurations()
+                for option in config.options()
+            }
+
+            performance_data = \
+                PerformanceEvolutionDatabase.get_data_for_project(
+                    project_name, ["revision", "config_id", "wall_clock_time"],
+                    commit_map,
+                    case_study,
+                    cached_only=True
+                ).pivot(
+                    index="config_id", columns="revision",
+                    values="wall_clock_time"
+                )
+
+            perf_inter_report_files = get_processed_revisions_files(
+                project_name,
+                PerformanceInteractionExperiment,
+                file_name_filter=get_case_study_file_name_filter(case_study)
+            )
+            perf_inter_reports: tp.Dict[
+                Revision, PerformanceInteractionReport] = {
+                    report_file.report_filename.commit_hash:
+                    load_performance_interaction_report(report_file)
+                    for report_file in perf_inter_report_files
+                }
+
+            for revision in map(lambda x: x.to_short_commit_hash(), revisions):
+                perf_inter_report = perf_inter_reports.get(revision, None)
+
+                if perf_inter_report:
+                    savings = calculate_saved_costs(
+                        project_name, revision, configs, perf_inter_report,
+                        performance_data
+                    )
+                else:
+                    savings = {
+                        "project_name": project_name,
+                        "revision": revision,
+                        "configs": len(configs.ids()),
+                        "relevant_configs": len(configs.ids()),
+                        "features": len(features),
+                        "relevant_features": len(features),
+                        "relative_savings": np.nan,
+                        "absolute_savings": np.nan,
+                        "time_savings": np.nan
+                    }
+
+                data.append({
+                    "Project": f"{project_name} ({revision})",
+                    "$|F|$": savings["features"],
+                    "$|\hat{F}|$": savings["relevant_features"],
+                    "$|C|$": savings["configs"],
+                    "$|\hat{C}|$": savings["relevant_configs"],
+                    "$S_{Abs}$": savings["absolute_savings"],
+                    "$S_{Rel}$": savings["relative_savings"],
+                    "$S_{Time} ($s$)$": savings["time_savings"],
+                })
+
+        df = pd.DataFrame.from_records(data)
+        df.set_index("Project", inplace=True)
+
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            kwargs["column_format"] = "lrrrrrrr"
+            kwargs["multicol_align"] = "c"
+            style.format(precision=2, thousands=r"\,")
+
+        return dataframe_to_table(
+            df, table_format, style, wrap_table, wrap_landscape=True, **kwargs
+        )
+
+
+class PerformanceInteractionSavings(
+    TableGenerator, generator_name="perf-inter-cost", options=[]
+):
+    """Generates a table showing potential cost savings from performance
+    interaction analysis."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PerformanceInteractionSavingsTable(
                 self.table_config, **self.table_kwargs
             )
         ]
@@ -744,6 +882,108 @@ class PerformanceRegressionClassificationSynth(
     def generate(self) -> tp.List[Table]:
         return [
             PerformanceRegressionClassificationTableSynth(
+                self.table_config, **self.table_kwargs
+            )
+        ]
+
+
+class PerformanceInteractionSavingsTableSynth(
+    Table, table_name="perf_inter_cost_synth"
+):
+    """Table showing potential cost savings from performance interaction
+    analysis."""
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        data: tp.List[tp.Dict[str, tp.Any]] = []
+
+        for case_study in case_studies:
+            project_name = case_study.project_name
+
+            if project_name != "DegreeComplex":
+                continue
+
+            configs = load_configuration_map_for_case_study(
+                get_paper_config(), case_study, PlainCommandlineConfiguration
+            )
+            features = {
+                option.name
+                for config in configs.configurations()
+                for option in config.options()
+            }
+
+            performance_data = load_synth_baseline_data(
+                case_study, configs.ids()
+            )
+
+            if performance_data.empty:
+                continue
+
+            revisions = performance_data["revision"].unique().tolist()
+            revisions.remove("base")
+            performance_data = performance_data.pivot(
+                index="config_id", columns="revision", values="wall_clock_time"
+            )
+            perf_inter_reports = load_synth_perf_inter_reports(case_study)
+
+            for revision in revisions:
+                perf_inter_report = perf_inter_reports.get(revision, None)
+
+                if perf_inter_report:
+                    savings = calculate_saved_costs(
+                        project_name, revision, configs, perf_inter_report,
+                        performance_data
+                    )
+                else:
+                    savings = {
+                        "project_name": project_name,
+                        "revision": revision,
+                        "configs": len(configs.ids()),
+                        "relevant_configs": len(configs.ids()),
+                        "features": len(features),
+                        "relevant_features": len(features),
+                        "relative_savings": np.nan,
+                        "absolute_savings": np.nan,
+                        "time_savings": np.nan
+                    }
+
+                data.append({
+                    "Project": f"{project_name} ({revision})",
+                    "$|F|$": savings["features"],
+                    "$|\hat{F}|$": savings["relevant_features"],
+                    "$|C|$": savings["configs"],
+                    "$|\hat{C}|$": savings["relevant_configs"],
+                    "$S_{Abs}$": savings["absolute_savings"],
+                    "$S_{Rel}$": savings["relative_savings"],
+                    "$S_{Time} ($s$)$": savings["time_savings"],
+                })
+
+        df = pd.DataFrame.from_records(data)
+        df.set_index("Project", inplace=True)
+
+        style = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            kwargs["column_format"] = "lrrrrrrr"
+            kwargs["multicol_align"] = "c"
+            style.format(precision=2, thousands=r"\,")
+
+        return dataframe_to_table(
+            df, table_format, style, wrap_table, wrap_landscape=True, **kwargs
+        )
+
+
+class PerformanceInteractionSavingsSynth(
+    TableGenerator, generator_name="perf-inter-cost-synth", options=[]
+):
+    """Generates a table showing potential cost savings from performance
+    interaction analysis."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            PerformanceInteractionSavingsTableSynth(
                 self.table_config, **self.table_kwargs
             )
         ]
