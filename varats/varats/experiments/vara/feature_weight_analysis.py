@@ -13,7 +13,8 @@ from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 
 
-class FeatureWeightAnalysisTable(Table, table_name="fperf-weight"):
+class FeatureWeightAnalysisTable(Table,
+                                 table_name="fperf-weight"):
     """Table that compares the different type of weight analysis."""
 
     @staticmethod

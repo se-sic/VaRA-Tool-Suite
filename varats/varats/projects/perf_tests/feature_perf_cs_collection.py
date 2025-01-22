@@ -49,7 +49,11 @@ def _do_feature_perf_cs_collection_compile(
 
     with local.cwd(feature_perf_source / "build"):
         with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON", "-DFPCSC_USE_LIBCXX=OFF")
+            bb.watch(cmake)("..",
+                            "-G",
+                            "Unix Makefiles",
+                            f"-D{cmake_flag}=ON",
+                            "-DFPCSC_USE_LIBCXX=OFF")
 
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -254,7 +258,8 @@ class LongerCallee(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("LongerCallee"), label="CompileTime-LongerCallee"
+                SourceRoot(NAME) / RSBinary("LongerCallee"),
+                label="CompileTime-LongerCallee"
             )
         ]
     }
@@ -269,7 +274,10 @@ class LongerCallee(VProject):
         binary_map.specify_binary(
             "build/bin/LongerCallee",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "f-calculatedynamicweight") #check the hash commit number on f-CalcualteDynamicWeight branch
+            # check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                                        "f-calculatedynamicweight")
         )
 
         return binary_map[revision]
@@ -311,7 +319,8 @@ class LongerCaller(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("LongerCaller"), label="CompileTime-LongerCaller"
+                SourceRoot(NAME) / RSBinary("LongerCaller"),
+                label="CompileTime-LongerCaller"
             )
         ]
     }
@@ -326,7 +335,10 @@ class LongerCaller(VProject):
         binary_map.specify_binary(
             "build/bin/LongerCaller",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "f-calculatedynamicweight") #check the hash commit number on f-CalcualteDynamicWeight branch
+            # check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                          "f-calculatedynamicweight")
         )
 
         return binary_map[revision]
@@ -368,7 +380,8 @@ class SimpleCall(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("SimpleCall"), label="CompileTime-SimpleCall"
+                SourceRoot(NAME) / RSBinary("SimpleCall"),
+                label="CompileTime-SimpleCall"
             )
         ]
     }
@@ -383,7 +396,9 @@ class SimpleCall(VProject):
         binary_map.specify_binary(
             "build/bin/SimpleCall",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "f-calculatedynamicweight"          ) #check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                          "f-calculatedynamicweight")
         )
 
         return binary_map[revision]
@@ -425,7 +440,8 @@ class RecursiveCalls(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot(NAME) / RSBinary("RecursiveCalls"), label="CompileTime-RecursiveCalls"
+                SourceRoot(NAME) / RSBinary("RecursiveCalls"),
+                label="CompileTime-RecursiveCalls"
             )
         ]
     }
@@ -440,7 +456,9 @@ class RecursiveCalls(VProject):
         binary_map.specify_binary(
             "build/bin/RecursiveCalls",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9", "0214ccd4cebac656449ce232a69e3b385d5e63e9") #check the hash commit number on f-CalcualteDynamicWeight branch
+            only_valid_in=
+            RevisionRange("0214ccd4cebac656449ce232a69e3b385d5e63e9",
+                          "f-calculatedynamicweight")
         )
 
         return binary_map[revision]
