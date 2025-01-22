@@ -29,6 +29,9 @@ class PerformanceInteractionSavingsPlot(Plot, plot_name="perf_inter_cost"):
         for case_study in case_studies:
             project_name = case_study.project_name
 
+            if project_name.startswith("Degree"):
+                continue
+
             configs = load_configuration_map_for_case_study(
                 get_paper_config(), case_study, PlainCommandlineConfiguration
             )
@@ -56,20 +59,20 @@ class PerformanceInteractionSavingsPlot(Plot, plot_name="perf_inter_cost"):
                         performance_data
                     )
                 else:
-                    savings = np.nan, np.nan, np.nan
+                    savings = {
+                        "project_name": project_name,
+                        "revision": revision,
+                        "configs": len(configs.ids()),
+                        "relevant_configs": len(configs.ids()),
+                        "relative_savings": np.nan,
+                        "absolute_savings": np.nan,
+                        "time_savings": np.nan
+                    }
 
-                data.append({
-                    "project": project_name,
-                    "revision": revision,
-                    "abs_savings": savings[0],
-                    "rel_savings": savings[1],
-                    "time_savings": savings[2],
-                })
+                data.append(tp.cast(tp.Dict[str, tp.Any], savings))
 
         df = pd.DataFrame.from_records(data)
-        sns.catplot(x="project", y="rel_savings", data=df)
-        # fig = ax.get_figure()
-        # fig.set_size_inches(20.92, 11.77)
+        sns.catplot(x="project_name", y="relative_savings", data=df)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
