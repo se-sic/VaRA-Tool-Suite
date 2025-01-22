@@ -1,53 +1,19 @@
 """Module for the FeaturePerfPrecision tables."""
-import re
 import typing as tp
-from pathlib import Path
-
-import matplotlib.pyplot as plt
-import numpy as np
-import numpy.typing as npt
 import pandas as pd
-#from benchbuild.utils.cmd import git
-from matplotlib import colors
-from plumbum import local
-from pylatex import Document, Package
-
-from varats.data.databases.feature_perf_precision_database import (
-    get_patch_names,
-    get_regressing_config_ids_gt,
-    map_to_positive_config_ids,
-    map_to_negative_config_ids,
-    Profiler,
-    VXray,
-    PIMTracer,
-    EbpfTraceTEF,
-    compute_profiler_predictions,
-    load_precision_data,
-    load_overhead_data,
-)
-from varats.data.metrics import ConfusionMatrix
 from varats.data.reports.instrumentation_verifier_report import InstrVerifierReport
 from varats.experiments.vara.feature_weight import WeightRegionsCountRec
 from varats.experiments.vara.feature_weight_default import WeightRegionsCountDef
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import get_local_project_git_path
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.utils.git_util import calc_repo_loc, ChurnConfig
 
-GROUP_SYNTHETIC_CATEGORIES = True
 
-SYNTH_CATEGORIES = [
-    "Static Analysis", "Dynamic Analysis", "Configurability",
-    "Implementation Pattern"
-]
-
-class FeatureWeightAnalysis(Table, table_name="fperf_weight"):
+class FeatureWeightAnalysisTable(Table, table_name="fperf-weight"):
     """Table that compares the different type of weight analysis."""
 
     @staticmethod
@@ -102,12 +68,12 @@ class FeatureWeightAnalysis(Table, table_name="fperf_weight"):
             wrap_landscape=True
         )
 
-class FeaturePerfPrecisionTableGenerator(
-    TableGenerator, generator_name="fperf-precision", options=[]
+class FeatureWeightAnalysisGenerator(
+    TableGenerator, generator_name="fperf-weight", options=[]
 ):
-    """Generator for `FeaturePerfPrecisionTable`."""
+    """Generator for `FeatureWeightAnalysisTable`."""
 
     def generate(self) -> tp.List[Table]:
         return [
-            FeatureWeightAnalysis(self.table_config, **self.table_kwargs)
+            FeatureWeightAnalysisTable(self.table_config, **self.table_kwargs)
         ]
