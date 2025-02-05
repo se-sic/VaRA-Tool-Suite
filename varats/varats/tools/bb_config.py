@@ -114,6 +114,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.agg_region_interaction_perf_runner',
         'varats.experiments.vara.blame_ast_experiment',
         'varats.experiments.vara.blame_report_experiment',
+        'varats.experiments.vara.blame_server_experiment',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
