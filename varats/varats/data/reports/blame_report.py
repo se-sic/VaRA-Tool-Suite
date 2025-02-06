@@ -90,9 +90,8 @@ class BlameTaintData():
         if other.region_id:
             return True
         return (
-            self.function_name < other.function_name
-            if self.function_name != other.function_name else
-            self.commit < other.commit
+            self.function_name < other.function_name if self.function_name
+            != other.function_name else self.commit < other.commit
         )
 
     def __lt_region(self, other: 'BlameTaintData') -> bool:
