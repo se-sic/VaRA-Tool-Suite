@@ -1,34 +1,34 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
-    -   id: check-added-large-files
-    -   id: requirements-txt-fixer
-    -   id: name-tests-test
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: requirements-txt-fixer
+      - id: name-tests-test
         args: ['--django']
         exclude: 'tests/helper_utils.py'
--   repo: https://github.com/timothycrosley/isort.git
-    rev: 5.13.2
+  - repo: https://github.com/timothycrosley/isort.git
+    rev: 6.0.0
     hooks:
-    - id: isort
-      args: ['--nis']
--   repo: https://github.com/myint/docformatter.git
-    rev: v1.7.5
+      - id: isort
+        args: ['--nis']
+  - repo: https://github.com/myint/docformatter.git
+    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38
     hooks:
-    - id: docformatter
-      args: ['--in-place', '--wrap-summaries=80', '--wrap-descriptions=80', '--pre-summary-newline']
--   repo: https://github.com/MarcoGorelli/auto-walrus
+      - id: docformatter
+        args: ['--in-place', '--wrap-summaries=80', '--wrap-descriptions=80', '--pre-summary-newline']
+  - repo: https://github.com/MarcoGorelli/auto-walrus
     rev: 0.3.4
     hooks:
-    -   id: auto-walrus
--   repo: https://github.com/pre-commit/mirrors-yapf
-    rev: 'v0.32.0'  # Use the sha / tag you want to point at
+      - id: auto-walrus
+  - repo: https://github.com/google/yapf
+    rev: 'v0.43.0'
     hooks:
-    -   id: yapf
+      - id: yapf
 
 exclude: ^tests/TEST_INPUTS/.*$
