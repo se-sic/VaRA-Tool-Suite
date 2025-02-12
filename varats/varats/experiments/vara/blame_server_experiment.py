@@ -75,8 +75,7 @@ class BlameServerExperiment(VersionExperiment, shorthand="BSE"):
         """
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g"]
         bc_file_extensions = [
-            BCFileExtensions.NO_OPT,
-            BCFileExtensions.TBAA,
+            BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
             BCFileExtensions.BLAME
         ]
 

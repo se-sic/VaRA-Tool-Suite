@@ -276,8 +276,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
             "vara-llvm-project"
         )
 
-        if (current_vara_version >=
-            highest_vara_llvm_version) and current_vara_version >= (
+        if (current_vara_version
+            >= highest_vara_llvm_version) and current_vara_version >= (
                 math.ceil(highest_vara_tag_version / 10) * 10
             ):
             return True
