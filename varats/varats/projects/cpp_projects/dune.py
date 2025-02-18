@@ -66,8 +66,8 @@ class DunePerfRegression(VProject):
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
-                ) / RSBinary('dune_performance_regressions'),
-                label='dune_helloworld'
+                ) / RSBinary('dune-performance-regressions'),
+                label='dune-helloworld'
             ),
             VCommand(
                 SourceRoot(
@@ -138,7 +138,7 @@ class DunePerfRegression(VProject):
         )
 
         binary_map.specify_binary(
-            'dune_performance_regressions',
+            'dune-performance-regressions',
             BinaryType.EXECUTABLE,
             only_valid_in=rev_range
         )
