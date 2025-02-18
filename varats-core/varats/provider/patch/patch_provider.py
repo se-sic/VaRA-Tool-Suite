@@ -5,15 +5,14 @@ The patch provider enables users to query patches for project, which can be
 applied during an experiment to alter the state of the project.
 """
 
-import jinja2
 import os
 import typing as tp
 import warnings
-
-from tempfile import NamedTemporaryFile
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import benchbuild as bb
+import jinja2
 import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
@@ -45,7 +44,7 @@ class Patch:
         tags: tp.Optional[tp.Set[str]] = None,
         feature_tags: tp.Optional[tp.Set[str]] = None,
         regression_severity: tp.Optional[int] = None,
-        arguments : tp.Optional[tp.Dict[str, tp.Any]] = None
+        arguments: tp.Optional[tp.Dict[str, tp.Any]] = None
     ):
         """
         Args:
@@ -199,11 +198,15 @@ class Patch:
             render_args[key] = value
 
         # Verify that all arguments are set
-        missing_args = [arg for arg, value in render_args.items() if value is None]
+        missing_args = [
+            arg for arg, value in render_args.items() if value is None
+        ]
         if missing_args:
             # TODO: Discuss whether we want to fail here.
             # Theoretically, someone could have set a default value in the template file via the jinja syntax.
-            raise ValueError(f"Missing arguments for patch rendering: {', '.join(missing_args)}")
+            raise ValueError(
+                f"Missing arguments for patch rendering: {', '.join(missing_args)}"
+            )
 
         # Create a temporary patch file with the rendered arguments
         tmp_file = NamedTemporaryFile(delete=False)

@@ -1,7 +1,7 @@
+import typing as tp
 import unittest
 from copy import deepcopy
 from pathlib import Path
-import typing as tp
 
 import benchbuild as bb
 from benchbuild.source.base import target_prefix
@@ -18,8 +18,12 @@ from varats.utils.git_util import (
     RepositoryHandle,
 )
 
+
 class TestPatchArguments(unittest.TestCase):
-    def __check_render(self, rendered_patch: Path, expected_content: tp.List[str]):
+
+    def __check_render(
+        self, rendered_patch: Path, expected_content: tp.List[str]
+    ):
         with open(rendered_patch, "r") as patch_file:
             rendered_content = patch_file.read().splitlines()
             self.assertEqual(rendered_content, expected_content)
@@ -27,10 +31,7 @@ class TestPatchArguments(unittest.TestCase):
     def test_parse_arguments(self):
         """Test if the arguments are correctly parsed from the patch file."""
 
-        BASE_PATH = Path(
-                TEST_INPUTS_DIR /
-                'patch_configs'
-            )
+        BASE_PATH = Path(TEST_INPUTS_DIR / 'patch_configs')
         argument_patch_nodefault = Patch.from_yaml(
             BASE_PATH / 'patch-with-args-nodefault.info'
         )
@@ -43,13 +44,28 @@ class TestPatchArguments(unittest.TestCase):
             BASE_PATH / 'patch-with-mixed-args.info'
         )
 
-        self.assertEqual(argument_patch_nodefault.arguments, {'arg1': None, 'arg2': None})
-        self.assertEqual(argument_patch_default.arguments, {'arg1': 100, 'arg2': 200})
-        self.assertEqual(argument_patch_mixed.arguments, {'arg1': None, 'arg2': 100})
-
+        self.assertEqual(
+            argument_patch_nodefault.arguments, {
+                'arg1': None,
+                'arg2': None
+            }
+        )
+        self.assertEqual(
+            argument_patch_default.arguments, {
+                'arg1': 100,
+                'arg2': 200
+            }
+        )
+        self.assertEqual(
+            argument_patch_mixed.arguments, {
+                'arg1': None,
+                'arg2': 100
+            }
+        )
 
     def test_render_noargs(self):
-        """Test if the render function works correctly for patches without arguments."""
+        """Test if the render function works correctly for patches without
+        arguments."""
         argument_patch = Patch.from_yaml(
             Path(
                 TEST_INPUTS_DIR /
@@ -62,7 +78,8 @@ class TestPatchArguments(unittest.TestCase):
         self.assertEqual(argument_patch.render(), argument_patch.path)
 
     def test_render_missing_args(self):
-        """Test if the render function raises an error if required arguments are missing."""
+        """Test if the render function raises an error if required arguments are
+        missing."""
         argument_patch = Patch.from_yaml(
             Path(
                 TEST_INPUTS_DIR / 'patch_configs/patch-with-args-nodefault.info'
@@ -72,20 +89,30 @@ class TestPatchArguments(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             argument_patch.render()
 
-        self.assertEqual( str(context.exception), "Missing arguments for patch rendering: arg1, arg2")
+        self.assertEqual(
+            str(context.exception),
+            "Missing arguments for patch rendering: arg1, arg2"
+        )
 
         with self.assertRaises(ValueError) as context:
             argument_patch.render(arg1=100)
 
-        self.assertEqual( str(context.exception), "Missing arguments for patch rendering: arg2")
+        self.assertEqual(
+            str(context.exception),
+            "Missing arguments for patch rendering: arg2"
+        )
 
         with self.assertRaises(ValueError) as context:
             argument_patch.render(arg2=200)
 
-        self.assertEqual( str(context.exception), "Missing arguments for patch rendering: arg1")
+        self.assertEqual(
+            str(context.exception),
+            "Missing arguments for patch rendering: arg1"
+        )
 
     def test_render_with_default_args(self):
-        """Test if the render function works correctly for patches with default arguments."""
+        """Test if the render function works correctly for patches with default
+        arguments."""
         argument_patch = Patch.from_yaml(
             Path(
                 TEST_INPUTS_DIR / 'patch_configs/patch-with-default-args.info'
@@ -94,52 +121,54 @@ class TestPatchArguments(unittest.TestCase):
 
         rendered_patch = argument_patch.render()
 
-        expected_rendered = ["100","200"]
+        expected_rendered = ["100", "200"]
 
         self.__check_render(rendered_patch, expected_rendered)
 
     def test_render_with_args(self):
-        """Test if the render function works correctly when providing arguments."""
+        """Test if the render function works correctly when providing
+        arguments."""
         argument_patch = Patch.from_yaml(
             Path(
                 TEST_INPUTS_DIR / 'patch_configs/patch-with-args-nodefault.info'
             )
         )
 
-        rendered_patch = argument_patch.render(arg1=345,arg2=678)
+        rendered_patch = argument_patch.render(arg1=345, arg2=678)
 
-        expected_rendered = ["345","678"]
+        expected_rendered = ["345", "678"]
 
         self.__check_render(rendered_patch, expected_rendered)
 
     def test_render_with_mixed_args(self):
-        """Test if the render function works correctly when providing some arguments."""
+        """Test if the render function works correctly when providing some
+        arguments."""
         argument_patch = Patch.from_yaml(
-            Path(
-                TEST_INPUTS_DIR / 'patch_configs/patch-with-mixed-args.info'
-            )
+            Path(TEST_INPUTS_DIR / 'patch_configs/patch-with-mixed-args.info')
         )
 
         rendered_patch = argument_patch.render(arg1=678)
 
-        expected_rendered = ["678","100"]
+        expected_rendered = ["678", "100"]
 
         self.__check_render(rendered_patch, expected_rendered)
         pass
 
     def test_render_with_override_default(self):
-        """Test if the render function works correctly when overriding default arguments."""
+        """Test if the render function works correctly when overriding default
+        arguments."""
         argument_patch = Patch.from_yaml(
             Path(
                 TEST_INPUTS_DIR / 'patch_configs/patch-with-default-args.info'
             )
         )
 
-        rendered_patch = argument_patch.render(arg1=1337,arg2=42)
+        rendered_patch = argument_patch.render(arg1=1337, arg2=42)
 
-        expected_rendered = ["1337","42"]
+        expected_rendered = ["1337", "42"]
 
         self.__check_render(rendered_patch, expected_rendered)
+
 
 class TestPatchProvider(unittest.TestCase):
 
@@ -180,7 +209,6 @@ class TestPatchProvider(unittest.TestCase):
         self.assertIsNotNone(regression_patch.regression_severity)
         self.assertEqual(1000, regression_patch.regression_severity)
         self.assertIsNone(other_patch.regression_severity)
-
 
 
 class TestPatchRevisionRanges(unittest.TestCase):

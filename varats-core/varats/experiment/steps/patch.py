@@ -10,8 +10,10 @@ from varats.provider.patch.patch_provider import Patch
 from varats.utils.git_commands import apply_patch, revert_patch
 from varats.utils.git_util import RepositoryHandle
 
+
 def _build_args_string(args: dict) -> str:
     return ", ".join([f"{k}={v}" for k, v in args.items()])
+
 
 class ApplyPatch(actions.ProjectStep):
     """Apply a patch to a project."""
@@ -34,8 +36,10 @@ class ApplyPatch(actions.ProjectStep):
         patch_path = self.__patch.render(**self.__arguments)
 
         try:
-            apply_patch(RepositoryHandle(Path(self.project.source_of_primary))
-                        , patch_path)
+            apply_patch(
+                RepositoryHandle(Path(self.project.source_of_primary)),
+                patch_path
+            )
 
         except ProcessExecutionError:
             self.status = StepResult.ERROR
@@ -47,9 +51,7 @@ class ApplyPatch(actions.ProjectStep):
         if self.__arguments:
             out += f" (Arguments: {_build_args_string(self.__arguments)})"
 
-        return textwrap.indent(
-            out, " " * indent
-        )
+        return textwrap.indent(out, " " * indent)
 
 
 class RevertPatch(actions.ProjectStep):
@@ -88,6 +90,4 @@ class RevertPatch(actions.ProjectStep):
         if self.__arguments:
             out += f" (Arguments: {_build_args_string(self.__arguments)})"
 
-        return textwrap.indent(
-            out, " " * indent
-        )
+        return textwrap.indent(out, " " * indent)
