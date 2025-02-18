@@ -5,9 +5,12 @@ The patch provider enables users to query patches for project, which can be
 applied during an experiment to alter the state of the project.
 """
 
+import jinja2
 import os
 import typing as tp
 import warnings
+
+from tempfile import NamedTemporaryFile
 from pathlib import Path
 
 import benchbuild as bb
@@ -41,7 +44,8 @@ class Patch:
         valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
         tags: tp.Optional[tp.Set[str]] = None,
         feature_tags: tp.Optional[tp.Set[str]] = None,
-        regression_severity: tp.Optional[int] = None
+        regression_severity: tp.Optional[int] = None,
+        arguments : tp.Optional[tp.Dict[str, tp.Any]] = None
     ):
         """
         Args:
@@ -63,6 +67,7 @@ class Patch:
         self.tags: tp.Optional[tp.Set[str]] = tags
         self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
         self.regression_severity: tp.Optional[int] = regression_severity
+        self.arguments: tp.Optional[tp.Dict[str, tp.Any]] = arguments
 
     @staticmethod
     def from_yaml(yaml_path: Path) -> 'Patch':
@@ -136,9 +141,28 @@ class Patch:
         else:
             regression_severity = None
 
+        arguments: tp.Optional[tp.Dict[str, tp.Any]]
+        if "arguments" in yaml_dict:
+            # Entries in arguments look like this:
+            # arguments:
+            #   - val1
+            #   - val2: 10
+            #
+            # In this example, val1 has no default value and val2 has a default
+            # value of 10
+            arguments = dict()
+            for arg in yaml_dict["arguments"]:
+                if isinstance(arg, str):
+                    arguments[arg] = None
+                else:
+                    for key, value in arg.items():
+                        arguments[key] = value
+        else:
+            arguments = None
+
         return Patch(
             project_name, shortname, description, path, include_revisions, tags,
-            feature_tags, regression_severity
+            feature_tags, regression_severity, arguments
         )
 
     def __repr__(self) -> str:
@@ -156,6 +180,42 @@ class Patch:
 """
 
         return str_representation
+
+    def render(self, **kwargs) -> Path:
+        """
+        Renders the patch with the given arguments.
+
+        Args:
+            render_args: Arguments to render the patch with
+
+        Returns:
+            Path to the rendered patch
+        """
+        if not self.arguments:
+            return self.path
+
+        render_args = self.arguments.copy()
+        for key, value in kwargs.items():
+            render_args[key] = value
+
+        # Verify that all arguments are set
+        missing_args = [arg for arg, value in render_args.items() if value is None]
+        if missing_args:
+            # TODO: Discuss whether we want to fail here.
+            # Theoretically, someone could have set a default value in the template file via the jinja syntax.
+            raise ValueError(f"Missing arguments for patch rendering: {', '.join(missing_args)}")
+
+        # Create a temporary patch file with the rendered arguments
+        tmp_file = NamedTemporaryFile(delete=False)
+
+        # Render the patch with the arguments
+        loader = jinja2.FileSystemLoader(searchpath=Path(self.path).parent)
+        env = jinja2.Environment(loader=loader, keep_trailing_newline=True)
+
+        template = env.get_template(Path(self.path).name)
+        tmp_file.write(template.render(render_args).encode())
+
+        return Path(tmp_file.name)
 
     def __hash__(self) -> int:
         hash_args = [self.shortname, self.path]

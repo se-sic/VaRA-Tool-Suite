@@ -10,6 +10,8 @@ from varats.provider.patch.patch_provider import Patch
 from varats.utils.git_commands import apply_patch, revert_patch
 from varats.utils.git_util import RepositoryHandle
 
+def _build_args_string(args: dict) -> str:
+    return ", ".join([f"{k}={v}" for k, v in args.items()])
 
 class ApplyPatch(actions.ProjectStep):
     """Apply a patch to a project."""
@@ -17,21 +19,23 @@ class ApplyPatch(actions.ProjectStep):
     NAME = "APPLY_PATCH"
     DESCRIPTION = "Apply a Git patch to a project."
 
-    def __init__(self, project: VProject, patch: Patch) -> None:
+    def __init__(self, project: VProject, patch: Patch, **kwargs) -> None:
         super().__init__(project)
         self.__patch = patch
+        self.__arguments = kwargs
 
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
+        print(
+            f"Applying {self.__patch.shortname} to "
+            f"{self.project.source_of_primary}"
+        )
+
+        patch_path = self.__patch.render(**self.__arguments)
+
         try:
-            print(
-                f"Applying {self.__patch.shortname} to "
-                f"{self.project.source_of_primary}"
-            )
-            apply_patch(
-                RepositoryHandle(Path(self.project.source_of_primary)),
-                self.__patch.path
-            )
+            apply_patch(RepositoryHandle(Path(self.project.source_of_primary))
+                        , patch_path)
 
         except ProcessExecutionError:
             self.status = StepResult.ERROR
@@ -39,9 +43,12 @@ class ApplyPatch(actions.ProjectStep):
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        out = f"* {self.project.name}: Apply patch {self.__patch.shortname}"
+        if self.__arguments:
+            out += f" (Arguments: {_build_args_string(self.__arguments)})"
+
         return textwrap.indent(
-            f"* {self.project.name}: Apply patch "
-            f"{self.__patch.shortname}", " " * indent
+            out, " " * indent
         )
 
 
@@ -51,20 +58,24 @@ class RevertPatch(actions.ProjectStep):
     NAME = "REVERT_PATCH"
     DESCRIPTION = "Revert a Git patch from a project."
 
-    def __init__(self, project: VProject, patch: Patch) -> None:
+    def __init__(self, project: VProject, patch: Patch, **kwargs) -> None:
         super().__init__(project)
         self.__patch = patch
+        self.__arguments = kwargs
 
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
+        print(
+            f"Reverting {self.__patch.shortname} on "
+            f"{self.project.source_of_primary}"
+        )
+
+        patch_path = self.__patch.render(**self.__arguments)
+
         try:
-            print(
-                f"Reverting {self.__patch.shortname} on "
-                f"{self.project.source_of_primary}"
-            )
             revert_patch(
                 RepositoryHandle(Path(self.project.source_of_primary)),
-                self.__patch.path
+                patch_path
             )
 
         except ProcessExecutionError:
@@ -73,7 +84,10 @@ class RevertPatch(actions.ProjectStep):
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
+        out = f"* {self.project.name}: Revert patch {self.__patch.shortname}"
+        if self.__arguments:
+            out += f" (Arguments: {_build_args_string(self.__arguments)})"
+
         return textwrap.indent(
-            f"* {self.project.name}: Revert patch "
-            f"{self.__patch.shortname}", " " * indent
+            out, " " * indent
         )
