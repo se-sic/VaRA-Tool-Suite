@@ -52,7 +52,7 @@ class PerfStat(OutputFolderStep):
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                self.project, self.__binary, [WorkloadCategory.EXAMPLE, WorkloadCategory.MEDIUM]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
