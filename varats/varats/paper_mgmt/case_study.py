@@ -330,8 +330,8 @@ def get_newest_result_files_for_case_study(
                     )] = opt_res_file
                 else:
                     if (
-                        current_file.stat().st_mtime <
-                        opt_res_file.stat().st_mtime
+                        current_file.stat().st_mtime
+                        < opt_res_file.stat().st_mtime
                     ):
                         files_to_store[(
                             commit_hash, report_file.experiment_shorthand,
