@@ -71,12 +71,32 @@ from varats.utils.git_util import (
     get_submodule_update_commits,
 )
 
+if tp.TYPE_CHECKING:
+    from varats.paper.case_study import CSStage
 
-def createCommitFilter(project: VProject) -> InteractionFilter:
+
+def createCommitFilter(project: VProject) -> tp.Optional[InteractionFilter]:
+    """
+    Creates a commit filter for the given project instance.
+
+    The commit filter accepts all commits between the
+    currently analyzed commit (inclusive) and the next older commit in the
+    same paper config stage (exclusive).
+    """
     project_repo = get_local_project_repo(project.name)
     case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
     commit_map = get_commit_map(project.name)
-    revisions = sorted(case_study.revisions, key=commit_map.time_id)
+    stage: tp.Optional['CSStage'] = None
+
+    for idx, s in enumerate(case_study.stages):
+        if s.has_revision(ShortCommitHash(project.version_of_primary)):
+            stage = s
+            break
+
+    if stage is None:
+        return None
+
+    revisions = sorted(stage.revisions, key=commit_map.time_id)
 
     def rev_filter(pair: tp.Tuple[FullCommitHash, FullCommitHash]) -> bool:
         return bool(pair[1].short_hash == project.version_of_primary)
@@ -350,10 +370,10 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
     def actions_for_project(
         self, project: VProject
     ) -> tp.MutableSequence[actions.Step]:
-        case_study = get_loaded_paper_config().get_case_studies(project.name)[0]
-        commit_map = get_commit_map(project.name)
-        revisions = sorted(case_study.revisions, key=commit_map.time_id)
-        if project.version_of_primary == revisions[0].short_hash:
+        commit_filter = createCommitFilter(project)
+
+        if commit_filter is None:
+            # No "old" project version exists -> skip analysis
             return []
 
         setup_basic_blame_experiment(
@@ -391,7 +411,7 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
         )
         analysis_actions.append(
             PerfInterReportGeneration(
-                project, self.get_handle(), createCommitFilter(project)
+                project, self.get_handle(), commit_filter
             )
         )
 
