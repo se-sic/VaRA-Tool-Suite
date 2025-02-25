@@ -60,7 +60,7 @@ class PerfStat(OutputFolderStep):
                     "perf_stat", prj_command.command, self.__num, ".csv"
                 )                
 
-                run_cmd = perf['stat', '-I 1', '-x',',','-o' f'{run_report_name}', pb_cmd]
+                run_cmd = perf['stat', '-I 1', '-j','-o' f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
                     run_cmd()
