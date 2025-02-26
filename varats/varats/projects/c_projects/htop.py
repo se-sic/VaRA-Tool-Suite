@@ -15,14 +15,11 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
-    get_local_project_git_path,
+    get_local_project_repo,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    ShortCommitHash,
-    RevisionBinaryMap,
-    typed_revision_range,
-)
+from varats.utils.git_util import ShortCommitHash, typed_revision_range
 from varats.utils.settings import bb_cfg
 
 
@@ -53,7 +50,7 @@ class Htop(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Htop.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Htop.NAME))
 
         binary_map.specify_binary('htop', BinaryType.EXECUTABLE)
 

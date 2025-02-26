@@ -1,4 +1,4 @@
-"""Project file for libsigrok."""
+"""Project file for yara."""
 import typing as tp
 
 import benchbuild as bb
@@ -6,38 +6,39 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    ProjectBinaryWrapper,
     BinaryType,
+    ProjectBinaryWrapper,
+    RevisionBinaryMap,
     get_local_project_repo,
     verify_binaries,
-    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
-class Libsigrok(VProject):
+class Yara(VProject):
     """
-    The sigrok project aims at creating a portable, cross-platform,
-    Free/Libre/Open-Source signal analysis software suite.
+    YARA is a tool aimed at (but not limited to) helping malware researchers to
+    identify and classify malware samples.
 
-    (fetched by Git)
+    With YARA you can create descriptions of malware families (or whatever you
+    want to describe) based on textual or binary patterns.
     """
 
-    NAME = 'libsigrok'
+    NAME = 'yara'
     GROUP = 'c_projects'
-    DOMAIN = ProjectDomains.SIGNAL_PROCESSING
+    DOMAIN = ProjectDomains.MALWARE_ANALYSIS
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="libsigrok",
-            remote="https://github.com/sigrokproject/libsigrok.git",
-            local="libsigrok",
+            project_name='yara',
+            remote="https://github.com/VirusTotal/yara.git",
+            local="yara",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
@@ -45,19 +46,17 @@ class Libsigrok(VProject):
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'automake', 'autotools-dev',
-        'libtool', 'pkg-config', 'libzip-dev', 'libglib2.0-dev'
+        'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
+        'autotools-dev', 'make', 'pkg-config'
     )
 
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_repo(Libsigrok.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Yara.NAME))
 
-        binary_map.specify_binary(
-            '.libs/libsigrok.so', BinaryType.SHARED_LIBRARY
-        )
+        binary_map.specify_binary('.libs/yara', BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -66,12 +65,12 @@ class Libsigrok(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        sigrok_source = local.path(self.source_of_primary)
+        yara_version_source = local.path(self.source_of_primary)
 
-        cc_compiler = bb.compiler.cc(self)
-        with local.cwd(sigrok_source):
-            with local.env(CC=str(cc_compiler)):
-                bb.watch(local["./autogen.sh"])()
+        c_compiler = bb.compiler.cc(self)
+        with local.cwd(yara_version_source):
+            with local.env(CC=str(c_compiler)):
+                bb.watch(local["./bootstrap.sh"])()
                 bb.watch(local["./configure"])()
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))

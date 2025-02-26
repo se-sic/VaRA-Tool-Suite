@@ -220,9 +220,9 @@ class Extract(actions.ProjectStep):  # type: ignore
             target_binary = Path(self.project.source_of_primary) / binary.path
             if is_gllvm_available():
                 from benchbuild.utils.cmd import get_bc
-                get_bc(target_binary)
+                get_bc("-b", target_binary)
             else:
-                extract_bc(target_binary)
+                extract_bc("-b", target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
 
         return actions.StepResult.OK

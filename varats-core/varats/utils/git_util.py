@@ -3,25 +3,16 @@ import abc
 import logging
 import re
 import typing as tp
-from collections import defaultdict
 from enum import Enum
-from itertools import chain
-from operator import attrgetter
 from pathlib import Path
 from types import TracebackType
 
 import pygit2
 from benchbuild.utils.cmd import git, grep
-from plumbum import local, TF, RETCODE
+from plumbum import TF, RETCODE
+from plumbum.commands.base import BoundCommand
 
-from varats.project.project_util import (
-    get_local_project_gits,
-    get_primary_project_source,
-    get_local_project_git_path,
-    BinaryType,
-    ProjectBinaryWrapper,
-    get_local_project_git_paths,
-)
+from varats.utils.exceptions import unwrap
 
 if tp.TYPE_CHECKING:
     from benchbuild.utils.revision_ranges import AbstractRevisionRange
@@ -137,6 +128,69 @@ def full_commit_hashes_sorted_by_time_id(
 # Git interaction helpers
 
 
+class RepositoryHandle:
+    """Wrapper class providing access to a git repository using either pygit2 or
+    commandline-git."""
+
+    def __init__(self, worktree_path: Path):
+        self.__worktree_path = worktree_path
+        self.__git: BoundCommand = git["-C", str(self.__worktree_path)]
+
+        self.__repo_path: tp.Optional[Path] = None
+        self.__libgit_repo: tp.Optional[pygit2.Repository] = None
+
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        """Call git with the given arguments."""
+        return self.__git(*args, **kwargs)
+
+    def __getitem__(self, *args: tp.Any) -> BoundCommand:
+        """Get a bound git command with the given arguments."""
+        return self.__git.bound_command(*args)
+
+    @property
+    def repo_name(self) -> str:
+        """Name of the repository, i.e., name of the worktree folder."""
+        return self.worktree_path.name
+
+    @property
+    def worktree_path(self) -> Path:
+        """Path to the main worktree of the repository, typically the parent of
+        the .git folder."""
+        return self.__worktree_path
+
+    @property
+    def repo_path(self) -> Path:
+        """Path to the git repository, i.e., the .git folder."""
+        if self.__repo_path is None:
+            self.__repo_path = Path(
+                unwrap(
+                    pygit2.discover_repository(str(self.worktree_path)),
+                    f"No git repository found."
+                )
+            )
+
+        return self.__repo_path
+
+    @property
+    def pygit_repo(self) -> pygit2.Repository:
+        """A pygit2 repository instance for the repository."""
+        if self.__libgit_repo is None:
+            self.__libgit_repo = pygit2.Repository(str(self.repo_path))
+
+        return self.__libgit_repo
+
+    def __eq__(self, other: tp.Any) -> bool:
+        if not isinstance(other, RepositoryHandle):
+            return False
+        return self.repo_path == other.repo_path
+
+    def __repr__(self) -> str:
+        return f"RepositoryHandle({self.repo_path})"
+
+    def __str__(self) -> str:
+        return self.repo_name
+
+
 def is_commit_hash(value: str) -> bool:
     """
     Checks if a string is a valid git (sha1) hash.
@@ -147,71 +201,50 @@ def is_commit_hash(value: str) -> bool:
     return re.search("^[a-fA-F0-9]{1,40}$", value) is not None
 
 
-def __get_git_path_arg(repo_folder: tp.Optional[Path] = None) -> tp.List[str]:
-    if repo_folder is None or repo_folder == Path(''):
-        return []
-
-    return ["-C", f"{repo_folder}"]
-
-
-def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
+def get_current_branch(repo: RepositoryHandle) -> str:
     """
     Get the current branch of a repository, e.g., HEAD.
 
     Args:
-        repo_folder: where the git repository is located
+        repo: git repository handle
 
     Returns: branch name
     """
-    return tp.cast(
-        str,
-        git(
-            __get_git_path_arg(repo_folder), "rev-parse", "--abbrev-ref", "HEAD"
-        ).strip()
-    )
+    return tp.cast(str, repo("rev-parse", "--abbrev-ref", "HEAD").strip())
 
 
-def get_head_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
+def get_head_commit(repo: RepositoryHandle) -> FullCommitHash:
     """
     Get the current HEAD commit.
 
     Args:
-        repo_folder:where the git repository is located
+        repo: git repository handle
 
     Returns: head commit hash
     """
-    return FullCommitHash(
-        git(__get_git_path_arg(repo_folder), "rev-parse", "HEAD").strip()
-    )
+    return FullCommitHash(repo("rev-parse", "HEAD").strip())
 
 
-def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
+def get_initial_commit(repo: RepositoryHandle) -> FullCommitHash:
     """
     Get the initial commit of a repository, i.e., the first commit made.
 
     Args:
-        repo_folder: where the git repository is located
+        repo: git repository handle
 
     Returns: initial commit hash
     """
-    return FullCommitHash(
-        git(
-            __get_git_path_arg(repo_folder), "rev-list", "--max-parents=0",
-            "HEAD"
-        ).strip()
-    )
+    return FullCommitHash(repo("rev-list", "--max-parents=0", "HEAD").strip())
 
 
-def get_submodule_commits(
-    c_head: str = "HEAD",
-    repo_folder: tp.Optional[Path] = None
-) -> tp.Dict[str, FullCommitHash]:
+def get_submodule_commits(repo: RepositoryHandle,
+                          c_head: str = "HEAD") -> tp.Dict[str, FullCommitHash]:
     """
     Get the revisions of all submodules of a repo at a given commit.
 
     Args:
+        repo: repository to get the submodules for
         c_head: the commit to look at
-        repo_folder: the repo to get the submodules for
 
     Returns:
         a mapping from submodule name to commit
@@ -220,7 +253,7 @@ def get_submodule_commits(
         r"\d{6} commit (?P<hash>[\da-f]{40})\s+(?P<name>.+)$"
     )
 
-    ls_tree_result = git(__get_git_path_arg(repo_folder), "ls-tree", c_head)
+    ls_tree_result = repo("ls-tree", c_head)
     result: tp.Dict[str, FullCommitHash] = {}
     for line in ls_tree_result.splitlines():
         match = submodule_regex.match(line)
@@ -230,10 +263,8 @@ def get_submodule_commits(
 
 
 def get_all_revisions_between(
-    c_start: str,
-    c_end: str,
-    hash_type: tp.Type[CommitHashTy],
-    repo_folder: tp.Optional[Path] = None
+    repo: RepositoryHandle, c_start: str, c_end: str,
+    hash_type: tp.Type[CommitHashTy]
 ) -> tp.List[CommitHashTy]:
     """
     Returns a list of all revisions between two commits c_start and c_end (both
@@ -242,16 +273,16 @@ def get_all_revisions_between(
     It is assumed that the current working directory is the git repository.
 
     Args:
-        c_start: first commit of the range c_end: last commit of the range
-        short: shorten revision hashes repo_folder: where the git repository is
-        located
+        repo: git repository handle
+        c_start: first commit of the range
+        c_end: last commit of the range
+        hash_type: type of the commit hash to return
     """
     result = [c_start]
     result.extend(
         reversed(
-            git(
-                __get_git_path_arg(repo_folder), "log", "--pretty=%H",
-                "--ancestry-path", f"{c_start}..{c_end}"
+            repo(
+                "log", "--pretty=%H", "--ancestry-path", f"{c_start}..{c_end}"
             ).strip().split()
         )
     )
@@ -259,29 +290,27 @@ def get_all_revisions_between(
 
 
 def typed_revision_range(
-    rev_range: 'AbstractRevisionRange', repo_path: Path,
+    repo: RepositoryHandle, rev_range: 'AbstractRevisionRange',
     hash_type: tp.Type[CommitHashTy]
 ) -> tp.Iterator[CommitHashTy]:
     """
     Typed iterator for revision ranges.
 
     Args:
+        repo: git repository handle
         rev_range: the revision range to iterate
-        repo_path: the path to the git repo
         hash_type: the commit type to use for iteration
 
     Returns:
         an iterator over the typed commits in the range
     """
-    rev_range.init_cache(str(repo_path))
+    rev_range.init_cache(str(repo.repo_path))
     for revision in rev_range:
         yield hash_type(revision)
 
 
-def get_commits_before_timestamp(
-    timestamp: str,
-    repo_folder: tp.Optional[Path] = None
-) -> tp.List[FullCommitHash]:
+def get_commits_before_timestamp(repo: RepositoryHandle,
+                                 timestamp: str) -> tp.List[FullCommitHash]:
     """
     Get all commits before a specific timestamp (given as a git date format).
 
@@ -289,55 +318,49 @@ def get_commits_before_timestamp(
     default to today.
 
     Args:
+        repo: git repository handle
         timestamp: before which commits should be collected
-        repo_folder: where the git repository is located
 
     Returns: list[last_commit_before_timestamp, ..., initial_commits]
     """
     return [
-        FullCommitHash(hash_val) for hash_val in git(
-            __get_git_path_arg(repo_folder), "rev-list",
-            f"--before={timestamp}", "HEAD"
-        ).split()
+        FullCommitHash(hash_val) for hash_val in
+        repo("rev-list", f"--before={timestamp}", "HEAD").split()
     ]
 
 
-def get_commits_after_timestamp(
-    timestamp: str,
-    repo_folder: tp.Optional[Path] = None
-) -> tp.List[FullCommitHash]:
+def get_commits_after_timestamp(repo: RepositoryHandle,
+                                timestamp: str) -> tp.List[FullCommitHash]:
     """
     Get all commits after a specific timestamp (given as a git date format).
 
-    Note: for imprecise timestamps (e.g., only 2020), the day and month will
-    default to today.
+        Note: for imprecise timestamps (e.g., only 2020), the day and month will
+        default to today.
 
-    Args:
-        repo_folder: where the git repository is located
-        timestamp: after which commits should be collected
+        Args:
+            repo: git repository handle
+            timestamp: after which commits should be collected
 
     Returns: list[newest_commit, ..., last_commit_after_timestamp]
     """
     return [
-        FullCommitHash(hash_val) for hash_val in git(
-            __get_git_path_arg(repo_folder), "rev-list", f"--after={timestamp}",
-            "HEAD"
-        ).split()
+        FullCommitHash(hash_val)
+        for hash_val in repo("rev-list", f"--after={timestamp}", "HEAD").split()
     ]
 
 
 def contains_source_code(
+    repo: RepositoryHandle,
     commit: ShortCommitHash,
-    repo_folder: tp.Optional[Path] = None,
     churn_config: tp.Optional['ChurnConfig'] = None
 ) -> bool:
     """
-    Check if a commit contains source code of any language specifyed with the
+    Check if a commit contains source code of any language specified with the
     churn config.
 
     Args:
+        repo: git repository handle
         commit: to check
-        repo_folder: of the commits repository
         churn_config: to specify the files that should be considered
 
     Returns: True, if source code of a language, specified in the churn
@@ -346,9 +369,13 @@ def contains_source_code(
     if not churn_config:
         churn_config = ChurnConfig.create_c_style_languages_config()
 
-    return_code = git[__get_git_path_arg(repo_folder), "show", "--exit-code",
-                      "-m", "--quiet", commit.hash, "--",
-                      churn_config.get_extensions_repr('*.')] & RETCODE
+    git_show_args = ["show", "--exit-code", "-m", "--quiet", commit.hash, "--"]
+    git_show_args += churn_config.get_extensions_repr('*.')
+    # There should be a '*' in front of 'git_show_args' to unpack the list.
+    # However, yapf and sphinx are unable to parse this.
+    # Fortunately, plumbum seems to unpack this correctly before running.
+    # Still: fix when possible.
+    return_code = repo[git_show_args] & RETCODE
 
     if return_code == 0:
         return False
@@ -359,103 +386,57 @@ def contains_source_code(
     raise RuntimeError(f"git diff failed with retcode={return_code}")
 
 
-def num_commits(
-    c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
-) -> int:
+def num_commits(repo: RepositoryHandle, c_start: str = "HEAD") -> int:
     """
     Count the commits in a git repo starting from the given commit back to the
     initial commit.
 
     Args:
+        repo: git repository handle
         c_start: commit to start counting at
-        repo_folder: path to the git repo
 
     Returns:
         the number of commits
     """
-    return int(
-        git(__get_git_path_arg(repo_folder), "rev-list", "--count", c_start)
-    )
+    return int(repo("rev-list", "--count", c_start))
 
 
-def num_authors(
-    c_start: str = "HEAD", repo_folder: tp.Optional[Path] = None
-) -> int:
+def num_authors(repo: RepositoryHandle, c_start: str = "HEAD") -> int:
     """
     Count the authors in a git repo starting from the given commit back to the
     initial commit.
 
     Args:
+        repo: git repository handle
         c_start: commit to start counting at
-        repo_folder: path to the git repo
 
     Returns:
         the number of authors
     """
-    return len(
-        git(__get_git_path_arg(repo_folder), "shortlog", "-s",
-            c_start).splitlines()
-    )
+    return len(repo("shortlog", "-s", c_start).splitlines())
 
 
-def num_project_commits(project_name: str, revision: FullCommitHash) -> int:
+def get_authors(repo: RepositoryHandle, c_start: str = "HEAD") -> tp.Set[str]:
     """
-    Calculate the number of commits of a project including submodules.
+    Get the authors in a git repo starting from the given commit back to the
+    initial commit.
 
     Args:
-        project_name: name of the project to calculate commits for
-        revision: revision to calculate commits at
+        repo: git repository handle
+        c_start: commit to start counting at
 
     Returns:
-        the number of commits in the project
-    """
-    project_repos = get_local_project_git_paths(project_name)
-    main_repo = get_local_project_git_path(project_name)
-
-    commits = num_commits(revision.hash, main_repo)
-    for submodule, sub_rev in get_submodule_commits(revision.hash,
-                                                    main_repo).items():
-        if submodule not in project_repos:
-            LOG.warning("Ignoring unknown submodule {}", submodule)
-            continue
-        commits += num_commits(sub_rev.hash, project_repos[submodule])
-    return commits
-
-
-def num_project_authors(project_name: str, revision: FullCommitHash) -> int:
-    """
-    Calculate the number of authors of a project including submodules.
-
-    Args:
-        project_name: name of the project to calculate authors for
-        revision: revision to authors commits at
-
-    Returns:
-        the number of authors in the project
+        the number of authors
     """
     author_regex = re.compile(r"\s*\d+\s+(?P<author>.+)$")
 
-    def get_authors(repo_path: Path, rev: str) -> tp.Set[str]:
-        lines = git(__get_git_path_arg(repo_path), "shortlog", "-s",
-                    rev).splitlines()
-        result = set()
-        for line in lines:
-            match = author_regex.match(line)
-            if match:
-                result.add(match.group("author"))
-        return result
-
-    project_repos = get_local_project_git_paths(project_name)
-    main_repo = get_local_project_git_path(project_name)
-
-    authors = get_authors(main_repo, revision.hash)
-    for submodule, sub_rev in get_submodule_commits(revision.hash,
-                                                    main_repo).items():
-        if submodule not in project_repos:
-            LOG.warning("Ignoring unknown submodule {}", submodule)
-            continue
-        authors.update(get_authors(project_repos[submodule], sub_rev.hash))
-    return len(authors)
+    lines = repo("shortlog", "-s", c_start).splitlines()
+    result = set()
+    for line in lines:
+        match = author_regex.match(line)
+        if match:
+            result.add(match.group("author"))
+    return result
 
 
 ################################################################################
@@ -637,74 +618,35 @@ class CommitRepoPair():
         return str(self)
 
 
-CommitLookupTy = tp.Callable[[CommitRepoPair], pygit2.Commit]
-
-
-def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
-    """
-    Creates a commit lookup function for project repositories.
-
-    Args:
-        project_name: name of the given benchbuild project
-
-    Returns:
-        a Callable that maps a commit hash and repository name to the
-        corresponding commit.
-    """
-
-    repos = get_local_project_gits(project_name)
-
-    def get_commit(crp: CommitRepoPair) -> pygit2.Commit:
-        """
-        Gets the commit from a given ``CommitRepoPair``.
-
-        Args:
-            crp: the ``CommitRepoPair`` for the commit to get
-
-
-        Returns:
-            the commit corresponding to the given CommitRepoPair
-        """
-        commit = repos[crp.repository_name].get(crp.commit_hash.hash)
-        if not commit:
-            raise LookupError(
-                f"Could not find commit {crp} for project {project_name}."
-            )
-
-        return commit
-
-    return get_commit
-
-
 def get_submodule_head(
-    project_name: str, submodule_name: str, commit: FullCommitHash
+    repo: RepositoryHandle, submodule: RepositoryHandle, commit: FullCommitHash
 ) -> FullCommitHash:
     """
     Retrieve the checked out commit for a submodule of a project.
 
     Args:
-        project_name: name of the project
-        submodule_name: name of the submodule
+        repo: main project repository handle
+        submodule: submodule repository handle
         commit: commit of the project's main repo
 
     Returns:
         checked out commit of the submodule
     """
-    if submodule_name == get_primary_project_source(project_name).local:
+    if submodule.repo_name == repo.repo_name:
         return commit
 
-    main_repo = get_local_project_git_path(project_name)
-    submodule_status = git(__get_git_path_arg(main_repo), "ls-tree", commit)
+    submodule_status = repo("ls-tree", commit)
     commit_pattern = re.compile(
-        r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
+        r"[0-9]* commit ([0-9abcdef]*)\t" + submodule.repo_name
     )
-    if (match := commit_pattern.search(submodule_status)):
+    if match := commit_pattern.search(submodule_status):
         return FullCommitHash(match.group(1))
 
-    raise AssertionError(f"Unknown submodule {submodule_name}")
+    raise AssertionError(f"Unknown submodule {submodule.repo_name}")
 
 
 MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
+CommitLookupTy = tp.Callable[[CommitRepoPair], pygit2.Commit]
 
 
 def map_commits(
@@ -734,7 +676,7 @@ GIT_DIFF_MATCHER = re.compile(
 
 
 def __calc_code_churn_range_impl(
-    repo_path: Path,
+    repo: RepositoryHandle,
     churn_config: ChurnConfig,
     start_range: tp.Optional[FullCommitHash] = None,
     end_range: tp.Optional[FullCommitHash] = None
@@ -748,14 +690,14 @@ def __calc_code_churn_range_impl(
     git log --pretty=format:'%H' --date=short --shortstat -- ':*.[enabled_exts]'
 
     Args:
-        repo_path: path to the git repository
+        repo: git repository handle
         churn_config: churn config to customize churn generation
         start_range: begin churn calculation at start commit
         end_range: end churn calculation at end commit
     """
 
     churn_values: tp.Dict[FullCommitHash, tp.Tuple[int, int, int]] = {}
-    if start_range and start_range == get_initial_commit(repo_path):
+    if start_range and start_range == get_initial_commit(repo):
         start_range = None
 
     if start_range is None and end_range is None:
@@ -767,7 +709,6 @@ def __calc_code_churn_range_impl(
     else:
         revision_range = f"{start_range.hash}~..{end_range.hash}"
 
-    repo_git = git[__get_git_path_arg(repo_path)]
     log_base_params = ["log", "--pretty=%H"]
     diff_base_params = ["log", "--pretty=format:'%H'", "--shortstat", "-l0"]
     if revision_range:
@@ -780,8 +721,8 @@ def __calc_code_churn_range_impl(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    stdout = repo_git(diff_base_params)
-    revs = repo_git(log_base_params).strip().split()
+    stdout = repo(diff_base_params)
+    revs = repo(log_base_params).strip().split()
 
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
@@ -804,7 +745,7 @@ def __calc_code_churn_range_impl(
 
 
 def calc_code_churn_range(
-    repo_path: Path,
+    repo: RepositoryHandle,
     churn_config: tp.Optional[ChurnConfig] = None,
     start_range: tp.Optional[FullCommitHash] = None,
     end_range: tp.Optional[FullCommitHash] = None
@@ -816,7 +757,7 @@ def calc_code_churn_range(
     calculated.
 
     Args:
-        repo_path: path to git repository
+        repo: git repository handle
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -825,12 +766,12 @@ def calc_code_churn_range(
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     return __calc_code_churn_range_impl(
-        repo_path, churn_config, start_range, end_range
+        repo, churn_config, start_range, end_range
     )
 
 
 def calc_commit_code_churn(
-    repo_path: Path,
+    repo: RepositoryHandle,
     commit_hash: FullCommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
@@ -838,7 +779,7 @@ def calc_commit_code_churn(
     Calculates churn of a specific commit.
 
     Args:
-        repo_path: path to git repository
+        repo: git repository handle
         commit_hash: commit hash to get churn for
         churn_config: churn config to customize churn generation
 
@@ -847,13 +788,12 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(
-        repo_path, churn_config, commit_hash, commit_hash
-    )[commit_hash]
+    return calc_code_churn_range(repo, churn_config, commit_hash,
+                                 commit_hash)[commit_hash]
 
 
 def calc_code_churn(
-    repo_path: Path,
+    repo: RepositoryHandle,
     commit_a: FullCommitHash,
     commit_b: FullCommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
@@ -862,7 +802,7 @@ def calc_code_churn(
     Calculates churn between two commits.
 
     Args:
-        repo: git repository
+        repo: git repository handle
         commit_a: base commit for diff calculation
         commit_b: target commit for diff calculation
         churn_config: churn config to customize churn generation
@@ -882,10 +822,10 @@ def calc_code_churn(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    stdout = git(__get_git_path_arg(repo_path), diff_base_params)
+    stdout = repo(*diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
-    if (match := GIT_DIFF_MATCHER.match(stdout)):
+    if match := GIT_DIFF_MATCHER.match(stdout):
 
         def value_or_zero(match_result: tp.Any) -> int:
             if match_result is not None:
@@ -901,14 +841,14 @@ def calc_code_churn(
 
 
 def calc_repo_code_churn(
-    repo_path: Path,
+    repo: RepositoryHandle,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates code churn for a repository.
 
     Args:
-        repo_path: path to git repository
+        repo: git repository handle
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -916,18 +856,20 @@ def calc_repo_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(repo_path, churn_config)
+    return calc_code_churn_range(repo, churn_config)
 
 
 def __print_calc_repo_code_churn(
-    repo: pygit2.Repository,
+    repo: RepositoryHandle,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> None:
     """Prints calc repo code churn data like git log would do."""
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    churn_map = calc_repo_code_churn(Path(repo.path), churn_config)
+    churn_map = calc_repo_code_churn(repo, churn_config)
 
-    for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TIME):
+    for commit in repo.pygit_repo.walk(
+        repo.pygit_repo.head.target, pygit2.GIT_SORT_TIME
+    ):
         commit_hash = FullCommitHash.from_pygit_commit(commit)
         print(commit_hash)
 
@@ -965,12 +907,12 @@ def __print_calc_repo_code_churn(
             print()
 
 
-def calc_repo_loc(repo_path: Path, rev_range: str) -> int:
+def calc_repo_loc(repo: RepositoryHandle, rev_range: str) -> int:
     """
     Calculate the LOC for a repository.
 
     Args:
-        repo_path: path to the repository to calculate the LOC for
+        repo: handle for the repository to calculate the LOC for
         rev_range: the revision range to use for LOC calculation
 
     Returns:
@@ -982,43 +924,18 @@ def calc_repo_loc(repo_path: Path, rev_range: str) -> int:
     )
 
     loc: int = 0
-    with local.cwd(repo_path):
-        files = git(
-            "ls-tree",
-            "-r",
-            "--name-only",
-            rev_range,
-        ).splitlines()
+    files = repo(
+        "ls-tree",
+        "-r",
+        "--name-only",
+        rev_range,
+    ).splitlines()
 
-        for file in files:
-            if file_pattern.match(file):
-                lines = git("show", f"{rev_range}:{file}").splitlines()
-                loc += len([line for line in lines if line])
+    for file in files:
+        if file_pattern.match(file):
+            lines = repo("show", f"{rev_range}:{file}").splitlines()
+            loc += len([line for line in lines if line])
 
-    return loc
-
-
-def calc_project_loc(project_name: str, revision: FullCommitHash) -> int:
-    """
-    Calculate the LOC for a project including submodules at the given revision.
-
-    Args:
-        project_name: name of the project to calculate LOC for
-        revision: revision to calculate LOC at
-
-    Returns:
-        the LOC in the project
-    """
-    project_repos = get_local_project_git_paths(project_name)
-    main_repo = get_local_project_git_path(project_name)
-
-    loc = calc_repo_loc(main_repo, revision.hash)
-    for submodule, sub_rev in get_submodule_commits(revision.hash,
-                                                    main_repo).items():
-        if submodule not in project_repos:
-            LOG.warning("Ignoring unknown submodule {}", submodule)
-            continue
-        loc += calc_repo_loc(project_repos[submodule], sub_rev.hash)
     return loc
 
 
@@ -1026,118 +943,30 @@ def calc_project_loc(project_name: str, revision: FullCommitHash) -> int:
 # Special git-specific classes
 
 
-class RevisionBinaryMap(tp.Container[str]):
-    """A special map that specifies for which revision ranges a binaries is
-    valid."""
-
-    def __init__(self, repo_location: Path) -> None:
-        self.__repo_location = repo_location
-        self.__revision_specific_mappings: tp.Dict[
-            'AbstractRevisionRange',
-            tp.List[ProjectBinaryWrapper]] = defaultdict(list)
-        self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
-
-    def specify_binary(
-        self, location: str, binary_type: BinaryType, **kwargs: tp.Any
-    ) -> 'RevisionBinaryMap':
-        """
-        Add a binary to the map.
-
-        Args:
-            location: where the binary can be found, relative to the
-                      project-source root
-            binary_type: the type of binary that is produced
-            override_binary_name: overrides the used binary name
-            override_entry_point: overrides the executable entry point
-            only_valid_in: additionally specifies a validity range that
-                           specifies in which revision range this binary is
-                           produced
-
-        Returns:
-            self for builder-style usage
-        """
-        binary_location_path = Path(location)
-        binary_name: str = kwargs.get(
-            "override_binary_name", binary_location_path.stem
-        )
-        override_entry_point = kwargs.get("override_entry_point", None)
-        if override_entry_point:
-            override_entry_point = Path(override_entry_point)
-        validity_range: AbstractRevisionRange = kwargs.get(
-            "only_valid_in", None
-        )
-        valid_exit_codes = kwargs.get("valid_exit_codes", None)
-
-        wrapped_binary = ProjectBinaryWrapper(
-            binary_name, binary_location_path, binary_type,
-            override_entry_point, valid_exit_codes
-        )
-
-        if validity_range:
-            validity_range.init_cache(self.__repo_location)
-            self.__revision_specific_mappings[validity_range].append(
-                wrapped_binary
-            )
-        else:
-            self.__always_valid_mappings.append(wrapped_binary)
-
-        return self
-
-    def __getitem__(self,
-                    revision: CommitHash) -> tp.List[ProjectBinaryWrapper]:
-        revision = revision.to_short_commit_hash()
-        revision_specific_binaries = []
-
-        for validity_range, wrapped_binaries \
-                in self.__revision_specific_mappings.items():
-            if revision in map(ShortCommitHash, validity_range):
-                revision_specific_binaries.extend(wrapped_binaries)
-
-        revision_specific_binaries.extend(self.__always_valid_mappings)
-
-        return sorted(
-            revision_specific_binaries, key=attrgetter("name", "path")
-        )
-
-    def __contains__(self, binary_name: object) -> bool:
-        if isinstance(binary_name, str):
-            for binary in chain(
-                self.__always_valid_mappings,
-                *self.__revision_specific_mappings.values()
-            ):
-                if binary.name == binary_name:
-                    return True
-
-        return False
-
-
-def has_branch(repo_folder: Path, branch_name: str) -> bool:
+def has_branch(repo: RepositoryHandle, branch_name: str) -> bool:
     """Checks if a branch exists in the local repository."""
 
-    exit_code = git["-C",
-                    repo_folder.absolute(), "rev-parse", "--verify",
-                    branch_name] & TF
+    exit_code = repo["rev-parse", "--verify", branch_name] & TF
     return tp.cast(bool, exit_code)
 
 
-def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
+def has_remote_branch(
+    repo: RepositoryHandle, branch_name: str, remote: str
+) -> bool:
     """Checks if a remote branch of a repository exists."""
     exit_code = (
-        git["-C",
-            repo_folder.absolute(), "ls-remote", "--heads", remote, branch_name]
-        | grep[branch_name]
+        repo["ls-remote", "--heads", remote, branch_name] | grep[branch_name]
     ) & RETCODE
     return tp.cast(bool, exit_code == 0)
 
 
 def branch_has_upstream(
-    repo_folder: Path, branch_name: str, upstream: str = 'origin'
+    repo: RepositoryHandle, branch_name: str, upstream: str = 'origin'
 ) -> bool:
     """Check if a branch has an upstream remote."""
     exit_code = (
-        git["-C",
-            repo_folder.absolute(), "rev-parse", "--abbrev-ref",
-            branch_name + "@{upstream}"] | grep[upstream]
+        repo["rev-parse", "--abbrev-ref", branch_name + "@{upstream}"] |
+        grep[upstream]
     ) & RETCODE
     return tp.cast(bool, exit_code == 0)
 
@@ -1146,10 +975,10 @@ class RepositoryAtCommit():
     """Context manager to work with a repository at a specific revision, without
     duplicating the repository."""
 
-    def __init__(self, project_name: str, revision: ShortCommitHash) -> None:
-        self.__repo = pygit2.Repository(
-            get_local_project_git_path(project_name)
-        )
+    def __init__(
+        self, repo: RepositoryHandle, revision: ShortCommitHash
+    ) -> None:
+        self.__repo = repo.pygit_repo
         self.__initial_head = self.__repo.head
         self.__revision = self.__repo.get(revision.hash)
 

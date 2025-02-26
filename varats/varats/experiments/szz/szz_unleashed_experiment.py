@@ -147,7 +147,9 @@ class CreateSZZUnleashedReport(actions.ProjectStep):  # type: ignore
             bugs[result_entry[0]].add(result_entry[1])
         raw_szz_report = {
             "szz_tool": SZZTool.SZZ_UNLEASHED.tool_name,
-            "bugs": {k: sorted(list(v)) for k, v in bugs.items()}
+            "bugs": {
+                k: sorted(list(v)) for k, v in bugs.items()
+            }
         }
 
         result_file = SZZUnleashedReport.get_file_name(

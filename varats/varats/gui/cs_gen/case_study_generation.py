@@ -33,9 +33,13 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.project.project_util import (
     get_loaded_vara_projects,
-    get_local_project_git_path,
     get_project_cls_by_name,
     get_primary_project_source,
+    get_local_project_repo,
+    num_project_commits,
+    num_project_authors,
+    calc_project_loc,
+    create_project_commit_lookup_helper,
 )
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension
@@ -47,15 +51,8 @@ from varats.utils.git_util import (
     get_initial_commit,
     get_all_revisions_between,
     ShortCommitHash,
-    create_commit_lookup_helper,
     FullCommitHash,
     CommitRepoPair,
-    num_commits,
-    num_authors,
-    calc_repo_loc,
-    calc_project_loc,
-    num_project_commits,
-    num_project_authors,
 )
 from varats.utils.settings import vara_cfg
 
@@ -173,7 +170,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         ) == GenerationStrategy.REVS_PER_YEAR.value:
             extend_with_revs_per_year(
                 case_study, cmap, 0, True,
-                get_local_project_git_path(self.selected_project),
+                get_local_project_repo(self.selected_project),
                 self.revs_per_year.value(), self.seperate.checkState()
             )
 
@@ -189,8 +186,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         if self.selected_project != project_name:
             self.selected_project = project_name
             project = get_project_cls_by_name(project_name)
-            git_path = get_local_project_git_path(project_name)
-            repo = pygit2.Repository(pygit2.discover_repository(git_path))
+            repo = get_local_project_repo(project_name).pygit_repo
 
             last_pygit_commit: pygit2.Commit = repo[repo.head.target]
             last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
@@ -223,12 +219,12 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             self.revision_details.repaint()
             # Update the local project git
             get_primary_project_source(self.selected_project).fetch()
-            git_path = get_local_project_git_path(self.selected_project)
-            initial_commit = get_initial_commit(git_path).hash
+            repo = get_local_project_repo(self.selected_project)
+            initial_commit = get_initial_commit(repo).hash
             commits = get_all_revisions_between(
-                initial_commit, 'HEAD', FullCommitHash, git_path
+                repo, initial_commit, 'HEAD', FullCommitHash
             )
-            commit_lookup_helper = create_commit_lookup_helper(
+            commit_lookup_helper = create_project_commit_lookup_helper(
                 self.selected_project
             )
             project = get_project_cls_by_name(self.selected_project)

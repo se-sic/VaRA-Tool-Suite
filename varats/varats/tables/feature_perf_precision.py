@@ -1,7 +1,6 @@
 """Module for the FeaturePerfPrecision tables."""
 import re
 import typing as tp
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +8,6 @@ import numpy.typing as npt
 import pandas as pd
 from benchbuild.utils.cmd import git
 from matplotlib import colors
-from plumbum import local
 from pylatex import Document, Package
 
 from varats.data.databases.feature_perf_precision_database import (
@@ -29,12 +27,12 @@ from varats.data.metrics import ConfusionMatrix
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_domain import ProjectDomains
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_repo
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
 from varats.ts_utils.cli_util import make_cli_option
-from varats.utils.git_util import calc_repo_loc, ChurnConfig
+from varats.utils.git_util import calc_repo_loc, ChurnConfig, RepositoryHandle
 
 SYNTH_CATEGORIES = [
     "Static Analysis", "Dynamic Analysis", "Configurability",
@@ -492,32 +490,33 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
     studies."""
 
     @staticmethod
-    def _calc_folder_locs(repo_path: Path, rev_range: str, folder: str) -> int:
+    def _calc_folder_locs(
+        repo: RepositoryHandle, rev_range: str, folder: str
+    ) -> int:
         churn_config = ChurnConfig.create_c_style_languages_config()
         file_pattern = re.compile(
             "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
         )
 
         loc: int = 0
-        with local.cwd(repo_path):
-            files = git(
-                "ls-tree",
-                "-r",
-                "--name-only",
-                rev_range,
-            ).splitlines()
+        files = repo(
+            "ls-tree",
+            "-r",
+            "--name-only",
+            rev_range,
+        ).splitlines()
 
-            for file in files:
-                if not file.startswith(folder):
-                    continue
-                if file_pattern.match(file):
-                    lines = git("show", f"{rev_range}:{file}").splitlines()
-                    loc += len([line for line in lines if line])
+        for file in files:
+            if not file.startswith(folder):
+                continue
+            if file_pattern.match(file):
+                lines = git("show", f"{rev_range}:{file}").splitlines()
+                loc += len([line for line in lines if line])
 
         return loc
 
     @staticmethod
-    def _calc_folder_locs_dune(repo_path: Path, rev_range: str) -> int:
+    def _calc_folder_locs_dune(repo: RepositoryHandle, rev_range: str) -> int:
         dune_sub_projects = [
             "dune-alugrid", "dune-common", "dune-functions", "dune-geometry",
             "dune-grid", "dune-istl", "dune-localfunctions",
@@ -526,11 +525,13 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
         ]
         total_locs = 0
 
-        total_locs += calc_repo_loc(repo_path, rev_range)
+        total_locs += calc_repo_loc(repo, rev_range)
 
         for sub_project in dune_sub_projects:
-            sub_project_path = repo_path / sub_project
-            locs = calc_repo_loc(sub_project_path, "HEAD")
+            sub_project_repo = RepositoryHandle(
+                repo.worktree_path / sub_project
+            )
+            locs = calc_repo_loc(sub_project_repo, "HEAD")
             total_locs += locs
 
         return total_locs
@@ -545,7 +546,7 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
         for case_study in case_studies:
             project_name = case_study.project_name
             rev = case_study.revisions[0]
-            project_git_path = get_local_project_git_path(project_name)
+            project_repo = get_local_project_repo(project_name)
 
             cs_precision_data = df_precision[df_precision['CaseStudy'] ==
                                              project_name]
@@ -559,12 +560,12 @@ class FeaturePerfMetricsOverviewTable(Table, table_name="fperf_overview"):
                 ):
                     src_folder = "projects/SynthCTSpecialization"
                 locs = self._calc_folder_locs(
-                    project_git_path, rev.hash, src_folder
+                    project_repo, rev.hash, src_folder
                 )
             elif case_study.project_cls.NAME == "DunePerfRegression":
-                locs = self._calc_folder_locs_dune(project_git_path, rev.hash)
+                locs = self._calc_folder_locs_dune(project_repo, rev.hash)
             else:
-                locs = calc_repo_loc(project_git_path, rev.hash)
+                locs = calc_repo_loc(project_repo, rev.hash)
 
             cs_dict = {
                 project_name: {

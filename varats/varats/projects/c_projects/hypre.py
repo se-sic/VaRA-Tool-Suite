@@ -16,19 +16,16 @@ from varats.project.project_util import (
     BinaryType,
     get_tagged_commits,
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.utils.git_util import (
-    RevisionBinaryMap,
-    ShortCommitHash,
-    FullCommitHash,
-)
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -64,7 +61,7 @@ class Hypre(VProject, ReleaseProviderHook):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Hypre.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Hypre.NAME))
         binary_map.specify_binary('src/cmbuild/test/ij', BinaryType.EXECUTABLE)
 
         return binary_map[revision]

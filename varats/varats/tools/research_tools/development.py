@@ -34,22 +34,23 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
 
     Test:
     >>> import re
-    >>> fixed_branch_name = __quickfix_dev_branches(\
-        'vara-dev', SubProject(None, "vara-llvm-project", "", "", ""))
+    >>> from pathlib import Path
+    >>> fixed_branch_name = __quickfix_dev_branches('vara-dev', \
+        SubProject(Path("/dev/null"), "vara-llvm-project", "", "", ""))
     >>> re.match(r'vara-\\d+-dev', fixed_branch_name) is not None
     True
 
-    >>> fixed_branch_name = __quickfix_dev_branches(\
-        'vara', SubProject(None, "vara-llvm-project", "", "", ""))
+    >>> fixed_branch_name = __quickfix_dev_branches('vara', \
+        SubProject(Path("/dev/null"), "vara-llvm-project", "", "", ""))
     >>> re.match(r'vara-\\d+', fixed_branch_name) is not None
     True
 
-    >>> __quickfix_dev_branches(\
-        "f-FooBar", SubProject(None, "vara-llvm-project", "", "", ""))
+    >>> __quickfix_dev_branches("f-FooBar", \
+        SubProject(Path("/dev/null"), "vara-llvm-project", "", "", ""))
     'f-FooBar'
 
     >>> __quickfix_dev_branches(\
-        "vara-dev", SubProject(None, "vara", "", "", ""))
+        "vara-dev", SubProject(Path("/dev/null"), "vara", "", "", ""))
     'vara-dev'
     """
     if sub_project.name == "vara-llvm-project":
