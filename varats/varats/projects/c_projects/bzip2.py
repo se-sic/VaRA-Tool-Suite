@@ -111,7 +111,7 @@ class Bzip2(VProject):
                     "geo-maps/countries-land-10m.geo.json.bz2",
                     "geo-maps/countries-land-100m.geo.json.bz2"
                 ],
-                requires_all_args={"--compress"}
+                requires_all_args={"-z"}
             ),
             VCommand(
                 SourceRoot("bzip2") / RSBinary("bzip2"),
@@ -128,7 +128,7 @@ class Bzip2(VProject):
                     "geo-maps-compr/countries-land-10m.geo.json",
                     "geo-maps-compr/countries-land-100m.geo.json"
                 ],
-                requires_all_args={"--decompress"}
+                requires_all_args={"-d"}
             )
         ],
     }
