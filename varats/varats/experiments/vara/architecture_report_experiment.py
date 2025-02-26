@@ -25,6 +25,9 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
 )
 from varats.project.varats_project import VProject
+from varats.provider.architecture.architecture_model_provider import (
+    ArchitectureModelProvider,
+)
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
@@ -43,13 +46,11 @@ class ArchitectureAnalysis(actions.ProjectStep):  # type: ignore
 
     def __call__(self) -> actions.StepResult:
         config_id = get_current_config_id(self.project)
-
         for binary in self.project.binaries:
             result_file = create_new_success_result_filepath(
                 self.__experiment_handle, ArchitectureReport, self.project,
                 binary, config_id
             )
-
             opt_params = [
                 "--enable-new-pm=0", "-vara-AD", "-vara-AR", "-vara-use-phasar",
                 f"-vara-report-outfile={result_file}",
@@ -95,6 +96,57 @@ class ArchitectureReportExperiment(VersionExperiment, shorthand="ARE"):
 
         project.cflags += [
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fvara-arch"
+        ]
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.ARCH,
+        ]
+        extraction_error_handler = create_default_compiler_error_handler(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+        analysis_actions = get_bc_cache_actions(
+            project, bc_file_extensions, extraction_error_handler
+        )
+        analysis_actions.append(
+            ArchitectureAnalysis(project, self.get_handle())
+        )
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+
+
+class ArchitectureModelReportExperiment(VersionExperiment, shorthand="AMRE"):
+    """Generates an Architecture report file."""
+
+    NAME = "GenerateArchitectureModelReport"
+
+    REPORT_SPEC = ReportSpecification(ArchitectureReport)
+
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+                                    << time.RunWithTime()
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+                                     << RunWLLVM() \
+                                     << run.WithTimeout()
+        model_provider = ArchitectureModelProvider.create_provider_for_project(
+            project
+        )
+
+        project.cflags += [
+            "-O1", "-g0", "-fvara-arch",
+            f"-fvara-am-path={model_provider.get_architecture_model_path(project)}"
         ]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
