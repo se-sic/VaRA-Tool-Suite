@@ -133,7 +133,8 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
 
 def update_env(bb_cfg: s.Configuration) -> None:
     """Update the given benchbuild config to contain our environment."""
-    bb_cfg["env"] = {
+    old_env = bb_cfg["env"].value
+    bb_cfg["env"] = old_env | {
         "PATH": [
             str(tool_type.install_location() / "bin") for tool_type in [
                 get_research_tool_type(tool_name)
