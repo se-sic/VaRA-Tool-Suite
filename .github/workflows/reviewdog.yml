@@ -31,13 +31,6 @@ jobs:
         pip install -r requirements.txt
         pip install mypy
         pip install pylint
-        ########################################################################
-        # Uninstalling `rich` is a hack to make the code base checkable with
-        # mypy.  mypy get's confused when discovering rich and by that does no
-        # longer any type checking.
-        ########################################################################
-        pip uninstall -y rich
-        ########################################################################
         pylint --version
     - name: Setup reviewdog
       run: |
