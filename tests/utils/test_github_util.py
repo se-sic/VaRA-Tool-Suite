@@ -5,14 +5,14 @@ import unittest
 from github import Github, PaginatedList
 from github.GithubObject import GithubObject, NonCompletableGithubObject
 from github.PaginatedList import PaginatedListBase
-
-from tests.helper_utils import run_in_test_environment
 from varats.utils.github_util import (
     get_cached_github_object,
     _get_cached_pygithub_object,
     _get_cached_pygithub_object_list,
     get_cached_github_object_list,
 )
+
+from tests.helper_utils import run_in_test_environment
 
 
 class DummyGithubObject(NonCompletableGithubObject):
@@ -28,7 +28,7 @@ class DummyGithubObject(NonCompletableGithubObject):
 
 
 def create_dummy_github_object() -> GithubObject:
-    return DummyGithubObject(None, {}, None, True)
+    return DummyGithubObject(None, {}, None)
 
 
 class DummyPaginatedList(PaginatedListBase):

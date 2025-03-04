@@ -6,6 +6,8 @@
 
 # -- Path setup --------------------------------------------------------------
 
+# -- Project information -----------------------------------------------------
+import importlib.metadata as metadata
 import logging
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -15,18 +17,12 @@ import os
 import sys
 
 import benchbuild.utils
-# -- Project information -----------------------------------------------------
-from pkg_resources import DistributionNotFound, get_distribution
+
+__version__ = metadata.version('varats')
 
 sys.path.insert(0, os.path.abspath('../../'))
 
 # pylint: skip-file
-
-try:
-    __version__ = get_distribution("varats").version
-except DistributionNotFound:
-    pass
-
 project = 'VaRA'
 copyright = '2023, Florian Sattler'
 author = 'Florian Sattler'

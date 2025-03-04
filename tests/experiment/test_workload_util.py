@@ -2,11 +2,9 @@
 import unittest
 from pathlib import Path
 
+import varats.experiment.workload_util as wu
 from benchbuild.command import Command, PathToken, RootRenderer
 from benchbuild.source.base import Revision, Variant
-
-import varats.experiment.workload_util as wu
-from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 from varats.paper.paper_config import load_paper_config
 from varats.projects.c_projects.xz import Xz
 from varats.projects.perf_tests.feature_perf_cs_collection import (
@@ -15,6 +13,8 @@ from varats.projects.perf_tests.feature_perf_cs_collection import (
 )
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
+
+from tests.helper_utils import run_in_test_environment, UnitTestFixtures
 
 TT = PathToken.make_token(RootRenderer())
 
