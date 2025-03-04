@@ -92,21 +92,18 @@ plugins = [
 module = [
   "pylatex",
   "benchbuild.*",
-  "plumbum",
-  "matplotlib",
-  "networkx",
+  "plumbum.*",
+  "matplotlib.*",
+  "networkx.*",
   "pandas",
-  "plotly",
+  "plotly.*",
   "pydriller",
-  "pygtrie",
   "pygit2",
-  "scipy",
-  "sklearn",
-  "PyQt5",
-  "argparse_utils",
+  "scipy.*",
+  "sklearn.*",
+  "PyQt5.*",
   "seaborn",
-  "github",
-  "distro",
+  "github.*",
   "ijson",
 ]
 ignore_missing_imports = true
@@ -117,13 +114,6 @@ module = [
   "varats.gui.ui_MainWindow",
   "varats.gui.*",
 ]
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
-  "rich",
-]
-ignore_missing_imports = true
 ignore_errors = true
 
 [tool.coverage.run]
