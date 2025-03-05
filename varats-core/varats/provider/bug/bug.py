@@ -12,7 +12,7 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_repo,
 )
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import FullCommitHash, RepositoryHandle
 from varats.utils.github_util import (
     get_cached_github_object_list,
     get_github_repo_name_for_project,
@@ -101,13 +101,13 @@ def as_raw_bug(pygit_bug: PygitBug) -> RawBug:
     )
 
 
-def as_pygit_bug(raw_bug: RawBug, repo: pygit2.Repository) -> PygitBug:
+def as_pygit_bug(raw_bug: RawBug, repo: RepositoryHandle) -> PygitBug:
     """Converts a ``RawBug`` to a ``PygitBug``."""
     introducing_commits: tp.Set[pygit2.Commit] = set()
     for intro_commit in raw_bug.introducing_commits:
-        introducing_commits.add(repo.get(intro_commit.hash))
+        introducing_commits.add(repo.pygit_commit(intro_commit))
     return PygitBug(
-        repo.get(raw_bug.fixing_commit.hash), introducing_commits,
+        repo[raw_bug.fixing_commit.hash], introducing_commits,
         raw_bug.issue_id, raw_bug.creation_date, raw_bug.resolution_date
     )
 
@@ -239,7 +239,7 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
 
 def _create_corresponding_bug(
     closing_commit: pygit2.Commit,
-    project_repo: pygit2.Repository,
+    project_repo: RepositoryHandle,
     issue_id: tp.Optional[int] = None,
     creation_date: tp.Optional[datetime] = None,
     resolution_date: tp.Optional[datetime] = None
@@ -258,7 +258,7 @@ def _create_corresponding_bug(
     Returns:
         the specified bug
     """
-    pydrill_repo = pydriller.Git(project_repo.path)
+    pydrill_repo = pydriller.Git(str(project_repo.repo_path))
 
     introducing_commits: tp.Set[pygit2.Commit] = set()
     blame_dict = pydrill_repo.get_commits_last_modified_lines(
@@ -267,7 +267,7 @@ def _create_corresponding_bug(
 
     for _, introducing_set in blame_dict.items():
         for introducing_id in introducing_set:
-            introducing_commits.add(project_repo.get(introducing_id))
+            introducing_commits.add(project_repo.pygit_commit(introducing_id))
 
     return PygitBug(
         closing_commit, introducing_commits, issue_id, creation_date,
@@ -294,12 +294,12 @@ def _find_corresponding_pygit_suspect_tuple(
         A PygitSuspectTuple if the issue event represents the closing of a bug,
         None otherwise
     """
-    pygit_repo = get_local_project_repo(project_name).pygit_repo
-    pydrill_repo = pydriller.Git(pygit_repo.path)
+    repo = get_local_project_repo(project_name)
+    pydrill_repo = pydriller.Git(str(repo.repo_path))
 
     if _has_closed_a_bug(issue_event) and issue_event.commit_id:
         issue_date = issue_event.issue.created_at
-        fixing_commit = pygit_repo.get(issue_event.commit_id)
+        fixing_commit = repo.pygit_commit(issue_event.commit_id)
         pydrill_fixing_commit = pydrill_repo.get_commit(issue_event.commit_id)
         blame_dict = pydrill_repo.get_commits_last_modified_lines(
             pydrill_fixing_commit
@@ -317,9 +317,9 @@ def _find_corresponding_pygit_suspect_tuple(
                 ).committer_date.astimezone(timezone.utc)
 
                 if introduction_date > issue_date:  # commit is a suspect
-                    suspect_commits.add(pygit_repo.get(introducing_id))
+                    suspect_commits.add(repo.pygit_commit(introducing_id))
                 else:
-                    non_suspect_commits.add(pygit_repo.get(introducing_id))
+                    non_suspect_commits.add(repo.pygit_commit(introducing_id))
 
         return PygitSuspectTuple(
             fixing_commit, non_suspect_commits, suspect_commits,
@@ -386,7 +386,7 @@ def _filter_issue_bugs(
 
 def _filter_commit_message_bugs(
     project_name: str,
-    commit_filter_function: tp.Callable[[pygit2.Repository, pygit2.Commit],
+    commit_filter_function: tp.Callable[[RepositoryHandle, pygit2.Commit],
                                         tp.Optional[PygitBug]]
 ) -> tp.FrozenSet[PygitBug]:
     """
@@ -400,10 +400,11 @@ def _filter_commit_message_bugs(
         the set of bugs created by the given filter
     """
     filtered_bugs = set()
-    project_repo = get_local_project_repo(project_name).pygit_repo
+    project_repo = get_local_project_repo(project_name)
+    pygit_repo = project_repo.pygit_repo
 
-    for commit in project_repo.walk(
-        project_repo.head.target, pygit2.enums.SortMode.TIME
+    for commit in pygit_repo.walk(
+        pygit_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         pybug = commit_filter_function(project_repo, commit)
         if pybug:
@@ -470,7 +471,7 @@ def find_commit_message_bugs(
     """
 
     def accept_commit_message_pybug(
-        repo: pygit2.Repository, commit: pygit2.Commit
+        repo: RepositoryHandle, commit: pygit2.Commit
     ) -> tp.Optional[PygitBug]:
         if _is_closing_message(commit.message):
             bug = _create_corresponding_bug(commit, repo)

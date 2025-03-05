@@ -2,7 +2,7 @@
 
 import typing as tp
 from collections import OrderedDict, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,14 +48,14 @@ def _load_projects_ordered_by_year(
             case_study, experiment_type
         )
 
-        pygit_repo = get_local_project_repo(case_study.project_name).pygit_repo
+        repo = get_local_project_repo(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[
             ShortCommitHash, FileStatusExtension]]] = defaultdict(list)
 
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
-            commit = pygit_repo.get(rev.hash)
-            commit_date = datetime.utcfromtimestamp(commit.commit_time)
+            commit = repo.pygit_commit(rev)
+            commit_date = datetime.fromtimestamp(commit.commit_time, timezone.utc)
             revisions[commit_date.year].append((rev, status))
 
         projects[case_study.project_name] = revisions

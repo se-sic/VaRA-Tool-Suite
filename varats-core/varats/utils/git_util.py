@@ -179,6 +179,25 @@ class RepositoryHandle:
 
         return self.__libgit_repo
 
+    def maybe_pygit_commit(self, commit_hash: tp.Union[CommitHash, str]) -> tp.Optional[pygit2.Commit]:
+        """Get a pygit2 commit object for a given commit hash."""
+        if isinstance(commit_hash, CommitHash):
+            commit_hash = commit_hash.hash
+
+        return tp.cast(pygit2.Commit, self.pygit_repo.get(commit_hash))
+
+    def pygit_commit(self, commit_hash: tp.Union[CommitHash, str]) -> pygit2.Commit:
+        """
+        Get a pygit2 commit object for a given commit hash.
+
+        Raises if commit is not found.
+        """
+        commit = self.maybe_pygit_commit(commit_hash)
+        if not commit:
+            raise KeyError(f"Commit {commit_hash} not found in repository.")
+
+        return commit
+
     def __eq__(self, other: tp.Any) -> bool:
         if not isinstance(other, RepositoryHandle):
             return False
@@ -980,7 +999,7 @@ class RepositoryAtCommit():
     ) -> None:
         self.__repo = repo.pygit_repo
         self.__initial_head = self.__repo.head
-        self.__revision = self.__repo.get(revision.hash)
+        self.__revision = self.__repo[revision.hash]
 
     def __enter__(self) -> Path:
         self.__repo.checkout_tree(self.__revision)

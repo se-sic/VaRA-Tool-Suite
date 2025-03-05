@@ -160,7 +160,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         def get(commit_id: str) -> pygit2.Commit:
             """Method that creates simple pygit2 Commit mocks for given ID."""
-            mock_commit = mock.create_autospec(pygit2.Commit)
+            mock_commit: pygit2.Commit = mock.create_autospec(pygit2.Commit)
             mock_commit.id = pygit2.Oid(hex=commit_id)
             return mock_commit
 
@@ -169,6 +169,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
         self.mock_pygit.get = get
         self.mock_repo_handle = mock.create_autospec(RepositoryHandle)
         self.mock_repo_handle.pygit_repo = self.mock_pygit
+        self.mock_repo_handle.pygit_commit = get
 
     def test_issue_events_closing_bug(self) -> None:
         """Test identifying issue events that close a bug related issue, with
@@ -260,7 +261,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
         mock_pydriller_git.return_value = DummyPydrillerRepo("")
 
         pybug = _create_corresponding_bug(
-            self.mock_pygit.get(issue_event.commit_id), self.mock_pygit,
+            self.mock_repo_handle.pygit_commit(issue_event.commit_id),
+            self.mock_repo_handle,
             issue_event.issue.number
         )
 
@@ -388,10 +390,10 @@ class TestBugDetectionStrategies(unittest.TestCase):
         mock_pydriller_git.return_value = DummyPydrillerRepo("")
 
         # commit filter method for pygit bugs
-        def accept_pybugs(repo: pygit2.Repository,
+        def accept_pybugs(repo: RepositoryHandle,
                           commit: pygit2.Commit) -> tp.Optional[PygitBug]:
             if _is_closing_message(commit.message):
-                return _create_corresponding_bug(commit, self.mock_pygit)
+                return _create_corresponding_bug(commit, self.mock_repo_handle)
             return None
 
         pybug_ids = set(

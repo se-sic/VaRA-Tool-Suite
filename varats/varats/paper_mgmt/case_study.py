@@ -425,9 +425,7 @@ def extend_with_latest_rev(
         ignore_blocked: ignore blocked revisions'
         repo: git repository handle
     """
-    pygit2_repo = repo.pygit_repo
-
-    last_pygit_commit: pygit2.Commit = pygit2_repo[pygit2_repo.head.target]
+    last_pygit_commit = repo.pygit_commit(str(repo.pygit_repo.head.target))
     last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
 
     while ignore_blocked and is_revision_blocked(

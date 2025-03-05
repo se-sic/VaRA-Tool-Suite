@@ -1,6 +1,6 @@
 """Module for diff based commit-data metrics."""
 import typing as tp
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from itertools import chain
 from pathlib import Path
@@ -317,9 +317,9 @@ class BlameDiffMetricsDatabase(
             # Look-up commit and infos about the HEAD commit of the report
             head_report = load_blame_report(report_paths[0])
             pred_report = load_blame_report(report_paths[1])
-            commit = pygit_repo.get(head_report.head_commit.hash)
-            commit_date = datetime.utcfromtimestamp(commit.commit_time)
-            pred_commit = pygit_repo.get(pred_report.head_commit.hash)
+            commit = repo.pygit_commit(head_report.head_commit)
+            commit_date = datetime.fromtimestamp(commit.commit_time, timezone.utc)
+            pred_commit = repo.pygit_commit(pred_report.head_commit)
 
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)
 
