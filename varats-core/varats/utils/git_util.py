@@ -868,7 +868,7 @@ def __print_calc_repo_code_churn(
     churn_map = calc_repo_code_churn(repo, churn_config)
 
     for commit in repo.pygit_repo.walk(
-        repo.pygit_repo.head.target, pygit2.GIT_SORT_TIME
+        repo.pygit_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         commit_hash = FullCommitHash.from_pygit_commit(commit)
         print(commit_hash)

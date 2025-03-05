@@ -357,20 +357,20 @@ class TestBugDetectionStrategies(unittest.TestCase):
         of bugs is created correctly."""
 
         first_fixing_commit = mock.create_autospec(pygit2.Commit)
-        first_fixing_commit.hex = "1241"
+        first_fixing_commit.id = "1241"
         first_fixing_commit.message = "Fixed first issue"
 
         first_non_fixing_commit = mock.create_autospec(pygit2.Commit)
-        first_non_fixing_commit.hex = "1242"
+        first_non_fixing_commit.id = "1242"
         first_non_fixing_commit.message = "Added documentation\n" + \
                                           "Grammar Errors need to be fixed"
 
         second_non_fixing_commit = mock.create_autospec(pygit2.Commit)
-        second_non_fixing_commit.hex = "1243"
+        second_non_fixing_commit.id = "1243"
         second_non_fixing_commit.message = "Added feature X"
 
         second_fixing_commit = mock.create_autospec(pygit2.Commit)
-        second_fixing_commit.hex = "1244"
+        second_fixing_commit.id = "1244"
         second_fixing_commit.message = "fixes second problem"
 
         def mock_walk(_start_id: str, _sort_mode: int):
@@ -395,7 +395,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
             return None
 
         pybug_ids = set(
-            pybug.fixing_commit.hex
+            pybug.fixing_commit.id
             for pybug in _filter_commit_message_bugs("", accept_pybugs)
         )
         expected_ids = {"1241", "1244"}
@@ -451,7 +451,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="ddf0ba95408dc5508504c84e6616c49128410389"
         )
         pybug_first_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_first)).introducing_commits
         )
 
@@ -459,7 +459,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="d846bdbe45e4d64a34115f5285079e1b5f84007f"
         )
         pybug_second_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_second)).introducing_commits
         )
 
@@ -467,7 +467,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="2da78b2820370f6759e9086fad74155d6655e93b"
         )
         pybug_third_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_third)).introducing_commits
         )
 
@@ -475,7 +475,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
         pybug_fourth_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_fourth)).introducing_commits
         )
 

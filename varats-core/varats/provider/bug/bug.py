@@ -403,7 +403,7 @@ def _filter_commit_message_bugs(
     project_repo = get_local_project_repo(project_name).pygit_repo
 
     for commit in project_repo.walk(
-        project_repo.head.target, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         pybug = commit_filter_function(project_repo, commit)
         if pybug:
@@ -435,7 +435,7 @@ def find_issue_bugs(
     ) -> tp.Optional[PygitBug]:
         bug = suspect.create_corresponding_bug()
 
-        if fixing_commit and bug.fixing_commit.hex != fixing_commit:
+        if fixing_commit and bug.fixing_commit.id != fixing_commit:
             return None
 
         if introducing_commit and introducing_commit not in [
@@ -475,7 +475,7 @@ def find_commit_message_bugs(
         if _is_closing_message(commit.message):
             bug = _create_corresponding_bug(commit, repo)
 
-            if fixing_commit and bug.fixing_commit.hex != fixing_commit:
+            if fixing_commit and bug.fixing_commit.id != fixing_commit:
                 return None
 
             if introducing_commit and introducing_commit not in [

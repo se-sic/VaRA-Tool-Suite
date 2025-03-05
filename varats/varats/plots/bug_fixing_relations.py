@@ -87,7 +87,7 @@ def _plot_chord_diagram_for_raw_bugs(
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
 
-    # maps commit hex -> node id
+    # maps commit id -> node id
     map_commit_to_id: tp.Dict[pygit2.Commit,
                               int] = _map_commits_to_nodes(project_repo)
     commit_type: tp.Dict[pygit2.Commit, NodeType] = {}
@@ -96,7 +96,7 @@ def _plot_chord_diagram_for_raw_bugs(
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
 
     for commit in project_repo.walk(
-        project_repo.head.target, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         commit_type[commit] = NodeType.DEFAULT
 
@@ -131,7 +131,7 @@ def _bug_data_diff_plot(
     commit_coordinates = _compute_node_placement(commit_count)
 
     for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         commit_occurrences[commit] = DiffOccurrence.NONE
 
@@ -240,10 +240,10 @@ def _generate_node_data(
     nodes = []
 
     for commit in project_repo.walk(
-        project_repo.head.target, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         # draw commit nodes using preprocessed commit types
-        commit_id = map_commit_to_id[commit]
+        commit_id = map_commit_to_id[str(commit.id)]
 
         if commit.id == project_repo.head.target:
             commit_type[commit] = NodeType.FIXING_HEAD if commit_type[
@@ -438,7 +438,7 @@ def _map_commits_to_nodes(
     commits_to_nodes_map: tp.Dict[pygit2.Commit, int] = {}
     commit_count = 0
     for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         # node ids are sorted by time
         commits_to_nodes_map[commit] = commit_count
