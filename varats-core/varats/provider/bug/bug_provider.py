@@ -3,7 +3,6 @@ import logging
 import typing as tp
 
 from benchbuild.project import Project
-
 from varats.project.project_util import (
     get_primary_project_source,
     is_git_source,

@@ -7,7 +7,6 @@ import pydriller
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
-
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_repo,
@@ -107,8 +106,8 @@ def as_pygit_bug(raw_bug: RawBug, repo: RepositoryHandle) -> PygitBug:
     for intro_commit in raw_bug.introducing_commits:
         introducing_commits.add(repo.pygit_commit(intro_commit))
     return PygitBug(
-        repo[raw_bug.fixing_commit.hash], introducing_commits,
-        raw_bug.issue_id, raw_bug.creation_date, raw_bug.resolution_date
+        repo[raw_bug.fixing_commit.hash], introducing_commits, raw_bug.issue_id,
+        raw_bug.creation_date, raw_bug.resolution_date
     )
 
 

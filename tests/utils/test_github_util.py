@@ -6,7 +6,6 @@ from github import Github, PaginatedList
 from github.GithubObject import GithubObject, NonCompletableGithubObject
 from github.PaginatedList import PaginatedListBase
 from github.Requester import Requester
-
 from varats.utils.github_util import (
     get_cached_github_object,
     _get_cached_pygithub_object,
@@ -34,7 +33,7 @@ class DummyRequester(Requester):
 
     def __init__(self) -> None:
         super().__init__(
-            auth = None,
+            auth=None,
             base_url="https://base.url",
             timeout=1,
             user_agent="user agent",

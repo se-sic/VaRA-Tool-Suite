@@ -6,7 +6,6 @@ from itertools import chain
 from pathlib import Path
 
 import pandas as pd
-
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
@@ -318,7 +317,9 @@ class BlameDiffMetricsDatabase(
             head_report = load_blame_report(report_paths[0])
             pred_report = load_blame_report(report_paths[1])
             commit = repo.pygit_commit(head_report.head_commit)
-            commit_date = datetime.fromtimestamp(commit.commit_time, timezone.utc)
+            commit_date = datetime.fromtimestamp(
+                commit.commit_time, timezone.utc
+            )
             pred_commit = repo.pygit_commit(pred_report.head_commit)
 
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)

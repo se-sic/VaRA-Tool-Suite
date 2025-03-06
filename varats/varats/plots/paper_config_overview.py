@@ -8,9 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import seaborn as sb
-from matplotlib.patches import Patch
-
 import varats.paper.paper_config as PC
+from matplotlib.patches import Patch
 from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
@@ -55,7 +54,9 @@ def _load_projects_ordered_by_year(
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
             commit = repo.pygit_commit(rev)
-            commit_date = datetime.fromtimestamp(commit.commit_time, timezone.utc)
+            commit_date = datetime.fromtimestamp(
+                commit.commit_time, timezone.utc
+            )
             revisions[commit_date.year].append((rev, status))
 
         projects[case_study.project_name] = revisions

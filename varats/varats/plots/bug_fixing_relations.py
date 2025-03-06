@@ -11,7 +11,6 @@ import numpy as np
 import numpy.typing as npt
 import plotly.graph_objs as gob
 import pygit2
-
 from varats.data.reports.szz_report import SZZUnleashedReport
 from varats.experiments.szz.szz_unleashed_experiment import (
     SZZUnleashedExperiment,
@@ -64,7 +63,8 @@ class DiffEntry():
 
     def __init__(
         self, fixing_commit: pygit2.Commit, occurrence: DiffOccurrence,
-        only_left: tp.FrozenSet[pygit2.Commit], only_right: tp.FrozenSet[pygit2.Commit]
+        only_left: tp.FrozenSet[pygit2.Commit],
+        only_right: tp.FrozenSet[pygit2.Commit]
     ):
         self.fixing_commit = fixing_commit
         self.occurrence = occurrence
@@ -158,8 +158,9 @@ ValueT = tp.TypeVar("ValueT")
 
 
 def _generate_diff_line_data(
-    diff_raw_bugs: tp.Generator[DiffEntry, None, None],
-    map_commit_to_id: tp.Dict[pygit2.Commit, int],
+    diff_raw_bugs: tp.Generator[DiffEntry, None,
+                                None], map_commit_to_id: tp.Dict[pygit2.Commit,
+                                                                 int],
     commit_coordinates: tp.List[npt.NDArray[np.float64]],
     commit_type: tp.Dict[pygit2.Commit, DiffOccurrence]
 ) -> tp.List[gob.Scatter]:
@@ -234,8 +235,9 @@ def _generate_line_data(
 def _generate_node_data(
     project_repo: pygit2.Repository,
     commit_coordinates: tp.List[npt.NDArray[np.float64]],
-    map_commit_to_id: tp.Dict[pygit2.Commit, int], commit_type: tp.Dict[pygit2.Commit,
-                                                              NodeType]
+    map_commit_to_id: tp.Dict[pygit2.Commit,
+                              int], commit_type: tp.Dict[pygit2.Commit,
+                                                         NodeType]
 ) -> tp.List[gob.Scatter]:
     nodes = []
 
@@ -450,7 +452,8 @@ def _diff_raw_bugs(
     bugs_left: tp.FrozenSet[PygitBug], bugs_right: tp.FrozenSet[PygitBug]
 ) -> tp.Generator[DiffEntry, None, None]:
     fixes_left: tp.Set[pygit2.Commit] = {bug.fixing_commit for bug in bugs_left}
-    fixes_right: tp.Set[pygit2.Commit] = {bug.fixing_commit for bug in bugs_right}
+    fixes_right: tp.Set[pygit2.Commit
+                       ] = {bug.fixing_commit for bug in bugs_right}
 
     for fixing_commit, introducers_left, introducers_right in _zip_dicts({
         bug.fixing_commit: bug.introducing_commits for bug in bugs_left

@@ -9,7 +9,6 @@ import pygit2
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
-
 from varats.projects.test_projects.bug_provider_test_repos import (
     BasicBugDetectionTestRepo,
 )
@@ -262,8 +261,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         pybug = _create_corresponding_bug(
             self.mock_repo_handle.pygit_commit(issue_event.commit_id),
-            self.mock_repo_handle,
-            issue_event.issue.number
+            self.mock_repo_handle, issue_event.issue.number
         )
 
         self.assertEqual(issue_event.commit_id, str(pybug.fixing_commit.id))

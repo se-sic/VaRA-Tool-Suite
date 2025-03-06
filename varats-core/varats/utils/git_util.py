@@ -11,13 +11,11 @@ import pygit2
 from benchbuild.utils.cmd import git, grep
 from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
-
 from varats.utils.exceptions import unwrap
 
 if tp.TYPE_CHECKING:
-    from benchbuild.utils.revision_ranges import AbstractRevisionRange
-
     import varats.mapping.commit_map as cm  # pylint: disable=W0611
+    from benchbuild.utils.revision_ranges import AbstractRevisionRange
 
 LOG = logging.Logger(__name__)
 
@@ -179,14 +177,18 @@ class RepositoryHandle:
 
         return self.__libgit_repo
 
-    def maybe_pygit_commit(self, commit_hash: tp.Union[CommitHash, str]) -> tp.Optional[pygit2.Commit]:
+    def maybe_pygit_commit(
+        self, commit_hash: tp.Union[CommitHash, str]
+    ) -> tp.Optional[pygit2.Commit]:
         """Get a pygit2 commit object for a given commit hash."""
         if isinstance(commit_hash, CommitHash):
             commit_hash = commit_hash.hash
 
         return tp.cast(pygit2.Commit, self.pygit_repo.get(commit_hash))
 
-    def pygit_commit(self, commit_hash: tp.Union[CommitHash, str]) -> pygit2.Commit:
+    def pygit_commit(
+        self, commit_hash: tp.Union[CommitHash, str]
+    ) -> pygit2.Commit:
         """
         Get a pygit2 commit object for a given commit hash.
 
