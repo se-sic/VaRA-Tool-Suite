@@ -14,6 +14,7 @@ from benchbuild.source import Git
 from benchbuild.utils.revision_ranges import AbstractRevisionRange
 from plumbum import local
 from plumbum.commands.base import BoundCommand
+
 from varats.utils.git_util import (
     RepositoryHandle,
     FullCommitHash,

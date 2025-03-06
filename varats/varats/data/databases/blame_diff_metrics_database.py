@@ -3,9 +3,9 @@ import typing as tp
 from datetime import datetime, timezone
 from enum import Enum
 from itertools import chain
-from pathlib import Path
 
 import pandas as pd
+
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (

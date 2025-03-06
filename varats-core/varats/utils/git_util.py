@@ -11,11 +11,13 @@ import pygit2
 from benchbuild.utils.cmd import git, grep
 from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
+
 from varats.utils.exceptions import unwrap
 
 if tp.TYPE_CHECKING:
-    import varats.mapping.commit_map as cm  # pylint: disable=W0611
     from benchbuild.utils.revision_ranges import AbstractRevisionRange
+
+    import varats.mapping.commit_map as cm  # pylint: disable=W0611
 
 LOG = logging.Logger(__name__)
 

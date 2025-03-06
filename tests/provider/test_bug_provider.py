@@ -9,6 +9,7 @@ import pygit2
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
+
 from varats.projects.test_projects.bug_provider_test_repos import (
     BasicBugDetectionTestRepo,
 )

@@ -23,6 +23,7 @@ from benchbuild.environments.domain.declarative import (
 )
 from benchbuild.utils.settings import to_yaml, get_number_of_jobs
 from plumbum import local
+
 from varats.tools.research_tools.research_tool import (
     Distro,
     ContainerInstallable,

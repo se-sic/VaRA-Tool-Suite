@@ -3,6 +3,7 @@ import typing as tp
 
 import numpy as np
 import pandas as pd
+
 from varats.paper.case_study import CaseStudy
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider

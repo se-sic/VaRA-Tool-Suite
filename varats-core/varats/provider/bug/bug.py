@@ -7,6 +7,7 @@ import pydriller
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
+
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_repo,

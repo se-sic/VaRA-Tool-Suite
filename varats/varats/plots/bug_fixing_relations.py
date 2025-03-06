@@ -11,6 +11,7 @@ import numpy as np
 import numpy.typing as npt
 import plotly.graph_objs as gob
 import pygit2
+
 from varats.data.reports.szz_report import SZZUnleashedReport
 from varats.experiments.szz.szz_unleashed_experiment import (
     SZZUnleashedExperiment,

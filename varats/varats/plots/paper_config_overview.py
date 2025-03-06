@@ -8,19 +8,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import seaborn as sb
-import varats.paper.paper_config as PC
 from matplotlib.patches import Patch
+
+import varats.paper.paper_config as PC
 from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import get_local_project_repo
 from varats.report.report import FileStatusExtension
-# colors taken from seaborn's default palette
 from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
+# colors taken from seaborn's default palette
 SUCCESS_COLOR: npt.NDArray[np.float64] = np.asarray(
     (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 )

@@ -2,9 +2,10 @@
 import unittest
 from pathlib import Path
 
-import varats.experiment.workload_util as wu
 from benchbuild.command import Command, PathToken, RootRenderer
 from benchbuild.source.base import Revision, Variant
+
+import varats.experiment.workload_util as wu
 from varats.paper.paper_config import load_paper_config
 from varats.projects.c_projects.xz import Xz
 from varats.projects.perf_tests.feature_perf_cs_collection import (

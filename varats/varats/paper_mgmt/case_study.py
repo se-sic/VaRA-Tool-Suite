@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pygit2
 from benchbuild import Project
+
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.reports.szz_report import SZZReport
 from varats.experiments.szz.pydriller_szz_experiment import (
