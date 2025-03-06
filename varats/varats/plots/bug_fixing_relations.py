@@ -63,8 +63,9 @@ class DiffEntry():
     """Class representing an element in a diff."""
 
     def __init__(
-        self, fixing_commit: str, occurrence: DiffOccurrence,
-        only_left: tp.FrozenSet[str], only_right: tp.FrozenSet[str]
+        self, fixing_commit: pygit2.Commit, occurrence: DiffOccurrence,
+        only_left: tp.FrozenSet[pygit2.Commit],
+        only_right: tp.FrozenSet[pygit2.Commit]
     ):
         self.fixing_commit = fixing_commit
         self.occurrence = occurrence
@@ -87,7 +88,7 @@ def _plot_chord_diagram_for_raw_bugs(
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
 
-    # maps commit hex -> node id
+    # maps commit id -> node id
     map_commit_to_id: tp.Dict[pygit2.Commit,
                               int] = _map_commits_to_nodes(project_repo)
     commit_type: tp.Dict[pygit2.Commit, NodeType] = {}
@@ -96,7 +97,7 @@ def _plot_chord_diagram_for_raw_bugs(
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
 
     for commit in project_repo.walk(
-        project_repo.head.target, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         commit_type[commit] = NodeType.DEFAULT
 
@@ -131,7 +132,7 @@ def _bug_data_diff_plot(
     commit_coordinates = _compute_node_placement(commit_count)
 
     for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         commit_occurrences[commit] = DiffOccurrence.NONE
 
@@ -159,9 +160,10 @@ ValueT = tp.TypeVar("ValueT")
 
 def _generate_diff_line_data(
     diff_raw_bugs: tp.Generator[DiffEntry, None,
-                                None], map_commit_to_id: tp.Dict[str, int],
+                                None], map_commit_to_id: tp.Dict[pygit2.Commit,
+                                                                 int],
     commit_coordinates: tp.List[npt.NDArray[np.float64]],
-    commit_type: tp.Dict[str, DiffOccurrence]
+    commit_type: tp.Dict[pygit2.Commit, DiffOccurrence]
 ) -> tp.List[gob.Scatter]:
     lines: tp.List[gob.Scatter] = []
     edge_color_left = "#ff5555"
@@ -234,13 +236,14 @@ def _generate_line_data(
 def _generate_node_data(
     project_repo: pygit2.Repository,
     commit_coordinates: tp.List[npt.NDArray[np.float64]],
-    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[pygit2.Commit,
-                                                              NodeType]
+    map_commit_to_id: tp.Dict[pygit2.Commit,
+                              int], commit_type: tp.Dict[pygit2.Commit,
+                                                         NodeType]
 ) -> tp.List[gob.Scatter]:
     nodes = []
 
     for commit in project_repo.walk(
-        project_repo.head.target, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         # draw commit nodes using preprocessed commit types
         commit_id = map_commit_to_id[commit]
@@ -254,7 +257,7 @@ def _generate_node_data(
             commit] == NodeType.FIXING_HEAD else 8
         displayed_message = commit.message.partition('\n')[0]
         node_label = f'Type: {commit_type[commit]}<br>' \
-                     f'Hash: {commit.hex}<br>' \
+                     f'Hash: {commit.id}<br>' \
                      f'Author: {commit.author.name}<br>' \
                      f'Date: {datetime.fromtimestamp(commit.commit_time)}<br>' \
                      f'Message: {displayed_message}'
@@ -438,7 +441,7 @@ def _map_commits_to_nodes(
     commits_to_nodes_map: tp.Dict[pygit2.Commit, int] = {}
     commit_count = 0
     for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.enums.SortMode.TIME
     ):
         # node ids are sorted by time
         commits_to_nodes_map[commit] = commit_count
@@ -449,8 +452,9 @@ def _map_commits_to_nodes(
 def _diff_raw_bugs(
     bugs_left: tp.FrozenSet[PygitBug], bugs_right: tp.FrozenSet[PygitBug]
 ) -> tp.Generator[DiffEntry, None, None]:
-    fixes_left: tp.Set[str] = {bug.fixing_commit for bug in bugs_left}
-    fixes_right: tp.Set[str] = {bug.fixing_commit for bug in bugs_right}
+    fixes_left: tp.Set[pygit2.Commit] = {bug.fixing_commit for bug in bugs_left}
+    fixes_right: tp.Set[pygit2.Commit
+                       ] = {bug.fixing_commit for bug in bugs_right}
 
     for fixing_commit, introducers_left, introducers_right in _zip_dicts({
         bug.fixing_commit: bug.introducing_commits for bug in bugs_left
@@ -463,8 +467,8 @@ def _diff_raw_bugs(
         elif fixing_commit in fixes_right:
             occurrence = DiffOccurrence.RIGHT
 
-        diff_left: tp.FrozenSet[str] = frozenset()
-        diff_right: tp.FrozenSet[str] = frozenset()
+        diff_left: tp.FrozenSet[pygit2.Commit] = frozenset()
+        diff_right: tp.FrozenSet[pygit2.Commit] = frozenset()
         if introducers_left:
             diff_left = introducers_left
             if introducers_right:
@@ -502,7 +506,8 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
     def plot(self, view_mode: bool) -> None:
         """Plots bug plot for the whole project."""
         project_name = self.plot_kwargs['case_study'].project_name
-        project_repo = get_local_project_repo(project_name).pygit_repo
+        project_repo = get_local_project_repo(project_name)
+        pygit_repo = project_repo.pygit_repo
 
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)
@@ -519,15 +524,15 @@ class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
 
         if self.__szz_tool == 'pydriller':
             self.__figure = _plot_chord_diagram_for_raw_bugs(
-                project_name, project_repo, pydriller_bugs, self.__szz_tool
+                project_name, pygit_repo, pydriller_bugs, self.__szz_tool
             )
         elif self.__szz_tool == 'szz_unleashed':
             self.__figure = _plot_chord_diagram_for_raw_bugs(
-                project_name, project_repo, szzunleashed_bugs, self.__szz_tool
+                project_name, pygit_repo, szzunleashed_bugs, self.__szz_tool
             )
         elif self.__szz_tool == 'szz_diff':
             self.__figure = _bug_data_diff_plot(
-                project_name, project_repo, pydriller_bugs, szzunleashed_bugs
+                project_name, pygit_repo, pydriller_bugs, szzunleashed_bugs
             )
         else:
             raise PlotDataEmpty

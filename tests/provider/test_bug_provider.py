@@ -160,7 +160,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         def get(commit_id: str) -> pygit2.Commit:
             """Method that creates simple pygit2 Commit mocks for given ID."""
-            mock_commit = mock.create_autospec(pygit2.Commit)
+            mock_commit: pygit2.Commit = mock.create_autospec(pygit2.Commit)
             mock_commit.id = pygit2.Oid(hex=commit_id)
             return mock_commit
 
@@ -169,6 +169,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
         self.mock_pygit.get = get
         self.mock_repo_handle = mock.create_autospec(RepositoryHandle)
         self.mock_repo_handle.pygit_repo = self.mock_pygit
+        self.mock_repo_handle.pygit_commit = get
 
     def test_issue_events_closing_bug(self) -> None:
         """Test identifying issue events that close a bug related issue, with
@@ -260,8 +261,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
         mock_pydriller_git.return_value = DummyPydrillerRepo("")
 
         pybug = _create_corresponding_bug(
-            self.mock_pygit.get(issue_event.commit_id), self.mock_pygit,
-            issue_event.issue.number
+            self.mock_repo_handle.pygit_commit(issue_event.commit_id),
+            self.mock_repo_handle, issue_event.issue.number
         )
 
         self.assertEqual(issue_event.commit_id, str(pybug.fixing_commit.id))
@@ -357,20 +358,20 @@ class TestBugDetectionStrategies(unittest.TestCase):
         of bugs is created correctly."""
 
         first_fixing_commit = mock.create_autospec(pygit2.Commit)
-        first_fixing_commit.hex = "1241"
+        first_fixing_commit.id = "1241"
         first_fixing_commit.message = "Fixed first issue"
 
         first_non_fixing_commit = mock.create_autospec(pygit2.Commit)
-        first_non_fixing_commit.hex = "1242"
+        first_non_fixing_commit.id = "1242"
         first_non_fixing_commit.message = "Added documentation\n" + \
                                           "Grammar Errors need to be fixed"
 
         second_non_fixing_commit = mock.create_autospec(pygit2.Commit)
-        second_non_fixing_commit.hex = "1243"
+        second_non_fixing_commit.id = "1243"
         second_non_fixing_commit.message = "Added feature X"
 
         second_fixing_commit = mock.create_autospec(pygit2.Commit)
-        second_fixing_commit.hex = "1244"
+        second_fixing_commit.id = "1244"
         second_fixing_commit.message = "fixes second problem"
 
         def mock_walk(_start_id: str, _sort_mode: int):
@@ -388,14 +389,14 @@ class TestBugDetectionStrategies(unittest.TestCase):
         mock_pydriller_git.return_value = DummyPydrillerRepo("")
 
         # commit filter method for pygit bugs
-        def accept_pybugs(repo: pygit2.Repository,
+        def accept_pybugs(repo: RepositoryHandle,
                           commit: pygit2.Commit) -> tp.Optional[PygitBug]:
             if _is_closing_message(commit.message):
-                return _create_corresponding_bug(commit, self.mock_pygit)
+                return _create_corresponding_bug(commit, self.mock_repo_handle)
             return None
 
         pybug_ids = set(
-            pybug.fixing_commit.hex
+            pybug.fixing_commit.id
             for pybug in _filter_commit_message_bugs("", accept_pybugs)
         )
         expected_ids = {"1241", "1244"}
@@ -451,7 +452,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="ddf0ba95408dc5508504c84e6616c49128410389"
         )
         pybug_first_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_first)).introducing_commits
         )
 
@@ -459,7 +460,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="d846bdbe45e4d64a34115f5285079e1b5f84007f"
         )
         pybug_second_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_second)).introducing_commits
         )
 
@@ -467,7 +468,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="2da78b2820370f6759e9086fad74155d6655e93b"
         )
         pybug_third_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_third)).introducing_commits
         )
 
@@ -475,7 +476,7 @@ class TestBugProvider(unittest.TestCase):
             fixing_commit="3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
         pybug_fourth_intro_ids = set(
-            intro_commit.hex
+            intro_commit.id
             for intro_commit in next(iter(pybug_fourth)).introducing_commits
         )
 
