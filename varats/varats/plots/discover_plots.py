@@ -2,7 +2,12 @@
 
 from varats import plots as __PLOTS__
 
+__PLOTS_DISCOVERED = False
+
 
 def initialize_plots() -> None:
-    # Discover and initialize all plots
-    __PLOTS__.discover()
+    global __PLOTS_DISCOVERED  # pylint: disable=global-statement
+    if not __PLOTS_DISCOVERED:
+        # Discover and initialize all plots
+        __PLOTS__.discover()
+        __PLOTS_DISCOVERED = True

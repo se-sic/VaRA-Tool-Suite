@@ -172,6 +172,7 @@ def main(
     )
 
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
+    env["PYTHONPATH"] = ":".join(sys.path)
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:

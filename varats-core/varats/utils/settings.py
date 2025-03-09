@@ -43,6 +43,12 @@ def create_new_varats_config() -> s.Configuration:
                 "desc": "Result folder for collected results",
                 "default": os.getcwd() + "/results",
             },
+            "external_source_repositories": {
+                "desc":
+                    "List of external repositories from where we local extra "
+                    "projects/experiments/tables/plots.",
+                "default": []
+            },
         }
     )
 
