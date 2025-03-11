@@ -23,6 +23,7 @@ from plumbum.commands import ProcessExecutionError
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
+from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.ts_utils.click_param_types import (
     create_multi_experiment_type_choice,
@@ -101,6 +102,20 @@ def __validate_project_parameters(
     help="The experiment to run."
 )
 @click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")
+@click.option(
+    "-wl",
+    "--white-list",
+    type=click.Choice(FileStatusExtension.__members__, case_sensitive=False),
+    multiple=True,
+    help="Override the file status whitelist."
+)
+@click.option(
+    "-bl",
+    "--black-list",
+    type=click.Choice(FileStatusExtension.__members__, case_sensitive=False),
+    multiple=True,
+    help="Override the file status blacklist."
+)
 @click.argument("projects", nargs=-1, callback=__validate_project_parameters)
 def main(
     verbose: int,
@@ -111,6 +126,8 @@ def main(
     experiment: tp.List[tp.Type['VersionExperiment']],
     projects: tp.List[str],
     pretend: bool,
+    white_list: tp.List[str],
+    black_list: tp.List[str],
 ) -> None:
     """
     Run benchbuild experiments.
@@ -153,6 +170,11 @@ def main(
                 bb_extra_args.append("--debug")
                 bb_extra_args.append("--interactive")
 
+    if white_list:
+        vara_cfg()["experiment"]["file_status_whitelist"] = list(white_list)
+    if black_list:
+        vara_cfg()["experiment"]["file_status_blacklist"] = list(black_list)
+
     if not slurm:
         bb_command_args.append("run")
 
@@ -172,6 +194,7 @@ def main(
     )
 
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
+    env |= {k: str(to_yaml(v)) for k, v in vara_cfg().to_env_dict().items()}
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
