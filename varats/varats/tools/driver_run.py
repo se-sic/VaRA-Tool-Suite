@@ -10,6 +10,7 @@ import logging
 import re
 import sys
 import typing as tp
+from operator import attrgetter
 from pathlib import Path
 from subprocess import PIPE
 
@@ -105,14 +106,16 @@ def __validate_project_parameters(
 @click.option(
     "-wl",
     "--white-list",
-    type=click.Choice(FileStatusExtension.__members__, case_sensitive=False),
+    type=click.Choice([x.name for x in FileStatusExtension],
+                      case_sensitive=False),
     multiple=True,
     help="Override the file status whitelist."
 )
 @click.option(
     "-bl",
     "--black-list",
-    type=click.Choice(FileStatusExtension.__members__, case_sensitive=False),
+    type=click.Choice([x.name for x in FileStatusExtension],
+                      case_sensitive=False),
     multiple=True,
     help="Override the file status blacklist."
 )
