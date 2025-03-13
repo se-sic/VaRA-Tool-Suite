@@ -28,6 +28,7 @@ from varats.report.report import FileStatusExtension
 from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.ts_utils.click_param_types import (
     create_multi_experiment_type_choice,
+    EnumChoice,
 )
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
@@ -106,16 +107,14 @@ def __validate_project_parameters(
 @click.option(
     "-wl",
     "--white-list",
-    type=click.Choice([x.name for x in FileStatusExtension],
-                      case_sensitive=False),
+    type=EnumChoice(FileStatusExtension, case_sensitive=False),
     multiple=True,
     help="Override the file status whitelist."
 )
 @click.option(
     "-bl",
     "--black-list",
-    type=click.Choice([x.name for x in FileStatusExtension],
-                      case_sensitive=False),
+    type=EnumChoice(FileStatusExtension, case_sensitive=False),
     multiple=True,
     help="Override the file status blacklist."
 )
@@ -129,8 +128,8 @@ def main(
     experiment: tp.List[tp.Type['VersionExperiment']],
     projects: tp.List[str],
     pretend: bool,
-    white_list: tp.List[str],
-    black_list: tp.List[str],
+    white_list: tp.List[FileStatusExtension],
+    black_list: tp.List[FileStatusExtension],
 ) -> None:
     """
     Run benchbuild experiments.
@@ -174,9 +173,13 @@ def main(
                 bb_extra_args.append("--interactive")
 
     if white_list:
-        vara_cfg()["experiment"]["file_status_whitelist"] = list(white_list)
+        vara_cfg()["experiment"]["file_status_whitelist"] = [
+            x.nice_name() for x in white_list
+        ]
     if black_list:
-        vara_cfg()["experiment"]["file_status_blacklist"] = list(black_list)
+        vara_cfg()["experiment"]["file_status_blacklist"] = [
+            x.nice_name() for x in black_list
+        ]
 
     if not slurm:
         bb_command_args.append("run")
@@ -197,7 +200,16 @@ def main(
     )
 
     env = {k: str(to_yaml(v)) for k, v in bb_cfg().to_env_dict().items()}
-    env |= {k: str(to_yaml(v)) for k, v in vara_cfg().to_env_dict().items()}
+    if white_list:
+        env |= {
+            k: str(to_yaml(v)) for k, v in vara_cfg()["experiment"]
+            ["file_status_whitelist"].to_env_dict().items()
+        }
+    if black_list:
+        env |= {
+            k: str(to_yaml(v)) for k, v in vara_cfg()["experiment"]
+            ["file_status_blacklist"].to_env_dict().items()
+        }
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         try:
