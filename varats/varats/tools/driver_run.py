@@ -10,7 +10,6 @@ import logging
 import re
 import sys
 import typing as tp
-from operator import attrgetter
 from pathlib import Path
 from subprocess import PIPE
 
