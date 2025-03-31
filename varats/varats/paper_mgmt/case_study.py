@@ -4,7 +4,7 @@ import logging
 import random
 import typing as tp
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from itertools import groupby
 from pathlib import Path
@@ -425,9 +425,7 @@ def extend_with_latest_rev(
         ignore_blocked: ignore blocked revisions'
         repo: git repository handle
     """
-    pygit2_repo = repo.pygit_repo
-
-    last_pygit_commit: pygit2.Commit = pygit2_repo[pygit2_repo.head.target]
+    last_pygit_commit = repo.pygit_commit(str(repo.pygit_repo.head.target))
     last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
 
     while ignore_blocked and is_revision_blocked(
@@ -516,8 +514,8 @@ def extend_with_revs_per_year(
     commits: tp.DefaultDict[int, tp.List[FullCommitHash]] = defaultdict(
         list
     )  # maps year -> list of commits
-    for commit in pygit_repo.walk(last_commit.id, pygit2.GIT_SORT_TIME):
-        commit_date = datetime.utcfromtimestamp(commit.commit_time)
+    for commit in pygit_repo.walk(last_commit.id, pygit2.enums.SortMode.TIME):
+        commit_date = datetime.fromtimestamp(commit.commit_time, timezone.utc)
         commits[commit_date.year].append(
             FullCommitHash.from_pygit_commit(commit)
         )

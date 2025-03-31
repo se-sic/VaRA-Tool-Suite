@@ -358,20 +358,12 @@ def _add_varats_layers(image_context: StageBuilder) -> None:
         mount = f'type=bind,src={src_dir},target={tgt_dir}'
         if buildah_version() >= (1, 24, 0):
             mount += ',rw'
-        image.run(
-            *pip_args, str(tgt_dir / 'varats-core'), mount=mount, runtime=crun
-        )
-        image.run(*pip_args, str(tgt_dir / 'varats'), mount=mount, runtime=crun)
+        image.run(*pip_args, str(tgt_dir), mount=mount, runtime=crun)
 
     def from_pip(image: ContainerImage) -> None:
         LOG.debug("installing varats from pip release.")
         image.run(
-            'pip',
-            'install',
-            '--ignore-installed',
-            'varats-core',
-            'varats',
-            runtime=crun
+            'pip', 'install', '--ignore-installed', 'varats', runtime=crun
         )
 
     _unset_varats_source_mount(image_context)
