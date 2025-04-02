@@ -6,9 +6,9 @@ benchbuild interface with tool suite specific functions.
 """
 import typing as tp
 from abc import abstractmethod
+from pathlib import Path
 
 import benchbuild as bb
-
 from varats.project.project_domain import ProjectDomains
 from varats.utils.git_util import ShortCommitHash
 
@@ -44,4 +44,32 @@ class VProject(bb.Project):  # type: ignore
 
         Returns:
             list of project binaries
+        """
+
+    @abstractmethod
+    def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Returns a list of tests that can be run for this project in the current
+        revision and configuration.
+
+        Returns:
+             A list of tests available for this project.
+        """
+
+    @abstractmethod
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """
+        Run the test suite for this project.
+
+        This method should be implemented by subclasses to execute the project's test suite.
+        Args:
+            test_report_path: Path to the test report file.
+            tests_to_run: List of test cases to run. If None, all tests will be run.
+
+        Returns:
+            True is all tests passed, False otherwise.
         """
