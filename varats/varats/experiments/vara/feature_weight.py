@@ -35,14 +35,13 @@ class WeightRegionsCountRec(FeatureExperiment, shorthand="WAR"):
 
         project.cflags += self.get_vara_feature_cflags(project)
 
-        # change the featureInstrType to verify
         project.cflags += self.get_vara_tracing_cflags(
-            FeatureInstrType.TEF, instruction_threshold=1
+            FeatureInstrType.VERIFY, instruction_threshold=1
         )
 
         project.cflags += [
             "-fvara-weight-opt=recursive",
-            "-O1",
+            "-O1",  # Use O1 to use minimal optimization
             "-g0",
             "-mllvm",
             "--vara-use-phasar"
