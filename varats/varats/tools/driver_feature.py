@@ -9,7 +9,7 @@ import click
 from pygit2 import Walker, Commit, Blob
 from pygit2.enums import SortMode
 
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import get_local_project_repo
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.ts_utils.click_param_types import create_project_choice
@@ -118,13 +118,13 @@ def __prompt_location(
     feature_name: str,
     commit: Commit,
     old_location: tp.Optional[Location] = None,
-    old_content: tp.Optional[str] = None
+    old_content: tp.Optional[str] = None,
+    prompt: tp.Optional[str] = None
 ) -> tp.Tuple[Location, str]:
     commit_hash = CommitHash.from_pygit_commit(commit)
 
-    prompt = f"Enter location for feature {feature_name} @ {commit_hash.short_hash}"
-    if old_content:
-        prompt += f" ({old_content})"
+    if prompt is None:
+        prompt = f"Enter location for feature {feature_name} @ {commit_hash.short_hash}"
 
     parse_location = partial(
         __get_and_check_location, commit=commit, old_location=old_location
@@ -154,8 +154,9 @@ def __get_and_check_location(
 
 def __get_location_content(commit: Commit,
                            location: Location) -> tp.Optional[str]:
-    assert location.start_line == location.end_line, \
-        "Multiline locations are not supported yet."
+    if location.start_line != location.end_line:
+        raise click.UsageError("Multiline locations are not supported yet.")
+
     lines: tp.List[bytes] = tp.cast(Blob, commit.tree[location.file
                                                      ]).data.splitlines()
 
@@ -192,7 +193,7 @@ def __annotate(
 ) -> None:
     initialize_cli_tool()
 
-    repo = get_local_project_git(project)
+    repo = get_local_project_repo(project).pygit_repo
     walker: Walker
 
     walker = repo.walk(
@@ -259,21 +260,24 @@ def __annotate(
 
                     # track new feature location
                     click.echo(
-                        f"({commit_hash.short_hash}) Annotation '{old_target}' "
-                        f"of feature '{feature}' has changed."
+                        f"[{feature} @ {commit_hash.short_hash}] "
+                        f"Annotation changed for '{old_target}'."
                     )
-                    click.echo(f"Old location was {annotation.location}")
+                    click.echo(f"Old location: {annotation.location}")
 
                     new_location, new_target = __prompt_location(
-                        feature, commit, annotation.location, old_target
+                        feature, commit, annotation.location, old_target,
+                        "New location: "
                     )
 
                     last_annotations[feature][annotation_id] = \
                         FeatureAnnotation(feature, new_location, commit_hash)
                     last_annotation_targets[feature][annotation_id] = new_target
-                    click.echo(
-                        f"Tracking '{new_target}' at location {new_location}"
-                    )
+
+                    if new_target != old_target:
+                        click.echo(
+                            f"Symbol changed. Tracking as '{new_target}'."
+                        )
             click.echo()
 
     # store remaining annotations
@@ -288,7 +292,8 @@ def __annotate(
             for location in locations:
                 outfile.write(location.to_xml())
                 outfile.write("\n")
-        outfile.write("\n\n")
+            outfile.write("\n")
+        outfile.write("\n")
 
 
 if __name__ == '__main__':
