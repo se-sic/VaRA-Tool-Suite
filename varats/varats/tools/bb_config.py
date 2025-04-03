@@ -97,6 +97,7 @@ def update_projects(
             'varats.projects.test_projects.test_suite',
             'varats.projects.perf_tests.feature_perf_cs_collection',
             'varats.projects.perf_tests.feature_perf_regression',
+            'varats.projects.test_projects.architecture_test_repo',
         ]
 
 
@@ -111,6 +112,8 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.vara.architecture_report_experiment',
+        'varats.experiments.vara.architecture_interactions_experiment',
         'varats.experiments.vara.agg_region_interaction_perf_runner',
         'varats.experiments.vara.blame_ast_experiment',
         'varats.experiments.vara.blame_report_experiment',
@@ -123,6 +126,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.feature_perf_precision',
         'varats.experiments.vara.feature_tracing_stats',
         'varats.experiments.vara.feature_instrumentation_points',
+        'varats.experiments.vara.feature_architecture_taint_report_experiment',
         'varats.experiments.vara.instrumentation_verifier',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
