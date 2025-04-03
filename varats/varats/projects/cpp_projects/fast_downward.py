@@ -7,6 +7,7 @@ from benchbuild.utils.cmd import cmake, mkdir, pytest
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 
+import benchbuild
 import benchbuild as bb
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -50,6 +51,19 @@ class FastDownward(VProject, ReleaseProviderHook):
         ImageBase.DEBIAN_10
     ).run('apt', 'install', '-y', 'cmake', 'g++', 'git', 'make', 'python3')
 
+    def __build_tests(self):
+        """Running the in-built testsuite depends on using the python build
+        script instead of CMake."""
+        version_source = local.path(self.source_of(self.primary_source))
+
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+        with local.cwd(version_source):
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                build_script = benchbuild.utils.cmd["./build.py"]
+                bb.watch(build_script
+                        )("--all", "-j", get_number_of_jobs(bb_cfg()))
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -69,21 +83,29 @@ class FastDownward(VProject, ReleaseProviderHook):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
-        # TODO: Partial test suite
+        self.__build_tests()
+        if tests_to_run is None:
+            # In case no test names are given, we run all tests
+            tests_to_run = []
+
         version_source = local.path(self.source_of(self.primary_source))
 
-        # "test_commandline_args" requires a debug build
+        # "test_commandline_args" requires the external plan validator VAL to be installed
+        # Since this is usually not the case, we skip this test
         test_runner = pytest["-k", "not test_commandline_args"]
 
         if test_report_path:
             test_runner = test_runner["--junitxml", test_report_path]
 
         with local.cwd(version_source):
-            ret_code, _, _ = bb.watch(test_runner["driver/tests.py"])
+            ret_code, _, _ = bb.watch(
+                test_runner["driver/tests.py", *tests_to_run]
+            )
 
         return ret_code == 0
 
     def get_test_names(self) -> tp.Iterable[str]:
+        self.__build_tests()
         pytest_cmd = pytest["--collect-only", "-q", "driver/tests.py"]
 
         try:
@@ -100,6 +122,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             for line in output.splitlines()
             if line.startswith("driver/tests.py::")
         ]
+
         return test_names
 
     def compile(self) -> None:
