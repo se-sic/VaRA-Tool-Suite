@@ -11,12 +11,13 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
-    get_local_project_git_path,
+    get_local_project_repo,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 
 
 class Architecture_Test(VProject):
@@ -44,7 +45,7 @@ class Architecture_Test(VProject):
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(Architecture_Test.NAME)
+            get_local_project_repo(Architecture_Test.NAME)
         )
 
         binary_map.specify_binary(
