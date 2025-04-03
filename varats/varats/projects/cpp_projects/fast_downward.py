@@ -1,12 +1,13 @@
 """Project file for FastDownward."""
 import re
 import typing as tp
+from pathlib import Path
+
+from benchbuild.utils.cmd import cmake, mkdir, pytest
+from benchbuild.utils.settings import get_number_of_jobs
+from plumbum import local, ProcessExecutionError
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, mkdir
-from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local
-
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
@@ -62,6 +63,44 @@ class FastDownward(VProject, ReleaseProviderHook):
 
     def run_tests(self) -> None:
         pass
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        # TODO: Partial test suite
+        version_source = local.path(self.source_of(self.primary_source))
+
+        # "test_commandline_args" requires a debug build
+        test_runner = pytest["-k", "not test_commandline_args"]
+
+        if test_report_path:
+            test_runner = test_runner["--junitxml", test_report_path]
+
+        with local.cwd(version_source):
+            ret_code, _, _ = bb.watch(test_runner["driver/tests.py"])
+
+        return ret_code == 0
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        pytest_cmd = pytest["--collect-only", "-q", "driver/tests.py"]
+
+        try:
+            with local.cwd(self.source_of(self.primary_source)):
+                _, output, _ = bb.watch(pytest_cmd)
+        except ProcessExecutionError:
+            return []
+
+        # For some reason even during the collection phase, fast downward is executed
+        # Therefore some output from the planning tool is included in the output
+        # We filter the output to only include lines that start with "driver/tests.py::"
+        test_names = [
+            line.strip()
+            for line in output.splitlines()
+            if line.startswith("driver/tests.py::")
+        ]
+        return test_names
 
     def compile(self) -> None:
         """Compile the project."""
