@@ -579,11 +579,13 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
 
         with ExitStack() as stack:
             tmp_folders = {
-                report_ty: Path(
-                    stack.enter_context(
-                        ZippedReportFolder(report_path.full_path())
+                report_ty:
+                    Path(
+                        stack.enter_context(
+                            ZippedReportFolder(report_path.full_path())
+                        )
                     )
-                ) for report_ty, report_path in self.__output_filepaths.items()
+                for report_ty, report_path in self.__output_filepaths.items()
             }
             try:
                 results = self.__run_children(tmp_folders)

@@ -79,9 +79,9 @@ def createCommitFilter(project: VProject) -> tp.Optional[InteractionFilter]:
     """
     Creates a commit filter for the given project instance.
 
-    The commit filter accepts all commits between the
-    currently analyzed commit (inclusive) and the next older commit in the
-    same paper config stage (exclusive).
+    The commit filter accepts all commits between the currently analyzed commit
+    (inclusive) and the next older commit in the same paper config stage
+    (exclusive).
     """
     project_repo = get_local_project_repo(project.name)
     case_study = get_loaded_paper_config().get_case_studies(project.name)[0]

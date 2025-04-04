@@ -543,7 +543,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
             perf_inter_reports: tp.Dict[
                 Revision, PerformanceInteractionReport] = {
                     report_file.report_filename.commit_hash:
-                    load_performance_interaction_report(report_file)
+                        load_performance_interaction_report(report_file)
                     for report_file in perf_inter_report_files
                 }
 
@@ -661,7 +661,7 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
             perf_inter_reports: tp.Dict[
                 Revision, PerformanceInteractionReport] = {
                     report_file.report_filename.commit_hash:
-                    load_performance_interaction_report(report_file)
+                        load_performance_interaction_report(report_file)
                     for report_file in perf_inter_report_files
                 }
 
