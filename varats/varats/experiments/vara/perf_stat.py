@@ -86,12 +86,8 @@ class PerfStat(OutputFolderStep):
                     print(f"Failed to decode JSON: {e} in line: {fixed_line}")
                     continue
 
-        #json_array = "[" + ",".join(fixed_lines) + "]"
-
-
         with open(file_path, "w") as file:
             json.dump(fixed_data, file)
-            #file.writelines(json_array)#, file
 
 
 class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
