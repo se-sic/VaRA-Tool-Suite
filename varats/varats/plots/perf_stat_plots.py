@@ -4,6 +4,7 @@ from itertools import chain
 import click
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -65,10 +66,12 @@ class PerfStatPlot(Plot, plot_name='fperf_stat'):
                     plt.xlabel("time")
                     plt.ylabel(self.plot_kwargs["value"])
 
+                    plt.xticks(rotation=90)
+
 class PerfStatPlotGenerator(
     PlotGenerator, generator_name="fperf-stat", options=[make_cli_option(
         "--value",
-        type=click.Choice(["msec", "context-switches", "cpu-migrations", "page-faults", "cycles",
+        type=click.Choice(["task-clock", "context-switches", "cpu-migrations", "page-faults", "cycles",
        "instructions", "branches", "branch-misses"]),
         required=True,
         help="File type for the plot."

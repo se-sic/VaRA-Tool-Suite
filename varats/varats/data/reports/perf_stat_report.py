@@ -3,42 +3,36 @@ import typing as tp
 import chardet
 import zipfile
 import pandas as pd
+import json
 
 from varats.report.report import BaseReport, ReportAggregate
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from pathlib import Path
 
 
-class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="csv"):
+class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
     """
     Converts perf stat output to a dictionary of data
     """
     def __init__(self, path: Path):
-        df = pd.DataFrame() 
-        line_counter = 0
+        df = pd.DataFrame()
         with open(path, "r") as file:
-            for line in file:
-                line_counter += 1
-                if line_counter <= 2:
-                    continue
-                line = line.strip()
-                elements = line.split(',')
-                elements = [elem for elem in elements if elem]
-                try:
-                    int(elements[2])
-                    parameter = elements[3]
-                except ValueError:
-                    parameter = elements[2]
-                value = elements[1]
-                timestemp = elements[0]
-                if parameter not in df.columns:
-                    df[parameter] = None
-                if timestemp not in df.index:
-                    df.loc[timestemp] = None
-                df.at[timestemp, parameter] = value
+            data = json.load(file)
+            for row in data:
+                interval = row['interval']
+                event = row['event']
+                counter_value = float(row['counter-value'])
 
-        self.df = df
+                if len(df) == 0:
+                    df.loc[interval, event] = counter_value
+                if interval not in df.index:
+                    df.loc[interval] = pd.Series()
+                if event not in df.columns:
+                    df[event] = None
 
+                df.loc[interval, event] = counter_value
+
+            self.df = df
 
 class PerfStatReportAggregate(
     ReportAggregate[PerfStatReport],

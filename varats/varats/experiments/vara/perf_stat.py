@@ -2,6 +2,8 @@
 
 import typing as tp
 from pathlib import Path
+import re
+import json
 
 from benchbuild import Project
 from benchbuild.command import cleanup
@@ -52,20 +54,44 @@ class PerfStat(OutputFolderStep):
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                self.project, self.__binary, [WorkloadCategory.EXAMPLE, WorkloadCategory.MEDIUM]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
                 run_report_name = tmp_dir / create_workload_specific_filename(
-                    "perf_stat", prj_command.command, self.__num, ".csv"
+                    "perf_stat", prj_command.command, self.__num, ".json"
                 )                
 
-                run_cmd = perf['stat', '-I 1', '-x',',','-o' f'{run_report_name}', pb_cmd]
+                run_cmd = perf['stat', '-I 1', '-j','-o' f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
                     run_cmd()
 
+                self.fix_json_format(run_report_name)
+
         return actions.StepResult.OK
+    
+    def fix_json_format(self, file_path: Path):
+        """Correcting wrong json format."""
+        wrong_decimal_regex = r'"?(\d+),(\d+)"?'
+        fixed_data = []
+
+        with open(file_path, "r") as file:
+            for line in file:
+                fixed_line = re.sub(wrong_decimal_regex, r"\1.\2", line)
+                try:
+                    json_obj = json.loads(fixed_line)
+                    fixed_data.append(json_obj)
+                except json.JSONDecodeError as e:
+                    print(f"Failed to decode JSON: {e} in line: {fixed_line}")
+                    continue
+
+        #json_array = "[" + ",".join(fixed_lines) + "]"
+
+
+        with open(file_path, "w") as file:
+            json.dump(fixed_data, file)
+            #file.writelines(json_array)#, file
 
 
 class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
