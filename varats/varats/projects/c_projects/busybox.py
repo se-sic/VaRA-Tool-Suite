@@ -12,10 +12,11 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
-    get_local_project_git_path,
+    get_local_project_repo,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -41,7 +42,7 @@ class Busybox(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Busybox.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Busybox.NAME))
 
         binary_map.specify_binary("PLEASE_REPLACE_ME", BinaryType.EXECUTABLE)
 

@@ -18,7 +18,7 @@ from varats.utils.settings import add_vara_experiment_options
 def update_projects(
     bb_cfg: s.Configuration, include_test_projects: bool = False
 ) -> None:
-    """update the projects entry in the benchbuild config to contain our
+    """Update the projects entry in the benchbuild config to contain our
     projects."""
     projects_conf = bb_cfg["plugins"]["projects"]
     # If we want later to use default BB projects
@@ -30,9 +30,10 @@ def update_projects(
         'varats.projects.c_projects.asterisk',
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
-        'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.brotli',
+        'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.bzip2',
+        'varats.projects.c_projects.capstone',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.file',
@@ -55,6 +56,7 @@ def update_projects(
         'varats.projects.c_projects.libxml2',
         'varats.projects.c_projects.lrzip',
         'varats.projects.c_projects.lz4',
+        'varats.projects.c_projects.open62541',
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.openvpn',
         'varats.projects.c_projects.opus',
@@ -66,6 +68,7 @@ def update_projects(
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
+        'varats.projects.c_projects.yara',
         'varats.projects.cpp_projects.clasp',
         'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
@@ -98,7 +101,7 @@ def update_projects(
 
 
 def update_experiments(bb_cfg: s.Configuration) -> None:
-    """update the given benchbuild config to contain our experiments."""
+    """Update the given benchbuild config to contain our experiments."""
     projects_conf = bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
@@ -109,7 +112,9 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.szz.pydriller_szz_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.vara.agg_region_interaction_perf_runner',
+        'varats.experiments.vara.blame_ast_experiment',
         'varats.experiments.vara.blame_report_experiment',
+        'varats.experiments.vara.blame_server_experiment',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
@@ -122,6 +127,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.vara.feature_region_verifier_experiment',
+        'varats.experiments.vara.hot_function_experiment',
     ]
 
 

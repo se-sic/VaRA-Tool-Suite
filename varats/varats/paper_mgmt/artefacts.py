@@ -165,9 +165,7 @@ class Artefacts:
 
     @property
     def artefacts(self) -> tp.Iterable[Artefact]:
-        r"""
-        An iterator of the :class:`Artefact`\ s in this collection.
-        """
+        r"""An iterator of the :class:`Artefact`\ s in this collection."""
         return self.__artefacts.values()
 
     def get_artefact(self, name: str) -> tp.Optional[Artefact]:

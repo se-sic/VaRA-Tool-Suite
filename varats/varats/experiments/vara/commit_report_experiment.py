@@ -61,6 +61,7 @@ class CRAnalysis(actions.ProjectStep):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """
         This step performs the actual analysis with the correct flags.
+
         Flags:
             -vara-CR: to run a commit flow report
             -vara-report-outfile=<path>: specify the path to store the results

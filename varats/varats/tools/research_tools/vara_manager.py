@@ -20,6 +20,7 @@ from PyQt5.QtCore import QProcess
 
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.git_commands import fetch_remote
+from varats.utils.git_util import RepositoryHandle
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -119,18 +120,17 @@ def get_llvm_project_status(
 ) -> GitStatus:
     """Retrieve the git status of a llvm project."""
     try:
-        with local.cwd(llvm_folder / project_folder):
-            fetch_remote('origin')
-            git_status = git['status']
-            stdout = git_status('-sb')
-            for line in stdout.split('\n'):
-                if line.startswith(
-                    '## vara-' + str(vara_cfg()['version']) + '-dev'
-                ):
-                    match = re.match(r".*\[(.*)\]", line)
-                    if match is not None:
-                        return GitStatus(GitState.BEHIND, match.group(1))
-                    return GitStatus(GitState.OK)
+        repo = RepositoryHandle(llvm_folder / project_folder)
+        fetch_remote(repo, 'origin')
+        stdout = repo('status', '-sb')
+        for line in stdout.split('\n'):
+            if line.startswith(
+                '## vara-' + str(vara_cfg()['version']) + '-dev'
+            ):
+                match = re.match(r".*\[(.*)\]", line)
+                if match is not None:
+                    return GitStatus(GitState.BEHIND, match.group(1))
+                return GitStatus(GitState.OK)
     except ProcessTerminatedError:
         pass
 

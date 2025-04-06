@@ -93,7 +93,7 @@ class TestWorkloadCommands(unittest.TestCase):
         self.assertEqual(len(commands), 1)
         command = commands[0]
         args = command.command.rendered_args(project=project)
-        self.assertEquals(args, tuple(["-c"]))
+        self.assertEqual(args, tuple(["-c"]))
 
     @run_in_test_environment(UnitTestFixtures.PAPER_CONFIGS)
     def test_workload_commands_requires_patch(self) -> None:

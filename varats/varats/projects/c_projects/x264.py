@@ -12,16 +12,13 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
-)
-from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    ShortCommitHash,
-    get_all_revisions_between,
     RevisionBinaryMap,
 )
+from varats.project.varats_project import VProject
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 
 
@@ -55,7 +52,7 @@ class X264(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(X264.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(X264.NAME))
 
         binary_map.specify_binary("x264", BinaryType.EXECUTABLE)
 
@@ -66,18 +63,21 @@ class X264(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
+        x264_repo = get_local_project_repo(self.NAME)
         x264_version_source = local.path(self.source_of_primary)
         x264_version = ShortCommitHash(self.version_of_primary)
 
         fpic_revisions = get_all_revisions_between(
+            x264_repo,
             "5dc0aae2f900064d1f58579929a2285ab289a436",
-            "290de9638e5364c37316010ac648a6c959f6dd26", ShortCommitHash,
-            x264_version_source
+            "290de9638e5364c37316010ac648a6c959f6dd26",
+            ShortCommitHash,
         )
         ldflags_revisions = get_all_revisions_between(
+            x264_repo,
             "6490f4398d9e28e65d7517849e729e14eede8c5b",
-            "275ef5332dffec445a0c5a78dbc00c3e0766011d", ShortCommitHash,
-            x264_version_source
+            "275ef5332dffec445a0c5a78dbc00c3e0766011d",
+            ShortCommitHash,
         )
 
         if x264_version in fpic_revisions:

@@ -28,3 +28,13 @@ Module: BlameExperiment
     :members:
     :undoc-members:
     :show-inheritance:
+
+------
+
+Module: BlameServerExperiment
+-----------------------------
+
+.. automodule:: varats.experiments.vara.blame_server_experiment
+    :members:
+    :undoc-members:
+    :show-inheritance:

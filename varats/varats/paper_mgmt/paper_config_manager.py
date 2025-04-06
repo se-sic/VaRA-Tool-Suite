@@ -94,8 +94,9 @@ def show_status_of_case_studies(
 
 
 def get_revision_list(case_study: CaseStudy) -> str:
-    """Returns a string with a list of revsion from the case-study, group by
-    case- study stages.
+    """
+    Returns a string with a list of revsion from the case-study, group by case-
+    study stages.
 
     Args:
         case_study: to print revisions for

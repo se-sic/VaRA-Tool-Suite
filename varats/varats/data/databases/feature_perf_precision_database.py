@@ -427,7 +427,7 @@ class EbpfTraceTEF(Profiler):
     def __init__(self) -> None:
         super().__init__(
             "eBPFTrace", fpp.EbpfTraceTEFProfileRunner,
-            fpp.TEFProfileOverheadRunner, fpp.MPRTEFAggregate
+            fpp.EbpfTraceTEFOverheadRunner, fpp.MPRTEFAggregate
         )
 
     def is_regression(
