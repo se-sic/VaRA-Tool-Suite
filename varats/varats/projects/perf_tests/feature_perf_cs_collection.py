@@ -165,7 +165,7 @@ class PrimeNumbers(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(PrimeNumbers.NAME)
+            get_local_project_repo(PrimeNumbers.NAME)
         )
 
         binary_map.specify_binary(

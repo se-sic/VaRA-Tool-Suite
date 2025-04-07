@@ -21,4 +21,3 @@ docs/source/.varats.yaml
 docs/**/*.inc
 pre-commit-env
 wheel_output
-.vscode/launch.json
