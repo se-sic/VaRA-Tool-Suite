@@ -56,7 +56,7 @@ class Yara(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(Yara.NAME))
 
-        binary_map.specify_binary('yara', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('.libs/yara', BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 

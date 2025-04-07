@@ -161,7 +161,7 @@ def create_project_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         Returns:
             the commit corresponding to the given CommitRepoPair
         """
-        commit = repos[crp.repository_name].pygit_repo.get(crp.commit_hash.hash)
+        commit = repos[crp.repository_name].maybe_pygit_commit(crp.commit_hash)
         if not commit:
             raise LookupError(
                 f"Could not find commit {crp} for project {project_name}."

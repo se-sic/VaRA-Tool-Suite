@@ -70,10 +70,11 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
         commit_lookup = create_project_commit_lookup_helper(project_name)
         repo_lookup = get_local_project_repos(project_name)
         code_churn_lookup = {
-            repo_name: calc_repo_code_churn(
-                get_local_project_repo(project_name, repo_name),
-                ChurnConfig.create_c_style_languages_config()
-            ) for repo_name, _ in repo_lookup.items()
+            repo_name:
+                calc_repo_code_churn(
+                    get_local_project_repo(project_name, repo_name),
+                    ChurnConfig.create_c_style_languages_config()
+                ) for repo_name, _ in repo_lookup.items()
         }
 
         def filter_nodes(node: CommitRepoPair) -> bool:

@@ -258,8 +258,9 @@ class InteractionGraph(abc.ABC):
         commit_lookup = create_project_commit_lookup_helper(self.project_name)
 
         commit_author_mapping = {
-            commit: commit_lookup(commit).author.name
-            if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
+            commit:
+                commit_lookup(commit).author.name
+                if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
             for commit in (list(commit_interaction_graph.nodes))
         }
         caig = nx.DiGraph()
