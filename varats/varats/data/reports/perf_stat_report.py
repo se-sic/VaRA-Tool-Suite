@@ -1,19 +1,19 @@
+import json
 import re
 import typing as tp
-import chardet
 import zipfile
-import pandas as pd
-import json
-
-from varats.report.report import BaseReport, ReportAggregate
-from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from pathlib import Path
+
+import chardet
+import pandas as pd
+
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
+from varats.report.report import BaseReport, ReportAggregate
 
 
 class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
-    """
-    Converts perf stat output to a dictionary of data
-    """
+    """Converts perf stat output to a dictionary of data."""
+
     def __init__(self, path: Path):
         df = pd.DataFrame()
         with open(path, "r") as file:
@@ -34,6 +34,7 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
 
             self.df = df
 
+
 class PerfStatReportAggregate(
     ReportAggregate[PerfStatReport],
     shorthand=PerfStatReport.SHORTHAND + ReportAggregate.SHORTHAND,
@@ -44,6 +45,7 @@ class PerfStatReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, PerfStatReport)
+
 
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
 

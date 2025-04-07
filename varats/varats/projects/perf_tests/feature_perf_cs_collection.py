@@ -127,6 +127,7 @@ class SynthFeatureInteraction(VProject):
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
 
+
 class PrimeNumbers(VProject):
     """Synthetic case-study project for testing detection of feature
     interactions."""
@@ -150,8 +151,7 @@ class PrimeNumbers(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot("PrimeNumbers") /
-                RSBinary("PrimeNumbers"),
+                SourceRoot("PrimeNumbers") / RSBinary("PrimeNumbers"),
                 ConfigParams(),
                 label="PrimeNumbers-no-input"
             )
@@ -171,7 +171,10 @@ class PrimeNumbers(VProject):
         binary_map.specify_binary(
             "build/bin/PrimeNumbers",
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("90cb6aec2a8abac249926a6bb4a1416ba65b550d", "f-perf-stat-example")
+            only_valid_in=RevisionRange(
+                "90cb6aec2a8abac249926a6bb4a1416ba65b550d",
+                "f-perf-stat-example"
+            )
         )
 
         return binary_map[revision]
@@ -188,9 +191,6 @@ class PrimeNumbers(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         _do_feature_perf_cs_collection_recompile(self)
-
-
-
 
 
 class FeaturePerfCSCollection(VProject):

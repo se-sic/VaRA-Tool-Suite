@@ -1,9 +1,9 @@
 """Implements an experiment that times the execution of all project binaries."""
 
+import json
+import re
 import typing as tp
 from pathlib import Path
-import re
-import json
 
 from benchbuild import Project
 from benchbuild.command import cleanup
@@ -12,6 +12,10 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import time, perf
 from plumbum import local
 
+from varats.data.reports.perf_stat_report import (
+    PerfStatReport,
+    PerfStatReportAggregate,
+)
 from varats.experiment.experiment_util import (
     VersionExperiment,
     get_default_compile_error_wrapped,
@@ -28,7 +32,6 @@ from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportAggregate, ReportSpecification
-from varats.data.reports.perf_stat_report import PerfStatReport, PerfStatReportAggregate
 
 
 class PerfStat(OutputFolderStep):
@@ -36,7 +39,7 @@ class PerfStat(OutputFolderStep):
 
     NAME = "PerfStat"
     DESCRIPTION = "Perf stat measurement for projects."
- 
+
     project: VProject
 
     def __init__(
@@ -54,15 +57,17 @@ class PerfStat(OutputFolderStep):
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE, WorkloadCategory.MEDIUM]
+                self.project, self.__binary,
+                [WorkloadCategory.EXAMPLE, WorkloadCategory.MEDIUM]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
                 run_report_name = tmp_dir / create_workload_specific_filename(
                     "perf_stat", prj_command.command, self.__num, ".json"
-                )                
+                )
 
-                run_cmd = perf['stat', '-I 1', '-j','-o' f'{run_report_name}', pb_cmd]
+                run_cmd = perf['stat', '-I 1', '-j', '-o'
+                               f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
                     run_cmd()
@@ -70,7 +75,7 @@ class PerfStat(OutputFolderStep):
                 self.fix_json_format(run_report_name)
 
         return actions.StepResult.OK
-    
+
     def fix_json_format(self, file_path: Path):
         """Correcting wrong json format."""
         wrong_decimal_regex = r'"?(\d+),(\d+)"?'
