@@ -1,5 +1,6 @@
 """Project file for brotli."""
 import json
+import re
 import typing as tp
 from pathlib import Path
 
@@ -130,26 +131,32 @@ class Brotli(VProject):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
-        # TODO: Partial test suite
-        run_dir = self.__get_build_dir()
 
-        with local.cwd(run_dir):
-            test_command = make["test", "-j", get_number_of_jobs(bb_cfg())]
-            ret_code, test_output, _ = bb.watch(test_command)()
+        with local.cwd(local.path(self.source_of_primary) / "out"):
+            # Run cmake to generate the test information
+            bb.watch(cmake["..", "-G", "Unix Makefiles"])()
 
-        if test_report_path:
-            with open(test_report_path, "w") as file:
-                file.write(test_output)
+            ctest_cmd = ctest
+            if test_report_path:
+                ctest_cmd = ctest_cmd["--output-junit", test_report_path]
+
+            if tests_to_run:
+                test_regex = f"^{'|'.join([re.escape(name) for name in tests_to_run])}''$"
+
+                ctest_cmd = ctest_cmd["-R", test_regex]
+
+            ret_code, _, _ = bb.watch(ctest_cmd)()
 
         return ret_code == 0
 
     def get_test_names(self) -> tp.Iterable[str]:
-        run_dir = self.__get_build_dir()
-
         ctest_cmd = ctest["--show-only=json-v1"]
 
         try:
-            with local.cwd(run_dir):
+            with local.cwd(local.path(self.source_of_primary) / "out"):
+                # Run cmake to generate the test information
+                bb.watch(cmake["..", "-G", "Unix Makefiles"])()
+
                 _, output, _ = bb.watch(ctest_cmd)
         except ProcessExecutionError:
             return []
