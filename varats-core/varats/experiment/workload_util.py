@@ -127,17 +127,14 @@ def workload_commands(
 def create_workload_specific_filename(
     filename_base: str,
     cmd: Command,
-    repetition: tp.Optional[int] = 0,
+    repetition: int = 0,
     file_suffix: str = ".txt"
 ) -> Path:
     if '_' in cmd.label:
         raise AssertionError(
             "Workload/Command labels must not contain underscores '_'!"
         )
-    if repetition is not None:
-        return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
-
-    return Path(f"{filename_base}_{cmd.label}{file_suffix}")
+    return Path(f"{filename_base}_{cmd.label}_{repetition}{file_suffix}")
 
 
 __WORKLOAD_FILE_REGEX = re.compile(r".*\_(?P<label>.+)\_\d+$")
@@ -172,8 +169,7 @@ class WorkloadSpecificReportAggregate(
                 "Files contained in a WorkloadSpecificReportAggregate should"
                 "always be formatted correctly by the"
                 "create_workload_specific_filename function."
-            )(label_method),
-            default_key=label_method(path)
+            )(label_method)
         )
 
     def workload_names(self) -> tp.Collection[str]:

@@ -761,9 +761,6 @@ class KeyedReportAggregate(
 
         return self.__reports[self.__default_key]
 
-    def __getitem__(self, key: KeyTy):
-        return self.reports(key)
-
 
 def _key_id(_: Path) -> int:
     return 0
