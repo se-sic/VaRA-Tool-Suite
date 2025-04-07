@@ -15,24 +15,15 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
     """Converts perf stat output to a dictionary of data."""
 
     def __init__(self, path: Path):
-        df = pd.DataFrame()
-        with open(path, "r") as file:
-            data = json.load(file)
-            for row in data:
-                interval = row['interval']
-                event = row['event']
-                counter_value = float(row['counter-value'])
-
-                if len(df) == 0:
-                    df.loc[interval, event] = counter_value
-                if interval not in df.index:
-                    df.loc[interval] = pd.Series()
-                if event not in df.columns:
-                    df[event] = None
-
-                df.loc[interval, event] = counter_value
-
-            self.df = df
+        self.df = pd.read_json(path)
+        if 'interval' in self.df.columns and 'event' in self.df.columns and 'counter-value' in self.df.columns:
+            self.df = self.df.pivot(
+                index='interval', columns='event', values='counter-value'
+            )
+        else:
+            print(
+                f"Warning: JSON structure in {path} might not be in the expected format."
+            )
 
 
 class PerfStatReportAggregate(
