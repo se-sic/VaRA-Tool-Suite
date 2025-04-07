@@ -1,12 +1,12 @@
 """Project file for zeromq."""
 import typing as tp
 
-import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+import benchbuild as bb
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -51,9 +51,15 @@ class Libzmq(VProject):
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
-            VCommand(SourceRoot("libzmq_git") / RSBinary(f"{binary}"),
-                     message_size, "100000", label=f"bench-{binary.replace('_','-')}-{message_size}")
-            for message_size in [2**e for e in range(3, 20)] for binary in ["inproc_thr", "inproc_lat"]
+            VCommand(
+                SourceRoot("libzmq_git") / RSBinary(f"{binary}"),
+                message_size,
+                "100000",
+                label=f"bench-{binary.replace('_','-')}-{message_size}"
+            )
+            for message_size in [2**e
+                                 for e in range(3, 20)]
+            for binary in ["inproc_thr", "inproc_lat"]
         ]
     }
 
@@ -67,13 +73,9 @@ class Libzmq(VProject):
             "build/lib/libzmq.so", BinaryType.SHARED_LIBRARY
         )
 
-        binary_map.specify_binary(
-            "build/bin/inproc_thr", BinaryType.EXECUTABLE
-        )
+        binary_map.specify_binary("build/bin/inproc_thr", BinaryType.EXECUTABLE)
 
-        binary_map.specify_binary(
-            "build/bin/inproc_lat", BinaryType.EXECUTABLE
-        )
+        binary_map.specify_binary("build/bin/inproc_lat", BinaryType.EXECUTABLE)
 
         binary_map.specify_binary(
             "build/bin/benchmark_radix_tree", BinaryType.EXECUTABLE
@@ -91,9 +93,6 @@ class Libzmq(VProject):
         cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
 
-        print(str(cpp_compiler))
-        print(str(cc_compiler))
-
         mkdir(libzmq_version_source / "build")
         with local.cwd(libzmq_version_source / "build"):
             with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
@@ -101,8 +100,8 @@ class Libzmq(VProject):
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
-        #with local.cwd(libzmq_version_source):
-        #    verify_binaries(self)
+        with local.cwd(libzmq_version_source):
+            verify_binaries(self)
 
     def recompile(self) -> None:
         """Recompile the project."""
@@ -110,7 +109,6 @@ class Libzmq(VProject):
 
         with local.cwd(libzmq_version_source / "build"):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
