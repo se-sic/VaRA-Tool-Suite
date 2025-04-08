@@ -29,9 +29,9 @@ class IfThenElse(OutputFolderStep):
         self,
         project: Project,
         condition: ProjectStep,
-        valid_results: tp.Optional[tp.List[StepResult]] = None,
         then_step: tp.Optional[ProjectStep] = None,
-        else_step: tp.Optional[ProjectStep] = None
+        else_step: tp.Optional[ProjectStep] = None,
+        valid_results: tp.Optional[tp.List[StepResult]] = None,
     ) -> None:
         super().__init__(project)
         self.__condition = condition
