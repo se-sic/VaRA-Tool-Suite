@@ -5,6 +5,7 @@ import unittest
 from github import Github, PaginatedList
 from github.GithubObject import GithubObject, NonCompletableGithubObject
 from github.PaginatedList import PaginatedListBase
+from github.Requester import Requester
 
 from tests.helper_utils import run_in_test_environment
 from varats.utils.github_util import (
@@ -27,8 +28,24 @@ class DummyGithubObject(NonCompletableGithubObject):
         pass
 
 
+class DummyRequester(Requester):
+    """Dummy Requester class."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            auth=None,
+            base_url="https://base.url",
+            timeout=1,
+            user_agent="user agent",
+            per_page=10,
+            verify=False,
+            retry=None,
+            pool_size=None
+        )
+
+
 def create_dummy_github_object() -> GithubObject:
-    return DummyGithubObject(None, {}, None, True)
+    return DummyGithubObject(DummyRequester(), {}, {})
 
 
 class DummyPaginatedList(PaginatedListBase):
