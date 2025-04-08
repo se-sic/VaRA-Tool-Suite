@@ -27,7 +27,7 @@ from varats.tools.tool_util import (
 from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
 from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import save_config, vara_cfg, bb_cfg
-from varats.varats.tools.bb_config import update_env
+from varats.tools.bb_config import update_env
 
 
 def update_term(text: str, enable_inline: bool = False) -> None:
