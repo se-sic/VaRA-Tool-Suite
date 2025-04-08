@@ -38,7 +38,7 @@ maintainers = [
   { name = "Florian Sattler", email = "sattlerf@cs.uni-saarland.de" }
 ]
 readme = "README.md"
-license = "BSD 2-Clause"
+license = "BSD-2-Clause"
 
 [project.scripts]
 vara-art = "varats.tools.driver_artefacts:main"
