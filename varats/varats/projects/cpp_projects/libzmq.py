@@ -1,12 +1,12 @@
 """Project file for zeromq."""
 import typing as tp
 
+import benchbuild.extensions as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-import benchbuild as bb
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
