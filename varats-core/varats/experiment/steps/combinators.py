@@ -3,9 +3,9 @@ import textwrap
 import typing as tp
 from pathlib import Path
 
-from benchbuild.utils.actions import StepResult, ProjectStep
+from benchbuild.project import Project
+from benchbuild.utils.actions import ProjectStep, StepResult
 
-from benchbuild import Project
 from varats.experiment.experiment_util import OutputFolderStep
 
 
