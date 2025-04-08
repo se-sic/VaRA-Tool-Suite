@@ -8,12 +8,12 @@ jobs:
   pre-commit:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-
-    - uses: actions/setup-python@v2
-
-    - uses: pre-commit/action@v2.0.3
+    - uses: actions/setup-python@v5
+    - uses: pre-commit/action@v3.0.1
       with:
         extra_args: --from-ref origin/vara-dev --to-ref HEAD
+    - uses: pre-commit-ci/lite-action@v1.1.0
+      if: always()
