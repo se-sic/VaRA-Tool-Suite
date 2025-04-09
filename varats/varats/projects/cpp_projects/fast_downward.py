@@ -51,19 +51,6 @@ class FastDownward(VProject, ReleaseProviderHook):
         ImageBase.DEBIAN_10
     ).run('apt', 'install', '-y', 'cmake', 'g++', 'git', 'make', 'python3')
 
-    def __build_tests(self):
-        """Running the in-built testsuite depends on using the python build
-        script instead of CMake."""
-        version_source = local.path(self.source_of(self.primary_source))
-
-        c_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
-        with local.cwd(version_source):
-            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                build_script = benchbuild.utils.cmd["./build.py"]
-                bb.watch(build_script
-                        )("--all", "-j", get_number_of_jobs(bb_cfg()))
-
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -78,12 +65,22 @@ class FastDownward(VProject, ReleaseProviderHook):
     def run_tests(self) -> None:
         pass
 
+    def prepare_testsuite(self):
+        version_source = local.path(self.source_of(self.primary_source))
+
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+        with local.cwd(version_source):
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                build_script = benchbuild.utils.cmd["./build.py"]
+                bb.watch(build_script
+                        )("--all", "-j", get_number_of_jobs(bb_cfg()))
+
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
-        self.__build_tests()
         if tests_to_run is None:
             # In case no test names are given, we run all tests
             tests_to_run = []
@@ -98,19 +95,19 @@ class FastDownward(VProject, ReleaseProviderHook):
             test_runner = test_runner["--junitxml", test_report_path]
 
         with local.cwd(version_source):
+            ret_code: int
             ret_code, _, _ = bb.watch(
                 test_runner["driver/tests.py", *tests_to_run]
-            )
+            )()
 
         return ret_code == 0
 
     def get_test_names(self) -> tp.Iterable[str]:
-        self.__build_tests()
         pytest_cmd = pytest["--collect-only", "-q", "driver/tests.py"]
 
         try:
             with local.cwd(self.source_of(self.primary_source)):
-                _, output, _ = bb.watch(pytest_cmd)
+                _, output, _ = bb.watch(pytest_cmd)()
         except ProcessExecutionError:
             return []
 

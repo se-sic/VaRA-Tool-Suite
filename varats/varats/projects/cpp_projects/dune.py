@@ -1,21 +1,26 @@
 """Project file for Dune."""
+import json
+import re
+import shutil
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils import cmd
 from benchbuild.utils.revision_ranges import RevisionRange
-from plumbum import local
+from plumbum import ProcessExecutionError, local
 
-from varats.containers.containers import get_base_image, ImageBase
+from varats.containers.containers import ImageBase, get_base_image
+from varats.experiment.experiment_util import ZippedReportFolder
 from varats.experiment.workload_util import RSBinary, WorkloadCategory
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    get_local_project_repo,
     BinaryType,
     ProjectBinaryWrapper,
     RevisionBinaryMap,
+    get_local_project_repo,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
@@ -126,6 +131,12 @@ class DunePerfRegression(VProject):
         ]
     }
 
+    __DUNE_MODULES = [
+        "dune-common", "dune-istl", "dune-geometry", "dune-uggrid", "dune-grid",
+        "dune-typetree", "dune-multidomaingrid", "dune-localfunctions",
+        "dune-functions", "dune-alugrid", "dune-pdelab"
+    ]
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -219,3 +230,111 @@ class DunePerfRegression(VProject):
 
     def run_tests(self) -> None:
         pass
+
+    # SupportsTesting interface
+    def prepare_testsuite(self) -> None:
+        """Prepare the testsuite for the project."""
+        version_source = local.path(self.source_of(self.primary_source))
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        with local.cwd(version_source):
+            dunecontrol = cmd['./dune-common/bin/dunecontrol']
+
+            with local.env(
+                CC=c_compiler,
+                CXX=cxx_compiler,
+                CMAKE_FLAGS=" ".join([
+                    "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
+                    "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE"
+                ])
+            ):
+                bb.watch(dunecontrol["cmake"])()
+
+                for module in DunePerfRegression.__DUNE_MODULES:
+                    if module == "dune-pdelab":
+                        # skip the pdalab module as building tests fails
+                        continue
+                    bb.watch(
+                        dunecontrol[f"--only={module}", "bexec", "make",
+                                    "build_tests"]
+                    )()
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names for the project."""
+        version_source = local.path(self.source_of(self.primary_source))
+
+        test_list = []
+        for module in DunePerfRegression.__DUNE_MODULES:
+            if module == "dune-pdelab":
+                # skip the pdalab module as building tests fails
+                continue
+
+            test_cmd = cmd["ctest", "--show-only=json-v1"]
+
+            with local.cwd(version_source / module / "build-cmake"):
+                try:
+                    _, output, _ = bb.watch(test_cmd)()
+                except ProcessExecutionError:
+                    print(f"Failed to collect test names for {module}.")
+                    continue
+
+            test_info = json.loads(output)
+
+            test_list.extend([
+                f"{module}#{test['name']}" for test in test_info["tests"]
+            ])
+
+        return test_list
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """Run the testsuite for the project."""
+        version_source = local.path(self.source_of(self.primary_source))
+
+        tests_per_module = {
+            module: [] for module in DunePerfRegression.__DUNE_MODULES
+        }
+
+        if tests_to_run is None:
+            # In case no test names are given, we run all tests
+            tests_to_run = []
+
+        # Split the tests into their respective modules
+        for test in tests_to_run:
+            module, test_name = test.split("#", 1)
+            if module not in tests_per_module:
+                print(f"Unknown module {module} for test {test_name}.")
+                continue
+            tests_per_module[module].append(test_name)
+
+        overall_result = True
+
+        aggregated_results = self.builddir / "aggregated_test_results.zip"
+        with ZippedReportFolder(aggregated_results) as zip_folder:
+            for module in DunePerfRegression.__DUNE_MODULES:
+                if module == "dune-pdelab":
+                    # skip the pdalab module as building tests fails
+                    continue
+
+                test_cmd = cmd["ctest"]
+
+                # TODO: Figure out how to aggregate test results for all submodules
+                module_test_report = zip_folder / f"{module}-tests.xml"
+                test_cmd = test_cmd["--output-junit", str(module_test_report)]
+
+                if tests_per_module[module]:
+                    test_regex = f"^{'|'.join([re.escape(name) for name in tests_per_module[module]])}''$"
+                    test_cmd = test_cmd["-R", test_regex]
+
+                ret_code, _, _ = bb.watch(test_cmd)()
+                overall_result &= ret_code == 0
+
+        if test_report_path:
+            # Move the aggregated test results to the specified path
+            shutil.copy(aggregated_results, test_report_path)
+
+        return overall_result
