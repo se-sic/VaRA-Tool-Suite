@@ -30,9 +30,10 @@ def update_projects(
         'varats.projects.c_projects.asterisk',
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
-        'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.brotli',
+        'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.bzip2',
+        'varats.projects.c_projects.capstone',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.file',
@@ -55,6 +56,7 @@ def update_projects(
         'varats.projects.c_projects.libxml2',
         'varats.projects.c_projects.lrzip',
         'varats.projects.c_projects.lz4',
+        'varats.projects.c_projects.open62541',
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.openvpn',
         'varats.projects.c_projects.opus',
@@ -66,6 +68,7 @@ def update_projects(
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
+        'varats.projects.c_projects.yara',
         'varats.projects.cpp_projects.clasp',
         'varats.projects.cpp_projects.fast_downward',
         'varats.projects.cpp_projects.libzmq',
@@ -84,7 +87,6 @@ def update_projects(
     ]
     if include_test_projects:
         projects_conf.value[:] += [
-            'varats.projects.test_projects.architecture_test_repo',
             'varats.projects.test_projects.basic_tests',
             'varats.projects.test_projects.bug_provider_test_repos',
             'varats.projects.test_projects.example_test_repo',
@@ -113,10 +115,11 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.architecture_report_experiment',
         'varats.experiments.vara.architecture_interactions_experiment',
         'varats.experiments.vara.blame_ast_experiment',
+        'varats.experiments.vara.blame_ast_experiment',
         'varats.experiments.vara.blame_report_experiment',
+        'varats.experiments.vara.blame_server_experiment',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.commit_report_experiment',
-        'varats.experiments.vara.feature_architecture_taint_report_experiment',
         'varats.experiments.vara.feature_perf_runner',
         'varats.experiments.vara.feature_perf_sampling',
         'varats.experiments.vara.feature_perf_tracing',
@@ -129,6 +132,24 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.feature_region_verifier_experiment',
         'varats.experiments.vara.hot_function_experiment',
     ]
+
+
+def update_env(bb_cfg: s.Configuration) -> None:
+    """Update the given benchbuild config to contain our environment."""
+    old_env = bb_cfg["env"].value
+    if "PATH" in old_env.keys():
+        path = old_env["PATH"]
+    else:
+        path = []
+    bb_cfg["env"] = old_env | {
+        "PATH": [
+            str(tool_type.install_location() / "bin") for tool_type in [
+                get_research_tool_type(tool_name)
+                for tool_name in get_supported_research_tool_names()
+            ] if tool_type.has_install_location() and
+            str(tool_type.install_location() / "bin") not in path
+        ] + path
+    }
 
 
 def create_new_bb_config(
@@ -175,15 +196,7 @@ def create_new_bb_config(
         ],
     ]
 
-    new_bb_cfg["env"] = {
-        "PATH": [
-            str(tool_type.install_location() / "bin") for tool_type in [
-                get_research_tool_type(tool_name)
-                for tool_name in get_supported_research_tool_names()
-            ] if tool_type.has_install_location()
-        ]
-    }
-
+    update_env(new_bb_cfg)
     # Add VaRA experiment config variables
     add_vara_experiment_options(new_bb_cfg, varats_cfg)
 

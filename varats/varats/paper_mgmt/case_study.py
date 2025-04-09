@@ -4,7 +4,7 @@ import logging
 import random
 import typing as tp
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from itertools import groupby
 from pathlib import Path
@@ -29,7 +29,7 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.project.project_util import (
     get_project_cls_by_name,
-    get_local_project_git_path,
+    get_local_project_repo,
 )
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
@@ -58,6 +58,7 @@ from varats.utils.git_util import (
     FullCommitHash,
     contains_source_code,
     ChurnConfig,
+    RepositoryHandle,
 )
 
 if tp.TYPE_CHECKING:
@@ -329,8 +330,8 @@ def get_newest_result_files_for_case_study(
                     )] = opt_res_file
                 else:
                     if (
-                        current_file.stat().st_mtime <
-                        opt_res_file.stat().st_mtime
+                        current_file.stat().st_mtime
+                        < opt_res_file.stat().st_mtime
                     ):
                         files_to_store[(
                             commit_hash, report_file.experiment_shorthand,
@@ -412,7 +413,7 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 ###############################################################################
 def extend_with_latest_rev(
     case_study: CaseStudy, cmap: CommitMap, merge_stage: int,
-    ignore_blocked: bool, git_path: str
+    ignore_blocked: bool, repo: RepositoryHandle
 ) -> None:
     """
     Extend a case_study with the latest revision.
@@ -422,11 +423,9 @@ def extend_with_latest_rev(
         cmap: commit map to map revisions to unique IDs
         merge_stage: stage to add the new revisions to
         ignore_blocked: ignore blocked revisions'
-        git_path: git path to the project
+        repo: git repository handle
     """
-    repo = pygit2.Repository(pygit2.discover_repository(git_path))
-
-    last_pygit_commit: pygit2.Commit = repo[repo.head.target]
+    last_pygit_commit = repo.pygit_commit(str(repo.pygit_repo.head.target))
     last_commit = FullCommitHash.from_pygit_commit(last_pygit_commit)
 
     while ignore_blocked and is_revision_blocked(
@@ -462,7 +461,8 @@ def extend_with_extra_revs(
 
 def extend_with_revs_per_year(
     case_study: CaseStudy, cmap: CommitMap, merge_stage: int,
-    ignore_blocked: bool, git_path: str, revs_per_year: int, revs_year_sep: bool
+    ignore_blocked: bool, repo: RepositoryHandle, revs_per_year: int,
+    revs_year_sep: bool
 ) -> None:
     """
     Extend a case_study with ``revs_per_year`` revisions per year.
@@ -508,14 +508,14 @@ def extend_with_revs_per_year(
         case_study.name_stage(num_stages, str(year))
         return num_stages
 
-    repo = pygit2.Repository(pygit2.discover_repository(git_path))
-    last_commit = repo[repo.head.target]
+    pygit_repo = repo.pygit_repo
+    last_commit = pygit_repo[pygit_repo.head.target]
 
     commits: tp.DefaultDict[int, tp.List[FullCommitHash]] = defaultdict(
         list
     )  # maps year -> list of commits
-    for commit in repo.walk(last_commit.id, pygit2.GIT_SORT_TIME):
-        commit_date = datetime.utcfromtimestamp(commit.commit_time)
+    for commit in pygit_repo.walk(last_commit.id, pygit2.enums.SortMode.TIME):
+        commit_date = datetime.fromtimestamp(commit.commit_time, timezone.utc)
         commits[commit_date.year].append(
             FullCommitHash.from_pygit_commit(commit)
         )
@@ -572,10 +572,10 @@ def extend_with_distrib_sampling(
     is_code_commit: tp.Callable[[ShortCommitHash], bool] = lambda rev: True
     if only_code_commits:
         churn_conf = ChurnConfig.create_c_style_languages_config()
-        project_git_path = get_local_project_git_path(case_study.project_name)
+        repo = get_local_project_repo(case_study.project_name)
 
         def is_c_cpp_code_commit(commit: ShortCommitHash) -> bool:
-            return contains_source_code(commit, project_git_path, churn_conf)
+            return contains_source_code(repo, commit, churn_conf)
 
         is_code_commit = is_c_cpp_code_commit
 

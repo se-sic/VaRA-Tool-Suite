@@ -45,7 +45,7 @@ from varats.provider.cve.cve import (
     find_cve,
     find_cwe,
 )
-from varats.utils.git_util import FullCommitHash
+from varats.utils.git_util import FullCommitHash, RepositoryHandle
 
 LOG = logging.getLogger(__name__)
 
@@ -234,7 +234,7 @@ def __merge_results(result_list: tp.List[CVEDict]) -> CVEDict:
 
 
 def generate_cve_map(
-    path: Path,
+    repo: RepositoryHandle,
     products: tp.List[tp.Tuple[str, str]],
     end: str = "HEAD",
     start: tp.Optional[str] = None,
@@ -273,34 +273,30 @@ def generate_cve_map(
         search_range += start + ".."
     search_range += end
 
-    with local.cwd(path):
-        commits = git(
-            "--no-pager", "log", "--pretty=format:'%H %d %s'", search_range
-        )
-        wanted_out = list(
-            map(split_commit_info, [x[1:-1] for x in commits.split('\n')])
-        )
+    commits = repo(
+        "--no-pager", "log", "--pretty=format:'%H %d %s'", search_range
+    )
+    wanted_out = list(
+        map(split_commit_info, [x[1:-1] for x in commits.split('\n')])
+    )
 
-        def get_results_for_product(vendor: str, product: str) -> CVEDict:
-            cve_list = find_all_cve(vendor=vendor, product=product)
-            cve_maps = [
-                __collect_via_commit_mgs(commits=wanted_out),
-                __collect_via_references(
-                    commits=wanted_out,
-                    cve_list=cve_list,
-                    vendor=vendor,
-                    product=product
-                )
-            ]
-            if not only_precise:
-                cve_maps.append(
-                    __collect_via_version(
-                        commits=wanted_out, cve_list=cve_list
-                    ),
-                )
-            return __merge_results(cve_maps)
+    def get_results_for_product(vendor: str, product: str) -> CVEDict:
+        cve_list = find_all_cve(vendor=vendor, product=product)
+        cve_maps = [
+            __collect_via_commit_mgs(commits=wanted_out),
+            __collect_via_references(
+                commits=wanted_out,
+                cve_list=cve_list,
+                vendor=vendor,
+                product=product
+            )
+        ]
+        if not only_precise:
+            cve_maps.append(
+                __collect_via_version(commits=wanted_out, cve_list=cve_list),
+            )
+        return __merge_results(cve_maps)
 
-        return __merge_results([
-            get_results_for_product(vendor, product)
-            for vendor, product in products
-        ])
+    return __merge_results([
+        get_results_for_product(vendor, product) for vendor, product in products
+    ])

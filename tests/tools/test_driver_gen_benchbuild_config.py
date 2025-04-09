@@ -14,7 +14,7 @@ class TestDriverGenBenchbuildConfig(unittest.TestCase):
 
     @run_in_test_environment()
     def test_gen_bbconfig(self):
-        """basic tests for the `gen-bbconfig` command."""
+        """Basic tests for the `gen-bbconfig` command."""
         runner = CliRunner()
         Path(vara_cfg()["benchbuild_root"].value + "/.benchbuild.yml").unlink()
         runner.invoke(driver_gen_benchbuild_config.main, [])

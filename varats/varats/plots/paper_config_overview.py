@@ -2,7 +2,7 @@
 
 import typing as tp
 from collections import OrderedDict, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,13 +15,13 @@ from varats.experiment.experiment_util import VersionExperiment
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import get_local_project_repo
 from varats.report.report import FileStatusExtension
-# colors taken from seaborn's default palette
 from varats.ts_utils.click_param_types import REQUIRE_EXPERIMENT_TYPE
 from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
+# colors taken from seaborn's default palette
 SUCCESS_COLOR: npt.NDArray[np.float64] = np.asarray(
     (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 )
@@ -48,14 +48,16 @@ def _load_projects_ordered_by_year(
             case_study, experiment_type
         )
 
-        repo = get_local_project_git(case_study.project_name)
+        repo = get_local_project_repo(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[
             ShortCommitHash, FileStatusExtension]]] = defaultdict(list)
 
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
-            commit = repo.get(rev.hash)
-            commit_date = datetime.utcfromtimestamp(commit.commit_time)
+            commit = repo.pygit_commit(rev)
+            commit_date = datetime.fromtimestamp(
+                commit.commit_time, timezone.utc
+            )
             revisions[commit_date.year].append((rev, status))
 
         projects[case_study.project_name] = revisions
