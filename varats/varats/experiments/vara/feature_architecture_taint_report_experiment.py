@@ -34,6 +34,9 @@ from varats.experiments.vara.feature_experiment import (
     FeatureInstrType,
 )
 from varats.project.varats_project import VProject
+from varats.provider.architecture.architecture_model_provider import (
+    ArchitectureModelProvider,
+)
 from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
     FeatureModelNotFound,
@@ -71,8 +74,8 @@ class FeatureArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-AD", "-vara-PTFDD", "-vara-FBFD",
-                "-vara-FATR", "-vara-use-phasar",
+                "--enable-new-pm=0", "-vara-AD", "-vara-PTFDD", "-vara-PTFD",
+                "-vara-FBFD", "-vara-FATR", "-vara-use-phasar",
                 f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
                     self.project, binary, [
@@ -97,7 +100,9 @@ class FeatureArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
         return actions.StepResult.OK
 
 
-class ArchitectureTaintReportExperiment(VersionExperiment, shorthand="FATRE"):
+class FeatureArchitectureTaintReportExperiment(
+    VersionExperiment, shorthand="FATRE"
+):
     """Generates an Architecture report file."""
 
     NAME = "GenerateFeatureArchitectureTaintReport"
@@ -127,10 +132,16 @@ class ArchitectureTaintReportExperiment(VersionExperiment, shorthand="FATRE"):
         project.compiler_extension = compiler.RunCompiler(project, self) \
                                      << RunWLLVM() \
                                      << run.WithTimeout()
-
+        am_provider = ArchitectureModelProvider.create_provider_for_project(
+            project
+        )
+        if am_provider is None:
+            raise FeatureModelNotFound(project, None)
+        am_path = am_provider.get_architecture_model_path(project)
         project.cflags += [
-            "-fvara-feature", "-Xclang", "-disable-llvm-optzns",
-            f"-fvara-fm-path={fm_path.absolute()}", "-O1", "-g0", "-fvara-arch"
+            "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
+            "-fvara-arch", f"-fvara-am-path={am_path}", "-Xclang",
+            "-disable-llvm-optzns", "-O1", "-g0", "-fvara-arch"
         ]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
