@@ -116,13 +116,3 @@ class ArchitectureTaintReport(BaseReport, shorthand="ATR", file_type="yaml"):
         for func_entry in self.__function_entries.values():
             str_representation += str(func_entry) + "\n"
         return str_representation
-
-
-class FeatureArchitectureTaintReport(
-    BaseReport, shorthand="FATR", file_type="yaml"
-):
-    """An metadata report for analyzing a project's architecture with taint
-    analysis."""
-
-    # TODO Implement the FeatureArchitectureTaintReport class.
-    pass
