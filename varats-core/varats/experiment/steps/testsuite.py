@@ -5,7 +5,7 @@ from pathlib import Path
 from benchbuild.utils.actions import ProjectStep, StepResult
 from plumbum import ProcessExecutionError
 
-from varats.project.varats_project import VProject
+from varats.project.varats_project import VProject, SupportsTesting
 
 
 class Testsuite(ProjectStep):
@@ -33,6 +33,10 @@ class Testsuite(ProjectStep):
         self.__tests_to_run = tests_to_run
 
     def __call__(self, *args, **kwargs):
+        if not isinstance(self.project, SupportsTesting):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
         try:
             result = self.project.run_testsuite(
                 self.__output_path, self.__tests_to_run
