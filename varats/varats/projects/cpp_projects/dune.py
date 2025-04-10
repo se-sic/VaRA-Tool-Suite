@@ -26,6 +26,10 @@ from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
+from varats.utils.testsuite_utils import (
+    ctest_get_test_names,
+    ctest_run_testsuite,
+)
 
 
 class DunePerfRegression(VProject):
@@ -270,20 +274,9 @@ class DunePerfRegression(VProject):
                 # skip the pdalab module as building tests fails
                 continue
 
-            test_cmd = cmd["ctest", "--show-only=json-v1"]
+            test_names = ctest_get_test_names(version_source)
 
-            with local.cwd(version_source / module / "build-cmake"):
-                try:
-                    _, output, _ = bb.watch(test_cmd)()
-                except ProcessExecutionError:
-                    print(f"Failed to collect test names for {module}.")
-                    continue
-
-            test_info = json.loads(output)
-
-            test_list.extend([
-                f"{module}#{test['name']}" for test in test_info["tests"]
-            ])
+            test_list.extend([f"{module}#{test}" for test in test_names])
 
         return test_list
 
@@ -320,18 +313,12 @@ class DunePerfRegression(VProject):
                     # skip the pdalab module as building tests fails
                     continue
 
-                test_cmd = cmd["ctest"]
-
-                # TODO: Figure out how to aggregate test results for all submodules
                 module_test_report = zip_folder / f"{module}-tests.xml"
-                test_cmd = test_cmd["--output-junit", str(module_test_report)]
-
-                if tests_per_module[module]:
-                    test_regex = f"^{'|'.join([re.escape(name) for name in tests_per_module[module]])}''$"
-                    test_cmd = test_cmd["-R", test_regex]
-
-                ret_code, _, _ = bb.watch(test_cmd)()
-                overall_result &= ret_code == 0
+                module_build_dir = version_source / module / "build-cmake"
+                overall_result &= ctest_run_testsuite(
+                    module_build_dir, module_test_report,
+                    tests_per_module[module]
+                )
 
         if test_report_path:
             # Move the aggregated test results to the specified path

@@ -28,6 +28,10 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+)
 
 
 class Brotli(VProject):
@@ -160,17 +164,7 @@ class Brotli(VProject):
                 "Test suites are not supported for this revision of brotli as it does not use CMake."
             )
 
-        ctest_cmd = ctest["--show-only=json-v1"]
-
-        try:
-            with local.cwd(build_dir):
-                _, output, _ = bb.watch(ctest_cmd)
-        except ProcessExecutionError:
-            return []
-
-        test_info = json.loads(output)
-
-        return [test["name"] for test in test_info["tests"]]
+        return ctest_get_test_names(build_dir)
 
     def run_testsuite(
         self,
@@ -184,19 +178,7 @@ class Brotli(VProject):
                 "Test suites are not supported for this revision of brotli as it does not use CMake."
             )
 
-        with local.cwd(build_dir):
-            ctest_cmd = ctest
-            if test_report_path:
-                ctest_cmd = ctest_cmd["--output-junit", test_report_path]
-
-            if tests_to_run:
-                test_regex = f"^{'|'.join([re.escape(name) for name in tests_to_run])}''$"
-
-                ctest_cmd = ctest_cmd["-R", test_regex]
-
-            ret_code, _, _ = bb.watch(ctest_cmd)()
-
-        return ret_code == 0
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
 
     def compile(self) -> None:
         """Compile the project."""
