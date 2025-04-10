@@ -6,7 +6,8 @@ import typing as tp
 import unittest
 
 from tests.helper_utils import run_in_test_environment
-from varats.utils.settings import bb_cfg
+from varats.tools.bb_config import update_env
+from varats.utils.settings import bb_cfg, vara_cfg
 
 
 class BenchBuildConfig(unittest.TestCase):
@@ -84,3 +85,13 @@ class BenchBuildConfig(unittest.TestCase):
         self.check_all_files_in_config_list(
             "varats.experiments", loaded_plugins, excluded_experiments
         )
+
+    @run_in_test_environment()
+    def test_if_environment_updates_correctly(self):
+        """Test if the environment variables are updated correctly."""
+        config = bb_cfg()
+        config["env"] = {"PATH": ["/old/"], "LD_PATH": ["/ld/"]}
+        vara_cfg()["vara"]["llvm_install_dir"] = "/test/"
+        update_env(config)
+        self.assertEqual(config["env"].value["PATH"], ["/test/bin", "/old/"])
+        self.assertEqual(config["env"].value["LD_PATH"], ["/ld/"])

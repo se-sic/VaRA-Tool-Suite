@@ -14,6 +14,7 @@ from varats.containers.containers import (
     StageBuilder,
     create_dev_image,
 )
+from varats.tools.bb_config import update_env
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
@@ -206,6 +207,7 @@ def build(
             return
 
         if tool.verify_install(__get_install_prefix(tool, install_prefix)):
+            update_env(bb_cfg())
             print(f"{tool.name} was correctly installed.")
         else:
             print(f"Could not install {tool.name} correctly.")
