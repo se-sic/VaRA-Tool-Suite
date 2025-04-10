@@ -232,7 +232,7 @@ class DunePerfRegression(VProject):
         pass
 
     # SupportsTesting interface
-    def prepare_testsuite(self) -> None:
+    def prepare_test_environment(self) -> None:
         """Prepare the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
         c_compiler = bb.compiler.cc(self)

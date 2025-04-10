@@ -3,12 +3,12 @@ import re
 import typing as tp
 from pathlib import Path
 
+import benchbuild
+import benchbuild as bb
 from benchbuild.utils.cmd import cmake, mkdir, pytest
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 
-import benchbuild
-import benchbuild as bb
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
@@ -65,7 +65,7 @@ class FastDownward(VProject, ReleaseProviderHook):
     def run_tests(self) -> None:
         pass
 
-    def prepare_testsuite(self):
+    def prepare_test_environment(self):
         version_source = local.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)

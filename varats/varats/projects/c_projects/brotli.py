@@ -5,6 +5,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild.utils.cmd import cmake, mkdir, make, ctest
 from benchbuild.utils.revision_ranges import (
     RevisionRange,
@@ -14,7 +15,6 @@ from benchbuild.utils.revision_ranges import (
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 
-import benchbuild as bb
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
@@ -137,7 +137,7 @@ class Brotli(VProject):
     def run_tests(self) -> None:
         pass
 
-    def prepare_testsuite(self):
+    def prepare_test_environment(self):
         build_dir, method = self.__get_build_dir()
         if method != Brotli.BrotliBuildMethod.CMAKE:
             # Currently unsupported/untested how to run the tests

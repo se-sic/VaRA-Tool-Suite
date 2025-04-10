@@ -38,6 +38,7 @@ class Testsuite(ProjectStep):
                 f"Project {self.project.name} does not support testing."
             )
         try:
+            self.project.prepare_test_environment()
             result = self.project.run_testsuite(
                 self.__output_path, self.__tests_to_run
             )
