@@ -50,8 +50,8 @@ class VProject(Project):  # type: ignore
 
 
 @runtime_checkable
-class SupportsTesting(Protocol):
-    """Interface for projects that support testing."""
+class SupportsTestSuites(Protocol):
+    """Interface for projects that support test suites."""
 
     def prepare_test_environment(self) -> None:
         """
