@@ -32,13 +32,13 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
         cls._methods[cls.name()] = cls
 
     @classmethod
-    def sampling_method_names(cls) -> tp.List[str]:
+    def sampling_method_names(cls) -> tp.Set[str]:
         """
-        Returns a list of all registered sampling method names.
+        Returns a set of all registered sampling method names.
 
-        Returns: list of sampling method names
+        Returns: set of sampling method names
         """
-        return list(cls._methods.keys())
+        return set(cls._methods.keys())
 
     @classmethod
     def get_sampling_method_type(
