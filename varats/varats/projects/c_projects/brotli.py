@@ -152,6 +152,15 @@ class Brotli(VProject):
             # Prepare the build directory
             bb.watch(cmake["..", "-G", "Unix Makefiles"])()
 
+    def build_tests(self) -> None:
+        build_dir, method = self.__get_build_dir()
+        if method != Brotli.BrotliBuildMethod.CMAKE:
+            # Currently unsupported/untested how to run the tests
+            raise NotImplementedError(
+                "Test suites are not supported for this revision of brotli as it does not use CMake."
+            )
+
+        with local.cwd(build_dir):
             # Build the test suite
             bb.watch(make["-j", get_number_of_jobs(bb_cfg())])()
 

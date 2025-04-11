@@ -12,7 +12,11 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
 )
-from varats.experiment.steps.testsuite import Testsuite
+from varats.experiment.steps.testsuite import (
+    RunTestSuite,
+    PrepareTestSuite,
+    BuildTestSuite,
+)
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.project.varats_project import VProject
@@ -81,7 +85,9 @@ class JustTest(VersionExperiment, shorthand="JT"):
 
         analysis_actions = [
             actions.Compile(project),
-            Testsuite(project, Path(result_file.full_path())),
+            PrepareTestSuite(project),
+            BuildTestSuite(project),
+            RunTestSuite(project, Path(result_file.full_path())),
             actions.Clean(project)
         ]
 

@@ -66,6 +66,7 @@ class FastDownward(VProject, ReleaseProviderHook):
         pass
 
     def prepare_test_environment(self):
+        # To collect test names, FastDownward needs to be built
         version_source = local.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)
@@ -75,6 +76,10 @@ class FastDownward(VProject, ReleaseProviderHook):
                 build_script = benchbuild.utils.cmd["./build.py"]
                 bb.watch(build_script
                         )("--all", "-j", get_number_of_jobs(bb_cfg()))
+
+    def build_tests(self) -> None:
+        # FastDownward does not have a separate test build step
+        self.prepare_test_environment()
 
     def run_testsuite(
         self,

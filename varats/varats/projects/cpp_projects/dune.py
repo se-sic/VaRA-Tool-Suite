@@ -255,14 +255,19 @@ class DunePerfRegression(VProject):
             ):
                 bb.watch(dunecontrol["cmake"])()
 
-                for module in DunePerfRegression.__DUNE_MODULES:
-                    if module == "dune-pdelab":
-                        # skip the pdalab module as building tests fails
-                        continue
-                    bb.watch(
-                        dunecontrol[f"--only={module}", "bexec", "make",
-                                    "build_tests"]
-                    )()
+    def build_tests(self) -> None:
+        version_source = local.path(self.source_of(self.primary_source))
+
+        with local.cwd(version_source):
+            dunecontrol = cmd['./dune-common/bin/dunecontrol']
+
+        for module in DunePerfRegression.__DUNE_MODULES:
+            if module == "dune-pdelab":
+                # skip the pdalab module as building tests fails
+                continue
+            bb.watch(
+                dunecontrol[f"--only={module}", "bexec", "make", "build_tests"]
+            )()
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names for the project."""

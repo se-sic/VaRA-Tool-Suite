@@ -130,6 +130,11 @@ class Libzmq(VProject):
             with local.env(CC=str(cc_compiler), CXX=str(cpp_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
+    def build_tests(self) -> None:
+        """Build the tests."""
+        libzmq_version_source = local.path(self.source_of_primary)
+
+        with local.cwd(libzmq_version_source / "build"):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:

@@ -8,11 +8,69 @@ from plumbum import ProcessExecutionError
 from varats.project.varats_project import VProject, SupportsTestSuites
 
 
-class Testsuite(ProjectStep):
+class PrepareTestSuite(ProjectStep):
+    """Experiment step to prepare the test suite for a project."""
+    project: VProject
+
+    NAME = "PrepareTestSuite"
+    DESCRIPTION = "Prepare the in-built test-suite of the project"
+
+    def __init__(self, project: VProject):
+        super().__init__(project)
+
+    def __call__(self, *args, **kwargs):
+        if not isinstance(self.project, SupportsTestSuites):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
+        try:
+            self.project.prepare_test_environment()
+            self.status = StepResult.OK
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
+
+        return self.status
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Prepare test-suite", indent * " "
+        )
+
+
+class BuildTestSuite(ProjectStep):
+    """Experiment step to build the test suite for a project."""
+    project: VProject
+
+    NAME = "BuildTestSuite"
+    DESCRIPTION = "Build the in-built test-suite of the project"
+
+    def __init__(self, project: VProject):
+        super().__init__(project)
+
+    def __call__(self, *args, **kwargs):
+        if not isinstance(self.project, SupportsTestSuites):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
+        try:
+            self.project.build_tests()
+            self.status = StepResult.OK
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
+
+        return self.status
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Build test-suite", indent * " "
+        )
+
+
+class RunTestSuite(ProjectStep):
     """Experiment step to run the test suite on a project."""
     project: VProject
 
-    NAME = "TESTSUITE"
+    NAME = "RunTestSuite"
     DESCRIPTION = "Run the in-built test-suite of the project"
 
     def __init__(
