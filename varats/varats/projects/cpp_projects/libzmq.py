@@ -2,7 +2,7 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.extensions as bb
+import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
