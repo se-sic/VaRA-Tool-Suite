@@ -101,9 +101,8 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         with local.cwd(version_source):
             ret_code: int
-            ret_code, _, _ = bb.watch(
-                test_runner["driver/tests.py", *tests_to_run]
-            )()
+            test_args = ["driver/tests.py", *tests_to_run]
+            ret_code, _, _ = bb.watch(test_runner[test_args])()
 
         return ret_code == 0
 
