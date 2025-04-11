@@ -16,6 +16,7 @@ from varats.experiment.steps.testsuite import (
     RunTestSuite,
     PrepareTestSuite,
     BuildTestSuite,
+    CollectTests,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
@@ -97,8 +98,9 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
     """Collects test names from the test suite."""
 
     NAME = "CollectTestNames"
-
     REPORT_SPEC = ReportSpecification(PlainTextReport)
+
+    project: VProject
 
     def actions_for_project(
         self, project: VProject
@@ -127,7 +129,7 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
 
         analysis_actions = [
             PrepareTestSuite(project),
-            CollectTestNames(project, result_file),
+            CollectTests(project, result_file),
             actions.Clean(project)
         ]
 
