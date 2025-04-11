@@ -113,3 +113,35 @@ class RunTestSuite(ProjectStep):
         return textwrap.indent(
             f"* {self.project.name}: Run test-suite", indent * " "
         )
+
+
+class CollectTests(ProjectStep):
+    """Experiment step to collect the test suite for a project."""
+    project: VProject
+
+    NAME = "CollectTests"
+    DESCRIPTION = "Collect the in-built test-suite of the project"
+
+    def __init__(self, project: VProject, output_path: Path):
+        super().__init__(project)
+        self.__output_path = output_path
+
+    def __call__(self, *args, **kwargs):
+        if not isinstance(self.project, SupportsTestSuites):
+            raise TypeError(
+                f"Project {self.project.name} does not support testing."
+            )
+        try:
+            tests = self.project.get_test_names()
+            self.status = StepResult.OK
+        except ProcessExecutionError:
+            self.status = StepResult.ERROR
+            tests = []
+
+        print(f"Collected tests: {tests}")
+
+        with open(self.__output_path, 'w') as f:
+            for test in tests:
+                f.write(f"{test}\n")
+
+        return self.status
