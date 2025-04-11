@@ -126,6 +126,8 @@ class Libzmq(VProject):
         cc_compiler = bb.compiler.cc(self)
         cpp_compiler = bb.compiler.cxx(self)
 
+        mkdir("-p", version_source / "build")
+
         with local.cwd(version_source / "build"):
             with local.env(CC=str(cc_compiler), CXX=str(cpp_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
