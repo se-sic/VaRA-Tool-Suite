@@ -60,7 +60,6 @@ class JustTest(VersionExperiment, shorthand="JT"):
     ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
-
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -84,7 +83,6 @@ class JustTest(VersionExperiment, shorthand="JT"):
         )
 
         analysis_actions = [
-            actions.Compile(project),
             PrepareTestSuite(project),
             BuildTestSuite(project),
             RunTestSuite(project, Path(result_file.full_path())),
@@ -92,3 +90,41 @@ class JustTest(VersionExperiment, shorthand="JT"):
         ]
 
         return analysis_actions
+
+
+class CollectTestNames(VersionExperiment, shorthand="CTN"):
+    """Collects test names from the test suite."""
+
+    NAME = "CollectTestNames"
+
+    REPORT_SPEC = ReportSpecification(PlainTextReport)
+
+    def actions_for_project(
+        self, project: VProject
+    ) -> tp.MutableSequence[actions.Step]:
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+                                    << time.RunWithTime()
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+                                     << RunWLLVM() \
+                                     << run.WithTimeout()
+
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        fake_binary = ProjectBinaryWrapper(
+            "TESTSUITE", Path(), BinaryType.EXECUTABLE
+        )
+
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), PlainTextReport, project, fake_binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions = [
+            PrepareTestSuite(project), ...,
+            actions.Clean(project)
+        ]
