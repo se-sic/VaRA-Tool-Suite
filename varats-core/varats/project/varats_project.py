@@ -54,7 +54,22 @@ class SupportsTestSuites(Protocol):
     """Interface for projects that support test suites."""
 
     def prepare_test_environment(self) -> None:
-        """Prepare the test environment for this project."""
+        """
+        Prepare the test environment for this project.
+
+        After running this method, the test environment should be prepared such
+        that tests are discoverable for the get_test_names() method. This does
+        not necessarily mean that the tests are built yet.
+        """
+        ...
+
+    def build_tests(self) -> None:
+        """
+        Build the tests for this project.
+
+        Should be called after prepare_test_environment() to build the tests.
+        Once this method is called, the tests should be built and ready to run.
+        """
         ...
 
     def run_testsuite(
@@ -77,7 +92,8 @@ class SupportsTestSuites(Protocol):
     def get_test_names(self) -> tp.Iterable[str]:
         """
         Returns a list of tests that can be run for this project in the current
-        revision and configuration.
+        revision and configuration. Requires that prepare_test_environment() was
+        called before.
 
         Returns:
              A list of tests available for this project.
