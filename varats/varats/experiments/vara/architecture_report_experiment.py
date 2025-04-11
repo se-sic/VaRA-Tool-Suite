@@ -51,9 +51,8 @@ class ArchitectureAnalysis(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--enable-new-pm=0",
-                f"-vara-report-outfile={result_file}",
-                # TODO an option which enables the analysis pass on VaRA's side
+                "--enable-new-pm=0", f"-vara-report-outfile={result_file}",
+                "-vara-AD", "-vara-AR",
                 get_cached_bc_file_path(
                     self.project, binary,
                     [BCFileExtensions.NO_OPT, BCFileExtensions.ARCH]
