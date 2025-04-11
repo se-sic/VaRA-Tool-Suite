@@ -22,7 +22,7 @@ def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
 
     try:
         with local.cwd(build_dir):
-            _, output, _ = bb.watch(ctest_cmd)
+            output = ctest_cmd()
     except ProcessExecutionError:
         return []
 

@@ -129,7 +129,8 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
 
         analysis_actions = [
             PrepareTestSuite(project),
-            CollectTests(project, result_file),
+            CollectTests(project,
+                         result_file.full_path().absolute()),
             actions.Clean(project)
         ]
 
