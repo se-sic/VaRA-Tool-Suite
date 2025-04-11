@@ -126,6 +126,9 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
         )
 
         analysis_actions = [
-            PrepareTestSuite(project), ...,
+            PrepareTestSuite(project),
+            CollectTestNames(project, result_file),
             actions.Clean(project)
         ]
+
+        return analysis_actions

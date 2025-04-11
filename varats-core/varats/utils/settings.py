@@ -342,7 +342,10 @@ def create_missing_bb_folders() -> None:
         if config_node.has_value() and\
                 config_node.value is not None and\
                 not path.isdir(str(config_node.value)):
-            makedirs(str(config_node.value), exist_ok=True)
+            try:
+                makedirs(str(config_node.value), exist_ok=True)
+            except PermissionError:
+                print(f"Could not create folder {config_node.value}")
 
     create_missing_folder_for_cfg("outfile", bb_cfg()["varats"])
     create_missing_folder_for_cfg("result", bb_cfg()["varats"])
