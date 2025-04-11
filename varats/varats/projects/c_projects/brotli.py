@@ -200,14 +200,10 @@ class Brotli(VProject):
 
         with local.cwd(build_dir):
             with local.env(CC=str(c_compiler)):
-                match method:
-                    case Brotli.BrotliBuildMethod.MAKE:
-                        # No special setup required
-                        pass
-                    case Brotli.BrotliBuildMethod.CONFIGURE:
-                        bb.watch(local["./configure"])()
-                    case Brotli.BrotliBuildMethod.CMAKE:
-                        bb.watch(cmake)("-G", "Unix Makefiles", "..")
+                if method == Brotli.BrotliBuildMethod.CONFIGURE:
+                    bb.watch(local["./configure"])()
+                if method == Brotli.BrotliBuildMethod.CMAKE:
+                    bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
