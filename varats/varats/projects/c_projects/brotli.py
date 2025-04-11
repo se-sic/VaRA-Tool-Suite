@@ -97,6 +97,8 @@ class Brotli(VProject):
             build_method = Brotli.BrotliBuildMethod.CMAKE
             run_dir = brotli_version_source / "out"
 
+        mkdir("-p", run_dir)
+
         return run_dir, build_method
 
     @staticmethod
