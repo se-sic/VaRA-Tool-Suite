@@ -1,11 +1,11 @@
 import json
+import textwrap
 import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.utils import actions
 from benchbuild.utils.actions import ProjectStep, StepResult, Step, Clean
 from plumbum import local, ProcessExecutionError
 
@@ -23,8 +23,14 @@ from varats.utils.config import get_current_config_id
 
 
 class BuildWithCoverage(ProjectStep):
+    """Builds the project with coverage information enabled."""
 
     def __init__(self, project: Project, build_cmd: tp.Callable) -> None:
+        """
+        Args:
+            project (Project): The project to build.
+            build_cmd (Callable): The command to build the project.
+        """
         super().__init__(project)
         self.build_cmd = build_cmd
 
@@ -42,6 +48,12 @@ class BuildWithCoverage(ProjectStep):
 
         return StepResult.OK
 
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Run custom build command with coverage flags",
+            indent * " "
+        )
+
 
 class CollectCoverage(ProjectStep):
 
@@ -52,13 +64,20 @@ class CollectCoverage(ProjectStep):
         run_cmd: tp.Callable,
         prefix: str = "coverages"
     ) -> None:
+        """
+        Args:
+            project: Project to collect coverage for
+            output_file: Path to create the merged profdata file
+            run_cmd: Callable to be run
+            prefix: prefix for temporary coverage files
+        """
         super().__init__(project)
         self.output_path = output_file
         self.run_cmd = run_cmd
         self.prefix = prefix
 
     def __call__(self) -> StepResult:
-        coverage_raw_files = self.project.builddir / f"{self.project.name}-{self.prefix}-%p.profraw"
+        coverage_raw_files = self.project.builddir / self.prefix / f"{self.project.name}-%p.profraw"
 
         with local.env(LLVM_PROFILE_FILE=str(coverage_raw_files)):
             try:
@@ -66,7 +85,7 @@ class CollectCoverage(ProjectStep):
             except ProcessExecutionError:
                 return StepResult.ERROR
 
-        coverage_raw_files = self.project.builddir / f"{self.project.name}-{self.prefix}-*.profraw"
+        coverage_raw_files = self.project.builddir / self.prefix / f"{self.project.name}-*.profraw"
 
         # Merge the coverage information
         profdata_cmd = local["llvm-profdata"]["merge", "-sparse",
@@ -78,6 +97,13 @@ class CollectCoverage(ProjectStep):
         except ProcessExecutionError:
             return StepResult.ERROR
 
+        return StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Collect Coverage Information", indent * " "
+        )
+
 
 class MergeCoverages(ProjectStep):
 
@@ -85,6 +111,14 @@ class MergeCoverages(ProjectStep):
         self, project: Project, profdata_file: Path, binary_path: Path,
         prefix: str, output_path: Path
     ) -> None:
+        """
+        Args:
+            project: Project to merge coverages for
+            profdata_file: Generated profdata file
+            binary_path: Path to binary that created the profdata file
+            prefix: Prefix for temporary coverage files
+            output_path: Output path for resulting json file
+        """
         super().__init__(project)
         self.profdata_file = profdata_file
         self.binary_path = binary_path
@@ -92,7 +126,7 @@ class MergeCoverages(ProjectStep):
         self.output_path = output_path
 
     def __call__(self) -> StepResult:
-        coverages_dir = self.project.builddir / self.prefix / "coverage_output"
+        coverages_dir = self.project.builddir / self.prefix / "coverages"
         coverages_dir.mkdir(parents=True, exist_ok=True)
 
         llvm_cov = local["llvm-cov"]["show", f"{self.binary_path}",
@@ -161,6 +195,11 @@ class MergeCoverages(ProjectStep):
             json.dump(coverage_data, json_file, indent=2)
 
         return StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Merge Coverage Information", indent * " "
+        )
 
 
 class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
