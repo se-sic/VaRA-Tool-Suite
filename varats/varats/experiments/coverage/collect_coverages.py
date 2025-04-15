@@ -4,19 +4,21 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
+from benchbuild.command import ProjectCommand
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
+from benchbuild.utils import actions
 from benchbuild.utils.actions import ProjectStep, StepResult, Step, Clean
 from plumbum import local, ProcessExecutionError
 
 from varats.data.reports.llvm_cov_report import LLVMCoverageReport
 from varats.experiment.experiment_util import (
-    VersionExperiment,
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
 )
 from varats.experiment.workload_util import workload_commands
 from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.project.project_util import BinaryType
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
@@ -38,12 +40,12 @@ class BuildWithCoverage(ProjectStep):
         with local.env(
             CFLAGS="-fprofile-instr-generate -fcoverage-mapping",
             CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping",
-            LDFLAGS=
-            "-fprofile-instr-generate -fcoverage-mapping -rtlib=compiler-rt",
+            #CMAKE_BUILD_TYPE="Debug",
         ):
             try:
                 self.build_cmd()
             except ProcessExecutionError:
+
                 return StepResult.ERROR
 
         return StepResult.OK
@@ -61,7 +63,7 @@ class CollectCoverage(ProjectStep):
         self,
         project: Project,
         output_file: Path,
-        run_cmd: tp.Callable,
+        run_cmd: tp.Union[tp.Callable, ProjectCommand],
         prefix: str = "coverages"
     ) -> None:
         """
@@ -81,19 +83,26 @@ class CollectCoverage(ProjectStep):
 
         with local.env(LLVM_PROFILE_FILE=str(coverage_raw_files)):
             try:
-                self.run_cmd()
-            except ProcessExecutionError:
+                if isinstance(self.run_cmd, ProjectCommand):
+                    bb.watch(
+                        self.run_cmd.command.as_plumbum(project=self.project)
+                    )()
+                else:
+                    self.run_cmd()
+            except ProcessExecutionError as pe:
                 return StepResult.ERROR
 
-        coverage_raw_files = self.project.builddir / self.prefix / f"{self.project.name}-*.profraw"
+        coverage_raw_files = local.path(
+            self.project.builddir, self.prefix
+        ) // f"{self.project.name}-*.profraw"
 
         # Merge the coverage information
         profdata_cmd = local["llvm-profdata"]["merge", "-sparse",
-                                              str(coverage_raw_files), "-o",
+                                              coverage_raw_files, "-o",
                                               str(self.output_path)]
 
         try:
-            bb.watch(profdata_cmd())()
+            bb.watch(profdata_cmd)()
         except ProcessExecutionError:
             return StepResult.ERROR
 
@@ -130,13 +139,13 @@ class MergeCoverages(ProjectStep):
         coverages_dir.mkdir(parents=True, exist_ok=True)
 
         llvm_cov = local["llvm-cov"]["show", f"{self.binary_path}",
-                                     f"-instr-profile={self.profdata_file}"
+                                     f"-instr-profile={self.profdata_file}",
                                      "-use-color=0",
                                      "-show-instantiations=false",
                                      f"-output-dir={coverages_dir}"]
 
         try:
-            bb.watch(llvm_cov())()
+            bb.watch(llvm_cov)()
         except ProcessExecutionError:
             return StepResult.ERROR
 
@@ -229,14 +238,22 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
         ]
 
         for binary in project.binaries:
-            profdata_file = self.project.builddir / f"{self.project.name}-{binary.name}.profdata"
+            if binary.type != BinaryType.EXECUTABLE:
+                continue
+
+            profdata_file = project.builddir / f"{project.name}-{binary.name}.profdata"
 
             # TODO: Different workloads?
-            binary_run_cmd = workload_commands(project, binary,
-                                               [])[0].command.as_plumbum(
-                                                   project=project
-                                               )
+            workloads = workload_commands(project, binary, [])
+            if not workloads:
+                print(f"No workloads found for {binary.name}")
+                continue
 
+            binary_run_cmd = workloads[0]
+
+            analysis_actions.append(
+                actions.Echo(f"Collect coverage for {binary.name}")
+            )
             analysis_actions.append(
                 CollectCoverage(
                     project, profdata_file, binary_run_cmd, binary.name
@@ -244,13 +261,14 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
             )
 
             result_file = create_new_success_result_filepath(
-                self.get_handle(), LLVMCoverageReport, self.project, binary,
+                self.get_handle(), LLVMCoverageReport, project, binary,
                 get_current_config_id(project)
             )
 
             analysis_actions.append(
                 MergeCoverages(
-                    project, profdata_file, binary.path, binary.name,
+                    project, profdata_file,
+                    Path(project.source_of_primary) / binary.path, binary.name,
                     result_file.full_path().absolute()
                 )
             )

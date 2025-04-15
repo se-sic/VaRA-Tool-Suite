@@ -1,7 +1,7 @@
 """Project file for zeromq."""
 import typing as tp
 
-import benchbuild.extensions as bb
+import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
@@ -93,7 +93,7 @@ class Libzmq(VProject):
         cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
 
-        mkdir(libzmq_version_source / "build")
+        mkdir["-p"](libzmq_version_source / "build")
         with local.cwd(libzmq_version_source / "build"):
             with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
