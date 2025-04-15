@@ -1,5 +1,4 @@
 import json
-import re
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -53,8 +52,8 @@ class BuildWithCoverage(ProjectStep):
 
     def __str__(self, indent: int = 0) -> str:
         return textwrap.indent(
-            f"* {self.project.name}: Run custom build command with coverage flags",
-            indent * " "
+            f"* {self.project.name}: "
+            f"Run custom build command with coverage flags", indent * " "
         )
 
 
@@ -80,7 +79,10 @@ class CollectCoverage(ProjectStep):
         self.prefix = prefix
 
     def __call__(self) -> StepResult:
-        coverage_raw_files = self.project.builddir / self.prefix / f"{self.project.name}-%p.profraw"
+        coverage_raw_files = (
+            self.project.builddir / self.prefix /
+            f"{self.project.name}-%p.profraw"
+        )
 
         with local.env(LLVM_PROFILE_FILE=str(coverage_raw_files)):
             try:
@@ -90,7 +92,7 @@ class CollectCoverage(ProjectStep):
                     )()
                 else:
                     self.run_cmd()
-            except ProcessExecutionError as pe:
+            except ProcessExecutionError:
                 return StepResult.ERROR
 
         coverage_raw_files = local.path(
@@ -203,7 +205,7 @@ class MergeCoverages(ProjectStep):
             binary_path: Path to the binary to check.
 
         Returns:
-            List of paths to the linked libraries that reside in the projects path.
+            List of paths to the linked libraries that reside in the projects' path.
         """
         ldd = local["ldd"][binary_path]
 
@@ -301,7 +303,9 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
             if binary.type != BinaryType.EXECUTABLE:
                 continue
 
-            profdata_file = project.builddir / f"{project.name}-{binary.name}.profdata"
+            profdata_file = (
+                project.builddir / f"{project.name}-{binary.name}.profdata"
+            )
 
             # TODO: Different workloads?
             workloads = workload_commands(project, binary, [])
