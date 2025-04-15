@@ -1,4 +1,5 @@
 import json
+import re
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -11,7 +12,7 @@ from benchbuild.utils import actions
 from benchbuild.utils.actions import ProjectStep, StepResult, Step, Clean
 from plumbum import local, ProcessExecutionError
 
-from varats.data.reports.llvm_cov_report import LLVMCoverageReport
+from varats.data.reports.llvm_cov_report import LLVMCoverageReport, CodeRegion
 from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
@@ -134,23 +135,11 @@ class MergeCoverages(ProjectStep):
         self.prefix = prefix
         self.output_path = output_path
 
-    def __call__(self) -> StepResult:
-        coverages_dir = self.project.builddir / self.prefix / "coverages"
-        coverages_dir.mkdir(parents=True, exist_ok=True)
-
-        llvm_cov = local["llvm-cov"]["show", f"{self.binary_path}",
-                                     f"-instr-profile={self.profdata_file}",
-                                     "-use-color=0",
-                                     "-show-instantiations=false",
-                                     f"-output-dir={coverages_dir}"]
-
-        try:
-            bb.watch(llvm_cov)()
-        except ProcessExecutionError:
-            return StepResult.ERROR
-
+    def __aggregate_coverages(
+        self, coverages_dir: Path
+    ) -> tp.Dict[str, tp.List[CodeRegion]]:
         coverage_data = {}
-        for report_file in coverages_dir.glob("*.txt"):
+        for report_file in coverages_dir.rglob("*.txt"):
             if report_file.stem == "index":
                 continue
 
@@ -162,8 +151,10 @@ class MergeCoverages(ProjectStep):
                     next(coverage_file)
 
                 # Third line contains the file name
-                file_name = next(coverage_file).strip()
-                file_name = Path(file_name).relative_to(self.project.builddir)
+                line = next(coverage_file).strip()
+
+                file_name = Path(line).relative_to(self.project.builddir)
+                file_name = Path(*file_name.parts[1:])
 
                 # The rest of the lines contain the coverage information
                 interval_start = None
@@ -172,14 +163,15 @@ class MergeCoverages(ProjectStep):
                     if not line.strip():
                         continue
 
-                    lineno, count, _ = line.split('|', 2)
+                    lineno, counts, _ = line.split('|', 2)
 
                     lineno = int(lineno.strip())
 
-                    # Count is either only whitespace, 0 or a number which may be abbreviated with multiplier (k, M, G)
+                    # Count is either only whitespace, 0 or a number
+                    # which may be abbreviated with multiplier (k, M, G)
                     # We only care whether the count is 0 or not
-                    if count.strip():
-                        count = 0 if count.strip() == "0" else 1
+                    if counts.strip():
+                        count = 0 if counts.strip() == "0" else 1
                     else:
                         count = 0
 
@@ -190,18 +182,86 @@ class MergeCoverages(ProjectStep):
                         if count > 0:
                             continue
 
-                        file_coverages.append((interval_start, lineno))
+                        file_coverages.append(
+                            CodeRegion(interval_start, lineno)
+                        )
                         interval_start = None
 
                 # We may have an open interval at the end
                 if interval_start is not None:
-                    file_coverages.append((interval_start, lineno))
+                    file_coverages.append(CodeRegion(interval_start, lineno))
 
-                coverage_data[file_name] = file_coverages
+                coverage_data[str(file_name)] = file_coverages
 
+        return coverage_data
+
+    def __collect_linked_libraries(self, binary_path: Path) -> tp.List[Path]:
+        """
+        Use ldd to check which libraries are linked to the binary.
+
+        Args:
+            binary_path: Path to the binary to check.
+
+        Returns:
+            List of paths to the linked libraries that reside in the projects path.
+        """
+        ldd = local["ldd"][binary_path]
+
+        try:
+            out = ldd()
+        except ProcessExecutionError:
+            print(f"Error while executing ldd on {binary_path}")
+            return []
+
+        linked_libs = []
+
+        for line in out.splitlines():
+            path_candidate: str = line.split("=>", maxsplit=1)[-1]
+            path_candidate = path_candidate[:path_candidate.rfind("(")].strip()
+
+            lib_path = Path(path_candidate)
+            if not lib_path.is_absolute():
+                # Combine with path of the binary
+                lib_path = binary_path.parent / lib_path
+
+            if not lib_path.exists():
+                # If the library is not found, skip it
+                continue
+
+            if lib_path.is_relative_to(self.project.builddir):
+                linked_libs.append(lib_path)
+
+        return linked_libs
+
+    def __call__(self) -> StepResult:
+        coverages_dir = Path(self.project.builddir) / self.prefix / "coverages"
+        coverages_dir.mkdir(parents=True, exist_ok=True)
+
+        linked_libs = self.__collect_linked_libraries(self.binary_path)
+
+        cov_args = [
+            "show", f"-instr-profile={self.profdata_file}", "-use-color=0",
+            "-show-instantiations=false", f"-output-dir={coverages_dir}",
+            f"-object={self.binary_path}"
+        ]
+
+        cov_args += [f"-object={lib}" for lib in linked_libs]
+
+        llvm_cov = local["llvm-cov"][cov_args]
+
+        try:
+            bb.watch(llvm_cov)()
+        except ProcessExecutionError:
+            return StepResult.ERROR
+
+        print(coverages_dir)
+
+        coverage_data = self.__aggregate_coverages(coverages_dir)
         # Write the coverage data to a json file
         with open(self.output_path, "w") as json_file:
-            json.dump(coverage_data, json_file, indent=2)
+            json.dump(
+                coverage_data, json_file, indent=2, default=CodeRegion.to_json
+            )
 
         return StepResult.OK
 

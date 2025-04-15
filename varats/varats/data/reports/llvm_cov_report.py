@@ -49,6 +49,21 @@ class CodeRegion:
 
         return CodeRegion(1, 0)
 
+    # Specializations for JSON serialization
+    @staticmethod
+    def to_json(obj: "CodeRegion") -> tp.Dict[str, tp.Any]:
+        """Convert CodeRegion to JSON serializable format."""
+        if not isinstance(obj, CodeRegion):
+            raise TypeError(f"Cannot serialize object of type: {type(obj)}")
+        return {"start": obj.start, "end": obj.end}
+
+    @staticmethod
+    def from_json(data: tp.Dict[str, tp.Any]) -> "CodeRegion":
+        """Convert JSON data back to CodeRegion."""
+        if not ("start" in data and "end" in data):
+            raise ValueError("Invalid JSON data for CodeRegion")
+        return CodeRegion(data["start"], data["end"])
+
 
 class LLVMCoverageReport(BaseReport, shorthand="LCOV", file_type="json"):
     """LLVM coverage report."""
