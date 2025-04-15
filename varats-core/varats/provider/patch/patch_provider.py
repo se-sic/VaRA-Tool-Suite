@@ -12,7 +12,6 @@ import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import benchbuild as bb
 import jinja2
 import yaml
 from benchbuild.project import Project
@@ -21,8 +20,8 @@ from benchbuild.utils.actions import ProjectStep
 from jinja2 import TemplateNotFound, TemplateError
 from yaml import YAMLError
 
+import benchbuild as bb
 from varats.project.project_util import get_local_project_repo
-from varats.project.varats_project import VProject
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import pull_current_branch, fetch_repository
@@ -88,7 +87,8 @@ class Patch:
 
         if not path.is_file():
             raise FileNotFoundError(
-                f"Patch file '{path}' for patch '{shortname}' does not exist. ({project_name})"
+                f"Patch file '{path}' for patch '{shortname}' does not exist."
+                f" ({project_name})"
             )
 
         tags = yaml_dict.get("tags")
@@ -158,7 +158,7 @@ class Patch:
             #
             # In this example, val1 has no default value and val2 has a default
             # value of 10
-            arguments = dict()
+            arguments = {}
             for arg in yaml_dict["arguments"]:
                 if isinstance(arg, str):
                     arguments[arg] = None
@@ -190,13 +190,15 @@ class Patch:
         return str_representation
 
     def render(
-        self, project_step: tp.Optional[ProjectStep] = None, **kwargs
+        self,
+        project_step: tp.Optional[ProjectStep] = None,
+        **kwargs: tp.Any
     ) -> Path:
         """
         Renders the patch with the given arguments.
 
         Args:
-            render_args: Arguments to render the patch with
+            kwargs: Arguments to render the patch with
             project_step: Optionally the project step this patch is rendered for
 
         Returns:
@@ -213,14 +215,6 @@ class Patch:
         for key, value in kwargs.items():
             #TODO: Emit warning if key is not in self.arguments
             render_args[key] = value
-
-        # Create a temporary patch file with the rendered arguments
-        if project_step:
-            # Generate a random name for the patch file
-            rendered_path = project_step.project.builddir / f"self.shortname-{uuid.uuid4()}"
-            tmp_file = open(str(rendered_path), "wb")
-        else:
-            tmp_file = NamedTemporaryFile(delete=False)  # type: ignore
 
         # Render the patch with the arguments
         loader = jinja2.FileSystemLoader(searchpath=Path(self.path).parent)
@@ -243,11 +237,18 @@ class Patch:
         except TemplateError:
             # TODO: Discuss what error we want to raise here
             raise
+        # Create a temporary patch file with the rendered arguments
+        if project_step:
+            # Generate a random name for the patch file
+            rendered_path = project_step.project.builddir / f"self.shortname-{uuid.uuid4()}"
+            with open(str(rendered_path), "wb") as f:
+                f.write(rendered.encode())
+        else:
+            with NamedTemporaryFile(delete=False) as tmp_file:
+                tmp_file.write(rendered.encode())
+                rendered_path = tmp_file.name
 
-        tmp_file.write(rendered.encode())
-        tmp_file.close()
-
-        return Path(tmp_file.name)
+        return Path(rendered_path)
 
     def __hash__(self) -> int:
         hash_args = [self.shortname, self.path]

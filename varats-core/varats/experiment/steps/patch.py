@@ -1,4 +1,5 @@
 import textwrap
+import typing as tp
 from pathlib import Path
 
 from benchbuild.utils import actions
@@ -12,7 +13,7 @@ from varats.utils.git_commands import apply_patch, revert_patch
 from varats.utils.git_util import RepositoryHandle
 
 
-def _build_args_string(**kwargs) -> str:
+def _build_args_string(**kwargs: tp.Any) -> str:
     return ", ".join([f"{k}={v}" for k, v in kwargs.items()])
 
 
@@ -22,7 +23,9 @@ class ApplyPatch(actions.ProjectStep):
     NAME = "APPLY_PATCH"
     DESCRIPTION = "Apply a Git patch to a project."
 
-    def __init__(self, project: VProject, patch: Patch, **kwargs) -> None:
+    def __init__(
+        self, project: VProject, patch: Patch, **kwargs: tp.Any
+    ) -> None:
         super().__init__(project)
         self.__patch = patch
         self.__arguments = kwargs
@@ -38,7 +41,9 @@ class ApplyPatch(actions.ProjectStep):
             patch_path = self.__patch.render(**self.__arguments)
         except TemplateError:
             print(
-                f"Failed to render patch {self.__patch.shortname} with arguments: {_build_args_string(**self.__arguments)}"
+                f"Failed to render patch {self.__patch.shortname} "
+                f"with arguments:"
+                f" {_build_args_string(**self.__arguments)}"
             )
             return StepResult.ERROR
 
@@ -67,7 +72,9 @@ class RevertPatch(actions.ProjectStep):
     NAME = "REVERT_PATCH"
     DESCRIPTION = "Revert a Git patch from a project."
 
-    def __init__(self, project: VProject, patch: Patch, **kwargs) -> None:
+    def __init__(
+        self, project: VProject, patch: Patch, **kwargs: tp.Any
+    ) -> None:
         super().__init__(project)
         self.__patch = patch
         self.__arguments = kwargs
@@ -79,7 +86,15 @@ class RevertPatch(actions.ProjectStep):
             f"{self.project.source_of_primary}"
         )
 
-        patch_path = self.__patch.render(**self.__arguments)
+        try:
+            patch_path = self.__patch.render(**self.__arguments)
+        except TemplateError:
+            print(
+                f"Failed to render patch {self.__patch.shortname} "
+                f"with arguments:"
+                f" {_build_args_string(**self.__arguments)}"
+            )
+            return StepResult.ERROR
 
         try:
             revert_patch(
@@ -95,6 +110,6 @@ class RevertPatch(actions.ProjectStep):
     def __str__(self, indent: int = 0) -> str:
         out = f"* {self.project.name}: Revert patch {self.__patch.shortname}"
         if self.__arguments:
-            out += f" (Arguments: {_build_args_string(self.__arguments)})"
+            out += f" (Arguments: {_build_args_string(**self.__arguments)})"
 
         return textwrap.indent(out, " " * indent)
