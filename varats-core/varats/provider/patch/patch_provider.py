@@ -7,18 +7,22 @@ applied during an experiment to alter the state of the project.
 
 import os
 import typing as tp
+import uuid
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import benchbuild as bb
 import jinja2
 import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
+from benchbuild.utils.actions import ProjectStep
+from jinja2 import TemplateNotFound, TemplateError
 from yaml import YAMLError
 
+import benchbuild as bb
 from varats.project.project_util import get_local_project_repo
+from varats.project.varats_project import VProject
 from varats.provider.provider import Provider, ProviderType
 from varats.utils.filesystem_util import lock_file
 from varats.utils.git_commands import pull_current_branch, fetch_repository
@@ -81,6 +85,11 @@ class Patch:
         # Convert to full qualified path, as we know that path is relative to
         # the yaml info file.
         path = yaml_path.parent / path
+
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"Patch file '{path}' for patch '{shortname}' does not exist. ({project_name})"
+            )
 
         tags = yaml_dict.get("tags")
         feature_tags = yaml_dict.get("feature_tags")
@@ -180,12 +189,15 @@ class Patch:
 
         return str_representation
 
-    def render(self, **kwargs) -> Path:
+    def render(
+        self, project_step: tp.Optional[ProjectStep] = None, **kwargs
+    ) -> Path:
         """
         Renders the patch with the given arguments.
 
         Args:
             render_args: Arguments to render the patch with
+            project_step: Optionally the project step this patch is rendered for
 
         Returns:
             Path to the rendered patch
@@ -193,30 +205,47 @@ class Patch:
         if not self.arguments:
             return self.path
 
-        render_args = self.arguments.copy()
+        render_args = {
+            name: value
+            for name, value in self.arguments.items()
+            if value is not None
+        }
         for key, value in kwargs.items():
+            #TODO: Emit warning if key is not in self.arguments
             render_args[key] = value
 
-        # Verify that all arguments are set
-        missing_args = [
-            arg for arg, value in render_args.items() if value is None
-        ]
-        if missing_args:
-            # TODO: Discuss whether we want to fail here.
-            # Theoretically, someone could have set a default value in the template file via the jinja syntax.
-            raise ValueError(
-                f"Missing arguments for patch rendering: {', '.join(missing_args)}"
-            )
-
         # Create a temporary patch file with the rendered arguments
-        tmp_file = NamedTemporaryFile(delete=False)
+        if project_step:
+            # Generate a random name for the patch file
+            rendered_path = project_step.project.builddir / f"self.shortname-{uuid.uuid4()}"
+            tmp_file = open(str(rendered_path), "wb")
+        else:
+            tmp_file = NamedTemporaryFile(delete=False)  # type: ignore
 
         # Render the patch with the arguments
         loader = jinja2.FileSystemLoader(searchpath=Path(self.path).parent)
-        env = jinja2.Environment(loader=loader, keep_trailing_newline=True)
+        env = jinja2.Environment(
+            loader=loader,
+            keep_trailing_newline=True,
+            undefined=jinja2.StrictUndefined
+        )
 
-        template = env.get_template(Path(self.path).name)
-        tmp_file.write(template.render(render_args).encode())
+        try:
+            template = env.get_template(Path(self.path).name)
+        except TemplateNotFound as e:
+            #TODO: Discuss what error we want to raise here
+            raise TemplateError(
+                f"Could not find template file '{self.path}'"
+            ) from e
+
+        try:
+            rendered = template.render(render_args)
+        except TemplateError:
+            # TODO: Discuss what error we want to raise here
+            raise
+
+        tmp_file.write(rendered.encode())
+        tmp_file.close()
 
         return Path(tmp_file.name)
 

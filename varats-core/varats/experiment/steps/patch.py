@@ -3,6 +3,7 @@ from pathlib import Path
 
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult
+from jinja2 import TemplateError
 from plumbum import ProcessExecutionError
 
 from varats.project.varats_project import VProject
@@ -11,8 +12,8 @@ from varats.utils.git_commands import apply_patch, revert_patch
 from varats.utils.git_util import RepositoryHandle
 
 
-def _build_args_string(args: dict) -> str:
-    return ", ".join([f"{k}={v}" for k, v in args.items()])
+def _build_args_string(**kwargs) -> str:
+    return ", ".join([f"{k}={v}" for k, v in kwargs.items()])
 
 
 class ApplyPatch(actions.ProjectStep):
@@ -33,7 +34,13 @@ class ApplyPatch(actions.ProjectStep):
             f"{self.project.source_of_primary}"
         )
 
-        patch_path = self.__patch.render(**self.__arguments)
+        try:
+            patch_path = self.__patch.render(**self.__arguments)
+        except TemplateError:
+            print(
+                f"Failed to render patch {self.__patch.shortname} with arguments: {_build_args_string(**self.__arguments)}"
+            )
+            return StepResult.ERROR
 
         try:
             apply_patch(
@@ -49,7 +56,7 @@ class ApplyPatch(actions.ProjectStep):
     def __str__(self, indent: int = 0) -> str:
         out = f"* {self.project.name}: Apply patch {self.__patch.shortname}"
         if self.__arguments:
-            out += f" (Arguments: {_build_args_string(self.__arguments)})"
+            out += f" (Arguments: {_build_args_string(**self.__arguments)})"
 
         return textwrap.indent(out, " " * indent)
 

@@ -3,9 +3,10 @@ import unittest
 from copy import deepcopy
 from pathlib import Path
 
-import benchbuild as bb
 from benchbuild.source.base import target_prefix
+from jinja2 import TemplateError
 
+import benchbuild as bb
 from tests.helper_utils import TEST_INPUTS_DIR
 from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,
@@ -24,7 +25,7 @@ class TestPatchArguments(unittest.TestCase):
     def __check_render(
         self, rendered_patch: Path, expected_content: tp.List[str]
     ):
-        with open(rendered_patch, "r") as patch_file:
+        with open(rendered_patch, "r", encoding="utf-8") as patch_file:
             rendered_content = patch_file.read().splitlines()
             self.assertEqual(rendered_content, expected_content)
 
@@ -86,7 +87,7 @@ class TestPatchArguments(unittest.TestCase):
             )
         )
 
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TemplateError) as context:
             argument_patch.render()
 
         self.assertEqual(
@@ -94,7 +95,7 @@ class TestPatchArguments(unittest.TestCase):
             "Missing arguments for patch rendering: arg1, arg2"
         )
 
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TemplateError) as context:
             argument_patch.render(arg1=100)
 
         self.assertEqual(
@@ -102,7 +103,7 @@ class TestPatchArguments(unittest.TestCase):
             "Missing arguments for patch rendering: arg2"
         )
 
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TemplateError) as context:
             argument_patch.render(arg2=200)
 
         self.assertEqual(
