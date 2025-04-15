@@ -240,7 +240,9 @@ class Patch:
         # Create a temporary patch file with the rendered arguments
         if project_step:
             # Generate a random name for the patch file
-            rendered_path = project_step.project.builddir / f"self.shortname-{uuid.uuid4()}"
+            rendered_path = (
+                project_step.project.builddir / f"self.shortname-{uuid.uuid4()}"
+            )
             with open(str(rendered_path), "wb") as f:
                 f.write(rendered.encode())
         else:
