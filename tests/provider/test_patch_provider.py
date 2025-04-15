@@ -3,10 +3,10 @@ import unittest
 from copy import deepcopy
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild.source.base import target_prefix
 from jinja2 import TemplateError
 
-import benchbuild as bb
 from tests.helper_utils import TEST_INPUTS_DIR
 from varats.projects.perf_tests.feature_perf_cs_collection import (
     FeaturePerfCSCollection,

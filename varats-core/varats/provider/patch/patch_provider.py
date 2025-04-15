@@ -12,6 +12,7 @@ import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+import benchbuild as bb
 import jinja2
 import yaml
 from benchbuild.project import Project
@@ -20,7 +21,6 @@ from benchbuild.utils.actions import ProjectStep
 from jinja2 import TemplateNotFound, TemplateError
 from yaml import YAMLError
 
-import benchbuild as bb
 from varats.project.project_util import get_local_project_repo
 from varats.project.varats_project import VProject
 from varats.provider.provider import Provider, ProviderType
