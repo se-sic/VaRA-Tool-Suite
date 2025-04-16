@@ -1,8 +1,10 @@
 """Project file for brotli."""
 import typing as tp
+from enum import Enum
+from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, mkdir, make
+from benchbuild.utils.cmd import cmake, mkdir, make, ctest
 from benchbuild.utils.revision_ranges import (
     RevisionRange,
     block_revisions,
@@ -24,6 +26,10 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+)
 
 
 class Brotli(VProject):
@@ -56,8 +62,42 @@ class Brotli(VProject):
         )
     ]
 
+    class BrotliBuildMethod(Enum):
+        MAKE = 0
+        CONFIGURE = 1
+        CMAKE = 2
+
     CONTAINER = get_base_image(ImageBase.DEBIAN_10
                               ).run('apt', 'install', '-y', 'cmake')
+
+    def __get_build_dir(self) -> tp.Tuple[Path, BrotliBuildMethod]:
+        """Get the build directory and the build method."""
+        brotli_version_source = local.path(self.source_of_primary)
+        brotli_repo = get_local_project_repo(self.NAME)
+        brotli_version = ShortCommitHash(self.version_of_primary)
+        configure_revisions = get_all_revisions_between(
+            brotli_repo, "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
+            "5814438791fb2d4394b46e5682a96b68cd092803", ShortCommitHash
+        )
+        simple_make_revisions = get_all_revisions_between(
+            brotli_repo, "e1739826c04a9944672b99b98249dda021bdeb36",
+            "378485b097fd7b80a5e404a3cb912f7b18f78cdb", ShortCommitHash
+        )
+        run_dir: Path
+        build_method: Brotli.BrotliBuildMethod
+        if brotli_version in simple_make_revisions:
+            run_dir = brotli_version_source / "tools"
+            build_method = Brotli.BrotliBuildMethod.MAKE
+        elif brotli_version in configure_revisions:
+            build_method = Brotli.BrotliBuildMethod.CONFIGURE
+            run_dir = brotli_version_source
+        else:
+            build_method = Brotli.BrotliBuildMethod.CMAKE
+            run_dir = brotli_version_source / "out"
+
+        mkdir("-p", run_dir)
+
+        return run_dir, build_method
 
     @staticmethod
     def binaries_for_revision(
@@ -101,34 +141,96 @@ class Brotli(VProject):
     def run_tests(self) -> None:
         pass
 
+    def prepare_test_environment(self) -> None:
+        """
+        Prepare the test environment for brotli.
+
+        Note:
+            Only supported for revisions using CMake.
+        """
+        build_dir, method = self.__get_build_dir()
+        if method != Brotli.BrotliBuildMethod.CMAKE:
+            # Currently unsupported/untested how to run the tests
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+        with local.cwd(build_dir):
+            # Prepare the build directory
+            bb.watch(cmake["..", "-G", "Unix Makefiles"])()
+
+    def build_tests(self) -> None:
+        """
+        Build the tests for brotli.
+
+        Note:
+            Only supported for revisions using CMake.
+        """
+        build_dir, method = self.__get_build_dir()
+        if method != Brotli.BrotliBuildMethod.CMAKE:
+            # Currently unsupported/untested how to run the tests
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+
+        with local.cwd(build_dir):
+            # Build the test suite
+            bb.watch(make["-j", get_number_of_jobs(bb_cfg())])()
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Get the test names for the project.
+
+        Note:
+            Only supported for revisions using CMake.
+        """
+
+        build_dir, method = self.__get_build_dir()
+        if method != Brotli.BrotliBuildMethod.CMAKE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """
+        Executes the test suite for brotli.
+
+        Args:
+            test_report_path: Path to store the detailed test results in.
+            tests_to_run: List of test cases to run.
+                          If None, all tests will be run.
+
+        Returns:
+            True if all tests passed, False otherwise.
+        """
+        build_dir, method = self.__get_build_dir()
+
+        if method != Brotli.BrotliBuildMethod.CMAKE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+
     def compile(self) -> None:
         """Compile the project."""
         brotli_version_source = local.path(self.source_of_primary)
-        brotli_repo = get_local_project_repo(self.NAME)
-        brotli_version = ShortCommitHash(self.version_of_primary)
-        configure_revisions = get_all_revisions_between(
-            brotli_repo, "f9ab24a7aaee93d5932ba212e5e3d32e4306f748",
-            "5814438791fb2d4394b46e5682a96b68cd092803", ShortCommitHash
-        )
-        simple_make_revisions = get_all_revisions_between(
-            brotli_repo, "e1739826c04a9944672b99b98249dda021bdeb36",
-            "378485b097fd7b80a5e404a3cb912f7b18f78cdb", ShortCommitHash
-        )
         c_compiler = bb.compiler.cc(self)
 
-        if brotli_version in simple_make_revisions:
-            with local.cwd(brotli_version_source / "tools"):
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        elif brotli_version in configure_revisions:
-            with local.cwd(brotli_version_source):
-                with local.env(CC=str(c_compiler)):
+        build_dir, method = self.__get_build_dir()
+
+        with local.cwd(build_dir):
+            with local.env(CC=str(c_compiler)):
+                if method == Brotli.BrotliBuildMethod.CONFIGURE:
                     bb.watch(local["./configure"])()
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            mkdir(brotli_version_source / "out")
-            with local.cwd(brotli_version_source / "out"):
-                with local.env(CC=str(c_compiler)):
+                if method == Brotli.BrotliBuildMethod.CMAKE:
                     bb.watch(cmake)("-G", "Unix Makefiles", "..")
+
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(brotli_version_source):

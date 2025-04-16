@@ -1,5 +1,6 @@
 """Project file for zeromq."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
@@ -22,6 +23,10 @@ from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_get_test_names,
+    ctest_run_testsuite,
+)
 
 
 class Libzmq(VProject):
@@ -113,3 +118,37 @@ class Libzmq(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Zeromq", "Libzmq")]
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the testsuite."""
+        version_source = local.path(self.source_of_primary)
+
+        cc_compiler = bb.compiler.cc(self)
+        cpp_compiler = bb.compiler.cxx(self)
+
+        mkdir("-p", version_source / "build")
+
+        with local.cwd(version_source / "build"):
+            with local.env(CC=str(cc_compiler), CXX=str(cpp_compiler)):
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")
+
+    def build_tests(self) -> None:
+        """Build the tests."""
+        libzmq_version_source = local.path(self.source_of_primary)
+
+        with local.cwd(libzmq_version_source / "build"):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """Run the testsuite."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
