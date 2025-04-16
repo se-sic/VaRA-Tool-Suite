@@ -11,6 +11,7 @@ from varats.tools.bb_config import (
     create_new_bb_config,
     update_projects,
     update_experiments,
+    update_env,
 )
 from varats.ts_utils.cli_util import cli_yn_choice
 from varats.utils.settings import save_config, vara_cfg, save_bb_config, bb_cfg
@@ -68,6 +69,7 @@ def main(
         config = bb_cfg()
         update_projects(config, test_projects)
         update_experiments(config)
+        update_env(config)
     else:
         config = create_new_bb_config(vara_cfg(), test_projects)
     save_bb_config(config)
