@@ -1,3 +1,9 @@
+"""
+Experiments to collect coverages of different executables of a project.
+
+Includes experiment steps for building the project with coverage information,
+running the project and collecting the coverage information.
+"""
 import json
 import textwrap
 import typing as tp
@@ -24,7 +30,7 @@ from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
 
-class BuildWithCoverage(ProjectStep):
+class BuildWithCoverage(ProjectStep):  # type: ignore
     """Builds the project with coverage information enabled."""
 
     def __init__(self, project: Project, build_cmd: tp.Callable) -> None:
@@ -57,7 +63,14 @@ class BuildWithCoverage(ProjectStep):
         )
 
 
-class CollectCoverage(ProjectStep):
+class CollectCoverage(ProjectStep):  # type: ignore
+    """
+    Collects coverage information for a project.
+
+    Can operate either on project steps or generic callable functions. The
+    callable should execute some code compiled with the necessary coverage
+    flags.
+    """
 
     def __init__(
         self,
@@ -117,7 +130,8 @@ class CollectCoverage(ProjectStep):
         )
 
 
-class MergeCoverages(ProjectStep):
+class MergeCoverages(ProjectStep):  # type: ignore
+    """Merges and aggregates coverage information from profdata files."""
 
     def __init__(
         self, project: Project, profdata_file: Path, binary_path: Path,
@@ -165,9 +179,9 @@ class MergeCoverages(ProjectStep):
                     if not line.strip():
                         continue
 
-                    lineno, counts, _ = line.split('|', 2)
+                    l, counts, _ = line.split('|', 2)
 
-                    lineno = int(lineno.strip())
+                    lineno = int(l.strip())
 
                     # Count is either only whitespace, 0 or a number
                     # which may be abbreviated with multiplier (k, M, G)
@@ -205,7 +219,8 @@ class MergeCoverages(ProjectStep):
             binary_path: Path to the binary to check.
 
         Returns:
-            List of paths to the linked libraries that reside in the projects' path.
+            List of paths to the linked libraries that
+            reside in the projects own source directory.
         """
         ldd = local["ldd"][binary_path]
 
