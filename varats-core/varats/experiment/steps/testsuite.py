@@ -23,7 +23,7 @@ class PrepareTestSuite(ProjectStep):  # type: ignore
     def __init__(self, project: VProject):
         super().__init__(project)
 
-    def __call__(self, *args, **kwargs) -> StepResult:
+    def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -52,7 +52,7 @@ class BuildTestSuite(ProjectStep):  # type: ignore
     def __init__(self, project: VProject):
         super().__init__(project)
 
-    def __call__(self, *args, **kwargs) -> StepResult:
+    def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -95,7 +95,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
 
-    def __call__(self, *args, **kwargs) -> StepResult:
+    def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -131,7 +131,7 @@ class CollectTests(ProjectStep):  # type: ignore
         super().__init__(project)
         self.__output_path = output_path
 
-    def __call__(self, *args, **kwargs) -> StepResult:
+    def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."

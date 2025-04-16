@@ -64,4 +64,4 @@ def ctest_run_testsuite(
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
-        return ret_code == 0
+        return bool(ret_code == 0)
