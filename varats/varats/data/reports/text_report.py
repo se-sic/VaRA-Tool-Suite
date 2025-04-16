@@ -1,3 +1,4 @@
+"""Plain text report."""
 from pathlib import Path
 
 from varats.report.report import BaseReport

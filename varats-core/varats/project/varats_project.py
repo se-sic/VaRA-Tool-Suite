@@ -82,7 +82,8 @@ class SupportsTestSuites(Protocol):
 
         Args:
             test_report_path: Path to the test report file.
-            tests_to_run: List of test cases to run. If None, all tests will be run.
+            tests_to_run: List of test cases to run.
+                          If None, all tests will be run.
 
         Returns:
             True is all tests passed, False otherwise.

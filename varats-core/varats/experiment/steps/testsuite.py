@@ -1,3 +1,8 @@
+"""
+Project Steps for interacting with the TestSuite protocol.
+
+This allows to prepare, build and run test suites for projects
+"""
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -8,7 +13,7 @@ from plumbum import ProcessExecutionError
 from varats.project.varats_project import VProject, SupportsTestSuites
 
 
-class PrepareTestSuite(ProjectStep):
+class PrepareTestSuite(ProjectStep):  # type: ignore
     """Experiment step to prepare the test suite for a project."""
     project: VProject
 
@@ -18,7 +23,7 @@ class PrepareTestSuite(ProjectStep):
     def __init__(self, project: VProject):
         super().__init__(project)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -37,7 +42,7 @@ class PrepareTestSuite(ProjectStep):
         )
 
 
-class BuildTestSuite(ProjectStep):
+class BuildTestSuite(ProjectStep):  # type: ignore
     """Experiment step to build the test suite for a project."""
     project: VProject
 
@@ -47,7 +52,7 @@ class BuildTestSuite(ProjectStep):
     def __init__(self, project: VProject):
         super().__init__(project)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -66,7 +71,7 @@ class BuildTestSuite(ProjectStep):
         )
 
 
-class RunTestSuite(ProjectStep):
+class RunTestSuite(ProjectStep):  # type: ignore
     """Experiment step to run the test suite on a project."""
     project: VProject
 
@@ -90,7 +95,7 @@ class RunTestSuite(ProjectStep):
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."
@@ -115,7 +120,7 @@ class RunTestSuite(ProjectStep):
         )
 
 
-class CollectTests(ProjectStep):
+class CollectTests(ProjectStep):  # type: ignore
     """Experiment step to collect the test suite for a project."""
     project: VProject
 
@@ -126,7 +131,7 @@ class CollectTests(ProjectStep):
         super().__init__(project)
         self.__output_path = output_path
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
                 f"Project {self.project.name} does not support testing."

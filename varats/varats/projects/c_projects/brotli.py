@@ -1,6 +1,4 @@
 """Project file for brotli."""
-import json
-import re
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -13,7 +11,7 @@ from benchbuild.utils.revision_ranges import (
     SingleRevision,
 )
 from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local, ProcessExecutionError
+from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -143,23 +141,35 @@ class Brotli(VProject):
     def run_tests(self) -> None:
         pass
 
-    def prepare_test_environment(self):
+    def prepare_test_environment(self) -> None:
+        """
+        Prepare the test environment for brotli.
+
+        Note:
+            Only supported for revisions using CMake.
+        """
         build_dir, method = self.__get_build_dir()
         if method != Brotli.BrotliBuildMethod.CMAKE:
             # Currently unsupported/untested how to run the tests
             raise NotImplementedError(
-                "Test suites are not supported for this revision of brotli as it does not use CMake."
+                "Test suites are only supported for revisions using CMake."
             )
         with local.cwd(build_dir):
             # Prepare the build directory
             bb.watch(cmake["..", "-G", "Unix Makefiles"])()
 
     def build_tests(self) -> None:
+        """
+        Build the tests for brotli.
+
+        Note:
+            Only supported for revisions using CMake.
+        """
         build_dir, method = self.__get_build_dir()
         if method != Brotli.BrotliBuildMethod.CMAKE:
             # Currently unsupported/untested how to run the tests
             raise NotImplementedError(
-                "Test suites are not supported for this revision of brotli as it does not use CMake."
+                "Test suites are only supported for revisions using CMake."
             )
 
         with local.cwd(build_dir):
@@ -167,12 +177,17 @@ class Brotli(VProject):
             bb.watch(make["-j", get_number_of_jobs(bb_cfg())])()
 
     def get_test_names(self) -> tp.Iterable[str]:
-        """Get the test names for the project."""
+        """
+        Get the test names for the project.
+
+        Note:
+            Only supported for revisions using CMake.
+        """
 
         build_dir, method = self.__get_build_dir()
         if method != Brotli.BrotliBuildMethod.CMAKE:
             raise NotImplementedError(
-                "Test suites are not supported for this revision of brotli as it does not use CMake."
+                "Test suites are only supported for revisions using CMake."
             )
 
         return ctest_get_test_names(build_dir)
@@ -182,11 +197,22 @@ class Brotli(VProject):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
+        """
+        Executes the test suite for brotli.
+
+        Args:
+            test_report_path: Path to store the detailed test results in.
+            tests_to_run: List of test cases to run.
+                          If None, all tests will be run.
+
+        Returns:
+            True if all tests passed, False otherwise.
+        """
         build_dir, method = self.__get_build_dir()
 
         if method != Brotli.BrotliBuildMethod.CMAKE:
             raise NotImplementedError(
-                "Test suites are not supported for this revision of brotli as it does not use CMake."
+                "Test suites are only supported for revisions using CMake."
             )
 
         return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)

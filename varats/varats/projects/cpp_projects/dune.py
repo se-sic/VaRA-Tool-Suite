@@ -1,6 +1,4 @@
 """Project file for Dune."""
-import json
-import re
 import shutil
 import typing as tp
 from pathlib import Path
@@ -9,7 +7,7 @@ import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils import cmd
 from benchbuild.utils.revision_ranges import RevisionRange
-from plumbum import ProcessExecutionError, local
+from plumbum import local
 
 from varats.containers.containers import ImageBase, get_base_image
 from varats.experiment.experiment_util import ZippedReportFolder
@@ -256,6 +254,7 @@ class DunePerfRegression(VProject):
                 bb.watch(dunecontrol["cmake"])()
 
     def build_tests(self) -> None:
+        """Build the tests for all subprojects."""
         version_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(version_source):
@@ -270,7 +269,12 @@ class DunePerfRegression(VProject):
             )()
 
     def get_test_names(self) -> tp.Iterable[str]:
-        """Get the test names for the project."""
+        """
+        Get the test names for the project.
+
+        As dune uses hierarchical project structure, test names are prefixed
+        with the module name, separated by a '#'.
+        """
         version_source = local.path(self.source_of(self.primary_source))
 
         test_list = []
@@ -293,7 +297,7 @@ class DunePerfRegression(VProject):
         """Run the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
 
-        tests_per_module = {
+        tests_per_module: tp.Dict[str, tp.List[str]] = {
             module: [] for module in DunePerfRegression.__DUNE_MODULES
         }
 
@@ -318,7 +322,7 @@ class DunePerfRegression(VProject):
                     # skip the pdalab module as building tests fails
                     continue
 
-                module_test_report = zip_folder / f"{module}-tests.xml"
+                module_test_report = Path(zip_folder) / f"{module}-tests.xml"
                 module_build_dir = version_source / module / "build-cmake"
                 overall_result &= ctest_run_testsuite(
                     module_build_dir, module_test_report,

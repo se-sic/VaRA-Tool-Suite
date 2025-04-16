@@ -1,3 +1,4 @@
+"""Experiments for simple test execution."""
 import typing as tp
 from pathlib import Path
 
@@ -21,7 +22,7 @@ from varats.experiment.steps.testsuite import (
 from varats.experiment.wllvm import RunWLLVM
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.project.varats_project import VProject
-from varats.report.report import ReportSpecification, BaseReport
+from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
 
@@ -68,7 +69,6 @@ class JustTest(VersionExperiment, shorthand="JT"):
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM() \
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(

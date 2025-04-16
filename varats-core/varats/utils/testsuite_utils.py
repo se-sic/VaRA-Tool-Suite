@@ -57,7 +57,8 @@ def ctest_run_testsuite(
             ctest_cmd = ctest_cmd["--output-junit", test_report_path]
 
         if tests_to_run:
-            test_regex = f"^{'|'.join([re.escape(name) for name in tests_to_run])}''$"
+            test_regex = '|'.join([re.escape(name) for name in tests_to_run])
+            test_regex = f"^{test_regex}$"
 
             ctest_cmd = ctest_cmd["-R", test_regex]
 
