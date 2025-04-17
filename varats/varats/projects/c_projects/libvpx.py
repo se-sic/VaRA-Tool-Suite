@@ -63,8 +63,9 @@ class Libvpx(VProject):
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
+        cxx = bb.compiler.cxx(self)
         with local.cwd(libvpx_source):
-            with local.env(CC=str(clang)):
+            with local.env(CC=str(clang), CXX=str(cxx)):
                 bb.watch(local["./configure"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 

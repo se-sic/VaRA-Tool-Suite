@@ -139,6 +139,12 @@ class DunePerfRegression(VProject):
         "dune-functions", "dune-alugrid", "dune-pdelab"
     ]
 
+    __CMAKE_FLAGS = [
+        "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
+        "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE",
+        "-DCMAKE_DISABLE_FIND_PACKAGE_Doxygen=TRUE",
+    ]
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -210,10 +216,7 @@ class DunePerfRegression(VProject):
             with local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
-                CMAKE_FLAGS=" ".join([
-                    "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
-                    "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE"
-                ])
+                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS)
             ):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
@@ -246,10 +249,7 @@ class DunePerfRegression(VProject):
             with local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
-                CMAKE_FLAGS=" ".join([
-                    "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
-                    "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE"
-                ])
+                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS)
             ):
                 bb.watch(dunecontrol["cmake"])()
 
@@ -283,7 +283,9 @@ class DunePerfRegression(VProject):
                 # skip the pdalab module as building tests fails
                 continue
 
-            test_names = ctest_get_test_names(version_source)
+            test_names = ctest_get_test_names(
+                version_source / module / "build-cmake"
+            )
 
             test_list.extend([f"{module}#{test}" for test in test_names])
 

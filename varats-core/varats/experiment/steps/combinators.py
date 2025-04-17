@@ -86,3 +86,35 @@ class IfThenElse(OutputFolderStep):
                 str(self.__else_step), (indent + 2) * " "
             ) + "\n"
         return outstr
+
+
+class OutputAdapter(OutputFolderStep):
+    """Wraps a step in order to make it compatible with OutputFolderStep."""
+
+    def __init__(
+        self,
+        project: Project,
+        step: ProjectStep,
+        out_path_adapter: tp.Optional[tp.Callable[[ProjectStep, Path],
+                                                  None]] = None
+    ) -> None:
+        """
+        Wraps a step in order to make it compatible with OutputFolderStep.
+
+        Args:
+            step: The step to wrap.
+            out_path_adapter: A callable that takes the step and a path and
+                            modifies the step to use that path.
+        """
+        super().__init__(project)
+        self.__step = step
+        self.__out_path_adapter = out_path_adapter
+
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+        if self.__out_path_adapter:
+            self.__out_path_adapter(self.__step, tmp_dir)
+
+        return _run_with_output_if_necessary(tmp_dir, self.__step)
+
+    def __str__(self, indent: int = 0) -> str:
+        return str(self.__step) + "(Wrapped)"

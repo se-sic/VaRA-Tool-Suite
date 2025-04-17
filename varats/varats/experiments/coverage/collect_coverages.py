@@ -21,11 +21,14 @@ from varats.data.reports.llvm_cov_report import LLVMCoverageReport, CodeRegion
 from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
+    ZippedExperimentSteps,
 )
+from varats.experiment.steps.combinators import OutputAdapter
+from varats.experiment.steps.testsuite import PrepareTestSuite
 from varats.experiment.workload_util import workload_commands
 from varats.experiments.vara.feature_experiment import FeatureExperiment
-from varats.project.project_util import BinaryType
-from varats.project.varats_project import VProject
+from varats.project.project_util import BinaryType, ProjectBinaryWrapper
+from varats.project.varats_project import VProject, SupportsTestSuites
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
@@ -347,11 +350,125 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
             analysis_actions.append(
                 MergeCoverages(
                     project, profdata_file,
-                    Path(project.source_of_primary) / binary.path, binary.name,
+                    Path(project.source_of_primary) / binary_run_cmd.path,
+                    binary.name,
                     result_file.full_path().absolute()
                 )
             )
 
+        if len(analysis_actions) == 1:
+            # No workloads found for any binary
+            return []
+
         analysis_actions.append(Clean(project))
+
+        return analysis_actions
+
+
+class CollectTestCoverages(FeatureExperiment, shorthand="CTC"):
+    """Collects coverage information for all binaries of a project."""
+    project: VProject
+    NAME = "CollectTestCoverages"
+    DESCRIPTION = "Collects coverage information for all tests of a project."
+    REPORT_SPEC = ReportSpecification(LLVMCoverageReport)
+
+    def __init__(
+        self, test_binary_map: tp.Callable[[VProject, str], tp.Optional[Path]]
+    ) -> None:
+        """
+        Args:
+            test_binary_map: Callable to get the path of the test binary
+                             for a specific test case
+        """
+        super().__init__()
+        self.test_binary_map = test_binary_map
+
+    def actions_for_project(self,
+                            project: VProject) -> tp.MutableSequence[Step]:
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+                                     << run.WithTimeout()
+
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+        if not isinstance(project, SupportsTestSuites):
+            print(f"{project.name} does not support testing")
+            return []
+
+        project: tp.Union[VProject, SupportsTestSuites]
+
+        analysis_actions: tp.List[Step] = [
+            PrepareTestSuite(project),
+            BuildWithCoverage(project, project.build_tests)
+        ]
+
+        test_names = project.get_test_names()
+
+        coverage_steps = []
+
+        def output_adapter(merge_step: ProjectStep, tmp_dir: Path) -> None:
+            merge_step.output_path = tmp_dir / merge_step.output_path.name
+
+        for test_name in test_names:
+            coverage_steps.append(
+                actions.Echo(f"Collect coverage for test '{test_name}'")
+            )
+
+            profdata_file = (
+                project.builddir /
+                f"{project.name}-{test_name}-coverage.profdata"
+            )
+
+            def test_cmd():
+                project.run_testsuite(
+                    test_report_path=None, tests_to_run=[test_name]
+                )
+
+            coverage_steps.append(
+                CollectCoverage(project, profdata_file, test_cmd, test_name)
+            )
+
+            test_binary = self.test_binary_map(project, test_name)
+
+            if test_binary is None:
+                print(f"No test binary found for {test_name}")
+                continue
+
+            fake_binary = ProjectBinaryWrapper(
+                f"TEST#{test_name}", Path(), BinaryType.EXECUTABLE
+            )
+
+            report_file = create_new_success_result_filepath(
+                self.get_handle(), LLVMCoverageReport, project, fake_binary,
+                get_current_config_id(project)
+            )
+
+            coverage_steps.append(
+                OutputAdapter(
+                    project,
+                    MergeCoverages(
+                        project, profdata_file, test_binary, test_name,
+                        Path(report_file.full_path())
+                    ), output_adapter
+                )
+            )
+
+        if len(coverage_steps) == 0:
+            # No tests to instrument
+            return []
+
+        fake_binary = ProjectBinaryWrapper(
+            f"TESTCOVERAGES", Path(), BinaryType.EXECUTABLE
+        )
+
+        report_file = create_new_success_result_filepath(
+            self.get_handle(), LLVMCoverageReport, project, fake_binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions.append(
+            ZippedExperimentSteps(report_file, coverage_steps)
+        )
 
         return analysis_actions
