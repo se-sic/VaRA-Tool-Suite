@@ -5,9 +5,9 @@ import re
 import typing as tp
 from pathlib import Path
 
-from benchbuild import Project
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
+from benchbuild.project import Project
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import time, perf
 from plumbum import local
@@ -32,6 +32,7 @@ from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportAggregate, ReportSpecification
+from varats.utils.config import get_current_config_id
 
 
 class PerfStat(OutputFolderStep):
@@ -125,7 +126,10 @@ class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
         measurement_repetitions = 2
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary
+            self.get_handle().report_spec().main_report,
+            project,
+            binary,
+            config_id=get_current_config_id(project),
         )
 
         analysis_actions = []
