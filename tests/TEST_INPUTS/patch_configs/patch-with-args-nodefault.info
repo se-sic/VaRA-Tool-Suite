@@ -1,0 +1,7 @@
+description: Test patch with arguments
+path: patch-with-args.patch
+project_name: FeaturePerfCSCollection
+shortname: patch-with-args-nodefault
+arguments:
+  - arg1
+  - arg2
