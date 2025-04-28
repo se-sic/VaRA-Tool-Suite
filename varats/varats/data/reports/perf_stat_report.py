@@ -1,7 +1,6 @@
 """Report class for perf stat output."""
 
 import re
-import typing as tp
 from pathlib import Path
 
 import pandas as pd
@@ -15,13 +14,17 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
     def __init__(self, path: Path):
         super().__init__(path)
         self.df = pd.read_json(path)
-        if 'interval' in self.df.columns and 'event' in self.df.columns and 'counter-value' in self.df.columns:
+        if (
+            'interval' in self.df.columns and 'event' in self.df.columns and
+            'counter-value' in self.df.columns
+        ):
             self.df = self.df.pivot(
                 index='interval', columns='event', values='counter-value'
             )
         else:
             print(
-                f"Warning: JSON structure in {path} might not be in the expected format."
+                f"Warning: JSON structure in {path} "
+                f"might not be in the expected format."
             )
 
 
