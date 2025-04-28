@@ -9,13 +9,10 @@ from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.project import Project
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import time, perf
+from benchbuild.utils.cmd import perf
 from plumbum import local
 
-from varats.data.reports.perf_stat_report import (
-    PerfStatReport,
-    PerfStatReportAggregate,
-)
+from varats.data.reports.perf_stat_report import PerfStatReportAggregate
 from varats.experiment.experiment_util import (
     VersionExperiment,
     get_default_compile_error_wrapped,
@@ -30,9 +27,27 @@ from varats.experiment.workload_util import (
 )
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
-from varats.report.gnu_time_report import WLTimeReportAggregate
-from varats.report.report import ReportAggregate, ReportSpecification
+from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
+
+
+def fix_json_format(file_path: Path) -> None:
+    """Correcting wrong json format."""
+    wrong_decimal_regex = r'"?(\d+),(\d+)"?'
+    fixed_data = []
+
+    with open(file_path, "r") as file:
+        for line in file:
+            fixed_line = re.sub(wrong_decimal_regex, r"\1.\2", line)
+            try:
+                json_obj = json.loads(fixed_line)
+                fixed_data.append(json_obj)
+            except json.JSONDecodeError as e:
+                print(f"Failed to decode JSON: {e} in line: {fixed_line}")
+                continue
+
+    with open(file_path, "w") as file:
+        json.dump(fixed_data, file)
 
 
 class PerfStat(OutputFolderStep):
@@ -42,6 +57,8 @@ class PerfStat(OutputFolderStep):
     DESCRIPTION = "Perf stat measurement for projects."
 
     project: VProject
+
+    METRICS = ["CPU_Utilization", "DRAM_BW_Use", "L1MPKI", "L2MPKI", "L3MPKI"]
 
     def __init__(
         self, project: Project, num: int, binary: ProjectBinaryWrapper
@@ -73,27 +90,9 @@ class PerfStat(OutputFolderStep):
                 with cleanup(prj_command):
                     run_cmd()
 
-                self.fix_json_format(run_report_name)
+                fix_json_format(run_report_name)
 
         return actions.StepResult.OK
-
-    def fix_json_format(self, file_path: Path):
-        """Correcting wrong json format."""
-        wrong_decimal_regex = r'"?(\d+),(\d+)"?'
-        fixed_data = []
-
-        with open(file_path, "r") as file:
-            for line in file:
-                fixed_line = re.sub(wrong_decimal_regex, r"\1.\2", line)
-                try:
-                    json_obj = json.loads(fixed_line)
-                    fixed_data.append(json_obj)
-                except json.JSONDecodeError as e:
-                    print(f"Failed to decode JSON: {e} in line: {fixed_line}")
-                    continue
-
-        with open(file_path, "w") as file:
-            json.dump(fixed_data, file)
 
 
 class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
@@ -132,17 +131,15 @@ class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
             config_id=get_current_config_id(project),
         )
 
-        analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-
-        analysis_actions.append(
+        analysis_actions = [
+            actions.Compile(project),
             ZippedExperimentSteps(
                 result_filepath, [
                     PerfStat(project, rep_num, binary)
                     for rep_num in range(0, measurement_repetitions)
                 ]
-            )
-        )
-        analysis_actions.append(actions.Clean(project))
+            ),
+            actions.Clean(project)
+        ]
 
         return analysis_actions

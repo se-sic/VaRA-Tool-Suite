@@ -1,49 +1,30 @@
 import typing as tp
-from itertools import chain
 
 import click
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from matplotlib.axes import Axes
-from matplotlib.text import Text
-from matplotlib.ticker import MaxNLocator
 
-from varats.data.databases.feature_perf_precision_database import (
-    Profiler,
-    VXray,
-    PIMTracer,
-    EbpfTraceTEF,
-    load_precision_data,
-    load_overhead_data,
-)
-from varats.data.reports.perf_stat_report import (
-    PerfStatReport,
-    PerfStatReportAggregate,
-)
-from varats.experiments.vara.perf_stat import PerfStat, PerfStatExperiment
+from varats.data.reports.perf_stat_report import PerfStatReportAggregate
+from varats.experiments.vara.perf_stat import PerfStatExperiment
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.plots.scatter_plot_utils import multivariate_grid
-from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.cli_util import make_cli_option
-from varats.ts_utils.click_param_types import REQUIRE_MULTI_CASE_STUDY
-from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 
 class PerfStatPlot(Plot, plot_name='fperf_stat'):
+    """Visualizes metrics collected with perf stat."""
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        pass
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
         for case_study in case_studies:
-            project_name = case_study.project_name
-
             report_files = get_processed_revisions_files(
                 'PrimeNumbers',
                 PerfStatExperiment,

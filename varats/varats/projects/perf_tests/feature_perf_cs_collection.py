@@ -2,7 +2,6 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild as bb
 from benchbuild.command import Command, SourceRoot, WorkloadSet
 from benchbuild.project import Workloads, Sources
 from benchbuild.source import HTTPMultiple
@@ -11,6 +10,7 @@ from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+import benchbuild as bb
 from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import (
     RSBinary,
@@ -103,7 +103,7 @@ class SynthFeatureInteraction(VProject):
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(
-            get_local_project_git_path(SynthFeatureInteraction.NAME)
+            get_local_project_repo(SynthFeatureInteraction.NAME)
         )
 
         binary_map.specify_binary(

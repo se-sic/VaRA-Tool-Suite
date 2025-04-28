@@ -1,13 +1,11 @@
-import json
+"""Report class for perf stat output."""
+
 import re
 import typing as tp
-import zipfile
 from pathlib import Path
 
-import chardet
 import pandas as pd
 
-from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
 
 
@@ -15,6 +13,7 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
     """Converts perf stat output to a dictionary of data."""
 
     def __init__(self, path: Path):
+        super().__init__(path)
         self.df = pd.read_json(path)
         if 'interval' in self.df.columns and 'event' in self.df.columns and 'counter-value' in self.df.columns:
             self.df = self.df.pivot(
@@ -39,13 +38,3 @@ class PerfStatReportAggregate(
 
 
 __WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
-
-
-def get_workload_label(workload_specific_report_file: Path) -> tp.Optional[str]:
-    if (
-        match :=
-        __WORKLOAD_FILE_REGEX.search(workload_specific_report_file.stem)
-    ):
-        return str(match.group("label"))
-
-    return None
