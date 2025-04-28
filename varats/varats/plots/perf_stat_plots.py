@@ -1,3 +1,4 @@
+"""Plot for visualizing perf stat metrics."""
 import typing as tp
 
 import click
@@ -11,6 +12,7 @@ from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
 from varats.revision.revisions import get_processed_revisions_files
 from varats.ts_utils.cli_util import make_cli_option
+from varats.utils.exceptions import UnsupportedOperation
 from varats.utils.git_util import FullCommitHash
 
 
@@ -20,7 +22,7 @@ class PerfStatPlot(Plot, plot_name='fperf_stat'):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        pass
+        raise UnsupportedOperation
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
