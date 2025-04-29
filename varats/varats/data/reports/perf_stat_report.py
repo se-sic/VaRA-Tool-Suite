@@ -33,8 +33,8 @@ class PerfStatReportAggregate(
     shorthand=PerfStatReport.SHORTHAND + ReportAggregate.SHORTHAND,
     file_type=ReportAggregate.FILE_TYPE
 ):
-    """Context Manager for parsing multiple TEF reports stored inside a zip
-    file."""
+    """Context Manager for parsing multiple Perf Stat reports stored inside a
+    zip file."""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, PerfStatReport)

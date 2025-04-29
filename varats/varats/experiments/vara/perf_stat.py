@@ -30,6 +30,8 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
+INTERVAL = 100
+
 
 def fix_json_format(file_path: Path) -> None:
     """Correcting wrong json format."""
@@ -58,6 +60,8 @@ class PerfStat(OutputFolderStep):
 
     project: VProject
 
+    # TODO: Maybe we want to make this a bit more flexible by reading these from
+    # a text file that resides somewhere e.g. in the paper config folder.
     METRICS = ["CPU_Utilization", "DRAM_BW_Use", "L1MPKI", "L2MPKI", "L3MPKI"]
 
     def __init__(
@@ -84,7 +88,8 @@ class PerfStat(OutputFolderStep):
                     "perf_stat", prj_command.command, self.__num, ".json"
                 )
 
-                run_cmd = perf['stat', '-I 1', '-j', '-o'
+                run_cmd = perf['stat', f'-I {INTERVAL}', "-a", '-j', '-o'
+                               f"--metrics={','.join(self.METRICS)}",
                                f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
