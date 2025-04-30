@@ -5,6 +5,7 @@ import benchbuild as bb
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
+from pathlib import Path
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -19,6 +20,10 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+)
 
 
 class Libvpx(VProject):
@@ -73,3 +78,35 @@ class Libvpx(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("john_koleszar", "libvpx")]
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the testsuite."""
+        libvpx_source = local.path(self.source_of_primary)
+
+        self.cflags += ["-fPIC"]
+
+        clang = bb.compiler.cc(self)
+        with local.cwd(libvpx_source):
+            with local.env(CC=str(clang)):
+                bb.watch(local["./configure"])()
+
+    def build_tests(self) -> None:
+        """Build the tests."""
+        libvpx_source = local.path(self.source_of_primary)
+
+        with local.cwd(libvpx_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        build_dir = local.path(self.source_of_primary)
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+            self,
+            test_report_path: tp.Optional[Path] = None,
+            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """Run the testsuite."""
+        build_dir = local.path(self.source_of_primary)
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
