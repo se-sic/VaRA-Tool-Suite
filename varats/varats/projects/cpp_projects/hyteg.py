@@ -2,13 +2,13 @@
 import logging
 import os
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import ninja, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
 from plumbum import local
-from pathlib import Path
 
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -150,7 +150,6 @@ class HyTeg(VProject):
     def run_tests(self) -> None:
         pass
 
-
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
         hyteg_source = local.path(self.source_of(self.primary_source))
@@ -179,7 +178,6 @@ class HyTeg(VProject):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)(*cmake_args)
 
-
     def build_tests(self) -> None:
         """Build the tests."""
         hyteg_source = local.path(self.source_of(self.primary_source))
@@ -195,9 +193,9 @@ class HyTeg(VProject):
         return ctest_get_test_names(build_dir)
 
     def run_testsuite(
-            self,
-            test_report_path: tp.Optional[Path] = None,
-            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"

@@ -214,7 +214,6 @@ class Bzip2(VProject):
                     get_number_of_jobs(bb_cfg())
                 )
 
-
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
         bzip2_source = Path(self.source_of_primary)
@@ -223,11 +222,11 @@ class Bzip2(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         if bzip2_version in typed_revision_range(
-                Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
+            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
         ):
-            return # no preparation needed for makefile
+            return  # no preparation needed for makefile
         elif bzip2_version in typed_revision_range(
-                Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
+            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
@@ -240,7 +239,6 @@ class Bzip2(VProject):
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake)("..")
 
-
     def build_tests(self) -> None:
         """Build the tests."""
         bzip2_source = Path(self.source_of_primary)
@@ -249,13 +247,13 @@ class Bzip2(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         if bzip2_version in typed_revision_range(
-                Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
+            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         elif bzip2_version in typed_revision_range(
-                Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
+            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
@@ -273,9 +271,9 @@ class Bzip2(VProject):
         return ctest_get_test_names(build_dir)
 
     def run_testsuite(
-            self,
-            test_report_path: tp.Optional[Path] = None,
-            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
