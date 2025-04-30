@@ -26,6 +26,10 @@ from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, typed_revision_range
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+)
 
 
 class Bzip2(VProject):
@@ -209,3 +213,70 @@ class Bzip2(VProject):
                     "--build", ".", "--config", "Release", "-j",
                     get_number_of_jobs(bb_cfg())
                 )
+
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the testsuite."""
+        bzip2_source = Path(self.source_of_primary)
+        bzip2_version = ShortCommitHash(self.version_of_primary)
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        if bzip2_version in typed_revision_range(
+                Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
+        ):
+            return # no preparation needed for makefile
+        elif bzip2_version in typed_revision_range(
+                Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
+        ):
+            with local.cwd(bzip2_source):
+                with local.env(CC=str(cc_compiler)):
+                    bb.watch(local["./autogen.sh"])()
+                    bb.watch(local["./configure"])()
+            return
+        else:
+            (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
+            with local.cwd(bzip2_source / "build"):
+                with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+                    bb.watch(cmake)("..")
+
+
+    def build_tests(self) -> None:
+        """Build the tests."""
+        bzip2_source = Path(self.source_of_primary)
+        bzip2_version = ShortCommitHash(self.version_of_primary)
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        if bzip2_version in typed_revision_range(
+                Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
+        ):
+            with local.cwd(bzip2_source):
+                with local.env(CC=str(cc_compiler)):
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        elif bzip2_version in typed_revision_range(
+                Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
+        ):
+            with local.cwd(bzip2_source):
+                with local.env(CC=str(cc_compiler)):
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        else:
+            with local.cwd(bzip2_source / "build"):
+                bb.watch(cmake)(
+                    "--build", ".", "--config", "Release", "-j",
+                    get_number_of_jobs(bb_cfg())
+                )
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+            self,
+            test_report_path: tp.Optional[Path] = None,
+            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """Run the testsuite."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
