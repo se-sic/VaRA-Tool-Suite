@@ -9,6 +9,7 @@ from benchbuild.source.http import HTTPUntar
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
+from pathlib import Path
 
 from varats.experiment.workload_util import (
     RSBinary,
@@ -38,6 +39,10 @@ from varats.utils.git_util import (
     get_all_revisions_between,
 )
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+)
 
 
 class PicoSAT(VProject, ReleaseProviderHook):
@@ -345,3 +350,53 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
         return [(FullCommitHash(h), tag)
                 for h, tag in tagged_commits
                 if re.match(release_regex, tag)]
+
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the testsuite."""
+        picosat_repo = get_local_project_repo(self.NAME)
+        picosat_source = local.path(self.source_of_primary)
+
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        revisions_with_new_config_name = get_all_revisions_between(
+            picosat_repo, "33c685e82213228726364980814f0183e435de78", "",
+            ShortCommitHash
+        )
+        picosat_version = ShortCommitHash(self.version_of_primary)
+        if picosat_version in revisions_with_new_config_name:
+            config_script_name = "./configure.sh"
+        else:
+            config_script_name = "./configure"
+
+        with local.cwd(picosat_source):
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                bb.watch(local[config_script_name]
+                         )(["--trace", "--stats", "-g"])
+
+    def build_tests(self) -> None:
+        """Build the tests."""
+        picosat_repo = get_local_project_repo(self.NAME)
+        picosat_source = local.path(self.source_of_primary)
+
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        with local.cwd(picosat_source):
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+            self,
+            test_report_path: tp.Optional[Path] = None,
+            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """Run the testsuite."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
