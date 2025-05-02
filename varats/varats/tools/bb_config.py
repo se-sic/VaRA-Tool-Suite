@@ -64,6 +64,7 @@ def update_projects(
         'varats.projects.c_projects.redis',
         'varats.projects.c_projects.tig',
         'varats.projects.c_projects.tmux',
+        'varats.projects.c_projects.toxcore',
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
