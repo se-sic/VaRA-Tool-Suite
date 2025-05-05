@@ -114,8 +114,7 @@ def store_configuration_map(
             "ConfigurationMap", 1
         )
         yaml.dump_all([
-            version_header.get_dict(),
-            {
+            version_header.get_dict(), {
                 id_config_pair[0]: id_config_pair[1].dump_to_string()
                 for id_config_pair in configuration_map.id_config_tuples()
             }

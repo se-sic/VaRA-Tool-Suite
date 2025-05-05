@@ -20,12 +20,12 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.project.project_util import create_project_commit_lookup_helper
 from varats.report.report import ReportFilepath
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
 )
-from varats.utils.git_util import create_commit_lookup_helper
 
 MAX_TIME_BUCKET_SIZE = 1
 AVG_TIME_BUCKET_SIZE = 1
@@ -88,7 +88,7 @@ class BlameInteractionDegreeDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
-        commit_lookup = create_commit_lookup_helper(project_name)
+        commit_lookup = create_project_commit_lookup_helper(project_name)
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)

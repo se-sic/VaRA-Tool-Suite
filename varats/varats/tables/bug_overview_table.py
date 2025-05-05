@@ -29,7 +29,7 @@ class BugOverviewTable(Table, table_name="bug_overview_table"):
         pybugs = bug_provider.find_pygit_bugs()
 
         data_rows = [[
-            pybug.fixing_commit.hex,
+            pybug.fixing_commit.id,
             pybug.fixing_commit.message.splitlines()[0],
             pybug.fixing_commit.author.name, pybug.issue_id
         ] for pybug in pybugs]

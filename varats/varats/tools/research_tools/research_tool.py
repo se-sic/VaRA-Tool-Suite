@@ -31,6 +31,7 @@ from varats.utils.git_util import (
     has_branch,
     has_remote_branch,
     branch_has_upstream,
+    RepositoryHandle,
 )
 from varats.utils.logger_util import log_without_linesep
 
@@ -169,7 +170,7 @@ class SubProject():
 
     def __init__(
         self,
-        parent_code_base: 'CodeBase',
+        parent_base_dir: Path,
         name: str,
         url: str,
         remote: str,
@@ -177,11 +178,12 @@ class SubProject():
         is_submodule: bool = False
     ):
         self.__name = name
-        self.__parent_code_base = parent_code_base
+        self.__parent_base_dir = parent_base_dir
         self.__url = url
         self.__remote = remote
         self.__sub_path = Path(sub_path)
         self.__is_submodule = is_submodule
+        self.__repo = RepositoryHandle(self.__parent_base_dir / self.__sub_path)
 
     @property
     def name(self) -> str:
@@ -228,20 +230,18 @@ class SubProject():
         Args:
             cb_base_dir: base directory for the ``CodeBase``
         """
-        init_all_submodules(self.__parent_code_base.base_dir / self.path)
-        update_all_submodules(self.__parent_code_base.base_dir / self.path)
+        init_all_submodules(self.__repo)
+        update_all_submodules(self.__repo)
 
     def clone(self) -> None:
         """Clone the sub project into the specified folder relative to the base
         dir of the ``CodeBase``."""
-        print(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
-        if (self.__parent_code_base.base_dir / self.path).exists():
-            raise FolderAlreadyPresentError(
-                self.__parent_code_base.base_dir / self.path
-            )
+        print(f"Cloning {self.name} into {self.__parent_base_dir}")
+        if self.__repo.worktree_path.exists():
+            raise FolderAlreadyPresentError(self.__repo.worktree_path)
         download_repo(
-            self.__parent_code_base.base_dir / self.path.parent, self.url,
-            self.path.name, self.remote, log_without_linesep(print)
+            self.__repo.worktree_path.parent, self.url, self.path.name,
+            self.remote, log_without_linesep(print)
         )
 
     def has_branch(
@@ -261,11 +261,10 @@ class SubProject():
         Returns:
             True, if the branch exists
         """
-        absl_repo_path = self.__parent_code_base.base_dir / self.path
         if remote_to_check is None:
-            return has_branch(absl_repo_path, branch_name)
+            return has_branch(self.__repo, branch_name)
 
-        return has_remote_branch(absl_repo_path, branch_name, remote_to_check)
+        return has_remote_branch(self.__repo, branch_name, remote_to_check)
 
     def get_branches(self,
                      extra_args: tp.Optional[tp.List[str]
@@ -279,9 +278,7 @@ class SubProject():
         Returns:
             list of branch names
         """
-        return get_branches(
-            self.__parent_code_base.base_dir / self.path, extra_args
-        ).split()
+        return get_branches(self.__repo, extra_args).split()
 
     def add_remote(self, remote: str, url: str) -> None:
         """
@@ -291,8 +288,8 @@ class SubProject():
             remote: name of the new remote
             url: to the remote
         """
-        add_remote(self.__parent_code_base.base_dir / self.path, remote, url)
-        fetch_remote(remote, self.__parent_code_base.base_dir / self.path)
+        add_remote(self.__repo, remote, url)
+        fetch_remote(self.__repo, remote)
 
     def checkout_branch(self, branch_name: str) -> None:
         """
@@ -301,9 +298,7 @@ class SubProject():
         Args:
             branch_name: name of the branch, should exists in the repo
         """
-        checkout_branch_or_commit(
-            self.__parent_code_base.base_dir / self.path, branch_name
-        )
+        checkout_branch_or_commit(self.__repo, branch_name)
 
     def checkout_new_branch(
         self, branch_name: str, remote_branch: tp.Optional[str] = None
@@ -314,10 +309,7 @@ class SubProject():
         Args:
             branch_name: name of the new branch, should not exists in the repo
         """
-        checkout_new_branch(
-            self.__parent_code_base.base_dir / self.path, branch_name,
-            remote_branch
-        )
+        checkout_new_branch(self.__repo, branch_name, remote_branch)
 
     def fetch(
         self,
@@ -325,27 +317,24 @@ class SubProject():
         extra_args: tp.Optional[tp.List[str]] = None
     ) -> None:
         """Fetch updates from the remote."""
-        fetch_remote(
-            remote, self.__parent_code_base.base_dir / self.path, extra_args
-        )
+        fetch_remote(self.__repo, remote, extra_args)
 
     def pull(self) -> None:
         """Pull updates from the remote of the current branch into the sub
         project."""
-        pull_current_branch(self.__parent_code_base.base_dir / self.path)
+        pull_current_branch(self.__repo)
 
     def push(self) -> None:
         """Push updates from the current branch to the remote branch."""
-        absl_repo_path = self.__parent_code_base.base_dir / self.path
-        branch_name = get_current_branch(absl_repo_path)
-        if branch_has_upstream(absl_repo_path, branch_name):
-            push_current_branch(absl_repo_path)
+        branch_name = get_current_branch(self.__repo)
+        if branch_has_upstream(self.__repo, branch_name):
+            push_current_branch(self.__repo)
         else:
-            push_current_branch(absl_repo_path, "origin", branch_name)
+            push_current_branch(self.__repo, "origin", branch_name)
 
     def show_status(self) -> None:
         """Show the current status of the sub project."""
-        show_status(self.__parent_code_base.base_dir / self.path)
+        show_status(self.__repo)
 
     def __str__(self) -> str:
         return f"{self.name} [{self.url}:{self.remote}] {self.path}"
@@ -353,9 +342,7 @@ class SubProject():
     def get_tags(self,
                  extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
         """Get the list of available git tags."""
-        tag_list = get_tags(
-            self.__parent_code_base.base_dir / self.path, extra_args
-        )
+        tag_list = get_tags(self.__repo, extra_args)
         return tag_list
 
 

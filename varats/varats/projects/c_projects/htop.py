@@ -15,13 +15,14 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
-    get_local_project_git_path,
+    get_local_project_repo,
+    RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
-    RevisionBinaryMap,
     typed_revision_range,
+    RepositoryHandle,
 )
 from varats.utils.settings import bb_cfg
 
@@ -53,7 +54,7 @@ class Htop(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Htop.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Htop.NAME))
 
         binary_map.specify_binary('htop', BinaryType.EXECUTABLE)
 
@@ -65,7 +66,7 @@ class Htop(VProject):
     def compile(self) -> None:
         """Compile the project."""
         htop_source = local.path(self.source_of_primary)
-        htop_version_source = Path(self.source_of_primary)
+        htop_version_repo = RepositoryHandle(Path(self.source_of_primary))
         htop_version = ShortCommitHash(self.version_of_primary)
 
         configure_flags: tp.List[str] = []
@@ -75,7 +76,7 @@ class Htop(VProject):
                                    ["dfd9279f87791e36a5212726781c31fbe7110361"],
                                    "Needs CFLAGS=-fcommon")
         if htop_version in typed_revision_range(
-            old_revs, htop_version_source, ShortCommitHash
+            htop_version_repo, old_revs, ShortCommitHash
         ):
             configure_flags += ["CFLAGS=-fcommon"]
 

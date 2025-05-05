@@ -16,17 +16,18 @@ from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_local_project_git_path,
+    get_local_project_repo,
     BinaryType,
     verify_binaries,
+    RevisionBinaryMap,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     ShortCommitHash,
-    RevisionBinaryMap,
     typed_revision_range,
+    RepositoryHandle,
 )
 from varats.utils.settings import bb_cfg
 
@@ -137,7 +138,7 @@ class Bzip2(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        binary_map = RevisionBinaryMap(get_local_project_git_path(Bzip2.NAME))
+        binary_map = RevisionBinaryMap(get_local_project_repo(Bzip2.NAME))
 
         binary_map.specify_binary(
             'build/bzip2',
@@ -163,17 +164,18 @@ class Bzip2(VProject):
         """Compile the project."""
         bzip2_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_repo = RepositoryHandle(bzip2_source)
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
         if bzip2_version in typed_revision_range(
-            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
+            bzip2_repo, Bzip2._MAKE_VERSIONS, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
         elif bzip2_version in typed_revision_range(
-            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
+            bzip2_repo, Bzip2._AUTOTOOLS_VERSIONS, ShortCommitHash
         ):
             with local.cwd(bzip2_source):
                 with local.env(CC=str(cc_compiler)):
@@ -198,11 +200,12 @@ class Bzip2(VProject):
         """Recompile the project."""
         bzip2_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_repo = RepositoryHandle(bzip2_source)
 
         if bzip2_version in typed_revision_range(
-            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
+            bzip2_repo, Bzip2._MAKE_VERSIONS, ShortCommitHash
         ) or bzip2_version in typed_revision_range(
-            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
+            bzip2_repo, Bzip2._AUTOTOOLS_VERSIONS, ShortCommitHash
         ):
             with local.cwd(bzip2_source / "build"):
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))

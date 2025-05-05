@@ -51,16 +51,16 @@ class VaRACodeBase(CodeBase):
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
             SubProject(
-                self, "vara-llvm-project",
+                base_dir, "vara-llvm-project",
                 "https://github.com/llvm/llvm-project.git", "upstream",
                 "vara-llvm-project"
             ),
             SubProject(
-                self, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
+                base_dir, "VaRA", "git@github.com:se-sic/VaRA.git", "origin",
                 "vara-llvm-project/vara"
             ),
             SubProject(
-                self,
+                base_dir,
                 "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin",
@@ -276,8 +276,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
             "vara-llvm-project"
         )
 
-        if (current_vara_version >=
-            highest_vara_llvm_version) and current_vara_version >= (
+        if (current_vara_version
+            >= highest_vara_llvm_version) and current_vara_version >= (
                 math.ceil(highest_vara_tag_version / 10) * 10
             ):
             return True
@@ -367,7 +367,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             )
 
     def get_install_binaries(self) -> tp.List[str]:
-        return ["bin/clang++", "bin/opt", "bin/phasar-cli"]
+        return ["bin/clang++", "bin/opt"]
 
     def verify_install(self, install_location: Path) -> bool:
         """
@@ -385,14 +385,6 @@ class VaRA(ResearchTool[VaRACodeBase]):
         vara_name = self.code_base.get_sub_project("vara-llvm-project").name
         status_ok &= ret == 0
         status_ok &= vara_name in stdout
-
-        # Check that phasar-cli can display its version
-        phasar_cli = local[str(install_location / "bin/phasar-cli")]
-        ret, stdout, _ = phasar_cli.run("--version")
-        status_ok &= ret == 0
-
-        phasar_name = self.code_base.get_sub_project("phasar").name.lower()
-        status_ok &= phasar_name in stdout.lower()
 
         return status_ok
 
