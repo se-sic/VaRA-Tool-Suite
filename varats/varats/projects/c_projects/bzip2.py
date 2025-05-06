@@ -202,8 +202,8 @@ class Bzip2(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         bzip2_source = Path(self.source_of_primary)
-        bzip2_repo = get_local_project_repo(Bzip2.NAME)
         bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_repo = get_local_project_repo(Bzip2.NAME)
 
         if bzip2_version in typed_revision_range(
             bzip2_repo, Bzip2._MAKE_VERSIONS, ShortCommitHash

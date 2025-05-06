@@ -40,7 +40,7 @@ maintainers = [
   { name = "Florian Sattler", email = "sattlerf@cs.uni-saarland.de" }
 ]
 readme = "README.md"
-license = { text = "BSD 2-Clause"}
+license = "BSD-2-Clause"
 
 [project.scripts]
 vara-art = "varats.tools.driver_artefacts:main"
@@ -70,9 +70,50 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 include-package-data = true
 
-[tool.setuptools.packages.find]
-where = ["varats", "varats-core"]
-include = ["varats.*"]
+[tool.setuptools.package-dir]
+varats = "varats/varats"
+"varats.containers" = "varats/varats/containers"
+"varats.data" = "varats/varats/data"
+"varats.data.databases" = "varats/varats/data/databases"
+"varats.data.reports" = "varats/varats/data/reports"
+"varats.experiments" = "varats/varats/experiments"
+"varats.experiments.base" = "varats/varats/experiments/base"
+"varats.experiments.phasar" = "varats/varats/experiments/phasar"
+"varats.experiments.szz" = "varats/varats/experiments/szz"
+"varats.experiments.vara" = "varats/varats/experiments/vara"
+"varats.gui" = "varats/varats/gui"
+"varats.gui.cs_gen" = "varats/varats/gui/cs_gen"
+"varats.gui.views" = "varats/varats/gui/views"
+"varats.jupyterhelper" = "varats/varats/jupyterhelper"
+"varats.paper_mgmt" = "varats/varats/paper_mgmt"
+"varats.plot" = "varats/varats/plot"
+"varats.plots" = "varats/varats/plots"
+"varats.projects" = "varats/varats/projects"
+"varats.projects.cpp_projects" = "varats/varats/projects/cpp_projects"
+"varats.projects.c_projects" = "varats/varats/projects/c_projects"
+"varats.projects.perf_tests" = "varats/varats/projects/perf_tests"
+"varats.projects.test_projects" = "varats/varats/projects/test_projects"
+"varats.table" = "varats/varats/table"
+"varats.tables" = "varats/varats/tables"
+"varats.tools" = "varats/varats/tools"
+"varats.tools.research_tools" = "varats/varats/tools/research_tools"
+"varats.tools.templates" = "varats/varats/tools/templates"
+"varats.ts_utils" = "varats/varats/ts_utils"
+"varats.base" = "varats-core/varats/base"
+"varats.experiment" = "varats-core/varats/experiment"
+"varats.experiment.steps" = "varats-core/varats/experiment/steps"
+"varats.mapping" = "varats-core/varats/mapping"
+"varats.paper" = "varats-core/varats/paper"
+"varats.project" = "varats-core/varats/project"
+"varats.provider" = "varats-core/varats/provider"
+"varats.provider.bug" = "varats-core/varats/provider/bug"
+"varats.provider.cve" = "varats-core/varats/provider/cve"
+"varats.provider.feature" = "varats-core/varats/provider/feature"
+"varats.provider.patch" = "varats-core/varats/provider/patch"
+"varats.provider.release" = "varats-core/varats/provider/release"
+"varats.report" = "varats-core/varats/report"
+"varats.revision" = "varats-core/varats/revision"
+"varats.utils" = "varats-core/varats/utils"
 
 [tool.pytest.ini_options]
 testpaths = ["varats", "varats-core", "tests"]
