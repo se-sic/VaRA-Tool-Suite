@@ -35,6 +35,7 @@ def update_projects(
         'varats.projects.c_projects.bzip2',
         'varats.projects.c_projects.capstone',
         'varats.projects.c_projects.coreutils',
+        'varats.projects.c_projects.coreutils_individual',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.file',
         'varats.projects.c_projects.gawk',
