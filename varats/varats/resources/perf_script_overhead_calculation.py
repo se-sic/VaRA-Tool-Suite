@@ -88,14 +88,24 @@ def trace_end() -> None:
 def process_event(param_dict: tp.Dict[str, tp.Any]) -> None:
     global total_samples
 
-    func_name = param_dict.get("symbol", None)
+    func_name = param_dict.get("symbol")
+    command = param_dict["comm"]
+    raw_dso = param_dict["dso"]
+
+    if (callchain := param_dict.get("callchain")):
+        for entry in callchain:
+            entry_dso = entry.get("dso")
+            entry_sym = entry.get("sym")
+            entry_name = entry_sym.get("name") if entry_sym else None
+            if entry_dso and entry_name and not is_irrelevant_dso(entry_dso):
+                raw_dso = entry_dso
+                func_name = entry_name
+                break
 
     if func_name is None:
         print(f"warning: unknown event format {param_dict}", file=sys.stderr)
         return
 
-    command = param_dict["comm"]
-    raw_dso = param_dict["dso"]
     dso = Path(raw_dso).name
 
     # ignore overhead of perf and gnu-time
