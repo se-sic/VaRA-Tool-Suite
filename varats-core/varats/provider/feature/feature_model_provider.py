@@ -71,17 +71,12 @@ class FeatureModelProvider(Provider):
 
         Returns: a path to the corresponding feature model
         """
-        project_name = self.project.NAME.lower()
+        if hasattr(self.project, "FEATURE_MODEL"):
+            rel_fm_path = f"{self.project.FEATURE_MODEL}"
+        else:
+            rel_fm_path = f"{self.project.NAME.lower()}/FeatureModel.xml"
 
-        fully_qualified_fm_name = "FeatureModel"
-
-        for project_dir in self._get_feature_model_repository_path().iterdir():
-            if project_dir.name.lower() == project_name:
-                for poss_fm_file in project_dir.iterdir():
-                    if poss_fm_file.stem == fully_qualified_fm_name:
-                        return poss_fm_file
-
-        return None
+        return self._get_feature_model_repository_path() / rel_fm_path
 
     @staticmethod
     def _get_feature_model_repository_path() -> Path:
