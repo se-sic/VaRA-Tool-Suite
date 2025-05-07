@@ -2,9 +2,9 @@
 import logging
 import textwrap
 import typing as tp
-from importlib import resources
 from pathlib import Path
 
+import importlib_resources
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
@@ -88,10 +88,13 @@ def _sample_with_perf_and_time(
 
                 with cleanup(workload):
                     run_cmd(retcode=None)
-                    perf_script_source = resources.files("varats").joinpath(
-                        "resources"
-                    ).joinpath("perf_script_overhead_calculation.py")
-                    with resources.as_file(perf_script_source) as perf_script:
+                    perf_script_source = importlib_resources.files(
+                        "varats"
+                    ).joinpath("resources"
+                              ).joinpath("perf_script_overhead_calculation.py")
+                    with importlib_resources.as_file(
+                        perf_script_source
+                    ) as perf_script:
                         perf_script_cmd = perf["script", "-s", perf_script,
                                                "-i", perf_data_file]
                         (perf_script_cmd > str(overhead_report_file))()
@@ -125,7 +128,7 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
     def __call__(self) -> StepResult:
         # get workload to use
         workloads = workload_commands(
-            self.project, self.__binary, [WorkloadCategory.MEDIUM]
+            self.project, self.__binary, [WorkloadCategory.EXAMPLE]
         )
         if len(workloads) == 0:
             print(
@@ -197,7 +200,7 @@ class SampleWithPerfAndTimeSynth(OutputFolderStep):
         self, tmp_dirs: tp.Dict[tp.Type["BaseReport"], Path]
     ) -> StepResult:
         workloads = workload_commands(
-            self.project, self.__binary, [WorkloadCategory.MEDIUM]
+            self.project, self.__binary, [WorkloadCategory.EXAMPLE]
         )
         if len(workloads) == 0:
             print(
