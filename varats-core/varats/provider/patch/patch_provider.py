@@ -372,7 +372,7 @@ class PatchProvider(Provider):
     patches_source = bb.source.Git(
         remote=patches_repository,
         local="patch-configurations",
-        refspec="origin/HEAD",
+        refspec="origin/f-HiddenVariability",
         limit=None,
         shallow=False
     )
