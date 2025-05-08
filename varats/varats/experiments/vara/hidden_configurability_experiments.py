@@ -6,7 +6,7 @@ from pathlib import Path
 import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult
+from benchbuild.utils.actions import StepResult, Echo
 from benchbuild.utils.cmd import git
 from plumbum import local
 
@@ -24,25 +24,22 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     ZippedReportFolder,
 )
-from varats.experiment.steps.ifthenelse import IfThenElse
+from varats.experiment.steps.combinators import IfThenElse
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
-from varats.experiment.steps.testsuite import Testsuite
+from varats.experiment.steps.testsuite import RunTestSuite
 from varats.experiment.workload_util import (
     workload_commands,
     create_workload_specific_filename,
     WorkloadCategory,
 )
 from varats.experiments.base.just_test import PrintString
-from varats.experiments.base.run_workloads import RunAllWorkloads
-from varats.experiments.base.time_workloads import TimeProjectWorkloads
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
 )
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
-from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportSpecification
 from varats.revision.revisions import get_processed_revisions_files
 from varats.tools.research_tools.vara import VaRA
@@ -263,24 +260,44 @@ PATCH_VARIATIONS = {
         ),
         "literal_block_cost": (
             "literal_block_cost",
-            [x / 10 for x in range(250, 300, 1) if x != 281]
+            [x / 10 for x in range(270, 300, 1) if x != 281]
         ),
         "distance_block_cost": (
             "distance_block_cost",
             [x / 10 for x in range(130, 160, 1) if x != 146]
         ),
         "min_entropy":
-            ("min_entropy", [x / 100 for x in range(500, 1000, 2) if x != 792]),
+            ("min_entropy", [x / 100 for x in range(650, 950, 10) if x != 792]),
         "min_utf_ratio":
             ("min_utf_ratio", [x / 100 for x in range(50, 100, 5) if x != 75]),
-        "sample_rate": ("sample_rate", [x for x in range(10, 20) if x != 13]),
+        "sample_rate": (
+            "sample_rate", [x for x in range(10, 20) if x != 13] +
+            [13 * i for i in range(2, 6)]
+        ),
     },
     "DunePerfRegression": {
-        "hexa_gitter_refinement": ("resolution", [x for x in range(25, 75, 5)]),
+        "hexa_gitter_refinement": (
+            "resolution",
+            [x for x in range(25, 100, 25)] + [x for x in range(100, 500, 50)]
+        ),
         "alu_repartition": ("mem_factor", [x for x in range(3, 10, 1)]),
     },
     "FastDownward": {},
-    "libvpx": {},
+    "libvpx": {
+        "block_size_vp9_enc":
+            ("block_size", [2**x for x in range(1, 7) if x != 4]),
+        "cq_adjust_one_pass": ("cq_adjust", [0.05, 0.2, 0.4, 0.6, 0.8]),
+        "cq_adjust_two_pass": ("cq_adjust", [0.05, 0.2, 0.4, 0.6, 0.8]),
+        "kMaxMfBoost":
+            ("kMaxMfBoost", [250, 500, 1000, 1500, 3000, 4000, 10000]),
+        "min_filter_pick":
+            ("min_filter_level", [1, 2, 3, 4] + [x for x in range(5, 20, 2)]),
+        "min_filter_search":
+            ("min_filter_level", [1, 2, 3, 4] + [x for x in range(5, 20, 2)]),
+        "mv_threshold": ("mv_threshold", [25, 50, 150, 200, 400, 800, 1000]),
+        "pred_stride": ("pred_stride", [4, 8, 16, 32, 128]),
+        "pred_stride_rd": ("pred_stride", [4, 8, 16, 32, 128])
+    },
 }
 
 
@@ -357,18 +374,36 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
         analysis_actions.append(actions.Compile(project))
 
         for binary in project.binaries:
+            if len(
+                workload_commands(
+                    project, binary,
+                    [WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL]
+                )
+            ) == 0:
+                analysis_actions.append(
+                    Echo(
+                        f"Skipping binary {binary.name} as it has no workloads."
+                    )
+                )
+                continue
+
             result_filepath = create_new_success_result_filepath(
                 self.get_handle(), self.REPORT_SPEC.main_report, project,
                 binary, get_current_config_id(project)
             )
 
-            analysis_actions.append(ReCompile(project))
+            if not isinstance(analysis_actions[-1], actions.Compile):
+                analysis_actions.append(ReCompile(project))
 
             patch_steps = []
 
             for patch in patches:
                 # Skip patches without any variations
                 if patch.shortname not in PATCH_VARIATIONS[project.name]:
+                    print(
+                        f"Skipping patch {patch.shortname} for project "
+                        f"{project.name} as it has no variations."
+                    )
                     continue
 
                 arg_name, values = PATCH_VARIATIONS[project.name][
@@ -382,7 +417,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     patch_steps.append(
                         IfThenElse(
                             project,
-                            Testsuite(project),
+                            PrintString(project, "Skipping test suite"),
                             TimePatchedWorkloadsStep(
                                 project,
                                 binary,
