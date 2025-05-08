@@ -4,7 +4,9 @@ from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, mkdir, make, ctest
+from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.source import HTTPMultiple
+from benchbuild.utils.cmd import cmake, mkdir, make
 from benchbuild.utils.revision_ranges import (
     RevisionRange,
     block_revisions,
@@ -14,6 +16,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import (
+    WorkloadCategory,
+    RSBinary,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -23,6 +30,8 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
@@ -59,8 +68,88 @@ class Brotli(VProject):
                 limit=None,
                 shallow=False
             )
+        ),
+        FeatureSource(),
+        HTTPMultiple(
+            local="geo-maps",
+            remote={
+                "1.0":
+                    "https://github.com/simonepri/geo-maps/releases/"
+                    "download/v0.6.0"
+            },
+            files=[
+                "countries-land-10km.geo.json", "countries-land-2km5.geo.json",
+                "countries-land-1km.geo.json", "countries-land-500m.geo.json",
+                "countries-land-250m.geo.json", "countries-land-100m.geo.json",
+                "countries-land-10m.geo.json", "countries-land-1m.geo.json"
+            ]
         )
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.SMALL): [
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-10km.geo.json",
+                label="geo-maps-countries-land-10km"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-2km5.geo.json",
+                label="geo-maps-countries-land-2km5"
+            ),
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-1km.geo.json",
+                label="geo-maps-countries-land-1km"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-500m.geo.json",
+                label="geo-maps-countries-land-500m"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-250m.geo.json",
+                label="geo-maps-countries-land-250m"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-100m.geo.json",
+                label="geo-maps-countries-land-100m"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-10m.geo.json",
+                label="geo-maps-countries-land-10m"
+            ),
+            VCommand(
+                SourceRoot("brotli_git") / RSBinary("brotli"),
+                "-fkn",
+                ConfigParams(),
+                "geo-maps/countries-land-1m.geo.json",
+                label="geo-maps-countries-land-1m"
+            )
+        ]
+    }
 
     class BrotliBuildMethod(Enum):
         MAKE = 0
@@ -235,6 +324,13 @@ class Brotli(VProject):
 
         with local.cwd(brotli_version_source):
             verify_binaries(self)
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        build_dir, _ = self.__get_build_dir()
+
+        with local.cwd(build_dir):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
