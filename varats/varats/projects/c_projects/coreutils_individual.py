@@ -5,9 +5,9 @@ import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import git, make
 from benchbuild.utils.settings import get_number_of_jobs
-from containers.containers import get_base_image, ImageBase
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import (
     WorkloadCategory,
     RSBinary,
