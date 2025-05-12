@@ -24,7 +24,11 @@ from varats.project.project_util import (
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, typed_revision_range
+from varats.utils.git_util import (
+    ShortCommitHash,
+    typed_revision_range,
+    RepositoryHandle,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -161,6 +165,7 @@ class Bzip2(VProject):
         bzip2_repo = get_local_project_repo(Bzip2.NAME)
         bzip2_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_repo = RepositoryHandle(bzip2_source)
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
@@ -197,6 +202,7 @@ class Bzip2(VProject):
         bzip2_repo = get_local_project_repo(Bzip2.NAME)
         bzip2_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_repo = RepositoryHandle(bzip2_source)
 
         if bzip2_version in typed_revision_range(
             bzip2_repo, Bzip2._MAKE_VERSIONS, ShortCommitHash
