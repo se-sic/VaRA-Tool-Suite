@@ -26,7 +26,7 @@ from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
-from varats.report.multi_patch_report import MultiBinaryMultiPatchReport
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import (
     BaseReport,
     ReportSpecification,
@@ -96,9 +96,7 @@ class MultiWLAggregate(
 
 
 class MPRBinAggregate(
-    MultiBinaryMultiPatchReport[MultiWLAggregate],
-    shorthand="MPBA",
-    file_type=".zip"
+    MultiPatchReport[MultiWLAggregate], shorthand="MPBA", file_type=".zip"
 ):
     """Multi-patch report aggregate."""
 

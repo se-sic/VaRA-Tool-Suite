@@ -73,4 +73,4 @@ class MPRTimeWLAggregate(
     """Aggregate for MultiPatchReports that contain WLTimeReports."""
 
     def __init__(self, path: Path) -> None:
-        super().__init__(path, TimeReportAggregate)
+        super().__init__(path, WLTimeReportAggregate)

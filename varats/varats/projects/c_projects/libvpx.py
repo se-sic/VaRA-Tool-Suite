@@ -22,7 +22,6 @@ from varats.project.project_util import (
     get_local_project_repo,
     verify_binaries,
     RevisionBinaryMap,
-    HTTPUn7Z,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand

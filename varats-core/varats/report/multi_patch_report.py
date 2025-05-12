@@ -79,5 +79,5 @@ class MultiPatchReport(
         fn_without_prefix = file_name[len("patched_"):]
         split_leftover_fn = fn_without_prefix.partition("_")
         shortname_length = int(split_leftover_fn[0])
-        patch_shortname = "".join(split_leftover_fn[2:])[:shortname_length]
+        patch_shortname = "".join(split_leftover_fn[2:])
         return patch_shortname
