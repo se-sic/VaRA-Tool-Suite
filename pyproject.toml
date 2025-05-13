@@ -55,6 +55,7 @@ vara-plot = "varats.tools.driver_plot:main"
 vara-run = "varats.tools.driver_run:main"
 vara-table = "varats.tools.driver_table:main"
 vara-cve = "varats.tools.driver_cve:main"
+vara-feature = "varats.tools.driver_feature:main"
 
 [project.gui-scripts]
 vara-graphview = "varats.tools.driver_graph_view:main"

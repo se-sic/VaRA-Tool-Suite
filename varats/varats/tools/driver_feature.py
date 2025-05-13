@@ -7,11 +7,11 @@ from functools import partial
 
 import click
 from pygit2 import Walker, Commit, Blob
-from pygit2.enums import SortMode
+from pygit2.enums import SortMode, DiffOption
 
 from varats.project.project_util import get_local_project_repo
 from varats.tools.tool_util import configuration_lookup_error_handler
-from varats.ts_utils.cli_util import initialize_cli_tool
+from varats.ts_utils.cli_util import initialize_cli_tool, cli_list_choice
 from varats.ts_utils.click_param_types import create_project_choice
 from varats.utils.git_util import CommitHash, FullCommitHash
 
@@ -119,10 +119,11 @@ def __prompt_location(
     commit: Commit,
     old_location: tp.Optional[Location] = None,
     old_content: tp.Optional[str] = None,
-    prompt: tp.Optional[str] = None
+    prompt: tp.Optional[str] = None,
+    default: str = None
 ) -> tp.Tuple[Location, str]:
     commit_hash = CommitHash.from_pygit_commit(commit)
-
+    LOG.setLevel(logging.DEBUG)
     if prompt is None:
         prompt = f"Enter location for feature {feature_name} @ {commit_hash.short_hash}"
 
@@ -132,7 +133,7 @@ def __prompt_location(
 
     return tp.cast(
         tp.Tuple[Location, str],
-        click.prompt(prompt, value_proc=parse_location)
+        click.prompt(prompt, default=default, value_proc=parse_location)
     )
 
 
@@ -142,8 +143,12 @@ def __get_and_check_location(
     old_location: tp.Optional["Location"] = None
 ) -> tp.Tuple[Location, str]:
     location = Location.parse_string(raw_location, old_location)
-    location_content = __get_location_content(commit, location)
-
+    if commit.tree.__contains__(location.file):
+        location_content = __get_location_content(commit, location)
+    else:
+        raise click.UsageError(
+            f"The provided location does not exist or is empty."
+        )
     if not location_content:
         raise click.UsageError(
             f"The provided location does not exist or is empty."
@@ -237,7 +242,6 @@ def __annotate(
     for commit in walker:
         commit_hash = CommitHash.from_pygit_commit(commit)
         LOG.debug("Current revision: %s", commit_hash.hash)
-
         for feature, annotations in last_annotations.items():
             for annotation_id, annotation in annotations.items():
                 old_target = last_annotation_targets[feature][annotation_id]
@@ -264,10 +268,67 @@ def __annotate(
                         f"Annotation changed for '{old_target}'."
                     )
                     click.echo(f"Old location: {annotation.location}")
-
+                    potential_new_locations = []
+                    # Determine potential new location
+                    for parent in commit.parents:
+                        diff = repo.diff(parent, commit)
+                        for patch in diff:
+                            if patch.delta.old_file.path == annotation.location.file:
+                                offset_counter = 0
+                                stop_offset = False
+                                for hunk in patch.hunks:
+                                    for line in hunk.lines:
+                                        if line.old_lineno > annotation.location.end_line:
+                                            stop_offset = True
+                                        if line.new_lineno >= 0:
+                                            if line.old_lineno < 0:
+                                                if not stop_offset:
+                                                    offset_counter += 1
+                                            if annotation.location.end_line == annotation.location.start_line:
+                                                content = line.content[
+                                                    annotation.location.
+                                                    start_col - 1:annotation.
+                                                    location.end_col]
+                                            else:
+                                                content = line.content[
+                                                    annotation.location.
+                                                    start_col - 1:]
+                                            if old_target == content:
+                                                potential_new_locations.append((
+                                                    Location.parse_string(
+                                                        str(line.new_lineno),
+                                                        annotation.location
+                                                    ), content
+                                                ))
+                                        else:
+                                            if not stop_offset:
+                                                offset_counter -= 1
+                                potential_new_location = Location.parse_string(
+                                    str(
+                                        annotation.location.start_line +
+                                        offset_counter
+                                    ), annotation.location
+                                )
+                                potential_new_locations.append((
+                                    potential_new_location,
+                                    __get_location_content(
+                                        commit, potential_new_location
+                                    )
+                                ))
+                    if potential_new_locations:
+                        potential_new_locations.sort(
+                            key=lambda x: x[0].start_line - annotation.location.
+                            start_line
+                        )
+                        best_candidate = potential_new_locations[0]
                     new_location, new_target = __prompt_location(
-                        feature, commit, annotation.location, old_target,
-                        "New location: "
+                        feature,
+                        commit,
+                        annotation.location,
+                        old_target,
+                        "New location: ",
+                        default=f"{best_candidate[0]}:{best_candidate[1]}"
+                        if potential_new_locations else None
                     )
 
                     last_annotations[feature][annotation_id] = \
