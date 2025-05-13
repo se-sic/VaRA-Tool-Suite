@@ -324,8 +324,8 @@ class ConfigurationAlternativesAggGenerator(
                 metric=metric,
                 **self.plot_kwargs
             ) for cs in get_loaded_paper_config().get_all_case_studies()
-            if cs.project_name in ["brotli"
-                                  ]  #,"DunePerfRegression","libzmq", "libvpx"]
+            if cs.project_name in
+            ["brotli", "DunePerfRegression", "libzmq", "libvpx"]
             for metric in ["wall_clock_time", "max_resident_size"]
         ]
 
