@@ -118,17 +118,36 @@ class ArchitectureTaintReport(BaseReport, shorthand="ATR", file_type="yaml"):
         return str_representation
 
 
+class FeatureArchitectureTaintIncommingRegions:
+
+    def __init__(
+        self, features: tp.List[str], incommingRegions: tp.Dict[str,
+                                                                tp.List[str]]
+    ):
+        self.__features = features
+        self.__incommingRegions = incommingRegions
+
+    @property
+    def features(self) -> tp.List[str]:
+        """List of features of the function."""
+        return self.__features
+
+    @property
+    def incommingRegions(self) -> tp.Dict[str, tp.List[str]]:
+        """List of found instruction blame-interactions."""
+        return self.__incommingRegions
+
+
 class FeatureArchitectureTaintResultFunctionEntry:
 
     def __init__(
-        self, name: str, demangled_name: str, file_name: str, feature: str,
-        incommingRegions: tp.Dict[str, tp.List[str]]
+        self, name: str, demangled_name: str, file_name: str,
+        incommingRegions: tp.List[FeatureArchitectureTaintIncommingRegions]
     ) -> None:
         self.__name = name
         self.__demangled_name = demangled_name
         self.__file_name = file_name
         self.__insts = incommingRegions
-        self.__feature = feature
 
     @classmethod
     def create_feature_architecture_taint_result_function_entry(
@@ -136,16 +155,18 @@ class FeatureArchitectureTaintResultFunctionEntry:
     ):
         demangled_name = str(raw_func_entry['DemangledName'])
         file_name = str(raw_func_entry.get('file'))
-        interactions = raw_func_entry['IncomingRegions']
-        feature = str(raw_func_entry.get('Feature'))
+        raw_incommingRegions = raw_func_entry['IncomingRegions']
+        incommingRegions = []
+        for region in raw_incommingRegions:
+            features = region['Features'].split(',')
+            incommingRegions.append(
+                FeatureArchitectureTaintIncommingRegions(
+                    features, region['IncomingRegions']
+                )
+            )
         return FeatureArchitectureTaintResultFunctionEntry(
-            name, demangled_name, file_name, feature, interactions
+            name, demangled_name, file_name, incommingRegions
         )
-
-    @property
-    def feature(self) -> str:
-        """Feature of the function."""
-        return self.__feature
 
     @property
     def name(self) -> str:
@@ -168,7 +189,7 @@ class FeatureArchitectureTaintResultFunctionEntry:
         return self.__file_name
 
     @property
-    def interactions(self) -> tp.Dict[str, tp.List[str]]:
+    def interactions(self) -> tp.List[FeatureArchitectureTaintIncommingRegions]:
         """List of found instruction blame-interactions."""
         return self.__insts
 
