@@ -2,13 +2,11 @@ import typing as tp
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas
 import pandas as pd
 import seaborn as sns
 from matplotlib.colors import to_rgba
 
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
-from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.experiments.vara.hidden_configurability_experiments import (
     TimePatchedWorkloads,
 )
@@ -20,7 +18,6 @@ from varats.plot.plots import PlotGenerator
 from varats.report.gnu_time_report import (
     WLTimeReportAggregate,
     TimeReportAggregate,
-    TimeReport,
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import FullCommitHash
@@ -62,6 +59,9 @@ def _aggregate_data(cs: CaseStudy, config_id: int) -> pd.DataFrame:
 
     data_rows = []
 
+    base_times = {}
+    base_rss = {}
+
     for result_file in result_files:
         report: MPRTimeWLAggregate = MPRTimeWLAggregate(result_file.full_path())
 
@@ -84,6 +84,9 @@ def _aggregate_data(cs: CaseStudy, config_id: int) -> pd.DataFrame:
                 "value": base_report.max_resident_sizes(wl),
             }])
 
+            base_times[wl] = base_report.measurements_wall_clock_time(wl)
+            base_rss[wl] = base_report.max_resident_sizes(wl)
+
         for patch_report in report.get_patched_reports():
             cp = extract_config_point(patch_report.filename.filename)
             for wl in patch_report.workload_names():
@@ -99,6 +102,30 @@ def _aggregate_data(cs: CaseStudy, config_id: int) -> pd.DataFrame:
                     "variation": cp[1],
                     "metric": "max_resident_size",
                     "value": patch_report.max_resident_sizes(wl),
+                }, {
+                    "binary-wl":
+                        f"{binary}/{wl}",
+                    "config_opportunity":
+                        cp[0],
+                    "variation":
+                        cp[1],
+                    "metric":
+                        "wall_clock_time_relative",
+                    "value": (
+                        patch_report.measurements_wall_clock_time(wl) /
+                        base_times[wl]
+                    ),
+                }, {
+                    "binary-wl":
+                        f"{binary}/{wl}",
+                    "config_opportunity":
+                        cp[0],
+                    "variation":
+                        cp[1],
+                    "metric":
+                        "max_resident_size_relative",
+                    "value":
+                        (patch_report.max_resident_sizes(wl) / base_rss[wl]),
                 }])
 
     result = pd.DataFrame.from_records(data_rows)
@@ -169,30 +196,30 @@ class ConfigurationAlternativesAggPlot(
             df[df["metric"] == "max_resident_size"]
         )
 
-        fig, axes = plt.subplots(ncols=2, nrows=len(binaries))
+        df["value"] = df["value"].apply(np.mean)
+        df["config_var"] = list(zip(df['config_opportunity'], df['variation']))
+
+        fig, axes = plt.subplots(
+            ncols=2,
+            nrows=len(binaries),
+            figsize=(8, 4 * len(binaries)),
+            squeeze=False
+        )
+        axes: plt.Axes
 
         for i, binary in enumerate(binaries):
-            baseline_df = df[df["binary-wl"] == binary][df["config_opportunity"]
-                                                        == "__baseline__"]
+            baseline_df = df[(df["binary-wl"] == binary) &
+                             (df["config_opportunity"] == "__baseline__")]
 
-            binary_df = df[df["binary-wl"] == binary][df["config_opportunity"]
-                                                      != "__baseline__"]
-
-            baseline_df["value"] = baseline_df["value"].apply(np.mean)
-            binary_df["value"] = binary_df["value"].apply(np.mean)
-
-            binary_df["config_var"] = list(
-                zip(binary_df['config_opportunity'], binary_df['variation'])
-            )
+            binary_df = df[(df["binary-wl"] == binary) &
+                           (df["config_opportunity"] != "__baseline__")]
 
             time_df = binary_df[binary_df["metric"] == "wall_clock_time"]
             rss_df = binary_df[binary_df["metric"] == "max_resident_size"]
 
-            rax = axes[i] if len(binaries) > 1 else axes
-
             # Create one strip plot in column 0 for wall clock time
             sns.stripplot(
-                ax=rax[0],
+                ax=axes[i, 0],
                 y="value",
                 x="config_opportunity",
                 hue="config_var",
@@ -202,7 +229,7 @@ class ConfigurationAlternativesAggPlot(
 
             # Create another strip plot in column 1 for max resident size
             sns.stripplot(
-                ax=rax[1],
+                ax=axes[i, 1],
                 y="value",
                 x="config_opportunity",
                 hue="config_var",
@@ -211,7 +238,7 @@ class ConfigurationAlternativesAggPlot(
             )
 
             # Draw the baseline line
-            rax[0].axhline(
+            axes[i, 0].axhline(
                 y=np.mean(
                     baseline_df[baseline_df["metric"] == "wall_clock_time"]
                     ["value"]
@@ -222,7 +249,7 @@ class ConfigurationAlternativesAggPlot(
                 label="Baseline"
             )
 
-            rax[1].axhline(
+            axes[i, 1].axhline(
                 y=np.mean(
                     baseline_df[baseline_df["metric"] == "max_resident_size"]
                     ["value"]
@@ -233,9 +260,36 @@ class ConfigurationAlternativesAggPlot(
                 label="Baseline"
             )
 
+            # Set labels and rotate x-ticks
+            axes[i, 0].set_ylabel("")
+            axes[i, 1].set_ylabel("")
+            axes[i, 0].set_xlabel("")
+            axes[i, 1].set_xlabel("")
+            axes[i, 0].set_title(f"")
+            axes[i, 1].set_title(f"")
+
+            if i < len(binaries) - 1:
+                axes[i, 0].set_xticklabels([])
+                axes[i, 1].set_xticklabels([])
+            else:
+                axes[i, 0].set_xticklabels(
+                    axes[i, 0].get_xticklabels(), rotation=90, ha="right"
+                )
+                axes[i, 1].set_xticklabels(
+                    axes[i, 1].get_xticklabels(), rotation=90, ha="right"
+                )
+            # For the right subplot set the y-axis labels to the right side
+            axes[i, 1].yaxis.tick_right()
+            axes[i, 1].yaxis.set_label_position("right")
+
         # Disable the legend for all
         for ax in axes.flat:
             ax.legend().remove()
+
+        axes[0, 0].set_ylabel("Runtime (seconds)")
+        axes[0, 1].set_ylabel("Max Resident Size (bytes)")
+        axes[0, 0].set_title(f"Wall Clock Time")
+        axes[0, 1].set_title(f"Max Resident Size")
 
 
 class ConfigurationAlternativesAggGenerator(
@@ -247,7 +301,9 @@ class ConfigurationAlternativesAggGenerator(
         generators = []
 
         for cs in get_loaded_paper_config().get_all_case_studies():
-            if cs.project_name != "libzmq":
+            if cs.project_name not in [
+                "DunePerfRegression", "brotli", "libvpx", "libzmq"
+            ]:
                 continue
             if len(cs.get_config_ids_for_revision(cs.revisions[0])) == 0:
                 generators.append(
