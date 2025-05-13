@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import patches
 from matplotlib.colors import to_rgba
+from matplotlib.figure import SubFigure
 from matplotlib.ticker import PercentFormatter
 
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
@@ -51,7 +53,8 @@ def _aggregate_data(cs: CaseStudy, config_id: int) -> pd.DataFrame:
         TimePatchedWorkloads,
         TimePatchedWorkloads.report_spec().main_report,
         get_case_study_file_name_filter(cs),
-        config_id=config_id
+        config_id=config_id,
+        only_newest=False,
     )
 
     if len(result_files) == 0:
@@ -146,7 +149,7 @@ class ConfigurationAlternativesAggPlot(
 
     @property
     def name(self) -> str:
-        return f"{self.NAME}_{self.plot_kwargs['config_id']}"
+        return f"{self.NAME}_{self.plot_kwargs['metric']}"
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -183,124 +186,129 @@ class ConfigurationAlternativesAggPlot(
         return variation_palette
 
     def plot(self, view_mode: bool) -> None:
-        case_study = self.plot_kwargs["case_study"]
-        config_id = self.plot_kwargs["config_id"]
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        metric: str = self.plot_kwargs["metric"]
 
-        df = _aggregate_data(case_study, config_id)
+        if "config_ids" in self.plot_kwargs:
+            configs = self.plot_kwargs["config_ids"]
+        else:
+            configs = case_study.get_config_ids_for_revision(
+                case_study.revisions[0]
+            )
+
+        if len(configs) == 0:
+            configs = [None]
+
+        # Load data for first config to get the number of binaries
+        df = _aggregate_data(case_study, configs[0])
 
         if df.empty:
-            print(f"No data for {case_study.project_name} ({config_id=})")
+            print(f"No data for {case_study.project_name} ({configs[0]})")
             return
 
         binaries = df["binary-wl"].unique()
 
-        time_palette = self.__create_palettes(
-            df[df["metric"] == "wall_clock_time"]
-        )
-        rss_palette = self.__create_palettes(
-            df[df["metric"] == "max_resident_size"]
+        fig = plt.figure(figsize=(8 * len(configs), 8 * len(binaries)))
+        sfigs = fig.subfigures(
+            ncols=len(configs), nrows=len(binaries), squeeze=False
         )
 
-        df["value"] = df["value"].apply(np.mean)
-        df["config_var"] = list(zip(df['config_opportunity'], df['variation']))
+        for conf_idx, config_id in enumerate(configs):
+            print(f"Loading data for {case_study.project_name} ({config_id=})")
+            # Load data for this config
+            df = _aggregate_data(case_study, config_id)
 
-        fig = plt.figure(figsize=(8 * len(binaries), 8))
-        sfigs = fig.subfigures(1, len(binaries), squeeze=False)
+            metric_palette = self.__create_palettes(df[df["metric"] == metric])
 
-        for i, binary in enumerate(binaries):
-            baseline_df = df[(df["binary-wl"] == binary) &
-                             (df["config_opportunity"] == "__baseline__")]
-
-            binary_df = df[(df["binary-wl"] == binary) &
-                           (df["config_opportunity"] != "__baseline__")]
-
-            time_df = binary_df[binary_df["metric"] == "wall_clock_time"]
-            time_rel_df = binary_df[binary_df["metric"] ==
-                                    "wall_clock_time_relative"]
-            rss_df = binary_df[binary_df["metric"] == "max_resident_size"]
-            rss_rel_df = binary_df[binary_df["metric"] ==
-                                   "max_resident_size_relative"]
-
-            axes = sfigs[0, i].subplots(2, 2)
-
-            # Create one strip plot in column 0 for wall clock time
-            sns.stripplot(
-                ax=axes[0, 0],
-                y="value",
-                x="config_opportunity",
-                hue="config_var",
-                data=time_df,
-                palette=time_palette,
+            df["value"] = df["value"].apply(np.mean)
+            df["config_var"] = list(
+                zip(df['config_opportunity'], df['variation'])
             )
 
-            # Create another strip plot in column 0 for wall clock time relative
-            sns.stripplot(
-                ax=axes[1, 0],
-                y="value",
-                x="config_opportunity",
-                hue="config_var",
-                data=time_rel_df,
-                palette=time_palette,
-            )
+            for bin_idx, binary in enumerate(binaries):
+                print(f"Processing {binary} ({config_id=})")
 
-            # Create another strip plot in column 1 for max resident size
-            sns.stripplot(
-                ax=axes[0, 1],
-                y="value",
-                x="config_opportunity",
-                hue="config_var",
-                data=rss_df,
-                palette=rss_palette,
-            )
+                baseline_df = df[(df["binary-wl"] == binary) &
+                                 (df["config_opportunity"] == "__baseline__")]
 
-            # Create another strip plot in column 1 for max resident size relative
-            sns.stripplot(
-                ax=axes[1, 1],
-                y="value",
-                x="config_opportunity",
-                hue="config_var",
-                data=rss_rel_df,
-                palette=rss_palette,
-            )
+                binary_df = df[(df["binary-wl"] == binary) &
+                               (df["config_opportunity"] != "__baseline__")]
 
-            # Draw the baseline line for absolute plots
-            axes[0, 0].axhline(
-                y=np.mean(
-                    baseline_df[baseline_df["metric"] == "wall_clock_time"]
-                    ["value"]
-                ),
-                color='red',
-                linestyle='--',
-                linewidth=1,
-                label="Baseline"
-            )
+                metric_df = binary_df[binary_df["metric"] == metric]
+                metric_rel_df = binary_df[binary_df["metric"] ==
+                                          f"{metric}_relative"]
 
-            axes[0, 1].axhline(
-                y=np.mean(
-                    baseline_df[baseline_df["metric"] == "max_resident_size"]
-                    ["value"]
-                ),
-                color='red',
-                linestyle='--',
-                linewidth=1,
-                label="Baseline"
-            )
+                subfig: SubFigure = sfigs[bin_idx, conf_idx]
 
-            for idx in range(2):
-                # Set yticks to the right
-                axes[idx, 1].yaxis.tick_right()
-                axes[1, idx].set_ylim(-0.5, 0.5)
-                axes[1,
-                     idx].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-                axes[1, idx].axhline(
-                    y=0, color='black', linestyle='--', linewidth=1
+                abs_ax, rel_ax = subfig.subplots(1, 2)
+
+                abs_ax.set_title(f"{metric} (Absolute)")
+                rel_ax.set_title(f"{metric} (Relative)")
+
+                # Set the titles for first col/row
+                if conf_idx == 0:
+                    subfig.supylabel(
+                        f"{binary}", size="xx-large", weight="bold"
+                    )
+
+                if bin_idx == 0:
+                    subfig.suptitle(
+                        f"Config ID: {config_id}",
+                        size="x-large",
+                        weight="bold"
+                    )
+
+                # Create strip plot for absolute values
+                sns.stripplot(
+                    ax=abs_ax,
+                    y="value",
+                    x="config_opportunity",
+                    hue="config_var",
+                    data=metric_df,
+                    palette=metric_palette,
                 )
 
-            for ax in axes.flatten():
-                ax.legend().remove()
-                ax.set_xticklabels([])
-                ax.set_ylabel("")
-                ax.set_xlabel("")
+                # Draw the baseline line for absolute plots
+                abs_ax.axhline(
+                    y=np.mean(
+                        baseline_df[baseline_df["metric"] == metric]["value"]
+                    ),
+                    color='red',
+                    linestyle='--',
+                    linewidth=1,
+                    label="Baseline"
+                )
+
+                # Create strip plot for relative change below
+                sns.stripplot(
+                    ax=rel_ax,
+                    y="value",
+                    x="config_opportunity",
+                    hue="config_var",
+                    data=metric_rel_df,
+                    palette=metric_palette,
+                )
+
+                # Draw the baseline line for relative plots
+                rel_ax.axhline(y=0, color='black', linestyle='--', linewidth=1)
+                rel_ax.set_ylim(-0.5, 0.5)
+                rel_ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+                rel_ax.yaxis.tick_right()
+
+                # Format the axes, labels, and legends
+
+                for ax in (abs_ax, rel_ax):
+                    ax.legend().remove()
+                    ax.set_ylabel("")
+                    ax.set_xlabel("")
+
+                    if bin_idx == len(binaries) - 1:
+                        #subfig.supxlabel("Configuration Opportunity Names", size="xx-large", weight="bold")
+                        ax.set_xticklabels(
+                            ax.get_xticklabels(), rotation=90, ha='right'
+                        )
+                    else:
+                        ax.set_xticklabels([])
 
 
 class ConfigurationAlternativesAggGenerator(
@@ -309,35 +317,17 @@ class ConfigurationAlternativesAggGenerator(
     """Generates the configuration opportunities runtime plot."""
 
     def generate(self) -> tp.List[Plot]:
-        generators = []
-
-        for cs in get_loaded_paper_config().get_all_case_studies():
-            if cs.project_name not in [
-                #"DunePerfRegression", "brotli", "libvpx", "libzmq"
-                "brotli"
-            ]:
-                continue
-            if len(cs.get_config_ids_for_revision(cs.revisions[0])) == 0:
-                generators.append(
-                    ConfigurationAlternativesAggPlot(
-                        self.plot_config,
-                        case_study=cs,
-                        config_id=None,
-                        **self.plot_kwargs
-                    )
-                )
-            else:
-                generators.extend([
-                    ConfigurationAlternativesAggPlot(
-                        self.plot_config,
-                        case_study=cs,
-                        config_id=c_id,
-                        **self.plot_kwargs
-                    )
-                    for c_id in cs.get_config_ids_for_revision(cs.revisions[0])
-                ])
-
-        return generators
+        return [
+            ConfigurationAlternativesAggPlot(
+                self.plot_config,
+                case_study=cs,
+                metric=metric,
+                **self.plot_kwargs
+            ) for cs in get_loaded_paper_config().get_all_case_studies()
+            if cs.project_name in ["brotli"
+                                  ]  #,"DunePerfRegression","libzmq", "libvpx"]
+            for metric in ["wall_clock_time", "max_resident_size"]
+        ]
 
 
 class ConfigurationOpportunitiesRuntimePlot(
