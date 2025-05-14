@@ -57,14 +57,18 @@ class Libzmq(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot("libzmq_git") / RSBinary(f"{binary}"),
+                SourceRoot("libzmq_git") / RSBinary("inproc_thr"),
                 message_size,
-                "100000",
-                label=f"bench-{binary.replace('_','-')}-{message_size}"
-            )
-            for message_size in [2**e
-                                 for e in range(3, 20)]
-            for binary in ["inproc_thr", "inproc_lat"]
+                "10000000",
+                label=f"bench-inproc-thr-{message_size}"
+            ) for message_size in [2**e for e in range(3, 20)]
+        ] + [
+            VCommand(
+                SourceRoot("libzmq_git") / RSBinary("inproc_lat"),
+                message_size,
+                "1000000",
+                label=f"bench-inproc-lat-{message_size}"
+            ) for message_size in [2**e for e in range(3, 20)]
         ]
     }
 
