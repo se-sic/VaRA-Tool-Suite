@@ -51,7 +51,7 @@ class TimeProjectWorkloads(OutputFolderStep):
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+                self.project, self.__binary, []
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
@@ -62,7 +62,7 @@ class TimeProjectWorkloads(OutputFolderStep):
                 run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
-                    run_cmd()
+                    run_cmd(retcode=self.__binary.valid_exit_codes)
 
         return actions.StepResult.OK
 
@@ -91,26 +91,25 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
-        # Only consider the main/first binary
-        binary = project.binaries[0]
-
-        measurement_repetitions = 2
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary
-        )
-
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
 
-        analysis_actions.append(
-            ZippedExperimentSteps(
-                result_filepath, [
-                    TimeProjectWorkloads(project, rep_num, binary)
-                    for rep_num in range(0, measurement_repetitions)
-                ]
+        for binary in project.binaries:
+            measurement_repetitions = 1
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report, project, binary
             )
-        )
+
+            analysis_actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        TimeProjectWorkloads(project, rep_num, binary)
+                        for rep_num in range(0, measurement_repetitions)
+                    ]
+                )
+            )
+
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

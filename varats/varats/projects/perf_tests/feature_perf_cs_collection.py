@@ -50,7 +50,10 @@ def _do_feature_perf_cs_collection_compile(
 
     with local.cwd(feature_perf_repo.worktree_path / "build"):
         with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
+            bb.watch(cmake)(
+                "..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON",
+                "-DFPCSC_USE_LIBCXX=OFF"
+            )
 
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 

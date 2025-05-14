@@ -105,6 +105,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
+                ConfigParams(),
                 "example.cnf",
                 label="example.cnf",
             )
@@ -113,6 +114,7 @@ class PicoSAT(VProject, ReleaseProviderHook):
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "aim-100-1_6-no-1.cnf",
+                ConfigParams(),
                 label="aim-100-1-6-no-1.cnf",
             )
         ],
@@ -120,11 +122,13 @@ class PicoSAT(VProject, ReleaseProviderHook):
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "traffic_kkb_unknown.cnf/traffic_kkb_unknown.cnf",
+                ConfigParams(),
                 label="traffic-kkb-unknow.cnf",
             ),
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "abw-N-bcsstk07.mtx-w44.cnf/abw-N-bcsstk07.mtx-w44.cnf",
+                ConfigParams(),
                 label="abw-N-bcsstk07.mtx-w44.cnf",
             ),
         ],
@@ -133,12 +137,14 @@ class PicoSAT(VProject, ReleaseProviderHook):
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "UNSAT_H_instances_childsnack_p11.hddl_1.cnf/"
                 "UNSAT_H_instances_childsnack_p11.hddl_1.cnf",
+                ConfigParams(),
                 label="UNSAT-H-instances-childsnack-p11.hddl-1.cnf",
             ),
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "UNSAT_H_instances_childsnack_p12.hddl_1.cnf/"
                 "UNSAT_H_instances_childsnack_p12.hddl_1.cnf",
+                ConfigParams(),
                 label="UNSAT-H-instances-childsnack-p12.hddl-1.cnf",
             )
         ],
