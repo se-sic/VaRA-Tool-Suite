@@ -88,8 +88,8 @@ class PerfStat(OutputFolderStep):
                     "perf_stat", prj_command.command, self.__num, ".json"
                 )
 
-                run_cmd = perf['stat', f'-I {INTERVAL}', "-a", '-j', '-o'
-                               f"--metrics={','.join(self.METRICS)}",
+                run_cmd = perf['stat', f'-I {INTERVAL}', "-a", '-j',
+                               f"--metrics={','.join(self.METRICS)}", '-o',
                                f'{run_report_name}', pb_cmd]
 
                 with cleanup(prj_command):
