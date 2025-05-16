@@ -65,6 +65,29 @@ class PicoSAT(VProject, ReleaseProviderHook):
                     "download/picoSAT-965/example.cnf"
             }
         ),
+        HTTP(
+            local="aim-100-1_6-no-1.cnf",
+            remote={
+                "1.0":
+                    "https://people.sc.fsu.edu/~jburkardt/data/cnf/aim-100-1_6-no-1.cnf"
+            }
+        ),
+        HTTP(
+            local="ibm-2004-03-k70.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-vara/releases/"
+                    "download/workloads-sat-race-2006/ibm-2004-03-k70.cnf"
+            }
+        ),
+        HTTP(
+            local="ibm-2004-1-31-2-k25.cnf",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/picoSAT-vara/releases/"
+                    "download/workloads-sat-race-2006/ibm-2004-1_31_2-k25.cnf"
+            }
+        ),
         HTTPUntar(
             local="abw-N-bcsstk07.mtx-w44.cnf",
             remote={
@@ -105,9 +128,9 @@ class PicoSAT(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("picosat") / RSBinary("picosat"),
-                ConfigParams(),
                 "example.cnf",
-                label="example.cnf",
+                ConfigParams(),
+                label="example",
             )
         ],
         WorkloadSet(WorkloadCategory.SMALL): [
@@ -115,8 +138,20 @@ class PicoSAT(VProject, ReleaseProviderHook):
                 SourceRoot("picosat") / RSBinary("picosat"),
                 "aim-100-1_6-no-1.cnf",
                 ConfigParams(),
-                label="aim-100-1-6-no-1.cnf",
-            )
+                label="aim-100-1-6-no-1",
+            ),
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                "ibm-2004-1-31-2-k25.cnf",
+                ConfigParams(),
+                label="ibm-2004-1-31-2-k25",
+            ),
+            VCommand(
+                SourceRoot("picosat") / RSBinary("picosat"),
+                "ibm-2004-03-k70.cnf",
+                ConfigParams(),
+                label="ibm-2004-03-k70",
+            ),
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
