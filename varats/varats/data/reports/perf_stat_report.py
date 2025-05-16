@@ -18,8 +18,13 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
             'interval' in self.df.columns and 'event' in self.df.columns and
             'counter-value' in self.df.columns
         ):
+            #counter_df = self.df[self.df['metric-unit'] == '(null)']
+            #counter_df = counter_df.pivot(
+            #    index='interval', columns='event', values='counter-value'
+            #)
+            self.df = self.df[self.df['metric-unit'] != '(null)']
             self.df = self.df.pivot(
-                index='interval', columns='event', values='counter-value'
+                index='interval', columns='metric-unit', values='metric-value'
             )
         else:
             print(
@@ -38,6 +43,3 @@ class PerfStatReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, PerfStatReport)
-
-
-__WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")

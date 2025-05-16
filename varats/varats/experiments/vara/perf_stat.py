@@ -5,6 +5,7 @@ import re
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.project import Project
@@ -30,7 +31,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
-INTERVAL = 100
+INTERVAL = 10
 
 
 def fix_json_format(file_path: Path) -> None:
@@ -45,7 +46,7 @@ def fix_json_format(file_path: Path) -> None:
                 json_obj = json.loads(fixed_line)
                 fixed_data.append(json_obj)
             except json.JSONDecodeError as e:
-                print(f"Failed to decode JSON: {e} in line: {fixed_line}")
+                #print(f"Failed to decode JSON: {e} in line: {fixed_line}")
                 continue
 
     with open(file_path, "w") as file:
@@ -80,7 +81,7 @@ class PerfStat(OutputFolderStep):
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
                 self.project, self.__binary,
-                [WorkloadCategory.EXAMPLE, WorkloadCategory.MEDIUM]
+                [WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL]
             ):
                 pb_cmd = prj_command.command.as_plumbum(project=self.project)
 
@@ -92,8 +93,10 @@ class PerfStat(OutputFolderStep):
                                f"--metrics={','.join(self.METRICS)}", '-o',
                                f'{run_report_name}', pb_cmd]
 
+                print(f"Running example {pb_cmd}")
+
                 with cleanup(prj_command):
-                    run_cmd()
+                    bb.watch(run_cmd)()
 
                 fix_json_format(run_report_name)
 
@@ -127,7 +130,7 @@ class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
         # Only consider the main/first binary
         binary = project.binaries[0]
 
-        measurement_repetitions = 2
+        measurement_repetitions = 1
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
             self.get_handle().report_spec().main_report,
