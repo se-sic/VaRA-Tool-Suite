@@ -367,7 +367,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             )
 
     def get_install_binaries(self) -> tp.List[str]:
-        return ["bin/clang++", "bin/opt", "bin/phasar-cli"]
+        return ["bin/clang++", "bin/opt"]
 
     def verify_install(self, install_location: Path) -> bool:
         """
@@ -385,14 +385,6 @@ class VaRA(ResearchTool[VaRACodeBase]):
         vara_name = self.code_base.get_sub_project("vara-llvm-project").name
         status_ok &= ret == 0
         status_ok &= vara_name in stdout
-
-        # Check that phasar-cli can display its version
-        phasar_cli = local[str(install_location / "bin/phasar-cli")]
-        ret, stdout, _ = phasar_cli.run("--version")
-        status_ok &= ret == 0
-
-        phasar_name = self.code_base.get_sub_project("phasar").name.lower()
-        status_ok &= phasar_name in stdout.lower()
 
         return status_ok
 
