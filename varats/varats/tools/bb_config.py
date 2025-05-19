@@ -55,6 +55,7 @@ def update_projects(
         'varats.projects.c_projects.libxml2',
         'varats.projects.c_projects.lrzip',
         'varats.projects.c_projects.lz4',
+        'varats.projects.c_projects.mangohud',
         'varats.projects.c_projects.nginx',
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.openvpn',
