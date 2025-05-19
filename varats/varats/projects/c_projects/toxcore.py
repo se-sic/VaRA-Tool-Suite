@@ -59,8 +59,9 @@ class Toxcore(VProject):
     # Assuming all the requirements are met, just run
     # cmake -B _build
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10
-                              ).run('apt', 'install', '-y', 'libsodium23')
+    CONTAINER = get_base_image(
+        ImageBase.DEBIAN_12
+    ).run('apt', 'install', '-y', 'libsodium-dev', 'pkg-config')
 
     @staticmethod
     def binaries_for_revision(
