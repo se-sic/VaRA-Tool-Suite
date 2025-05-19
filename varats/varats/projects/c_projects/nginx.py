@@ -32,7 +32,7 @@ from varats.utils.settings import bb_cfg
 
 class Nginx(VProject):
     """NGINX is the world's most popular Web Server, high performance Load
-        Balancer, Reverse Proxy, API Gateway and Content Cache."""
+    Balancer, Reverse Proxy, API Gateway and Content Cache."""
 
     NAME = 'nginx'
     GROUP = 'c_projects'
@@ -50,7 +50,7 @@ class Nginx(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
 
     @staticmethod
     def binaries_for_revision(
@@ -68,15 +68,7 @@ class Nginx(VProject):
         """Compile the project."""
         nginx_version_source = local.path(self.source_of_primary)
 
-        # for debugging
-        from pudb.remote import set_trace
-        # set_trace(term_size=(140, 45))
-
-
         compiler = bb.compiler.cc(self)
-
-        # What do I need this for?
-        # mkdir(nginx_version_source)
 
         with local.cwd(nginx_version_source):
             with local.env(CC=str(compiler)):
@@ -85,7 +77,7 @@ class Nginx(VProject):
                     '--conf-path=/usr/local/nginx/nginx.conf',
                     '--pid-path=/usr/local/nginx/nginx.pid',
                     '--with-http_ssl_module'
-                ) # --with-pcre=../pcre2-10.39  --with-zlib=../zlib-1.3)
+                )
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -93,5 +85,4 @@ class Nginx(VProject):
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
-        # The project’s actual name is ‘c-toxcore’.
         return [("nginx", "nginx")]
