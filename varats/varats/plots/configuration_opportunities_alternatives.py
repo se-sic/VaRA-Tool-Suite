@@ -4,11 +4,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import patches
+from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
 from matplotlib.figure import SubFigure
 from matplotlib.ticker import PercentFormatter
 
+from varats.data.databases.hidden_configurability_database import (
+    _aggregate_date,
+    _create_config_opportunities_value_map,
+    _get_data_for_single_config,
+    get_configuration_points,
+    extract_config_point,
+)
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
 from varats.experiments.vara.hidden_configurability_experiments import (
     TimePatchedWorkloads,
@@ -18,127 +25,135 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator
-from varats.report.gnu_time_report import (
-    WLTimeReportAggregate,
-    TimeReportAggregate,
-)
+from varats.report.gnu_time_report import TimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
+from varats.ts_utils.cli_util import make_cli_option
+from varats.ts_utils.click_param_types import create_multi_case_study_choice
 from varats.utils.git_util import FullCommitHash
 
 
-def extract_config_point(full_name: str) -> tp.Tuple[str, str]:
-    # patch names follow the pattern "<patch_name>_<base_file_name>_<config_point>=<value>"
-    # We are interested in the unique configuration points
-    name_parts = full_name.split("_")
-    config_point = name_parts[-1].split("=")
-    return config_point[0], config_point[1].split('.')[0]
+class ConfAlternativesDetailPlot(
+    Plot, plot_name="configuration_opportunities_details"
+):
 
+    @property
+    def name(self) -> str:
+        return f"{self.NAME}_{self.plot_kwargs['metric']}"
 
-def get_configuration_points(report_file: MPRTimeWLAggregate) -> tp.List[str]:
-    result = set()
+    def plot(self, view_mode: bool) -> None:
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        metric: str = self.plot_kwargs["metric"]
 
-    for patch_name in report_file.get_patch_names():
-        # patch names follow the pattern "<patch_name>_<base_file_name>_<config_point>=<value>"
-        # We are interested in the unique configuration points
-        result.add(extract_config_point(patch_name)[0])
-
-    return list(result)
-
-
-def _aggregate_data(cs: CaseStudy, config_id: int) -> pd.DataFrame:
-    result = pd.DataFrame()
-
-    result_files = get_processed_revisions_files(
-        cs.project_name,
-        TimePatchedWorkloads,
-        TimePatchedWorkloads.report_spec().main_report,
-        get_case_study_file_name_filter(cs),
-        config_id=config_id,
-        only_newest=False,
-    )
-
-    if len(result_files) == 0:
-        print(f"No results found for {cs.project_name} ({config_id=})")
-        return pd.DataFrame()
-
-    data_rows = []
-
-    base_times = {}
-    base_rss = {}
-
-    for result_file in result_files:
-        report: MPRTimeWLAggregate = MPRTimeWLAggregate(result_file.full_path())
-
-        binary = report.filename.binary_name
-
-        base_report: WLTimeReportAggregate = report.get_baseline_report()
-
-        for wl in base_report.workload_names():
-            data_rows.extend([{
-                "binary-wl": f"{binary}/{wl}",
-                "config_opportunity": "__baseline__",
-                "variation": None,
-                "metric": "wall_clock_time",
-                "value": base_report.measurements_wall_clock_time(wl),
-            }, {
-                "binary-wl": f"{binary}/{wl}",
-                "config_opportunity": "__baseline__",
-                "variation": None,
-                "metric": "max_resident_size",
-                "value": base_report.max_resident_sizes(wl),
-            }])
-
-            base_times[wl] = np.mean(
-                base_report.measurements_wall_clock_time(wl)
+        if "config_ids" in self.plot_kwargs:
+            configs = [
+                int(i) for i in self.plot_kwargs["config_ids"].split(",")
+            ] if self.plot_kwargs["config_ids"] else [None]
+        else:
+            configs = case_study.get_config_ids_for_revision(
+                case_study.revisions[0]
             )
-            base_rss[wl] = np.mean(base_report.max_resident_sizes(wl))
 
-        for patch_report in report.get_patched_reports():
-            cp = extract_config_point(patch_report.filename.filename)
-            for wl in patch_report.workload_names():
-                data_rows.extend([{
-                    "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": cp[0],
-                    "variation": cp[1],
-                    "metric": "wall_clock_time",
-                    "value": patch_report.measurements_wall_clock_time(wl),
-                }, {
-                    "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": cp[0],
-                    "variation": cp[1],
-                    "metric": "max_resident_size",
-                    "value": patch_report.max_resident_sizes(wl),
-                }, {
-                    "binary-wl":
-                        f"{binary}/{wl}",
-                    "config_opportunity":
-                        cp[0],
-                    "variation":
-                        cp[1],
-                    "metric":
-                        "wall_clock_time_relative",
-                    "value": (
-                        np.mean(patch_report.measurements_wall_clock_time(wl)) /
-                        base_times[wl]
-                    ) - 1,
-                }, {
-                    "binary-wl":
-                        f"{binary}/{wl}",
-                    "config_opportunity":
-                        cp[0],
-                    "variation":
-                        cp[1],
-                    "metric":
-                        "max_resident_size_relative",
-                    "value": (
-                        np.mean(patch_report.max_resident_sizes(wl)) /
-                        base_rss[wl]
-                    ) - 1,
-                }])
+        if len(configs) == 0:
+            configs = [None]
 
-    result = pd.DataFrame.from_records(data_rows)
+        df = _aggregate_date(case_study, configs)
 
-    return result
+        # Filter for relevant metric & Filter out baseline
+        df = df[(df["metric"] == f"{metric}_relative") &
+                (df["config_opportunity"] != "__baseline__")]
+
+        if df.empty:
+            print(f"No data for {case_study.project_name} ({configs=})")
+            return
+
+        # Transform variation values from strings to their actual values
+        config_opportunity_map = _create_config_opportunities_value_map(
+            case_study
+        )
+
+        df["variation"] = df.apply(
+            lambda row: config_opportunity_map[row["config_opportunity"]][row[
+                "variation"]],
+            axis=1
+        )
+
+        binaries = df["binary-wl"].unique()
+        config_vars = df["config_opportunity"].unique()
+        fig = plt.figure(figsize=(8 * len(config_vars), 8 * len(binaries)))
+        sfigs = fig.subplots(
+            nrows=len(binaries), ncols=len(config_vars), squeeze=False
+        )
+
+        for bin_idx, binary in enumerate(binaries):
+            for conf_idx, config_var in enumerate(config_vars):
+                # Plot the relative values
+                data_df = df[(df["binary-wl"] == binary) &
+                             (df["config_opportunity"] == config_var)]
+
+                subfig: Axes = sfigs[bin_idx, conf_idx]
+
+                sns.jointplot(
+                    data_df,
+                    y="variation",
+                    x="value",
+                    hue="config_id",
+                    ax=subfig
+                )
+
+                # Arrange things
+                subfig.legend().remove()
+                subfig.set_xticklabels(
+                    subfig.get_xticklabels(), rotation=90, ha='right'
+                )
+                subfig.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+                subfig.set_title(f"{binary} ({config_var})")
+                subfig.set_ylabel(f"{metric} (Relative)")
+                subfig.set_xlabel("")
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        return set()
+
+
+class ConfigurationAlternativesDetailGenerator(
+    PlotGenerator,
+    generator_name="co-alt-detail",
+    options=[
+        make_cli_option(
+            "--case_studies",
+            type=create_multi_case_study_choice(),
+            required=True,
+            help="Case studies to plot",
+        ),
+        make_cli_option(
+            "--config_ids",
+            type=str,
+            required=False,
+            help="Configuration IDs to plot",
+        ),
+        make_cli_option(
+            "--metrics",
+            # Type should be a comma-separated list of metrics
+            type=str,
+            required=False,
+            default="wall_clock_time,max_resident_size",
+            help="Metrics to plot (e.g. wall_clock_time,max_resident_size)",
+        )
+    ]
+):
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            ConfAlternativesDetailPlot(
+                self.plot_config,
+                case_study=cs,
+                metric=metric,
+                **self.plot_kwargs
+            )
+            for cs in self.plot_kwargs["case_studies"]
+            for metric in self.plot_kwargs["metrics"].split(",")
+        ]
 
 
 class ConfigurationAlternativesAggPlot(
@@ -190,7 +205,9 @@ class ConfigurationAlternativesAggPlot(
         metric: str = self.plot_kwargs["metric"]
 
         if "config_ids" in self.plot_kwargs:
-            configs = self.plot_kwargs["config_ids"]
+            configs = [
+                int(i) for i in self.plot_kwargs["config_ids"].split(",")
+            ] if self.plot_kwargs["config_ids"] else [None]
         else:
             configs = case_study.get_config_ids_for_revision(
                 case_study.revisions[0]
@@ -200,7 +217,7 @@ class ConfigurationAlternativesAggPlot(
             configs = [None]
 
         # Load data for first config to get the number of binaries
-        df = _aggregate_data(case_study, configs[0])
+        df = _get_data_for_single_config(case_study, configs[0])
 
         if df.empty:
             print(f"No data for {case_study.project_name} ({configs[0]})")
@@ -216,11 +233,13 @@ class ConfigurationAlternativesAggPlot(
         for conf_idx, config_id in enumerate(configs):
             print(f"Loading data for {case_study.project_name} ({config_id=})")
             # Load data for this config
-            df = _aggregate_data(case_study, config_id)
+            df = _get_data_for_single_config(case_study, config_id)
 
             metric_palette = self.__create_palettes(df[df["metric"] == metric])
 
-            df["value"] = df["value"].apply(np.mean)
+            #df["value"] = df["value"].apply(np.mean)
+            df = df.explode("value")
+
             df["config_var"] = list(
                 zip(df['config_opportunity'], df['variation'])
             )
@@ -303,7 +322,6 @@ class ConfigurationAlternativesAggPlot(
                     ax.set_xlabel("")
 
                     if bin_idx == len(binaries) - 1:
-                        #subfig.supxlabel("Configuration Opportunity Names", size="xx-large", weight="bold")
                         ax.set_xticklabels(
                             ax.get_xticklabels(), rotation=90, ha='right'
                         )
@@ -312,7 +330,29 @@ class ConfigurationAlternativesAggPlot(
 
 
 class ConfigurationAlternativesAggGenerator(
-    PlotGenerator, generator_name="co-alt-agg", options=[]
+    PlotGenerator,
+    generator_name="co-alt-agg",
+    options=[
+        make_cli_option(
+            "--case_studies",
+            type=create_multi_case_study_choice(),
+            required=True,
+            help="Case studies to plot",
+        ),
+        make_cli_option(
+            "--config_ids",
+            type=str,
+            required=False,
+            help="Configuration IDs to plot",
+        ),
+        make_cli_option(
+            "--metrics",
+            # Type should be a comma-separated list of metrics
+            type=str,
+            required=True,
+            help="Metrics to plot (e.g. wall_clock_time,max_resident_size)",
+        )
+    ]
 ):
     """Generates the configuration opportunities runtime plot."""
 
@@ -323,10 +363,9 @@ class ConfigurationAlternativesAggGenerator(
                 case_study=cs,
                 metric=metric,
                 **self.plot_kwargs
-            ) for cs in get_loaded_paper_config().get_all_case_studies()
-            if cs.project_name in
-            ["brotli", "DunePerfRegression", "libzmq", "libvpx"]
-            for metric in ["wall_clock_time", "max_resident_size"]
+            )
+            for cs in self.plot_kwargs["case_studies"]
+            for metric in self.plot_kwargs["metrics"].split(",")
         ]
 
 
