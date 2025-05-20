@@ -46,7 +46,7 @@ from varats.tools.research_tools.vara import VaRA
 from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ChurnConfig, ShortCommitHash
 
-NUM_REPETITIONS = 3
+NUM_REPETITIONS = 30
 
 
 class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
@@ -301,6 +301,10 @@ PATCH_VARIATIONS = {
 }
 
 
+def variation_value_to_str(value: tp.Any) -> str:
+    return str(value).replace('.', '')
+
+
 class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
     NAME = "TimePatchedWorkloads"
     DESCRIPTION = "Time patched workloads."
@@ -423,7 +427,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                                 binary,
                                 file_name=MPRTimeWLAggregate.
                                 create_patched_report_name(patch, binary.name) +
-                                f"_{arg_name.replace('_','-')}={str(value).replace('.', '')}",
+                                f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}",
                                 report_file_ending=".txt",
                                 reps=NUM_REPETITIONS
                             ),
