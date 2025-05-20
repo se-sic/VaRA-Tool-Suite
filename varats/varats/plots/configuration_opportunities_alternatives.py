@@ -10,9 +10,9 @@ from matplotlib.figure import SubFigure
 from matplotlib.ticker import PercentFormatter
 
 from varats.data.databases.hidden_configurability_database import (
-    _aggregate_date,
-    _create_config_opportunities_value_map,
-    _get_data_for_single_config,
+    aggregate_date,
+    create_config_opportunities_value_map,
+    get_data_for_single_config,
     get_configuration_points,
     extract_config_point,
 )
@@ -56,7 +56,7 @@ class ConfAlternativesDetailPlot(
         if len(configs) == 0:
             configs = [None]
 
-        df = _aggregate_date(case_study, configs)
+        df = aggregate_date(case_study, configs)
 
         # Filter for relevant metric & Filter out baseline
         df = df[(df["metric"] == f"{metric}_relative") &
@@ -67,7 +67,7 @@ class ConfAlternativesDetailPlot(
             return
 
         # Transform variation values from strings to their actual values
-        config_opportunity_map = _create_config_opportunities_value_map(
+        config_opportunity_map = create_config_opportunities_value_map(
             case_study
         )
 
@@ -217,7 +217,7 @@ class ConfigurationAlternativesAggPlot(
             configs = [None]
 
         # Load data for first config to get the number of binaries
-        df = _get_data_for_single_config(case_study, configs[0])
+        df = get_data_for_single_config(case_study, configs[0])
 
         if df.empty:
             print(f"No data for {case_study.project_name} ({configs[0]})")
@@ -233,7 +233,7 @@ class ConfigurationAlternativesAggPlot(
         for conf_idx, config_id in enumerate(configs):
             print(f"Loading data for {case_study.project_name} ({config_id=})")
             # Load data for this config
-            df = _get_data_for_single_config(case_study, config_id)
+            df = get_data_for_single_config(case_study, config_id)
 
             metric_palette = self.__create_palettes(df[df["metric"] == metric])
 
