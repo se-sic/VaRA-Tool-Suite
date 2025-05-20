@@ -6,6 +6,7 @@ import typing as tp
 from functools import partial
 
 import click
+import pygit2
 from pygit2 import Walker, Commit, Blob
 from pygit2.enums import SortMode, DiffOption
 
@@ -36,6 +37,25 @@ class Location:
         self.start_col = start_col
         self.end_line = end_line
         self.end_col = end_col
+
+    @staticmethod
+    def change_start_line(
+        old_location: "Location",
+        new_start_line: int,
+    ):
+        """Move the location the start of the location to a line."""
+        return Location(
+            old_location.file, new_start_line, old_location.start_col,
+            old_location.end_line + (new_start_line - old_location.start_line),
+            old_location.end_col
+        )
+
+    @staticmethod
+    def move_location(old_location: "Location", line_offset: int) -> "Location":
+        """Move the location by a line offset."""
+        return Location.change_start_line(
+            old_location, line_offset + old_location.start_line
+        )
 
     @staticmethod
     def parse_string(
@@ -147,7 +167,7 @@ def __get_and_check_location(
         location_content = __get_location_content(commit, location)
     else:
         raise click.UsageError(
-            f"The provided location does not exist or is empty."
+            f"The provided file does not exist in the repository."
         )
     if not location_content:
         raise click.UsageError(
@@ -174,6 +194,55 @@ def __get_location_content(commit: Commit,
         return None
 
     return line[(location.start_col - 1):location.end_col]
+
+
+def __find_potential_new_locations(
+    repo: pygit2.Repository, commit, annotation: FeatureAnnotation,
+    old_target: str
+) -> tp.List[tp.Tuple[Location, str]]:
+    potential_new_locations: tp.List[tp.Tuple[Location, str]] = []
+    for parent in commit.parents:
+        diff = repo.diff(parent, commit)
+        for patch in diff:
+            if patch.delta.old_file.path == annotation.location.file:
+                offset_counter = 0
+                stop_offset = False
+                for hunk in patch.hunks:
+                    for line in hunk.lines:
+                        if line.old_lineno > annotation.location.end_line:
+                            stop_offset = True
+                        if line.new_lineno >= 0:
+                            if line.old_lineno < 0:
+                                if not stop_offset:
+                                    offset_counter += 1
+                            if annotation.location.end_line == annotation.location.start_line:
+                                content = line.content[
+                                    annotation.location.start_col -
+                                    1:annotation.location.end_col]
+                            else:
+                                content = line.content[annotation.location.
+                                                       start_col - 1:]
+                            if old_target == content:
+                                potential_new_locations.append((
+                                    Location.change_start_line(
+                                        annotation.location, line.new_lineno
+                                    ), content
+                                ))
+                        else:
+                            if not stop_offset:
+                                offset_counter -= 1
+
+                potential_new_location = Location.move_location(
+                    annotation.location, offset_counter
+                )
+                potential_new_content = __get_location_content(
+                    commit, potential_new_location
+                )
+                if potential_new_content == old_target:
+                    potential_new_locations.append(
+                        (potential_new_location, potential_new_content)
+                    )
+    return potential_new_locations
 
 
 @click.group()
@@ -268,53 +337,11 @@ def __annotate(
                         f"Annotation changed for '{old_target}'."
                     )
                     click.echo(f"Old location: {annotation.location}")
-                    potential_new_locations = []
+                    potential_new_locations = __find_potential_new_locations(
+                        repo, commit, annotation, old_target
+                    )
                     # Determine potential new location
-                    for parent in commit.parents:
-                        diff = repo.diff(parent, commit)
-                        for patch in diff:
-                            if patch.delta.old_file.path == annotation.location.file:
-                                offset_counter = 0
-                                stop_offset = False
-                                for hunk in patch.hunks:
-                                    for line in hunk.lines:
-                                        if line.old_lineno > annotation.location.end_line:
-                                            stop_offset = True
-                                        if line.new_lineno >= 0:
-                                            if line.old_lineno < 0:
-                                                if not stop_offset:
-                                                    offset_counter += 1
-                                            if annotation.location.end_line == annotation.location.start_line:
-                                                content = line.content[
-                                                    annotation.location.
-                                                    start_col - 1:annotation.
-                                                    location.end_col]
-                                            else:
-                                                content = line.content[
-                                                    annotation.location.
-                                                    start_col - 1:]
-                                            if old_target == content:
-                                                potential_new_locations.append((
-                                                    Location.parse_string(
-                                                        str(line.new_lineno),
-                                                        annotation.location
-                                                    ), content
-                                                ))
-                                        else:
-                                            if not stop_offset:
-                                                offset_counter -= 1
-                                potential_new_location = Location.parse_string(
-                                    str(
-                                        annotation.location.start_line +
-                                        offset_counter
-                                    ), annotation.location
-                                )
-                                potential_new_locations.append((
-                                    potential_new_location,
-                                    __get_location_content(
-                                        commit, potential_new_location
-                                    )
-                                ))
+
                     if potential_new_locations:
                         potential_new_locations.sort(
                             key=lambda x: x[0].start_line - annotation.location.
