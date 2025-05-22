@@ -1,7 +1,9 @@
 import typing as tp
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+from scipy.stats import ttest_ind
 
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
 from varats.experiments.vara.hidden_configurability_experiments import (
@@ -69,6 +71,7 @@ def get_data_for_single_config(
                 "variation": None,
                 "metric": "wall_clock_time",
                 "value": base_report.measurements_wall_clock_time(wl),
+                "value_relative": None,
                 "config_id": report.filename.config_id,
             }, {
                 "binary-wl": f"{binary}/{wl}",
@@ -76,6 +79,7 @@ def get_data_for_single_config(
                 "variation": None,
                 "metric": "max_resident_size",
                 "value": base_report.max_resident_sizes(wl),
+                "value_relative": None,
                 "config_id": report.filename.config_id,
             }])
 
@@ -93,6 +97,10 @@ def get_data_for_single_config(
                     "variation": cp[1],
                     "metric": "wall_clock_time",
                     "value": patch_report.measurements_wall_clock_time(wl),
+                    "value_relative": [
+                        (t / base_times[wl]) - 1
+                        for t in patch_report.measurements_wall_clock_time(wl)
+                    ],
                     "config_id": report.filename.config_id,
                 }, {
                     "binary-wl": f"{binary}/{wl}",
@@ -100,37 +108,11 @@ def get_data_for_single_config(
                     "variation": cp[1],
                     "metric": "max_resident_size",
                     "value": patch_report.max_resident_sizes(wl),
+                    "value_relative": [
+                        (t / base_rss[wl]) - 1
+                        for t in patch_report.max_resident_sizes(wl)
+                    ],
                     "config_id": report.filename.config_id,
-                }, {
-                    "binary-wl":
-                        f"{binary}/{wl}",
-                    "config_opportunity":
-                        cp[0],
-                    "variation":
-                        cp[1],
-                    "metric":
-                        "wall_clock_time_relative",
-                    "value": (
-                        np.mean(patch_report.measurements_wall_clock_time(wl)) /
-                        base_times[wl]
-                    ) - 1,
-                    "config_id":
-                        report.filename.config_id,
-                }, {
-                    "binary-wl":
-                        f"{binary}/{wl}",
-                    "config_opportunity":
-                        cp[0],
-                    "variation":
-                        cp[1],
-                    "metric":
-                        "max_resident_size_relative",
-                    "value": (
-                        np.mean(patch_report.max_resident_sizes(wl)) /
-                        base_rss[wl]
-                    ) - 1,
-                    "config_id":
-                        report.filename.config_id,
                 }])
 
     result = pd.DataFrame.from_records(data_rows)
@@ -138,13 +120,23 @@ def get_data_for_single_config(
     return result
 
 
-def aggregate_date(cs: CaseStudy, config_ids: tp.List[int]) -> pd.DataFrame:
+def aggregate_data(
+    cs: CaseStudy, config_ids: tp.Optional[tp.List[int]]
+) -> pd.DataFrame:
     result_df = pd.DataFrame()
+
+    if config_ids is None:
+        config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
+
+    if len(config_ids) == 0:
+        config_ids = [None]
 
     for config_id in config_ids:
         config_df = get_data_for_single_config(cs, config_id)
 
         result_df = pd.concat([result_df, config_df], ignore_index=True)
+
+    result_df = add_significance_values(result_df)
 
     return result_df
 
@@ -162,5 +154,91 @@ def create_config_opportunities_value_map(
         result[arg_name.replace("_", "-")] = {
             variation_value_to_str(value): value for value in values
         }
+
+    return result
+
+
+def add_significance_values(df: pd.DataFrame) -> pd.DataFrame:
+    """Add significance values to the DataFrame."""
+    if df.empty:
+        return df
+    # First identify all baseline rows
+    baseline_df = df[df["config_opportunity"] == "__baseline__"].set_index([
+        "binary-wl", "metric", "config_id"
+    ])["value"]
+
+    def is_significant(row):
+        if (row["config_opportunity"] == "__baseline__"):
+            return None
+        baseline_value = baseline_df.loc[row["binary-wl"], row["metric"],
+                                         row["config_id"]]
+        return ttest_ind(baseline_value, row["value"])
+
+    df["significance"] = df.apply(is_significant, axis=1)
+
+    return df
+
+
+def get_regressing_configs(
+    cs: CaseStudy
+) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[str, str, float]]]]:
+    str_val_map = create_config_opportunities_value_map(cs)
+
+    full_data = aggregate_data(cs, None)
+
+    config_ids = full_data["config_id"].unique()
+
+    result = {}
+
+    for metrics in full_data["metric"].unique():
+
+        result[metrics] = defaultdict(dict)
+
+        for config_id in config_ids:
+            result[metrics][config_id] = []
+
+            config_data = full_data[(full_data["config_id"] == config_id) &
+                                    (full_data["metric"] == metrics)]
+
+            for wl in config_data["binary-wl"].unique():
+                wl_data = config_data[config_data["binary-wl"] == wl]
+
+                baseline_data = wl_data[wl_data["config_opportunity"] ==
+                                        "__baseline__"]["value"].tolist()[0]
+
+                for config_opportunity in wl_data["config_opportunity"].unique(
+                ):
+                    if config_opportunity == "__baseline__":
+                        continue
+
+                    config_opportunity_data = wl_data[
+                        wl_data["config_opportunity"] == config_opportunity]
+
+                    for variation in config_opportunity_data["variation"
+                                                            ].unique():
+                        variation_data = config_opportunity_data[
+                            config_opportunity_data["variation"] == variation
+                        ]["value"].tolist()[0]
+
+                        ttest_res = ttest_ind(baseline_data, variation_data)
+
+                        if ttest_res.pvalue > 0.05:
+                            continue
+
+                        print(
+                            f"{metrics} {config_id} {wl} {config_opportunity} {variation} {ttest_res.pvalue}"
+                        )
+                        print(f"{baseline_data} {variation_data}")
+
+                        rel_data = config_opportunity_data[
+                            config_opportunity_data["variation"] == variation
+                        ]["value_relative"].tolist()[0]
+
+                        print(f"{rel_data}")
+
+                        result[metrics][config_id].append((
+                            wl, config_opportunity,
+                            str_val_map[config_opportunity][variation]
+                        ))
 
     return result
