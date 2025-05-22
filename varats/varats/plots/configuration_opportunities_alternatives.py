@@ -1,5 +1,6 @@
 import typing as tp
 
+import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -10,8 +11,7 @@ from matplotlib.figure import SubFigure
 from matplotlib.ticker import PercentFormatter
 
 from varats.data.databases.hidden_configurability_database import (
-    aggregate_date,
-    create_config_opportunities_value_map,
+    aggregate_data,
     get_data_for_single_config,
     get_configuration_points,
     extract_config_point,
@@ -32,8 +32,8 @@ from varats.ts_utils.click_param_types import create_multi_case_study_choice
 from varats.utils.git_util import FullCommitHash
 
 
-class ConfAlternativesDetailPlot(
-    Plot, plot_name="configuration_opportunities_details"
+class SignificantOpportunitiesDistPlot(
+    Plot, plot_name="significant_opportunities_dist"
 ):
 
     @property
@@ -43,72 +43,37 @@ class ConfAlternativesDetailPlot(
     def plot(self, view_mode: bool) -> None:
         case_study: CaseStudy = self.plot_kwargs["case_study"]
         metric: str = self.plot_kwargs["metric"]
+        print(f"Plotting case study {case_study.project_name} with {metric}")
 
-        if "config_ids" in self.plot_kwargs:
-            configs = [
-                int(i) for i in self.plot_kwargs["config_ids"].split(",")
-            ] if self.plot_kwargs["config_ids"] else [None]
-        else:
-            configs = case_study.get_config_ids_for_revision(
-                case_study.revisions[0]
-            )
+        full_data = aggregate_data(case_study, None)
 
-        if len(configs) == 0:
-            configs = [None]
-
-        df = aggregate_date(case_study, configs)
-
-        # Filter for relevant metric & Filter out baseline
-        df = df[(df["metric"] == f"{metric}_relative") &
-                (df["config_opportunity"] != "__baseline__")]
-
-        if df.empty:
-            print(f"No data for {case_study.project_name} ({configs=})")
+        if full_data.empty:
+            print(f"No data for {case_study.project_name}")
             return
 
-        # Transform variation values from strings to their actual values
-        config_opportunity_map = create_config_opportunities_value_map(
-            case_study
-        )
+        # Select metric and filter out baseline data
+        metric_df = full_data[
+            (full_data["metric"] == metric) &
+            (full_data["config_opportunity"] != "__baseline__")]
 
-        df["variation"] = df.apply(
-            lambda row: config_opportunity_map[row["config_opportunity"]][row[
-                "variation"]],
-            axis=1
-        )
+        sig_df = metric_df[
+            metric_df.apply(lambda x: x["significance"].pvalue < 0.05, axis=1)]
+        sig_df = sig_df.explode("value_relative", ignore_index=True)
 
-        binaries = df["binary-wl"].unique()
-        config_vars = df["config_opportunity"].unique()
-        fig = plt.figure(figsize=(8 * len(config_vars), 8 * len(binaries)))
-        sfigs = fig.subplots(
-            nrows=len(binaries), ncols=len(config_vars), squeeze=False
-        )
+        extra_args = {}
 
-        for bin_idx, binary in enumerate(binaries):
-            for conf_idx, config_var in enumerate(config_vars):
-                # Plot the relative values
-                data_df = df[(df["binary-wl"] == binary) &
-                             (df["config_opportunity"] == config_var)]
+        if self.plot_kwargs["explode"]:
+            extra_args = {
+                "hue": "config_opportunity",
+                "col": "config_id",
+                "col_wrap": 5,
+            }
 
-                subfig: Axes = sfigs[bin_idx, conf_idx]
+        g = sns.displot(sig_df, x="value_relative", kind="kde", **extra_args)
 
-                sns.jointplot(
-                    data_df,
-                    y="variation",
-                    x="value",
-                    hue="config_id",
-                    ax=subfig
-                )
-
-                # Arrange things
-                subfig.legend().remove()
-                subfig.set_xticklabels(
-                    subfig.get_xticklabels(), rotation=90, ha='right'
-                )
-                subfig.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-                subfig.set_title(f"{binary} ({config_var})")
-                subfig.set_ylabel(f"{metric} (Relative)")
-                subfig.set_xlabel("")
+        for ax in g.axes.flat:
+            ax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+            ax.tick_params(labelbottom=True)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -116,36 +81,35 @@ class ConfAlternativesDetailPlot(
         return set()
 
 
-class ConfigurationAlternativesDetailGenerator(
+class SignificantOpportunitiesDistGenerator(
     PlotGenerator,
-    generator_name="co-alt-detail",
+    generator_name="significant_opportunities_dist",
     options=[
         make_cli_option(
-            "--case_studies",
+            "--case-studies",
             type=create_multi_case_study_choice(),
             required=True,
             help="Case studies to plot",
         ),
         make_cli_option(
-            "--config_ids",
-            type=str,
-            required=False,
-            help="Configuration IDs to plot",
+            "--explode",
+            is_flag=True,
+            default=False,
+            help=
+            "Explodes the plot into multiple subplots for each config_id and configuration opportunity",
         ),
         make_cli_option(
             "--metrics",
-            # Type should be a comma-separated list of metrics
             type=str,
-            required=False,
-            default="wall_clock_time,max_resident_size",
-            help="Metrics to plot (e.g. wall_clock_time,max_resident_size)",
-        )
+            required=True,
+            help="Metric to plot (e.g. wall_clock_time,max_resident_size)",
+        ),
     ]
 ):
 
     def generate(self) -> tp.List[Plot]:
         return [
-            ConfAlternativesDetailPlot(
+            SignificantOpportunitiesDistPlot(
                 self.plot_config,
                 case_study=cs,
                 metric=metric,
@@ -254,8 +218,6 @@ class ConfigurationAlternativesAggPlot(
                                (df["config_opportunity"] != "__baseline__")]
 
                 metric_df = binary_df[binary_df["metric"] == metric]
-                metric_rel_df = binary_df[binary_df["metric"] ==
-                                          f"{metric}_relative"]
 
                 subfig: SubFigure = sfigs[bin_idx, conf_idx]
 
@@ -301,10 +263,10 @@ class ConfigurationAlternativesAggPlot(
                 # Create strip plot for relative change below
                 sns.stripplot(
                     ax=rel_ax,
-                    y="value",
+                    y="value_relative",
                     x="config_opportunity",
                     hue="config_var",
-                    data=metric_rel_df,
+                    data=metric_df,
                     palette=metric_palette,
                 )
 

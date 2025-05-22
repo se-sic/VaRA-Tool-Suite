@@ -46,7 +46,7 @@ from varats.tools.research_tools.vara import VaRA
 from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ChurnConfig, ShortCommitHash
 
-NUM_REPETITIONS = 30
+NUM_REPETITIONS = 10
 
 
 class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
