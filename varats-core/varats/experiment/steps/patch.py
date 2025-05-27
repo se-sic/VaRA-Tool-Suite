@@ -38,7 +38,7 @@ class ApplyPatch(actions.ProjectStep):
         )
 
         try:
-            patch_path = self.__patch.render(**self.__arguments)
+            patch_path = self.__patch.render(self, **self.__arguments)
         except TemplateError:
             print(
                 f"Failed to render patch {self.__patch.shortname} "
@@ -87,7 +87,7 @@ class RevertPatch(actions.ProjectStep):
         )
 
         try:
-            patch_path = self.__patch.render(**self.__arguments)
+            patch_path = self.__patch.render(self, **self.__arguments)
         except TemplateError:
             print(
                 f"Failed to render patch {self.__patch.shortname} "
