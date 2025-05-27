@@ -3,7 +3,7 @@ import logging
 import re
 import textwrap
 import typing as tp
-from functools import partial
+from functools import partial, reduce
 
 import click
 import pygit2
@@ -179,17 +179,25 @@ def __get_and_check_location(
 
 def __get_location_content(commit: Commit,
                            location: Location) -> tp.Optional[str]:
-    if location.start_line != location.end_line:
-        raise click.UsageError("Multiline locations are not supported yet.")
-
     lines: tp.List[bytes] = tp.cast(Blob, commit.tree[location.file
                                                      ]).data.splitlines()
 
     if len(lines) < location.start_line:
         return None
 
-    line: str = lines[location.start_line - 1].decode("utf-8")
+    if location.start_line != location.end_line:
+        content = reduce(
+            lambda x, y: x + "\n" + y.decode("utf-8"),
+            lines[location.start_line:location.end_line - 1],
+            lines[location.start_line - 1].decode("utf-8")[location.start_col -
+                                                           1:]
+        )
+        content += "\n" + lines[location.end_line -
+                                1].decode("utf-8")[:location.end_col]
+        return content
 
+    line: str = lines[location.start_line - 1].decode("utf-8")
+    # Todo Why is this end_col and not start_col?
     if len(line) <= location.end_col:
         return None
 
