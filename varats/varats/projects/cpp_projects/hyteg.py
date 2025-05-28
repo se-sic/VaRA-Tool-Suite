@@ -181,8 +181,6 @@ class HyTeg(VProject):
     def build_tests(self) -> None:
         """Build the tests."""
         hyteg_source = local.path(self.source_of(self.primary_source))
-        cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
 
         with local.cwd(hyteg_source / "build"):
             bb.watch(ninja)("ProfilingApp")
