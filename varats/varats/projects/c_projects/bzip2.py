@@ -214,9 +214,9 @@ class Bzip2(VProject):
         return ctest_get_test_names(build_dir)
 
     def run_testsuite(
-            self,
-            test_report_path: tp.Optional[Path] = None,
-            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
