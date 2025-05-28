@@ -1,6 +1,7 @@
 """Project file for PicoSAT."""
 import re
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
@@ -9,7 +10,6 @@ from benchbuild.source.http import HTTPUntar
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
-from pathlib import Path
 
 from varats.experiment.workload_util import (
     RSBinary,
@@ -351,7 +351,6 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
                 for h, tag in tagged_commits
                 if re.match(release_regex, tag)]
 
-
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
         picosat_repo = get_local_project_repo(self.NAME)
@@ -373,7 +372,7 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
         with local.cwd(picosat_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 bb.watch(local[config_script_name]
-                         )(["--trace", "--stats", "-g"])
+                        )(["--trace", "--stats", "-g"])
 
     def build_tests(self) -> None:
         """Build the tests."""
@@ -393,9 +392,9 @@ class PicoSATLoadTime(VProject, ReleaseProviderHook):
         return ctest_get_test_names(build_dir)
 
     def run_testsuite(
-            self,
-            test_report_path: tp.Optional[Path] = None,
-            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"

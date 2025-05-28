@@ -1,11 +1,11 @@
 """Project file for libvpx."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
-from pathlib import Path
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -103,9 +103,9 @@ class Libvpx(VProject):
         return ctest_get_test_names(build_dir)
 
     def run_testsuite(
-            self,
-            test_report_path: tp.Optional[Path] = None,
-            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary)
