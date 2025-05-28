@@ -5,7 +5,7 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
-from benchbuild.utils.cmd import cmake, make
+from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -162,110 +162,51 @@ class Bzip2(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        bzip2_source = Path(self.source_of_primary)
-        bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_version_source = local.path(self.source_of_primary)
+
+        cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
 
-        if bzip2_version in typed_revision_range(
-            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
-        ):
-            with local.cwd(bzip2_source):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        elif bzip2_version in typed_revision_range(
-            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
-        ):
-            with local.cwd(bzip2_source):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(local["./autogen.sh"])()
-                    bb.watch(local["./configure"])()
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
-            with local.cwd(bzip2_source / "build"):
+        mkdir(bzip2_version_source / "build")
+        with local.cwd(bzip2_version_source / "build"):
+            with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
-                with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                    bb.watch(cmake)("..")
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
-                bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
-                )
-        with local.cwd(bzip2_source):
+        with local.cwd(bzip2_version_source):
             verify_binaries(self)
 
     def recompile(self) -> None:
         """Recompile the project."""
-        bzip2_source = Path(self.source_of_primary)
-        bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_version_source = local.path(self.source_of_primary)
 
-        if bzip2_version in typed_revision_range(
-            Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
-        ) or bzip2_version in typed_revision_range(
-            Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
-        ):
-            with local.cwd(bzip2_source / "build"):
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            with local.cwd(bzip2_source / "build"):
-                bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
-                )
-
+        with local.cwd(bzip2_version_source / "build"):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        bzip2_source = Path(self.source_of_primary)
-        bzip2_version = ShortCommitHash(self.version_of_primary)
+        bzip2_version_source = local.path(self.source_of_primary)
+
+        cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
 
-        if bzip2_version in typed_revision_range(
-                Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
-        ):
-            return # no preparation needed for makefile
-        elif bzip2_version in typed_revision_range(
-                Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
-        ):
-            with local.cwd(bzip2_source):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(local["./autogen.sh"])()
-                    bb.watch(local["./configure"])()
-            return
-        else:
-            (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
-            with local.cwd(bzip2_source / "build"):
-                with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                    bb.watch(cmake)("..")
+        mkdir(bzip2_version_source / "build")
+        with local.cwd(bzip2_version_source / "build"):
+            with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+        with local.cwd(bzip2_version_source):
+            verify_binaries(self)
 
     def build_tests(self) -> None:
         """Build the tests."""
-        bzip2_source = Path(self.source_of_primary)
-        bzip2_version = ShortCommitHash(self.version_of_primary)
-        cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
+        bzip2_version_source = local.path(self.source_of_primary)
 
-        if bzip2_version in typed_revision_range(
-                Bzip2._MAKE_VERSIONS, bzip2_source, ShortCommitHash
-        ):
-            with local.cwd(bzip2_source):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        elif bzip2_version in typed_revision_range(
-                Bzip2._AUTOTOOLS_VERSIONS, bzip2_source, ShortCommitHash
-        ):
-            with local.cwd(bzip2_source):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            with local.cwd(bzip2_source / "build"):
-                bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
-                )
+        with local.cwd(bzip2_version_source / "build"):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names."""
