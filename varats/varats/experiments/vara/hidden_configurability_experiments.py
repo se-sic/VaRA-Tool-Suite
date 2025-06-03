@@ -27,7 +27,6 @@ from varats.experiment.experiment_util import (
 from varats.experiment.steps.combinators import IfThenElse
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
-from varats.experiment.steps.testsuite import RunTestSuite
 from varats.experiment.workload_util import (
     workload_commands,
     create_workload_specific_filename,

@@ -88,12 +88,22 @@ def get_data_for_single_config(
             )
             base_rss[wl] = np.mean(base_report.max_resident_sizes(wl))
 
+        def get_shortname(name: str) -> str:
+            name = name.split("/")[-1]  # Get the last part of the path
+            fn_without_prefix = name[len("patched_"):]
+            split_leftover_fn = fn_without_prefix.partition("_")
+            shortname_length = int(split_leftover_fn[0])
+            patch_shortname = "".join(split_leftover_fn[2:])[:shortname_length]
+            return patch_shortname
+
         for patch_report in report.get_patched_reports():
             cp = extract_config_point(patch_report.filename.filename)
+            patch_name = get_shortname(patch_report.filename.filename)
+
             for wl in patch_report.workload_names():
                 data_rows.extend([{
                     "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": cp[0],
+                    "config_opportunity": f"{patch_name}/{cp[0]}",
                     "variation": cp[1],
                     "metric": "wall_clock_time",
                     "value": patch_report.measurements_wall_clock_time(wl),
@@ -104,7 +114,7 @@ def get_data_for_single_config(
                     "config_id": report.filename.config_id,
                 }, {
                     "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": cp[0],
+                    "config_opportunity": f"{patch_name}/{cp[0]}",
                     "variation": cp[1],
                     "metric": "max_resident_size",
                     "value": patch_report.max_resident_sizes(wl),
@@ -151,7 +161,7 @@ def create_config_opportunities_value_map(
 
     for patch_name, config_opportunity in patches.items():
         arg_name, values = config_opportunity
-        result[arg_name.replace("_", "-")] = {
+        result[f'{patch_name}/{arg_name.replace("_", "-")}'] = {
             variation_value_to_str(value): value for value in values
         }
 

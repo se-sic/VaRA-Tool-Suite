@@ -1,5 +1,5 @@
 import typing as tp
-from itertools import product
+from functools import cmp_to_key
 
 import click
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ from varats.data.databases.hidden_configurability_database import (
     get_data_for_single_config,
     get_configuration_points,
     extract_config_point,
-    add_significance_values,
+    create_config_opportunities_value_map,
 )
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
 from varats.experiments.vara.hidden_configurability_experiments import (
@@ -432,34 +432,20 @@ class ConfigurationOpportunitiesRuntimeGenerator(
 
 class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
 
-    @property
-    def name(self) -> str:
-        """Returns the name of the plot."""
-        if self.plot_kwargs["significant_only"]:
-            return f"{self.NAME}_{self.plot_kwargs['metric']}_significant"
-        return f"{self.NAME}_{self.plot_kwargs['metric']}"
-
-    def plot(self, view_mode: bool) -> None:
-        print(f"Plotting {self.plot_kwargs['case_study'].project_name}...")
-        max_cols = 5  # Number of columns in the grid
-        # Hard coded for testing
+    def __prepare_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Filter the DataFrame to only include relevant data."""
         metric = self.plot_kwargs["metric"]
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-
-        # Load the data for the case study
-        df = aggregate_data(case_study, None)
-
-        if df.empty:
-            print(f"No data for {case_study.project_name}")
-            return
 
         # If a value for the config_ids argument is None, replace it by -1
         df["config_id"] = df["config_id"].fillna(value=-1)
+        if "config_opportunity" in self.plot_kwargs:
+            config_opportunity = self.plot_kwargs["config_opportunity"]
+            df = df[(df["config_opportunity"] == config_opportunity) |
+                    (df["config_opportunity"] == "__baseline__")]
 
         # Filter data based on argument selection
         df = df[(df["metric"] == metric)]
 
-        # TODO: Only keep significant results?
         if self.plot_kwargs.get("significant_only", False):
 
             def keep_significant(row: pd.Series) -> bool:
@@ -468,6 +454,57 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
                 return row["significance"].pvalue < 0.05
 
             df = df[df.apply(keep_significant, axis=1)]
+
+        str_val_map = create_config_opportunities_value_map(
+            self.plot_kwargs["case_study"]
+        )
+
+        def map_str_values(row: pd.Series) -> pd.Series:
+            """Map string values to numerical values."""
+            if row["config_opportunity"] == "__baseline__":
+                return row
+            row["variation"] = str_val_map[row["config_opportunity"]][str(
+                row["variation"]
+            )]
+            return row
+
+        df = df.apply(map_str_values, axis=1)
+
+        return df
+
+    @property
+    def name(self) -> str:
+        """Returns the name of the plot."""
+        name = f"{self.NAME}_{self.plot_kwargs['metric']}"
+        if "config_opportunity" in self.plot_kwargs:
+            name += f"_config_{self.plot_kwargs['config_opportunity'].replace('/', '+')}"
+        if self.plot_kwargs["significant_only"]:
+            name += "_significant"
+        return name
+
+    def plot(self, view_mode: bool) -> None:
+        print(
+            f"Plotting {self.plot_kwargs['metric']} for {self.plot_kwargs['case_study'].project_name}..."
+        )
+        if "config_opportunity" in self.plot_kwargs:
+            print(f"({self.plot_kwargs['config_opportunity']})")
+
+        max_cols = 5  # Number of columns in the grid
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+
+        # Load the data for the case study
+        df = aggregate_data(case_study, None)
+        df = self.__prepare_data(df)
+
+        if df.empty:
+            print(f"No data for {case_study.project_name}")
+            return
+
+        category_col = "config_opportunity"
+        draw_means = True
+        if "config_opportunity" in self.plot_kwargs:
+            category_col = "variation"
+            draw_means = False
 
         # Get all combinations of config_opportunity and variation that exist in the df
         elems = df[["config_id",
@@ -489,6 +526,9 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
         fwidth = 8
         fheight = 8
         fig = plt.figure(figsize=(fwidth * max_cols, nrows * fheight))
+        fig.suptitle(
+            f"{case_study.project_name} - {self.plot_kwargs['metric']}"
+        )
         sfigs = fig.subfigures(
             nrows=nrows, ncols=max_cols, wspace=0.1, hspace=0.3
         )
@@ -508,15 +548,23 @@ class MinMaxAlternativesPlot(Plot, plot_name="min_max_alternatives"):
             # Add secondary x-axis for relative change
             ax1.set_xlabel("Absolute Value")
 
-            fig_df = fig_df[fig_df["config_opportunity"] != "__baseline__"]
+            # Keep Baseline row only for plots that show the config opportunity explicitly
+            if "config_opportunity" not in self.plot_kwargs:
+                fig_df = fig_df[fig_df["config_opportunity"] != "__baseline__"]
+            else:
+                fig_df.loc[:, "variation"] = fig_df["variation"].fillna(
+                    value="Base"
+                )
 
             _create_min_max_plot(
                 fig_df,
                 x="value",
-                cat_col="config_opportunity",
+                cat_col=category_col,
                 ax=ax1,
-                baseline_val=base
+                baseline_val=base,
+                draw_mean=draw_means
             )
+
             secax = ax1.secondary_xaxis(
                 'top',
                 functions=(
@@ -555,6 +603,13 @@ class MinMaxAlternativesGenerator(
             is_flag=True,
             default=False,
             help="Only plot significant results (p-value < 0.05).",
+        ),
+        make_cli_option(
+            "--config-opportunity",
+            type=str,
+            required=False,
+            help=
+            "Show a detailed view for a specific config_opportunity. Will plot bars for each variation of the config_opportunity.",
         )
     ]
 ):
@@ -562,11 +617,27 @@ class MinMaxAlternativesGenerator(
     def generate(self) -> tp.List[Plot]:
         case_studies = self.plot_kwargs["case_studies"]
         self.plot_kwargs.pop("case_studies", None)
-        return [
-            MinMaxAlternativesPlot(
-                self.plot_config, **self.plot_kwargs, case_study=cs
-            ) for cs in case_studies
-        ]
+        self.plot_kwargs.pop("metric", None)
+        self.plot_kwargs.pop("config_opportunity", None)
+
+        plots = []
+
+        for cs in case_studies:
+            # Get config opportunities for the case study
+            opportunities = create_config_opportunities_value_map(cs)
+
+            plots += [
+                MinMaxAlternativesPlot(
+                    self.plot_config,
+                    **self.plot_kwargs,
+                    case_study=cs,
+                    config_opportunity=opportunity,
+                    metric=m
+                )
+                for opportunity in opportunities
+                for m in ["wall_clock_time", "max_resident_size"]
+            ]
+        return plots
 
 
 def _create_min_max_plot(
@@ -574,9 +645,19 @@ def _create_min_max_plot(
     x: str,
     cat_col: str,
     ax: Axes,
-    baseline_val: float = 0.0
+    baseline_val: float = 0.0,
+    draw_mean: bool = True
 ) -> None:
-    categories = data[cat_col].unique()
+
+    def cmp(item1, item2) -> int:
+        if isinstance(item1, str):
+            return -1
+        if isinstance(item2, str):
+            return 1
+
+        return item1 - item2
+
+    categories = sorted(data[cat_col].unique(), key=cmp_to_key(cmp))
     y_pos = np.arange(len(categories))
 
     data = data.explode(x)
@@ -592,7 +673,7 @@ def _create_min_max_plot(
         min_val = cat_data[x].min()
         max_val = cat_data[x].max()
 
-        if min_val < baseline_val:
+        if min_val <= baseline_val:
             bar = ax.barh(
                 y_pos[i],
                 min(baseline_val, max_val) - min_val,
@@ -607,26 +688,31 @@ def _create_min_max_plot(
                 color='lightcoral'
             )
 
+        vline_end = y_pos[i]
+        if not draw_mean:
+            vline_end += (bar[0].get_height() / 2)
+
         # Add vlines for all individual values
         ax.vlines(
             cat_data[x],
             y_pos[i] - (bar[0].get_height() / 2),
-            y_pos[i],
+            vline_end,
             color='black',
             linewidth=1,
             alpha=0.6
         )
 
-        # Add vlines for mean values per variation
-        mean_vals = cat_data.groupby("variation").mean()
-        ax.vlines(
-            mean_vals[x],
-            y_pos[i],
-            y_pos[i] + (bar[0].get_height() / 2),
-            color='black',
-            linewidth=1,
-            alpha=0.6
-        )
+        if draw_mean:
+            # Add vlines for mean values per variation
+            mean_vals = cat_data.groupby("variation").mean()
+            ax.vlines(
+                mean_vals[x],
+                vline_end,
+                y_pos[i] + (bar[0].get_height() / 2),
+                color='black',
+                linewidth=1,
+                alpha=0.6
+            )
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(categories)
