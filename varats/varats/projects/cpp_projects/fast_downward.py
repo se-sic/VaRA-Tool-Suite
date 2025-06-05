@@ -27,6 +27,194 @@ from varats.utils.git_util import FullCommitHash, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
+class FDParameterRenderer:
+
+    STR_REPRESENTATIONS = {
+        "allSystems": "ALL_TRANSITION_SYSTEMS",
+        "allSystemsWithFixpoint": "ALL_TRANSITION_SYSTEMS_WITH_FIXPOINT",
+        "twoSystems": "TWO_TRANSITION_SYSTEMS",
+        "blind": "blind()",
+        "max": "hmax()",
+        "canonicalPDB": "cpdbs()",
+        "landmarkCut": "lmcut()",
+        "bisimulation": "shrink_bisimulation()",
+        "RHWLM": "lm_rhw(",
+        "exhaustiveLM": "lm_exhaust(",
+        "zhuGivanLM": "lm_zg(",
+        # TODO: Check whether this is the correct syntax for this flag
+        "hmLM": "lm_hm(m=true,",
+        "reasonableOrders": "reasonable_orders",
+        "onlyCausalLMs": "only_causal_landmarks",
+        "conjunctiveLMs": "conjunctive_landmarks",
+        "noOrders": "no_orders",
+        "pdbMaxSize": "pdb_max_size",
+        "collectionMaxSize": "collection_max_size",
+        "numSamples": "num_samples",
+        "minImprovement": "min_improvement",
+    }
+
+    def __init__(self, *default_args: str) -> None:
+        self.__default_args = default_args
+
+    def __render_option(
+        self, options: tp.Dict[str, tp.Union[int, bool]], to_render: str
+    ) -> str:
+        if to_render in options:
+            options.pop(to_render)
+            return self.STR_REPRESENTATIONS.get(to_render, "")
+
+        return ""
+
+    def _render_lm_count(
+        self, options: tp.Dict[str, tp.Union[int, bool]]
+    ) -> str:
+        rendered = "lmcount(lm_factory="
+
+        lm_factories = ["exhaustiveLM", "hmLM", "RHWLM", "zhuGivanLM"]
+
+        for lm_factory in lm_factories:
+            rendered += self.__render_option(options, lm_factory)
+
+        factory_args = [
+            "reasonableOrders", "onlyCausalLMs", "conjunctiveLMs", "noOrders"
+        ]
+
+        fargs = []
+        for arg in factory_args:
+            fargs.append(
+                f"{self.STR_REPRESENTATIONS[arg]}={str(options[arg]).lower()}"
+            )
+            options.pop(arg)
+
+        rendered += ",".join(fargs)
+        # End Factory
+        rendered += ")"
+
+        rendered += ")"
+
+        return rendered
+
+    def _render_iPDB(self, options: tp.Dict[str, tp.Union[int, bool]]) -> str:
+        rendered = "ipdb(max_time=infinity,"
+
+        rendered += "max_time_dominance_pruning=0.0,"
+
+        ipdb_options = [
+            "pdbMaxSize", "collectionMaxSize", "numSamples", "minImprovement"
+        ]
+
+        ipdb_args = []
+
+        for arg in ipdb_options:
+            ipdb_args.append(f"{self.STR_REPRESENTATIONS[arg]}={options[arg]}")
+            options.pop(arg)
+
+        rendered += ",".join(ipdb_args)
+
+        rendered += ")"
+
+        return rendered
+
+    def _render_merge_and_shrink(
+        self, options: tp.Dict[str, tp.Union[int, bool]]
+    ) -> str:
+        random_str = f"random_seed={options.get('random', 1)}"
+
+        rendered = "merge_and_shrink("
+
+        rendered += f"label_reduction=exact(before_shrinking={...}, before_merging={...},method="
+
+        methods = ["allSystems", "allSystemsWithFixpoint", "twoSystems"]
+
+        for method in methods:
+            rendered += self.__render_option(options, to_render=method)
+
+        # End label_reduction=...
+        rendered += f",{random_str})"
+
+        # Shrink Strategy
+        rendered += ",shrink_strategy="
+
+        rendered += self.__render_option(options, to_render="bisimulation")
+        if "fPreserving" in options:
+            options.pop("fPreserving")
+            rendered += f"shrink_fh({random_str})"
+
+        # Add linear merge strategy
+        rendered += f",merge_strategy=merge_precomputed(merge_tree=linear({random_str}))"
+
+        # End merge_and_shrink...
+        rendered += ")"
+
+        return rendered
+
+    def _render_heuristic(
+        self, options: tp.Dict[str, tp.Union[int, bool]]
+    ) -> str:
+        rendered = ""
+
+        # Simple cases
+        simple_heuristics = ["blind", "max", "canonicalPDB", "landmarkCut"]
+
+        for h in simple_heuristics:
+            rendered += self.__render_option(options, to_render=h)
+
+        # Merge and Shrink heuristic
+        if "mergeAndShrink" in options:
+            options.pop("mergeAndShrink")
+
+            rendered += self._render_merge_and_shrink(options)
+
+        # LMCount
+        if "landmarkCount" in options:
+            options.pop("landmarkCount")
+
+            rendered += self._render_lm_count(options)
+
+        # iPDB
+        if "iPDB" in options:
+            options.pop("iPDB")
+
+            rendered += self._render_iPDB(options)
+
+        # TODO: How to handle noiPDB?
+
+        return rendered
+
+    def unrendered(self) -> str:
+        return f"<params>"
+
+    def rendered(self, project: VProject,
+                 **kwargs: tp.Any) -> tp.Tuple[str, ...]:
+        requested_options = set(get_extra_config_options(project))
+        if get_config(project, PlainCommandlineConfiguration) is None:
+            requested_options = set(self.__default_args)
+
+        options_dict: tp.Dict[str, tp.Union[int, bool]] = {}
+
+        for option in requested_options:
+            if "=" in option:
+                option, value = option.split("=", 1)
+                options_dict[option] = int(value)
+            else:
+                options_dict[option] = True
+
+        # Convert options to specific FD required Syntax
+        params = "astar("
+
+        # Render heuristics
+        params += self._render_heuristic(options_dict)
+
+        params += ")"
+
+        if len(options_dict) > 0:
+            print("There were unprocessed options:")
+            for option in options_dict.keys():
+                print(f"\t{option}: {options_dict[option]}")
+
+        return tuple([params])
+
+
 class FastDownward(VProject, ReleaseProviderHook):
     """Planning tool FastDownward (fetched by Git)"""
 
