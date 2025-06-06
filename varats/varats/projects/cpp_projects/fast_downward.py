@@ -24,6 +24,7 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
@@ -31,7 +32,7 @@ from varats.provider.release.release_provider import (
     ReleaseType,
 )
 from varats.utils.config import get_config, get_extra_config_options
-from varats.utils.git_util import FullCommitHash, ShortCommitHash
+from varats.utils.git_util import FullCommitHash, ShortCommitHash, GitFileSource
 from varats.utils.settings import bb_cfg
 
 
@@ -248,17 +249,19 @@ class FastDownward(VProject, ReleaseProviderHook):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        FeatureSource(),
+        GitFileSource(
+            "https://github.com/aibasel/downward-benchmarks",
+            "planning-benchmarks", "8302319bb3", [
+                "sokoban-sat08-strips/domain.pddl",
+                "sokoban-sat08-strips/p01.pddl"
+            ]
+        ),
     ]
 
-    WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
-            VCommand(SourceRoot("FastDownward") / "fast-downward.py",)
-        ]
-    }
-
     CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
+        ImageBase.DEBIAN_12
     ).run('apt', 'install', '-y', 'cmake', 'g++', 'git', 'make', 'python3')
 
     @staticmethod
