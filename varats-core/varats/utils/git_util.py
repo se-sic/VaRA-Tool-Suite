@@ -1,18 +1,23 @@
 """Utility module for handling git repos."""
 import abc
 import logging
+import os
 import re
 import typing as tp
 from enum import Enum
+from importlib.metadata import files
 from pathlib import Path
 from types import TracebackType
 
+import benchbuild.source
+import plumbum as pb
 import pygit2
-from benchbuild.utils.cmd import git, grep
+from benchbuild.utils.cmd import git, grep, mkdir
 from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
 
 from varats.utils.exceptions import unwrap
+from varats.utils.filesystem_util import lock_file
 
 if tp.TYPE_CHECKING:
     from benchbuild.utils.revision_ranges import AbstractRevisionRange
@@ -1015,3 +1020,63 @@ class RepositoryAtCommit():
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
         self.__repo.checkout(self.__initial_head)
+
+
+class GitFileSource(benchbuild.source.Git):
+    """
+    A source to provide one or multiple files that are stored in a Git
+    repository.
+
+    From the motivation similar to the HTTPMultiple source. Common uses may be
+    the use of benchmark/example workload repositories
+    """
+
+    def __init__(
+        self,
+        remote: str,
+        local: str,
+        files: tp.Iterable[str],
+        refspec: str = "HEAD"
+    ) -> None:
+        # Initiate the project with the whole history
+        super().__init__(
+            remote, local, refspec=refspec, limit=None, shallow=False
+        )
+        self.__files = files
+
+    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+        """
+        Fetches the defined files for a given version to the target directory.
+
+        :param target_dir:
+        :param version:
+        :return:
+        """
+        prefix = benchbuild.source.base.target_prefix()
+        flat_local = self.local.replace(os.sep, '-')
+        file_lock = f".{flat_local}.lock"
+
+        # Guard simultaneous access of multiple projects with the same defined local
+        with lock_file(pb.local.path(prefix) / file_lock):
+            src_loc = self.fetch()
+            tgt_subdir = f'{self.local}-{version}/'
+            tgt_loc = pb.local.path(target_dir) / tgt_subdir
+
+            repo = RepositoryHandle(src_loc)
+
+            # Checkout the requested version, store current head to restore later
+            initial_commit = repo.pygit_repo.head
+            repo("checkout", version)
+
+            # Create target directory
+            mkdir("-p", tgt_loc)
+            cp = pb.local["cp"]
+
+            with pb.local.cwd(src_loc):
+                for file in self.__files:
+                    flat_file = file.replace(os.sep, "-")
+                    cp(file, tgt_loc / flat_file)
+
+            repo.pygit_repo.checkout_tree(initial_commit)
+
+        return tgt_loc
