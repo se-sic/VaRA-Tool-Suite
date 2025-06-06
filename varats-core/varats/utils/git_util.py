@@ -1035,6 +1035,7 @@ class GitFileSource(benchbuild.source.Git):
         self,
         remote: str,
         local: str,
+        revision: str,
         files: tp.Iterable[str],
         refspec: str = "HEAD"
     ) -> None:
@@ -1042,7 +1043,9 @@ class GitFileSource(benchbuild.source.Git):
         super().__init__(
             remote, local, refspec=refspec, limit=None, shallow=False
         )
+        #TODO: Add possibility to specify target name by passing tuples?
         self.__files = files
+        self.__revision = revision
 
     def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
         """
@@ -1059,7 +1062,7 @@ class GitFileSource(benchbuild.source.Git):
         # Guard simultaneous access of multiple projects with the same defined local
         with lock_file(pb.local.path(prefix) / file_lock):
             src_loc = self.fetch()
-            tgt_subdir = f'{self.local}-{version}/'
+            tgt_subdir = f'{self.local}@{version}/'
             tgt_loc = pb.local.path(target_dir) / tgt_subdir
 
             repo = RepositoryHandle(src_loc)
@@ -1073,10 +1076,16 @@ class GitFileSource(benchbuild.source.Git):
             cp = pb.local["cp"]
 
             with pb.local.cwd(src_loc):
+                #TODO: Add support for globs?
                 for file in self.__files:
                     flat_file = file.replace(os.sep, "-")
                     cp(file, tgt_loc / flat_file)
 
-            repo.pygit_repo.checkout_tree(initial_commit)
+            repo.pygit_repo.checkout(initial_commit)
 
         return tgt_loc
+
+    def versions(self) -> tp.List[benchbuild.source.base.Variant]:
+        versions = super().versions()
+
+        return [v for v in versions if v.version == self.__revision]
