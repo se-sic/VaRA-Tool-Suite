@@ -3,11 +3,17 @@ import re
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.base.configuration import PlainCommandlineConfiguration
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import (
+    WorkloadCategory,
+    ConfigurationParameterRenderer,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -18,11 +24,13 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
+from varats.utils.config import get_config, get_extra_config_options
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
@@ -42,15 +50,16 @@ class FDParameterRenderer:
         "exhaustiveLM": "lm_exhaust(",
         "zhuGivanLM": "lm_zg(",
         # TODO: Check whether this is the correct syntax for this flag
-        "hmLM": "lm_hm(m=true,",
-        "reasonableOrders": "reasonable_orders",
+        "hmLM": "lm_hm(m=2,",
+        "resonableOrders": "reasonable_orders",
         "onlyCausalLMs": "only_causal_landmarks",
         "conjunctiveLMs": "conjunctive_landmarks",
-        "noOrders": "no_orders",
+        "noOrders": "use_orders",
         "pdbMaxSize": "pdb_max_size",
         "collectionMaxSize": "collection_max_size",
         "numSamples": "num_samples",
         "minImprovement": "min_improvement",
+        "random": "random_seed"
     }
 
     def __init__(self, *default_args: str) -> None:
@@ -68,23 +77,24 @@ class FDParameterRenderer:
     def _render_lm_count(
         self, options: tp.Dict[str, tp.Union[int, bool]]
     ) -> str:
-        rendered = "lmcount(lm_factory="
+        rendered = "landmark_sum(lm_factory="
 
         lm_factories = ["exhaustiveLM", "hmLM", "RHWLM", "zhuGivanLM"]
 
         for lm_factory in lm_factories:
             rendered += self.__render_option(options, lm_factory)
 
+        # TODO: Update usage based on change log to 21.12
+        # https://www.fast-downward.org/latest/releases/21.12/#changes_in_fast_downward_2112
         factory_args = [
-            "reasonableOrders", "onlyCausalLMs", "conjunctiveLMs", "noOrders"
+            "resonableOrders", "onlyCausalLMs", "conjunctiveLMs", "noOrders"
         ]
 
         fargs = []
         for arg in factory_args:
-            fargs.append(
-                f"{self.STR_REPRESENTATIONS[arg]}={str(options[arg]).lower()}"
-            )
-            options.pop(arg)
+            val = options.get(arg, False)
+            fargs.append(f"{self.STR_REPRESENTATIONS[arg]}={str(val).lower()}")
+            options.pop(arg, None)
 
         rendered += ",".join(fargs)
         # End Factory
@@ -100,7 +110,8 @@ class FDParameterRenderer:
         rendered += "max_time_dominance_pruning=0.0,"
 
         ipdb_options = [
-            "pdbMaxSize", "collectionMaxSize", "numSamples", "minImprovement"
+            "pdbMaxSize", "collectionMaxSize", "numSamples", "minImprovement",
+            "random"
         ]
 
         ipdb_args = []
@@ -122,7 +133,9 @@ class FDParameterRenderer:
 
         rendered = "merge_and_shrink("
 
-        rendered += f"label_reduction=exact(before_shrinking={...}, before_merging={...},method="
+        rendered += f"label_reduction=exact(before_shrinking={str(options.get('beforeShrinking',False)).lower()},before_merging={str(options.get('beforeMerging',False)).lower()},method="
+        options.pop("beforeShrinking", None)
+        options.pop("beforeMerging", None)
 
         methods = ["allSystems", "allSystemsWithFixpoint", "twoSystems"]
 
@@ -184,12 +197,7 @@ class FDParameterRenderer:
     def unrendered(self) -> str:
         return f"<params>"
 
-    def rendered(self, project: VProject,
-                 **kwargs: tp.Any) -> tp.Tuple[str, ...]:
-        requested_options = set(get_extra_config_options(project))
-        if get_config(project, PlainCommandlineConfiguration) is None:
-            requested_options = set(self.__default_args)
-
+    def render_internal(self, requested_options):
         options_dict: tp.Dict[str, tp.Union[int, bool]] = {}
 
         for option in requested_options:
@@ -212,6 +220,16 @@ class FDParameterRenderer:
             for option in options_dict.keys():
                 print(f"\t{option}: {options_dict[option]}")
 
+        return params
+
+    def rendered(self, project: VProject,
+                 **kwargs: tp.Any) -> tp.Tuple[str, ...]:
+        requested_options = set(get_extra_config_options(project))
+        if get_config(project, PlainCommandlineConfiguration) is None:
+            requested_options = set(self.__default_args)
+
+        params = self.render_internal(requested_options)
+
         return tuple([params])
 
 
@@ -232,6 +250,12 @@ class FastDownward(VProject, ReleaseProviderHook):
             shallow=False
         )
     ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(SourceRoot("FastDownward") / "fast-downward.py",)
+        ]
+    }
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
