@@ -3,7 +3,7 @@ import re
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.command import WorkloadSet, SourceRoot, ArgsToken
 from benchbuild.utils.cmd import cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -13,6 +13,7 @@ from varats.containers.containers import get_base_image, ImageBase
 from varats.experiment.workload_util import (
     WorkloadCategory,
     ConfigurationParameterRenderer,
+    RSBinary,
 )
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
@@ -36,7 +37,7 @@ from varats.utils.git_util import FullCommitHash, ShortCommitHash, GitFileSource
 from varats.utils.settings import bb_cfg
 
 
-class FDParameterRenderer:
+class _FDParameterRenderer:
 
     STR_REPRESENTATIONS = {
         "allSystems": "ALL_TRANSITION_SYSTEMS",
@@ -191,8 +192,6 @@ class FDParameterRenderer:
 
             rendered += self._render_iPDB(options)
 
-        # TODO: How to handle noiPDB?
-
         return rendered
 
     def unrendered(self) -> str:
@@ -223,15 +222,26 @@ class FDParameterRenderer:
 
         return params
 
-    def rendered(self, project: VProject,
-                 **kwargs: tp.Any) -> tp.Tuple[str, ...]:
+    def rendered(self, project: VProject, **kwargs: tp.Any) -> str:
+        if not isinstance(project, FastDownward):
+            raise NotImplementedError(
+                f"This renderer must not be used for any project other than FastDownward"
+            )
+
         requested_options = set(get_extra_config_options(project))
         if get_config(project, PlainCommandlineConfiguration) is None:
             requested_options = set(self.__default_args)
 
         params = self.render_internal(requested_options)
 
-        return tuple([params])
+        return [params]
+
+
+def _fd_config_params():
+    return ArgsToken.make_token(_FDParameterRenderer())
+
+
+_FDConfigParams = _fd_config_params
 
 
 class FastDownward(VProject, ReleaseProviderHook):
@@ -260,6 +270,19 @@ class FastDownward(VProject, ReleaseProviderHook):
         ),
     ]
 
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("fast-downward"),
+                "planning-benchmarks@8302319bb3/sokoban-sat08-strips-domain.pddl",
+                "planning-benchmarks@8302319bb3/sokoban-sat08-strips-p01.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="sokoban-sat08-strips-domain"
+            )
+        ]
+    }
+
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_12
     ).run('apt', 'install', '-y', 'cmake', 'g++', 'git', 'make', 'python3')
@@ -271,6 +294,8 @@ class FastDownward(VProject, ReleaseProviderHook):
         binary_map = RevisionBinaryMap(
             get_local_project_repo(FastDownward.NAME)
         )
+
+        binary_map.specify_binary('fast-downward.py', BinaryType.EXECUTABLE)
         binary_map.specify_binary('build/bin/downward', BinaryType.EXECUTABLE)
 
         return binary_map[revision]
@@ -295,6 +320,10 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         with local.cwd(version_source):
             verify_binaries(self)
+            # Create Symlink such that FD Python script works properly
+            local["mkdir"]("-p", "builds")
+            ln = local["ln"]
+            ln("-rs", "build", "builds/release")
 
     @classmethod
     def get_release_revisions(
