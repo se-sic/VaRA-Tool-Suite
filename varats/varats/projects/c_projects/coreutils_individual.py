@@ -3,6 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import git, make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -45,7 +46,18 @@ def _coreutils_source(tool_name: str) -> 'Sources':
                 "gnulib": "https://github.com/coreutils/gnulib"
             }
         ),
-        FeatureSource()
+        FeatureSource(),
+        HTTPMultiple(
+            local="coreutils-workloads",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/coreutils-workloads/releases/download/v0.1"
+            },
+            files=[
+                "jrc-en-full.xml",
+                "random_data.txt",
+            ]
+        )
     ]
 
 
@@ -76,19 +88,20 @@ def _coreutils_compile(project: VProject) -> None:
         verify_binaries(project)
 
 
-class CoreutilsSort(VProject):
-    """GNU coreutils - sort"""
+class CoreutilsBasenc(VProject):
+    """GNU coreutils - basenc"""
 
-    NAME = "coreutils_sort"
+    NAME = "coreutils_basenc"
     GROUP = 'c_projects'
     DOMAIN = ProjectDomains.UNIX_TOOLS
-    FEATURE_MODEL = "coreutils/sort.xml"
+    FEATURE_MODEL = "coreutils/basenc.xml"
 
     SOURCE = _coreutils_source(NAME)
+    # TODO
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot("coreutils") / RSBinary("sort"),
+                SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
                 "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
                 label="default"
@@ -102,7 +115,292 @@ class CoreutilsSort(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("basenc")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsCksum(VProject):
+    """GNU coreutils - cksum"""
+
+    NAME = "coreutils_cksum"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/cksum.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    # TODO
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("cksum"),
+                ConfigParams(),
+                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("cksum")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsDd(VProject):
+    """GNU coreutils - dd"""
+
+    NAME = "coreutils_dd"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/dd.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    # TODO
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("dd"),
+                ConfigParams(),
+                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("dd")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsFmt(VProject):
+    """GNU coreutils - fmt"""
+
+    NAME = "coreutils_fmt"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/fmt.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    # TODO
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("fmt"),
+                ConfigParams(),
+                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("fmt")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsOd(VProject):
+    """GNU coreutils - od"""
+
+    NAME = "coreutils_od"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/od.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    # TODO
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("od"),
+                ConfigParams(),
+                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("od")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsPr(VProject):
+    """GNU coreutils - pr"""
+
+    NAME = "coreutils_pr"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/pr.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    # TODO
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("pr"),
+                ConfigParams(),
+                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("pr")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsSort(VProject):
+    """GNU coreutils - sort"""
+
+    NAME = "coreutils_sort"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/sort.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("sort"),
+                ConfigParams(),
+                "coreutils-workloads/random_data.txt",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
         return _coreutils_binary_map("sort")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsUniq(VProject):
+    """GNU coreutils - uniq"""
+
+    NAME = "coreutils_uniq"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/uniq.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("uniq"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full.xml",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("uniq")[revision]
+
+    def run_tests(self) -> None:
+        _coreutils_run_tests(self)
+
+    def compile(self) -> None:
+        _coreutils_compile(self)
+
+
+class CoreutilsWc(VProject):
+    """GNU coreutils - wc"""
+
+    NAME = "coreutils_wc"
+    GROUP = 'c_projects'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
+    FEATURE_MODEL = "coreutils/wc.xml"
+
+    SOURCE = _coreutils_source(NAME)
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("wc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full.xml",
+                label="default"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List[ProjectBinaryWrapper]:
+        return _coreutils_binary_map("wc")[revision]
 
     def run_tests(self) -> None:
         _coreutils_run_tests(self)
