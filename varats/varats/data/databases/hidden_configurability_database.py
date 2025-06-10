@@ -148,6 +148,19 @@ def aggregate_data(
 
     result_df = add_significance_values(result_df)
 
+    str_val_map = create_config_opportunities_value_map(cs)
+
+    def map_str_values(row: pd.Series) -> pd.Series:
+        """Map string values to numerical values."""
+        if row["config_opportunity"] == "__baseline__":
+            return row
+        row["variation"] = str_val_map[row["config_opportunity"]][str(
+            row["variation"]
+        )]
+        return row
+
+    result_df = result_df.apply(map_str_values, axis=1)
+
     return result_df
 
 
