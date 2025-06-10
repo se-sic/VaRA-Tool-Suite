@@ -148,42 +148,21 @@ class HyTeg(VProject):
             bb.watch(ninja)("ProfilingApp")
 
     def run_tests(self) -> None:
-        pass
+        hyteg_source = local.path(self.source_of(self.primary_source))
+
+        with local.cwd(hyteg_source / "build"):
+            bb.watch(ctest)()
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        hyteg_source = local.path(self.source_of(self.primary_source))
-
-        mkdir("-p", hyteg_source / "build")
-
-        update_all_submodules(hyteg_source, recursive=True, init=True)
-
-        cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
-
-        cmake_args = [
-            "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
-            "-DHYTEG_BUILD_DOC=OFF"
-        ]
-
-        if (eigen_path := os.getenv("EIGEN_PATH")):
-            cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
-        else:
-            LOG.warning(
-                "EIGEN_PATH environment variable not set! This will cause"
-                " compilation errors when using configurations"
-            )
-
-        with local.cwd(hyteg_source / "build"):
-            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)(*cmake_args)
+        pass
 
     def build_tests(self) -> None:
         """Build the tests."""
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(hyteg_source / "build"):
-            bb.watch(ninja)("ProfilingApp")
+            bb.watch(ninja)()
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names."""

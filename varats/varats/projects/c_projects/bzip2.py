@@ -186,27 +186,14 @@ class Bzip2(VProject):
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        bzip2_version_source = local.path(self.source_of_primary)
-
-        cpp_compiler = bb.compiler.cxx(self)
-        cc_compiler = bb.compiler.cc(self)
-
-        mkdir(bzip2_version_source / "build")
-        with local.cwd(bzip2_version_source / "build"):
-            with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", "..")
-
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
-        with local.cwd(bzip2_version_source):
-            verify_binaries(self)
+        pass
 
     def build_tests(self) -> None:
         """Build the tests."""
         bzip2_version_source = local.path(self.source_of_primary)
 
         with local.cwd(bzip2_version_source / "build"):
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("test")
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names."""
