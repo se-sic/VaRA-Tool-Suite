@@ -861,6 +861,10 @@ class SingleMinMaxAlternativesPlot(
         else:
             df = get_data_for_single_config(case_study, config_id)
 
+        print(
+            f"Case Study: {case_study.project_name}, Metric: {metric}, Config ID: {config_id}, Workload: {workload}, Config Opportunity: {self.plot_kwargs.get('config_opportunity', 'None')}"
+        )
+
         df = _prepare_data(self.plot_kwargs, df)
 
         category_col = "config_opportunity"
@@ -932,6 +936,10 @@ class SingleStackedDistPlot(Plot, plot_name="single_stacked_dist"):
             df = self.plot_kwargs["data_cache"]
         else:
             df = get_data_for_single_config(case_study, config_id)
+
+        print(
+            f"Case Study: {case_study.project_name}, Metric: {metric}, Config ID: {config_id}, Workload: {workload}, Config Opportunity: {self.plot_kwargs.get('config_opportunity', 'None')}"
+        )
 
         df = _prepare_data(self.plot_kwargs, df)
 
@@ -1062,6 +1070,107 @@ class SingleStackedDistGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [SingleStackedDistPlot(self.plot_config, **self.plot_kwargs)]
+
+
+class AllHCPlotsGenerator(
+    PlotGenerator,
+    generator_name="all_hc_plots",
+    options=[
+        make_cli_option(
+            "--case-studies",
+            type=create_multi_case_study_choice(),
+            required=True,
+            help="Case studies to plot",
+        )
+    ]
+):
+    """Generates all min-max alternatives plots for the given case studies."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies = self.plot_kwargs["case_studies"]
+        self.plot_kwargs.pop("case_studies", None)
+
+        metrics = ["wall_clock_time", "max_resident_size"]
+
+        plots = []
+
+        for cs in case_studies:
+            # Create data cache for the case study
+            df = aggregate_data(cs, None)
+
+            # Get all configuration IDs for the case study
+            config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
+            if len(config_ids) == 0:
+                config_ids = [None]
+
+            # Get all workloads for the case study
+            workloads = df["binary-wl"].unique()
+
+            # Get all configuration opportunities for the case study
+            config_opportunities = create_config_opportunities_value_map(cs)
+
+            old_size = len(plots)
+
+            plots += [
+                SingleMinMaxAlternativesPlot(
+                    self.plot_config,
+                    case_study=cs,
+                    metric=metric,
+                    config_id=config_id,
+                    workload=workload,
+                    config_opportunity=config_opportunity,
+                    data_cache=df
+                )
+                for metric in metrics
+                for config_id in config_ids
+                for workload in workloads
+                for config_opportunity in config_opportunities
+            ] + [
+                SingleMinMaxAlternativesPlot(
+                    self.plot_config,
+                    case_study=cs,
+                    metric=metric,
+                    config_id=config_id,
+                    workload=workload,
+                    data_cache=df,
+                    config_opportunity=None
+                )
+                for metric in metrics
+                for config_id in config_ids
+                for workload in workloads
+            ] + [
+                SingleStackedDistPlot(
+                    self.plot_config,
+                    case_study=cs,
+                    metric=metric,
+                    config_id=config_id,
+                    workload=workload,
+                    config_opportunity=config_opportunity,
+                    data_cache=df
+                )
+                for metric in metrics
+                for config_id in config_ids
+                for workload in workloads
+                for config_opportunity in config_opportunities
+            ] + [
+                SingleStackedDistPlot(
+                    self.plot_config,
+                    case_study=cs,
+                    metric=metric,
+                    config_id=config_id,
+                    workload=workload,
+                    data_cache=df,
+                    config_opportunity=None
+                )
+                for metric in metrics
+                for config_id in config_ids
+                for workload in workloads
+            ]
+
+            print(f"Added {len(plots) - old_size} plots for {cs.project_name}")
+
+        print(f"Number of plots to generate: {len(plots)}")
+        return plots
 
 
 def _create_min_max_plot(
