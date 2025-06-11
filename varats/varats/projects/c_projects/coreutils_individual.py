@@ -88,7 +88,9 @@ def _coreutils_compile(project: VProject) -> None:
     with local.cwd(coreutils_source):
         git("submodule", "init")
         git("submodule", "update")
-        with local.env(CC=str(compiler)):
+        # FORCE_UNSAFE_CONFIGURE is needed because we appear as root when
+        # building in a container.
+        with local.env(CC=str(compiler), FORCE_UNSAFE_CONFIGURE=1):
             bb.watch(local["./bootstrap"])()
             bb.watch(local["./configure"])("--disable-gcc-warnings")
 
