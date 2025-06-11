@@ -30,6 +30,7 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 if tp.TYPE_CHECKING:
+    from benchbuild.environments.domain.declarative import ContainerImage
     from benchbuild.project import Sources
 
 
@@ -59,6 +60,14 @@ def _coreutils_source(tool_name: str) -> 'Sources':
             ]
         )
     ]
+
+
+def _coreutils_container() -> 'ContainerImage':
+    return get_base_image(ImageBase.DEBIAN_12).run(
+        "apt", "install", "-y", "autoconf", "automake", "bison", "gettext",
+        "gperf", "gzip", "help2man", "m4", "make", "perl", "tar", "texinfo",
+        "wget", "xz"
+    )
 
 
 def _coreutils_binary_map(tool_name: str) -> RevisionBinaryMap:
@@ -109,7 +118,7 @@ class CoreutilsBasenc(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -145,7 +154,7 @@ class CoreutilsCksum(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -181,7 +190,7 @@ class CoreutilsDd(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -217,7 +226,7 @@ class CoreutilsFmt(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -253,7 +262,7 @@ class CoreutilsOd(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -289,7 +298,7 @@ class CoreutilsPr(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -324,7 +333,7 @@ class CoreutilsSort(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -359,7 +368,7 @@ class CoreutilsUniq(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
@@ -394,7 +403,7 @@ class CoreutilsWc(VProject):
         ]
     }
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+    CONTAINER = _coreutils_container()
 
     @staticmethod
     def binaries_for_revision(
