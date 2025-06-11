@@ -48,11 +48,10 @@ class _FDParameterRenderer:
         "canonicalPDB": "cpdbs()",
         "landmarkCut": "lmcut()",
         "bisimulation": "shrink_bisimulation()",
-        "RHWLM": "lm_rhw(",
-        "exhaustiveLM": "lm_exhaust(",
-        "zhuGivanLM": "lm_zg(",
-        # TODO: Check whether this is the correct syntax for this flag
-        "hmLM": "lm_hm(m=2,",
+        "RHWLM": "lm_rhw",
+        "exhaustiveLM": "lm_exhaust",
+        "zhuGivanLM": "lm_zg",
+        "hmLM": "lm_hm",
         "resonableOrders": "reasonable_orders",
         "onlyCausalLMs": "only_causal_landmarks",
         "conjunctiveLMs": "conjunctive_landmarks",
@@ -76,31 +75,52 @@ class _FDParameterRenderer:
 
         return ""
 
+    def _render_lm_factory_arg(
+        self, options: tp.Dict[str, tp.Union[int, bool]], arg: str
+    ) -> str:
+        val = options.pop(arg, False)
+        return f"{self.STR_REPRESENTATIONS[arg]}={str(val).lower()}"
+
     def _render_lm_count(
         self, options: tp.Dict[str, tp.Union[int, bool]]
     ) -> str:
         rendered = "landmark_sum(lm_factory="
 
-        lm_factories = ["exhaustiveLM", "hmLM", "RHWLM", "zhuGivanLM"]
+        if "reasonable_orders" in options:
+            rendered += "lm_reasonable_orders_hps("
 
-        for lm_factory in lm_factories:
-            rendered += self.__render_option(options, lm_factory)
+        # Render factory used
+        # Different factories support a different subset of the arguments
+        factory = ""
+        factory_args = []
+        if "exhaustiveLM" in options:
+            factory = "exhaustiveLM"
+            # Exhaustive supports useOrders and causalLMs
+            factory_args.append("noOrders")
+            factory_args.append("onlyCausalLMs")
+        elif "hmLM" in options:
+            factory = "hmLM"
+            # mLM supports conjunctive and useOrders
+            factory_args.append("noOrders")
+            factory_args.append("conjunctiveLMs")
+        elif "RHWLM" in options:
+            factory = "RHWLM"
+            # RHW supports causal and useOrders
+            factory_args.append("noOrders")
+            factory_args.append("onlyCausalLMs")
+        elif "zhuGivanLM" in options:
+            factory = "zhuGivanLM"
+            # zg supports useOrders
+            factory_args.append("noOrders")
+        else:
+            raise NotImplementedError("Landmark factory not supported")
 
-        # TODO: Update usage based on change log to 21.12
-        # https://www.fast-downward.org/latest/releases/21.12/#changes_in_fast_downward_2112
-        factory_args = [
-            "resonableOrders", "onlyCausalLMs", "conjunctiveLMs", "noOrders"
-        ]
+        rendered += self.__render_option(options, factory)
+        rendered += f"({','.join([self._render_lm_factory_arg(options, arg) for arg in factory_args])})"
 
-        fargs = []
-        for arg in factory_args:
-            val = options.get(arg, False)
-            fargs.append(f"{self.STR_REPRESENTATIONS[arg]}={str(val).lower()}")
-            options.pop(arg, None)
-
-        rendered += ",".join(fargs)
-        # End Factory
-        rendered += ")"
+        if "reasonable_orders" in options:
+            rendered += ")"
+            options.pop("reasonable_orders")
 
         rendered += ")"
 
