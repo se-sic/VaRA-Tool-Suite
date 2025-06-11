@@ -293,7 +293,7 @@ class FastDownward(VProject, ReleaseProviderHook):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot("FastDownward") / RSBinary("fast-downward"),
+                SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
                 "planning-benchmarks@8302319bb3/sokoban-sat08-strips-domain.pddl",
                 "planning-benchmarks@8302319bb3/sokoban-sat08-strips-p01.pddl",
                 "--search",
@@ -315,7 +315,11 @@ class FastDownward(VProject, ReleaseProviderHook):
             get_local_project_repo(FastDownward.NAME)
         )
 
-        binary_map.specify_binary('fast-downward.py', BinaryType.EXECUTABLE)
+        binary_map.specify_binary(
+            'fast-downward.py',
+            BinaryType.EXECUTABLE,
+            override_binary_name="FDDriverPy"
+        )
         binary_map.specify_binary('build/bin/downward', BinaryType.EXECUTABLE)
 
         return binary_map[revision]
