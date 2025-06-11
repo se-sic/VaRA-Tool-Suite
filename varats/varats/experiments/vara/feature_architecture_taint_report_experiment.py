@@ -7,6 +7,7 @@ from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt
+from benchbuild.utils.requirements import Requirement, SlurmMem
 
 from varats.data.reports.architecture_report import (
     ArchitectureTaintReport,
@@ -74,7 +75,7 @@ class FeatureArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-AD", "-vara-PTFDD", "-vara-PTFD",
+                "--enable-new-pm=0", "-vara-AD", "-vara-PTFD", "-vara-PTFDD",
                 "-vara-FBFD", "-vara-FATR", "-vara-use-phasar",
                 f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
@@ -106,7 +107,7 @@ class FeatureArchitectureTaintReportExperiment(
     """Generates an Architecture report file."""
 
     NAME = "GenerateFeatureArchitectureTaintReport"
-
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
     REPORT_SPEC = ReportSpecification(FeatureArchitectureTaintReport)
 
     def actions_for_project(
