@@ -66,7 +66,7 @@ def _coreutils_container() -> 'ContainerImage':
     return get_base_image(ImageBase.DEBIAN_12).run(
         "apt", "install", "-y", "autoconf", "automake", "bison", "gettext",
         "gperf", "gzip", "help2man", "m4", "make", "perl", "tar", "texinfo",
-        "wget", "xz"
+        "wget", "xz-utils"
     )
 
 
