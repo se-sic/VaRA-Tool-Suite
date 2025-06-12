@@ -360,6 +360,26 @@ class FastDownward(VProject, ReleaseProviderHook):
             ln = local["ln"]
             ln("-rs", "build", "builds/release")
 
+        # Translate Planning problems into .sas files such that we can interact
+        # with them directly through the 'downward' binary
+        translate = local[version_source / "build/bin/translate/translate.py"]
+        planning_problems_dir = self.__PlanningFilesSource.version(
+            self.builddir, self.__PlanningFilesSource.revision
+        )
+        with local.cwd(planning_problems_dir):
+            #Sokoban Problem
+            bb.watch(translate)(
+                "sokoban-sat08-strips-domain.pddl",
+                "sokoban-sat08-strips-p01.pddl", "--sas-file",
+                "sokoban-sat08.sas"
+            )
+            # Data networks
+            bb.watch(translate)(
+                "data-network-opt18-strips-domain.pddl",
+                "data-network-opt18-strips-p05.pddl", "--sas-file",
+                "data-network-opt18.sas"
+            )
+
     @classmethod
     def get_release_revisions(
         cls, release_type: ReleaseType
