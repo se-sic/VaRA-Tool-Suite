@@ -284,7 +284,9 @@ class FastDownward(VProject, ReleaseProviderHook):
             "https://github.com/aibasel/downward-benchmarks",
             "planning-benchmarks", "8302319bb3", [
                 "sokoban-sat08-strips/domain.pddl",
-                "sokoban-sat08-strips/p01.pddl"
+                "sokoban-sat08-strips/p01.pddl",
+                "data-network-opt18-strips/domain.pddl",
+                "data-network-opt18-strips/p05.pddl",
             ]
         ),
     ]
@@ -297,7 +299,17 @@ class FastDownward(VProject, ReleaseProviderHook):
                 "planning-benchmarks@8302319bb3/sokoban-sat08-strips-p01.pddl",
                 "--search",
                 _FDConfigParams(),
-                label="sokoban-sat08-strips-domain"
+                label="sokoban-sat08"
+            )
+        ],
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
+                "planning-benchmarks@8302319bb3/data-network-opt18-strips-domain.pddl",
+                "planning-benchmarks@8302319bb3/data-network-opt18-strips-p05.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="data-network-opt18"
             )
         ]
     }
