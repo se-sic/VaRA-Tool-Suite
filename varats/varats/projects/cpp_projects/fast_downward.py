@@ -86,7 +86,7 @@ class _FDParameterRenderer:
     ) -> str:
         rendered = "landmark_sum(lm_factory="
 
-        if "reasonable_orders" in options:
+        if "reasonableOrders" in options:
             rendered += "lm_reasonable_orders_hps("
 
         # Render factory used
@@ -95,8 +95,7 @@ class _FDParameterRenderer:
         factory_args = []
         if "exhaustiveLM" in options:
             factory = "exhaustiveLM"
-            # Exhaustive supports useOrders and causalLMs
-            factory_args.append("noOrders")
+            # Exhaustive supports causalLMs
             factory_args.append("onlyCausalLMs")
         elif "hmLM" in options:
             factory = "hmLM"
@@ -118,9 +117,9 @@ class _FDParameterRenderer:
         rendered += self.__render_option(options, factory)
         rendered += f"({','.join([self._render_lm_factory_arg(options, arg) for arg in factory_args])})"
 
-        if "reasonable_orders" in options:
+        if "reasonableOrders" in options:
             rendered += ")"
-            options.pop("reasonable_orders")
+            options.pop("reasonableOrders")
 
         rendered += ")"
 
