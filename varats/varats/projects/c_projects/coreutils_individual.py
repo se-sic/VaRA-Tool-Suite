@@ -99,6 +99,12 @@ def _coreutils_compile(project: VProject) -> None:
         verify_binaries(project)
 
 
+def _coreutils_recompile(project: VProject) -> None:
+    coreutils_source = local.path(project.source_of_primary)
+    with local.cwd(coreutils_source):
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+
 class CoreutilsBasenc(VProject):
     """GNU coreutils - basenc"""
 
@@ -133,6 +139,9 @@ class CoreutilsBasenc(VProject):
 
     def compile(self) -> None:
         _coreutils_compile(self)
+
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
 
 
 class CoreutilsCksum(VProject):
@@ -170,6 +179,9 @@ class CoreutilsCksum(VProject):
     def compile(self) -> None:
         _coreutils_compile(self)
 
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
+
 
 class CoreutilsDd(VProject):
     """GNU coreutils - dd"""
@@ -205,6 +217,9 @@ class CoreutilsDd(VProject):
 
     def compile(self) -> None:
         _coreutils_compile(self)
+
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
 
 
 class CoreutilsFmt(VProject):
@@ -242,6 +257,9 @@ class CoreutilsFmt(VProject):
     def compile(self) -> None:
         _coreutils_compile(self)
 
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
+
 
 class CoreutilsOd(VProject):
     """GNU coreutils - od"""
@@ -277,6 +295,9 @@ class CoreutilsOd(VProject):
 
     def compile(self) -> None:
         _coreutils_compile(self)
+
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
 
 
 class CoreutilsPr(VProject):
@@ -314,6 +335,9 @@ class CoreutilsPr(VProject):
     def compile(self) -> None:
         _coreutils_compile(self)
 
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
+
 
 class CoreutilsSort(VProject):
     """GNU coreutils - sort"""
@@ -348,6 +372,9 @@ class CoreutilsSort(VProject):
 
     def compile(self) -> None:
         _coreutils_compile(self)
+
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
 
 
 class CoreutilsUniq(VProject):
@@ -384,6 +411,9 @@ class CoreutilsUniq(VProject):
     def compile(self) -> None:
         _coreutils_compile(self)
 
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
+
 
 class CoreutilsWc(VProject):
     """GNU coreutils - wc"""
@@ -418,3 +448,7 @@ class CoreutilsWc(VProject):
 
     def compile(self) -> None:
         _coreutils_compile(self)
+
+    def recompile(self) -> None:
+        _coreutils_recompile(self)
+
