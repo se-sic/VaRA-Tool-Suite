@@ -1110,6 +1110,8 @@ class GitFileSource(benchbuild.source.Git):
 
             repo.pygit_repo.checkout(initial_commit)
 
+        pb.local["ln"]('-sf', tgt_loc, pb.local.path(target_dir) / self.local)
+
         return tgt_loc
 
     def versions(self) -> list[benchbuild.source.base.Variant]:
