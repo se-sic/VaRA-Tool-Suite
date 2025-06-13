@@ -266,6 +266,26 @@ _FDConfigParams = _fd_config_params
 class FastDownward(VProject, ReleaseProviderHook):
     """Planning tool FastDownward (fetched by Git)"""
 
+    __PlanningFilesSource = GitFileSource(
+        "https://github.com/aibasel/downward-benchmarks", "planning-benchmarks",
+        "8302319bb3", [
+            "sokoban-sat08-strips/domain.pddl",
+            "sokoban-sat08-strips/p01.pddl",
+            "data-network-opt18-strips/domain.pddl",
+            "data-network-opt18-strips/p05.pddl",
+        ]
+    )
+
+    __PlanningProblems = {
+        "sokoban-sat08": [
+            "sokoban-sat08-strips/domain.pddl", "sokoban-sat08-strips/p01.pddl"
+        ],
+        "data-network-opt18": [
+            "data-network-opt18-strips/domain.pddl",
+            "data-network-opt18-strips/p05.pddl"
+        ]
+    }
+
     NAME = 'FastDownward'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.PLANNING
@@ -280,23 +300,22 @@ class FastDownward(VProject, ReleaseProviderHook):
             shallow=False
         ),
         FeatureSource(),
-        GitFileSource(
-            "https://github.com/aibasel/downward-benchmarks",
-            "planning-benchmarks", "8302319bb3", [
-                "sokoban-sat08-strips/domain.pddl",
-                "sokoban-sat08-strips/p01.pddl",
-                "data-network-opt18-strips/domain.pddl",
-                "data-network-opt18-strips/p05.pddl",
-            ]
-        ),
+        __PlanningFilesSource,
     ]
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
-                "planning-benchmarks@8302319bb3/sokoban-sat08-strips-domain.pddl",
-                "planning-benchmarks@8302319bb3/sokoban-sat08-strips-p01.pddl",
+                f"{self.__PlanningFilesSource.version}/sokoban-sat08-strips-domain.pddl",
+                f"{self.__PlanningFilesSource.version}/sokoban-sat08-strips-p01.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="sokoban-sat08-py"
+            ),
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("downward"),
+                f"{self.__PlanningFilesSource.version}/sokoban-sat08.sas",
                 "--search",
                 _FDConfigParams(),
                 label="sokoban-sat08"
@@ -305,8 +324,15 @@ class FastDownward(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
-                "planning-benchmarks@8302319bb3/data-network-opt18-strips-domain.pddl",
-                "planning-benchmarks@8302319bb3/data-network-opt18-strips-p05.pddl",
+                f"{self.__PlanningFilesSource.version}/data-network-opt18-strips-domain.pddl",
+                f"{self.__PlanningFilesSource.version}/data-network-opt18-strips-p05.pddl",
+                "--search",
+                _FDConfigParams(),
+                label="data-network-opt18-py"
+            ),
+            VCommand(
+                SourceRoot("FastDownward") / RSBinary("downward"),
+                f"{self.__PlanningFilesSource.version}/data-network-opt18.sas",
                 "--search",
                 _FDConfigParams(),
                 label="data-network-opt18"
@@ -364,21 +390,11 @@ class FastDownward(VProject, ReleaseProviderHook):
         # with them directly through the 'downward' binary
         translate = local[version_source / "build/bin/translate/translate.py"]
         planning_problems_dir = self.__PlanningFilesSource.version(
-            self.builddir, self.__PlanningFilesSource.revision
+            self.builddir
         )
         with local.cwd(planning_problems_dir):
-            #Sokoban Problem
-            bb.watch(translate)(
-                "sokoban-sat08-strips-domain.pddl",
-                "sokoban-sat08-strips-p01.pddl", "--sas-file",
-                "sokoban-sat08.sas"
-            )
-            # Data networks
-            bb.watch(translate)(
-                "data-network-opt18-strips-domain.pddl",
-                "data-network-opt18-strips-p05.pddl", "--sas-file",
-                "data-network-opt18.sas"
-            )
+            for problem, inputs in self.__PlanningProblems.items():
+                bb.watch(translate)(*inputs, "--sas-file", f"{problem}.sas")
 
     @classmethod
     def get_release_revisions(

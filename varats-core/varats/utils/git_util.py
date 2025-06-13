@@ -1051,7 +1051,9 @@ class GitFileSource(benchbuild.source.Git):
     def revision(self) -> str:
         return self.__revision
 
-    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+    def version(
+        self, target_dir: str, version: str = self.revision
+    ) -> pb.LocalPath:
         """
         Fetches the defined files for a given version to the target directory.
 
