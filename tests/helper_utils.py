@@ -241,7 +241,9 @@ def run_in_test_environment(
     return wrapper_func
 
 
-def test_environment(*required_test_inputs: UnitTestFixture) -> TestEnvironment:
+def create_test_environment(
+    *required_test_inputs: UnitTestFixture
+) -> TestEnvironment:
     """
     Context manager that creates an isolated test environment.
 
