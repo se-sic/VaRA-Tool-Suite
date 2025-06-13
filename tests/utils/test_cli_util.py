@@ -5,7 +5,7 @@ import unittest.mock as mock
 from enum import Enum
 from pathlib import Path
 
-from tests.helper_utils import run_in_test_environment, test_environment
+from tests.helper_utils import run_in_test_environment, create_test_environment
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.vara import VaRA
 from varats.tools.tool_util import get_research_tool_type, get_research_tool
@@ -29,7 +29,7 @@ class ResearchToolUtils(unittest.TestCase):
     def test_research_tool_accessor_default(self, _):
         """Checks if the source_location of a ``ResearchTool`` is set to the
         correct default."""
-        with test_environment() as tmp_path:
+        with create_test_environment() as tmp_path:
             vara_cfg()["config_file"] = tmp_path / "dummy.yml"
             vara_cfg()["vara"]["llvm_source_dir"] = tmp_path / "tools_src"
             vara = get_research_tool("vara")
