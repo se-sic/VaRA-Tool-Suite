@@ -1,4 +1,5 @@
 """Project file for FastDownward."""
+import os
 import re
 import typing as tp
 
@@ -307,35 +308,41 @@ class FastDownward(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
-                f"{self.__PlanningFilesSource.version}/sokoban-sat08-strips-domain.pddl",
-                f"{self.__PlanningFilesSource.version}/sokoban-sat08-strips-p01.pddl",
+                SourceRoot("planning-benchmarks") /
+                "sokoban-sat08-strips-domain.pddl",
+                SourceRoot("planning-benchmarks") /
+                "sokoban-sat08-strips-p01.pddl",
                 "--search",
                 _FDConfigParams(),
                 label="sokoban-sat08-py"
             ),
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("downward"),
-                f"{self.__PlanningFilesSource.version}/sokoban-sat08.sas",
                 "--search",
                 _FDConfigParams(),
+                redirect_stdin=SourceRoot("planning-benchmarks") /
+                "sokoban-sat08.sas",
                 label="sokoban-sat08"
             )
         ],
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
-                f"{self.__PlanningFilesSource.version}/data-network-opt18-strips-domain.pddl",
-                f"{self.__PlanningFilesSource.version}/data-network-opt18-strips-p05.pddl",
+                SourceRoot("planning-benchmarks") /
+                "data-network-opt18-strips-domain.pddl",
+                SourceRoot("planning-benchmarks") /
+                "data-network-opt18-strips-p05.pddl",
                 "--search",
                 _FDConfigParams(),
                 label="data-network-opt18-py"
             ),
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("downward"),
-                f"{self.__PlanningFilesSource.version}/data-network-opt18.sas",
                 "--search",
                 _FDConfigParams(),
-                label="data-network-opt18"
+                label="data-network-opt18",
+                redirect_stdin=SourceRoot("planning-benchmarks") /
+                "data-network-opt18.sas"
             )
         ]
     }
@@ -384,7 +391,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             # Create Symlink such that FD Python script works properly
             local["mkdir"]("-p", "builds")
             ln = local["ln"]
-            ln("-rs", "build", "builds/release")
+            ln("-rsf", "build", "builds/release")
 
         # Translate Planning problems into .sas files such that we can interact
         # with them directly through the 'downward' binary
@@ -394,6 +401,7 @@ class FastDownward(VProject, ReleaseProviderHook):
         )
         with local.cwd(planning_problems_dir):
             for problem, inputs in self.__PlanningProblems.items():
+                inputs = [f.replace(os.sep, "-") for f in inputs]
                 bb.watch(translate)(*inputs, "--sas-file", f"{problem}.sas")
 
     @classmethod
