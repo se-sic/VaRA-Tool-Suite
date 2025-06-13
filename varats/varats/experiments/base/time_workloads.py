@@ -1,14 +1,16 @@
 """Implements an experiment that times the execution of all project binaries."""
 
+import textwrap
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild import Project
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import time
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -26,6 +28,7 @@ from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.report import ReportSpecification
+from varats.utils.config import get_current_config_id
 
 
 class TimeProjectWorkloads(OutputFolderStep):
@@ -48,6 +51,7 @@ class TimeProjectWorkloads(OutputFolderStep):
 
     def analyze(self, tmp_dir: Path) -> actions.StepResult:
         """Only create a report file."""
+        step_result = actions.StepResult.OK
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
@@ -59,12 +63,29 @@ class TimeProjectWorkloads(OutputFolderStep):
                     "time_report", prj_command.command, self.__num, ".txt"
                 )
 
-                run_cmd = time['-v', '-o', f'{run_report_name}', pb_cmd]
+                #print(pb_cmd.formulate())
+
+                run_cmd = time['-v', '-o', f'{run_report_name}',
+                               pb_cmd.formulate()]
+                #print(run_cmd.formulate())
 
                 with cleanup(prj_command):
-                    run_cmd()
+                    try:
+                        print(f"Running {run_cmd}")
+                        ret, out, err = bb.watch(run_cmd)()
+                        print(f"{ret=}")
+                        print(f"{out=}")
+                        print(f"{err=}")
+                    except ProcessExecutionError as e:
+                        step_result = actions.StepResult.ERROR
 
-        return actions.StepResult.OK
+        return step_result
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: Time workloads for binary '{self.__binary.name}'",
+            indent * " "
+        )
 
 
 class TimeWorkloads(VersionExperiment, shorthand="TWL"):
@@ -92,12 +113,16 @@ class TimeWorkloads(VersionExperiment, shorthand="TWL"):
         )
 
         # Only consider the main/first binary
-        binary = project.binaries[0]
+        binary = project.binaries[1]
+        print(f"{binary}")
 
-        measurement_repetitions = 2
+        measurement_repetitions = 1
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
-            self.get_handle().report_spec().main_report, project, binary
+            self.get_handle().report_spec().main_report,
+            project,
+            binary,
+            config_id=get_current_config_id(project),
         )
 
         analysis_actions = []
