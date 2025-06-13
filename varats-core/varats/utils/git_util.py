@@ -1071,9 +1071,7 @@ class GitFileSource(benchbuild.source.Git):
     def revision(self) -> str:
         return self.__revision
 
-    def version(
-        self, target_dir: str, version: str = self.revision
-    ) -> pb.LocalPath:
+    def version(self, target_dir: str, version: str = "") -> pb.LocalPath:
         """
         Fetches the defined files for a given version to the target directory.
 
@@ -1081,6 +1079,9 @@ class GitFileSource(benchbuild.source.Git):
         :param version:
         :return:
         """
+        if len(version) == 0:
+            version = self.revision
+
         prefix = benchbuild.source.base.target_prefix()
         flat_local = self.local.replace(os.sep, '-')
         file_lock = f".{flat_local}.lock"
