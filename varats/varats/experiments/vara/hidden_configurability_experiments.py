@@ -281,7 +281,17 @@ PATCH_VARIATIONS = {
         ),
         "alu_repartition": ("mem_factor", [x for x in range(3, 10, 1)]),
     },
-    "FastDownward": {},
+    "FastDownward": {
+        "extra_columns": ("extra_columns", range(1, 10)),
+        "max_distance":
+            ("max_distance", [2**x for x in range(1, 10) if 2**x != 32]),
+        "memory_padding": (
+            "memory_padding",
+            [25] + [x for x in range(50, 105, 5) if x != 75] + [150, 225, 300]
+        ),
+        "preconditions_to_test":
+            ("preconditions_to_test", [x for x in range(2, 11) if x != 5]),
+    },
     "libvpx": {
         "block_size_vp9_enc":
             ("block_size", [2**x for x in range(1, 7) if x != 4]),
