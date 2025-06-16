@@ -354,6 +354,15 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
         )
 
 
+def __get_project_binaries(project):
+    if project.name == "FastDownward":
+        return [
+            binary for binary in project.binaries if binary.name == "FDDriverPy"
+        ]
+
+    return project.binaries
+
+
 class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
     """Generates time report files for patched workloads."""
 
