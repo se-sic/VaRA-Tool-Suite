@@ -63,20 +63,16 @@ class TimeProjectWorkloads(OutputFolderStep):
                     "time_report", prj_command.command, self.__num, ".txt"
                 )
 
-                #print(pb_cmd.formulate())
-
                 run_cmd = time['-v', '-o', f'{run_report_name}',
                                pb_cmd.formulate()]
-                #print(run_cmd.formulate())
 
                 with cleanup(prj_command):
                     try:
-                        print(f"Running {run_cmd}")
-                        ret, out, err = bb.watch(run_cmd)()
-                        print(f"{ret=}")
-                        print(f"{out=}")
-                        print(f"{err=}")
+                        run_cmd()
                     except ProcessExecutionError as e:
+                        print(f"{e.stdout=}")
+                        print(f"{e.stderr=}")
+                        print(f"{e.retcode=}")
                         step_result = actions.StepResult.ERROR
 
         return step_result
