@@ -354,7 +354,7 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
         )
 
 
-def __get_project_binaries(project):
+def _get_project_binaries(project):
     if project.name == "FastDownward":
         return [
             binary for binary in project.binaries if binary.name == "FDDriverPy"
@@ -395,7 +395,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
         analysis_actions.append(actions.Compile(project))
 
-        for binary in project.binaries:
+        for binary in _get_project_binaries(project):
             if len(
                 workload_commands(
                     project, binary,
