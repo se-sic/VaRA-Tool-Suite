@@ -284,6 +284,9 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
         project.compiler_extension = compiler.RunCompiler(project, self) \
                                      << RunWLLVM() \
                                      << run.WithTimeout()
+        project.cflags += [
+            "-O2", "-fno-inline-functions", "-fno-omit-frame-pointer"
+        ]
 
         config_id = get_current_config_id(project)
         # Only consider the main/first binary
