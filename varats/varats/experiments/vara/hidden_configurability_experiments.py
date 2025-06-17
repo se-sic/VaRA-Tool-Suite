@@ -3,6 +3,7 @@ import textwrap
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
 import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup
 from benchbuild.utils import actions
@@ -282,7 +283,7 @@ PATCH_VARIATIONS = {
         "alu_repartition": ("mem_factor", [x for x in range(3, 10, 1)]),
     },
     "FastDownward": {
-        "extra_columns": ("extra_columns", range(1, 10)),
+        "extra_columns": ("extra_columns", [x for x in range(1, 10)]),
         "max_distance":
             ("max_distance", [2**x for x in range(1, 10) if 2**x != 32]),
         "memory_padding": (
@@ -329,8 +330,12 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
                     for prj_command in workload_commands(
-                        self.project, self._binary,
-                        [WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL]
+                        self.project,
+                        self._binary,
+                        [
+                            WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL,
+                            WorkloadCategory.MEDIUM
+                        ],
                     ):
                         time_report_file = reps_tmp_dir / create_workload_specific_filename(
                             "time_report", prj_command.command, rep, ".txt"
@@ -340,10 +345,11 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                             project=self.project
                         )
                         run_cmd = local["time"]["-v", "-o",
-                                                f"{time_report_file}", pb_cmd]
+                                                f"{time_report_file}",
+                                                pb_cmd.formulate()]
 
                         with cleanup(prj_command):
-                            run_cmd()
+                            bb.watch(run_cmd)()
 
         return StepResult.OK
 
@@ -398,8 +404,10 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
         for binary in _get_project_binaries(project):
             if len(
                 workload_commands(
-                    project, binary,
-                    [WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL]
+                    project, binary, [
+                        WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL,
+                        WorkloadCategory.MEDIUM
+                    ]
                 )
             ) == 0:
                 analysis_actions.append(
