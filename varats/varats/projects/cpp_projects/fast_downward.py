@@ -310,10 +310,8 @@ class FastDownward(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
-                SourceRoot("planning-benchmarks") /
-                "sokoban-sat08-strips-domain.pddl",
-                SourceRoot("planning-benchmarks") /
-                "sokoban-sat08-strips-p01.pddl",
+                "planning-benchmarks/sokoban-sat08-strips-domain.pddl",
+                "planning-benchmarks/sokoban-sat08-strips-p01.pddl",
                 "--search",
                 _FDConfigParams(),
                 label="sokoban-sat08-py"
@@ -330,10 +328,8 @@ class FastDownward(VProject, ReleaseProviderHook):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("FastDownward") / RSBinary("FDDriverPy"),
-                SourceRoot("planning-benchmarks") /
-                "data-network-opt18-strips-domain.pddl",
-                SourceRoot("planning-benchmarks") /
-                "data-network-opt18-strips-p05.pddl",
+                "planning-benchmarks/data-network-opt18-strips-domain.pddl",
+                "planning-benchmarks/data-network-opt18-strips-p05.pddl",
                 "--search",
                 _FDConfigParams(),
                 label="data-network-opt18-py"
@@ -482,6 +478,28 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         with local.cwd(version_source):
             verify_binaries(self)
+            # Create Symlink such that FD Python script works properly
+            local["mkdir"]("-p", "builds")
+            ln = local["ln"]
+            ln("-rsf", "build", "builds/release")
+
+        # Translate Planning problems into .sas files such that we can interact
+        # with them directly through the 'downward' binary
+        translate = local[version_source / "build/bin/translate/translate.py"]
+        planning_problems_dir = self.__PlanningFilesSource.version(
+            self.builddir
+        )
+        with local.cwd(planning_problems_dir):
+            for problem, inputs in self.__PlanningProblems.items():
+                inputs = [f.replace(os.sep, "-") for f in inputs]
+                bb.watch(translate)(*inputs, "--sas-file", f"{problem}.sas")
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        version_source = local.path(self.source_of(self.primary_source))
+
+        with local.cwd(version_source / "build"):
+            bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_release_revisions(
