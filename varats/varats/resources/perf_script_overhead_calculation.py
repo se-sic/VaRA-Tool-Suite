@@ -4,6 +4,7 @@ yaml-format to stdout."""
 from __future__ import print_function
 
 import os
+import pprint
 import sys
 import typing as tp
 from pathlib import Path
@@ -46,13 +47,14 @@ class FunctionData:
 irrelevant_comms = ["perf-exec", "time"]
 
 
-def is_irrelevant_comm(comm: str) -> bool:
-    if comm in irrelevant_comms:
+def is_irrelevant_comm(comm: tp.Union[str, None]) -> bool:
+    return comm is None or comm in irrelevant_comms
+
+
+def is_irrelevant_dso(dso: tp.Union[str, None]) -> bool:
+    if dso is None:
         return True
-    return False
 
-
-def is_irrelevant_dso(dso: str) -> bool:
     if dso.startswith("/lib") or dso.startswith("/usr/lib"):
         return True
 
@@ -66,6 +68,10 @@ def is_irrelevant_dso(dso: str) -> bool:
 
 sample_data: tp.Dict[str, FunctionData] = {}
 total_samples = 0
+processed_samples = 0
+skipped_samples = 0
+irrelevant_samples = 0
+missing_data_samples = 0
 
 
 def trace_begin() -> None:
@@ -74,6 +80,10 @@ def trace_begin() -> None:
 
 def trace_end() -> None:
     print(f"total_samples: {total_samples}")
+    print(f"processed_samples: {processed_samples}")
+    print(f"skipped_samples: {skipped_samples}")
+    print(f"missing_data_samples: {missing_data_samples}")
+    print(f"irrelevant_samples: {irrelevant_samples}")
     print("functions:")
     for func_data in sorted(
         sample_data.values(), key=lambda x: x.samples, reverse=True
@@ -87,12 +97,28 @@ def trace_end() -> None:
 
 def process_event(param_dict: tp.Dict[str, tp.Any]) -> None:
     global total_samples
+    global processed_samples
+    global skipped_samples
+    global irrelevant_samples
+    global missing_data_samples
+
+    total_samples += 1
 
     func_name = param_dict.get("symbol")
-    command = param_dict["comm"]
-    raw_dso = param_dict["dso"]
+    command = param_dict.get("comm")
+    raw_dso = param_dict.get("dso")
+    callchain = param_dict.get("callchain")
 
-    if (callchain := param_dict.get("callchain")):
+    # Ignore overhead of perf and gnu-time.
+    if is_irrelevant_comm(command):
+        skipped_samples += 1
+        return
+
+    processed_samples += 1
+
+    # Use callchain to attribute samples from system libraries to the dso
+    # under investigation.
+    if is_irrelevant_dso(raw_dso) and callchain is not None:
         for entry in callchain:
             entry_dso = entry.get("dso")
             entry_sym = entry.get("sym")
@@ -102,22 +128,20 @@ def process_event(param_dict: tp.Dict[str, tp.Any]) -> None:
                 func_name = entry_name
                 break
 
-    if func_name is None:
-        print(f"warning: unknown event format {param_dict}", file=sys.stderr)
+    if None in (func_name, raw_dso):
+        print(f"[WARNING] Skipping sample with missing data.", file=sys.stderr)
+        if os.environ.get("LOG_LEVEL", "WARNING").upper() == "DEBUG":
+            pprint.pp(param_dict, indent=2, compact=True, stream=sys.stderr)
+        missing_data_samples += 1
         return
 
-    dso = Path(raw_dso).name
-
-    # ignore overhead of perf and gnu-time
-    if is_irrelevant_comm(command):
-        return
-
-    total_samples += 1
-
-    # do not collect stats for system libs and kernel functions
+    # Do not collect stats for system libs and kernel functions.
     if is_irrelevant_dso(raw_dso):
+        irrelevant_samples += 1
         return
 
     if func_name not in sample_data:
+        dso = Path(raw_dso).name
         sample_data[func_name] = FunctionData(func_name, command, dso)
+
     sample_data[func_name].add_sample()
