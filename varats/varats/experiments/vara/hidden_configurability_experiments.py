@@ -25,7 +25,6 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     ZippedReportFolder,
 )
-from varats.experiment.steps.combinators import IfThenElse
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.workload_util import (
@@ -33,7 +32,6 @@ from varats.experiment.workload_util import (
     create_workload_specific_filename,
     WorkloadCategory,
 )
-from varats.experiments.base.just_test import PrintString
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
@@ -443,14 +441,14 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
             for patch in patches:
                 # Skip patches without any variations
-                if patch.shortname not in _PATCH_VARIATIONS[project.name]:
+                if patch.shortname not in PATCH_VARIATIONS[project.name]:
                     print(
                         f"Skipping patch {patch.shortname} for project "
                         f"{project.name} as it has no variations."
                     )
                     continue
 
-                arg_name, values = _PATCH_VARIATIONS[project.name][
+                arg_name, values = PATCH_VARIATIONS[project.name][
                     patch.shortname]
 
                 for value in values:
@@ -459,22 +457,14 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     )
                     patch_steps.append(ReCompile(project))
                     patch_steps.append(
-                        IfThenElse(
+                        TimePatchedWorkloadsStep(
                             project,
-                            PrintString(project, "Skipping test suite"),
-                            TimePatchedWorkloadsStep(
-                                project,
-                                binary,
-                                file_name=MPRTimeWLAggregate.
-                                create_patched_report_name(patch, binary.name) +
-                                f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}",
-                                report_file_ending=".txt",
-                                reps=NUM_REPETITIONS
-                            ),
-                            PrintString(
-                                project,
-                                f"Testsuite failed for path {patch.shortname} with {arg_name}={value}"
-                            ),
+                            binary,
+                            file_name=MPRTimeWLAggregate.
+                            create_patched_report_name(patch, binary.name) +
+                            f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}",
+                            report_file_ending=".txt",
+                            reps=NUM_REPETITIONS
                         )
                     )
 
