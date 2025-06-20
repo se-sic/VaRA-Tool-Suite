@@ -5,7 +5,7 @@ from pathlib import Path
 
 import benchbuild as bb
 import benchbuild.extensions as bb_ext
-from benchbuild.command import cleanup
+from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Echo
 from benchbuild.utils.cmd import git
@@ -38,6 +38,7 @@ from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
 )
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.report import ReportSpecification
@@ -310,9 +311,27 @@ PATCH_VARIATIONS = {
     },
 }
 
+_PROJECT_WORKLOADS = {
+    "DunePerfRegression": [
+        "poisson-yasp-q2-3d", "poisson-alugrid", "poisson-non-separated"
+    ],
+    "FastDownward": ["data-network-opt18-py", "sokoban-sat08-py"],
+    "libvpx": ["nocturne-1080p"],
+    "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
+    "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"]
+}
+
 
 def variation_value_to_str(value: tp.Any) -> str:
     return str(value).replace('.', '')
+
+
+def _filter_workloads(project: VProject,
+                      binary: ProjectBinaryWrapper) -> tp.List[ProjectCommand]:
+    return [
+        cmd for cmd in workload_commands(project, binary, [])
+        if cmd.command.label in _PROJECT_WORKLOADS[project.name]
+    ]
 
 
 class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
@@ -329,13 +348,8 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
             zip_tmp_dir = tmp_dir / self._file_name
             with ZippedReportFolder(zip_tmp_dir) as reps_tmp_dir:
                 for rep in range(0, self._reps):
-                    for prj_command in workload_commands(
-                        self.project,
-                        self._binary,
-                        [
-                            WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL,
-                            WorkloadCategory.MEDIUM
-                        ],
+                    for prj_command in _filter_workloads(
+                        self.project, self._binary
                     ):
                         time_report_file = reps_tmp_dir / create_workload_specific_filename(
                             "time_report", prj_command.command, rep, ".txt"
@@ -429,14 +443,14 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
 
             for patch in patches:
                 # Skip patches without any variations
-                if patch.shortname not in PATCH_VARIATIONS[project.name]:
+                if patch.shortname not in _PATCH_VARIATIONS[project.name]:
                     print(
                         f"Skipping patch {patch.shortname} for project "
                         f"{project.name} as it has no variations."
                     )
                     continue
 
-                arg_name, values = PATCH_VARIATIONS[project.name][
+                arg_name, values = _PATCH_VARIATIONS[project.name][
                     patch.shortname]
 
                 for value in values:
