@@ -9,7 +9,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import WorkloadCategory, RSBinary
+from varats.experiment.workload_util import (
+    WorkloadCategory,
+    RSBinary,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -54,21 +58,29 @@ class Libzmq(VProject):
         'libsodium-dev', 'pkg-config'
     )
 
+    COUNT_ARGS = [f"{2**x}" for x in range(3, 20)]
+
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("libzmq_git") / RSBinary("inproc_thr"),
-                message_size,
+                ConfigParams(),
                 "10000000",
-                label=f"bench-inproc-thr-{message_size}"
-            ) for message_size in [2**e for e in range(3, 20)]
-        ] + [
+                label=f"bench-inproc-thr",
+                requires_any_args=set(COUNT_ARGS),
+            ),
             VCommand(
                 SourceRoot("libzmq_git") / RSBinary("inproc_lat"),
-                message_size,
+                ConfigParams(),
                 "1000000",
-                label=f"bench-inproc-lat-{message_size}"
-            ) for message_size in [2**e for e in range(3, 20)]
+                label=f"bench-inproc-lat",
+                requires_any_args=set(COUNT_ARGS),
+            ),
+            VCommand(
+                SourceRoot("libzmq_git") / RSBinary("benchmark_radix_tree"),
+                label="bench-radix-tree",
+                requires_all_args={"radix"},
+            )
         ]
     }
 
