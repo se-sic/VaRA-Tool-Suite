@@ -125,7 +125,7 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
     """
 
     NAME = "RunWorkloads"
-    NUM_REPETITIONS = 3
+    NUM_REPETITIONS = 10
 
     REPORT_SPEC = ReportSpecification(MPRBinAggregate)
 
