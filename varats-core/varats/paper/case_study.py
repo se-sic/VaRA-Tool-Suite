@@ -534,9 +534,15 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                         file_path
                     ).ids()
                 else:
-                    config_ids = [
-                        int(x) for x in raw_hash_id_tuple['config_ids']
-                    ]
+                    config_ids = []
+                    for x in raw_hash_id_tuple['config_ids']:
+                        if isinstance(x, str):
+                            parts = x.split("..")
+                            begin = int(parts[0])
+                            end = int(parts[1])
+                            config_ids.extend(range(begin, end + 1))
+                        else:
+                            config_ids.append(int(x))
             else:
                 config_ids = []
 
