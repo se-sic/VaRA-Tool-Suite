@@ -36,6 +36,7 @@ from varats.report.report import (
     ReportAggregate,
     FileStatusExtension,
 )
+from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -153,7 +154,10 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
 
         result_filepath = create_new_success_result_filepath(
             self.get_handle(),
-            self.get_handle().report_spec().main_report, project, fake_binary
+            self.get_handle().report_spec().main_report,
+            project,
+            fake_binary,
+            config_id=get_current_config_id(project),
         )
 
         patch_provider = PatchProvider.get_provider_for_project(type(project))
@@ -179,7 +183,9 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
                     file_name=MPRBinAggregate.
                     create_patched_report_name(patch, binary.name) +
                     f"_hwm={hwm}"
-                ) for binary in project.binaries
+                )
+                for binary in project.binaries
+                if binary.type == BinaryType.EXECUTABLE
             ])
             patch_steps.append(RevertPatch(project, patch, hwm=hwm))
 
@@ -197,7 +203,9 @@ class RunWorkloads(FeatureExperiment, shorthand="RWL"):
                         file_name=MPRBinAggregate.create_baseline_report_name(
                             binary.name
                         )
-                    ) for binary in project.binaries
+                    )
+                    for binary in project.binaries
+                    if binary.type == BinaryType.EXECUTABLE
                 ] + patch_steps
             )
         )
