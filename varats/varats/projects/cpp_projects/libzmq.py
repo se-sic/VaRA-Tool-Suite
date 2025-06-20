@@ -23,6 +23,7 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
@@ -50,7 +51,8 @@ class Libzmq(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        FeatureSource()
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
