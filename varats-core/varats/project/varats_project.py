@@ -13,7 +13,6 @@ from benchbuild.project import Project
 
 from varats.project.project_domain import ProjectDomains
 from varats.utils.git_util import ShortCommitHash
-from varats.utils.testsuite_utils import TestPassingStatus
 
 if tp.TYPE_CHECKING:
     # pylint: disable=W0611
@@ -77,7 +76,7 @@ class SupportsTestSuites(Protocol):
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Dict[str, TestPassingStatus]:
+    ) -> bool:
         """
         Run the test suite for this project.
 

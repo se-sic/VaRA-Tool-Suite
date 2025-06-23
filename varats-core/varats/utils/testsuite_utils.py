@@ -2,20 +2,10 @@
 import json
 import re
 import typing as tp
-from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-import junitparser
 from plumbum import local, ProcessExecutionError
-
-
-class TestPassingStatus(Enum):
-    SUCCESS = "success"
-    FAILURE = "failure"
-    SKIPPED = "skipped"
-    TIMEOUT = "timeout"
-    UNKNOWN = "unknown"
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
@@ -45,7 +35,7 @@ def ctest_run_testsuite(
     build_dir: Path,
     test_report_path: tp.Optional[Path] = None,
     tests_to_run: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Dict[str, TestPassingStatus]:
+) -> bool:
     """
     Run a test suite using ctest.
 
@@ -63,10 +53,8 @@ def ctest_run_testsuite(
 
     with local.cwd(build_dir):
         ctest_cmd = local["ctest"]
-        if not test_report_path:
-            test_report_path = build_dir / "junit-result.xml"
-
-        ctest_cmd = ctest_cmd["--output-junit", test_report_path]
+        if test_report_path:
+            ctest_cmd = ctest_cmd["--output-junit", test_report_path]
 
         if tests_to_run:
             test_regex = '|'.join([re.escape(name) for name in tests_to_run])
@@ -76,16 +64,4 @@ def ctest_run_testsuite(
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
-        test_results_xml = junitparser.JUnitXml.fromfile(test_report_path)
-        testing_results = {}
-
-        for test in test_results_xml:
-            if test.is_skipped:
-                status = TestPassingStatus.SKIPPED
-            elif test.is_passed:
-                status = TestPassingStatus.SUCCESS
-            else:
-                status = TestPassingStatus.FAILURE
-            testing_results[test.name] = status
-
-        return testing_results
+        return bool(ret_code == 0)
