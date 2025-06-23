@@ -7,14 +7,15 @@ import benchbuild as bb
 import benchbuild.extensions as bb_ext
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult, Echo
+from benchbuild.utils.actions import StepResult, Echo, Step
 from benchbuild.utils.cmd import git
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
     MPRTimeWLAggregate,
 )
+from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
@@ -25,8 +26,14 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     ZippedReportFolder,
 )
+from varats.experiment.steps.combinators import OutputAdapter
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
+from varats.experiment.steps.testsuite import (
+    RunTestSuite,
+    PrepareTestSuite,
+    BuildTestSuite,
+)
 from varats.experiment.workload_util import (
     workload_commands,
     create_workload_specific_filename,
@@ -36,9 +43,10 @@ from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
 )
-from varats.project.project_util import ProjectBinaryWrapper
-from varats.project.varats_project import VProject
+from varats.project.project_util import ProjectBinaryWrapper, BinaryType
+from varats.project.varats_project import VProject, SupportsTestSuites
 from varats.provider.patch.patch_provider import PatchProvider
+from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
 from varats.revision.revisions import get_processed_revisions_files
 from varats.tools.research_tools.vara import VaRA
@@ -486,6 +494,119 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     ] + patch_steps
                 )
             )
+
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+
+
+class MPTextReport(
+    MultiPatchReport,
+    shorthand="MP" + PlainTextReport.shorthand(),
+    file_type="zip"
+):
+    """Aggregate for MultiPatchReports that contain WLTimeReports."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, PlainTextReport)
+
+
+class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
+
+    NAME = "TestPatchVariations"
+    REPORT_SPEC = ReportSpecification(MPTextReport)
+
+    def actions_for_project(self,
+                            project: VProject) -> tp.MutableSequence[Step]:
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = bb_ext.run.RuntimeExtension(project, self)
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = bb_ext.compiler.RunCompiler(project, self) \
+                                     << bb_ext.run.WithTimeout()
+
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        patch_provider = PatchProvider.get_provider_for_project(type(project))
+        patches = patch_provider.get_patches_for_revision(
+            ShortCommitHash(project.version_of_primary)
+        )["hidden-config"]
+
+        print(f"{patches=}")
+
+        analysis_actions = get_config_patch_steps(project)
+
+        analysis_actions.append(PrepareTestSuite(project))
+        analysis_actions.append(BuildTestSuite(project))
+
+        patch_steps = []
+        fake_binary = ProjectBinaryWrapper(
+            "TESTSUITE", Path(), BinaryType.EXECUTABLE
+        )
+
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), MPTextReport, project, fake_binary,
+            get_current_config_id(project)
+        )
+
+        def adapt_test_step_output(test_step: RunTestSuite, tmp_dir: Path):
+            test_step.set_output_path(tmp_dir / test_step.output_path.name)
+
+        for patch in patches:
+            # Skip patches without any variations
+            if patch.shortname not in PATCH_VARIATIONS[project.name]:
+                print(
+                    f"Skipping patch {patch.shortname} for project "
+                    f"{project.name} as it has no variations."
+                )
+                continue
+
+            arg_name, values = PATCH_VARIATIONS[project.name][patch.shortname]
+
+            for value in values:
+                patch_steps.append(
+                    ApplyPatch(project, patch, **{arg_name: value})
+                )
+                patch_steps.append(BuildTestSuite(project))
+                patch_steps.append(
+                    OutputAdapter(
+                        project,
+                        RunTestSuite(
+                            project,
+                            Path(
+                                MPTextReport.
+                                create_patched_report_name(patch, "testsuite") +
+                                f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}"
+                            )
+                        ), adapt_test_step_output
+                    )
+                )
+
+                patch_steps.append(
+                    RevertPatch(project, patch, **{arg_name: value})
+                )
+
+        analysis_actions.append(
+            ZippedExperimentSteps(
+                result_file, [
+                    OutputAdapter(
+                        project,
+                        RunTestSuite(
+                            project,
+                            Path(
+                                MultiPatchReport.
+                                create_baseline_report_name("testsuite")
+                            )
+                        ), adapt_test_step_output
+                    )
+                ] + patch_steps
+            )
+        )
 
         analysis_actions.append(actions.Clean(project))
 
