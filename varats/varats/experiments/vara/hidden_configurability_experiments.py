@@ -26,7 +26,7 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     ZippedReportFolder,
 )
-from varats.experiment.steps.combinators import OutputAdapter
+from varats.experiment.steps.combinators import OutputAdapter, AlwaysOk
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.experiment.steps.recompile import ReCompile
 from varats.experiment.steps.testsuite import (
@@ -521,9 +521,6 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = bb_ext.run.RuntimeExtension(project, self)
-
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = bb_ext.compiler.RunCompiler(project, self) \
                                      << bb_ext.run.WithTimeout()
@@ -536,8 +533,6 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
         patches = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
         )["hidden-config"]
-
-        print(f"{patches=}")
 
         analysis_actions = get_config_patch_steps(project)
 
@@ -574,16 +569,20 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                 )
                 patch_steps.append(BuildTestSuite(project))
                 patch_steps.append(
-                    OutputAdapter(
+                    AlwaysOk(
                         project,
-                        RunTestSuite(
+                        OutputAdapter(
                             project,
-                            Path(
-                                MPTextReport.
-                                create_patched_report_name(patch, "testsuite") +
-                                f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}"
-                            )
-                        ), adapt_test_step_output
+                            RunTestSuite(
+                                project,
+                                Path(
+                                    MPTextReport.create_patched_report_name(
+                                        patch, "testsuite"
+                                    ) +
+                                    f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}"
+                                )
+                            ), adapt_test_step_output
+                        )
                     )
                 )
 
@@ -594,15 +593,18 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
         analysis_actions.append(
             ZippedExperimentSteps(
                 result_file, [
-                    OutputAdapter(
+                    AlwaysOk(
                         project,
-                        RunTestSuite(
+                        OutputAdapter(
                             project,
-                            Path(
-                                MultiPatchReport.
-                                create_baseline_report_name("testsuite")
-                            )
-                        ), adapt_test_step_output
+                            RunTestSuite(
+                                project,
+                                Path(
+                                    MultiPatchReport.
+                                    create_baseline_report_name("testsuite")
+                                )
+                            ), adapt_test_step_output
+                        )
                     )
                 ] + patch_steps
             )
