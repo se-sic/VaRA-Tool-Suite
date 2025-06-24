@@ -389,7 +389,8 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
             f"-fvara-highlight-function={','.join(hot_funcs)}"
         ])
         project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fuse-ld=lld"
+            "-O1", "-Xclang", "-disable-llvm-passes", "-Xclang",
+            "-disable-llvm-verifier", "-g0", "-fuse-ld=lld"
         ]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
@@ -404,7 +405,7 @@ class PerformanceInteractionExperiment(VersionExperiment, shorthand="PIE"):
         analysis_actions += generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
-            use_blame_server=True,
+            use_blame_server=False,
             extraction_error_handler=create_default_compiler_error_handler(
                 self.get_handle(), project, self.REPORT_SPEC.main_report
             )
@@ -445,7 +446,8 @@ class PerformanceInteractionExperimentSynthetic(
             f"-fvara-highlight-function={','.join(hot_funcs)}"
         ])
         project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0", "-fuse-ld=lld"
+            "-O1", "-Xclang", "-disable-llvm-passes", "-Xclang",
+            "-disable-llvm-verifier", "-g0", "-fuse-ld=lld"
         ]
         bc_file_extensions = [
             BCFileExtensions.NO_OPT,
@@ -511,7 +513,7 @@ class PerformanceInteractionExperimentSynthetic(
                     project,
                     bc_file_extensions,
                     applied_patches,
-                    use_blame_server=True,
+                    use_blame_server=False,
                     extraction_error_handler=
                     create_default_compiler_error_handler(
                         self.get_handle(), project, self.REPORT_SPEC.main_report
