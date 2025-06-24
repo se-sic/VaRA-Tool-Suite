@@ -520,6 +520,9 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                             project: VProject) -> tp.MutableSequence[Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = bb_ext.run.RuntimeExtension(project, self) \
+                                    << bb_ext.time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = bb_ext.compiler.RunCompiler(project, self) \
