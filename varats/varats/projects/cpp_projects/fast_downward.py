@@ -384,8 +384,11 @@ class FastDownward(VProject, ReleaseProviderHook):
         with local.cwd(version_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 build_script = benchbuild.utils.cmd["./build.py"]
+                # FD Tests require both release and debug to be built
                 bb.watch(build_script
-                        )("--all", "-j", get_number_of_jobs(bb_cfg()))
+                        )("release", "-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(build_script
+                        )("debug", "-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self) -> None:
         """
