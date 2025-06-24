@@ -4,7 +4,6 @@ import re
 import typing as tp
 from pathlib import Path
 
-import benchbuild
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot, ArgsToken
 from benchbuild.utils.cmd import cmake, mkdir, pytest
@@ -362,7 +361,10 @@ class FastDownward(VProject, ReleaseProviderHook):
             BinaryType.EXECUTABLE,
             override_binary_name="FDDriverPy"
         )
-        binary_map.specify_binary('build/bin/downward', BinaryType.EXECUTABLE)
+
+        binary_map.specify_binary(
+            'builds/release/bin/downward', BinaryType.EXECUTABLE
+        )
 
         return binary_map[revision]
 
@@ -381,14 +383,19 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
-        with local.cwd(version_source):
-            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                build_script = benchbuild.utils.cmd["./build.py"]
-                # FD Tests require both release and debug to be built
-                bb.watch(build_script
-                        )("release", "-j", get_number_of_jobs(bb_cfg()))
-                bb.watch(build_script
-                        )("debug", "-j", get_number_of_jobs(bb_cfg()))
+
+        mkdir("-p", version_source / "builds/release")
+        mkdir("-p", version_source / "builds/debug")
+
+        build_types = ["Release", "Debug"]
+        for build_type in build_types:
+            with local.cwd(version_source / "builds" / build_type.lower()):
+                with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                    bb.watch(cmake
+                            )("../../src", f"-DCMAKE_BUILD_TYPE={build_type}")
+
+                bb.watch(cmake
+                        )("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self) -> None:
         """
@@ -471,24 +478,18 @@ class FastDownward(VProject, ReleaseProviderHook):
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        mkdir("-p", version_source / "build")
+        mkdir("-p", version_source / "builds/release")
 
-        with local.cwd(version_source / "build"):
+        with local.cwd(version_source / "builds/release"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("../src")
+                bb.watch(cmake)("../../src", f"-DCMAKE_BUILD_TYPE={build_type}")
 
             bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
-        with local.cwd(version_source):
-            verify_binaries(self)
-            # Create Symlink such that FD Python script works properly
-            local["mkdir"]("-p", "builds")
-            ln = local["ln"]
-            ln("-rsf", "build", "builds/release")
-
         # Translate Planning problems into .sas files such that we can interact
         # with them directly through the 'downward' binary
-        translate = local[version_source / "build/bin/translate/translate.py"]
+        translate = local[version_source /
+                          "builds/release/bin/translate/translate.py"]
         planning_problems_dir = self.__PlanningFilesSource.version(
             self.builddir
         )
@@ -501,7 +502,7 @@ class FastDownward(VProject, ReleaseProviderHook):
         """Recompile the project."""
         version_source = local.path(self.source_of(self.primary_source))
 
-        with local.cwd(version_source / "build"):
+        with local.cwd(version_source / "builds/release"):
             bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
