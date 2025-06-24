@@ -118,3 +118,22 @@ class OutputAdapter(OutputFolderStep):
 
     def __str__(self, indent: int = 0) -> str:
         return str(self.__step) + "(Wrapped)"
+
+
+class AlwaysOk(OutputFolderStep):
+    """Returns OK regardless of the actual child step."""
+
+    def __init__(self, project: Project, step: ProjectStep) -> None:
+        super().__init__(project)
+        self.__step = step
+
+    def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+        _run_with_output_if_necessary(tmp_dir, self.__step)
+        return StepResult.OK
+
+    def __call__(self) -> StepResult:
+        self.__step()
+        return StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return str(self.__step) + "(Always OK)"
