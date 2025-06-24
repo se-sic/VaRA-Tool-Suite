@@ -1,5 +1,6 @@
 """Project file for libvpx."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
@@ -114,3 +115,77 @@ class Libvpx(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("john_koleszar", "libvpx")]
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the test environment."""
+        libvpx_source = local.path(self.source_of_primary)
+        test_source = libvpx_source / "build_tests"
+        test_source.mkdir(exist_ok=True)
+
+        clang = bb.compiler.cc(self)
+        cxx = bb.compiler.cxx(self)
+        with local.cwd(test_source):
+            with local.env(CC=str(clang), CXX=str(cxx)):
+                configure = local["../configure"]["--disable-examples",
+                                                  "--disable-tools",
+                                                  "--disable-docs",
+                                                  "--enable-unit-tests"]
+                # TODO: See how to include perf tests as workloads?
+                #"--enable-decode-perf-tests",
+                #"--enable-encode-perf-tests"]
+
+                bb.watch(configure)()
+
+    def build_tests(self):
+        libvpx_source = local.path(self.source_of_primary)
+        test_source = libvpx_source / "build_tests"
+
+        with local.cwd(test_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("testdata", "-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        test_list = []
+
+        test_libvpx = local.path(self.source_of_primary) / "build_tests"
+        output = test_libvpx("--gtest_list_tests")
+
+        current_prefix = ""
+        for line in output.splitlines():
+            if line.endswith("."):
+                current_prefix = line
+                continue
+
+            test_name = line.split("#", maxsplit=1)[0].strip()
+
+            test_list.append(current_prefix + test_name)
+
+        return test_list
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        if tests_to_run is None:
+            tests_to_run = []
+        excluded_tests = [
+            "*TestLarge*", "*/LevelTest.*Large*",
+            "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
+        ]
+
+        gtest_filter = ":".join(tests_to_run)
+
+        gtest_filter += "-" + ":".join(excluded_tests)
+
+        test_libvpx = local.path(self.source_of_primary) / "build_tests"
+
+        with local.cwd(test_libvpx):
+            test_cmd = local["./test_libvpx"][f"--gtest_filter={gtest_filter}"]
+            if test_report_path:
+                test_report_path = test_report_path.with_suffix(".json")
+                test_cmd = test_cmd[
+                    f"--gtest_output=json:{test_report_path.absolute()}"]
+            ret_code, _, _ = bb.watch(test_cmd)()
+
+        return bool(ret_code == 0)
