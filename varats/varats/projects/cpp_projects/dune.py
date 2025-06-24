@@ -240,33 +240,36 @@ class DunePerfRegression(VProject):
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
+
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
         with local.cwd(version_source):
-            dunecontrol = cmd['./dune-common/bin/dunecontrol']
-
             with local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
                 CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS)
             ):
+                dunecontrol = cmd['./dune-common/bin/dunecontrol']
                 bb.watch(dunecontrol["cmake"])()
 
     def build_tests(self) -> None:
         """Build the tests for all subprojects."""
+        print("Running Build Tests for Dune...")
         version_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(version_source):
             dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
-        for module in DunePerfRegression.__DUNE_MODULES:
-            if module == "dune-pdelab":
-                # skip the pdalab module as building tests fails
-                continue
-            bb.watch(
-                dunecontrol[f"--only={module}", "bexec", "make", "build_tests"]
-            )()
+            for module in DunePerfRegression.__DUNE_MODULES:
+                print(f"Running for module {module}...")
+                if module == "dune-pdelab":
+                    # skip the pdelab module as building tests fails
+                    continue
+                bb.watch(
+                    dunecontrol[f"--only={module}", "bexec", "make",
+                                "build_tests"]
+                )()
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
