@@ -5,7 +5,7 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper.paper_config import PaperConfigSpecificGit
@@ -81,6 +81,10 @@ class Libvpx(VProject):
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
+        # libvpx_source = local.path(self.source_of_primary)
+        #
+        # with local.cwd(libvpx_source):
+        #     bb.watch(make)("test")
         libvpx_source = local.path(self.source_of_primary)
 
         self.cflags += ["-fPIC"]
@@ -89,18 +93,32 @@ class Libvpx(VProject):
         with local.cwd(libvpx_source):
             with local.env(CC=str(clang)):
                 bb.watch(local["./configure"])()
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self) -> None:
         """Build the tests."""
         libvpx_source = local.path(self.source_of_primary)
 
         with local.cwd(libvpx_source):
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("test")
 
     def get_test_names(self) -> tp.Iterable[str]:
-        """Get the test names."""
-        build_dir = local.path(self.source_of_primary)
-        return ctest_get_test_names(build_dir)
+        """Get the test names
+            Returns:
+                A list of test names available in the test directory.
+        """
+        libvpx_source = local.path(self.source_of_primary)
+
+        # ls | grep 'test\.cc$'
+        test_names_cmd = local["ls"]["test"]["|"]["grep"]["'test\\.cc$'"]
+
+        try:
+            with local.cwd(libvpx_source):
+                test_names = test_names_cmd()
+        except ProcessExecutionError:
+            return []
+
+        return test_names.split("\n")
 
     def run_testsuite(
         self,
@@ -108,5 +126,6 @@ class Libvpx(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
-        build_dir = local.path(self.source_of_primary)
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        # build_dir = local.path(self.source_of_primary)
+        # return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        pass
