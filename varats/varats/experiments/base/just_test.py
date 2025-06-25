@@ -26,30 +26,6 @@ from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
 
-class PrintString(actions.ProjectStep):  # type: ignore
-    """
-    Step for testing.
-
-    Prints a specified string.
-    """
-
-    NAME = "PrintString"
-    DESCRIPTION = "Prints a string."
-
-    project: VProject
-
-    def __init__(self, project: Project, message: str):
-        super().__init__(project=project)
-        self.__message = message
-
-    def __call__(self) -> actions.StepResult:
-        print(self.__message)
-        return StepResult.OK
-
-    def __str__(self, indent: int = 0) -> str:
-        return f"* Print: '{self.__message}'"
-
-
 class JustTest(VersionExperiment, shorthand="JT"):
     """Generates empty report file."""
 
