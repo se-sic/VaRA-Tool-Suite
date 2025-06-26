@@ -1,5 +1,5 @@
 """Git related project steps."""
-
+import logging
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -10,6 +10,8 @@ from plumbum import ProcessExecutionError
 import varats.utils.git_commands as git
 from varats.project.varats_project import VProject
 from varats.utils.git_util import CommitHash, RepositoryHandle
+
+LOG = logging.Logger(__name__)
 
 
 class GitAdd(ProjectStep):
@@ -64,7 +66,8 @@ class GitCommit(ProjectStep):
                 RepositoryHandle(Path(self.project.source_of_primary)),
                 self.__message, self.__allow_empty
             )
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status
@@ -93,7 +96,8 @@ class GitCheckout(ProjectStep):
                 RepositoryHandle(Path(self.project.source_of_primary)),
                 self.__commit
             )
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status

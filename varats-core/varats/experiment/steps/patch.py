@@ -1,3 +1,4 @@
+import logging
 import textwrap
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import Patch
 from varats.utils.git_commands import apply_patch, revert_patch
 from varats.utils.git_util import RepositoryHandle
+
+LOG = logging.Logger(__name__)
 
 
 class ApplyPatch(actions.ProjectStep):
@@ -33,7 +36,8 @@ class ApplyPatch(actions.ProjectStep):
                 self.__patch.path
             )
 
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status
@@ -67,7 +71,8 @@ class RevertPatch(actions.ProjectStep):
                 self.__patch.path
             )
 
-        except ProcessExecutionError:
+        except ProcessExecutionError as e:
+            LOG.error(e)
             self.status = StepResult.ERROR
 
         return self.status
