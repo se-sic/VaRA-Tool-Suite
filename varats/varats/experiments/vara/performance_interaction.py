@@ -69,6 +69,8 @@ from varats.utils.git_util import (
     FullCommitHash,
     get_all_revisions_between,
     get_submodule_update_commits,
+    get_head_commit,
+    RepositoryHandle,
 )
 
 if tp.TYPE_CHECKING:
@@ -302,36 +304,37 @@ class PerfInterReportGenerationSynth(OutputFolderStep):
         result_file: str,
         experiment_handle: ExperimentHandle,
         patches: tp.Optional[tp.List[Patch]] = None,
-        interaction_filter: InteractionFilter = SingleCommitFilter(
-            commit_hash=UNCOMMITTED_COMMIT_HASH.hash
-        )
     ):
         super().__init__(project=project)
         self.__binary = binary
         self.__result_file = result_file
         self.__experiment_handle = experiment_handle
         self.__patches = patches
-        self.__interaction_filter = interaction_filter
 
     def call_with_output_folder(self, tmp_dir: Path) -> actions.StepResult:
-        filter_file_path = Path(
-            self.project.source_of_primary
-        ).parent / "interaction_filter.yaml"
+        repo = RepositoryHandle(Path(self.project.source_of_primary))
+        head = get_head_commit(repo)
+        interaction_filter = SingleCommitFilter(commit_hash=head.hash)
+
+        filter_file_path = repo.worktree_path.parent / "interaction_filter.yaml"
         with filter_file_path.open("w") as filter_file:
-            version_header = self.__interaction_filter.getVersionHeader(
-            ).get_dict()
-            yaml.dump_all([version_header, self.__interaction_filter],
-                          filter_file)
+            version_header = interaction_filter.getVersionHeader().get_dict()
+            yaml.dump_all([version_header, interaction_filter], filter_file)
 
         opt_params = [
-            "--enable-new-pm=0", "-vara-PTFDD", "-vara-FBFD", "-vara-HD",
-            "-vara-BD", "-vara-PIR", "-vara-init-commits", "-vara-rewriteMD",
-            "-vara-git-mappings=" + ",".join([
-                f'{repo_name}:{repo.repo_path}' for repo_name, repo in
-                get_local_project_repos(self.project.name).items()
-            ]), "-vara-use-phasar",
+            "--enable-new-pm=0",
+            "-vara-PTFDD",
+            "-vara-FBFD",
+            "-vara-HD",
+            "-vara-BD",
+            "-vara-PIR",
+            "-vara-init-commits",
+            "-vara-rewriteMD",
+            "-vara-use-phasar",
             f"-vara-cf-interaction-filter={filter_file_path}",
             f"-vara-report-outfile={tmp_dir / self.__result_file}",
+            # TODO: cached bc files from previous runs (probably?) won't work
+            #       because commit hashes from patches are not stable.
             get_cached_bc_file_path(
                 self.project, self.__binary, [
                     BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
@@ -505,8 +508,10 @@ class PerformanceInteractionExperimentSynthetic(
                 )
 
                 # apply change patch
-                patch_steps.append(ApplyPatch(project, change_patch))
                 applied_patches.append(change_patch)
+                patch_steps.append(ApplyPatch(project, change_patch))
+                patch_steps.append(GitAdd(project, "-u"))
+                patch_steps.append(GitCommit(project, message="Change patch."))
 
                 # experiment steps
                 patch_steps += generate_basic_blame_experiment_actions(
@@ -528,7 +533,6 @@ class PerformanceInteractionExperimentSynthetic(
                         ), self.get_handle(), applied_patches
                     )
                 )
-                patch_steps.append(RevertPatch(project, change_patch))
 
                 # checkout original project revision
                 patch_steps.append(
