@@ -576,7 +576,8 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
 
 
 def load_configuration_map_from_case_study_file(
-    file_path: Path, concrete_config_type: tp.Type[Configuration]
+    file_path: Path,
+    concrete_config_type: tp.Optional[tp.Type[Configuration]] = None
 ) -> ConfigurationMap:
     """
     Load a configuration map from a case-study file.
@@ -597,8 +598,12 @@ def load_configuration_map_from_case_study_file(
     try:
         while True:
             document = next(documents)
+            raw_config_type = document.get("config_type", None)
 
-            if document["config_type"] == concrete_config_type.__name__:
+            if raw_config_type is not None and (
+                concrete_config_type is None or
+                raw_config_type == concrete_config_type.__name__
+            ):
                 break
 
         return create_configuration_map_from_yaml_doc(
