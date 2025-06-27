@@ -5,10 +5,12 @@ import re
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.project import Project
 from benchbuild.utils import actions
+from benchbuild.utils.actions import ProjectStep
 from benchbuild.utils.cmd import perf
 from plumbum import local
 
@@ -30,7 +32,7 @@ from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
-INTERVAL = 100
+INTERVAL = 10
 
 
 def fix_json_format(file_path: Path) -> None:
@@ -45,7 +47,7 @@ def fix_json_format(file_path: Path) -> None:
                 json_obj = json.loads(fixed_line)
                 fixed_data.append(json_obj)
             except json.JSONDecodeError as e:
-                print(f"Failed to decode JSON: {e} in line: {fixed_line}")
+                #print(f"Failed to decode JSON: {e} in line: {fixed_line}")
                 continue
 
     with open(file_path, "w") as file:
@@ -62,7 +64,15 @@ class PerfStat(OutputFolderStep):
 
     # TODO: Maybe we want to make this a bit more flexible by reading these from
     # a text file that resides somewhere e.g. in the paper config folder.
-    METRICS = ["CPU_Utilization", "DRAM_BW_Use", "L1MPKI", "L2MPKI", "L3MPKI"]
+    METRICS = [
+        "branch_misprediction_ratio", "all_l2_cache_hits",
+        "all_l2_cache_misses", "ic_fetch_miss_ratio",
+        "op_cache_fetch_miss_ratio"
+    ]
+    EVENTS = [
+        "branch-misses", "branches", "l3_cache_accesses", "l3_misses",
+        "L1-dcache-loads", "L1-dcache-load-misses"
+    ]
 
     def __init__(
         self, project: Project, num: int, binary: ProjectBinaryWrapper
@@ -79,21 +89,25 @@ class PerfStat(OutputFolderStep):
 
         with local.cwd(self.project.builddir):
             for prj_command in workload_commands(
-                self.project, self.__binary,
-                [WorkloadCategory.EXAMPLE, WorkloadCategory.MEDIUM]
+                self.project, self.__binary, [
+                    WorkloadCategory.EXAMPLE, WorkloadCategory.SMALL,
+                    WorkloadCategory.MEDIUM
+                ]
             ):
-                pb_cmd = prj_command.command.as_plumbum(project=self.project)
-
                 run_report_name = tmp_dir / create_workload_specific_filename(
                     "perf_stat", prj_command.command, self.__num, ".json"
                 )
 
-                run_cmd = perf['stat', f'-I {INTERVAL}', "-a", '-j',
-                               f"--metrics={','.join(self.METRICS)}", '-o',
-                               f'{run_report_name}', pb_cmd]
+                perf_cmd = perf['stat', f'-I {INTERVAL}', '-j',
+                                f"--metrics={','.join(self.METRICS)}",
+                                f"--event={','.join(self.EVENTS)}", '-o',
+                                f'{run_report_name}']
 
                 with cleanup(prj_command):
-                    run_cmd()
+                    run_cmd = prj_command.command.as_plumbum_wrapped_with(
+                        perf_cmd, project=self.project
+                    )
+                    bb.watch(run_cmd)()
 
                 fix_json_format(run_report_name)
 
@@ -127,24 +141,28 @@ class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
         # Only consider the main/first binary
         binary = project.binaries[0]
 
-        measurement_repetitions = 2
-        result_filepath = create_new_success_result_filepath(
-            self.get_handle(),
-            self.get_handle().report_spec().main_report,
-            project,
-            binary,
-            config_id=get_current_config_id(project),
-        )
-
-        analysis_actions = [
-            actions.Compile(project),
-            ZippedExperimentSteps(
-                result_filepath, [
-                    PerfStat(project, rep_num, binary)
-                    for rep_num in range(0, measurement_repetitions)
-                ]
-            ),
-            actions.Clean(project)
+        analysis_actions: tp.List[ProjectStep | ZippedExperimentSteps] = [
+            actions.Compile(project)
         ]
+        measurement_repetitions = 1
+        for binary in project.binaries:
+            result_filepath = create_new_success_result_filepath(
+                self.get_handle(),
+                self.get_handle().report_spec().main_report,
+                project,
+                binary,
+                config_id=get_current_config_id(project),
+            )
+
+            analysis_actions.append(
+                ZippedExperimentSteps(
+                    result_filepath, [
+                        PerfStat(project, rep_num, binary)
+                        for rep_num in range(0, measurement_repetitions)
+                    ]
+                )
+            )
+
+        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

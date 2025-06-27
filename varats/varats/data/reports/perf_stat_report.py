@@ -38,6 +38,3 @@ class PerfStatReportAggregate(
 
     def __init__(self, path: Path) -> None:
         super().__init__(path, PerfStatReport)
-
-
-__WORKLOAD_FILE_REGEX = re.compile(r"trace\_(?P<label>.+)$")
