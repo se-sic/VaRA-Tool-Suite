@@ -1,4 +1,5 @@
 """Test VaRA workload utilities."""
+import typing as tp
 import unittest
 from pathlib import Path
 
@@ -6,8 +7,15 @@ from benchbuild.command import Command, PathToken, RootRenderer
 from benchbuild.source.base import Revision, Variant
 
 import varats.experiment.workload_util as wu
-from tests.helper_utils import run_in_test_environment, UnitTestFixtures
+from tests.helper_utils import (
+    run_in_test_environment,
+    UnitTestFixtures,
+    BBTestSource,
+)
 from varats.paper.paper_config import load_paper_config
+from varats.project.project_util import ProjectBinaryWrapper, BinaryType
+from varats.project.varats_command import VCommand
+from varats.project.varats_project import VProject
 from varats.projects.c_projects.xz import Xz
 from varats.projects.perf_tests.feature_perf_cs_collection import (
     SynthIPTemplate,
@@ -17,6 +25,53 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
 TT = PathToken.make_token(RootRenderer())
+
+
+class _TestProject(VProject):
+    NAME = "test_empty"
+
+    DOMAIN = "debug"  # type: ignore
+    GROUP = "debug"
+    SOURCE = [
+        BBTestSource(
+            test_versions=['0000000001'], local="/dev/null", remote="/dev/null"
+        )
+    ]
+
+    WORKLOADS = {
+        wu.WorkloadSet("Test1"): [
+            VCommand(wu.RSBinary("binName"), label="binWithFileEnding"),
+        ],
+        wu.WorkloadSet("Test2"): [
+            VCommand(wu.RSBinary("customBinName"), label="binWithCustomName")
+        ]
+    }
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash
+    ) -> tp.List['ProjectBinaryWrapper']:
+        binaries = []
+        binaries.append(
+            ProjectBinaryWrapper(
+                "binName", Path("/path/to/binName.exe"), BinaryType.EXECUTABLE
+            )
+        )
+
+        binaries.append(
+            ProjectBinaryWrapper(
+                "customBinName", Path("/path/to/otherBinName"),
+                BinaryType.EXECUTABLE
+            )
+        )
+
+        return binaries
+
+    def compile(self) -> None:
+        pass
+
+    def run_tests(self) -> None:
+        pass
 
 
 class TestWorkloadCategory(unittest.TestCase):
@@ -125,6 +180,36 @@ class TestWorkloadCommands(unittest.TestCase):
             .binaries_for_revision(ShortCommitHash("7930350628"))[0]
         workloads = wu.workload_commands(project, binary, [])
         self.assertEqual(8, len(workloads))
+
+    def test_workload_commands_with_file_ending(self) -> None:
+        """Checks that the workload_commands correctly works for binaries that
+        have a file ending specified."""
+        project = _TestProject()
+        binary = project.binaries_for_revision(ShortCommitHash("0000000001"))[0]
+
+        workloads = wu.workload_commands(
+            project, binary, ["Test1"]
+        )  # type: ignore
+        self.assertEqual(len(workloads), 1)
+
+        wl = workloads[0]
+
+        self.assertEqual(wl.command.label, "binWithFileEnding")
+
+    def test_workload_commands_with_override_binary_name(self) -> None:
+        """Checks that the workload_commands correctly works for binaries that
+        have a custom name specified."""
+        project = _TestProject()
+        binary = project.binaries_for_revision(ShortCommitHash("0000000001"))[1]
+
+        workloads = wu.workload_commands(
+            project, binary, ["Test2"]
+        )  # type: ignore
+        self.assertEqual(len(workloads), 1)
+
+        wl = workloads[0]
+
+        self.assertEqual(wl.command.label, "binWithCustomName")
 
 
 class TestWorkloadFilenames(unittest.TestCase):
