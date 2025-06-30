@@ -8,13 +8,12 @@ import importlib_resources
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.utils import actions
-from benchbuild.utils.actions import ProjectStep, StepResult
+from benchbuild.utils.actions import ProjectStep, StepResult, Step
 from benchbuild.utils.cmd import perf, time
 from plumbum import local, ProcessExecutionError
 
 from varats.experiment.experiment_util import (
     VersionExperiment,
-    get_default_compile_error_wrapped,
     ZippedReportFolder,
     create_new_success_result_filepath,
     ExperimentHandle,
@@ -30,7 +29,7 @@ from varats.experiment.workload_util import (
     create_workload_specific_filename,
 )
 from varats.experiments.base.precompile import RestoreBinaries, PreCompile
-from varats.provider.patch.patch_provider import PatchProvider
+from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.report.function_overhead_report import (
     FunctionOverheadReport,
     WLFunctionOverheadReportAggregate,
@@ -128,7 +127,7 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
     def __call__(self) -> StepResult:
         # get workload to use
         workloads = workload_commands(
-            self.project, self.__binary, [WorkloadCategory.EXAMPLE]
+            self.project, self.__binary, [WorkloadCategory.MEDIUM]
         )
         if len(workloads) == 0:
             print(
@@ -249,12 +248,6 @@ class PerfSampling(VersionExperiment, shorthand="PS"):
         self, project: "VProject"
     ) -> tp.MutableSequence[actions.Step]:
         project.runtime_extension = run.RuntimeExtension(project, self)
-        project.compiler_extension = compiler.RunCompiler(project, self
-                                                         ) << run.WithTimeout()
-
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report
-        )
 
         # Only consider the main/first binary
         binary = project.binaries[0]
@@ -303,7 +296,7 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
 
         analysis_actions = [actions.Compile(project)]
 
-        patch_steps = [
+        patch_steps: tp.List[Step] = [
             SampleWithPerfAndTimeSynth(
                 project,
                 binary,
@@ -321,7 +314,7 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
         ]
 
         for change_patch in change_patches:
-            applied_patches = [change_patch]
+            applied_patches: tp.List[Patch] = []
 
             # apply separate regression simulating patch if available
             # TODO: use tags to match patches
@@ -335,6 +328,8 @@ class PerfSamplingSynth(VersionExperiment, shorthand="PSS"):
                 assert len(filtered_regression_patches) == 1
                 regression_patch = filtered_regression_patches[0]
                 applied_patches.append(regression_patch)
+
+            applied_patches.append(change_patch)
 
             for patch in applied_patches:
                 patch_steps.append(ApplyPatch(project, patch))
