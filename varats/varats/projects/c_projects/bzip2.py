@@ -52,6 +52,7 @@ class Bzip2(VProject):
             limit=None,
             shallow=False
         ),
+        FeatureSource(),
         HTTPMultiple(
             local="geo-maps",
             remote={
@@ -64,7 +65,6 @@ class Bzip2(VProject):
                 "countries-land-100m.geo.json"
             ]
         ),
-        FeatureSource(),
         HTTPMultiple(
             local="geo-maps-compr",
             remote={
@@ -191,7 +191,6 @@ class Bzip2(VProject):
         else:
             (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
             with local.cwd(bzip2_source / "build"):
-
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake)("..")
 
