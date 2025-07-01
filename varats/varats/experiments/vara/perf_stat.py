@@ -107,7 +107,7 @@ class PerfStat(OutputFolderStep):
                     run_cmd = prj_command.command.as_plumbum_wrapped_with(
                         perf_cmd, project=self.project
                     )
-                    bb.watch(run_cmd)()
+                    run_cmd()
 
                 fix_json_format(run_report_name)
 
