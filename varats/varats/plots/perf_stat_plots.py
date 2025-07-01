@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 
 from varats.data.reports.perf_stat_report import PerfStatReportAggregate
 from varats.experiment.workload_util import get_workload_label
-from varats.experiments.vara.perf_stat import PerfStatExperiment, PerfStat
+from varats.experiments.tipm.perf_stat import PerfStatExperiment, PerfStat
 from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter

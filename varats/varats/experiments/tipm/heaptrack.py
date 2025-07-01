@@ -23,17 +23,11 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
     create_workload_specific_filename,
 )
+from varats.experiments.tipm.tipm_utils import select_binaries
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
-
-
-def _select_binaries(project: VProject):
-    if project.name == "FastDownward":
-        return [bi for bi in project.binaries if bi.name == "downward"][0]
-
-    return project.binaries[0]
 
 
 class HeapTrackStep(OutputFolderStep):
@@ -120,7 +114,7 @@ class HeapTrackExperiment(VersionExperiment, shorthand="HTE"):
         )
 
         # Only consider the main/first binary
-        binary = _select_binaries(project)
+        binary = select_binaries(project)
 
         measurement_repetitions = 1
         result_filepath = create_new_success_result_filepath(

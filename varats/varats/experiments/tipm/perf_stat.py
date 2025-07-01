@@ -63,7 +63,7 @@ class PerfStat(OutputFolderStep):
     project: VProject
 
     # TODO: Maybe we want to make this a bit more flexible by reading these from
-    # a text file that resides somewhere e.g. in the paper config folder.
+    # a text file or a the varats config?
     METRICS = [
         "branch_misprediction_ratio", "all_l2_cache_hits",
         "all_l2_cache_misses", "ic_fetch_miss_ratio",
@@ -137,9 +137,6 @@ class PerfStatExperiment(VersionExperiment, shorthand="PSE"):
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
-
-        # Only consider the main/first binary
-        binary = project.binaries[0]
 
         analysis_actions: tp.List[ProjectStep | ZippedExperimentSteps] = [
             actions.Compile(project)
