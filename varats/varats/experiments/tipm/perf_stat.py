@@ -65,13 +65,17 @@ class PerfStat(OutputFolderStep):
     # TODO: Maybe we want to make this a bit more flexible by reading these from
     # a text file or a the varats config?
     METRICS = [
-        "branch_misprediction_ratio", "all_l2_cache_hits",
-        "all_l2_cache_misses", "ic_fetch_miss_ratio",
-        "op_cache_fetch_miss_ratio"
+        "branch_misprediction_ratio",
+        "all_l2_cache_hits",
+        "all_l2_cache_misses",
+        "ic_fetch_miss_ratio",
+        "op_cache_fetch_miss_ratio",
+        "all_l2_cache_accesses",
     ]
     EVENTS = [
         "branch-misses", "branches", "l3_cache_accesses", "l3_misses",
-        "L1-dcache-loads", "L1-dcache-load-misses"
+        "L1-dcache-loads", "L1-dcache-load-misses",
+        "l2_request_g1.all_no_prefetch"
     ]
 
     def __init__(
