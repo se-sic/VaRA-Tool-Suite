@@ -125,7 +125,9 @@ class Libvpx(VProject):
                 current_suite = line.strip().rstrip('.')
                 test_names[current_suite] = []
             else:
-                test_names[current_test_category].append(line.split("#")[0].strip())
+                test_names[current_test_category].append(
+                    line.split("#")[0].strip()
+                )
 
         return test_names
 
