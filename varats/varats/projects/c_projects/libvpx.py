@@ -109,16 +109,25 @@ class Libvpx(VProject):
         """
         libvpx_source = local.path(self.source_of_primary)
 
-        # ls | grep 'test\.cc$'
-        test_names_cmd = local["ls"]["test"]["|"]["grep"]["'test\\.cc$'"]
-
         try:
             with local.cwd(libvpx_source):
-                test_names = test_names_cmd()
+                output = local["./your_test_binary"]["--gtest_list_tests"]
         except ProcessExecutionError:
             return []
 
-        return test_names.split("\n")
+        test_names = {}
+        current_test_category = ""
+
+        for line in output.splitlines():
+            if not line.strip():
+                continue
+            if line.endswith('.'):
+                current_suite = line.strip().rstrip('.')
+                test_names[current_suite] = []
+            else:
+                test_names[current_test_category].append(line.split("#")[0].strip())
+
+        return test_names
 
     def run_testsuite(
         self,
