@@ -13,7 +13,7 @@ class ConfigurationOption:
     @property
     @abc.abstractmethod
     def name(self) -> str:
-        """The option name, refering to the feature from which this options
+        """The option name, referring to the feature from which this options
         stems."""
         raise NotImplementedError  # pragma: no cover
 
