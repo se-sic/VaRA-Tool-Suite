@@ -146,7 +146,8 @@ def add(repo: RepositoryHandle, *git_add_args: str) -> None:
 def commit(
     repo: RepositoryHandle,
     message: tp.Optional[str] = None,
-    allow_empty: bool = False
+    allow_empty: bool = False,
+    no_verify: bool = False
 ) -> None:
     """Commits the repository."""
     args = ["--allow-empty-message"]
@@ -154,6 +155,8 @@ def commit(
         args = ["-m", message]
     if allow_empty:
         args += ["--allow-empty"]
+    if no_verify:
+        args += ["--no-verify"]
 
     repo("commit", *args)
 

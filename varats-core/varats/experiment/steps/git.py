@@ -53,18 +53,20 @@ class GitCommit(ProjectStep):
         self,
         project: VProject,
         message: tp.Optional[str] = None,
-        allow_empty: bool = False
+        allow_empty: bool = False,
+        no_verify: bool = False
     ) -> None:
         super().__init__(project)
         self.__message = message
         self.__allow_empty = allow_empty
+        self.__no_verify = no_verify
 
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
         try:
             git.commit(
                 RepositoryHandle(Path(self.project.source_of_primary)),
-                self.__message, self.__allow_empty
+                self.__message, self.__allow_empty, self.__no_verify
             )
         except ProcessExecutionError as e:
             LOG.error(e)

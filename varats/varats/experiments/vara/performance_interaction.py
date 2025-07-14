@@ -503,7 +503,9 @@ class PerformanceInteractionExperimentSynthetic(
                 patch_steps.append(GitAdd(project, "-u"))
                 patch_steps.append(
                     GitCommit(
-                        project, message="Hot code and regression patches"
+                        project,
+                        message=f"Hot code and regression patches",
+                        no_verify=True
                     )
                 )
 
@@ -511,7 +513,9 @@ class PerformanceInteractionExperimentSynthetic(
                 applied_patches.append(change_patch)
                 patch_steps.append(ApplyPatch(project, change_patch))
                 patch_steps.append(GitAdd(project, "-u"))
-                patch_steps.append(GitCommit(project, message="Change patch."))
+                patch_steps.append(
+                    GitCommit(project, message=f"Change patch", no_verify=True)
+                )
 
                 # experiment steps
                 patch_steps += generate_basic_blame_experiment_actions(
