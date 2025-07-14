@@ -3,7 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
-from benchbuild.source import HTTPMultiple
+from benchbuild.source import HTTPMultiple, HTTPUntar
 from benchbuild.utils.cmd import git, make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -113,7 +113,16 @@ class CoreutilsBasenc(VProject):
     DOMAIN = ProjectDomains.UNIX_TOOLS
     FEATURE_MODEL = "coreutils/basenc.xml"
 
-    SOURCE = _coreutils_source(NAME)
+    SOURCE = _coreutils_source(NAME) + [
+        HTTPUntar(
+            local="jrc-en-full_basenc.tar.gz",
+            remote={
+                "1.0":
+                    "https://github.com/se-sic/coreutils-workloads/"
+                    "releases/download/v0.1/jrc-en-full_basenc.tar.gz"
+            }
+        )
+    ]
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
@@ -126,49 +135,49 @@ class CoreutilsBasenc(VProject):
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "coreutils-workloads/jrc-en-full_base64.txt",
+                "jrc-en-full_basenc.tar.gz/jrc-en-full_base64.txt",
                 label="default",
                 requires_all_args={"-d", "--base64"}
             ),
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "coreutils-workloads/jrc-en-full_base64url.txt",
+                "jrc-en-full_basenc.tar.gz/jrc-en-full_base64url.txt",
                 label="default",
                 requires_all_args={"-d", "--base64url"}
             ),
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "coreutils-workloads/jrc-en-full_base32.txt",
+                "jrc-en-full_basenc.tar.gz/jrc-en-full_base32.txt",
                 label="default",
                 requires_all_args={"-d", "--base32"}
             ),
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "coreutils-workloads/jrc-en-full_base32hex.txt",
+                "jrc-en-full_basenc.tar.gz/jrc-en-full_base32hex.txt",
                 label="default",
                 requires_all_args={"-d", "--base32hex"}
             ),
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "coreutils-workloads/jrc-en-full_base16.txt",
+                "jrc-en-full_basenc.tar.gz/jrc-en-full_base16.txt",
                 label="default",
                 requires_all_args={"-d", "--base16"}
             ),
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "coreutils-workloads/jrc-en-full_base2msbf.txt",
+                "jrc-en-full_basenc.tar.gz/jrc-en-full_base2msbf.txt",
                 label="default",
                 requires_all_args={"-d", "--base2msbf"}
             ),
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "coreutils-workloads/jrc-en-full_base2lsbf.txt",
+                "jrc-en-full_basenc.tar.gz/jrc-en-full_base2lsbf.txt",
                 label="default",
                 requires_all_args={"-d", "--base2lsbf"}
             )
