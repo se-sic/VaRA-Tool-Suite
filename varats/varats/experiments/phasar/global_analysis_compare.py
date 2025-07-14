@@ -6,7 +6,6 @@ import typing as tp
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import phasar_globals
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
 from varats.data.reports.globals_report import (
@@ -59,6 +58,8 @@ class RunGlobalsTestAnalysis(actions.ProjectStep):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
+        from benchbuild.utils.cmd import phasar_globals
+
         vara_result_folder = get_varats_result_folder(self.project)
 
         for binary in self.project.binaries:
