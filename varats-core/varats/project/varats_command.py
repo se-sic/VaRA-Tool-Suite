@@ -38,6 +38,8 @@ class VCommand(Command):  # type: ignore [misc]
         *args: tp.Any,
         requires_any_args: tp.Optional[tp.Set[str]] = None,
         requires_all_args: tp.Optional[tp.Set[str]] = None,
+        forbids_any_args: tp.Optional[tp.Set[str]] = None,
+        forbids_all_args: tp.Optional[tp.Set[str]] = None,
         requires_any_patch: tp.Optional[tp.Set[str]] = None,
         requires_all_patch: tp.Optional[tp.Set[str]] = None,
         redirect_stdin: tp.Optional[PathToken] = None,
@@ -48,6 +50,8 @@ class VCommand(Command):  # type: ignore [misc]
         super().__init__(*args, **kwargs)
         self._requires_any_args = requires_any_args or set()
         self._requires_all_args = requires_all_args or set()
+        self._forbids_any_args = forbids_any_args or set()
+        self._forbids_all_args = forbids_all_args or set()
         self._requires_any_patch = requires_any_patch or set()
         self._requires_all_patch = requires_all_patch or set()
         self._redirect_stdin = redirect_stdin
@@ -60,6 +64,14 @@ class VCommand(Command):  # type: ignore [misc]
     @property
     def requires_all_args(self) -> tp.Set[str]:
         return self._requires_all_args
+
+    @property
+    def forbids_any_args(self) -> tp.Set[str]:
+        return self._forbids_any_args
+
+    @property
+    def forbids_all_args(self) -> tp.Set[str]:
+        return self._forbids_all_args
 
     @property
     def requires_any_patch(self) -> tp.Set[str]:
@@ -147,6 +159,12 @@ class VProjectCommand(ProjectCommand):  # type: ignore
         ) and (
             not self.v_command.requires_all_args or
             self.v_command.requires_all_args.issubset(all_args)
+        ) and (
+            not self.v_command.forbids_any_args or
+            all_args.isdisjoint(self.v_command.forbids_any_args)
+        ) and (
+            not self.v_command.forbids_all_args or
+            not self.v_command.forbids_all_args.issubset(all_args)
         ) and (
             not self.v_command.requires_any_patch or
             all_patch_tags.intersection(self.v_command.requires_any_patch)

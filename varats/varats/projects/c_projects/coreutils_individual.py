@@ -114,14 +114,63 @@ class CoreutilsBasenc(VProject):
     FEATURE_MODEL = "coreutils/basenc.xml"
 
     SOURCE = _coreutils_source(NAME)
-    # TODO
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("basenc"),
                 ConfigParams(),
-                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
-                label="default"
+                "coreutils-workloads/jrc-en-full.xml",
+                label="default",
+                forbids_any_args={"-d"}
+            ),
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("basenc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full_base64.txt",
+                label="default",
+                requires_all_args={"-d", "--base64"}
+            ),
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("basenc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full_base64url.txt",
+                label="default",
+                requires_all_args={"-d", "--base64url"}
+            ),
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("basenc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full_base32.txt",
+                label="default",
+                requires_all_args={"-d", "--base32"}
+            ),
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("basenc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full_base32hex.txt",
+                label="default",
+                requires_all_args={"-d", "--base32hex"}
+            ),
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("basenc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full_base16.txt",
+                label="default",
+                requires_all_args={"-d", "--base16"}
+            ),
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("basenc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full_base2msbf.txt",
+                label="default",
+                requires_all_args={"-d", "--base2msbf"}
+            ),
+            VCommand(
+                SourceRoot("coreutils") / RSBinary("basenc"),
+                ConfigParams(),
+                "coreutils-workloads/jrc-en-full_base2lsbf.txt",
+                label="default",
+                requires_all_args={"-d", "--base2lsbf"}
             )
         ]
     }
@@ -451,4 +500,3 @@ class CoreutilsWc(VProject):
 
     def recompile(self) -> None:
         _coreutils_recompile(self)
-
