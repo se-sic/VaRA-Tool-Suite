@@ -211,13 +211,12 @@ class CoreutilsCksum(VProject):
     FEATURE_MODEL = "coreutils/cksum.xml"
 
     SOURCE = _coreutils_source(NAME)
-    # TODO
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("cksum"),
                 ConfigParams(),
-                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                "coreutils-test-inputs/random_data.txt",
                 label="default"
             )
         ]
@@ -250,13 +249,12 @@ class CoreutilsDd(VProject):
     FEATURE_MODEL = "coreutils/dd.xml"
 
     SOURCE = _coreutils_source(NAME)
-    # TODO
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("dd"),
                 ConfigParams(),
-                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                "if=coreutils-test-inputs/random_data.txt",
                 label="default"
             )
         ]
@@ -289,13 +287,12 @@ class CoreutilsFmt(VProject):
     FEATURE_MODEL = "coreutils/fmt.xml"
 
     SOURCE = _coreutils_source(NAME)
-    # TODO
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("fmt"),
                 ConfigParams(),
-                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                "coreutils-workloads/jrc-en-full.xml",
                 label="default"
             )
         ]
