@@ -212,7 +212,7 @@ class CoreutilsCksum(VProject):
 
     SOURCE = _coreutils_source(NAME)
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("cksum"),
                 ConfigParams(),
@@ -250,7 +250,7 @@ class CoreutilsDd(VProject):
 
     SOURCE = _coreutils_source(NAME)
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("dd"),
                 ConfigParams(),
@@ -288,7 +288,7 @@ class CoreutilsFmt(VProject):
 
     SOURCE = _coreutils_source(NAME)
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("fmt"),
                 ConfigParams(),
