@@ -56,6 +56,8 @@ def _coreutils_source(tool_name: str) -> 'Sources':
             },
             files=[
                 "jrc-en-full.xml",
+                "jrc-en-medium.xml",
+                "jrc-en-small.xml",
                 "random_data.txt",
             ]
         )
@@ -325,13 +327,12 @@ class CoreutilsOd(VProject):
     FEATURE_MODEL = "coreutils/od.xml"
 
     SOURCE = _coreutils_source(NAME)
-    # TODO
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("od"),
                 ConfigParams(),
-                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                "coreutils-workloads/jrc-en-medium.xml",
                 label="default"
             )
         ]
@@ -364,13 +365,12 @@ class CoreutilsPr(VProject):
     FEATURE_MODEL = "coreutils/pr.xml"
 
     SOURCE = _coreutils_source(NAME)
-    # TODO
     WORKLOADS = {
-        WorkloadSet(WorkloadCategory.EXAMPLE): [
+        WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("coreutils") / RSBinary("pr"),
                 ConfigParams(),
-                "/local/storage/boehmseb/coreutils-test-inputs/sort/random_data.txt",
+                "coreutils-workloads/jrc-en-full.xml",
                 label="default"
             )
         ]
