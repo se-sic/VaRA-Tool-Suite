@@ -168,6 +168,11 @@ class Patch:
         else:
             arguments = None
 
+        if "rendered_name" in yaml_dict:
+            self.__rendered_name = yaml_dict["rendered_name"]
+        else:
+            self.__rendered_name = None
+
         return Patch(
             project_name, shortname, description, path, include_revisions, tags,
             feature_tags, regression_severity, arguments
@@ -242,7 +247,7 @@ class Patch:
             # Generate a random name for the patch file
             rendered_path = (
                 project_step.project.builddir /
-                f"{self.shortname}-{uuid.uuid4()}"
+                f"{self.rendered_name(render_args)}-{uuid.uuid4()}"
             )
             with open(str(rendered_path), "wb") as f:
                 f.write(rendered.encode())
@@ -261,6 +266,22 @@ class Patch:
             hash_args += tuple(self.feature_tags)
 
         return hash(tuple(hash_args))
+
+    def rendered_name(self, **kwargs: tp.Any) -> str:
+        if not self.arguments or self.__rendered_name is None:
+            return self.shortname
+
+        render_args = {
+            name: value
+            for name, value in self.arguments.items()
+            if value is not None
+        }
+        for key, value in kwargs.items():
+            #TODO: Emit warning if key is not in self.arguments
+            render_args[key] = value
+
+        template = Template(self.__rendered_name)
+        return template.render(render_args)
 
 
 class PatchSet:

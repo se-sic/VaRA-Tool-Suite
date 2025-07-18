@@ -63,10 +63,12 @@ class MultiPatchReport(
         return file_name.startswith("baseline_")
 
     @staticmethod
-    def create_patched_report_name(patch: Patch, base_file_name: str) -> str:
+    def create_patched_report_name(
+        patch: Patch, base_file_name: str, **kwargs: tp.Any
+    ) -> str:
         return (
-            f"patched_{len(patch.shortname)}_" +
-            f"{patch.shortname}_{base_file_name}"
+            f"patched_{len(patch.rendered_name(kwargs))}_" +
+            f"{patch.rendered_name(kwargs)}_{base_file_name}"
         )
 
     @staticmethod
