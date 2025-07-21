@@ -51,6 +51,7 @@ from varats.utils.git_util import ShortCommitHash
 REPS = 3
 
 IDENTIFIER_PATCH_TAG = 'perf_prec'
+REGRESSION_SEVERITIES = [1, 10, 100, 1000, 10000]
 
 
 def perf_prec_workload_commands(
@@ -458,19 +459,27 @@ def setup_actions_for_vara_experiment(
     )[IDENTIFIER_PATCH_TAG]
 
     patch_steps = []
-    for patch in patches:
-        patch_steps.append(ApplyPatch(project, patch))
+
+    def __add_patch_steps(**kwargs: tp.Any) -> None:
+        patch_steps.append(ApplyPatch(project, patch, **kwargs))
         patch_steps.append(ReCompile(project))
         patch_steps.append(
             analysis_step(
                 project,
                 binary,
                 file_name=report_type.create_patched_report_name(
-                    patch, "rep_measurements"
+                    patch, "rep_measurements", **kwargs
                 )
             )
         )
-        patch_steps.append(RevertPatch(project, patch))
+        patch_steps.append(RevertPatch(project, patch, **kwargs))
+
+    for patch in patches:
+        if "severity" in patch.arguments:
+            for severity in REGRESSION_SEVERITIES:
+                __add_patch_steps(severity=severity)
+        else:
+            __add_patch_steps()
 
     analysis_actions = get_config_patch_steps(project)
 
