@@ -256,7 +256,8 @@ class CoreutilsDd(VProject):
             VCommand(
                 SourceRoot("coreutils") / RSBinary("dd"),
                 ConfigParams(),
-                "if=coreutils-test-inputs/random_data.txt",
+                "if=coreutils-workloads/random_data.txt",
+                "of=/dev/null",
                 label="default"
             )
         ]
