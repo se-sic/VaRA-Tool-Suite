@@ -70,7 +70,8 @@ class Patch:
         self.tags: tp.Optional[tp.Set[str]] = tags
         self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
         self.regression_severity: tp.Optional[int] = regression_severity
-        self.arguments: tp.Optional[tp.Dict[str, tp.Any]] = arguments
+        self.arguments: tp.Optional[tp.Dict[str, tp.Any]
+                                   ] = arguments if arguments else dict()
         self.__rendered_name: tp.Optional[str] = rendered_name
 
     @staticmethod
@@ -249,7 +250,7 @@ class Patch:
             # Generate a random name for the patch file
             rendered_path = (
                 project_step.project.builddir /
-                f"{self.rendered_name(render_args)}-{uuid.uuid4()}"
+                f"{self.rendered_name(**render_args)}-{uuid.uuid4()}"
             )
             with open(str(rendered_path), "wb") as f:
                 f.write(rendered.encode())

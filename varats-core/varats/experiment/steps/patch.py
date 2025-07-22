@@ -33,7 +33,7 @@ class ApplyPatch(actions.ProjectStep):
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
         print(
-            f"Applying {self.__patch.rendered_name(self.__arguments)} to "
+            f"Applying {self.__patch.rendered_name(**self.__arguments)} to "
             f"{self.project.source_of_primary}"
         )
 
@@ -41,7 +41,7 @@ class ApplyPatch(actions.ProjectStep):
             patch_path = self.__patch.render(self, **self.__arguments)
         except TemplateError:
             print(
-                f"Failed to render patch {self.__patch.rendered_name(self.__arguments)} "
+                f"Failed to render patch {self.__patch.shortname} "
                 f"with arguments:"
                 f" {_build_args_string(**self.__arguments)}"
             )
@@ -82,7 +82,7 @@ class RevertPatch(actions.ProjectStep):
     def __call__(self) -> StepResult:
         self.status = StepResult.OK
         print(
-            f"Reverting {self.__patch.shortname} on "
+            f"Reverting {self.__patch.rendered_name(**self.__arguments)} on "
             f"{self.project.source_of_primary}"
         )
 
