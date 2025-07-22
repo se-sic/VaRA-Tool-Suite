@@ -22,7 +22,7 @@ from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RepositoryHandle
 
 LOG = logging.getLogger(__name__)
 
@@ -106,10 +106,11 @@ class HyTeg(VProject):
     def compile(self) -> None:
         """Compile HyTeg with irrelevant settings disabled."""
         hyteg_source = local.path(self.source_of(self.primary_source))
+        hyteg_repo_handle = RepositoryHandle(hyteg_source)
 
         mkdir("-p", hyteg_source / "build")
 
-        update_all_submodules(hyteg_source, recursive=True, init=True)
+        update_all_submodules(hyteg_repo_handle, recursive=True, init=True)
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
@@ -123,7 +124,7 @@ class HyTeg(VProject):
             cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
         else:
             LOG.warning(
-                "EIGEN_PATH environment variable not set! This will cause"
+                "EIGEN_PATH environment variable not set! This can cause"
                 " compilation errors when using configurations"
             )
 
