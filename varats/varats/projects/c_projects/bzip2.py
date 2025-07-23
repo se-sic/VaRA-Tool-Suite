@@ -191,7 +191,7 @@ class Bzip2(VProject):
         cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
 
-        mkdir(bzip2_version_source / "build")
+        mkdir("-p", bzip2_version_source / "build")
         with local.cwd(bzip2_version_source / "build"):
             with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
