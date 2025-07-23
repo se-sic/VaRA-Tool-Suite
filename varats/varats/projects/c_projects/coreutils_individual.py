@@ -218,7 +218,7 @@ class CoreutilsCksum(VProject):
             VCommand(
                 SourceRoot("coreutils") / RSBinary("cksum"),
                 ConfigParams(),
-                "coreutils-test-inputs/random_data.txt",
+                "coreutils-workloads/random_data.txt",
                 label="default"
             )
         ]
