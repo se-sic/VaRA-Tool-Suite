@@ -201,7 +201,7 @@ class Bzip2(VProject):
         bzip2_version_source = local.path(self.source_of_primary)
 
         with local.cwd(bzip2_version_source / "build"):
-            bb.watch(make)("test")
+            bb.watch(make)
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names."""
