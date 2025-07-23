@@ -159,6 +159,8 @@ class HyTeg(VProject):
 
         mkdir("-p", hyteg_source / "build")
 
+        update_all_submodules(hyteg_source, recursive=True, init=True)
+
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
@@ -184,7 +186,7 @@ class HyTeg(VProject):
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(hyteg_source / "build"):
-            bb.watch(ninja)("test")
+            bb.watch(ninja)("ProfilingApp")
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names."""
