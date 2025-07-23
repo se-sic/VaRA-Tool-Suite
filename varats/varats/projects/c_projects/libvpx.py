@@ -89,11 +89,9 @@ class Libvpx(VProject):
 
         self.cflags += ["-fPIC"]
 
-        clang = bb.compiler.cc(self)
         with local.cwd(libvpx_source):
-            with local.env(CC=str(clang)):
-                bb.watch(local["./configure"])()
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(local["./configure"])()
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self) -> None:
         """Build the tests."""
@@ -111,7 +109,7 @@ class Libvpx(VProject):
 
         try:
             with local.cwd(libvpx_source):
-                output = local["./your_test_binary"]["--gtest_list_tests"]
+                output = local["./test_libvpx"]["--gtest_list_tests"]
         except ProcessExecutionError:
             return []
 
