@@ -186,7 +186,16 @@ class Bzip2(VProject):
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        pass
+        bzip2_version_source = local.path(self.source_of_primary)
+
+        cpp_compiler = bb.compiler.cxx(self)
+        cc_compiler = bb.compiler.cc(self)
+
+        mkdir(bzip2_version_source / "build")
+        with local.cwd(bzip2_version_source / "build"):
+            with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")
+
 
     def build_tests(self) -> None:
         """Build the tests."""

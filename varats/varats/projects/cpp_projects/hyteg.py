@@ -179,8 +179,6 @@ class HyTeg(VProject):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)(*cmake_args)
 
-                with local.cwd(hyteg_source / "build"):
-                    bb.watch(ninja)("ProfilingApp")
 
     def build_tests(self) -> None:
         """Build the tests."""
