@@ -196,7 +196,6 @@ class Bzip2(VProject):
             with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
-
     def build_tests(self) -> None:
         """Build the tests."""
         bzip2_version_source = local.path(self.source_of_primary)
