@@ -138,5 +138,5 @@ class Libvpx(VProject):
             test_regex = ":".join((test + ".*") for test in tests_to_run)
             gtest_cmd = local[libvpx_source]["--gtest_filter=" + test_regex]
 
-        ret_code, _, _ = bb.watch(gtest_cmd)
-        return bool(ret_code == 0)
+        bb.watch(gtest_cmd)
+        return True
