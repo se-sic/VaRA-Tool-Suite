@@ -181,7 +181,6 @@ class HyTeg(VProject):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)(*cmake_args)
 
-
     def build_tests(self) -> None:
         """Build the tests."""
         hyteg_source = local.path(self.source_of(self.primary_source))
