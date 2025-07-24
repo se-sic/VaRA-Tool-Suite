@@ -155,7 +155,7 @@ class HyTeg(VProject):
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        hyteg_source = local.path(self.source_of(self.primary_source))
+        hyteg_source = local.path(self.primary_source)
 
         mkdir("-p", hyteg_source / "build")
 
