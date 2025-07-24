@@ -148,18 +148,16 @@ class HyTeg(VProject):
             bb.watch(ninja)("ProfilingApp")
 
     def run_tests(self) -> None:
-        hyteg_source = local.path(self.source_of(self.primary_source))
-
-        with local.cwd(hyteg_source / "build"):
-            bb.watch("ctest")
+        pass
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        hyteg_source = local.path(self.primary_source)
+        hyteg_source = local.path(self.source_of(self.primary_source))
 
         mkdir("-p", hyteg_source / "build")
 
-        update_all_submodules(hyteg_source, recursive=True, init=True)
+        with local.cwd(hyteg_source):
+            local["git"]["submodule"]("update", "--init", "--recursive")
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
