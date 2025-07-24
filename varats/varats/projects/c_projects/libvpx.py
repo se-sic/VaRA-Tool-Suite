@@ -110,19 +110,14 @@ class Libvpx(VProject):
         except ProcessExecutionError:
             return []
 
-        test_names = {}
-        current_test_category = ""
+        test_names = []
 
         for line in output.splitlines():
             if not line.strip():
                 continue
             if line.endswith('.'):
                 current_suite = line.strip().rstrip('.')
-                test_names[current_suite] = []
-            else:
-                test_names[current_test_category].append(
-                    line.split("#")[0].strip()
-                )
+                test_names.append(current_suite)
 
         return test_names
 
