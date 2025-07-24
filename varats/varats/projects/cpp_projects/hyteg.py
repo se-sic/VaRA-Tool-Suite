@@ -184,7 +184,7 @@ class HyTeg(VProject):
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(hyteg_source / "build"):
-            bb.watch(ninja)("ProfilingApp")
+            bb.watch(ninja)
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names."""
