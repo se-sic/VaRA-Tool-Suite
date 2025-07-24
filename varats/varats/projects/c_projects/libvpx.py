@@ -132,11 +132,11 @@ class Libvpx(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
-        libvpx_source = local.path(self.source_of_primary)
+        libvpx_source = local.path(self.source_of_primary) / "test_libvpx"
 
         if tests_to_run:
             test_regex = ":".join((test + ".*") for test in tests_to_run)
-            gtest_cmd = local["./test_libvpx"]["--gtest_filter=" + test_regex]
+            gtest_cmd = local[libvpx_source]["--gtest_filter=" + test_regex]
 
         ret_code, _, _ = bb.watch(gtest_cmd)()
         return bool(ret_code == 0)
