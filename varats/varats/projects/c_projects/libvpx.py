@@ -81,24 +81,21 @@ class Libvpx(VProject):
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        # libvpx_source = local.path(self.source_of_primary)
-        #
-        # with local.cwd(libvpx_source):
-        #     bb.watch(make)("test")
         libvpx_source = local.path(self.source_of_primary)
 
         self.cflags += ["-fPIC"]
 
+        clang = bb.compiler.cc(self)
         with local.cwd(libvpx_source):
-            bb.watch(local["./configure"])()
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            with local.env(CC=str(clang)):
+                bb.watch(local["./configure"])()
 
     def build_tests(self) -> None:
         """Build the tests."""
         libvpx_source = local.path(self.source_of_primary)
 
         with local.cwd(libvpx_source):
-            bb.watch(make)("test")
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names
@@ -135,6 +132,11 @@ class Libvpx(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
-        # build_dir = local.path(self.source_of_primary)
-        # return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
-        pass
+        libvpx_source = local.path(self.source_of_primary)
+
+        if tests_to_run:
+            test_regex = ":".join((test + ".*") for test in tests_to_run)
+            gtest_cmd = local["./test_libvpx"]["--gtest_filter=" + test_regex]
+
+        ret_code, _, _ = bb.watch(gtest_cmd)()
+        return bool(ret_code == 0)
