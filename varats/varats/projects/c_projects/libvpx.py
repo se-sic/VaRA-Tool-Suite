@@ -96,6 +96,7 @@ class Libvpx(VProject):
 
         with local.cwd(libvpx_source):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("test")
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names
