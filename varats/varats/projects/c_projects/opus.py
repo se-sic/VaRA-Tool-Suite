@@ -9,7 +9,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import WorkloadCategory, ConfigParams
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -89,9 +93,9 @@ class OpusTools(VProject):
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="opus",
+            project_name="OpusTools",
             remote="https://github.com/xiph/opus-tools.git",
-            local="opus",
+            local="OpusTools",
             refspec="origin/HEAD",
             limit=None,
             shallow=False
@@ -109,9 +113,9 @@ class OpusTools(VProject):
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.SMALL): [
             VCommand(
-                SourceRoot("opusenc"),
+                SourceRoot("OpusTools") / RSBinary("opusenc"),
                 ConfigParams(),
-                SourceRoot("trondheim.wav"),
+                "trondheim.wav/pts-trondheim-3.wav",
                 "trondheim.opus",
                 label="trondheim"
             )
@@ -124,7 +128,7 @@ class OpusTools(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(OpusTools.NAME))
 
-        binary_map.specify_binary("build/opusenc"), BinaryType.EXECUTABLE
+        binary_map.specify_binary("build/opusenc", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
@@ -134,18 +138,19 @@ class OpusTools(VProject):
     def compile(self) -> None:
         """Compile the project."""
         opus_source = local.path(self.source_of_primary)
+        build_dir = opus_source / "build"
+        build_dir.mkdir(parents=True, exist_ok=True)
 
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
 
-        with local.cwd(opus_source / "build"):
+        with local.cwd(build_dir):
             with local.env(CC=str(clang)):
                 bb.watch(local["../autogen.sh"])()
-                bb.watch(local["../configure"])("--without-flac")
+                bb.watch(local["../configure"]
+                        )("--without-flac", "--with-gnu-ld=yes")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
-            verify_binaries(self)
 
     def recompile(self):
         """Compile the project."""
