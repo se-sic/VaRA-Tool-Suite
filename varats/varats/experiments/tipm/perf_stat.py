@@ -5,7 +5,7 @@ import re
 import typing as tp
 from pathlib import Path
 
-import benchbuild as bb
+import benchbuild
 from benchbuild.command import cleanup
 from benchbuild.extensions import compiler, run
 from benchbuild.project import Project
@@ -111,7 +111,7 @@ class PerfStat(OutputFolderStep):
                     run_cmd = prj_command.command.as_plumbum_wrapped_with(
                         perf_cmd, project=self.project
                     )
-                    run_cmd()
+                    benchbuild.watch(run_cmd)()
 
                 fix_json_format(run_report_name)
 

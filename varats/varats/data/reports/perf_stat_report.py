@@ -17,10 +17,12 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
         metrics_of_interest = [
             "%  branch_mispredition_ratio", "%  ic_fetch_miss_ratio",
             "op_cache_fetch_miss_ratio", "of all branches",
-            "of all L1-dcache accesses", "all_l2_cache_accesses",
-            "all_l2_cache_misses", "all_l2_cache_hits"
+            "of all L1-dcache accesses", "all_l2_cache_misses",
+            "all_l2_cache_hits"
         ]
-        events_of_interest = ["l3_cache_accesses", "l3_misses"]
+        events_of_interest = [
+            "l3_cache_accesses", "l3_misses", "l2_request_g1.all_no_prefetch"
+        ]
         if (
             'interval' in self.df.columns and 'event' in self.df.columns and
             'counter-value' in self.df.columns and
@@ -43,9 +45,14 @@ class PerfStatReport(BaseReport, shorthand="PERFSTAT", file_type="json"):
                 subset=["interval", "label", "value"]
             )
 
+            combined_df.drop_duplicates(["interval", "label"], inplace=True)
+            combined_df["value"] = pd.to_numeric(
+                combined_df["value"], errors='coerce'
+            ).fillna(0)
             self.df = combined_df.pivot(
                 index="interval", columns="label", values="value"
             ).fillna(0)
+
             self.df.index.name = "interval"
         else:
             print(
