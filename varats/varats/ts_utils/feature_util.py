@@ -62,10 +62,7 @@ class Location:
         """Create a location from a string."""
         if old_location and raw_location.isnumeric():
             new_line = int(raw_location)
-            return Location(
-                old_location.file, new_line, old_location.start_col, new_line,
-                old_location.end_col
-            )
+            return Location.change_start_line(old_location, new_line)
 
         match = Location.LOCATION_FORMAT.match(raw_location)
         if match is None:
@@ -184,6 +181,7 @@ def __get_location_content(commit: Commit,
             "Location start_line is larger than number of lines in file, returning None."
         )
         return None
+    # Handling of multiline locations
     if location.start_line != location.end_line:
         content = reduce(
             lambda x, y: x + "\n" + y.decode("utf-8"),
@@ -198,7 +196,7 @@ def __get_location_content(commit: Commit,
             f"{location.start_line} to {location.end_line}."
         )
         return content
-
+    # Handling of single line locations
     line: str = lines[location.start_line - 1].decode("utf-8")
     LOG.debug(
         "Location spans a single line, returning content from "
