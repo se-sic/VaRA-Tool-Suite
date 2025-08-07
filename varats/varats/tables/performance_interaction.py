@@ -43,6 +43,11 @@ from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.utils.config import load_configuration_map_for_case_study
 from varats.utils.git_util import ShortCommitHash
 
+if tp.TYPE_CHECKING:
+    from varats.data.reports.performance_interaction_report import (
+        PerfInteraction,
+    )
+
 LOG = logging.Logger(__name__)
 
 Revision = tp.Union[ShortCommitHash, str]
@@ -58,87 +63,161 @@ class FeatureLike(tp.Protocol):
 
 class Feature:
 
-    def __init__(self, name: str, flag: str, default_value: tp.Optional[str]):
+    def __init__(
+        self,
+        name: str,
+        values: tp.Union[str, tp.List[str]],
+    ):
         self.name = name
-        self.flag = flag
-        self.default_value = default_value
 
-    def should_include_config(
-        self, config: Configuration, relevant_features: tp.Iterable[str]
-    ) -> bool:
-        value = self.is_relevant(relevant_features) or config.get_config_value(
-            self.flag
-        ) == self.default_value
-        return value
+        self.values: tp.List[str] = []
 
-    def is_relevant(self, relevant_features: tp.Iterable[str]) -> bool:
-        return self.name in relevant_features
+        if isinstance(values, list):
+            self.values = values
+        else:
+            self.values.append(values)
 
+    def config_value(self, config: Configuration) -> tp.Optional[str]:
+        for v in self.values:
+            if config.get_config_value(v):
+                return v
 
-class ExactlyOneOf:
-
-    def __init__(self, *features: Feature):
-        self.features = features
-
-    def should_include_config(
-        self, config: Configuration, relevant_features: tp.Iterable[str]
-    ) -> bool:
-        if any(map(lambda x: x.is_relevant(relevant_features), self.features)):
-            return True
-
-        value = len(
-            list(
-                filter(
-                    None,
-                    map(
-                        lambda x: x.
-                        should_include_config(config, relevant_features),
-                        self.features
-                    )
-                )
-            )
-        ) == 1
-        return value
+        return None
 
 
-class AtMostOneOf:
-
-    def __init__(self, *features: Feature):
-        self.features = features
-
-    def should_include_config(
-        self, config: Configuration, relevant_features: tp.Iterable[str]
-    ) -> bool:
-        if any(map(lambda x: x.is_relevant(relevant_features), self.features)):
-            return True
-
-        return len(
-            list(
-                filter(
-                    None,
-                    map(
-                        lambda x: x.
-                        should_include_config(config, relevant_features),
-                        self.features
-                    )
-                )
-            )
-        ) <= 1
-
-
-F1 = Feature("FR(F1)", "f1", None)
-F2 = Feature("FR(F2)", "f2", None)
-F3 = Feature("FR(F3)", "f3", None)
-F4 = Feature("FR(F4)", "f4", None)
-F5 = Feature("FR(F5)", "f5", None)
-F6 = Feature("FR(F6)", "f6", None)
-F7 = Feature("FR(F7)", "f7", None)
-F8 = Feature("FR(F8)", "f8", None)
-F9 = Feature("FR(F9)", "f9", None)
-F10 = Feature("FR(F10)", "f10", None)
+F1 = Feature("FR(F1)", "f1")
+F2 = Feature("FR(F2)", "f2")
+F3 = Feature("FR(F3)", "f3")
+F4 = Feature("FR(F4)", "f4")
+F5 = Feature("FR(F5)", "f5")
+F6 = Feature("FR(F6)", "f6")
+F7 = Feature("FR(F7)", "f7")
+F8 = Feature("FR(F8)", "f8")
+F9 = Feature("FR(F9)", "f9")
+F10 = Feature("FR(F10)", "f10")
 
 # default values for features
-CONFIG_DATA: tp.Dict[str, tp.List[FeatureLike]] = {
+CONFIG_DATA: tp.Dict[str, tp.List[Feature]] = {
+    "coreutils_basenc": [
+        Feature("base2lsbf", "base2lsbf"),
+        Feature("base2msbf", "base2msbf"),
+        Feature("base16", "base16"),
+        Feature("base32", "base32"),
+        Feature("base32hex", "base32hex"),
+        Feature("base64", "base64"),
+        Feature("base64url", "base64url"),
+        Feature("decode", "d"),
+        Feature("ignore_garbage", "i"),
+        Feature("wrap", ["wrap=0", "wrap=25", "wrap=76"]),
+    ],
+    "coreutils_cksum": [
+        Feature("sha512", "algorithm=sha512"),
+        Feature("sha256", "algorithm=sha256"),
+        Feature("sha1", "algorithm=sha1"),
+        Feature("crc", "algorithm=crc"),
+        Feature("md5", "algorithm=md5"),
+        Feature("sm3", "algorithm=sm3"),
+        Feature("blake2b", "algorithm=blake2b"),
+        Feature("base64", "base64"),
+        Feature("raw", "raw"),
+        Feature("tag", "tag"),
+        Feature("untagged", "untagged"),
+        Feature("length", ["length=64", "length=128", "length=256"]),
+    ],
+    "coreutils_dd": [
+        Feature("ucase", "conv=ucase"),
+        Feature("swab", "conv=swab"),
+        Feature("ibm", "conv=ibm"),
+        Feature("fdatasync", "conv=fdatasync"),
+        Feature("ebcdic", "conv=ebcdic"),
+        Feature("block", "conv=block"),
+        Feature("unblock", "conv=unblock"),
+        Feature("lcase", "conv=lcase"),
+        Feature("fsync", "conv=fsync"),
+        Feature("sync", "conv=sync"),
+        Feature("sparse", "conv=sparse"),
+        Feature("ascii", "conv=ascii"),
+        Feature("status_none", "status=none"),
+        Feature("status_noxfer", "status=noxfer"),
+        Feature("status_progress", "status=progress"),
+        Feature("convert_bytes", ["cbs=128", "cbs=512", "cbs=2048"]),
+        Feature("input_bytes", ["ibs=128", "cbs=512", "cbs=2048"]),
+        Feature("output_bytes", ["obs=128", "cbs=512", "cbs=2048"]),
+    ],
+    "coreutils_fmt": [
+        Feature("crown_margin", "c"),
+        Feature("prefix", "prefix=        <p n="),
+        Feature("split_only", "s"),
+        Feature("tagged_paragraph", "t"),
+        Feature("uniform_spacing", "u"),
+        Feature("width", "width="),
+        Feature("goal", "goal="),
+    ],
+    "coreutils_od": [
+        Feature("address_radix_d", "Ad"),
+        Feature("address_radix_o", "Ao"),
+        Feature("address_radix_x", "Ax"),
+        Feature("address_radix_n", "An"),
+        Feature("endian_big", "endian=big"),
+        Feature("endian_little", "endian=little"),
+        Feature("hexadecimal_trailer", "format=x2z"),
+        Feature("named_character", "format=a"),
+        Feature("unsigned_long", "format=uL"),
+        Feature("signed_int", "format=dI"),
+        Feature("octal", "format=o2"),
+        Feature("float", "format=fF"),
+        Feature("character", "format=c"),
+        Feature("output-duplicates", "v"),
+        Feature("strings", ["strings=1", "strings=3", "strings=8"]),
+        Feature("width", ["width=16", "width=32", "width=64"]),
+    ],
+    "coreutils_pr": [
+        Feature("across", "a"),
+        Feature("show_control_chars", "c"),
+        Feature("show_nonprinting", "v"),
+        Feature("double_space", "d"),
+        Feature("join_lines", "J"),
+        Feature("merge", "m"),
+        Feature("number_lines", "n"),
+        Feature("omit_header", "t"),
+        Feature("sep_string", "S"),
+        Feature("columns", ["columns=1", "columns=3"]),
+        Feature("length", ["length=15", "length=66"]),
+        Feature("page_width", ["page_width=50", "page_width=72"]),
+    ],
+    "coreutils_sort": [
+        Feature("numeric-sort", "n"),
+        Feature("random-sort", "R"),
+        Feature("version-sort", "V"),
+        Feature("ignore-case", "f"),
+        Feature("reverse", "r"),
+        Feature("stable", "s"),
+        Feature("unique", "u"),
+        Feature("parallel", "parallel=4"),
+    ],
+    "coreutils_uniq": [
+        Feature("count", "count"),
+        Feature("repeated", "repeated"),
+        Feature("unique", "unique"),
+        Feature("ignore_case", "ignore-case"),
+        Feature("all_repeated_none", "all-repeated=none"),
+        Feature("all_repeated_prepend", "all-repeated=prepend"),
+        Feature("all_repeated_separate", "all-repeated=separate"),
+        Feature("group_separate", "group=separate"),
+        Feature("group_prepend", "group=prepend"),
+        Feature("group_append", "group=append"),
+        Feature("group_both", "group=both"),
+        Feature("check-chars", ["check-chars=8", "check-chars=16"]),
+        Feature("skip-chars", ["skip-chars=8", "skip-chars=16"]),
+        Feature("check-fields", ["check-fields=8"]),
+    ],
+    "coreutils_wc": [
+        Feature("bytes", "bytes"),
+        Feature("chars", "chars"),
+        Feature("lines", "lines"),
+        Feature("words", "words"),
+        Feature("max_line_length", "max-line-length"),
+    ],
     "InterStructural": [F1],
     "InterDataFlow": [F1],
     "InterImplicitFlow": [F1],
@@ -147,95 +226,66 @@ CONFIG_DATA: tp.Dict[str, tp.List[FeatureLike]] = {
     "FunctionMultiple": [F1, F2, F3],
     "DegreeLow": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "DegreeHigh": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
-    "DegreeComplex": [F1, F2, F3, F4, F5, F6,
-                      AtMostOneOf(F7, F8), F9, F10],
+    "DegreeComplex": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "bzip2": [
-        Feature("FR(forceOverwrite)", "f", None),
-        Feature("FR(keepInputFiles)", "k", "-k"),
-        ExactlyOneOf(
-            Feature("FR(compress)", "z", "-z"),
-            Feature("FR(decompress)", "d", "-d")
+        Feature("FR(forceOverwrite)", "f"),
+        Feature("FR(keepInputFiles)", "k"),
+        Feature("FR(compress)", "z"),
+        Feature("FR(decompress)", "d"),
+        Feature("FR(quiet)", "q"),
+        Feature("FR(smallMode)", "s"),
+        Feature("FR(stdout)", "c"),
+        Feature("FR(verbosity)", "v"),
+        Feature(
+            "FR(level)", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         ),
-        Feature("FR(quiet)", "q", None),
-        Feature("FR(smallMode)", "s", None),
-        Feature("FR(stdout)", "c", None),
-        Feature("FR(verbosity)", "v", None),
-        Feature("FR(level)", "0", None),
-        Feature("FR(level)", "1", None),
-        Feature("FR(level)", "2", None),
-        Feature("FR(level)", "3", None),
-        Feature("FR(level)", "4", None),
-        Feature("FR(level)", "5", "-5"),
-        Feature("FR(level)", "6", None),
-        Feature("FR(level)", "7", None),
-        Feature("FR(level)", "8", None),
-        Feature("FR(level)", "9", None),
     ],
     "grep": [
-        Feature("FR(ignore_case)", "i", None),
-        Feature("FR(invert_match)", "v", None),
-        Feature("FR(count)", "c", None),
-        Feature("FR(only_matching)", "o", None),
-        AtMostOneOf(
-            Feature("FR(word_regex)", "w", "-w"),
-            Feature("FR(line_regex)", "x", "-x")
-        ),
-        AtMostOneOf(
-            Feature("FR(files_with_match)", "l", "-l"),
-            Feature("FR(files_without_match)", "L", "-L")
-        ),
-        AtMostOneOf(
-            Feature("FR(context_5)", "C5", "-C5"),
-            Feature("FR(context_10)", "C10", "-C10")
-        )
+        Feature("FR(ignore_case)", "i"),
+        Feature("FR(invert_match)", "v"),
+        Feature("FR(count)", "c"),
+        Feature("FR(only_matching)", "o"),
+        Feature("FR(word_regex)", "w"),
+        Feature("FR(line_regex)", "x"),
+        Feature("FR(files_with_match)", "l"),
+        Feature("FR(files_without_match)", "L"),
+        Feature("FR(context_5)", "C5"),
+        Feature("FR(context_10)", "C10")
     ],
     "openssl": [
-        Feature("FR(base64)", "a", None),
-        Feature("FR(one Line)", "A", None),
-        Feature("FR(PBKDF2)", "pbkdf2", None),
-        Feature("FR(print)", "p", None),
-        Feature("FR(print and exit)", "P", None),
-        Feature("FR(compress)", "z", None),
-        ExactlyOneOf(
-            Feature("FR(MD5)", "md=md5", "-md=md5"),
-            Feature("FR(SHA-256)", "md=sha-256", "-md=sha-256")
-        ),
-        ExactlyOneOf(
-            Feature("FR(AES-128-CBC)", "aes-128-cbc", "-aes-128-cbc"),
-            Feature("FR(AES-128-OFB)", "aes-128-ofb", "-aes-128-ofb"),
-            Feature("FR(AES-256-CBC)", "aes-256-cbc", "-aes-256-cbc"),
-            Feature("FR(Blowfish-CBC)", "bf-cbc", "-bf-cbc"),
-        )
+        Feature("FR(base64)", "a"),
+        Feature("FR(one Line)", "A"),
+        Feature("FR(PBKDF2)", "pbkdf2"),
+        Feature("FR(print)", "p"),
+        Feature("FR(print and exit)", "P"),
+        Feature("FR(compress)", "z"),
+        Feature("FR(MD5)", "md=md5"),
+        Feature("FR(SHA-256)", "md=sha-256"),
+        Feature("FR(AES-128-CBC)", "aes-128-cbc"),
+        Feature("FR(AES-128-OFB)", "aes-128-ofb"),
+        Feature("FR(AES-256-CBC)", "aes-256-cbc"),
+        Feature("FR(Blowfish-CBC)", "bf-cbc")
     ],
     "picosat": [
-        Feature("FR(Plain)", "plain", None),
-        Feature("FR(AllSAT)", "all", None),
-        Feature("FR(Partial)", "partial", None),
-        Feature("FR(CompactTrace)", "t", None),
-        Feature("FR(ExtendedTrace)", "T", None),
-        Feature("FR(ReverseUnitPropagationProof)", "r", None),
+        Feature("FR(Plain)", "plain"),
+        Feature("FR(Partial)", "partial"),
+        Feature("FR(CompactTrace)", "t"),
+        Feature("FR(ExtendedTrace)", "T"),
+        Feature("FR(ReverseUnitPropagationProof)", "r"),
     ],
     "xz": [
-        ExactlyOneOf(
-            Feature("FR(compress)", "z", "-z"),
-            Feature("FR(decompress)", "d", "-d"),
-            Feature("FR(test)", "t", "-t"), Feature("FR(list)", "l", "-l")
+        Feature("FR(compress)", "z"),
+        Feature("FR(decompress)", "d"),
+        Feature("FR(test)", "t"),
+        Feature("FR(list)", "l"),
+        Feature("FR(keep)", "k"),
+        Feature("FR(force)", "f"),
+        Feature("FR(stdout)", "c"),
+        Feature("FR(no-sparse)", "no-sparse"),
+        Feature("FR(extreme)", "e"),
+        Feature(
+            "FR(level)", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         ),
-        Feature("FR(keep)", "k", "-k"),
-        Feature("FR(force)", "f", None),
-        Feature("FR(stdout)", "c", None),
-        Feature("FR(no-sparse)", "no-sparse", None),
-        Feature("FR(extreme)", "e", None),
-        Feature("FR(level)", "0", None),
-        Feature("FR(level)", "1", None),
-        Feature("FR(level)", "2", None),
-        Feature("FR(level)", "3", None),
-        Feature("FR(level)", "4", None),
-        Feature("FR(level)", "5", None),
-        Feature("FR(level)", "6", "-6"),
-        Feature("FR(level)", "7", None),
-        Feature("FR(level)", "8", None),
-        Feature("FR(level)", "9", None),
     ]
 }
 
@@ -253,7 +303,10 @@ class EvalData(tp.TypedDict):
 def get_performance_data(
     performance_data: pd.DataFrame, revision: Revision, config_id: int
 ) -> tp.List[float]:
-    vals_raw = performance_data.loc[config_id, revision]
+    try:
+        vals_raw = performance_data.loc[config_id, revision]
+    except KeyError:
+        vals_raw = []
 
     if isinstance(vals_raw, list):
         return vals_raw
@@ -261,10 +314,44 @@ def get_performance_data(
     return tp.cast(tp.List[float], ast.literal_eval(vals_raw))
 
 
-def is_regression(
+def get_regressing_configs(
     performance_data: pd.DataFrame, old_rev: Revision, new_rev: Revision,
-    configs: ConfigurationMap, threshold: float, sigma: float, min_diff: float
-) -> tp.Tuple[bool, int]:
+    configs: ConfigurationMap, threshold: float, sigma: float, min_diff: float,
+    ignore_old_zero: bool
+) -> ConfigurationMap:
+    """Calculates the regressing configurations between two revisions."""
+    regressing_configs: ConfigurationMap = ConfigurationMap()
+    for cid, config in configs.id_config_tuples():
+        old_vals = get_performance_data(performance_data, old_rev, cid)
+        new_vals = get_performance_data(performance_data, new_rev, cid)
+
+        if is_regression(
+            old_vals, new_vals, threshold, sigma, min_diff, ignore_old_zero
+        ):
+            regressing_configs.add_configuration(config, config_id=cid)
+
+    return regressing_configs
+
+
+def get_num_regressions(
+    performance_data: pd.DataFrame, old_rev: Revision, new_rev: Revision,
+    configs: ConfigurationMap, threshold: float, sigma: float, min_diff: float,
+    ignore_old_zero: bool
+) -> int:
+    """Calculates the number of regressing configurations between two
+    revisions."""
+    return len(
+        get_regressing_configs(
+            performance_data, old_rev, new_rev, configs, threshold, sigma,
+            min_diff, ignore_old_zero
+        ).ids()
+    )
+
+
+def is_regression(
+    old_vals: list[float], new_vals: list[float], threshold: float,
+    sigma: float, min_diff: float, ignore_old_zero: bool
+) -> bool:
     """
     Calculates if there is a regression between two revisions.
 
@@ -274,39 +361,36 @@ def is_regression(
     Ignore regressions with a smaller absolute value than `min_diff`.
 
     Args:
-        performance_data: dataframe with the performance measurements for both
-                          revisions and all configurations
-        old_rev: old revision
-        new_rev: new revision
-        configs: configurations to consider
+        old_vals: old performance data
+        new_vals: new performance data
         threshold: percentage change that is considered a regression
         sigma: factor that controls the minimum difference to the standard
                deviation of the measurements
         min_diff: minimum absolute difference to be considered a regression
+        ignore_old_zero: if True, ignore configurations where the old revision
+                         has an average 0s execution time; this can happen if
+                         new configurations are introduced in the new revision
 
     Returns:
     """
-    num_regressions = 0
-    for cid in configs.ids():
-        old_vals = get_performance_data(performance_data, old_rev, cid)
-        new_vals = get_performance_data(performance_data, new_rev, cid)
+    if not old_vals or not new_vals:
+        return False
 
-        std_old = np.std(old_vals)
-        std_new = np.std(new_vals)
-        std = max(std_old, std_new)
+    std_old = np.std(old_vals)
+    std_new = np.std(new_vals)
+    std = max(std_old, std_new)
 
-        old_avg = np.average(old_vals)
-        new_avg = np.average(new_vals)
-        diff = abs(old_avg - new_avg)
+    old_avg = np.average(old_vals)
+    new_avg = np.average(new_vals)
+    diff = abs(old_avg - new_avg)
 
-        # 0 means old data not available for config -> skip
-        if old_avg == 0:
-            continue
+    if ignore_old_zero and old_avg == 0:
+        return False
 
-        if diff >= max(threshold * old_avg, sigma * std, min_diff):
-            num_regressions += 1
+    if diff >= max(threshold * old_avg, sigma * std, min_diff):
+        return True
 
-    return num_regressions > 0, num_regressions
+    return False
 
 
 def get_relevant_configs(
@@ -316,20 +400,28 @@ def get_relevant_configs(
     Computes relevant configurations according to a performance interaction
     report.
 
-    We include all configurations where only relevant features vary and all
-    other features are set to their default value.
+    We include configurations such that they cover all possible interactions
+    between relevant features.
     """
     relevant_configs: ConfigurationMap = ConfigurationMap()
-    # collect all configs where non-relevant features are set to their default value
-    for config_id, config in configs.id_config_tuples():
-        is_relevant_config = True
-        for feature in CONFIG_DATA[project_name]:
-            if not feature.should_include_config(config, relevant_features):
-                is_relevant_config = False
-                break
+    seen_tuples: tp.Set[tp.Tuple[tp.Optional[str], ...]] = set()
+    features = list(
+        filter(
+            lambda f: f.name in relevant_features, CONFIG_DATA[project_name]
+        )
+    )
 
-        if is_relevant_config:
+    def get_relevant_tuple(c: Configuration) -> tp.Tuple[tp.Optional[str], ...]:
+        return tuple(f.config_value(c) for f in features)
+
+    # collect all configs with unseen combinations of relevant features
+    for config_id, config in configs.id_config_tuples():
+        relevant_tuple = get_relevant_tuple(config)
+
+        if relevant_tuple not in seen_tuples:
+            seen_tuples.add(relevant_tuple)
             relevant_configs.add_configuration(config, config_id=config_id)
+
     return relevant_configs
 
 
@@ -337,12 +429,13 @@ def calculate_eval_data(
     project_name: str, performance_data: pd.DataFrame, old_rev: Revision,
     new_rev: Revision, configs: ConfigurationMap,
     report: tp.Optional[PerformanceInteractionReport], threshold: float,
-    sigma: float, min_diff: float, eval_data: EvalData
+    sigma: float, min_diff: float, ignore_old_zero: bool, eval_data: EvalData
 ) -> None:
     # RQ1
-    is_reg, _ = is_regression(
-        performance_data, old_rev, new_rev, configs, threshold, sigma, min_diff
-    )
+    is_reg = get_num_regressions(
+        performance_data, old_rev, new_rev, configs, threshold, sigma, min_diff,
+        ignore_old_zero
+    ) > 0
 
     if is_reg:
         eval_data["baseline_positives"].append(new_rev)
@@ -350,27 +443,30 @@ def calculate_eval_data(
         eval_data["baseline_negatives"].append(new_rev)
 
     # performance interaction classification
-    detected_reg = report and report.performance_interactions
-    if detected_reg:
+    perf_inters: 'tp.Optional[tp.Iterable[PerfInteraction]]' = None
+    if report:
+        perf_inters = report.performance_interactions
+
+    if perf_inters:
         eval_data["rq1_predicted_positives"].append(new_rev)
     else:
         eval_data["rq1_predicted_negatives"].append(new_rev)
 
     # RQ2
-    if detected_reg:
+    if perf_inters:
         relevant_features: tp.Set[str] = set()
 
-        for inter in report.performance_interactions:
+        for inter in perf_inters:
             relevant_features.update(inter.involved_features)
 
         relevant_configs = get_relevant_configs(
             project_name, configs, relevant_features
         )
 
-        is_reg2, _ = is_regression(
+        is_reg2 = get_num_regressions(
             performance_data, old_rev, new_rev, relevant_configs, threshold,
-            sigma, min_diff
-        )
+            sigma, min_diff, ignore_old_zero
+        ) > 0
 
         if is_reg2:
             eval_data["rq2_predicted_positives"].append(new_rev)
@@ -383,7 +479,7 @@ def calculate_case_study_data(
     revision_pairs: tp.Iterable[tp.Tuple[Revision,
                                          Revision]], configs: ConfigurationMap,
     perf_inter_reports: tp.Dict[Revision, PerformanceInteractionReport],
-    threshold: float, sigma: float, min_diff: float
+    threshold: float, sigma: float, min_diff: float, ignore_old_zero: bool
 ) -> pd.DataFrame:
     eval_data: EvalData = tp.cast(EvalData, defaultdict(list))
 
@@ -397,7 +493,7 @@ def calculate_case_study_data(
         report = perf_inter_reports.get(new_rev, None)
         calculate_eval_data(
             project_name, performance_data, old_rev, new_rev, configs, report,
-            threshold, sigma, min_diff, eval_data
+            threshold, sigma, min_diff, ignore_old_zero, eval_data
         )
 
     confusion_matrix = ConfusionMatrix(
@@ -516,9 +612,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
         data: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
             project_name = case_study.project_name
-
             commit_map = get_commit_map(project_name)
-
             revisions = sorted(case_study.revisions, key=commit_map.time_id)
 
             configs = load_configuration_map_for_case_study(
@@ -527,13 +621,14 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
 
             performance_data = \
                 PerformanceEvolutionDatabase.get_data_for_project(
-                project_name, ["revision", "config_id", "wall_clock_time"],
-                commit_map,
-                case_study,
-                cached_only=True
-            ).pivot(
-                index="config_id", columns="revision", values="wall_clock_time"
-            )
+                    project_name, ["revision", "config_id", "wall_clock_time"],
+                    commit_map,
+                    case_study,
+                    cached_only=False
+                ).pivot(
+                    index="config_id", columns="revision",
+                    values="wall_clock_time"
+                )
 
             perf_inter_report_files = get_processed_revisions_files(
                 project_name,
@@ -553,8 +648,15 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
 
             data.append(
                 calculate_case_study_data(
-                    project_name, performance_data, revision_pairs, configs,
-                    perf_inter_reports, threshold, sigma, min_diff
+                    project_name,
+                    performance_data,
+                    revision_pairs,
+                    configs,
+                    perf_inter_reports,
+                    threshold,
+                    sigma,
+                    min_diff,
+                    ignore_old_zero=True
                 )
             )
 
@@ -564,7 +666,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
-            kwargs["column_format"] = "lrr|rrr|rr"
+            kwargs["column_format"] = "l|rrrrrr|rrrr"
             kwargs["multicol_align"] = "c"
             style.format(precision=2, thousands=r"\,")
 
@@ -851,8 +953,15 @@ class PerformanceRegressionClassificationTableSynth(
 
             data.append(
                 calculate_case_study_data(
-                    project_name, performance_data, revision_pairs, configs,
-                    perf_inter_reports, threshold, sigma, min_diff
+                    project_name,
+                    performance_data,
+                    revision_pairs,
+                    configs,
+                    perf_inter_reports,
+                    threshold,
+                    sigma,
+                    min_diff,
+                    ignore_old_zero=False
                 )
             )
 
@@ -900,9 +1009,6 @@ class PerformanceInteractionSavingsTableSynth(
 
         for case_study in case_studies:
             project_name = case_study.project_name
-
-            if project_name != "DegreeComplex":
-                continue
 
             configs = load_configuration_map_for_case_study(
                 get_paper_config(), case_study, PlainCommandlineConfiguration
