@@ -88,13 +88,11 @@ class Libvpx(VProject):
         with local.cwd(libvpx_source):
             with local.env(CC=str(clang)):
                 bb.watch(local["./configure"])()
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self) -> None:
         """Build the tests."""
         libvpx_source = local.path(self.source_of_primary)
-
-        with local.cwd(libvpx_source):
-            bb.watch(make)()
 
         with local.cwd(libvpx_source):
             bb.watch(make)("test")
