@@ -130,11 +130,10 @@ class Libvpx(VProject):
         libvpx_source = local.path(self.source_of_primary)
 
         if tests_to_run:
-            test_regex = ":".join((test + ".*") for test in tests_to_run)
+            test_regex = ":".join((test + "*") for test in tests_to_run)
             with local.cwd(libvpx_source):
                 bb.watch(
-                    local["./test_libvpx"]["--gtest_filter=" + '"' +
-                                           test_regex + '"']
+                    local["./test_libvpx"]["--gtest_filter="+ test_regex]
                 )
             return True
 
