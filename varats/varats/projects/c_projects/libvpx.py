@@ -82,7 +82,6 @@ class Libvpx(VProject):
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
         libvpx_source = local.path(self.source_of_primary)
-
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
@@ -95,7 +94,9 @@ class Libvpx(VProject):
         libvpx_source = local.path(self.source_of_primary)
 
         with local.cwd(libvpx_source):
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)()
+
+        with local.cwd(libvpx_source):
             bb.watch(make)("test")
 
     def get_test_names(self) -> tp.Iterable[str]:
