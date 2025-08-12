@@ -93,14 +93,16 @@ class Libvpx(VProject):
         with local.cwd(test_source):
             with local.env(CC=str(clang), CXX=str(cxx)):
                 configure = local["../configure"]["--disable-examples",
-                "--disable-tools",
-                "--disable-docs",
-                "--enable-unit-tests"]
+                                                  "--disable-tools",
+                                                  "--disable-docs",
+                                                  "--enable-unit-tests"]
                 # TODO: See how to include perf tests as workloads?
                 # "--enable-decode-perf-tests",
                 # "--enable-encode-perf-tests"]
                 bb.watch(configure)()
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg())) # the argument just make sure that i can be parallelized
+            bb.watch(make)(
+                "-j", get_number_of_jobs(bb_cfg())
+            )  # the argument just make sure that i can be parallelized
 
     def build_tests(self) -> None:
         """Build the tests."""
@@ -153,11 +155,12 @@ class Libvpx(VProject):
             test_regex = ":".join((test + "*") for test in tests_to_run)
             with local.cwd(libvpx_source):
                 out = bb.watch(
-                    local["./test_libvpx"]["--gtest_filter="+ test_regex + excluded_regex]
+                    local["./test_libvpx"]["--gtest_filter=" + test_regex +
+                                           excluded_regex]
                 )()
         else:
             out = bb.watch(
-                local["./test_libvpx"]["--gtest_filter=-"+ excluded_regex]
+                local["./test_libvpx"]["--gtest_filter=-" + excluded_regex]
             )()
 
-        return True # still missing the check if any of the test failed
+        return True  # still missing the check if any of the test failed
