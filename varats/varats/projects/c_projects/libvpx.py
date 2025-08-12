@@ -3,7 +3,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 
@@ -82,20 +82,32 @@ class Libvpx(VProject):
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
         libvpx_source = local.path(self.source_of_primary)
+
+        mkdir("-p", libvpx_source / "build_test")
+
+        test_source = libvpx_source / "build_test"
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
-        with local.cwd(libvpx_source):
-            with local.env(CC=str(clang)):
-                bb.watch(local["./configure"])()
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        cxx = bb.compiler.cxx(self)
+        with local.cwd(test_source):
+            with local.env(CC=str(clang), CXX=str(cxx)):
+                configure = local["../configure"]["--disable-examples",
+                "--disable-tools",
+                "--disable-docs",
+                "--enable-unit-tests"]
+                # TODO: See how to include perf tests as workloads?
+                # "--enable-decode-perf-tests",
+                # "--enable-encode-perf-tests"]
+                bb.watch(configure)()
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg())) # the argument just make sure that i can be parallelized
 
     def build_tests(self) -> None:
         """Build the tests."""
         libvpx_source = local.path(self.source_of_primary)
 
         with local.cwd(libvpx_source):
-            bb.watch(make)("test")
+            bb.watch(make)("testdata")
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names
@@ -112,12 +124,15 @@ class Libvpx(VProject):
 
         test_names = []
 
+        current_prefix = ""
         for line in output.splitlines():
-            if not line.strip():
+            if line.endswith("."):
+                current_prefix = line
                 continue
-            if line.endswith('.'):
-                current_suite = line.strip().rstrip('.')
-                test_names.append(current_suite)
+
+            test_name = line.split("#", maxsplit=1)[0].strip()
+
+            test_names.append(current_prefix + test_name)
 
         return test_names
 
@@ -128,13 +143,21 @@ class Libvpx(VProject):
     ) -> bool:
         """Run the testsuite."""
         libvpx_source = local.path(self.source_of_primary)
+        excluded_tests = [
+            "*TestLarge*", "*/LevelTest.*Large*",
+            "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
+        ]
 
+        excluded_regex = ":".join(test for test in excluded_tests)
         if tests_to_run:
             test_regex = ":".join((test + "*") for test in tests_to_run)
             with local.cwd(libvpx_source):
-                bb.watch(
-                    local["./test_libvpx"]["--gtest_filter="+ test_regex]
-                )
-            return True
+                out = bb.watch(
+                    local["./test_libvpx"]["--gtest_filter="+ test_regex + excluded_regex]
+                )()
+        else:
+            out = bb.watch(
+                local["./test_libvpx"]["--gtest_filter=-"+ excluded_regex]
+            )()
 
-        return False
+        return True # still missing the check if any of the test failed
