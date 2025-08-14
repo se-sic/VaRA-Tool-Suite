@@ -158,16 +158,19 @@ class Libvpx(VProject):
         if tests_to_run:
             test_regex = ":".join((test + "*") for test in tests_to_run)
             with local.cwd(libvpx_source):
-                out = bb.watch(
+                ret_code, out, err = bb.watch(
                     local["./test_libvpx"]["--gtest_filter="+ test_regex + "-" + excluded_regex][gtest_out]
                 )()
         else:
-            out = bb.watch(
+            ret_code, out, err = bb.watch(
                 local["./test_libvpx"]["--gtest_filter=-"+ excluded_regex][gtest_out]
             )()
 
+        if ret_code != 0: # Should be correct but need to test after this
+            return False
+
         passed = failed  = 0
-        for line in out[1].splitlines():
+        for line in out.splitlines():
             line = line.strip()
             if line.startswith("[  PASSED  ]") and "tests." in line:
                 passed = int(line.split()[2])
