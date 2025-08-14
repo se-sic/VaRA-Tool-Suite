@@ -149,15 +149,29 @@ class Libvpx(VProject):
         ]
 
         excluded_regex = ":".join(test for test in excluded_tests)
+        gtest_out = ""
+        if test_report_path:
+            gtest_out = "--gtest_output=json" + test_report_path
+
         if tests_to_run:
             test_regex = ":".join((test + "*") for test in tests_to_run)
             with local.cwd(libvpx_source):
                 out = bb.watch(
-                    local["./test_libvpx"]["--gtest_filter="+ test_regex + excluded_regex]
+                    local["./test_libvpx"]["--gtest_filter="+ test_regex + "-" + excluded_regex][gtest_out]
                 )()
         else:
             out = bb.watch(
-                local["./test_libvpx"]["--gtest_filter=-"+ excluded_regex]
+                local["./test_libvpx"]["--gtest_filter=-"+ excluded_regex][gtest_out]
             )()
 
-        return True # still missing the check if any of the test failed
+        passed = failed  = 0
+        for line in out[1].splitlines():
+            line = line.strip()
+            if line.startswith("[  PASSED  ]") and "tests." in line:
+                passed = int(line.split()[2])
+            elif line.startswith("[  FAILED  ]") and "tests" in line:
+                failed = int(line.split()[2])
+        if failed > 0:
+            return False # Failed some test
+
+        return True # Passed all test
