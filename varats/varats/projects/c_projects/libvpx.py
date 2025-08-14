@@ -93,14 +93,16 @@ class Libvpx(VProject):
         with local.cwd(test_source):
             with local.env(CC=str(clang), CXX=str(cxx)):
                 configure = local["../configure"]["--disable-examples",
-                "--disable-tools",
-                "--disable-docs",
-                "--enable-unit-tests"]
+                                                  "--disable-tools",
+                                                  "--disable-docs",
+                                                  "--enable-unit-tests"]
                 # TODO: See how to include perf tests as workloads?
                 # "--enable-decode-perf-tests",
                 # "--enable-encode-perf-tests"]
                 bb.watch(configure)()
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg())) # the argument just make sure that i can be parallelized
+            bb.watch(make)(
+                "-j", get_number_of_jobs(bb_cfg())
+            )  # the argument just make sure that i can be parallelized
 
     def build_tests(self) -> None:
         """Build the tests."""
