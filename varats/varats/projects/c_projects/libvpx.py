@@ -162,9 +162,11 @@ class Libvpx(VProject):
                     local["./test_libvpx"]["--gtest_filter="+ test_regex + "-" + excluded_regex][gtest_out]
                 )()
         else:
-            ret_code, out, err = bb.watch(
-                local["./test_libvpx"]["--gtest_filter=-"+ excluded_regex][gtest_out]
-            )()
+            with local.cwd(libvpx_source):
+                ret_code, out, err = bb.watch(
+                    local["./test_libvpx"]["--gtest_filter=-" +
+                                           excluded_regex][gtest_out]
+                )()
 
         if ret_code != 0: # Should be correct but need to test after this
             return False
@@ -177,6 +179,6 @@ class Libvpx(VProject):
             elif line.startswith("[  FAILED  ]") and "tests" in line:
                 failed = int(line.split()[2])
         if failed > 0:
-            return False # Failed some test
+            return False  # Failed some test
 
-        return True # Passed all test
+        return True  # Passed all test
