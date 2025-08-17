@@ -106,9 +106,9 @@ class Libvpx(VProject):
 
     def build_tests(self) -> None:
         """Build the tests."""
-        libvpx_source = local.path(self.source_of_primary)
+        test_source = local.path(self.source_of_primary) / "build_test"
 
-        with local.cwd(libvpx_source):
+        with local.cwd(test_source):
             bb.watch(make)("testdata")
 
     def get_test_names(self) -> tp.Iterable[str]:
@@ -116,10 +116,10 @@ class Libvpx(VProject):
             Returns:
                 A list of test names available in the test directory.
         """
-        libvpx_source = local.path(self.source_of_primary)
+        test_source = local.path(self.source_of_primary) / "build_test"
 
         try:
-            with local.cwd(libvpx_source):
+            with local.cwd(test_source):
                 output = local["./test_libvpx"]["--gtest_list_tests"]
         except ProcessExecutionError:
             return []
@@ -144,7 +144,7 @@ class Libvpx(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
-        libvpx_source = local.path(self.source_of_primary)
+        test_source = local.path(self.source_of_primary) / "build_test"
         excluded_tests = [
             "*TestLarge*", "*/LevelTest.*Large*",
             "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
@@ -157,7 +157,7 @@ class Libvpx(VProject):
 
         if tests_to_run:
             test_regex = ":".join((test + "*") for test in tests_to_run)
-            with local.cwd(libvpx_source):
+            with local.cwd(test_source):
                 ret_code, out, err = bb.watch(
                     local["./test_libvpx"]["--gtest_filter="+ test_regex + "-" + excluded_regex][gtest_out]
                 )()
