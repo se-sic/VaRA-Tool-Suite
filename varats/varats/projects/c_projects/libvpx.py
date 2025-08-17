@@ -176,9 +176,9 @@ class Libvpx(VProject):
         for line in out.splitlines():
             line = line.strip()
             if line.startswith("[  PASSED  ]") and "tests." in line:
-                passed = int(line.split()[2])
+                passed = int(line.split()[3])
             elif line.startswith("[  FAILED  ]") and "tests" in line:
-                failed = int(line.split()[2])
+                failed = int(line.split()[3])
         if failed > 0:
             return False  # Failed some test
 
