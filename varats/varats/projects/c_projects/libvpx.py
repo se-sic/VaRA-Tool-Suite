@@ -163,7 +163,7 @@ class Libvpx(VProject):
                                            "-" + excluded_regex][gtest_out]
                 )()
         else:
-            with local.cwd(libvpx_source):
+            with local.cwd(test_source):
                 ret_code, out, err = bb.watch(
                     local["./test_libvpx"]["--gtest_filter=-" +
                                            excluded_regex][gtest_out]
