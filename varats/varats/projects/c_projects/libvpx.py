@@ -153,7 +153,7 @@ class Libvpx(VProject):
         excluded_regex = ":".join(test for test in excluded_tests)
         gtest_out = ""
         if test_report_path:
-            gtest_out = "--gtest_output=json" + test_report_path
+            gtest_out = "--gtest_output=json:" + test_report_path.__str__()
 
         if tests_to_run:
             test_regex = ":".join((test + "*") for test in tests_to_run)
