@@ -469,8 +469,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                             project,
                             binary,
                             file_name=MPRTimeWLAggregate.
-                            create_patched_report_name(patch, binary.name) +
-                            f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}",
+                            create_patched_report_name(patch, binary.name),
                             report_file_ending=".txt",
                             reps=NUM_REPETITIONS
                         )
@@ -581,8 +580,7 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                                 Path(
                                     MPTextReport.create_patched_report_name(
                                         patch, "testsuite"
-                                    ) +
-                                    f"_{arg_name.replace('_','-')}={variation_value_to_str(value)}"
+                                    )
                                 )
                             ), adapt_test_step_output
                         )

@@ -67,8 +67,8 @@ class MultiPatchReport(
         patch: Patch, base_file_name: str, **kwargs: tp.Any
     ) -> str:
         return (
-            f"patched_{len(patch.rendered_name(kwargs))}_" +
-            f"{patch.rendered_name(kwargs)}_{base_file_name}"
+            f"patched_{len(patch.rendered_name(**kwargs))}_" +
+            f"{patch.rendered_name(**kwargs)}_{base_file_name}"
         )
 
     @staticmethod
