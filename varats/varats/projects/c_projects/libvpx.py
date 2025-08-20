@@ -136,13 +136,14 @@ class Libvpx(VProject):
 
                 bb.watch(configure)()
 
+            bb.watch(make)("testdata", "-j", get_number_of_jobs(bb_cfg()))
+
     def build_tests(self):
         libvpx_source = local.path(self.source_of_primary)
         test_source = libvpx_source / "build_tests"
 
         with local.cwd(test_source):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-            bb.watch(make)("testdata", "-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
         test_list = []
