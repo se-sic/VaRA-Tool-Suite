@@ -95,6 +95,13 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
 
+    @property
+    def output_path(self) -> Path:
+        return self.__output_path
+
+    def set_output_path(self, output_path: Path) -> None:
+        self.__output_path = output_path
+
     def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(

@@ -75,13 +75,13 @@ class DunePerfRegression(VProject):
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('dune_performance_regressions'),
-                label='dune_helloworld'
+                label='dune-helloworld'
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_test'),
-                label='poisson_non_separated',
+                label='poisson-non-separated',
                 creates=[
                     'poisson_UG_Pk_2d.vtu', 'poisson-yasp-Q1-2d.vtu',
                     'poisson-yasp-Q1-3d.vtu', 'poisson-yasp-Q2-2d.vtu',
@@ -92,42 +92,42 @@ class DunePerfRegression(VProject):
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_ug_pk_2d'),
-                label='poisson_ug_pk_2d',
+                label='poisson-ug-pk-2d',
                 creates=['poisson-UG-Pk-2d.vtu']
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q1_2d'),
-                label='poisson_yasp_q1_2d',
+                label='poisson-yasp-q1-2d',
                 creates=['poisson-yasp-q1-2d.vtu']
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q1_3d'),
-                label='poisson_yasp_q1_3d',
+                label='poisson-yasp-q1-3d',
                 creates=['poisson-yasp-q1-3d.vtu']
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q2_2d'),
-                label='poisson_yasp_q2_2d',
+                label='poisson-yasp-q2-2d',
                 creates=['poisson-yasp-q2-2d.vtu']
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_yasp_q2_3d'),
-                label='poisson_yasp_q2_3d',
+                label='poisson-yasp-q2-3d',
                 creates=['poisson-yasp-q2-3d.vtu']
             ),
             VCommand(
                 SourceRoot(
                     "dune-VaRA/dune-performance-regressions/build-cmake/src"
                 ) / RSBinary('poisson_alugrid'),
-                label='poisson_alugrid',
+                label='poisson-alugrid',
                 creates=['poisson_ALU_Pk_2d.vtu']
             )
         ]
@@ -137,6 +137,12 @@ class DunePerfRegression(VProject):
         "dune-common", "dune-istl", "dune-geometry", "dune-uggrid", "dune-grid",
         "dune-typetree", "dune-multidomaingrid", "dune-localfunctions",
         "dune-functions", "dune-alugrid", "dune-pdelab"
+    ]
+
+    __CMAKE_FLAGS = [
+        "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
+        "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE",
+        "-DCMAKE_DISABLE_FIND_PACKAGE_Doxygen=TRUE",
     ]
 
     @staticmethod
@@ -210,10 +216,7 @@ class DunePerfRegression(VProject):
             with local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
-                CMAKE_FLAGS=" ".join([
-                    "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
-                    "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE"
-                ])
+                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS)
             ):
                 dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
@@ -237,20 +240,17 @@ class DunePerfRegression(VProject):
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
+
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
         with local.cwd(version_source):
-            dunecontrol = cmd['./dune-common/bin/dunecontrol']
-
             with local.env(
                 CC=c_compiler,
                 CXX=cxx_compiler,
-                CMAKE_FLAGS=" ".join([
-                    "-DDUNE_ENABLE_PYTHONBINDINGS=OFF",
-                    "-DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE"
-                ])
+                CMAKE_FLAGS=" ".join(self.__CMAKE_FLAGS)
             ):
+                dunecontrol = cmd['./dune-common/bin/dunecontrol']
                 bb.watch(dunecontrol["cmake"])()
 
     def build_tests(self) -> None:
@@ -260,13 +260,14 @@ class DunePerfRegression(VProject):
         with local.cwd(version_source):
             dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
-        for module in DunePerfRegression.__DUNE_MODULES:
-            if module == "dune-pdelab":
-                # skip the pdalab module as building tests fails
-                continue
-            bb.watch(
-                dunecontrol[f"--only={module}", "bexec", "make", "build_tests"]
-            )()
+            for module in DunePerfRegression.__DUNE_MODULES:
+                if module == "dune-pdelab":
+                    # skip the pdelab module as building tests fails
+                    continue
+                bb.watch(
+                    dunecontrol[f"--only={module}", "bexec", "make",
+                                "build_tests"]
+                )()
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
@@ -283,7 +284,9 @@ class DunePerfRegression(VProject):
                 # skip the pdalab module as building tests fails
                 continue
 
-            test_names = ctest_get_test_names(version_source)
+            test_names = ctest_get_test_names(
+                version_source / module / "build-cmake"
+            )
 
             test_list.extend([f"{module}#{test}" for test in test_names])
 
