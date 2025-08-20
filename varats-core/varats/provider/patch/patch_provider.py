@@ -18,7 +18,7 @@ import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
 from benchbuild.utils.actions import ProjectStep
-from jinja2 import TemplateNotFound, TemplateError
+from jinja2 import TemplateNotFound, TemplateError, Template
 from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_repo
@@ -47,7 +47,8 @@ class Patch:
         tags: tp.Optional[tp.Set[str]] = None,
         feature_tags: tp.Optional[tp.Set[str]] = None,
         regression_severity: tp.Optional[int] = None,
-        arguments: tp.Optional[tp.Dict[str, tp.Any]] = None
+        arguments: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        rendered_name: tp.Optional[str] = None,
     ):
         """
         Args:
@@ -70,6 +71,7 @@ class Patch:
         self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
         self.regression_severity: tp.Optional[int] = regression_severity
         self.arguments: tp.Optional[tp.Dict[str, tp.Any]] = arguments
+        self.__rendered_name: tp.Optional[str] = rendered_name
 
     @staticmethod
     def from_yaml(yaml_path: Path) -> 'Patch':
@@ -169,13 +171,13 @@ class Patch:
             arguments = None
 
         if "rendered_name" in yaml_dict:
-            self.__rendered_name = yaml_dict["rendered_name"]
+            rendered_name = yaml_dict["rendered_name"]
         else:
-            self.__rendered_name = None
+            rendered_name = None
 
         return Patch(
             project_name, shortname, description, path, include_revisions, tags,
-            feature_tags, regression_severity, arguments
+            feature_tags, regression_severity, arguments, rendered_name
         )
 
     def __repr__(self) -> str:
@@ -247,7 +249,7 @@ class Patch:
             # Generate a random name for the patch file
             rendered_path = (
                 project_step.project.builddir /
-                f"{self.rendered_name(render_args)}-{uuid.uuid4()}"
+                f"{self.rendered_name(**render_args)}-{uuid.uuid4()}"
             )
             with open(str(rendered_path), "wb") as f:
                 f.write(rendered.encode())
