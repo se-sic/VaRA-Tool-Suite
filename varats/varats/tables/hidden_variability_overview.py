@@ -9,14 +9,18 @@ from varats.data.reports.hidden_configurability_report import (
 )
 from varats.experiments.vara.hidden_configurability_experiments import (
     FindHiddenConfigurationPoints,
+    _PROJECT_WORKLOADS,
+    PATCH_VARIATIONS,
 )
 from varats.paper.paper_config import get_loaded_paper_config
+from varats.project.project_util import get_local_project_repo
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableGenerator, TableFormat
 from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import create_multi_case_study_choice
+from varats.utils.git_util import calc_repo_loc
 
 
 class HiddenVariabilityOverviewTable(Table, table_name="hidden_var_overview"):
@@ -83,6 +87,48 @@ class HiddenVariabilityOverviewTableGenerator(
                 self.table_config, **self.table_kwargs
             )
         ]
+
+
+class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        table_rows = []
+
+        for cs in case_studies:
+            cs_workloads = _PROJECT_WORKLOADS[cs.project_name]
+            cs_opportunities: dict = PATCH_VARIATIONS[cs.project_name]
+            project_repo = get_local_project_repo(cs.project_name)
+            locs = calc_repo_loc(project_repo, cs.revisions[0].hash)
+            row = {
+                "Name":
+                    cs.project_name,
+                "LOC":
+                    locs,
+                "|C|":
+                    len(cs.get_config_ids_for_revision(cs.revisions[0])),
+                "|W|":
+                    len(cs_workloads),
+                "|O|":
+                    len(cs_opportunities),
+                "|A|":
+                    sum([len(entry[1]) for entry in cs_opportunities.values()]),
+            }
+
+            table_rows.append(row)
+
+        df = pd.DataFrame(table_rows)
+
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+
+
+class HVProjectOverviewTableGenerator(
+    TableGenerator, generator_name="hv_project_overview", options=[]
+):
+
+    def generate(self) -> tp.List[Table]:
+        return [HVProjectOverviewTable(self.table_config, **self.table_kwargs)]
 
 
 class HCPerfTable(Table, table_name="hc_perf_overview"):
