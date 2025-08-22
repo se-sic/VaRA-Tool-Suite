@@ -51,7 +51,7 @@ from varats.utils.git_util import ShortCommitHash
 REPS = 30
 
 IDENTIFIER_PATCH_TAG = 'perf_prec'
-REGRESSION_SEVERITIES = [1, 10, 100, 1000, 10000]
+REGRESSION_SEVERITIES = [1, 10, 100, 1000]
 
 
 def perf_prec_workload_commands(
