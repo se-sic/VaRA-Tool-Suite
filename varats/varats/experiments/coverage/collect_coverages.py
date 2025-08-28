@@ -14,7 +14,13 @@ from benchbuild.command import ProjectCommand
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
 from benchbuild.utils import actions
-from benchbuild.utils.actions import ProjectStep, StepResult, Step, Clean
+from benchbuild.utils.actions import (
+    ProjectStep,
+    StepResult,
+    Step,
+    Clean,
+    Compile,
+)
 from plumbum import local, ProcessExecutionError
 
 from varats.data.reports.llvm_cov_report import LLVMCoverageReport, CodeRegion
@@ -313,8 +319,12 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
             self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
-        analysis_actions = [
-            BuildWithCoverage(project, project.compile),
+        project.cflags.extend([
+            "-fprofile-instr-generate", "-fcoverage-mapping"
+        ])
+
+        analysis_actions: tp.MutableSequence[Step] = [
+            Compile(project),
         ]
 
         for binary in project.binaries:
