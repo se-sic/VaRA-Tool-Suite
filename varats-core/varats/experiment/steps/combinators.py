@@ -142,7 +142,9 @@ class AlwaysStatus(OutputFolderStep):
         return self.__status
 
     def __str__(self, indent: int = 0) -> str:
-        return self.__step.__str__(indent) + f"(Always {self.__status.name})"
+        return textwrap.indent(
+            f"{self.__step} (Always {self.__status.name})", " " * indent
+        )
 
 
 def AlwaysOk(project: Project, step: ProjectStep) -> AlwaysStatus:
