@@ -482,7 +482,7 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         with local.cwd(version_source / "builds/release"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("../../src", f"-DCMAKE_BUILD_TYPE={build_type}")
+                bb.watch(cmake)("../../src", f"-DCMAKE_BUILD_TYPE=Release")
 
             bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 

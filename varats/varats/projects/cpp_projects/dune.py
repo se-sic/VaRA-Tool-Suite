@@ -324,7 +324,7 @@ class DunePerfRegression(VProject):
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for module in DunePerfRegression.__DUNE_MODULES:
                 if module == "dune-pdelab":
-                    # skip the pdalab module as building tests fails
+                    # skip the pdelab module as building tests fails
                     continue
 
                 module_test_report = Path(zip_folder) / f"{module}-tests.xml"
