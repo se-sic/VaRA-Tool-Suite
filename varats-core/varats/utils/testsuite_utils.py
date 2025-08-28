@@ -2,10 +2,22 @@
 import json
 import re
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
 from plumbum import local, ProcessExecutionError
+
+
+class TestStatus(Enum):
+    """Collection of different workload categories, used for grouping workloads
+    together."""
+    SKIPPED = "Skipped"
+    NOT_RUN = "NotRun"
+    PASSED = "Passed"
+    FAILED = "Failed"
+    TIMEOUT = "Timeout"
+    UNKNOWN = "Unknown"
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
@@ -62,6 +74,6 @@ def ctest_run_testsuite(
 
             ctest_cmd = ctest_cmd["-R", test_regex]
 
-        ret_code, _, _ = bb.watch(ctest_cmd)()
+        ret_code, _, _ = bb.watch(ctest_cmd)(retcode=None)
 
         return bool(ret_code == 0)
