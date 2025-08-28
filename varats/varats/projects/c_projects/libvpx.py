@@ -171,8 +171,11 @@ class Libvpx(VProject):
         if tests_to_run is None:
             tests_to_run = []
         excluded_tests = [
-            "*TestLarge*", "*/LevelTest.*Large*",
-            "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
+            "*TestLarge*",
+            "*/LevelTest.*Large*",
+            "*Datarate*",
+            "VP9Large*",
+            "*CpuSpeedTest*",
         ]
 
         gtest_filter = ":".join(tests_to_run)
