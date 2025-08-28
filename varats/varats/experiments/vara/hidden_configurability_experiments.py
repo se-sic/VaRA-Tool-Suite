@@ -25,6 +25,7 @@ from varats.experiment.experiment_util import (
     get_config_patch_steps,
     ZippedExperimentSteps,
     ZippedReportFolder,
+    get_config_reverse_patch_steps,
 )
 from varats.experiment.steps.combinators import OutputAdapter, AlwaysOk
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
@@ -294,7 +295,7 @@ PATCH_VARIATIONS = {
         "max_distance":
             ("max_distance", [2**x for x in range(1, 10) if 2**x != 32]),
         "memory_padding": (
-            "memory_padding",
+            "memory_padding_mb",
             [25] + [x for x in range(50, 105, 5) if x != 75] + [150, 225, 300]
         ),
         "preconditions_to_test":
@@ -357,6 +358,7 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                     for prj_command in _filter_workloads(
                         self.project, self._binary
                     ):
+                        print(f"Running {prj_command.command.label}...")
                         time_report_file = reps_tmp_dir / create_workload_specific_filename(
                             "time_report", prj_command.command, rep, ".txt"
                         )
@@ -465,13 +467,18 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                     )
                     patch_steps.append(ReCompile(project))
                     patch_steps.append(
-                        TimePatchedWorkloadsStep(
+                        AlwaysOk(
                             project,
-                            binary,
-                            file_name=MPRTimeWLAggregate.
-                            create_patched_report_name(patch, binary.name),
-                            report_file_ending=".txt",
-                            reps=NUM_REPETITIONS
+                            TimePatchedWorkloadsStep(
+                                project,
+                                binary,
+                                file_name=MPRTimeWLAggregate.
+                                create_patched_report_name(
+                                    patch, binary.name, **{arg_name: value}
+                                ),
+                                report_file_ending=".txt",
+                                reps=NUM_REPETITIONS
+                            )
                         )
                     )
 
@@ -494,6 +501,7 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                 )
             )
 
+        analysis_actions.extend(get_config_reverse_patch_steps(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
@@ -579,7 +587,7 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                                 project,
                                 Path(
                                     MPTextReport.create_patched_report_name(
-                                        patch, "testsuite"
+                                        patch, "testsuite", **{arg_name: value}
                                     )
                                 )
                             ), adapt_test_step_output
@@ -610,6 +618,8 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
                 ] + patch_steps
             )
         )
+
+        analysis_actions.extend(get_config_reverse_patch_steps(project))
 
         analysis_actions.append(actions.Clean(project))
 
