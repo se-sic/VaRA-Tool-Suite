@@ -692,3 +692,24 @@ def get_config_patch_steps(project: VProject) -> tp.MutableSequence[Step]:
             get_config_patches(project)
         )
     )
+
+
+def get_config_reverse_patch_steps(
+    project: VProject
+) -> tp.MutableSequence[Step]:
+    """
+    Get a list of actions that reverse all configuration patches applied to the
+    project.
+
+    Args:
+        project: the project to be configured
+
+    Returns:
+        the actions that reverse the configuration of the project
+    """
+    return list(
+        map(
+            lambda patch: RevertPatch(project, patch),
+            reversed(list(get_config_patches(project)))
+        )
+    )
