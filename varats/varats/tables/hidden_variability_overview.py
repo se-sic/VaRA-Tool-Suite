@@ -1,16 +1,21 @@
+import json
 import typing as tp
 
 import numpy as np
 import pandas as pd
+from junitparser import JUnitXml, junitparser
 
 from varats.data.databases.hidden_configurability_database import aggregate_data
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
 )
+from varats.data.reports.text_report import PlainTextReport
 from varats.experiments.vara.hidden_configurability_experiments import (
     FindHiddenConfigurationPoints,
     _PROJECT_WORKLOADS,
     PATCH_VARIATIONS,
+    TestPatchVariations,
+    MPTextReport,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_repo
@@ -21,6 +26,7 @@ from varats.table.tables import TableGenerator, TableFormat
 from varats.ts_utils.cli_util import make_cli_option
 from varats.ts_utils.click_param_types import create_multi_case_study_choice
 from varats.utils.git_util import calc_repo_loc
+from varats.utils.testsuite_utils import TestStatus
 
 
 class HiddenVariabilityOverviewTable(Table, table_name="hidden_var_overview"):
@@ -226,3 +232,162 @@ class HCPerfGenerator(
 
     def generate(self) -> tp.List[Table]:
         return [HCPerfTable(self.table_config, **self.table_kwargs)]
+
+
+class ConfigAlternativesValidityTable(
+    Table, table_name="hc_alternatives_validity"
+):
+
+    def __parse_gtest_report(self, report: PlainTextReport) -> tp.Any:
+        """Parse the gtest report."""
+        test_data = json.loads(report.content)
+
+        results = {}
+
+        # Iterate over test suites
+        for suite in test_data.get("testsuites", []):
+            suite_name = suite.get("name", "<unknown>")
+
+            for case in suite.get("testsuite", []):
+                case_name = case.get("name", "<unknown>")
+                status = case.get("status", "UNKNOWN").upper()
+
+                if status == "RUN":
+                    if "failures" in case:
+                        results[f"{suite_name}.{case_name}"] = TestStatus.FAILED
+                    else:
+                        results[f"{suite_name}.{case_name}"] = TestStatus.PASSED
+                elif status == "NOTRUN":
+                    results[f"{suite_name}.{case_name}"] = TestStatus.NOT_RUN
+
+        return results
+
+    def __parse_junit_report(self, report: PlainTextReport) -> tp.Any:
+        """Parse the junit report."""
+        test_xml = JUnitXml.fromstring(report.content)
+
+        results = {}
+
+        for suite in test_xml:
+            suite: junitparser.TestSuite
+            suite_name = suite.name if suite.name else "<unknown>"
+
+            for case in suite:
+                case: junitparser.TestCase
+                case_name = case.name if case.name else "<unknown>"
+
+                if case.is_passed:
+                    status = TestStatus.PASSED
+                elif case.is_skipped:
+                    status = TestStatus.SKIPPED
+                elif case.is_failure or case.is_error:
+                    status = TestStatus.FAILED
+                else:
+                    status = TestStatus.UNKNOWN
+
+                results[f"{suite_name}.{case_name}"] = status
+
+        return results
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        table_rows = []
+
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        project_testparsers = {
+            "brotli": self.__parse_junit_report,
+            "libzmq": self.__parse_junit_report,
+            "libvpx": self.__parse_gtest_report,
+            "FastDownward": self.__parse_junit_report,
+        }
+
+        for cs in case_studies:
+            reports = get_processed_revisions_files(
+                cs.project_name,
+                TestPatchVariations,
+                TestPatchVariations.report_spec().main_report,
+                only_newest=False
+            )
+
+            if len(reports
+                  ) > 0 and (cs.project_name not in project_testparsers):
+                print(f"No test parser for {cs.project_name} defined.")
+                continue
+
+            for report in reports:
+                config_id = report.report_filename.config_id
+
+                mp_test_report = MPTextReport(report.full_path())
+
+                base_report: PlainTextReport = mp_test_report.get_baseline_report(
+                )
+
+                baseline_results = project_testparsers[cs.project_name
+                                                      ](base_report)
+
+                row = {
+                    "Case Study": cs.project_name,
+                    "Config ID": config_id,
+                    "configuration_opportunity": "__Baseline__",
+                    "variation": None
+                }
+
+                for status in TestStatus:
+                    # Count the number of tests that passed, failed, etc.
+                    row[f"{status.value}"] = sum(
+                        1 for test in baseline_results.values()
+                        if test == status
+                    )
+                table_rows.append(row)
+
+                # We want to identify all patched reports in which the
+                # test result differs from the baseline
+                for patch_name in mp_test_report.get_patch_names():
+                    patched_report = mp_test_report.get_report_for_patch(
+                        patch_name
+                    )
+                    if not patched_report:
+                        print(f"No patched report for {patch_name}?")
+                        continue
+                    patched_results = project_testparsers[cs.project_name
+                                                         ](patched_report)
+
+                    base_name, value = patch_name.split("=", 1)
+                    row = {
+                        "Case Study": cs.project_name,
+                        "Config ID": config_id,
+                        "configuration_opportunity": base_name,
+                        "variation": value
+                    }
+
+                    for status in TestStatus:
+                        # Count the number of tests that passed, failed, etc.
+                        row[f"{status.value}"] = sum(
+                            1 for test in patched_results.values()
+                            if test == status
+                        )
+
+                    table_rows.append(row)
+
+        df = pd.DataFrame(table_rows)
+        df.sort_values(
+            by=[
+                "Case Study", "Config ID", "configuration_opportunity",
+                "variation"
+            ],
+            inplace=True
+        )
+
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+
+
+class ConfigAlternativesGenerator(
+    TableGenerator, generator_name="hc_alternatives_validity", options=[]
+):
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            ConfigAlternativesValidityTable(
+                self.table_config, **self.table_kwargs
+            )
+        ]
