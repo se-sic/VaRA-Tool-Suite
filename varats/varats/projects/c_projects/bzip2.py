@@ -231,7 +231,7 @@ class Bzip2(VProject):
         (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
         with local.cwd(bzip2_source / "build"):
             with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
-                bb.watch(cmake)("test" ,"-G", "Unix Makefiles", "..")
+                bb.watch(cmake)("test", "-G", "Unix Makefiles", "..")
 
     def build_tests(self) -> None:
         """Build the tests."""

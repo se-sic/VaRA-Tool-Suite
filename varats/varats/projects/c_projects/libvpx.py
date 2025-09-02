@@ -177,9 +177,9 @@ class Libvpx(VProject):
         return test_names
 
     def run_testsuite(
-            self,
-            test_report_path: tp.Optional[Path] = None,
-            tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         test_source = local.path(self.source_of_primary) / "build_tests"
@@ -197,12 +197,15 @@ class Libvpx(VProject):
             included_test = ":".join(tests_to_run)
             with local.cwd(test_source):
                 ret_code, out, err = bb.watch(
-                    local["./test_libvpx"][f"--gtest_filter={included_test}-{excluded_test}", gtest_out]
+                    local["./test_libvpx"]
+                    [f"--gtest_filter={included_test}-{excluded_test}",
+                     gtest_out]
                 )()
         else:
             with local.cwd(test_source):
                 ret_code, out, err = bb.watch(
-                    local["./test_libvpx"][f"--gtest_filter=-{excluded_test}", gtest_out]
+                    local["./test_libvpx"][f"--gtest_filter=-{excluded_test}",
+                                           gtest_out]
                 )()
 
         if ret_code != 0:  # Should be correct but need to test after this
