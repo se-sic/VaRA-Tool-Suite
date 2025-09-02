@@ -1,7 +1,6 @@
 """Project file for PicoSAT."""
 import re
 import typing as tp
-from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
@@ -39,10 +38,6 @@ from varats.utils.git_util import (
     get_all_revisions_between,
 )
 from varats.utils.settings import bb_cfg
-from varats.utils.testsuite_utils import (
-    ctest_run_testsuite,
-    ctest_get_test_names,
-)
 
 
 class PicoSAT(VProject, ReleaseProviderHook):
