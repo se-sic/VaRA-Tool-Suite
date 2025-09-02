@@ -98,7 +98,6 @@ class HyTeg(VProject):
         "-DHYTEG_BUILD_DOC=OFF"
     ]
 
-
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
