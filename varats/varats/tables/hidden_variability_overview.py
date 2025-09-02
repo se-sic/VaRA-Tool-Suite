@@ -1,5 +1,6 @@
 import json
 import typing as tp
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -19,12 +20,17 @@ from varats.experiments.vara.hidden_configurability_experiments import (
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_repo
+from varats.report.multi_patch_report import MultiPatchReport
+from varats.report.report import ReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableGenerator, TableFormat
 from varats.ts_utils.cli_util import make_cli_option
-from varats.ts_utils.click_param_types import create_multi_case_study_choice
+from varats.ts_utils.click_param_types import (
+    create_single_case_study_choice,
+    create_multi_case_study_choice,
+)
 from varats.utils.git_util import calc_repo_loc
 from varats.utils.testsuite_utils import TestStatus
 
@@ -234,6 +240,42 @@ class HCPerfGenerator(
         return [HCPerfTable(self.table_config, **self.table_kwargs)]
 
 
+def _is_equivalent(base_results, patched_results) -> bool:
+    for test_name, base_status in base_results.items():
+        if test_name not in patched_results:
+            # Not sure how that would happen, but ignore
+            continue
+
+        patched_status = patched_results[test_name]
+
+        # We are mostly interested in cases where the base test passed,
+        # but the patched test failed in some way
+        if base_status == TestStatus.PASSED and patched_status in {
+            TestStatus.FAILED, TestStatus.TIMEOUT, TestStatus.UNKNOWN
+        }:
+            return False
+
+    return True
+
+
+class PTRAggregate(
+    ReportAggregate[PlainTextReport], shorthand="", file_type=""
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, PlainTextReport)
+
+
+class MPDuneReport(
+    MultiPatchReport[ReportAggregate[PlainTextReport]],
+    shorthand="",
+    file_type=""
+):
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, PTRAggregate)
+
+
 class ConfigAlternativesValidityTable(
     Table, table_name="hc_alternatives_validity"
 ):
@@ -289,100 +331,147 @@ class ConfigAlternativesValidityTable(
 
         return results
 
+    def __parse_dune_report(self, agg_report: PTRAggregate) -> tp.Any:
+        """Parse the DunePerfRegression report."""
+        test_results = {}
+        for report in agg_report.reports():
+            module_name = report.path.stem.removesuffix("-tests")
+            module_results = self.__parse_junit_report(report)
+            module_results = {
+                f"{module_name}#{k}": v for k, v in module_results.items()
+            }
+            test_results.update(module_results)
+        return test_results
+
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         table_rows = []
 
-        case_studies = get_loaded_paper_config().get_all_case_studies()
+        # case_studies = get_loaded_paper_config().get_all_case_studies()
 
         project_testparsers = {
             "brotli": self.__parse_junit_report,
             "libzmq": self.__parse_junit_report,
             "libvpx": self.__parse_gtest_report,
             "FastDownward": self.__parse_junit_report,
+            "DunePerfRegression": self.__parse_dune_report,
         }
 
-        for cs in case_studies:
-            reports = get_processed_revisions_files(
-                cs.project_name,
-                TestPatchVariations,
-                TestPatchVariations.report_spec().main_report,
-                only_newest=False
-            )
+        cs = self.table_kwargs["case_study"]
+        reports = get_processed_revisions_files(
+            cs.project_name,
+            TestPatchVariations,
+            TestPatchVariations.report_spec().main_report,
+            only_newest=False
+        )
 
-            if len(reports
-                  ) > 0 and (cs.project_name not in project_testparsers):
-                print(f"No test parser for {cs.project_name} defined.")
-                continue
+        if len(reports) > 0 and (cs.project_name not in project_testparsers):
+            print(f"No test parser for {cs.project_name} defined.")
 
-            for report in reports:
-                config_id = report.report_filename.config_id
+        for report in reports:
+            config_id = report.report_filename.config_id
 
+            if cs.project_name == "DunePerfRegression":
+                mp_test_report = MPDuneReport(report.full_path())
+            else:
                 mp_test_report = MPTextReport(report.full_path())
 
-                base_report: PlainTextReport = mp_test_report.get_baseline_report(
+            base_report = mp_test_report.get_baseline_report()
+
+            baseline_results = project_testparsers[cs.project_name](base_report)
+
+            row = {
+                "Config ID": config_id,
+                "configuration_opportunity": "__Baseline__",
+                "variation": None,
+                "same_as_baseline": True
+            }
+
+            for status in TestStatus:
+                # Count the number of tests that passed, failed, etc.
+                row[f"{status.value}"] = sum(
+                    1 for test in baseline_results.values() if test == status
                 )
+            table_rows.append(row)
 
-                baseline_results = project_testparsers[cs.project_name
-                                                      ](base_report)
+            # We want to identify all patched reports in which the
+            # test result differs from the baseline
+            for patch_name in mp_test_report.get_patch_names():
+                patched_report = mp_test_report.get_report_for_patch(patch_name)
+                if not patched_report:
+                    print(f"No patched report for {patch_name}?")
+                    continue
+                patched_results = project_testparsers[cs.project_name
+                                                     ](patched_report)
 
+                base_name, value = patch_name.split("=", 1)
                 row = {
-                    "Case Study": cs.project_name,
-                    "Config ID": config_id,
-                    "configuration_opportunity": "__Baseline__",
-                    "variation": None
+                    "Config ID":
+                        config_id,
+                    "configuration_opportunity":
+                        base_name,
+                    "variation":
+                        value,
+                    "same_as_baseline":
+                        _is_equivalent(baseline_results, patched_results)
                 }
 
                 for status in TestStatus:
                     # Count the number of tests that passed, failed, etc.
                     row[f"{status.value}"] = sum(
-                        1 for test in baseline_results.values()
-                        if test == status
+                        1 for test in patched_results.values() if test == status
                     )
+
                 table_rows.append(row)
-
-                # We want to identify all patched reports in which the
-                # test result differs from the baseline
-                for patch_name in mp_test_report.get_patch_names():
-                    patched_report = mp_test_report.get_report_for_patch(
-                        patch_name
-                    )
-                    if not patched_report:
-                        print(f"No patched report for {patch_name}?")
-                        continue
-                    patched_results = project_testparsers[cs.project_name
-                                                         ](patched_report)
-
-                    base_name, value = patch_name.split("=", 1)
-                    row = {
-                        "Case Study": cs.project_name,
-                        "Config ID": config_id,
-                        "configuration_opportunity": base_name,
-                        "variation": value
-                    }
-
-                    for status in TestStatus:
-                        # Count the number of tests that passed, failed, etc.
-                        row[f"{status.value}"] = sum(
-                            1 for test in patched_results.values()
-                            if test == status
-                        )
-
-                    table_rows.append(row)
 
         df = pd.DataFrame(table_rows)
         df.sort_values(
-            by=[
-                "Case Study", "Config ID", "configuration_opportunity",
-                "variation"
-            ],
+            by=["Config ID", "configuration_opportunity", "variation"],
             inplace=True
         )
 
-        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+        summary_rows = []
+        for configuration_opportunity in df["configuration_opportunity"].unique(
+        ):
+            if configuration_opportunity == "__Baseline__":
+                continue
+
+            row = {
+                "configuration_opportunity": configuration_opportunity,
+            }
+
+            opportunity_df = df[df["configuration_opportunity"] ==
+                                configuration_opportunity]
+            total_alternatives = len(opportunity_df["variation"].unique())
+
+            for config_id in opportunity_df["Config ID"].unique():
+                config_df = opportunity_df[opportunity_df["Config ID"] ==
+                                           config_id]
+                num_equivalent = len(
+                    config_df[config_df["same_as_baseline"] == True
+                             ]  # noqa: E712
+                )
+                row[config_id] = f"{num_equivalent}/{total_alternatives}"
+
+            summary_rows.append(row)
+
+        summary_df = pd.DataFrame(summary_rows)
+
+        return dataframe_to_table(
+            summary_df, table_format, wrap_table=wrap_table
+        )
 
 
 class ConfigAlternativesGenerator(
-    TableGenerator, generator_name="hc_alternatives_validity", options=[]
+    TableGenerator,
+    generator_name="hc_alternatives_validity",
+    options=[
+        make_cli_option(
+            "--case_study",
+            type=create_single_case_study_choice(),
+            required=True,
+            help="Case studies to plot",
+        )
+    ]
 ):
 
     def generate(self) -> tp.List[Table]:
