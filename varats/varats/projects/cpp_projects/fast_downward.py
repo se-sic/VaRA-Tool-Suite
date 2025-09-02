@@ -3,7 +3,6 @@ import re
 import typing as tp
 from pathlib import Path
 
-import benchbuild
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake, mkdir, pytest
 from benchbuild.utils.settings import get_number_of_jobs
@@ -48,7 +47,7 @@ class FastDownward(VProject, ReleaseProviderHook):
     ]
 
     CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
+        ImageBase.DEBIAN_12
     ).run('apt', 'install', '-y', 'cmake', 'g++', 'git', 'make', 'python3')
 
     @staticmethod
@@ -58,7 +57,9 @@ class FastDownward(VProject, ReleaseProviderHook):
         binary_map = RevisionBinaryMap(
             get_local_project_repo(FastDownward.NAME)
         )
-        binary_map.specify_binary('build/bin/downward', BinaryType.EXECUTABLE)
+        binary_map.specify_binary(
+            'build/release/bin/downward', BinaryType.EXECUTABLE
+        )
 
         return binary_map[revision]
 
@@ -77,11 +78,19 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
-        with local.cwd(version_source):
-            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                build_script = benchbuild.utils.cmd["./build.py"]
-                bb.watch(build_script
-                        )("--all", "-j", get_number_of_jobs(bb_cfg()))
+
+        mkdir("-p", version_source / "builds/release")
+        mkdir("-p", version_source / "builds/debug")
+
+        build_types = ["Release", "Debug"]
+        for build_type in build_types:
+            with local.cwd(version_source / "builds" / build_type.lower()):
+                with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                    bb.watch(cmake
+                            )("../../src", f"-DCMAKE_BUILD_TYPE={build_type}")
+
+                bb.watch(cmake
+                        )("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self) -> None:
         """
@@ -164,11 +173,11 @@ class FastDownward(VProject, ReleaseProviderHook):
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        mkdir("-p", version_source / "build")
+        mkdir("-p", version_source / "builds/release")
 
-        with local.cwd(version_source / "build"):
+        with local.cwd(version_source / "builds/release"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("../src")
+                bb.watch(cmake)("../../src", f"-DCMAKE_BUILD_TYPE=Release")
 
             bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
