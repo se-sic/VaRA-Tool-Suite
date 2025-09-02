@@ -267,9 +267,9 @@ class Bzip2(VProject):
         """Build the tests."""
         bzip2_version_source = local.path(self.source_of_primary)
 
-        build_dir, method = self.__get_build_dir()
+        build_dir, build_method = self.__getbuilddir()
 
-        if method != Bzip2.BrotliBuildMethod.CMAKE:
+        if build_method != Bzip2.BrotliBuildMethod.CMAKE:
             raise NotImplementedError(
                 "Test suites are only supported for revisions using CMake."
             )
