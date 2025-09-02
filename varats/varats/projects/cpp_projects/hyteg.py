@@ -93,6 +93,12 @@ class HyTeg(VProject):
         ]
     }
 
+    CMAKE_ARGS = [
+        "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
+        "-DHYTEG_BUILD_DOC=OFF"
+    ]
+
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -162,11 +168,7 @@ class HyTeg(VProject):
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
-        cmake_args = [
-            "-G", "Ninja", "..", "-DWALBERLA_BUILD_WITH_MPI=OFF",
-            "-DHYTEG_BUILD_DOC=OFF"
-        ]
-
+        cmake_args = self.CMAKE_ARGS
         if (eigen_path := os.getenv("EIGEN_PATH")):
             cmake_args.append(f"-DEIGEN_DIR={eigen_path}")
         else:
