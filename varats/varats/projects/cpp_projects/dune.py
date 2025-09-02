@@ -327,7 +327,7 @@ class DunePerfRegression(VProject):
                     # skip the pdelab module as building tests fails
                     continue
 
-                module_test_report = Path(zip_folder) / f"{module}-tests.xml"
+                module_test_report = Path(zip_folder) / f"{module}.xml"
                 module_build_dir = version_source / module / "build-cmake"
                 overall_result &= ctest_run_testsuite(
                     module_build_dir, module_test_report,
@@ -336,6 +336,8 @@ class DunePerfRegression(VProject):
 
         if test_report_path:
             # Move the aggregated test results to the specified path
-            shutil.copy(aggregated_results, test_report_path)
+            shutil.copy(
+                aggregated_results, test_report_path.with_suffix(".zip")
+            )
 
         return overall_result

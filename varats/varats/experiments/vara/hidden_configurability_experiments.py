@@ -259,7 +259,8 @@ class FindHiddenConfigurationPoints(VersionExperiment, shorthand="HCP"):
 # for patch rendering.
 PATCH_VARIATIONS = {
     "libzmq": {
-        "hwm_template": ("hwm", [x for x in range(100, 2000, 100)]),
+        "hwm_template":
+            ("hwm", [x for x in range(100, 2000, 100) if x != 1000]),
     },
     "brotli": {
         "command_block_cost": (

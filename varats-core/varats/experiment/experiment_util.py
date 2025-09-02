@@ -22,7 +22,7 @@ from plumbum.commands import ProcessExecutionError
 from plumbum.commands.base import BoundCommand
 
 import varats.revision.revisions as revs
-from varats.experiment.steps.patch import ApplyPatch
+from varats.experiment.steps.patch import ApplyPatch, RevertPatch
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.project.varats_project import VProject
 from varats.report.report import (
@@ -555,12 +555,14 @@ class ZippedExperimentSteps(MultiStep[ZippedStepTy]):  # type: ignore
         with ZippedReportFolder(self.__output_filepath.full_path()) as tmp_dir:
             try:
                 results = self.__run_children(Path(tmp_dir))
-            except:  # noqa: E722
+            except Exception as e:
+                # noqa: E722
+                print(f"Exception during execution of zipped step: {e}")
                 exception_raised_during_exec = True
                 raise
 
         overall_step_result = max(results) if results else StepResult.OK
-        if overall_step_result is not StepResult.OK \
+        if overall_step_result not in [StepResult.OK, StepResult.CAN_CONTINUE] \
                 or exception_raised_during_exec:
             error_filepath = self.__output_filepath.with_status(
                 FileStatusExtension.FAILED

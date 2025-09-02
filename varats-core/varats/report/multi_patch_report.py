@@ -34,7 +34,7 @@ class MultiPatchReport(
 
             if not self.__base or not self.__patched_reports:
                 raise AssertionError(
-                    f"Reports where missing in the file {path=}"
+                    f"Reports were missing in the file {path=}"
                 )
 
     def get_baseline_report(self) -> ReportTy:
