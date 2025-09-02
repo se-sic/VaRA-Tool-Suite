@@ -179,14 +179,12 @@ class Bzip2(VProject):
         run_dir: Path
         build_method: Bzip2.Bzip2BuildMethod
         if bzip2_version in typed_revision_range(
-            bzip2_repo, Bzip2._MAKE_VERSIONS,
-            ShortCommitHash
+            bzip2_repo, Bzip2._MAKE_VERSIONS, ShortCommitHash
         ):
             run_dir = bzip2_source
             build_method = Bzip2.Bzip2BuildMethod.MAKE
         elif bzip2_version in typed_revision_range(
-            bzip2_repo, Bzip2._AUTOTOOLS_VERSIONS,
-            ShortCommitHash
+            bzip2_repo, Bzip2._AUTOTOOLS_VERSIONS, ShortCommitHash
         ):
             run_dir = bzip2_source
             build_method = Bzip2.Bzip2BuildMethod.AUTOTOOLS
