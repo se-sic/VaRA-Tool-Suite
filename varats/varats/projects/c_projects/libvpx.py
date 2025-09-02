@@ -147,14 +147,14 @@ class Libvpx(VProject):
         test_source = libvpx_source / "build_tests"
 
         with local.cwd(test_source):
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("test_libvpx", "-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names
             Returns:
                 A list of test names available in the test directory.
         """
-        test_source = local.path(self.source_of_primary) / "build_test"
+        test_source = local.path(self.source_of_primary) / "build_tests"
 
         try:
             with local.cwd(test_source):
@@ -182,29 +182,27 @@ class Libvpx(VProject):
             tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
-        test_source = local.path(self.source_of_primary) / "build_test"
+        test_source = local.path(self.source_of_primary) / "build_tests"
         excluded_tests = [
             "*TestLarge*", "*/LevelTest.*Large*",
             "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
         ]
 
-        excluded_regex = ":".join(test for test in excluded_tests)
+        excluded_test = ":".join(test for test in excluded_tests)
         gtest_out = ""
         if test_report_path:
-            gtest_out = "--gtest_output=json:" + test_report_path.__str__()
+            gtest_out = "--gtest_output=json:" + test_report_path.absolute()
 
         if tests_to_run:
-            test_regex = ":".join((test + "*") for test in tests_to_run)
+            included_test = ":".join(tests_to_run)
             with local.cwd(test_source):
                 ret_code, out, err = bb.watch(
-                    local["./test_libvpx"]["--gtest_filter=" + test_regex +
-                                           "-" + excluded_regex][gtest_out]
+                    local["./test_libvpx"][f"--gtest_filter={included_test}-{excluded_test}", gtest_out]
                 )()
         else:
             with local.cwd(test_source):
                 ret_code, out, err = bb.watch(
-                    local["./test_libvpx"]["--gtest_filter=-" +
-                                           excluded_regex][gtest_out]
+                    local["./test_libvpx"][f"--gtest_filter=-{excluded_test}", gtest_out]
                 )()
 
         if ret_code != 0:  # Should be correct but need to test after this
