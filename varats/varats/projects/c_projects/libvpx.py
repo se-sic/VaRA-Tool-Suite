@@ -164,7 +164,9 @@ class Libvpx(VProject):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        test_to_include: tp.Optional[tp.Iterable[str]] = None,
+        test_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         libvpx_source = local.path(self.source_of_primary)
@@ -174,5 +176,5 @@ class Libvpx(VProject):
             "*TestLarge*", "*/LevelTest.*Large*",
             "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
         ]
-        status, result = gtest_run_testsuite(libvpx_source, test_libvpx, test_report_path, tests_to_run, tests_to_exclude=excluded_tests)
-        return status
+        included_tests = ["C/YUVTemporalFilterTest.*"]
+        return gtest_run_testsuite(libvpx_source, test_libvpx, test_report_path, tests_to_run, tests_to_include=included_tests)

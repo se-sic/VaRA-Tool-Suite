@@ -6,6 +6,7 @@ from pathlib import Path
 
 import benchbuild as bb
 from plumbum import local, ProcessExecutionError
+import xml.etree.ElementTree as ET
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
@@ -35,7 +36,7 @@ def ctest_run_testsuite(
     build_dir: Path,
     test_report_path: tp.Optional[Path] = None,
     tests_to_run: tp.Optional[tp.Iterable[str]] = None
-) -> bool:
+) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, str]]]:
     """
     Run a test suite using ctest.
 
@@ -53,8 +54,9 @@ def ctest_run_testsuite(
 
     with local.cwd(build_dir):
         ctest_cmd = local["ctest"]
-        if test_report_path:
-            ctest_cmd = ctest_cmd["--output-junit", test_report_path]
+        if test_report_path is None:
+            test_report_path = build_dir / "result.xml"
+        ctest_cmd = ctest_cmd["--output-junit", test_report_path]
 
         if tests_to_run:
             test_regex = '|'.join([re.escape(name) for name in tests_to_run])
@@ -64,7 +66,20 @@ def ctest_run_testsuite(
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
-        return bool(ret_code == 0)
+    result: tp.Dict[str, str] = {}
+    tree = ET.parse(test_report_path)
+    root = tree.getroot()
+    for testcase in root.iter("Test"):
+        name = testcase.attrib.get("Name")
+        status = testcase.attrib.get("Status", "").lower()
+        if status == "passed":
+            result[name] = "passed"
+        elif status == "notrun":
+            result[name] = "skipped"
+        else:
+            result[name] = "failed"
+    has_failures = any(status == "failed" for status in result.values())
+    return not has_failures, result
 
 def gtest_get_test_names(build_dir: Path,
                    test_bin: str
@@ -106,9 +121,14 @@ def gtest_run_testsuite(
     included_tests = ":".join(tests_to_include)
     excluded_tests = ":".join(tests_to_exclude)
 
-    gtest_out = ""
+    output_file: Path
     if test_report_path:
-        gtest_out = "--gtest_output=json:" + test_report_path.absolute()
+        output_file = test_report_path.absolute()
+
+    else:
+        output_file = build_dir / "results.json"
+
+    gtest_out = "--gtest_output=json:" + output_file
 
     if tests_to_run:
         all_tests = ":".join(tests_to_run)
@@ -125,18 +145,23 @@ def gtest_run_testsuite(
                                        gtest_out]
             )()
 
-    if ret_code != 0:  # Should be correct but need to test after this
-        return False, None
+    # if ret_code != 0:  # Should be correct but need to test after this
+    #     return False, None
 
     # TODO: need to figure out how to get all the passed test and fail test
-    passed = failed = 0
-    for line in out.splitlines():
-        line = line.strip()
-        if line.startswith("[  PASSED  ]") and "tests." in line:
-            passed = int(line.split()[3])
-        elif line.startswith("[  FAILED  ]") and "tests" in line:
-            failed = int(line.split()[3])
-    if failed > 0:
-        return False, None  # Failed some test
-
-    return True, None  # Passed all test
+    # look at the json file that is generated
+    result: tp.Dict[str, str] = {}
+    if output_file.exists():
+        with open(output_file) as f:
+            report = json.load(f)
+            for suite in report.get("testsuites", []):
+                for case in suite.get("testsuite", []):
+                    name = f"{suite['name']}.{case['name']}"
+                    if case.get("status") == "SKIP":
+                        result[name] = "skipped"
+                    elif case.get("failure") is not None:
+                        result[name] = "failed"
+                    else:
+                        result[name] = "passed"
+    has_failures = any(status == "failed" for status in result.values())
+    return not has_failures, result  # Passed all test

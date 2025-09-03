@@ -200,5 +200,4 @@ class HyTeg(VProject):
     ) -> bool:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
-        status, result = ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
-        return status
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)

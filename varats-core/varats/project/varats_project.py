@@ -105,7 +105,7 @@ class SupportsTestSuites(Protocol):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None,
-    ) -> bool:
+    ) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, str]]]:
         """
         Run the test suite for this project.
 
@@ -117,7 +117,8 @@ class SupportsTestSuites(Protocol):
             test_to_exclude: List of test cases to exclude.
 
         Returns:
-            True is all tests passed, False otherwise.
+            True is no failing tests, False otherwise.
+            Additionally returns a dictionary mapping test names to respective status (e.g., 'passed', 'failed', 'skipped').
         """
         ...
 
