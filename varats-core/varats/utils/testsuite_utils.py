@@ -2,11 +2,11 @@
 import json
 import re
 import typing as tp
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import benchbuild as bb
 from plumbum import local, ProcessExecutionError
-import xml.etree.ElementTree as ET
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
