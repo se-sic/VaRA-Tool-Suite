@@ -66,9 +66,8 @@ def ctest_run_testsuite(
 
         return bool(ret_code == 0)
 
-def gtest_get_test_names(build_dir: Path,
-                   test_bin: str
-                   ) -> tp.Iterable[str]:
+
+def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
     """Get the test names
         Returns:
             A list of test names available in the test directory.
@@ -93,6 +92,7 @@ def gtest_get_test_names(build_dir: Path,
         test_names.append(current_prefix + test_name)
 
     return test_names
+
 
 def gtest_run_testsuite(
     build_dir: Path,
@@ -121,8 +121,7 @@ def gtest_run_testsuite(
     else:
         with local.cwd(build_dir):
             ret_code, out, err = bb.watch(
-                local[test_bin][f"--gtest_filter=-{excluded_tests}",
-                                       gtest_out]
+                local[test_bin][f"--gtest_filter=-{excluded_tests}", gtest_out]
             )()
 
     if ret_code != 0:  # Should be correct but need to test after this

@@ -174,5 +174,11 @@ class Libvpx(VProject):
             "*TestLarge*", "*/LevelTest.*Large*",
             "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
         ]
-        status, result = gtest_run_testsuite(libvpx_source, test_libvpx, test_report_path, tests_to_run, tests_to_exclude=excluded_tests)
+        status, result = gtest_run_testsuite(
+            libvpx_source,
+            test_libvpx,
+            test_report_path,
+            tests_to_run,
+            tests_to_exclude=excluded_tests
+        )
         return status
