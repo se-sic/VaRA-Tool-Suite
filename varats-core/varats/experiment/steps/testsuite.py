@@ -99,7 +99,6 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__test_to_include = test_to_include
         self.__test_to_exclude = test_to_exclude
 
-
     @property
     def output_path(self) -> Path:
         return self.__output_path
@@ -115,8 +114,8 @@ class RunTestSuite(ProjectStep):  # type: ignore
         try:
             self.project.prepare_test_environment()
             result_status, results = self.project.run_testsuite(
-                self.__output_path, self.__tests_to_run,
-                self.__test_to_include, self.__test_to_exclude
+                self.__output_path, self.__tests_to_run, self.__test_to_include,
+                self.__test_to_exclude
             )
             if result_status:
                 self.status = StepResult.OK
