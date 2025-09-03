@@ -102,7 +102,9 @@ class SupportsTestSuites(Protocol):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        test_to_include: tp.Optional[tp.Iterable[str]] = None,
+        test_to_exclude: tp.Optional[tp.Iterable[str]] = None,
     ) -> bool:
         """
         Run the test suite for this project.
@@ -111,6 +113,8 @@ class SupportsTestSuites(Protocol):
             test_report_path: Path to the test report file.
             tests_to_run: List of test cases to run.
                           If None, all tests will be run.
+            test_to_include: List of test cases to include.
+            test_to_exclude: List of test cases to exclude.
 
         Returns:
             True is all tests passed, False otherwise.

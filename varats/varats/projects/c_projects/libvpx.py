@@ -32,6 +32,8 @@ from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_run_testsuite,
     ctest_get_test_names,
+    gtest_run_testsuite,
+    gtest_get_test_names,
 )
 
 
@@ -155,26 +157,9 @@ class Libvpx(VProject):
                 A list of test names available in the test directory.
         """
         test_source = local.path(self.source_of_primary) / "build_tests"
+        test_executable = test_source / "test_libvpx"
 
-        try:
-            with local.cwd(test_source):
-                output = local["./test_libvpx"]["--gtest_list_tests"]
-        except ProcessExecutionError:
-            return []
-
-        test_names = []
-
-        current_prefix = ""
-        for line in output.splitlines():
-            if line.endswith("."):
-                current_prefix = line
-                continue
-
-            test_name = line.split("#", maxsplit=1)[0].strip()
-
-            test_names.append(current_prefix + test_name)
-
-        return test_names
+        return gtest_get_test_names(test_source, test_executable)
 
     def run_testsuite(
         self,
@@ -182,43 +167,12 @@ class Libvpx(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
+        libvpx_source = local.path(self.source_of_primary)
         test_source = local.path(self.source_of_primary) / "build_tests"
+        test_libvpx = test_source / "test_libvpx"
         excluded_tests = [
             "*TestLarge*", "*/LevelTest.*Large*",
             "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
         ]
-
-        excluded_test = ":".join(test for test in excluded_tests)
-        gtest_out = ""
-        if test_report_path:
-            gtest_out = "--gtest_output=json:" + test_report_path.absolute()
-
-        if tests_to_run:
-            included_test = ":".join(tests_to_run)
-            with local.cwd(test_source):
-                ret_code, out, err = bb.watch(
-                    local["./test_libvpx"]
-                    [f"--gtest_filter={included_test}-{excluded_test}",
-                     gtest_out]
-                )()
-        else:
-            with local.cwd(test_source):
-                ret_code, out, err = bb.watch(
-                    local["./test_libvpx"][f"--gtest_filter=-{excluded_test}",
-                                           gtest_out]
-                )()
-
-        if ret_code != 0:  # Should be correct but need to test after this
-            return False
-
-        passed = failed = 0
-        for line in out.splitlines():
-            line = line.strip()
-            if line.startswith("[  PASSED  ]") and "tests." in line:
-                passed = int(line.split()[3])
-            elif line.startswith("[  FAILED  ]") and "tests" in line:
-                failed = int(line.split()[3])
-        if failed > 0:
-            return False  # Failed some test
-
-        return True  # Passed all test
+        status, result = gtest_run_testsuite(libvpx_source, test_libvpx, test_report_path, tests_to_run, tests_to_exclude=excluded_tests)
+        return status

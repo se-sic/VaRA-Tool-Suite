@@ -65,3 +65,78 @@ def ctest_run_testsuite(
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
         return bool(ret_code == 0)
+
+def gtest_get_test_names(build_dir: Path,
+                   test_bin: str
+                   ) -> tp.Iterable[str]:
+    """Get the test names
+        Returns:
+            A list of test names available in the test directory.
+    """
+    test_path = build_dir / test_bin
+    try:
+        with local.cwd(build_dir):
+            output = local[test_path]["--gtest_list_tests"]
+    except ProcessExecutionError:
+        return []
+
+    test_names = []
+
+    current_prefix = ""
+    for line in output.splitlines():
+        if line.endswith("."):
+            current_prefix = line
+            continue
+
+        test_name = line.split("#", maxsplit=1)[0].strip()
+
+        test_names.append(current_prefix + test_name)
+
+    return test_names
+
+def gtest_run_testsuite(
+    build_dir: Path,
+    test_bin: Path,
+    test_report_path: tp.Optional[Path] = None,
+    tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+    tests_to_include: tp.Optional[tp.Iterable[str]] = None,
+    tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, str]]]:
+    """Run the testsuite."""
+    included_tests = ":".join(tests_to_include)
+    excluded_tests = ":".join(tests_to_exclude)
+
+    gtest_out = ""
+    if test_report_path:
+        gtest_out = "--gtest_output=json:" + test_report_path.absolute()
+
+    if tests_to_run:
+        all_tests = ":".join(tests_to_run)
+        with local.cwd(build_dir):
+            ret_code, out, err = bb.watch(
+                local[test_bin]
+                [f"--gtest_filter={all_tests}:{included_tests}-{excluded_tests}",
+                 gtest_out]
+            )()
+    else:
+        with local.cwd(build_dir):
+            ret_code, out, err = bb.watch(
+                local[test_bin][f"--gtest_filter=-{excluded_tests}",
+                                       gtest_out]
+            )()
+
+    if ret_code != 0:  # Should be correct but need to test after this
+        return False, None
+
+    # TODO: need to figure out how to get all the passed test and fail test
+    passed = failed = 0
+    for line in out.splitlines():
+        line = line.strip()
+        if line.startswith("[  PASSED  ]") and "tests." in line:
+            passed = int(line.split()[3])
+        elif line.startswith("[  FAILED  ]") and "tests" in line:
+            failed = int(line.split()[3])
+    if failed > 0:
+        return False, None  # Failed some test
+
+    return True, None  # Passed all test

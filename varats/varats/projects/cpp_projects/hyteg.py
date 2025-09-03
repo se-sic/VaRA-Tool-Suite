@@ -161,8 +161,7 @@ class HyTeg(VProject):
 
         mkdir("-p", hyteg_source / "build")
 
-        with local.cwd(hyteg_source):
-            local["git"]["submodule"]("update", "--init", "--recursive")
+        update_all_submodules(hyteg_source, recursive=True, init=True)
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
@@ -185,7 +184,7 @@ class HyTeg(VProject):
         hyteg_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(hyteg_source / "build"):
-            bb.watch(ninja)
+            bb.watch(ninja)()
 
     def get_test_names(self) -> tp.Iterable[str]:
         """Get the test names."""
@@ -195,8 +194,11 @@ class HyTeg(VProject):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        test_to_include: tp.Optional[tp.Iterable[str]] = None,
+        test_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> bool:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        status, result = ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        return status

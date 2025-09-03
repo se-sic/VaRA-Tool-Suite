@@ -82,7 +82,9 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self,
         project: VProject,
         output_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        test_to_include: tp.Optional[tp.Iterable[str]] = None,
+        test_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ):
         """
         Initialize the test-suite step.
@@ -94,6 +96,9 @@ class RunTestSuite(ProjectStep):  # type: ignore
         super().__init__(project)
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
+        self.__test_to_include = test_to_include
+        self.__test_to_exclude = test_to_exclude
+
 
     @property
     def output_path(self) -> Path:
@@ -109,10 +114,11 @@ class RunTestSuite(ProjectStep):  # type: ignore
             )
         try:
             self.project.prepare_test_environment()
-            result = self.project.run_testsuite(
-                self.__output_path, self.__tests_to_run
+            result_status, results = self.project.run_testsuite(
+                self.__output_path, self.__tests_to_run,
+                self.__test_to_include, self.__test_to_exclude
             )
-            if result:
+            if result_status:
                 self.status = StepResult.OK
             else:
                 self.status = StepResult.ERROR
