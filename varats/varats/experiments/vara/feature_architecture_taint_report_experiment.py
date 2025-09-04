@@ -142,7 +142,7 @@ class FeatureArchitectureTaintReportExperiment(
         project.cflags += [
             "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
             "-fvara-arch", f"-fvara-am-path={am_path}", "-Xclang",
-            "-disable-llvm-optzns", "-O1", "-g0", "-fvara-arch"
+            "-disable-llvm-optzns", "-O1", "-g0"
         ]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report

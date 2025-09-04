@@ -145,8 +145,12 @@ class ArchitectureModelReportExperiment(VersionExperiment, shorthand="AMRE"):
         )
 
         project.cflags += [
-            "-O1", "-g0", "-fvara-arch",
-            f"-fvara-am-path={model_provider.get_architecture_model_path(project)}"
+            f"-fvara-am-path={model_provider.get_architecture_model_path(project)}",
+            "-Xclang",
+            "-disable-llvm-optzns",
+            "-O1",
+            "-g0",
+            "-fvara-arch",
         ]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
