@@ -30,7 +30,7 @@ class DMSInterface:
         interface = ET.SubElement(parent, "interface")
         ET.SubElement(interface, "uid").text = str(self.uid)
         ET.SubElement(interface, "name").text = self.name
-        ET.SubElement(interface, "abbreviation").text = self.abbreviation
+        ET.SubElement(interface, "abbrev").text = self.abbreviation
         return interface
 
 
@@ -75,7 +75,7 @@ class DSMConnection:
     col_uid: int
     name: str
     weight: float
-    interfaces: tp.List[DMSInterface]
+    interfaces: tp.List[int]
 
     def __init__(
         self,
@@ -101,8 +101,7 @@ class DSMConnection:
         ET.SubElement(connection, "weight").text = str(self.weight)
         interfaces = ET.SubElement(connection, "interfaces")
         for interface in self.interfaces:
-            ET.SubElement(interfaces,
-                          "interface").set("uid", str(interface.uid))
+            ET.SubElement(interfaces, "interface").set("uid", str(interface))
         return connection
 
 
@@ -122,13 +121,14 @@ class DSMEntry:
         self.group = group
         self.alias = alias
 
-    def to_xml(self, parent: ET.Element, col: bool = True) -> ET.Element:
-        col = ET.SubElement(parent, "col" if col else "row")
-        col.set("uid", str(self.uid if col else self.alias))
+    def to_xml(self, parent: ET.Element, is_col: bool = True) -> ET.Element:
+        col = ET.SubElement(parent, "col" if is_col else "row")
+        col.set("uid", str(self.uid if is_col else self.alias))
         ET.SubElement(col, "name").text = self.name
-        ET.SubElement(col, "index").text = str(self.index)
-        ET.SubElement(col, "group").text = str(self.group)
-        ET.SubElement(col, "alias").text = str(self.alias if col else self.uid)
+        ET.SubElement(col, "sort_index").text = str(self.index)
+        ET.SubElement(col, "group1").text = str(self.group)
+        ET.SubElement(col,
+                      "alias").text = str(self.alias if is_col else self.uid)
         return col
 
 
@@ -156,6 +156,7 @@ class DSM:
             entries = []
         if groups is None:
             groups = []
+        groups.append(DSMGroup(2147483647, "(none)", -1))
         if connections is None:
             connections = []
         if interfaces is None:
@@ -167,29 +168,31 @@ class DSM:
         self.connections = connections
         self.interfaces = interfaces
 
-    def add_entry(self, name: str) -> None:
+    def add_entry(self, name: str) -> tuple[int, int]:
         entry = DSMEntry(
             self.entryUid, name,
-            len(self.entries) + 1, 0, self.entryUid + 1
+            len(self.entries) + 1, 2147483647, self.entryUid + 1
         )
         self.entries.append(entry)
         self.entryUid += 2
+        return entry.uid, entry.alias
 
     def add_group(self, name: str, priority: int) -> None:
         group = DSMGroup(self.groupUid, name, priority)
         self.groups.append(group)
         self.groupUid += 1
 
-    def add_interface(self, name: str, abbreviation: str) -> None:
+    def add_interface(self, name: str, abbreviation: str) -> int:
         interface = DMSInterface(self.interfaceUid, name, abbreviation)
         self.interfaces.append(interface)
         self.interfaceUid += 1
+        return interface.uid
 
     def add_connection(
         self,
         row_uid: int,
         col_uid: int,
-        name: str,
+        name: str = "x",
         weight: float = 1.0,
         interfaces=None
     ) -> None:
@@ -202,8 +205,8 @@ class DSM:
         ET.SubElement(info, "title").text = self.title
         ET.SubElement(info, "project").text = self.project
         ET.SubElement(info, "customer")
-        ET.SubElement(info, "type").text = "feature"
-        ET.SubElement(info, "file_structure").text = "v2.1.0"
+        ET.SubElement(info, "type").text = "symmetric"
+        ET.SubElement(info, "version").text = "v2.1.0"
         return info
 
     def to_xml(self) -> ET.Element:
@@ -211,17 +214,18 @@ class DSM:
         self.crate_info(ET.SubElement(dsm, "info"))
         columns = ET.SubElement(dsm, "columns")
         for entry in self.entries:
-            entry.to_xml(columns, col=True)
+            entry.to_xml(columns, is_col=True)
         rows = ET.SubElement(dsm, "rows")
         for entry in self.entries:
-            entry.to_xml(rows, col=False)
+            entry.to_xml(rows, is_col=False)
         connections = ET.SubElement(dsm, "connections")
         for connection in self.connections:
             connection.to_xml(connections)
-        groups = ET.SubElement(dsm, "groups")
+        groups = ET.SubElement(dsm, "groupings")
         for group in self.groups:
             group.to_xml(groups)
-        interfaces = ET.SubElement(dsm, "interfaces")
+        interfaces = ET.SubElement(ET.SubElement(dsm, "interfaces"), "grouping")
+        interfaces.set("name", "features")
         for interface in self.interfaces:
             interface.to_xml(interfaces)
         return dsm
@@ -233,6 +237,7 @@ class DSM:
 class DesignStructureMatrix(Table, table_name=None):
 
     data: pd.DataFrame = None
+    dsm: DSM = None
 
     def __init__(self, table_config: TableConfig, **kwargs: tp.Any):
         super().__init__(table_config, **kwargs)
@@ -240,4 +245,5 @@ class DesignStructureMatrix(Table, table_name=None):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         output = "symmetric\n"
         output += crate_matrix(self.data)
-        return output
+        ET.dump(self.dsm.to_xml())
+        return self.dsm.to_xml_string()

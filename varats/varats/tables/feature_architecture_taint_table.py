@@ -16,7 +16,7 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.tables.design_structure_matrix import DesignStructureMatrix
+from varats.tables.design_structure_matrix import DesignStructureMatrix, DSM
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 
 
@@ -60,6 +60,30 @@ def fat_report_to_table(
     return df
 
 
+def fat_report_to_DSM(fat_report: FeatureArchitectureTaintReport) -> DSM:
+    entries, features = get_all_regions_tuples(fat_report)
+    dsm = DSM(
+        fat_report.filename.commit_hash.hash, fat_report.filename.project_name
+    )
+    feature_uid_dict: tp.Dict[str, int] = {}
+    region_uid_dict: tp.Dict[str, tp.Tuple[int, int]] = {}
+    for f in features:
+        uid = dsm.add_interface(f, f[:2])
+        feature_uid_dict[f] = uid
+    for r in entries:
+        uids = dsm.add_entry(r)
+        region_uid_dict[r] = uids
+    for function in fat_report.function_entries.values():
+        for region in function.interactions:
+            for in_region, in_features in region.incommingRegions.items():
+                dsm.add_connection(
+                    region_uid_dict[in_region][1],
+                    region_uid_dict[function.file_name][0],
+                    interfaces=[feature_uid_dict[f] for f in set(in_features)]
+                )
+    return dsm
+
+
 class FeatureArchitectureTaintTable(Table, table_name="FAT_table"):
 
     def __init__(
@@ -98,6 +122,7 @@ class FeatureArchitectureDsm(DesignStructureMatrix, table_name="Fat_DSM"):
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
         self.revision = report_path.report_filename.commit_hash
         self.data = fat_report_to_table(self.report)
+        self.dsm = fat_report_to_DSM(self.report)
 
 
 class FeatureArchitectureTaintTableGenerator(

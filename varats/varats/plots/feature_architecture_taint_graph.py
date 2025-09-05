@@ -4,7 +4,6 @@ from collections import Counter
 from pathlib import Path
 
 import pygraphviz as pgv
-from docutils.nodes import compound
 from pygraphviz import AGraph
 from rich import region
 
