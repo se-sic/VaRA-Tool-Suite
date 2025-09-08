@@ -57,6 +57,7 @@ class TableFormat(Enum):
     LATEX_RAW = "latex_raw"
     LATEX_BOOKTABS = "latex_booktabs"
     TEXTILE = "textile"
+    DSM = "dsm"  # Design Structure Matrix
 
     def is_latex(self) -> bool:
         return self in [

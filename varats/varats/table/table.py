@@ -33,6 +33,7 @@ class Table:
         TableFormat.LATEX_RAW: "tex",
         TableFormat.LATEX_BOOKTABS: "tex",
         TableFormat.RST: "rst",
+        TableFormat.DSM: "dsm",
     }
 
     def __init__(self, table_config: TableConfig, **kwargs: tp.Any) -> None:

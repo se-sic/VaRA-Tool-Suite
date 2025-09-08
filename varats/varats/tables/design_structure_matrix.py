@@ -205,7 +205,7 @@ class DSM:
         ET.SubElement(info, "title").text = self.title
         ET.SubElement(info, "project").text = self.project
         ET.SubElement(info, "customer")
-        ET.SubElement(info, "type").text = "symmetric"
+        ET.SubElement(info, "type").text = "feature"
         ET.SubElement(info, "version").text = "v2.1.0"
         return info
 
