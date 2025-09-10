@@ -249,7 +249,7 @@ class Patch:
             # Generate a random name for the patch file
             rendered_path = (
                 project_step.project.builddir /
-                f"{self.rendered_name(**render_args)}-{uuid.uuid4()}"
+                f"{self.rendered_name(**render_args)}-{uuid.uuid4()}.patch"
             )
             with open(str(rendered_path), "wb") as f:
                 f.write(rendered.encode())
