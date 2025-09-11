@@ -149,7 +149,9 @@ class VaRA(ResearchTool[VaRACodeBase]):
     __DEPENDENCIES = Dependencies({
         Distro.DEBIAN: [
             "libboost-all-dev", "libpapi-dev", "googletest", "libsqlite3-dev",
-            "libxml2-dev", "libcurl4-openssl-dev", "cmake", "ninja-build"
+            "libxml2-dev", "libcurl4-openssl-dev", "cmake", "ninja-build",
+            "libprotobuf-dev", "libgrpc++-dev", "protobuf-compiler-grpc",
+            "libpcre3", 'libtbb-dev'
         ],
         Distro.ARCH: [
             "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl",
