@@ -1,4 +1,5 @@
 import unittest
+from functools import partial
 
 from pygit2 import Walker
 from pygit2.enums import SortMode
@@ -21,9 +22,11 @@ class TestFeatureUtils(unittest.TestCase):
         walker.simplify_first_parent()
 
         first_commit = next(walker)
-        commit = repo.get(revision)
-        while first_commit != commit:
-            first_commit = next(walker)
+        if revision is not None:
+            commit = repo.get(revision)
+            while first_commit != commit:
+                first_commit = next(walker)
+        return first_commit
 
     def test_parse_location(self):
         test_location = Location.parse_string("file.py 10:20 12:15")

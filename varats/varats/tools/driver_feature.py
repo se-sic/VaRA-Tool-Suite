@@ -189,8 +189,7 @@ def __annotate(
         for annotation_id, annotation in annotations.items():
             tracked_features[feature][annotation_id].append(annotation)
 
-    click.echo(f"Final annotations written to {outfile.name}.")
-    if not Path(outfile.name).exists():
+    if not Path(str(outfile.name)).exists():
         for feature, annotations in tracked_features.items():
             outfile.write(f"Annotations for feature {feature}:\n")
             for annotation_id, locations in annotations.items():
@@ -201,6 +200,7 @@ def __annotate(
             outfile.write("\n")
     else:
         update_feature_model(Path(outfile.name), tracked_features)
+    click.echo(f"Final annotations written to {outfile.name}.")
 
 
 if __name__ == '__main__':
