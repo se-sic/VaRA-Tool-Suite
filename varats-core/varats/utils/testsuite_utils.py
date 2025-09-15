@@ -1,5 +1,6 @@
 """Several utility functions for the testsuite protocol."""
 import json
+from enum import Enum
 import re
 import typing as tp
 from pathlib import Path
@@ -7,6 +8,14 @@ from pathlib import Path
 import benchbuild as bb
 from plumbum import local, ProcessExecutionError
 import xml.etree.ElementTree as ET
+
+class TestResult(Enum):
+    PASSED = 0,
+    FAILED = 1,
+    SKIPPED = 2,
+    TIMEOUT = 3,
+    SKIPPED = 4,
+    DiSABLED = 5
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:

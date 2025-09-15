@@ -11,6 +11,7 @@ from benchbuild.utils.actions import ProjectStep, StepResult
 from plumbum import ProcessExecutionError
 
 from varats.project.varats_project import VProject, SupportsTestSuites
+from varats.utils.testsuite_utils import TestResult
 
 
 class PrepareTestSuite(ProjectStep):  # type: ignore
@@ -82,6 +83,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self,
         project: VProject,
         output_path: tp.Optional[Path] = None,
+        result_filter: tp.Optional[tp.Dict[TestResult, bool]] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None
@@ -95,6 +97,8 @@ class RunTestSuite(ProjectStep):  # type: ignore
         """
         super().__init__(project)
         self.__output_path = output_path
+        self.__tests_to_run = tests_to_run
+        self.__result_filter = result_filter
         self.__tests_to_run = tests_to_run
         self.__test_to_include = test_to_include
         self.__test_to_exclude = test_to_exclude
