@@ -43,11 +43,14 @@ if tp.TYPE_CHECKING:
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
     value: str
-    package_manager: pb.machines.LocalCommand
 
-    DEBIAN = "debian", local["apt"]
-    ARCH = "arch", local["pacman"]
-    FEDORA = "fedora", local["dnf"]
+    DEBIAN = "debian", "apt"
+    ARCH = "arch", "pacman"
+    FEDORA = "fedora", "dnf"
+
+    def __init__(self, value: str, package_manager: str) -> None:
+        self._value = value
+        self.__package_manager = package_manager
 
     @staticmethod
     def get_current_distro() -> tp.Optional['Distro']:
@@ -60,6 +63,10 @@ class Distro(Enum):
             return Distro.FEDORA
         return None
 
+    @property
+    def package_manager(self) -> pb.machines.LocalCommand:
+        return local[self.__package_manager]
+
     def __str__(self) -> str:
         return str(self.value)
 
@@ -70,10 +77,7 @@ _install_commands = {
     Distro.FEDORA: "dnf install"
 }
 
-_checker_commands = {
-    Distro.DEBIAN: Distro.DEBIAN.package_manager["list"],
-    Distro.ARCH: Distro.ARCH.package_manager["-Qi"]
-}
+_checker_commands = {Distro.DEBIAN: "list", Distro.ARCH: "-Qi"}
 
 _expected_check_output = {Distro.DEBIAN: "installed", Distro.ARCH: "Installed"}
 
@@ -140,7 +144,7 @@ class Dependencies:
                 f"not implemented for {distro}"
             )
 
-        base_command = _checker_commands[distro]
+        base_command = distro.package_manager(_checker_commands[distro])
         for package in self.__dependencies[distro]:
             output = base_command(package)
             output_list = output.split()
