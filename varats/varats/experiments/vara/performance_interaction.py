@@ -1,4 +1,5 @@
 """Module for performance interaction detection experiments."""
+import sys
 import textwrap
 import typing as tp
 from itertools import pairwise
@@ -333,7 +334,7 @@ class PerfInterReportGenerationSynth(OutputFolderStep):
             "-vara-use-phasar",
             f"-vara-cf-interaction-filter={filter_file_path}",
             f"-vara-report-outfile={tmp_dir / self.__result_file}",
-            # TODO: cached bc files from previous runs (probably?) won't work
+            # TODO: cached bc files from previous runs won't work
             #       because commit hashes from patches are not stable.
             get_cached_bc_file_path(
                 self.project, self.__binary, [
@@ -344,7 +345,7 @@ class PerfInterReportGenerationSynth(OutputFolderStep):
             )
         ]
 
-        run_cmd = wrap_unlimit_stack_size(opt[opt_params])
+        run_cmd = (wrap_unlimit_stack_size(opt[opt_params]) > sys.stdout)
         exec_func_with_pe_error_handler(
             run_cmd,
             create_default_analysis_failure_handler(
