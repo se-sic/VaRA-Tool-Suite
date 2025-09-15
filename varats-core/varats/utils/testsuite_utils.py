@@ -3,11 +3,11 @@ import json
 from enum import Enum
 import re
 import typing as tp
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import benchbuild as bb
 from plumbum import local, ProcessExecutionError
-import xml.etree.ElementTree as ET
 
 class TestResult(Enum):
     PASSED = 0,

@@ -177,4 +177,10 @@ class Libvpx(VProject):
             "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
         ]
         included_tests = ["C/YUVTemporalFilterTest.*"]
-        return gtest_run_testsuite(libvpx_source, test_libvpx, test_report_path, tests_to_run, tests_to_include=included_tests)
+        return gtest_run_testsuite(
+            libvpx_source,
+            test_libvpx,
+            test_report_path,
+            tests_to_run,
+            tests_to_include=included_tests
+        )
