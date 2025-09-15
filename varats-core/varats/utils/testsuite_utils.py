@@ -1,13 +1,14 @@
 """Several utility functions for the testsuite protocol."""
 import json
-from enum import Enum
 import re
 import typing as tp
 import xml.etree.ElementTree as ET
+from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
 from plumbum import local, ProcessExecutionError
+
 
 class TestResult(Enum):
     PASSED = 0,
