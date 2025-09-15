@@ -2,7 +2,6 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import ninja, meson
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -67,6 +66,9 @@ class Glib(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
+        ninja = local["ninja"]
+        meson = local["meson"]
+
         glib_source = local.path(self.source_of_primary)
 
         cc_compiler = bb.compiler.cc(self)

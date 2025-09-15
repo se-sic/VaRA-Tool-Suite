@@ -6,7 +6,8 @@ import benchbuild as bb
 import plumbum as pb
 from benchbuild.source import Variant, HTTP
 from benchbuild.source.base import Revision
-from benchbuild.utils.cmd import mkdir, ln, unzip
+from benchbuild.utils.cmd import mkdir, ln
+from plumbum import local
 
 from varats.paper.paper_config import get_paper_config
 from varats.utils.git_util import ShortCommitHash
@@ -81,6 +82,7 @@ class HTTPUnzip(HTTP):  # type: ignore
             Your workloads need to make sure to reference this directory (e.g. using tokens),
             e.g., ``source_root("compression.zip")``
         """
+        unzip = local["unzip"]
         archive_path = super().version(target_dir, version)
 
         target_name = str(pb.local.path(archive_path).with_suffix(".dir"))

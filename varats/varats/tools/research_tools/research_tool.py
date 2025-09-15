@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 import distro as distribution
-from benchbuild.utils.cmd import apt, pacman
+import plumbum as pb
+from plumbum import local
 
 from varats.tools.research_tools.vara_manager import BuildType
 from varats.utils.filesystem_util import FolderAlreadyPresentError
@@ -42,10 +43,11 @@ if tp.TYPE_CHECKING:
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
     value: str
+    package_manager: pb.machines.LocalCommand
 
-    DEBIAN = "debian"
-    ARCH = "arch"
-    FEDORA = "fedora"
+    DEBIAN = "debian", local["apt"]
+    ARCH = "arch", local["pacman"]
+    FEDORA = "fedora", local["dnf"]
 
     @staticmethod
     def get_current_distro() -> tp.Optional['Distro']:
@@ -68,7 +70,10 @@ _install_commands = {
     Distro.FEDORA: "dnf install"
 }
 
-_checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
+_checker_commands = {
+    Distro.DEBIAN: Distro.DEBIAN.package_manager["list"],
+    Distro.ARCH: Distro.ARCH.package_manager["-Qi"]
+}
 
 _expected_check_output = {Distro.DEBIAN: "installed", Distro.ARCH: "Installed"}
 

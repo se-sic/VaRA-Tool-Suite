@@ -6,7 +6,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import gradle, cp
+from benchbuild.utils.cmd import cp
 from plumbum import local
 
 from varats.tools.research_tools.research_tool import (
@@ -115,6 +115,7 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         Returns:
             the current version number of SZZUnleashed
         """
+        gradle = local["gradle"]
         with local.cwd(SZZUnleashed.source_location() / "szzunleashed"):
             stdout = gradle("-p", "szz", "properties")
             version_pattern = re.compile("version:\\s+([\\d.]*)")
@@ -153,6 +154,7 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
             build_type: not used
             install_location: where to put the built jar
         """
+        gradle = local["gradle"]
         with local.cwd(self.source_location() / "szzunleashed"):
             bb.watch(gradle)("-p", "szz", "build")
             bb.watch(gradle)("-p", "szz", "fatJar")
