@@ -138,7 +138,7 @@ class SampleWithPerfAndTime(ProjectStep):  # type: ignore
 
         # check if perf record works
         try:
-            perf["record", "-o", "/dev/null", "ls"]
+            perf("record", "-o", "/dev/null", "ls")
         except ProcessExecutionError:
             return StepResult.ERROR
 
@@ -210,7 +210,7 @@ class SampleWithPerfAndTimeSynth(OutputFolderStep):
 
         # check if perf record works
         try:
-            perf["record", "-o", "/dev/null", "ls"]
+            perf("record", "-o", "/dev/null", "ls")
         except ProcessExecutionError:
             return StepResult.ERROR
 
