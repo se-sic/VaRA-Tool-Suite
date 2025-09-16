@@ -248,11 +248,16 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
         _create_layers_helper(lambda ctx: ctx.layers
             .from_("docker.io/library/debian:12")
             .run('apt', 'update')
-            .run('apt', 'install', '-y', 'wget', 'curl', 'gnupg', 'lsb-release',
-                 'software-properties-common', 'musl-dev', 'git', 'gcc',
-                 'libgit2-dev', 'libffi-dev', 'libyaml-dev', 'graphviz-dev',
-                 'python3', 'python3-pip', 'python3-virtualenv', 'clang',
-                 'lld', 'libc++-dev', 'libc++abi-dev', 'libtbb12', 'time', 'linux-perf')
+            .run('apt', 'install', '-y', 'locale', 'wget', 'curl', 'gnupg',
+                 'lsb-release', 'software-properties-common', 'musl-dev', 'git',
+                 'gcc', 'libgit2-dev', 'libffi-dev', 'libyaml-dev',
+                 'graphviz-dev', 'python3', 'python3-pip', 'python3-virtualenv',
+                 'clang', 'lld', 'libc++-dev', 'libc++abi-dev', 'libtbb12',
+                 'time', 'linux-perf')
+            # set locale to UTF-8
+            .run('sed', '-i', '/en_US.UTF-8/s/^# //g', '/etc/locale.gen')
+            .run('locale-gen')
+            .run('update-locale', 'LANG=en_US.UTF-8')
             # setup git config
             .run('git', 'config', '--global', 'user.name', 'VaRA-Tool-Suite')
             .run('git', 'config', '--global', 'user.email', 'varats@container'))
