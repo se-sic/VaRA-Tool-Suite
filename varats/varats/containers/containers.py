@@ -258,6 +258,8 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[StageBuilder], None]] = {
             .run('sed', '-i', '/en_US.UTF-8/s/^# //g', '/etc/locale.gen')
             .run('locale-gen')
             .run('update-locale', 'LANG=en_US.UTF-8')
+            .env('LANG=en_US.UTF-8')
+            .env('LC_ALL=en_US.UTF-8')
             # setup git config
             .run('git', 'config', '--global', 'user.name', 'VaRA-Tool-Suite')
             .run('git', 'config', '--global', 'user.email', 'varats@container'))
