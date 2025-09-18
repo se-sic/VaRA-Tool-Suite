@@ -15,8 +15,7 @@ class TestResult(Enum):
     FAILED = 1,
     SKIPPED = 2,
     TIMEOUT = 3,
-    SKIPPED = 4,
-    DiSABLED = 5
+    DiSABLED = 4
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
