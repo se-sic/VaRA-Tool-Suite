@@ -127,12 +127,6 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
                 files.append(sm_path + "/" + line)
 
-        print(f"Found {len(files)} files to analyze")
-        print(files)
-
-        print(f"{result_file=}")
-        print(f"{project_directory=}")
-
         # Run the HiddenConfigurabilityDetector
         hvf = local[VaRA.install_location() / "bin" /
                     "hidden-variability-finder"]
@@ -142,7 +136,7 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
                           f"--root-dir={project_directory}"]
             run_cmd = run_cmd[files]
 
-            run_cmd()
+            bb.watch(run_cmd)()
 
         return actions.StepResult.OK
 
