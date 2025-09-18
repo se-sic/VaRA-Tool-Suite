@@ -109,6 +109,11 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
         table_rows = []
 
         for cs in case_studies:
+            if cs.project_name not in _PROJECT_WORKLOADS or cs.project_name not in PATCH_VARIATIONS:
+                print(
+                    f"Skipping {cs.project_name} as it is not an active HV subject system"
+                )
+                continue
             cs_workloads = _PROJECT_WORKLOADS[cs.project_name]
             cs_opportunities: dict = PATCH_VARIATIONS[cs.project_name]
             project_repo = get_local_project_repo(cs.project_name)
@@ -130,7 +135,8 @@ class HVProjectOverviewTable(Table, table_name="hv_project_overview"):
 
             table_rows.append(row)
 
-        df = pd.DataFrame(table_rows)
+        df = pd.DataFrame(table_rows).set_index("Name")
+        df.sort_index(inplace=True)
 
         return dataframe_to_table(df, table_format, wrap_table=wrap_table)
 
@@ -279,6 +285,13 @@ class MPDuneReport(
 class ConfigAlternativesValidityTable(
     Table, table_name="hc_alternatives_validity"
 ):
+    __TEST_TO_IGNORE: tp.Dict[str, tp.List[str]] = {
+        "libzmq": ["(empty).test_hwm", "(empty).test_hwm_pubsub"],
+        "brotli": [],
+        "libvpx": [],
+        "FastDownward": [],
+        "DunePerfRegression": []
+    }
 
     def __parse_gtest_report(self, report: PlainTextReport) -> tp.Any:
         """Parse the gtest report."""
@@ -301,6 +314,12 @@ class ConfigAlternativesValidityTable(
                         results[f"{suite_name}.{case_name}"] = TestStatus.PASSED
                 elif status == "NOTRUN":
                     results[f"{suite_name}.{case_name}"] = TestStatus.NOT_RUN
+
+        for ignored_test in self.__TEST_TO_IGNORE.get(
+            self.table_kwargs["case_study"].project_name, []
+        ):
+            if ignored_test in results:
+                results.pop(ignored_test)
 
         return results
 
@@ -329,6 +348,12 @@ class ConfigAlternativesValidityTable(
 
                 results[f"{suite_name}.{case_name}"] = status
 
+        for ignored_test in self.__TEST_TO_IGNORE.get(
+            self.table_kwargs["case_study"].project_name, []
+        ):
+            if ignored_test in results:
+                results.pop(ignored_test)
+
         return results
 
     def __parse_dune_report(self, agg_report: PTRAggregate) -> tp.Any:
@@ -341,12 +366,17 @@ class ConfigAlternativesValidityTable(
                 f"{module_name}#{k}": v for k, v in module_results.items()
             }
             test_results.update(module_results)
+
+        for ignored_test in self.__TEST_TO_IGNORE.get(
+            self.table_kwargs["case_study"].project_name, []
+        ):
+            if ignored_test in test_results:
+                test_results.pop(ignored_test)
+
         return test_results
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         table_rows = []
-
-        # case_studies = get_loaded_paper_config().get_all_case_studies()
 
         project_testparsers = {
             "brotli": self.__parse_junit_report,
@@ -450,11 +480,12 @@ class ConfigAlternativesValidityTable(
                     config_df[config_df["same_as_baseline"] == True
                              ]  # noqa: E712
                 )
-                row[config_id] = f"{num_equivalent}/{total_alternatives}"
+                row[int(config_id)] = f"{num_equivalent}/{total_alternatives}"
 
             summary_rows.append(row)
 
-        summary_df = pd.DataFrame(summary_rows)
+        summary_df = pd.DataFrame(summary_rows
+                                 ).set_index("configuration_opportunity")
 
         return dataframe_to_table(
             summary_df, table_format, wrap_table=wrap_table
