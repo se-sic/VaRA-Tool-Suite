@@ -82,7 +82,8 @@ def ctest_run_testsuite(
         name = testcase.attrib.get("name")
         if testcase.find("skipped") is not None:
             result[name] = "SKIPPED"
-        elif testcase.find("failure") is not None or testcase.find("error") is not None:
+        elif testcase.find("failure"
+                          ) is not None or testcase.find("error") is not None:
             result[name] = "FAILED"
         else:
             result[name] = "PASSED"
