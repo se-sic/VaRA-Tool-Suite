@@ -345,7 +345,7 @@ class PerfInterReportGenerationSynth(OutputFolderStep):
             )
         ]
 
-        run_cmd = (wrap_unlimit_stack_size(opt[opt_params]) > sys.stdout)
+        run_cmd = wrap_unlimit_stack_size(opt[opt_params])
         exec_func_with_pe_error_handler(
             run_cmd,
             create_default_analysis_failure_handler(
