@@ -1249,3 +1249,127 @@ def _create_min_max_plot(
     ax.set_xlim(
         baseline_val - 1.05 * range_span, baseline_val + 1.05 * range_span
     )
+
+
+class AlternativesHeatmapPlot(Plot, plot_name="alternatives_heatmap"):
+
+    @property
+    def name(self) -> str:
+        """Returns the name of the plot."""
+        name = f"{self.NAME}_{self.plot_kwargs['metric']}_{self.plot_kwargs['config_opportunity'].replace('/', '+')}_{self.plot_kwargs['workload'].replace('/', '+')}"
+        return name
+
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        pass
+
+    def plot(self, view_mode: bool) -> None:
+        print(
+            f"Plotting:\nMetric: {self.plot_kwargs['metric']}\nConfig Opportunity: {self.plot_kwargs['config_opportunity']}\nWorkload: {self.plot_kwargs['workload']}"
+        )
+        cs = self.plot_kwargs["case_study"]
+
+        if "data_cache" in self.plot_kwargs:
+            print("Using data cache")
+            df = self.plot_kwargs["data_cache"]
+        else:
+            df = aggregate_data(cs, None)
+
+        df = _prepare_data(self.plot_kwargs, df)
+
+        if df.empty:
+            print(f"No data for {cs.project_name}")
+            return
+
+        # Filter out baseline rows
+        df = df[df["config_opportunity"] != "__baseline__"]
+
+        # Convert value_relative to mean value
+        df["value_relative"] = df["value_relative"].apply(np.mean)
+
+        # Convert data to be compatible with heatmap
+        # For the heatmap we have variations on the y-axis and config_ids on the x-axis
+        heatmap_data = df.pivot_table(
+            index="variation",
+            columns="config_id",
+            values="value_relative",
+            #aggfunc=np.mean
+        )
+
+        #print(f"{heatmap_data=}")
+
+        # Create a mask
+        # With our mask we want to hide all cells were, in the original df, there is no significant result
+        significance_df = df.pivot_table(
+            index="variation",
+            columns="config_id",
+            values="significance",
+            aggfunc=lambda x: x.iloc[0] if not x.empty else None
+        )
+
+        # For each entry in significance df convert the ttest result to a boolean by performing x.pvalue < 0.05
+        significance_mask = significance_df.map(
+            lambda x: x is None or x.pvalue >= 0.05
+        )
+        #print(f"{significance_mask=}")
+
+        sns.heatmap(
+            heatmap_data,
+            cmap="coolwarm",
+            center=0.0,
+            cbar_kws={
+                "label": "Relative Change",
+                "format": PercentFormatter(xmax=1.0)
+            },
+            mask=significance_mask
+        )
+
+        plt.title(
+            f"{cs.project_name} - {self.plot_kwargs['metric']} - {self.plot_kwargs['config_opportunity'].split('/')[0]} - {self.plot_kwargs['workload'].split('/')[1]}"
+        )
+
+
+class AlternativesHeatmapGenerator(
+    PlotGenerator,
+    generator_name="alternatives_heatmap",
+    options=[
+        make_cli_option(
+            "--case-study",
+            type=create_single_case_study_choice(),
+            required=True,
+            help="Case study to plot",
+        )
+    ]
+):
+    """Generates the alternatives heatmap plot."""
+
+    def generate(self) -> tp.List[Plot]:
+        cs = self.plot_kwargs["case_study"]
+        cs_data = aggregate_data(cs, None)
+
+        # Get all workloads for the case study
+        workloads = cs_data["binary-wl"].unique()
+
+        # Get all configuration opportunities for the case study
+        config_opportunities = create_config_opportunities_value_map(cs)
+
+        plots = [
+            AlternativesHeatmapPlot(
+                self.plot_config,
+                **self.plot_kwargs,
+                data_cache=cs_data,
+                metric=m,
+                config_opportunity=o,
+                workload=wl
+            )
+            for m in ["wall_clock_time", "max_resident_size"]
+            for wl in workloads
+            for o in config_opportunities
+        ]
+
+        print(
+            f"Generating {len(plots)} alternatives heatmaps for {cs.project_name}..."
+        )
+
+        return plots
