@@ -87,7 +87,9 @@ def ctest_run_testsuite(
             result[name] = TestResult.FAILED
         else:
             result[name] = TestResult.PASSED
-    has_failures = any(status == TestResult.FAILED for status in result.values())
+    has_failures = any(
+        status == TestResult.FAILED for status in result.values()
+    )
     return not has_failures, result
 
 
@@ -164,11 +166,15 @@ def gtest_run_testsuite(
             for suite in report.get("testsuites", []):
                 for case in suite.get("testsuite", []):
                     name = f"{suite['name']}.{case['name']}"
-                    if case.get("status") == "NOTRUN" and case.get("result") == "SUPPRESSED":
+                    if case.get("status") == "NOTRUN" and case.get(
+                        "result"
+                    ) == "SUPPRESSED":
                         result[name] = TestResult.DiSABLED
                     elif case.get("failure") is not None:
                         result[name] = TestResult.FAILED
                     else:
                         result[name] = TestResult.PASSED
-    has_failures = any(status == TestResult.FAILED for status in result.values())
+    has_failures = any(
+        status == TestResult.FAILED for status in result.values()
+    )
     return not has_failures, result  # Passed all test
