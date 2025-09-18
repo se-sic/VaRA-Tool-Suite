@@ -45,7 +45,7 @@ def ctest_run_testsuite(
     build_dir: Path,
     test_report_path: tp.Optional[Path] = None,
     tests_to_run: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, str]]]:
+) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, TestResult]]]:
     """
     Run a test suite using ctest.
 
@@ -75,19 +75,19 @@ def ctest_run_testsuite(
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
-    result: tp.Dict[str, str] = {}
+    result: tp.Dict[str, TestResult] = {}
     tree = ET.parse(test_report_path)
     root = tree.getroot()
     for testcase in root.iter("testcase"):
         name = testcase.attrib.get("name")
         if testcase.find("skipped") is not None:
-            result[name] = "SKIPPED"
+            result[name] = TestResult.SKIPPED
         elif testcase.find("failure"
                           ) is not None or testcase.find("error") is not None:
-            result[name] = "FAILED"
+            result[name] = TestResult.FAILED
         else:
-            result[name] = "PASSED"
-    has_failures = any(status == "FAILED" for status in result.values())
+            result[name] = TestResult.PASSED
+    has_failures = any(status == TestResult.FAILED for status in result.values())
     return not has_failures, result
 
 
@@ -125,7 +125,7 @@ def gtest_run_testsuite(
     tests_to_run: tp.Optional[tp.Iterable[str]] = None,
     tests_to_include: tp.Optional[tp.Iterable[str]] = None,
     tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, str]]]:
+) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, TestResult]]]:
     """Run the testsuite."""
     included_tests = ":".join(tests_to_include)
     excluded_tests = ":".join(tests_to_exclude)
@@ -157,7 +157,7 @@ def gtest_run_testsuite(
 
     # TODO: need to figure out how to get all the passed test and fail test
     # look at the json file that is generated
-    result: tp.Dict[str, str] = {}
+    result: tp.Dict[str, TestResult] = {}
     if output_file.exists():
         with open(output_file) as f:
             report = json.load(f)
@@ -165,10 +165,10 @@ def gtest_run_testsuite(
                 for case in suite.get("testsuite", []):
                     name = f"{suite['name']}.{case['name']}"
                     if case.get("status") == "NOTRUN" and case.get("result") == "SUPPRESSED":
-                        result[name] = "DISABLED"
+                        result[name] = TestResult.DiSABLED
                     elif case.get("failure") is not None:
-                        result[name] = "failed"
+                        result[name] = TestResult.FAILED
                     else:
-                        result[name] = "passed"
-    has_failures = any(status == "failed" for status in result.values())
+                        result[name] = TestResult.PASSED
+    has_failures = any(status == TestResult.FAILED for status in result.values())
     return not has_failures, result  # Passed all test
