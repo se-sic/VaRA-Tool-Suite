@@ -164,7 +164,9 @@ def gtest_run_testsuite(
             for suite in report.get("testsuites", []):
                 for case in suite.get("testsuite", []):
                     name = f"{suite['name']}.{case['name']}"
-                    if case.get("status") == "NOTRUN" and case.get("result") == "SUPPRESSED":
+                    if case.get("status") == "NOTRUN" and case.get(
+                        "result"
+                    ) == "SUPPRESSED":
                         result[name] = "DISABLED"
                     elif case.get("failure") is not None:
                         result[name] = "failed"
