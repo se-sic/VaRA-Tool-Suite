@@ -101,30 +101,34 @@ class CollectCoverage(ProjectStep):  # type: ignore
         self.prefix = prefix
 
     def __call__(self) -> StepResult:
-        coverage_raw_files = (
-            self.project.builddir / self.prefix /
-            f"{self.project.name}-%p.profraw"
-        )
+        with local.cwd(self.project.builddir):
+            coverage_raw_files = (
+                self.project.builddir / self.prefix /
+                f"{self.project.name}-%p.profraw"
+            )
+            print(f"Current working dir: {local.cwd}")
 
-        with local.env(LLVM_PROFILE_FILE=str(coverage_raw_files)):
-            try:
-                if isinstance(self.run_cmd, ProjectCommand):
-                    bb.watch(
-                        self.run_cmd.command.as_plumbum(project=self.project)
-                    )()
-                else:
-                    self.run_cmd()
-            except ProcessExecutionError:
-                return StepResult.ERROR
+            with local.env(LLVM_PROFILE_FILE=str(coverage_raw_files)):
+                try:
+                    if isinstance(self.run_cmd, ProjectCommand):
+                        bb.watch(
+                            self.run_cmd.command.as_plumbum(
+                                project=self.project
+                            )
+                        )()
+                    else:
+                        self.run_cmd()
+                except ProcessExecutionError:
+                    return StepResult.ERROR
 
-        coverage_raw_files = local.path(
-            self.project.builddir, self.prefix
-        ) // f"{self.project.name}-*.profraw"
+            coverage_raw_files = local.path(
+                self.project.builddir, self.prefix
+            ) // f"{self.project.name}-*.profraw"
 
-        # Merge the coverage information
-        profdata_cmd = local["llvm-profdata"]["merge", "-sparse",
-                                              coverage_raw_files, "-o",
-                                              str(self.output_path)]
+            # Merge the coverage information
+            profdata_cmd = local["llvm-profdata"]["merge", "-sparse",
+                                                  coverage_raw_files, "-o",
+                                                  str(self.output_path)]
 
         try:
             bb.watch(profdata_cmd)()
@@ -329,6 +333,10 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
 
         for binary in project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
+                continue
+
+            if project.name == "FastDownward" and binary.name == "FDDriverPy":
+                # Skip python driver for FastDownward
                 continue
 
             profdata_file = (
