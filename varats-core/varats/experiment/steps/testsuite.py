@@ -118,8 +118,13 @@ class RunTestSuite(ProjectStep):  # type: ignore
     def set_output_path(self, output_path: Path) -> None:
         self.__output_path = output_path
 
-    def parse_results(result: tp.Dict[str, TestResult], result_filter: tp.Dict[TestResult, bool]) -> bool:
-        return all(result_filter.get(status) == True for status in result.values())
+    def parse_results(
+        result: tp.Dict[str, TestResult], result_filter: tp.Dict[TestResult,
+                                                                 bool]
+    ) -> bool:
+        return all(
+            result_filter.get(status) == True for status in result.values()
+        )
 
     def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
