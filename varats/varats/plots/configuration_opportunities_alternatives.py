@@ -74,17 +74,6 @@ def _prepare_data(plot_kwargs, df: pd.DataFrame) -> pd.DataFrame:
         plot_kwargs["case_study"]
     )
 
-    def map_str_values(row: pd.Series) -> pd.Series:
-        """Map string values to numerical values."""
-        if row["config_opportunity"] == "__baseline__":
-            return row
-        row["variation"] = str_val_map[row["config_opportunity"]][str(
-            row["variation"]
-        )]
-        return row
-
-    df = df.apply(map_str_values, axis=1)
-
     return df
 
 
