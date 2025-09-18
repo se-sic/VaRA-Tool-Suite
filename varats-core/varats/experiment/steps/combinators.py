@@ -134,11 +134,17 @@ class AlwaysStatus(OutputFolderStep):
         self.__status = status
 
     def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
-        _run_with_output_if_necessary(tmp_dir, self.__step)
+        try:
+            _run_with_output_if_necessary(tmp_dir, self.__step)
+        except Exception as e:
+            print(f"Exception in AlwaysStatus step: {e}")
         return self.__status
 
     def __call__(self) -> StepResult:
-        self.__step()
+        try:
+            self.__step()
+        except Exception as e:
+            print(f"Exception in AlwaysStatus step: {e}")
         return self.__status
 
     def __str__(self, indent: int = 0) -> str:
