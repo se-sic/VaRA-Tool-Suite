@@ -101,6 +101,17 @@ def create_new_varats_config() -> s.Configuration:
         },
     }
 
+    cfg["heaptrack"] = {
+        "source_dir": {
+            "desc": "HeapTrack source directory",
+            "default": None
+        },
+        "install_dir": {
+            "desc": "HeapTrack install directory",
+            "default": None
+        }
+    }
+
     cfg["phasar"] = {
         "source_dir": {
             "desc": "Phasar source directory",
