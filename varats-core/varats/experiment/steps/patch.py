@@ -54,6 +54,7 @@ class ApplyPatch(actions.ProjectStep):
             )
 
         except ProcessExecutionError:
+            print("Applying patch failed")
             self.status = StepResult.ERROR
 
         return self.status
