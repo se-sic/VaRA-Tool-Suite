@@ -78,16 +78,15 @@ def ctest_run_testsuite(
     result: tp.Dict[str, str] = {}
     tree = ET.parse(test_report_path)
     root = tree.getroot()
-    for testcase in root.iter("Test"):
-        name = testcase.attrib.get("Name")
-        status = testcase.attrib.get("Status", "").lower()
-        if status == "passed":
-            result[name] = "passed"
-        elif status == "notrun":
-            result[name] = "skipped"
+    for testcase in root.iter("testcase"):
+        name = testcase.attrib.get("name")
+        if testcase.find("skipped") is not None:
+            result[name] = "SKIPPED"
+        elif testcase.find("failure") is not None or testcase.find("error") is not None:
+            result[name] = "FAILED"
         else:
-            result[name] = "failed"
-    has_failures = any(status == "failed" for status in result.values())
+            result[name] = "PASSED"
+    has_failures = any(status == "FAILED" for status in result.values())
     return not has_failures, result
 
 
@@ -133,7 +132,6 @@ def gtest_run_testsuite(
     output_file: Path
     if test_report_path:
         output_file = test_report_path.absolute()
-
     else:
         output_file = build_dir / "results.json"
 
