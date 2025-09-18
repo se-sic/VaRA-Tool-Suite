@@ -98,6 +98,14 @@ class RunTestSuite(ProjectStep):  # type: ignore
         super().__init__(project)
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
+        if result_filter is None:
+            result_filter = {
+                TestResult.PASSED: True,
+                TestResult.FAILED: False,
+                TestResult.SKIPPED: True,
+                TestResult.TIMEOUT: False,
+                TestResult.DiSABLED: True
+            }
         self.__result_filter = result_filter
         self.__tests_to_run = tests_to_run
         self.__test_to_include = test_to_include
