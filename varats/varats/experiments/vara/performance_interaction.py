@@ -1,10 +1,10 @@
 """Module for performance interaction detection experiments."""
-import sys
 import textwrap
 import typing as tp
 from itertools import pairwise
 from pathlib import Path
 
+import benchbuild as bb
 import yaml
 from benchbuild import Project
 from benchbuild.utils import actions
@@ -345,7 +345,7 @@ class PerfInterReportGenerationSynth(OutputFolderStep):
             )
         ]
 
-        run_cmd = wrap_unlimit_stack_size(opt[opt_params])
+        run_cmd = bb.watch(wrap_unlimit_stack_size(opt[opt_params]))
         exec_func_with_pe_error_handler(
             run_cmd,
             create_default_analysis_failure_handler(
