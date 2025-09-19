@@ -31,8 +31,9 @@ class HeapTrackCodeBase(CodeBase):
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
             SubProject(
-                base_dir, "heaptrack", "https://github.com/KDE/heaptrack.git",
-                "origin", "heaptrack"
+                base_dir, "heaptrack",
+                "https://invent.kde.org/sdk/heaptrack.git", "origin",
+                "heaptrack"
             )
         ]
 
@@ -81,6 +82,10 @@ class HeapTrack(ResearchTool[HeapTrackCodeBase]):
     def has_install_location() -> bool:
         """Check if an install location for heaptrack is configured."""
         return vara_cfg()["heaptrack"]["install_dir"].value is not None
+
+    def is_up_to_date(self) -> bool:
+        """Check if heaptrack is up to date."""
+        return True
 
     def setup(
         self, source_folder: tp.Optional[Path], install_prefix: Path,

@@ -16,9 +16,7 @@ ResearchToolTy = tp.Union[tp.Type[VaRA], tp.Type[Phasar], tp.Type[SZZUnleashed],
                           tp.Type[HeapTrack]]
 
 
-def get_research_tool_type(
-    name: str
-) -> type[VaRA | Phasar | SZZUnleashed | HeapTrack]:
+def get_research_tool_type(name: str) -> ResearchToolTy:
     """
     Look up the type of a research tool by name.
 
