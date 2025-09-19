@@ -93,10 +93,10 @@ def _coreutils_compile(project: VProject) -> None:
         # FORCE_UNSAFE_CONFIGURE is needed because we appear as root when
         # building in a container.
         with local.env(CC=str(compiler), FORCE_UNSAFE_CONFIGURE=1):
-            bb.watch(local["./bootstrap"])()
-            bb.watch(local["./configure"])("--disable-gcc-warnings")
+            local["./bootstrap"]()
+            local["./configure"]("--disable-gcc-warnings")
 
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        make("-j", get_number_of_jobs(bb_cfg()))
 
         verify_binaries(project)
 
