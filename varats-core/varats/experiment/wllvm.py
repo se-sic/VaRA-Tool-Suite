@@ -10,6 +10,7 @@ later use the generated bc files with LLVM.
 
 import shutil
 import sys
+import textwrap
 import typing as tp
 from enum import Enum
 from os import getenv, path
@@ -230,6 +231,11 @@ class Extract(actions.ProjectStep):  # type: ignore
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
 
         return actions.StepResult.OK
+
+    def __str__(self, indent: int = 0) -> str:
+        return textwrap.indent(
+            f"* {self.project.name}: extract binaries", " " * indent
+        )
 
 
 def project_bc_files_in_cache(
