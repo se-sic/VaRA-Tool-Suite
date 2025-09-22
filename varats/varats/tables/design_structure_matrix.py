@@ -138,7 +138,7 @@ class DSM:
     entries: tp.List[DSMEntry]
     groups: tp.List[DSMGroup]
     connections: tp.List[DSMConnection]
-    interfaces: tp.List[DMSInterface]
+    interfaces: tp.Dict[str, tp.List[DMSInterface]]
     entryUid: int = 0
     groupUid: int = 0
     interfaceUid: int = 0
@@ -160,7 +160,7 @@ class DSM:
         if connections is None:
             connections = []
         if interfaces is None:
-            interfaces = []
+            interfaces = {}
         self.title = title
         self.project = project
         self.entries = entries
@@ -182,9 +182,13 @@ class DSM:
         self.groups.append(group)
         self.groupUid += 1
 
-    def add_interface(self, name: str, abbreviation: str) -> int:
+    def add_interface(
+        self, interface_group: str, name: str, abbreviation: str
+    ) -> int:
+        if self.interfaces.get(interface_group) is None:
+            self.interfaces[interface_group] = []
         interface = DMSInterface(self.interfaceUid, name, abbreviation)
-        self.interfaces.append(interface)
+        self.interfaces[interface_group].append(interface)
         self.interfaceUid += 1
         return interface.uid
 
@@ -224,10 +228,12 @@ class DSM:
         groups = ET.SubElement(dsm, "groupings")
         for group in self.groups:
             group.to_xml(groups)
-        interfaces = ET.SubElement(ET.SubElement(dsm, "interfaces"), "grouping")
-        interfaces.set("name", "features")
-        for interface in self.interfaces:
-            interface.to_xml(interfaces)
+        interfaces = ET.SubElement(dsm, "interfaces")
+        for grouping_name, group_interfaces in self.interfaces.items():
+            grouping = ET.SubElement(interfaces, "grouping")
+            grouping.set("name", grouping_name)
+            for interface in group_interfaces:
+                interface.to_xml(grouping)
         return dsm
 
     def to_xml_string(self) -> str:
@@ -245,5 +251,4 @@ class DesignStructureMatrix(Table, table_name=None):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         output = "symmetric\n"
         output += crate_matrix(self.data)
-        ET.dump(self.dsm.to_xml())
         return self.dsm.to_xml_string()
