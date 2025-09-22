@@ -1,15 +1,15 @@
+"""Utilities for handling feature annotations in source code files."""
 import logging
 import re
 import textwrap
 import typing as tp
 from functools import reduce
 from pathlib import Path
-from xml.etree import ElementTree as ET
+from xml.etree import ElementTree
 
 import click
 import pygit2
-from pygit2 import Commit, Blob
-from virtualenv.discovery.cached_py_info import LogCmd
+from pygit2 import Commit, Blob, Patch
 
 from varats.utils.git_util import FullCommitHash
 
@@ -80,15 +80,15 @@ class Location:
             int(match.group("end_col")) if match.group("end_col") else None
         )
 
-    def to_xml(self, parent) -> str:
+    def to_xml(self, parent) -> None:
         """Convert the location to SPLConqueror feature model format."""
-        ET.SubElement(parent, "path").text = str(self.file)
-        start = ET.SubElement(parent, "start")
-        ET.SubElement(start, "line").text = str(self.start_line)
-        ET.SubElement(start, "column").text = str(self.start_col)
-        end = ET.SubElement(parent, "end")
-        ET.SubElement(end, "line").text = str(self.end_line)
-        ET.SubElement(end, "column").text = str(self.end_col)
+        ElementTree.SubElement(parent, "path").text = str(self.file)
+        start = ElementTree.SubElement(parent, "start")
+        ElementTree.SubElement(start, "line").text = str(self.start_line)
+        ElementTree.SubElement(start, "column").text = str(self.start_col)
+        end = ElementTree.SubElement(parent, "end")
+        ElementTree.SubElement(end, "line").text = str(self.end_line)
+        ElementTree.SubElement(end, "column").text = str(self.end_col)
 
     def to_xml_direct(self) -> str:
         """Convert the location to SPLConqueror feature model format."""
@@ -126,14 +126,16 @@ class FeatureAnnotation:
         self.introduced = introduced
         self.removed = removed
 
-    def to_xml(self, parent) -> str:
+    def to_xml(self, parent) -> None:
         """Convert the annotation to SPLConqueror feature model format."""
-        source_range = ET.SubElement(parent, "sourceRange")
-        revision_range = ET.SubElement(source_range, "revisionRange")
-        introduced_revision = ET.SubElement(revision_range, "introduced")
+        source_range = ElementTree.SubElement(parent, "sourceRange")
+        revision_range = ElementTree.SubElement(source_range, "revisionRange")
+        introduced_revision = ElementTree.SubElement(
+            revision_range, "introduced"
+        )
         introduced_revision.text = str(self.introduced)
         if self.removed is not None:
-            removed_revision = ET.SubElement(revision_range, "removed")
+            removed_revision = ElementTree.SubElement(revision_range, "removed")
             removed_revision.text = str(self.removed)
         self.location.to_xml(source_range)
 
@@ -158,15 +160,15 @@ def __get_and_check_location(
 ) -> tp.Tuple[Location, str]:
     location = Location.parse_string(raw_location, old_location)
     LOG.debug(location)
-    if commit.tree.__contains__(location.file):
+    if location.file in commit.tree:
         location_content = __get_location_content(commit, location)
     else:
         raise click.UsageError(
-            f"The provided file does not exist in the repository."
+            "The provided file does not exist in the repository."
         )
     if not location_content:
         raise click.UsageError(
-            f"The provided location does not exist or is empty."
+            "The provided location does not exist or is empty."
         )
 
     return location, location_content
@@ -178,7 +180,8 @@ def __get_location_content(commit: Commit,
                                                      ]).data.splitlines()
     if len(lines) < location.start_line:
         LOG.debug(
-            "Location start_line is larger than number of lines in file, returning None."
+            "Location start_line is larger than number of lines in file,"
+            " returning None."
         )
         return None
     # Handling of multiline locations
@@ -211,77 +214,89 @@ def __get_location_content(commit: Commit,
             )
             return None
         word = line[location.start_col - 1:]
-        location.end_col = word.split()[0].__len__() + location.start_col - 2
+        location.end_col = len(word.split()[0]) + location.start_col - 2
         LOG.debug(f"End column set to {location.end_col}.")
     # Todo Why is this end_col and not start_col?
     if len(line) <= location.end_col:
         LOG.debug(
-            f"Location end_col is larger than line length {len(line)}, returning None."
+            f"Location end_col is larger than line length {len(line)},"
+            f" returning None."
         )
         return None
 
     return line[(location.start_col - 1):location.end_col]
 
 
+def __process_patch(location: Location, commit, old_target: str,
+                    patch: Patch) -> tp.List[tp.Tuple[Location, str]]:
+    """Process a patch and return potential new locations for a feature."""
+    potential_new_locations: tp.List[tp.Tuple[Location, str]] = []
+    offset_counter = 0
+    for hunk in patch.hunks:
+        for line in hunk.lines:
+            if line.new_lineno >= 0:  # Added or modified line
+                if line.old_lineno < 0:  # Added line
+                    #if we are before the location, increase offset
+                    if line.old_lineno > location.end_line:
+                        offset_counter += 1
+
+                if location.end_line == location.start_line:
+                    content = line.content[location.start_col -
+                                           1:location.end_col]
+                else:
+                    content = line.content[location.start_col - 1:]
+                if old_target == content:
+                    potential_new_locations.append((
+                        Location.change_start_line(location,
+                                                   line.new_lineno), content
+                    ))
+
+            else:
+                # Deleted line if we are before the location, decrease offset
+                if line.old_lineno > location.end_line:
+                    offset_counter -= 1
+    # Check location based on the offset calculated from the diff.
+    # The line may not be in the diff as it was not changed,
+    # but moved because of the diff.
+    potential_new_location = Location.move_location(location, offset_counter)
+    potential_new_content = __get_location_content(
+        commit, potential_new_location
+    )
+    if potential_new_content == old_target:
+        potential_new_locations.append(
+            (potential_new_location, potential_new_content)
+        )
+    return potential_new_locations
+
+
 def __find_potential_new_locations(
-    repo: pygit2.Repository, commit, annotation: FeatureAnnotation,
-    old_target: str
+    repo: pygit2.Repository, commit, current_location: Location, old_target: str
 ) -> tp.List[tp.Tuple[Location, str]]:
+    """Find potential new locations for a feature annotation."""
     potential_new_locations: tp.List[tp.Tuple[Location, str]] = []
     for parent in commit.parents:
         diff = repo.diff(parent, commit)
         for patch in diff:
-            if patch.delta.old_file.path == annotation.location.file:
-                offset_counter = 0
-                stop_offset = False
-                for hunk in patch.hunks:
-                    for line in hunk.lines:
-                        if line.old_lineno > annotation.location.end_line:
-                            stop_offset = True
-                        if line.new_lineno >= 0:
-                            if line.old_lineno < 0:
-                                if not stop_offset:
-                                    offset_counter += 1
-                            if annotation.location.end_line == annotation.location.start_line:
-                                content = line.content[
-                                    annotation.location.start_col -
-                                    1:annotation.location.end_col]
-                            else:
-                                content = line.content[annotation.location.
-                                                       start_col - 1:]
-                            if old_target == content:
-                                potential_new_locations.append((
-                                    Location.change_start_line(
-                                        annotation.location, line.new_lineno
-                                    ), content
-                                ))
-                        else:
-                            if not stop_offset:
-                                offset_counter -= 1
-
-                potential_new_location = Location.move_location(
-                    annotation.location, offset_counter
-                )
-                potential_new_content = __get_location_content(
-                    commit, potential_new_location
-                )
-                if potential_new_content == old_target:
-                    potential_new_locations.append(
-                        (potential_new_location, potential_new_content)
+            if patch.delta.old_file.path == current_location.file:
+                potential_new_locations.extend(
+                    __process_patch(
+                        current_location, commit, old_target, patch
                     )
+                )
     return potential_new_locations
 
 
 def update_feature_model(
     path: Path, annotations: dict[str, dict[int, list[FeatureAnnotation]]]
-):
-    tree = ET.parse(str(path))
+) -> None:
+    """Update the feature model at the given path based on the annotations."""
+    tree = ElementTree.parse(str(path))
     root = tree.getroot()
     for feature in root.iter("configurationOption"):
-        if annotations.__contains__(feature.find("name").text):
+        if feature.find("name").text in annotations:
             annotation_dict = annotations.pop(feature.find("name").text)
             locations = feature.find("locations")
-            for annotation_id, annotation_list in annotation_dict.items():
+            for _, annotation_list in annotation_dict.items():
                 for annotation in annotation_list:
                     annotation.to_xml(locations)
     tree.write(str(path))

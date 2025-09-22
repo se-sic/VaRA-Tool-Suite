@@ -5,7 +5,7 @@ from functools import partial
 from pathlib import Path
 
 import click
-from pygit2 import Walker, Commit
+from pygit2 import Walker, Commit, Repository
 from pygit2.enums import SortMode
 
 from varats.project.project_util import get_local_project_repo
@@ -30,13 +30,15 @@ def __prompt_location(
     feature_name: str,
     commit: Commit,
     old_location: tp.Optional[Location] = None,
-    old_content: tp.Optional[str] = None,
     prompt: tp.Optional[str] = None,
-    default: str = None
+    default: tp.Optional[str] = None
 ) -> tp.Tuple[Location, str]:
     commit_hash = CommitHash.from_pygit_commit(commit)
     if prompt is None:
-        prompt = f"Enter location for feature {feature_name} @ {commit_hash.short_hash}"
+        prompt = (
+            f"Enter location for feature {feature_name} @"
+            f" {commit_hash.short_hash}"
+        )
 
     parse_location = partial(
         __get_and_check_location, commit=commit, old_location=old_location
@@ -46,6 +48,22 @@ def __prompt_location(
         tp.Tuple[Location, str],
         click.prompt(prompt, default=default, value_proc=parse_location)
     )
+
+
+def get_pygit_commit(project: str, revision=None):
+    """Get a pygit commit for a project7."""
+    repo = get_local_project_repo(project).pygit_repo
+    walker: Walker
+    walker = repo.walk(
+        repo.head.target, SortMode.TOPOLOGICAL | SortMode.REVERSE
+    )
+    walker.simplify_first_parent()
+    first_commit = next(walker)
+    if revision is not None:
+        commit = repo.get(revision)
+        while first_commit != commit:
+            first_commit = next(walker)
+    return first_commit
 
 
 @click.group()
@@ -87,20 +105,26 @@ def __annotate(
         while first_commit != commit:
             first_commit = next(walker)
 
+    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]]
+    last_annotations: dict[str, dict[int, FeatureAnnotation]]
+    last_annotation_targets: dict[str, dict[int, str]]
+
     if infile is not None:
-        LOG.debug("Reading existing annotations from %s", infile.name)
-        tracked_features, last_annotations, last_annotation_targets = load_initial_annotations(
+        LOG.debug(f"Reading existing annotations from {infile.name}")
+        tracked_features, last_annotations, last_annotation_targets =\
+            load_initial_annotations(
             infile, first_commit
         )
         LOG.debug(
-            f"Loaded {len(tracked_features)} tracked features from {infile.name}."
+            f"Loaded {len(tracked_features)} tracked features from "
+            f"{infile.name}."
         )
     else:
-        tracked_features: dict[str, dict[int, list[FeatureAnnotation]]] = {}
-        last_annotations: dict[str, dict[int, FeatureAnnotation]] = {}
-        last_annotation_targets: dict[str, dict[int, str]] = {}
+        tracked_features = {}
+        last_annotations = {}
+        last_annotation_targets = {}
 
-    LOG.debug("Current revision: %s", first_commit.id)
+    LOG.debug(f"Current revision: {first_commit.id}")
 
     while click.confirm("Annotate another feature?"):
         feature_name = click.prompt("Enter feature name to annotate", type=str)
@@ -124,9 +148,24 @@ def __annotate(
 
         click.echo()
 
+    tracked_features = track_annotations(
+        last_annotation_targets, last_annotations, repo, tracked_features,
+        walker
+    )
+    write_annotations(outfile, tracked_features)
+
+
+def track_annotations(
+    last_annotation_targets: dict[str, dict[int, str]],
+    last_annotations: dict[str, dict[int, FeatureAnnotation]], repo: Repository,
+    tracked_features: dict[str, dict[int,
+                                     list[FeatureAnnotation]]], walker: Walker
+) -> dict[str, dict[int, list[FeatureAnnotation]]]:
+    """Track the given annotations through the given walker and write the
+    results to the given output file."""
     for commit in walker:
         commit_hash = CommitHash.from_pygit_commit(commit)
-        LOG.debug("Current revision: %s", commit_hash.hash)
+        LOG.debug(f"Current revision: {commit_hash.hash}",)
         for feature, annotations in last_annotations.items():
             for annotation_id, annotation in annotations.items():
                 old_target = last_annotation_targets[feature][annotation_id]
@@ -136,8 +175,8 @@ def __annotate(
 
                 if current_target != old_target:
                     LOG.debug(
-                        f"{feature} @ ({annotation_id}, {annotation.location}): "
-                        f"{current_target} != {old_target}"
+                        f"{feature} @ ({annotation_id}, {annotation.location}):"
+                        f" {current_target} != {old_target}"
                     )
                     # set removed field for annotation and store it
                     tracked_features[feature][annotation_id].append(
@@ -157,7 +196,6 @@ def __annotate(
                         repo, commit, annotation, old_target
                     )
                     # Determine potential new location
-
                     if potential_new_locations:
                         potential_new_locations.sort(
                             key=lambda x: x[0].start_line - annotation.location.
@@ -168,7 +206,6 @@ def __annotate(
                         feature,
                         commit,
                         annotation.location,
-                        old_target,
                         "New location: ",
                         default=f"{best_candidate[0]}:{best_candidate[1]}"
                         if potential_new_locations else None
@@ -189,10 +226,18 @@ def __annotate(
         for annotation_id, annotation in annotations.items():
             tracked_features[feature][annotation_id].append(annotation)
 
+    return tracked_features
+
+
+def write_annotations(
+    outfile: tp.TextIO,
+    tracked_features: dict[str, dict[int, list[FeatureAnnotation]]]
+) -> None:
+    """Write the given annotations to the given output file."""
     if not Path(str(outfile.name)).exists():
         for feature, annotations in tracked_features.items():
             outfile.write(f"Annotations for feature {feature}:\n")
-            for annotation_id, locations in annotations.items():
+            for _, locations in annotations.items():
                 for location in locations:
                     outfile.write(location.to_xml_direct())
                     outfile.write("\n")
