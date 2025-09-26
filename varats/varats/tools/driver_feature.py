@@ -193,7 +193,7 @@ def track_annotations(
                     )
                     click.echo(f"Old location: {annotation.location}")
                     potential_new_locations = __find_potential_new_locations(
-                        repo, commit, annotation, old_target
+                        repo, commit, annotation.location, old_target
                     )
                     # Determine potential new location
                     if potential_new_locations:

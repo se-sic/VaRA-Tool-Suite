@@ -27,7 +27,7 @@ class Location:
 
     def __init__(
         self, file: str, start_line: int, start_col: int, end_line: int,
-        end_col: int
+        end_col: tp.Optional[int]
     ) -> None:
         self.file = file
         self.start_line = start_line
@@ -39,7 +39,7 @@ class Location:
     def change_start_line(
         old_location: "Location",
         new_start_line: int,
-    ):
+    ) -> "Location":
         """Move the location the start of the location to a line."""
         return Location(
             old_location.file, new_start_line, old_location.start_col,
@@ -80,7 +80,7 @@ class Location:
             int(match.group("end_col")) if match.group("end_col") else None
         )
 
-    def to_xml(self, parent) -> None:
+    def to_xml(self, parent: ElementTree.Element) -> None:
         """Convert the location to SPLConqueror feature model format."""
         ElementTree.SubElement(parent, "path").text = str(self.file)
         start = ElementTree.SubElement(parent, "start")
@@ -126,7 +126,7 @@ class FeatureAnnotation:
         self.introduced = introduced
         self.removed = removed
 
-    def to_xml(self, parent) -> None:
+    def to_xml(self, parent: ElementTree.Element) -> None:
         """Convert the annotation to SPLConqueror feature model format."""
         source_range = ElementTree.SubElement(parent, "sourceRange")
         revision_range = ElementTree.SubElement(source_range, "revisionRange")
@@ -216,7 +216,6 @@ def __get_location_content(commit: Commit,
         word = line[location.start_col - 1:]
         location.end_col = len(word.split()[0]) + location.start_col - 2
         LOG.debug(f"End column set to {location.end_col}.")
-    # Todo Why is this end_col and not start_col?
     if len(line) <= location.end_col:
         LOG.debug(
             f"Location end_col is larger than line length {len(line)},"
@@ -227,8 +226,9 @@ def __get_location_content(commit: Commit,
     return line[(location.start_col - 1):location.end_col]
 
 
-def __process_patch(location: Location, commit, old_target: str,
-                    patch: Patch) -> tp.List[tp.Tuple[Location, str]]:
+def __process_patch(
+    location: Location, commit: Commit, old_target: str, patch: Patch
+) -> tp.List[tp.Tuple[Location, str]]:
     """Process a patch and return potential new locations for a feature."""
     potential_new_locations: tp.List[tp.Tuple[Location, str]] = []
     offset_counter = 0
@@ -270,12 +270,13 @@ def __process_patch(location: Location, commit, old_target: str,
 
 
 def __find_potential_new_locations(
-    repo: pygit2.Repository, commit, current_location: Location, old_target: str
+    repo: pygit2.Repository, commit: Commit, current_location: Location,
+    old_target: str
 ) -> tp.List[tp.Tuple[Location, str]]:
     """Find potential new locations for a feature annotation."""
     potential_new_locations: tp.List[tp.Tuple[Location, str]] = []
     for parent in commit.parents:
-        diff = repo.diff(parent, commit)
+        diff = repo.diff(parent.tree, commit.tree)
         for patch in diff:
             if patch.delta.old_file.path == current_location.file:
                 potential_new_locations.extend(
@@ -293,8 +294,9 @@ def update_feature_model(
     tree = ElementTree.parse(str(path))
     root = tree.getroot()
     for feature in root.iter("configurationOption"):
-        if feature.find("name").text in annotations:
-            annotation_dict = annotations.pop(feature.find("name").text)
+        xml_feature = feature.find("name")
+        if xml_feature and xml_feature.text in annotations:
+            annotation_dict = annotations.pop(xml_feature.text)
             locations = feature.find("locations")
             for _, annotation_list in annotation_dict.items():
                 for annotation in annotation_list:
