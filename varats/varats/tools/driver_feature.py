@@ -50,22 +50,6 @@ def __prompt_location(
     )
 
 
-def get_pygit_commit(project: str, revision=None):
-    """Get a pygit commit for a project7."""
-    repo = get_local_project_repo(project).pygit_repo
-    walker: Walker
-    walker = repo.walk(
-        repo.head.target, SortMode.TOPOLOGICAL | SortMode.REVERSE
-    )
-    walker.simplify_first_parent()
-    first_commit = next(walker)
-    if revision is not None:
-        commit = repo.get(revision)
-        while first_commit != commit:
-            first_commit = next(walker)
-    return first_commit
-
-
 @click.group()
 @configuration_lookup_error_handler
 def main() -> None:
@@ -196,6 +180,7 @@ def track_annotations(
                         repo, commit, annotation.location, old_target
                     )
                     # Determine potential new location
+                    best_candidate = (None, None)
                     if potential_new_locations:
                         potential_new_locations.sort(
                             key=lambda x: x[0].start_line - annotation.location.

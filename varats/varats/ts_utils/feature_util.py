@@ -237,7 +237,7 @@ def __process_patch(
             if line.new_lineno >= 0:  # Added or modified line
                 if line.old_lineno < 0:  # Added line
                     #if we are before the location, increase offset
-                    if line.old_lineno > location.end_line:
+                    if line.old_lineno < location.end_line:
                         offset_counter += 1
 
                 if location.end_line == location.start_line:
@@ -253,7 +253,7 @@ def __process_patch(
 
             else:
                 # Deleted line if we are before the location, decrease offset
-                if line.old_lineno > location.end_line:
+                if line.old_lineno < location.end_line:
                     offset_counter -= 1
     # Check location based on the offset calculated from the diff.
     # The line may not be in the diff as it was not changed,
@@ -298,9 +298,10 @@ def update_feature_model(
         if xml_feature and xml_feature.text in annotations:
             annotation_dict = annotations.pop(xml_feature.text)
             locations = feature.find("locations")
-            for _, annotation_list in annotation_dict.items():
-                for annotation in annotation_list:
-                    annotation.to_xml(locations)
+            if locations:
+                for _, annotation_list in annotation_dict.items():
+                    for annotation in annotation_list:
+                        annotation.to_xml(locations)
     tree.write(str(path))
     click.echo("Feature model updated.")
     if annotations:
