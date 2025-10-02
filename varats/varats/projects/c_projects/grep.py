@@ -46,7 +46,10 @@ class Grep(VProject):
             local="grep",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False
+            shallow=False,
+            submodule_set_urls={
+                "gnulib": "https://github.com/coreutils/gnulib"
+            }
         ),
         FeatureSource(),
         bb.source.GitSubmodule(
