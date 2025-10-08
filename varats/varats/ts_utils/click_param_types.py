@@ -148,7 +148,7 @@ def create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     return TypedChoice(BaseReport.REPORT_TYPES)
 
 
-def create_project_choice() -> click.Choice:
+def create_project_choice() -> click.Choice[str]:
     initialize_projects()
     projects = [proj.NAME for proj in get_loaded_vara_projects()]
     return click.Choice(projects)

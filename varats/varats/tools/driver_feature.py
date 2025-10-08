@@ -180,7 +180,8 @@ def track_annotations(
                         repo, commit, annotation.location, old_target
                     )
                     # Determine potential new location
-                    best_candidate = (None, None)
+                    best_candidate: tp.Tuple[tp.Optional[str],tp.Optional[str]]\
+                        = (None, None)
                     if potential_new_locations:
                         potential_new_locations.sort(
                             key=lambda x: x[0].start_line - annotation.location.
