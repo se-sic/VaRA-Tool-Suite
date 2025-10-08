@@ -180,8 +180,7 @@ def track_annotations(
                         repo, commit, annotation.location, old_target
                     )
                     # Determine potential new location
-                    best_candidate: tp.Tuple[tp.Optional[str],tp.Optional[str]]\
-                        = (None, None)
+                    best_candidate: tp.Optional[tp.Tuple[Location, str]] = None
                     if potential_new_locations:
                         potential_new_locations.sort(
                             key=lambda x: x[0].start_line - annotation.location.
@@ -194,7 +193,7 @@ def track_annotations(
                         annotation.location,
                         "New location: ",
                         default=f"{best_candidate[0]}:{best_candidate[1]}"
-                        if potential_new_locations else None
+                        if best_candidate else None
                     )
 
                     last_annotations[feature][annotation_id] = \
