@@ -1,5 +1,6 @@
 import typing as tp
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -18,11 +19,17 @@ from varats.revision.revisions import get_processed_revisions_files
 
 
 def extract_config_point(full_name: str) -> tp.Tuple[str, str]:
-    # patch names follow the pattern "<patch_name>_<base_file_name>_<config_point>=<value>"
-    # We are interested in the unique configuration points
-    name_parts = full_name.split("_")
-    config_point = name_parts[-1].split("=")
-    return config_point[0], config_point[1].split('.')[0]
+    # patch names follow the pattern "patched_<len>_<config_point>=<value>_<base-name>.zip"
+    # Where <len> is the length of the <config_point>=<value>
+    # We want to extract <config_point> and <value>
+    # Example: "patched_15_opt_level=3_basefile.c.zip" -> ("opt_level", "3")
+    name_path = Path(full_name).stem
+    name_path = name_path[len("patched_"):]
+    split_leftover_fn = name_path.partition("_")
+    shortname_length = int(split_leftover_fn[0])
+    config_part = "".join(split_leftover_fn[2:])[:shortname_length]
+    config_point = config_part.split('=')
+    return config_point[0], config_point[1]
 
 
 def get_configuration_points(report_file: MPRTimeWLAggregate) -> tp.List[str]:
@@ -98,12 +105,11 @@ def get_data_for_single_config(
 
         for patch_report in report.get_patched_reports():
             cp = extract_config_point(patch_report.filename.filename)
-            patch_name = get_shortname(patch_report.filename.filename)
 
             for wl in patch_report.workload_names():
                 data_rows.extend([{
                     "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": f"{patch_name}/{cp[0]}",
+                    "config_opportunity": f"{cp[0]}",
                     "variation": cp[1],
                     "metric": "wall_clock_time",
                     "value": patch_report.measurements_wall_clock_time(wl),
@@ -114,7 +120,7 @@ def get_data_for_single_config(
                     "config_id": report.filename.config_id,
                 }, {
                     "binary-wl": f"{binary}/{wl}",
-                    "config_opportunity": f"{patch_name}/{cp[0]}",
+                    "config_opportunity": f"{cp[0]}",
                     "variation": cp[1],
                     "metric": "max_resident_size",
                     "value": patch_report.max_resident_sizes(wl),
@@ -154,6 +160,11 @@ def aggregate_data(
         """Map string values to numerical values."""
         if row["config_opportunity"] == "__baseline__":
             return row
+
+        # Quick fix for ZMQ
+        if cs.project_name == "libzmq":
+            row["config_opportunity"] = "hwm_template/hwm"
+
         row["variation"] = str_val_map[row["config_opportunity"]][str(
             row["variation"]
         )]

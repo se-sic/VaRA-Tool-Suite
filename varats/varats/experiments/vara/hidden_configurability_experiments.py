@@ -1,20 +1,25 @@
 import re
 import textwrap
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import benchbuild as bb
 import benchbuild.extensions as bb_ext
+import yaml
+from benchbuild import Project
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Echo, Step
 from benchbuild.utils.cmd import git
+from plotly.data import experiment
 from plumbum import local, ProcessExecutionError
 
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
     MPRTimeWLAggregate,
 )
+from varats.data.reports.llvm_cov_report import LLVMCoverageReport
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -40,6 +45,7 @@ from varats.experiment.workload_util import (
     create_workload_specific_filename,
     WorkloadCategory,
 )
+from varats.experiments.coverage.collect_coverages import CollectBinaryCoverages
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
@@ -148,6 +154,14 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
 
     project: VProject
 
+    __GLOBAL_IGNORED_PATTERNS = [
+        "/usr/include",
+        "test",
+        "examples",
+    ]
+
+    __PROJECT_SPECIFIC_IGNORED_PATTERNS = {"HyTeg": ["eigen/"]}
+
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
         self.__experiment_handle = experiment_handle
@@ -161,13 +175,84 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             " " * indent
         )
 
+    def __filter_ignored_patterns(
+        self, report: HiddenConfigurabilityReport
+    ) -> HiddenConfigurabilityReport:
+        ignored_patterns = self.__GLOBAL_IGNORED_PATTERNS
+
+        if self.project.name in self.__PROJECT_SPECIFIC_IGNORED_PATTERNS:
+            ignored_patterns.extend(
+                self.__PROJECT_SPECIFIC_IGNORED_PATTERNS[self.project.name]
+            )
+
+        ignored_patterns = re.compile(
+            "|".join(re.escape(pattern) for pattern in ignored_patterns)
+        )
+
+        report.__hidden_configurability_points = {
+            kind: [
+                point
+                if not ignored_patterns.search(point.declaration.filename) else
+                type(point)(
+                    **{
+                        **point.__dict__, "tags":
+                            getattr(point, "tags", []) +
+                            ["Excluded (Filepath)"]
+                    }
+                ) for point in points
+            ] for kind, points in
+            report.get_hidden_configurability_points().items()
+        }
+
+        return report
+
+    def __filter_coverage_based(
+        self, report: HiddenConfigurabilityReport
+    ) -> HiddenConfigurabilityReport:
+        # Filter points that are not covered according to coverage report
+        coverage_reports = get_processed_revisions_files(
+            self.project.name,
+            CollectBinaryCoverages,
+            LLVMCoverageReport,
+            config_id=get_current_config_id(self.project)
+        )
+
+        if not coverage_reports or len(coverage_reports) > 1:
+            print(
+                f"Expected exactly one coverage report for {self.project.name}, found {len(coverage_reports)}"
+            )
+            return report
+
+        coverage_report = LLVMCoverageReport(coverage_reports[0].full_path())
+
+        for kind, points in report.get_hidden_configurability_points().items():
+            for point in points:
+                # For each point create a map from files to lines they are used at
+                use_locations = defaultdict(list)
+
+                # First, the location of the definition
+                use_locations[point.filename].append(point.line)
+
+                # Then all use locations
+                for use in point.uses:
+                    use_locations[use.filename].append(use.line)
+
+                # Check if any of the locations is covered
+                if not any(
+                    coverage_report.is_covered(file, line)
+                    for file, lines in use_locations.items()
+                    for line in lines
+                ):
+                    point.tags = getattr(point, "tags",
+                                         []) + ["Excluded (Not Covered)"]
+
+        return report
+
     def filter(self) -> actions.StepResult:
         # Load the report
         reports = get_processed_revisions_files(
-            self.project.name,
-            FindHiddenConfigurationPoints,
-            HiddenConfigurabilityReport,
-            config_id=get_current_config_id(self.project)
+            self.project.name, FindHiddenConfigurationPoints,
+            HiddenConfigurabilityReport
         )
 
         if not reports:
@@ -177,35 +262,17 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             print(f"More than one report for {self.project.name}")
             return actions.StepResult.ERROR
 
+        # TODO: Handle multiple reports? (Should not happen currently)
         report = HiddenConfigurabilityReport(reports[0].full_path())
+        report = self.__filter_ignored_patterns(report)
 
-        # General Filtering:
-        # Ignore paths containing any of the following substrings:
-        # - "/usr/include" - System Headers
-        # - "test" - Test files
-        # ... (May be extended)
-
-        ignored_patterns = [
-            "/usr/include",
-            "test",
-            "examples",
-        ]
-
-        if self.project.name == "HyTeg":
-            ignored_patterns.append("eigen/")
-
-        ignored_patterns = re.compile(
-            "|".join(re.escape(pattern) for pattern in ignored_patterns)
+        result_filename = create_new_success_result_filepath(
+            self.__experiment_handle, HiddenConfigurabilityReport, self.project,
+            self.project.binaries[0]
         )
 
-        report.__hidden_configurability_points = {
-            kind: [
-                point
-                for point in points
-                if not ignored_patterns.search(point.filename)
-            ] for kind, points in
-            report.get_hidden_configurability_points().items()
-        }
+        with open(result_filename.full_path(), "w") as f:
+            yaml.dump(report.get_hidden_configurability_points(), f)
 
         return actions.StepResult.OK
 
@@ -236,15 +303,42 @@ class FindHiddenConfigurationPoints(VersionExperiment, shorthand="HCP"):
 
         # Wrap compile action such that we can continue, even if it fails.
         # While it helps us to have a compile_commands.json, some projects might
-        # not compile but the HiddenConfigurabilityDetector might still work.
+        # not compile but the HiddenConfigurabilityDetector might still work to a certain extent.
         experiment_steps = [
             actions.Any([
                 actions.Compile(project),
                 HiddenConfigurabilityDetector(project, self.get_handle()),
                 actions.Clean(project)
-            ]),
-            FilterHiddenConfigurabilityPoints(project, self.get_handle())
+            ])
         ]
+
+        return experiment_steps
+
+
+class FilterHiddenConfigurabilityReport(VersionExperiment, shorthand="FCP"):
+
+    NAME = "FilterHiddenConfigurabilityReport"
+    REPORT_SPEC = ReportSpecification(HiddenConfigurabilityReport)
+
+    def actions_for_project(self,
+                            project: VProject) -> tp.MutableSequence[Step]:
+        # Check whether the project already has a hidden configurability report
+        # Load the report
+        reports = get_processed_revisions_files(
+            project.name, FindHiddenConfigurationPoints,
+            HiddenConfigurabilityReport
+        )
+
+        if not reports:
+            experiment_steps = [
+                Echo(
+                    f"No HiddenConfigurabilityReport found for {project.name}, skipping filtering."
+                )
+            ]
+        else:
+            experiment_steps = [
+                FilterHiddenConfigurabilityPoints(project, self.get_handle())
+            ]
 
         return experiment_steps
 

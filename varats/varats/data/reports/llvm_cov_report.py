@@ -25,7 +25,7 @@ class CodeRegion:
         """Return the end of the code region."""
         return self.__end
 
-    def contains(self, line: int) -> bool:
+    def __contains__(self, line: int) -> bool:
         """Check if the given line is in the code region."""
         return self.__start <= line < self.__end
 
@@ -83,6 +83,12 @@ class LLVMCoverageReport(BaseReport, shorthand="LCOV", file_type="json"):
             self.coverage_data[file] = [
                 CodeRegion(start, end) for start, end in regions
             ]
+
+    def is_covered(self, filename: str, line: int) -> bool:
+        if filename not in self.coverage_data:
+            return False
+
+        return any(line in region for region in self.coverage_data[filename])
 
 
 class LLVMProfDataReport(BaseReport, shorthand="LPD", file_type="profdata"):

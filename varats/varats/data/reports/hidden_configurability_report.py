@@ -1,31 +1,46 @@
-from dataclasses import dataclass
-from enum import Enum
+import typing as tp
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
 
-from varats.report.gnu_time_report import (
-    WLTimeReportAggregate,
-    TimeReportAggregate,
-)
+from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import BaseReport, ReportAggregate
 
 
 @dataclass
-class HiddenConfigurabilityPoint:
-    """Data class to store hidden configurability points."""
+class CodeLocation:
+    """Data class to store code locations."""
     filename: str
     line: int
     column: int
 
 
+@dataclass
+class HiddenConfigurabilityPoint:
+    """Data class to store hidden configurability points."""
+    declaration: CodeLocation
+    uses: list[CodeLocation]
+    tags: list[str] = field(default_factory=list)
+
+
 def from_dict(data: dict) -> HiddenConfigurabilityPoint:
     """Converts a dictionary to a HiddenConfigurabilityPoint object."""
+    location = data.get("Location")
     return HiddenConfigurabilityPoint(
-        filename=data["Filename"],
-        line=data["Lineno"],
-        column=data["Colno"],
+        declaration=CodeLocation(
+            filename=location["Filename"],
+            line=location["Lineno"],
+            column=location["Colno"]
+        ),
+        uses=[
+            CodeLocation(
+                filename=use["Filename"],
+                line=use["Lineno"],
+                column=use["Colno"]
+            ) for use in data.get("UseLocations", [])
+        ]
     )
 
 
@@ -34,7 +49,8 @@ class HiddenConfigurabilityReport(BaseReport, shorthand="HC", file_type="yaml"):
 
     def __init__(self, path: Path):
         super().__init__(path)
-        self.__hidden_configurability_points = {}
+        self.__hidden_configurability_points: tp.Dict[
+            str, tp.Iterable[HiddenConfigurabilityPoint]] = {}
 
         with open(path, "r") as file:
             data = yaml.safe_load(file)
