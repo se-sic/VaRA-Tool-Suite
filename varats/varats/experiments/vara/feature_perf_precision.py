@@ -475,6 +475,9 @@ def setup_actions_for_vara_experiment(
         patch_steps.append(RevertPatch(project, patch, **kwargs))
 
     for patch in patches:
+        if "region_identifier" in patch.tags:
+            # Skip patches that only add region identifiers but no regression
+            continue
         if "severity" in patch.arguments:
             for severity in REGRESSION_SEVERITIES:
                 __add_patch_steps(severity=severity)
@@ -1111,3 +1114,8 @@ class BlackBoxOverheadBaseline(FeatureExperiment, shorthand="BBBaseO"):
         return setup_actions_for_vara_overhead_experiment(
             self, project, FeatureInstrType.NONE, RunBlackBoxBaselineOverhead
         )
+
+
+################################################################################
+# Whitebox Feature Baseline
+################################################################################
