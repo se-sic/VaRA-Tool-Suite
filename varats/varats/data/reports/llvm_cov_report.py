@@ -75,13 +75,14 @@ class LLVMCoverageReport(BaseReport, shorthand="LCOV", file_type="json"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
+        self.coverage_data = {}
         with open(path, "r") as file:
-            self.coverage_data = json.load(file)
+            data = json.load(file)
 
         # Convert tuples to CodeRegion objects
-        for file, regions in self.coverage_data.items():
-            self.coverage_data[file] = [
-                CodeRegion(start, end) for start, end in regions
+        for file, regions in data.items():
+            self.coverage_data[file.strip(":")] = [
+                CodeRegion(r["start"], r["end"]) for r in regions
             ]
 
     def is_covered(self, filename: str, line: int) -> bool:

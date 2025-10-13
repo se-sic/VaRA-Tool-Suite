@@ -17,6 +17,7 @@ from varats.experiments.vara.hidden_configurability_experiments import (
     PATCH_VARIATIONS,
     TestPatchVariations,
     MPTextReport,
+    FilterHiddenConfigurabilityReport,
 )
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_repo
@@ -45,8 +46,8 @@ class HiddenVariabilityOverviewTable(Table, table_name="hidden_var_overview"):
         for case_study in case_studies:
             reports = get_processed_revisions_files(
                 case_study.project_name,
-                FindHiddenConfigurationPoints,
-                FindHiddenConfigurationPoints.report_spec().main_report,
+                FilterHiddenConfigurabilityReport,
+                FilterHiddenConfigurabilityReport.report_spec().main_report,
             )
 
             if not reports:
@@ -62,14 +63,37 @@ class HiddenVariabilityOverviewTable(Table, table_name="hidden_var_overview"):
             ) == 0 and self.table_kwargs["hide_zero"]:
                 continue
 
+            config_points = report.get_hidden_configurability_points()
+
             new_row = {
                 "Case Study": case_study.project_name,
-                "Total": report.get_num_configurability_points(),
+                "Total (Unfiltered)": report.get_num_configurability_points(),
+                "Excluded (Filename)": 0,
+                "Excluded (Coverage)": 0,
+                "Total (Filtered)": 0
             }
 
-            for kind, count in report.get_num_configurability_points_by_kind(
-            ).items():
-                new_row[kind] = count
+            for kind in config_points:
+                filename_excluded = len([
+                    point for point in config_points[kind]
+                    if "Excluded (Filename)" in point.tags
+                ])
+                coverage_excluded = len([
+                    point for point in config_points[kind]
+                    if "Excluded (Coverage)" in point.tags
+                ])
+                relevant_points = len([
+                    point for point in config_points[kind]
+                    if "Excluded (Filename)" not in point.tags and
+                    "Excluded (Coverage)" not in point.tags
+                ])
+                new_row["Excluded (Filename)"] += filename_excluded
+                new_row["Excluded (Coverage)"] += coverage_excluded
+                new_row["Total (Filtered)"] += relevant_points
+
+                new_row[
+                    kind
+                ] = f"{len(config_points[kind])}/{filename_excluded}/{coverage_excluded}/{relevant_points}"
 
             table_data.append(new_row)
 

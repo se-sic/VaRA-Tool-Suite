@@ -40,7 +40,8 @@ def from_dict(data: dict) -> HiddenConfigurabilityPoint:
                 line=use["Lineno"],
                 column=use["Colno"]
             ) for use in data.get("UseLocations", [])
-        ]
+        ],
+        tags=data.get("tags", [])
     )
 
 

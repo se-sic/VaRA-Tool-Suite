@@ -190,9 +190,9 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
 
         for _, points in report_data.items():
             for point in points:
-                print(point["Location"]["Filename"])
+                #print(point["Location"]["Filename"])
                 if ignored_patterns.search(point["Location"]["Filename"]):
-                    print("Filename matched ignored pattern")
+                    #print("Filename matched ignored pattern")
                     point["tags"] = getattr(point, "tags",
                                             []) + ["Excluded (Filename)"]
 
@@ -214,7 +214,6 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             return report_data
 
         coverage_report = LLVMCoverageReport(coverage_reports[0].full_path())
-        pprint.pprint(report_data)
         for _, points in report_data.items():
             for point in points:
                 # For each point create a map from files to lines they are used at
