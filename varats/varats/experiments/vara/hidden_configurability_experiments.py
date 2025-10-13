@@ -1,3 +1,4 @@
+import pprint
 import re
 import textwrap
 import typing as tp
@@ -175,9 +176,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             " " * indent
         )
 
-    def __filter_ignored_patterns(
-        self, report: HiddenConfigurabilityReport
-    ) -> HiddenConfigurabilityReport:
+    def __filter_ignored_patterns(self, report_data: dict) -> dict:
         ignored_patterns = self.__GLOBAL_IGNORED_PATTERNS
 
         if self.project.name in self.__PROJECT_SPECIFIC_IGNORED_PATTERNS:
@@ -189,26 +188,17 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             "|".join(re.escape(pattern) for pattern in ignored_patterns)
         )
 
-        report.__hidden_configurability_points = {
-            kind: [
-                point
-                if not ignored_patterns.search(point.declaration.filename) else
-                type(point)(
-                    **{
-                        **point.__dict__, "tags":
-                            getattr(point, "tags", []) +
-                            ["Excluded (Filepath)"]
-                    }
-                ) for point in points
-            ] for kind, points in
-            report.get_hidden_configurability_points().items()
-        }
+        for _, points in report_data.items():
+            for point in points:
+                print(point["Location"]["Filename"])
+                if ignored_patterns.search(point["Location"]["Filename"]):
+                    print("Filename matched ignored pattern")
+                    point["tags"] = getattr(point, "tags",
+                                            []) + ["Excluded (Filename)"]
 
-        return report
+        return report_data
 
-    def __filter_coverage_based(
-        self, report: HiddenConfigurabilityReport
-    ) -> HiddenConfigurabilityReport:
+    def __filter_coverage_based(self, report_data: dict) -> dict:
         # Filter points that are not covered according to coverage report
         coverage_reports = get_processed_revisions_files(
             self.project.name,
@@ -221,21 +211,23 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             print(
                 f"Expected exactly one coverage report for {self.project.name}, found {len(coverage_reports)}"
             )
-            return report
+            return report_data
 
         coverage_report = LLVMCoverageReport(coverage_reports[0].full_path())
-
-        for kind, points in report.get_hidden_configurability_points().items():
+        pprint.pprint(report_data)
+        for _, points in report_data.items():
             for point in points:
                 # For each point create a map from files to lines they are used at
                 use_locations = defaultdict(list)
 
                 # First, the location of the definition
-                use_locations[point.filename].append(point.line)
+                use_locations[point["Location"]["Filename"]].append(
+                    point["Location"]["Lineno"]
+                )
 
                 # Then all use locations
-                for use in point.uses:
-                    use_locations[use.filename].append(use.line)
+                for use in point["UseLocations"]:
+                    use_locations[use["Filename"]].append(use["Lineno"])
 
                 # Check if any of the locations is covered
                 if not any(
@@ -243,10 +235,13 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
                     for file, lines in use_locations.items()
                     for line in lines
                 ):
-                    point.tags = getattr(point, "tags",
-                                         []) + ["Excluded (Not Covered)"]
+                    if "tags" in point:
+                        point["tags"].extend(["Excluded (Coverage)"])
+                    else:
+                        point["tags"] = ["Excluded (Coverage)"]
 
-        return report
+        #pprint.pprint(report_data)
+        return report_data
 
     def filter(self) -> actions.StepResult:
         # Load the report
@@ -263,8 +258,17 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             return actions.StepResult.ERROR
 
         # TODO: Handle multiple reports? (Should not happen currently)
-        report = HiddenConfigurabilityReport(reports[0].full_path())
-        report = self.__filter_ignored_patterns(report)
+
+        # We do not load the actual report, but rather directly load it as a dict
+        # and then filter it, as we do not have bindings for the data types
+        # in the report generated from LLVM.
+
+        with open(reports[0].full_path(), "r") as f:
+            report_data = yaml.safe_load(f)
+
+        report_data = self.__filter_ignored_patterns(report_data)
+
+        report_data = self.__filter_coverage_based(report_data)
 
         result_filename = create_new_success_result_filepath(
             self.__experiment_handle, HiddenConfigurabilityReport, self.project,
@@ -272,7 +276,7 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         )
 
         with open(result_filename.full_path(), "w") as f:
-            yaml.dump(report.get_hidden_configurability_points(), f)
+            yaml.dump(report_data, f)
 
         return actions.StepResult.OK
 
