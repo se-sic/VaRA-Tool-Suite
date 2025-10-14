@@ -32,7 +32,7 @@ from varats.experiment.experiment_util import (
     OutputFolderStep,
 )
 from varats.experiment.steps.git import GitAdd, GitCommit, GitCheckout
-from varats.experiment.steps.patch import ApplyPatch, RevertPatch
+from varats.experiment.steps.patch import ApplyPatch
 from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.experiments.base.perf_sampling import (
     PerfSampling,
@@ -51,7 +51,7 @@ from varats.project.project_util import (
     get_local_project_repo,
 )
 from varats.project.varats_project import VProject
-from varats.provider.patch.patch_provider import PatchProvider, Patch, PatchSet
+from varats.provider.patch.patch_provider import PatchProvider, Patch
 from varats.report.function_overhead_report import (
     WLFunctionOverheadReportAggregate,
     MPRWLFunctionOverheadReportAggregate,
@@ -63,13 +63,11 @@ from varats.report.report import (
     ReportFilepath,
 )
 from varats.revision.revisions import get_processed_revisions_files
-from varats.utils.git_commands import get_submodules, get_submodule_updates
 from varats.utils.git_util import (
     ShortCommitHash,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
     get_all_revisions_between,
-    get_submodule_update_commits,
     get_head_commit,
     RepositoryHandle,
 )
@@ -109,22 +107,6 @@ def createCommitFilter(project: VProject) -> tp.Optional[InteractionFilter]:
     commits = get_all_revisions_between(
         project_repo, old_rev.hash, new_rev.hash, FullCommitHash
     )[1:]
-
-    submodules = get_submodules(project_repo)
-    submodule_commits: tp.List[FullCommitHash] = []
-
-    # for submodule in submodules:
-    #     submodule_updates = get_submodule_updates(
-    #         project_repo,
-    #         str(
-    #             submodule.worktree_path.relative_to(project_repo.worktree_path)
-    #         )
-    #     )
-    #     for update in submodule_updates:
-    #         if update in commits:
-    #             submodule_commits += get_submodule_update_commits(
-    #                 project_repo, submodule, update
-    #             )
 
     return OrOperator(
         children=[
@@ -479,7 +461,7 @@ class PerformanceInteractionExperimentSynthetic(
 
             # simulate regressions via patches
             patch_steps = []
-            for change_patch in change_patches:
+            for change_patch in [next(change_patches.__iter__())]:
                 # apply performance region patches
                 applied_patches = list(perf_region_patches)
                 for perf_region_patch in perf_region_patches:
