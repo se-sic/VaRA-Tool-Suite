@@ -518,6 +518,43 @@ class OutputFolderStep(ProjectStep):  # type: ignore
         """Actual call implementation that gets a path to tmp_folder."""
 
 
+def AsOutputFolderStep(property_name: str):
+    """
+    Decorator to turn a ProjectStep into an OutputFolderStep.
+
+    Allows to simply wrap existing steps that have a property that defines where
+    to write their output to. The decorator will turn the class into an
+    OutputFolderStep and provide a call_with_output_folder method that sets the
+    property to a path inside the provided tmp_dir before calling the original
+    call method.
+    """
+
+    def decorator(cls):
+        if "call_with_output_folder" in cls.__dict__:
+            raise ValueError(
+                f"Class {cls.__name__} already has a call_with_output_folder method."
+            )
+
+        def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
+            original_output = getattr(self, property_name)
+            if original_output is None:
+                raise ValueError(f"The property {property_name} is None.")
+            if not isinstance(original_output, Path):
+                raise ValueError(f"The property {property_name} is not a Path.")
+
+            self.__dict__[property_name] = tmp_dir / original_output.name
+
+            return self()
+
+        cls.call_with_output_folder = call_with_output_folder
+        new_cls = type(
+            cls.__name__, (cls, OutputFolderStep), dict(cls.__dict__)
+        )
+        return new_cls
+
+    return decorator
+
+
 ZippedStepTy = tp.TypeVar(
     "ZippedStepTy", bound=tp.Union[OutputFolderStep, ProjectStep]
 )
