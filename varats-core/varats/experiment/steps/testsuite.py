@@ -10,6 +10,7 @@ from pathlib import Path
 from benchbuild.utils.actions import ProjectStep, StepResult
 from plumbum import ProcessExecutionError
 
+from varats.experiment.experiment_util import AsOutputFolderStep
 from varats.project.varats_project import VProject, SupportsTestSuites
 
 
@@ -71,6 +72,7 @@ class BuildTestSuite(ProjectStep):  # type: ignore
         )
 
 
+@AsOutputFolderStep("__output_path")
 class RunTestSuite(ProjectStep):  # type: ignore
     """Experiment step to run the test suite on a project."""
     project: VProject

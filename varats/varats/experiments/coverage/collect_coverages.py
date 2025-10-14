@@ -23,15 +23,22 @@ from benchbuild.utils.actions import (
 )
 from plumbum import local, ProcessExecutionError
 
-from varats.data.reports.llvm_cov_report import LLVMCoverageReport, CodeRegion
+from varats.data.reports.llvm_cov_report import (
+    LLVMCoverageReport,
+    CodeRegion,
+    MWLCoverageReport,
+)
 from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
     ZippedExperimentSteps,
+    AsOutputFolderStep,
 )
-from varats.experiment.steps.combinators import OutputAdapter
 from varats.experiment.steps.testsuite import PrepareTestSuite
-from varats.experiment.workload_util import workload_commands
+from varats.experiment.workload_util import (
+    workload_commands,
+    create_workload_specific_filename,
+)
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.project_util import BinaryType, ProjectBinaryWrapper
 from varats.project.varats_project import VProject, SupportsTestSuites
@@ -127,6 +134,7 @@ class CollectCoverage(ProjectStep):  # type: ignore
         )
 
 
+@AsOutputFolderStep("output_path")
 class MergeCoverages(ProjectStep):  # type: ignore
     """Merges and aggregates coverage information from profdata files."""
 
@@ -355,37 +363,51 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
                 # Skip python driver for FastDownward
                 continue
 
-            # TODO: Different workloads?
             workloads = workload_commands(project, binary, [])
             if not workloads:
                 print(f"No workloads found for {binary.name}")
                 continue
 
-            binary_run_cmd = workloads[0]
-
-            analysis_actions.append(
-                actions.Echo(f"Collect coverage for {binary.name}")
-            )
-            analysis_actions.append(
-                CollectCoverage(project, binary_run_cmd, binary.name)
-            )
-
-            result_file = create_new_success_result_filepath(
-                self.get_handle(), LLVMCoverageReport, project, binary,
+            aggregated_result_file = create_new_success_result_filepath(
+                self.get_handle(), MWLCoverageReport, project, binary,
                 get_current_config_id(project)
             )
 
-            binary_path = Path(project.source_of_primary) / binary_run_cmd.path
+            zipped_steps = []
+
+            for binary_run_cmd in workloads:
+                zipped_steps.append(
+                    actions.Echo(f"Collect coverage for {binary.name}")
+                )
+                zipped_steps.append(
+                    CollectCoverage(project, binary_run_cmd, binary.name)
+                )
+
+                workload_result_file = create_workload_specific_filename(
+                    binary.name, binary_run_cmd.command, file_suffix=".json"
+                )
+
+                binary_path = Path(
+                    project.source_of_primary
+                ) / binary_run_cmd.path
+                workload_prefix = f"{binary.name}-{binary_run_cmd.command.label}"
+
+                zipped_steps.append(
+                    MergeCoverages(
+                        project, binary_path, workload_prefix, workload_prefix,
+                        workload_result_file
+                    )
+                )
+
+                binaries.append(binary_path)
+                prefixes.append(workload_prefix)
+
+            if len(zipped_steps) == 0:
+                continue
 
             analysis_actions.append(
-                MergeCoverages(
-                    project, binary_path, binary.name, binary.name,
-                    result_file.full_path().absolute()
-                )
+                ZippedExperimentSteps(aggregated_result_file, zipped_steps)
             )
-
-            binaries.append(binary_path)
-            prefixes.append(binary.name)
 
         if len(analysis_actions) == 1:
             # No workloads found for any binary
@@ -455,9 +477,6 @@ class CollectTestCoverages(FeatureExperiment, shorthand="CTC"):
 
         coverage_steps = []
 
-        def output_adapter(merge_step: ProjectStep, tmp_dir: Path) -> None:
-            merge_step.output_path = tmp_dir / merge_step.output_path.name
-
         for test_name in test_names:
             coverage_steps.append(
                 actions.Echo(f"Collect coverage for test '{test_name}'")
@@ -493,12 +512,9 @@ class CollectTestCoverages(FeatureExperiment, shorthand="CTC"):
             )
 
             coverage_steps.append(
-                OutputAdapter(
-                    project,
-                    MergeCoverages(
-                        project, profdata_file, test_binary, test_name,
-                        Path(report_file.full_path())
-                    ), output_adapter
+                MergeCoverages(
+                    project, profdata_file, test_binary, test_name,
+                    Path(report_file.full_path())
                 )
             )
 

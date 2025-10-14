@@ -8,13 +8,11 @@ from pathlib import Path
 import benchbuild as bb
 import benchbuild.extensions as bb_ext
 import yaml
-from benchbuild import Project
 from benchbuild.command import cleanup, ProjectCommand
 from benchbuild.utils import actions
 from benchbuild.utils.actions import StepResult, Echo, Step
 from benchbuild.utils.cmd import git
-from plotly.data import experiment
-from plumbum import local, ProcessExecutionError
+from plumbum import local
 
 from varats.data.reports.hidden_configurability_report import (
     HiddenConfigurabilityReport,
