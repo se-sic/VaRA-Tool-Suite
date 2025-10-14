@@ -1,5 +1,6 @@
 """Database for evaluating performance evolution of configurable systems."""
 import typing as tp
+from itertools import chain
 
 import pandas as pd
 
@@ -14,10 +15,11 @@ from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.gnu_time_report import WLTimeReportAggregate
-from varats.report.report import ReportFilepath
+from varats.report.report import ReportFilepath, FileStatusExtension
 from varats.revision.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
+    get_files_with_status_by_config,
 )
 from varats.utils.config import load_configuration_map_for_case_study
 
@@ -77,33 +79,37 @@ class PerformanceEvolutionDatabase(
         configs = load_configuration_map_for_case_study(
             get_paper_config(), case_study, PlainCommandlineConfiguration
         )
-        report_files: tp.List[ReportFilepath] = []
-        for config_id in configs.ids():
-            report_files.extend(
-                get_processed_revisions_files(
-                    project_name,
-                    PerfSampling,
-                    WLTimeReportAggregate,
-                    file_name_filter=get_case_study_file_name_filter(
-                        case_study
-                    ),
-                    config_id=config_id
-                )
-            )
 
-        failed_report_files: tp.List[ReportFilepath] = []
-        for config_id in configs.ids():
-            failed_report_files.extend(
-                get_failed_revisions_files(
-                    project_name,
+        report_files: tp.List[ReportFilepath] = list(
+            chain.from_iterable(
+                get_files_with_status_by_config(
+                    project_name, [FileStatusExtension.SUCCESS],
                     PerfSampling,
                     WLTimeReportAggregate,
                     file_name_filter=get_case_study_file_name_filter(
                         case_study
                     ),
-                    config_id=config_id
-                )
+                    config_ids=configs.ids()
+                ).values()
             )
+        )
+
+        failed_report_files: tp.List[ReportFilepath] = list(
+            chain.from_iterable(
+                get_files_with_status_by_config(
+                    project_name, [
+                        FileStatusExtension.FAILED,
+                        FileStatusExtension.COMPILE_ERROR
+                    ],
+                    PerfSampling,
+                    WLTimeReportAggregate,
+                    file_name_filter=get_case_study_file_name_filter(
+                        case_study
+                    ),
+                    config_ids=configs.ids()
+                ).values()
+            )
+        )
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
