@@ -58,17 +58,27 @@ class HotFunctionsTable(Table, table_name="hot_functions"):
                             "Project": project_name,
                             "Binary": report_file.binary_name,
                             "Revision": str(report_file.commit_hash),
+                            "Configuration": str(report_file.config_id),
                             "FunctionName": hf_name,
                             "Overhead": np.average([hf.overhead for hf in hf]),
                         })
 
             entries += cs_entries
 
+        if not entries:
+            return "No data to display."
+
         df = pd.DataFrame.from_records(entries)
-        df = df.groupby(["Project", "Binary", "Revision", "FunctionName"],
-                        as_index=False).mean()
-        df.sort_values(["Project", "Binary", "Revision", "Overhead"],
-                       inplace=True)
+        df = df.groupby(
+            ["Project", "Binary", "Revision", "Configuration", "FunctionName"],
+            # df = df.groupby(["Project", "Binary", "Revision", "FunctionName"],
+            as_index=False
+        ).max()
+        df.sort_values(
+            ["Project", "Binary", "Revision", "Configuration", "Overhead"],
+            # df.sort_values(["Project", "Binary", "Revision", "Overhead"],
+            inplace=True
+        )
         df.set_index(
             ["Project", "Binary"],
             inplace=True,
