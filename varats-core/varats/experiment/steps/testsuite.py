@@ -83,7 +83,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self,
         project: VProject,
         output_path: tp.Optional[Path] = None,
-        result_filter: tp.Optional[tp.Dict[TestResult, bool]] = None,
+        result_filter: tp.Optional[tp.Callable[..., bool]] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None
@@ -99,13 +99,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
         if result_filter is None:
-            result_filter = {
-                TestResult.PASSED: True,
-                TestResult.FAILED: False,
-                TestResult.SKIPPED: True,
-                TestResult.TIMEOUT: False,
-                TestResult.DiSABLED: True
-            }
+            self.__result_filter = RunTestSuite.parse_results
         self.__result_filter = result_filter
         self.__tests_to_run = tests_to_run
         self.__test_to_include = test_to_include
@@ -122,6 +116,13 @@ class RunTestSuite(ProjectStep):  # type: ignore
         result: tp.Dict[str, TestResult], result_filter: tp.Dict[TestResult,
                                                                  bool]
     ) -> bool:
+        result_filter = {
+            TestResult.PASSED: True,
+            TestResult.FAILED: False,
+            TestResult.SKIPPED: True,
+            TestResult.TIMEOUT: False,
+            TestResult.DiSABLED: True
+        }
         return all(
             result_filter.get(status) == True for status in result.values()
         )
@@ -137,7 +138,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
                 self.__output_path, self.__tests_to_run, self.__test_to_include,
                 self.__test_to_exclude
             )
-            status = parse_results(results, self.__result_filter)
+            status = self.__result_filter(results, self.__result_filter)
             if status:
                 self.status = StepResult.OK
             else:
