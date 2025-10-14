@@ -35,7 +35,11 @@ from varats.paper.case_study import CaseStudy
 from varats.paper.paper_config import get_loaded_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.gnu_time_report import MPRWLTimeReportAggregate
-from varats.revision.revisions import get_processed_revisions_files
+from varats.report.report import FileStatusExtension
+from varats.revision.revisions import (
+    get_processed_revisions_files,
+    get_files_with_status_by_config,
+)
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
@@ -228,65 +232,35 @@ CONFIG_DATA: tp.Dict[str, tp.List[Feature]] = {
     "DegreeHigh": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "DegreeComplex": [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10],
     "bzip2": [
-        Feature("FR(forceOverwrite)", "f"),
-        Feature("FR(keepInputFiles)", "k"),
-        Feature("FR(compress)", "z"),
-        Feature("FR(decompress)", "d"),
-        Feature("FR(quiet)", "q"),
-        Feature("FR(smallMode)", "s"),
-        Feature("FR(stdout)", "c"),
-        Feature("FR(verbosity)", "v"),
-        Feature(
-            "FR(level)", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-        ),
+        Feature("forceOverwrite", "f"),
+        Feature("keepInputFiles", "k"),
+        Feature("compress", "z"),
+        Feature("decompress", "d"),
+        Feature("quiet", "q"),
+        Feature("smallMode", "s"),
+        Feature("stdout", "c"),
+        Feature("verbosity", "v"),
+        Feature("level", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]),
     ],
     "grep": [
-        Feature("FR(ignore_case)", "i"),
-        Feature("FR(invert_match)", "v"),
-        Feature("FR(count)", "c"),
-        Feature("FR(only_matching)", "o"),
-        Feature("FR(word_regex)", "w"),
-        Feature("FR(line_regex)", "x"),
-        Feature("FR(files_with_match)", "l"),
-        Feature("FR(files_without_match)", "L"),
-        Feature("FR(context_5)", "C5"),
-        Feature("FR(context_10)", "C10")
-    ],
-    "openssl": [
-        Feature("FR(base64)", "a"),
-        Feature("FR(one Line)", "A"),
-        Feature("FR(PBKDF2)", "pbkdf2"),
-        Feature("FR(print)", "p"),
-        Feature("FR(print and exit)", "P"),
-        Feature("FR(compress)", "z"),
-        Feature("FR(MD5)", "md=md5"),
-        Feature("FR(SHA-256)", "md=sha-256"),
-        Feature("FR(AES-128-CBC)", "aes-128-cbc"),
-        Feature("FR(AES-128-OFB)", "aes-128-ofb"),
-        Feature("FR(AES-256-CBC)", "aes-256-cbc"),
-        Feature("FR(Blowfish-CBC)", "bf-cbc")
+        Feature("ignore_case", "i"),
+        Feature("invert_match", "v"),
+        Feature("count", "c"),
+        Feature("only_matching", "o"),
+        Feature("word_regex", "w"),
+        Feature("line_regex", "x"),
+        Feature("files_with_match", "l"),
+        Feature("files_without_match", "L"),
+        Feature("context_5", "C5"),
+        Feature("context_10", "C10")
     ],
     "picosat": [
-        Feature("FR(Plain)", "plain"),
-        Feature("FR(Partial)", "partial"),
-        Feature("FR(CompactTrace)", "t"),
-        Feature("FR(ExtendedTrace)", "T"),
-        Feature("FR(ReverseUnitPropagationProof)", "r"),
+        Feature("Plain", "plain"),
+        Feature("Partial", "partial"),
+        Feature("CompactTrace", "t"),
+        Feature("ExtendedTrace", "T"),
+        Feature("ReverseUnitPropagationProof", "r"),
     ],
-    "xz": [
-        Feature("FR(compress)", "z"),
-        Feature("FR(decompress)", "d"),
-        Feature("FR(test)", "t"),
-        Feature("FR(list)", "l"),
-        Feature("FR(keep)", "k"),
-        Feature("FR(force)", "f"),
-        Feature("FR(stdout)", "c"),
-        Feature("FR(no-sparse)", "no-sparse"),
-        Feature("FR(extreme)", "e"),
-        Feature(
-            "FR(level)", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-        ),
-    ]
 }
 
 
@@ -306,7 +280,10 @@ def get_performance_data(
     try:
         vals_raw = performance_data.loc[config_id, revision]
     except KeyError:
-        vals_raw = []
+        return []
+
+    if vals_raw is np.nan:
+        return []
 
     if isinstance(vals_raw, list):
         return vals_raw
@@ -432,10 +409,12 @@ def calculate_eval_data(
     sigma: float, min_diff: float, ignore_old_zero: bool, eval_data: EvalData
 ) -> None:
     # RQ1
-    is_reg = get_num_regressions(
+    regressing_configs = get_regressing_configs(
         performance_data, old_rev, new_rev, configs, threshold, sigma, min_diff,
         ignore_old_zero
-    ) > 0
+    )
+
+    is_reg = len(regressing_configs.ids()) > 0
 
     if is_reg:
         eval_data["baseline_positives"].append(new_rev)
@@ -517,25 +496,20 @@ def calculate_case_study_data(
     )
     assert rq2_confusion_matrix.FP == 0, f"{project_name}: encountered FP in RQ2. This should not be possible!"
 
-    threshold_key = f"Threshold = {threshold}"
     cs_data: tp.Dict[tp.Any, tp.Any] = {
-        ("Project", "", ""): [project_name],
+        ("Project", ""): [project_name],
         # RQ1
-        (threshold_key, "RQ1", "Revs"): [
-            confusion_matrix.P + confusion_matrix.N
-        ],
-        (threshold_key, "RQ1", "P"): [confusion_matrix.P],
-        (threshold_key, "RQ1", "PP"): [confusion_matrix.PP],
-        (threshold_key, "RQ1", "TP"): [confusion_matrix.TP],
-        (threshold_key, "RQ1", "Prec."): [confusion_matrix.precision()],
-        (threshold_key, "RQ1", "Rec."): [confusion_matrix.recall()],
+        ("RQ1", "Scenarios"): [confusion_matrix.P + confusion_matrix.N],
+        ("RQ1", "P"): [confusion_matrix.P],
+        ("RQ1", "PP"): [confusion_matrix.PP],
+        ("RQ1", "TP"): [confusion_matrix.TP],
+        ("RQ1", "Precision"): [confusion_matrix.precision()],
+        ("RQ1", "Recall"): [confusion_matrix.recall()],
         # RQ2
-        (threshold_key, "RQ2", "Revs"): [
-            rq2_confusion_matrix.P + rq2_confusion_matrix.N
-        ],
-        (threshold_key, "RQ2", "P"): [rq2_confusion_matrix.P],
-        (threshold_key, "RQ2", "PP"): [rq2_confusion_matrix.PP],
-        (threshold_key, "RQ2", "Rec."): [rq2_confusion_matrix.recall()]
+        ("RQ2", "Scenarios"): [rq2_confusion_matrix.P + rq2_confusion_matrix.N],
+        ("RQ2", "P"): [rq2_confusion_matrix.P],
+        ("RQ2", "PP"): [rq2_confusion_matrix.PP],
+        ("RQ2", "Recall"): [rq2_confusion_matrix.recall()]
     }
 
     cs_df = pd.DataFrame.from_dict(cs_data)
@@ -546,56 +520,77 @@ def calculate_case_study_data(
 class SavingsData(tp.TypedDict):
     project_name: str
     revision: Revision
+    regression: bool
+    predicted_regression: bool
+    detected_regression: bool
     configs: int
     relevant_configs: int
+    regressing_configs: int
+    regressing_relevant_configs: int
     features: int
     relevant_features: int
-    relative_savings: float
-    absolute_savings: float
-    time_savings: float
+    total_time: float
+    relevant_time: float
 
 
 def calculate_saved_costs(
-    project_name: str, revision: Revision, configs: ConfigurationMap,
-    perf_inter_report: PerformanceInteractionReport,
-    performance_data: pd.DataFrame
+    project_name: str, old_rev: Revision, new_rev: Revision,
+    configs: ConfigurationMap, perf_inter_report: PerformanceInteractionReport,
+    performance_data: pd.DataFrame, threshold: float, sigma: float,
+    min_diff: float, ignore_old_zero: bool
 ) -> SavingsData:
     # RQ3
-    features: tp.Set[str] = set()
+    features: tp.Set[str] = set(f.name for f in CONFIG_DATA[project_name])
     relevant_features: tp.Set[str] = set()
+    predicted_regression = False
 
     for inter in perf_inter_report.performance_interactions:
-        relevant_features.update(inter.involved_features)
+        predicted_regression = True
+        relevant_features.update(
+            f for f in inter.involved_features if f in features
+        )
 
     relevant_configs = get_relevant_configs(
         project_name, configs, relevant_features
     )
+
+    regressing_configs = get_regressing_configs(
+        performance_data, old_rev, new_rev, configs, threshold, sigma, min_diff,
+        ignore_old_zero
+    )
+
+    num_configs = len(configs.ids())
+    num_relevant_configs = len(relevant_configs.ids())
+    num_regressing_configs = len(regressing_configs.ids())
+    num_regressing_relevant_configs = len(
+        set(relevant_configs.ids()).intersection(regressing_configs.ids())
+    )
+
     t_baseline = 0.0
     t_rq3 = 0.0
 
     for config_id, config in configs.id_config_tuples():
-        features.update([option.name for option in config.options()])
-        new_vals = get_performance_data(performance_data, revision, config_id)
+        new_vals = get_performance_data(performance_data, new_rev, config_id)
         t_baseline += float(np.average(new_vals))
 
     for config_id in relevant_configs.ids():
-        new_vals = get_performance_data(performance_data, revision, config_id)
+        new_vals = get_performance_data(performance_data, new_rev, config_id)
         t_rq3 += float(np.average(new_vals))
-
-    absolute_savings = len(configs.ids()) - len(relevant_configs.ids())
-    relative_savings = 1 - len(relevant_configs.ids()) / len(configs.ids())
-    time_savings = t_baseline - t_rq3
 
     return {
         "project_name": project_name,
-        "revision": revision,
-        "configs": len(configs.ids()),
-        "relevant_configs": len(relevant_configs.ids()),
+        "revision": new_rev,
+        "regression": num_regressing_configs > 0,
+        "predicted_regression": predicted_regression,
+        "detected_regression": num_regressing_relevant_configs > 0,
+        "configs": num_configs,
+        "relevant_configs": num_relevant_configs,
+        "regressing_configs": num_regressing_configs,
+        "regressing_relevant_configs": num_regressing_relevant_configs,
         "features": len(features),
         "relevant_features": len(relevant_features),
-        "relative_savings": relative_savings,
-        "absolute_savings": absolute_savings,
-        "time_savings": time_savings
+        "total_time": t_baseline,
+        "relevant_time": t_rq3
     }
 
 
@@ -628,7 +623,7 @@ class PerformanceRegressionClassificationTable(Table, table_name="perf_reg"):
                 ).pivot(
                     index="config_id", columns="revision",
                     values="wall_clock_time"
-                )
+                )[[revision.to_short_commit_hash() for revision in revisions]]
 
             perf_inter_report_files = get_processed_revisions_files(
                 project_name,
@@ -749,11 +744,11 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
                     project_name, ["revision", "config_id", "wall_clock_time"],
                     commit_map,
                     case_study,
-                    cached_only=True
+                    cached_only=False
                 ).pivot(
                     index="config_id", columns="revision",
                     values="wall_clock_time"
-                )
+                )[[revision.to_short_commit_hash() for revision in revisions]]
 
             perf_inter_report_files = get_processed_revisions_files(
                 project_name,
@@ -767,37 +762,62 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
                     for report_file in perf_inter_report_files
                 }
 
-            for revision in map(lambda x: x.to_short_commit_hash(), revisions):
-                perf_inter_report = perf_inter_reports.get(revision, None)
+            revision_pairs = pairwise([
+                rev.to_short_commit_hash() for rev in revisions
+            ])
+
+            cs_data = []
+
+            for old_rev, new_rev in revision_pairs:
+                perf_inter_report = perf_inter_reports.get(new_rev, None)
 
                 if perf_inter_report:
                     savings = calculate_saved_costs(
-                        project_name, revision, configs, perf_inter_report,
-                        performance_data
+                        project_name,
+                        old_rev,
+                        new_rev,
+                        configs,
+                        perf_inter_report,
+                        performance_data,
+                        threshold=0.1,
+                        sigma=3,
+                        min_diff=0,
+                        ignore_old_zero=True
                     )
                 else:
                     savings = {
                         "project_name": project_name,
-                        "revision": revision,
+                        "revision": new_rev,
+                        "regression": False,
+                        "predicted_regression": False,
+                        "detected_regression": False,
                         "configs": len(configs.ids()),
                         "relevant_configs": len(configs.ids()),
+                        "regressing_configs": 0,
+                        "regressing_relevant_configs": 0,
                         "features": len(features),
                         "relevant_features": len(features),
-                        "relative_savings": np.nan,
-                        "absolute_savings": np.nan,
-                        "time_savings": np.nan
+                        "total_time": np.nan,
+                        "relevant_time": np.nan
                     }
 
-                data.append({
-                    "Project": f"{project_name} ({revision})",
-                    "$|F|$": savings["features"],
-                    "$|\hat{F}|$": savings["relevant_features"],
-                    "$|C|$": savings["configs"],
-                    "$|\hat{C}|$": savings["relevant_configs"],
-                    "$S_{Abs}$": savings["absolute_savings"],
-                    "$S_{Rel}$": savings["relative_savings"],
-                    "$S_{Time} ($s$)$": savings["time_savings"],
-                })
+                cs_data.append(savings)
+
+            project_df = pd.DataFrame.from_records(cs_data)
+            # write data as csv
+            project_df.to_csv(f"tables/{project_name}_cost.txt", sep=" ")
+            # table contains per-project summary
+            predicted_df = project_df[project_df["predicted_regression"]]
+            data.append({
+                "Project": f"{project_name}",
+                "$|F|$":
+                    predicted_df["features"].median(),  # should be constant
+                "$|\hat{F}|$": predicted_df["relevant_features"].mean(),
+                "$|C|$": predicted_df["configs"].median(),  # should be constant
+                "$|\hat{C}|$": predicted_df["relevant_configs"].mean(),
+                "$T_{C} ($s$)$": predicted_df["total_time"].mean(),
+                "$T_{\hat{C}} ($s$)$": predicted_df["relevant_time"].mean(),
+            })
 
         df = pd.DataFrame.from_records(data)
         df.set_index("Project", inplace=True)
@@ -806,7 +826,7 @@ class PerformanceInteractionSavingsTable(Table, table_name="perf_inter_cost"):
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
-            kwargs["column_format"] = "lrrrrrrr"
+            kwargs["column_format"] = "lrrrrrr"
             kwargs["multicol_align"] = "c"
             style.format(precision=2, thousands=r"\,")
 
@@ -835,16 +855,17 @@ def load_synth_baseline_data(
     project_name = case_study.project_name
 
     data: tp.List[tp.Dict[str, tp.Any]] = []
+    time_report_dict = get_files_with_status_by_config(
+        project_name, [FileStatusExtension.SUCCESS],
+        PerfSamplingSynth,
+        MPRWLTimeReportAggregate,
+        file_name_filter=get_case_study_file_name_filter(case_study),
+        only_newest=True,
+        config_ids=config_ids
+    )
 
     for config_id in config_ids:
-        time_report_files = get_processed_revisions_files(
-            project_name,
-            PerfSamplingSynth,
-            MPRWLTimeReportAggregate,
-            file_name_filter=get_case_study_file_name_filter(case_study),
-            only_newest=True,
-            config_id=config_id
-        )
+        time_report_files = time_report_dict.get(config_id, [])
 
         if not time_report_files:
             LOG.warning(
@@ -1027,43 +1048,66 @@ class PerformanceInteractionSavingsTableSynth(
                 continue
 
             revisions = performance_data["revision"].unique().tolist()
-            revisions.remove("base")
+            revision_pairs = [("base", patch_name)
+                              for patch_name in sorted(revisions)
+                              if patch_name != "base"]
             performance_data = performance_data.pivot(
                 index="config_id", columns="revision", values="wall_clock_time"
             )
             perf_inter_reports = load_synth_perf_inter_reports(case_study)
 
-            for revision in revisions:
-                perf_inter_report = perf_inter_reports.get(revision, None)
+            cs_data = []
+
+            for old_rev, new_rev in revision_pairs:
+                perf_inter_report = perf_inter_reports.get(new_rev, None)
 
                 if perf_inter_report:
                     savings = calculate_saved_costs(
-                        project_name, revision, configs, perf_inter_report,
-                        performance_data
+                        project_name,
+                        old_rev,
+                        new_rev,
+                        configs,
+                        perf_inter_report,
+                        performance_data,
+                        threshold=0.1,
+                        sigma=3,
+                        min_diff=0,
+                        ignore_old_zero=False
                     )
                 else:
                     savings = {
                         "project_name": project_name,
-                        "revision": revision,
+                        "revision": new_rev,
+                        "regression": False,
+                        "predicted_regression": False,
+                        "detected_regression": False,
                         "configs": len(configs.ids()),
                         "relevant_configs": len(configs.ids()),
+                        "regressing_configs": 0,
+                        "regressing_relevant_configs": 0,
                         "features": len(features),
                         "relevant_features": len(features),
-                        "relative_savings": np.nan,
-                        "absolute_savings": np.nan,
-                        "time_savings": np.nan
+                        "total_time": np.nan,
+                        "relevant_time": np.nan
                     }
 
-                data.append({
-                    "Project": f"{project_name} ({revision})",
-                    "$|F|$": savings["features"],
-                    "$|\hat{F}|$": savings["relevant_features"],
-                    "$|C|$": savings["configs"],
-                    "$|\hat{C}|$": savings["relevant_configs"],
-                    "$S_{Abs}$": savings["absolute_savings"],
-                    "$S_{Rel}$": savings["relative_savings"],
-                    "$S_{Time} ($s$)$": savings["time_savings"],
-                })
+                cs_data.append(savings)
+
+            project_df = pd.DataFrame.from_records(cs_data)
+            # write data as csv
+            project_df.to_csv(f"tables/{project_name}_cost.txt", sep=" ")
+            # table contains per-project summary
+            predicted_df = project_df[project_df["predicted_regression"]]
+            data.append({
+                "Project": f"{project_name}",
+                "$|F|$":
+                    predicted_df["features"].median(),  # should be constant
+                "$|\hat{F}|$": predicted_df["relevant_features"].mean(),
+                "$|C|$": predicted_df["configs"].median(),  # should be constant
+                "$|\hat{C}|$": predicted_df["relevant_configs"].mean(),
+                "$T_{C} ($s$)$": predicted_df["total_time"].mean(),
+                "$T_{\hat{C}} ($s$)$": predicted_df["relevant_time"].mean(),
+            })
 
         df = pd.DataFrame.from_records(data)
         df.set_index("Project", inplace=True)
@@ -1072,7 +1116,7 @@ class PerformanceInteractionSavingsTableSynth(
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
             kwargs["hrules"] = True
-            kwargs["column_format"] = "lrrrrrrr"
+            kwargs["column_format"] = "lrrrrrr"
             kwargs["multicol_align"] = "c"
             style.format(precision=2, thousands=r"\,")
 
