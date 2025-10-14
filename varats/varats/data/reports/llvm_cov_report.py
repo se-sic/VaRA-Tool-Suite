@@ -4,6 +4,7 @@ import typing as tp
 from dataclasses import dataclass
 from pathlib import Path
 
+from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport
 
 
@@ -90,6 +91,22 @@ class LLVMCoverageReport(BaseReport, shorthand="LCOV", file_type="json"):
             return False
 
         return any(line in region for region in self.coverage_data[filename])
+
+
+class MWLCoverageReport(
+    WorkloadSpecificReportAggregate[LLVMCoverageReport],
+    shorthand="MLCOV",
+    file_type="zip"
+):
+    """
+    Multi-workload LLVM coverage report.
+
+    This report aggregates multiple `LLVMCoverageReport`s for different
+    workloads into a single report.
+    """
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, LLVMCoverageReport)
 
 
 class LLVMProfDataReport(BaseReport, shorthand="LPD", file_type="profdata"):

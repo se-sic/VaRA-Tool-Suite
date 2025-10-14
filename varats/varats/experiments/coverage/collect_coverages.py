@@ -84,7 +84,6 @@ class CollectCoverage(ProjectStep):  # type: ignore
     def __init__(
         self,
         project: Project,
-        output_file: Path,
         run_cmd: tp.Union[tp.Callable, ProjectCommand],
         prefix: str = "coverages"
     ) -> None:
@@ -96,7 +95,6 @@ class CollectCoverage(ProjectStep):  # type: ignore
             prefix: prefix for temporary coverage files
         """
         super().__init__(project)
-        self.output_path = output_file
         self.run_cmd = run_cmd
         self.prefix = prefix
 
@@ -121,20 +119,6 @@ class CollectCoverage(ProjectStep):  # type: ignore
                 except ProcessExecutionError:
                     return StepResult.ERROR
 
-            coverage_raw_files = local.path(
-                self.project.builddir, self.prefix
-            ) // f"{self.project.name}-*.profraw"
-
-            # Merge the coverage information
-            profdata_cmd = local["llvm-profdata"]["merge", "-sparse",
-                                                  coverage_raw_files, "-o",
-                                                  str(self.output_path)]
-
-        try:
-            bb.watch(profdata_cmd)()
-        except ProcessExecutionError:
-            return StepResult.ERROR
-
         return StepResult.OK
 
     def __str__(self, indent: int = 0) -> str:
@@ -147,8 +131,9 @@ class MergeCoverages(ProjectStep):  # type: ignore
     """Merges and aggregates coverage information from profdata files."""
 
     def __init__(
-        self, project: Project, profdata_file: Path, binary_path: Path,
-        prefix: str, output_path: Path
+        self, project: Project, binary_paths: tp.Union[Path, tp.Iterable[Path]],
+        prefixes: tp.Union[str, tp.Iterable[str]], output_prefix: str,
+        output_path: Path
     ) -> None:
         """
         Args:
@@ -159,10 +144,17 @@ class MergeCoverages(ProjectStep):  # type: ignore
             output_path: Output path for resulting json file
         """
         super().__init__(project)
-        self.profdata_file = profdata_file
-        self.binary_path = binary_path
-        self.prefix = prefix
+        if isinstance(binary_paths, Path):
+            self.binary_paths = [binary_paths]
+        else:
+            self.binary_paths = list(binary_paths)
+
+        if isinstance(prefixes, str):
+            self.prefixes = [prefixes]
+        else:
+            self.prefixes = list(prefixes)
         self.output_path = output_path
+        self.prefix = output_prefix
 
     def __aggregate_coverages(
         self, coverages_dir: Path
@@ -180,7 +172,7 @@ class MergeCoverages(ProjectStep):  # type: ignore
                     next(coverage_file)
 
                 # Third line contains the file name
-                line = next(coverage_file).strip()
+                line = next(coverage_file).strip().strip(":")
 
                 file_name = Path(line).relative_to(self.project.builddir)
                 file_name = Path(*file_name.parts[1:])
@@ -224,7 +216,9 @@ class MergeCoverages(ProjectStep):  # type: ignore
 
         return coverage_data
 
-    def __collect_linked_libraries(self, binary_path: Path) -> tp.List[Path]:
+    def __collect_linked_libraries(
+        self, binary_paths: tp.List[Path]
+    ) -> tp.List[Path]:
         """
         Use ldd to check which libraries are linked to the binary.
 
@@ -235,45 +229,64 @@ class MergeCoverages(ProjectStep):  # type: ignore
             List of paths to the linked libraries that
             reside in the projects own source directory.
         """
-        ldd = local["ldd"][binary_path]
-
-        try:
-            out = ldd()
-        except ProcessExecutionError:
-            print(f"Error while executing ldd on {binary_path}")
-            return []
-
         linked_libs = []
+        for binary_path in binary_paths:
+            ldd = local["ldd"][binary_path]
 
-        for line in out.splitlines():
-            path_candidate: str = line.split("=>", maxsplit=1)[-1]
-            path_candidate = path_candidate[:path_candidate.rfind("(")].strip()
-
-            lib_path = Path(path_candidate)
-            if not lib_path.is_absolute():
-                # Combine with path of the binary
-                lib_path = binary_path.parent / lib_path
-
-            if not lib_path.exists():
-                # If the library is not found, skip it
+            try:
+                out = ldd()
+            except ProcessExecutionError:
+                print(f"Error while executing ldd on {binary_path}")
                 continue
 
-            if lib_path.is_relative_to(self.project.builddir):
-                linked_libs.append(lib_path)
+            for line in out.splitlines():
+                path_candidate: str = line.split("=>", maxsplit=1)[-1]
+                path_candidate = path_candidate[:path_candidate.
+                                                rfind("(")].strip()
+
+                lib_path = Path(path_candidate)
+                if not lib_path.is_absolute():
+                    # Combine with path of the binary
+                    lib_path = binary_path.parent / lib_path
+
+                if not lib_path.exists():
+                    # If the library is not found, skip it
+                    continue
+
+                if lib_path.is_relative_to(self.project.builddir):
+                    linked_libs.append(lib_path)
 
         return linked_libs
 
     def __call__(self) -> StepResult:
+        coverage_raw_files = [
+            local.path(self.project.builddir, prefix) //
+            f"{self.project.name}-*.profraw" for prefix in self.prefixes
+        ]
+
+        profdata_file = self.project.builddir / f"{self.prefix}.profdata"
+
+        # Merge the coverage information
+        profdata_cmd = local["llvm-profdata"]["merge", "-sparse",
+                                              *coverage_raw_files, "-o",
+                                              str(profdata_file)]
+
+        try:
+            bb.watch(profdata_cmd)()
+        except ProcessExecutionError:
+            return StepResult.ERROR
+
         coverages_dir = Path(self.project.builddir) / self.prefix / "coverages"
         coverages_dir.mkdir(parents=True, exist_ok=True)
 
-        linked_libs = self.__collect_linked_libraries(self.binary_path)
+        linked_libs = self.__collect_linked_libraries(self.binary_paths)
 
         cov_args = [
-            "show", f"-instr-profile={self.profdata_file}", "-use-color=0",
-            "-show-instantiations=false", f"-output-dir={coverages_dir}",
-            f"-object={self.binary_path}"
+            "show", f"-instr-profile={profdata_file}", "-use-color=0",
+            "-show-instantiations=false", f"-output-dir={coverages_dir}"
         ]
+
+        cov_args += [f"-object={bin}" for bin in self.binary_paths]
 
         cov_args += [f"-object={lib}" for lib in linked_libs]
 
@@ -331,6 +344,9 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
             Compile(project),
         ]
 
+        binaries = []
+        prefixes = []
+
         for binary in project.binaries:
             if binary.type != BinaryType.EXECUTABLE:
                 continue
@@ -338,10 +354,6 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
             if project.name == "FastDownward" and binary.name == "FDDriverPy":
                 # Skip python driver for FastDownward
                 continue
-
-            profdata_file = (
-                project.builddir / f"{project.name}-{binary.name}.profdata"
-            )
 
             # TODO: Different workloads?
             workloads = workload_commands(project, binary, [])
@@ -355,9 +367,7 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
                 actions.Echo(f"Collect coverage for {binary.name}")
             )
             analysis_actions.append(
-                CollectCoverage(
-                    project, profdata_file, binary_run_cmd, binary.name
-                )
+                CollectCoverage(project, binary_run_cmd, binary.name)
             )
 
             result_file = create_new_success_result_filepath(
@@ -365,18 +375,38 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
                 get_current_config_id(project)
             )
 
+            binary_path = Path(project.source_of_primary) / binary_run_cmd.path
+
             analysis_actions.append(
                 MergeCoverages(
-                    project, profdata_file,
-                    Path(project.source_of_primary) / binary_run_cmd.path,
-                    binary.name,
+                    project, binary_path, binary.name, binary.name,
                     result_file.full_path().absolute()
                 )
             )
 
+            binaries.append(binary_path)
+            prefixes.append(binary.name)
+
         if len(analysis_actions) == 1:
             # No workloads found for any binary
             return []
+
+        # Final aggregation step for all binaries
+        fake_binary = ProjectBinaryWrapper(
+            "ALLBINARIES", Path(), BinaryType.EXECUTABLE
+        )
+
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), LLVMCoverageReport, project, fake_binary,
+            get_current_config_id(project)
+        )
+
+        analysis_actions.append(
+            MergeCoverages(
+                project, binaries, prefixes, "ALLBINARIES",
+                result_file.full_path().absolute()
+            )
+        )
 
         analysis_actions.append(Clean(project))
 
