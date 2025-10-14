@@ -72,6 +72,7 @@ def update_projects(
         'varats.projects.c_projects.yara',
         'varats.projects.cpp_projects.clasp',
         'varats.projects.cpp_projects.fast_downward',
+        'varats.projects.cpp_projects.fmt',
         'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.opencv',

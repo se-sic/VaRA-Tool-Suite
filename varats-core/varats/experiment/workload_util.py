@@ -120,7 +120,7 @@ def workload_commands(
 
     return [
         cmd for cmd in project_cmds
-        if cmd.path.name == binary.name and cmd.can_be_executed()
+        if cmd.path.name == binary.path.name and cmd.can_be_executed()
     ]
 
 

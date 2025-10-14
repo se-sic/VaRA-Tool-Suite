@@ -113,7 +113,7 @@ class VCommand(Command):  # type: ignore [misc]
                 )
 
         if wrapper_cmd:
-            cmd = wrapper_cmd[base_cmd]
+            cmd = wrapper_cmd[base_cmd.formulate()]
         else:
             cmd = base_cmd
 
