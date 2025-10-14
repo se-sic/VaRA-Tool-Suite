@@ -172,6 +172,75 @@ def __get_files_with_status(
     return processed_revisions_paths
 
 
+def get_files_with_status_by_config(
+    project_name: str,
+    file_statuses: tp.List[FileStatusExtension],
+    experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,
+    report_type: tp.Optional[tp.Type[BaseReport]] = None,
+    file_name_filter: tp.Callable[[str], bool] = lambda x: False,
+    only_newest: bool = True,
+    config_ids: tp.Optional[tp.List[int]] = None
+) -> tp.Dict[tp.Optional[int], tp.List[ReportFilepath]]:
+    """
+    Find all file paths to result files with given file statuses. Use this if
+    you want results for multiple configs grouped by config id.
+
+    Args:
+        project_name: target project
+        file_statuses: a list of statuses the files should have
+        experiment_type: the experiment type that created the result files
+        report_type: the report type of the result files;
+                     defaults to experiment's main report
+        file_name_filter: optional filter to exclude certain files; returns
+                          true if the file_name should not be checked
+        only_newest: whether to include all result files, or only the newest;
+                     if ``False``, result files for the same revision are sorted
+                     descending by the file's mtime
+        config_ids: a list of config ids to include
+
+    Returns:
+        a dict of file paths to matching revision files grouped by config id
+    """
+    result: tp.DefaultDict[tp.Optional[int],
+                           tp.List[ReportFilepath]] = defaultdict(list)
+    result_files = __get_result_files_dict(
+        project_name, experiment_type, report_type
+    )
+
+    for files_for_revision in result_files.values():
+        filtered_files = filter(
+            lambda f: f.report_filename.file_status in file_statuses,
+            files_for_revision
+        )
+        filtered_files = filter(
+            lambda f: not file_name_filter(f.report_filename.filename),
+            filtered_files
+        )
+        files_by_id: tp.Iterable[
+            tp.Tuple[tp.Optional[int], ReportFilepath]
+        ] = map(lambda f: (f.report_filename.config_id, f), filtered_files)
+
+        if config_ids:
+            files_by_id = filter(lambda x: x[0] in config_ids, files_by_id)
+        result_file_dict: tp.DefaultDict[
+            tp.Optional[int], tp.List[ReportFilepath]] = defaultdict(list)
+        for cid, file in files_by_id:
+            result_file_dict[cid].append(file)
+
+        if not result_file_dict:
+            continue
+
+        for cid, files in result_file_dict.items():
+            sorted_res_files: tp.List[ReportFilepath] = sorted(
+                files, key=lambda x: x.stat().st_mtime, reverse=True
+            )
+            if only_newest:
+                sorted_res_files = [sorted_res_files[0]]
+            result[cid] += sorted_res_files
+
+    return result
+
+
 def get_all_revisions_files(
     project_name: str,
     experiment_type: tp.Optional[tp.Type["exp_u.VersionExperiment"]] = None,

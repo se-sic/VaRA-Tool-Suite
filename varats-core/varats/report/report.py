@@ -6,6 +6,7 @@ import typing as tp
 import weakref
 from collections import defaultdict
 from enum import Enum
+from functools import cached_property
 from os import stat_result
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -187,7 +188,7 @@ class ReportFilename():
         """Literal file name."""
         return self.__filename
 
-    @property
+    @cached_property
     def project_name(self) -> str:
         """Name of the analyzed project."""
         if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
@@ -195,7 +196,7 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
-    @property
+    @cached_property
     def binary_name(self) -> str:
         """Name of the analyzed binary."""
         if (match := ReportFilename.__RESULT_FILE_REGEX.search(self.filename)):
@@ -289,7 +290,7 @@ class ReportFilename():
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         return match is not None
 
-    @property
+    @cached_property
     def commit_hash(self) -> ShortCommitHash:
         """
         Commit hash of the result file.
@@ -302,7 +303,7 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
-    @property
+    @cached_property
     def experiment_shorthand(self) -> str:
         """
         Experiment shorthand of the result file.
@@ -315,7 +316,7 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
-    @property
+    @cached_property
     def report_shorthand(self) -> str:
         """
         Report shorthand of the result file.
@@ -328,7 +329,7 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
-    @property
+    @cached_property
     def file_status(self) -> FileStatusExtension:
         """
         Get the FileStatusExtension from a result file.
@@ -343,7 +344,7 @@ class ReportFilename():
 
         raise ValueError('File {file_name} name was wrongly formatted.')
 
-    @property
+    @cached_property
     def config_id(self) -> tp.Optional[int]:
         """
         Configuration ID of the result file. A configuartion ID is only present
@@ -368,7 +369,7 @@ class ReportFilename():
         """
         return self.config_id is not None
 
-    @property
+    @cached_property
     def uuid(self) -> str:
         """Report UUID of the result file, genereated by BenchBuild during the
         experiment."""
@@ -377,7 +378,7 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
-    @property
+    @cached_property
     def file_suffix(self) -> str:
         """File suffix, commonly known as file ending/type (in the codebase
         referred to as file_ext)."""
