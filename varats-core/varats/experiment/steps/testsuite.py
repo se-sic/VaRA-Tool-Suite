@@ -85,7 +85,6 @@ class RunTestSuite(ProjectStep):  # type: ignore
         output_path: tp.Optional[Path] = None,
         result_filter: tp.Optional[tp.Callable[..., bool]] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ):
         """
@@ -102,7 +101,6 @@ class RunTestSuite(ProjectStep):  # type: ignore
             self.__result_filter = RunTestSuite.parse_results
         self.__result_filter = result_filter
         self.__tests_to_run = tests_to_run
-        self.__test_to_include = test_to_include
         self.__test_to_exclude = test_to_exclude
 
     @property
@@ -132,8 +130,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         try:
             self.project.prepare_test_environment()
             results = self.project.run_testsuite(
-                self.__output_path, self.__tests_to_run, self.__test_to_include,
-                self.__test_to_exclude
+                self.__output_path, self.__tests_to_run, self.__test_to_exclude
             )
             status = self.__result_filter(results)
             if status:
