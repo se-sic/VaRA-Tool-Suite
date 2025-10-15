@@ -390,3 +390,68 @@ class TestCaseStudyExtenders(unittest.TestCase):
             FullCommitHash("510131d1db47f91602f45b9a8d7b1ee54d12a629"),
             cs.stages[1].revisions
         )
+
+
+class TestCaseStudyConfigID(unittest.TestCase):
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_config_ids_list(self):
+        vara_cfg()['paper_config']['current_config'] = "test_config_ids"
+        load_paper_config()
+
+        expected_config_ids = {
+            "SynthSAContextSensitivity":
+                ("06eac0edb6886a7e487867c8d5629cb2409b54fd", [0, 1]),
+            "SynthIPTemplate":
+                ("793035062810ea3a2d9a10f831cd199fbbb82090", [0, 1, 2, 3, 4]),
+            "SynthIPRuntime":
+                ("793035062810ea3a2d9a10f831cd199fbbb82090", [0, 1, 2, 3, 4]),
+            "xz": ("c5c7ceb08a011b97d261798033e2c39613a69eb7", [1])
+        }
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_config_ids_all(self):
+        vara_cfg()['paper_config']['current_config'] = "test_config_id_ranges"
+        load_paper_config()
+
+        cs = get_paper_config().get_case_studies("SynthIPTemplate")[0]
+
+        config_ids = cs.get_config_ids_for_revision(
+            FullCommitHash("793035062810ea3a2d9a10f831cd199fbbb82090")
+        )
+
+        self.assertListEqual(config_ids, [0, 1, 2, 3, 4])
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_config_ids_range(self):
+        vara_cfg()['paper_config']['current_config'] = "test_config_id_ranges"
+        load_paper_config()
+
+        cs = get_paper_config().get_case_studies("SynthSAContextSensitivity")[0]
+
+        config_ids = cs.get_config_ids_for_revision(
+            FullCommitHash("06eac0edb6886a7e487867c8d5629cb2409b54fd")
+        )
+
+        self.assertListEqual(config_ids, [1, 2, 3])
+
+    @run_in_test_environment(
+        UnitTestFixtures.PAPER_CONFIGS, UnitTestFixtures.RESULT_FILES
+    )
+    def test_config_ids_mixed(self):
+        vara_cfg()['paper_config']['current_config'] = "test_config_id_ranges"
+        load_paper_config()
+
+        cs = get_paper_config().get_case_studies("SynthIPRuntime")[0]
+
+        config_ids = cs.get_config_ids_for_revision(
+            FullCommitHash("793035062810ea3a2d9a10f831cd199fbbb82090")
+        )
+
+        self.assertListEqual(config_ids, [0, 1, 2, 4])
