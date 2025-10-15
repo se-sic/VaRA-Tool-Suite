@@ -97,7 +97,6 @@ class CollectCoverage(ProjectStep):  # type: ignore
         """
         Args:
             project: Project to collect coverage for
-            output_file: Path to create the merged profdata file
             run_cmd: Callable to be run
             prefix: prefix for temporary coverage files
         """
@@ -111,7 +110,6 @@ class CollectCoverage(ProjectStep):  # type: ignore
                 self.project.builddir / self.prefix /
                 f"{self.project.name}-%p.profraw"
             )
-            print(f"Current working dir: {local.cwd}")
 
             with local.env(LLVM_PROFILE_FILE=str(coverage_raw_files)):
                 try:
@@ -305,8 +303,6 @@ class MergeCoverages(ProjectStep):  # type: ignore
         except ProcessExecutionError:
             return StepResult.ERROR
 
-        print(coverages_dir)
-
         coverage_data = self.__aggregate_coverages(coverages_dir)
         # Write the coverage data to a json file
         with open(self.output_path, "w") as json_file:
@@ -328,7 +324,7 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
 
     NAME = "CollectBinaryCoverages"
     DESCRIPTION = "Collects coverage information for all binaries of a project."
-    REPORT_SPEC = ReportSpecification(LLVMCoverageReport)
+    REPORT_SPEC = ReportSpecification(LLVMCoverageReport, MWLCoverageReport)
 
     def actions_for_project(self,
                             project: VProject) -> tp.MutableSequence[Step]:
@@ -376,11 +372,14 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
             zipped_steps = []
 
             for binary_run_cmd in workloads:
+                workload_prefix = f"{binary.name}-{binary_run_cmd.command.label}"
                 zipped_steps.append(
-                    actions.Echo(f"Collect coverage for {binary.name}")
+                    actions.Echo(
+                        f"Collect coverage for binary '{binary.name}' and workload '{binary_run_cmd.command.label}'"
+                    )
                 )
                 zipped_steps.append(
-                    CollectCoverage(project, binary_run_cmd, binary.name)
+                    CollectCoverage(project, binary_run_cmd, workload_prefix)
                 )
 
                 workload_result_file = create_workload_specific_filename(
@@ -390,7 +389,6 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
                 binary_path = Path(
                     project.source_of_primary
                 ) / binary_run_cmd.path
-                workload_prefix = f"{binary.name}-{binary_run_cmd.command.label}"
 
                 zipped_steps.append(
                     MergeCoverages(
@@ -421,6 +419,10 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
         result_file = create_new_success_result_filepath(
             self.get_handle(), LLVMCoverageReport, project, fake_binary,
             get_current_config_id(project)
+        )
+
+        analysis_actions.append(
+            actions.Echo(f"Merge coverages of all binaries and workloads")
         )
 
         analysis_actions.append(
