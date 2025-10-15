@@ -172,14 +172,11 @@ class Libvpx(VProject):
         libvpx_source = local.path(self.source_of_primary)
         test_source = local.path(self.source_of_primary) / "build_tests"
         test_libvpx = test_source / "test_libvpx"
-        excluded_tests = [
-            "*TestLarge*", "*/LevelTest.*Large*",
-            "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
-        ]
+
         return gtest_run_testsuite(
             libvpx_source,
             test_libvpx,
             test_report_path,
             tests_to_run,
-            tests_to_exclude=excluded_tests
+            tests_to_exclude=test_to_exclude,
         )
