@@ -104,8 +104,8 @@ class HeapTrack(ResearchTool[HeapTrackCodeBase]):
         """
         cfg = vara_cfg()
         if source_folder:
-            cfg["phasar"]["source_dir"] = str(source_folder)
-        cfg["phasar"]["install_dir"] = str(install_prefix)
+            cfg["heaptrack"]["source_dir"] = str(source_folder)
+        cfg["heaptrack"]["install_dir"] = str(install_prefix)
         save_config()
 
         print(f"Setting up heaptrack in {self.source_location()}")
