@@ -2,11 +2,11 @@
 import json
 import re
 import typing as tp
-import xml.etree.ElementTree as ET
 from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
+from junitparser import JUnitXml, junitparser
 from plumbum import local, ProcessExecutionError
 
 
@@ -15,7 +15,8 @@ class TestResult(Enum):
     FAILED = 1,
     SKIPPED = 2,
     TIMEOUT = 3,
-    DiSABLED = 4
+    DISABLED = 4,
+    UNKNOWN = 5
 
 
 def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
@@ -44,7 +45,8 @@ def ctest_get_test_names(build_dir: Path) -> tp.Iterable[str]:
 def ctest_run_testsuite(
     build_dir: Path,
     test_report_path: tp.Optional[Path] = None,
-    tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+    tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
 ) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, TestResult]]]:
     """
     Run a test suite using ctest.
@@ -53,6 +55,7 @@ def ctest_run_testsuite(
         build_dir: Path to the build directory to execute ctest in
         test_report_path: Path to write the test report file to.
         tests_to_run: List of test cases to run. If None, all tests will be run.
+        tests_to_exclude: List of test cases to exclude.
 
     Returns:
         True if all tests passed, False otherwise.
@@ -68,29 +71,42 @@ def ctest_run_testsuite(
         ctest_cmd = ctest_cmd["--output-junit", test_report_path]
 
         if tests_to_run:
-            test_regex = '|'.join([re.escape(name) for name in tests_to_run])
-            test_regex = f"^{test_regex}$"
+            test_regex = '|'.join([
+                "^" + re.escape(name) for name in tests_to_run
+            ])
+            # test_regex = f"^{test_regex}$" #only for the first test..
 
-            ctest_cmd = ctest_cmd["-R", test_regex]
+            if tests_to_exclude:
+                exclude_regex = '|'.join([
+                    "^" + re.escape(name) for name in tests_to_exclude
+                ])
+                #exclude_regex = f"^{exclude_regex}$"
+            ctest_cmd = ctest_cmd["-R", test_regex, "-E", exclude_regex]
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
-    result: tp.Dict[str, TestResult] = {}
-    tree = ET.parse(test_report_path)
-    root = tree.getroot()
-    for testcase in root.iter("testcase"):
-        name = testcase.attrib.get("name")
-        if testcase.find("skipped") is not None:
-            result[name] = TestResult.SKIPPED
-        elif testcase.find("failure"
-                          ) is not None or testcase.find("error") is not None:
-            result[name] = TestResult.FAILED
-        else:
-            result[name] = TestResult.PASSED
-    has_failures = any(
-        status == TestResult.FAILED for status in result.values()
-    )
-    return not has_failures, result
+    results: tp.Dict[str, TestResult] = {}
+    test_xml = JUnitXml.fromfile(test_report_path)
+    for suite in test_xml:
+        suite: junitparser.TestSuite
+        suite_name = suite.name if suite.name else "<unknown>"
+
+        for case in suite:
+            case: junitparser.TestCase
+            case_name = case.name if case.name else "<unknown>"
+
+            if case.is_passed:
+                status = TestResult.PASSED
+            elif case.is_skipped:
+                status = TestResult.SKIPPED
+            elif case.is_failure or case.is_error:
+                status = TestResult.FAILED
+            else:
+                status = TestResult.UNKNOWN
+
+            results[f"{suite_name}.{case_name}"] = status
+
+    return results
 
 
 def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
@@ -125,11 +141,9 @@ def gtest_run_testsuite(
     test_bin: Path,
     test_report_path: tp.Optional[Path] = None,
     tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-    tests_to_include: tp.Optional[tp.Iterable[str]] = None,
     tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
 ) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, TestResult]]]:
     """Run the testsuite."""
-    included_tests = ":".join(tests_to_include)
     excluded_tests = ":".join(tests_to_exclude)
 
     output_file: Path
@@ -141,15 +155,15 @@ def gtest_run_testsuite(
     gtest_out = "--gtest_output=json:" + output_file
 
     if tests_to_run:
-        all_tests = ":".join(tests_to_run)
+        included_tests = ":".join(tests_to_run)
         with local.cwd(build_dir):
             ret_code, out, err = bb.watch(
                 local[test_bin]
-                [f"--gtest_filter={all_tests}:{included_tests}-{excluded_tests}",
-                 gtest_out]
+                [f"--gtest_filter={included_tests}-{excluded_tests}", gtest_out]
             )()
     else:
         with local.cwd(build_dir):
+            # Run all tests except the excluded ones
             ret_code, out, err = bb.watch(
                 local[test_bin][f"--gtest_filter=-{excluded_tests}", gtest_out]
             )()
@@ -159,22 +173,25 @@ def gtest_run_testsuite(
 
     # TODO: need to figure out how to get all the passed test and fail test
     # look at the json file that is generated
-    result: tp.Dict[str, TestResult] = {}
-    if output_file.exists():
-        with open(output_file) as f:
-            report = json.load(f)
-            for suite in report.get("testsuites", []):
-                for case in suite.get("testsuite", []):
-                    name = f"{suite['name']}.{case['name']}"
-                    if case.get("status") == "NOTRUN" and case.get(
-                        "result"
-                    ) == "SUPPRESSED":
-                        result[name] = TestResult.DiSABLED
-                    elif case.get("failure") is not None:
-                        result[name] = TestResult.FAILED
-                    else:
-                        result[name] = TestResult.PASSED
-    has_failures = any(
-        status == TestResult.FAILED for status in result.values()
-    )
-    return not has_failures, result  # Passed all test
+    results: tp.Dict[str, TestResult] = {}
+    test_xml = JUnitXml.fromfile(output_file)
+    for suite in test_xml:
+        suite: junitparser.TestSuite
+        suite_name = suite.name if suite.name else "<unknown>"
+
+        for case in suite:
+            case: junitparser.TestCase
+            case_name = case.name if case.name else "<unknown>"
+
+            if case.is_passed:
+                status = TestResult.PASSED
+            elif case.is_skipped:
+                status = TestResult.SKIPPED
+            elif case.is_failure or case.is_error:
+                status = TestResult.FAILED
+            else:
+                status = TestResult.UNKNOWN
+
+            results[f"{suite_name}.{case_name}"] = status
+
+    return results

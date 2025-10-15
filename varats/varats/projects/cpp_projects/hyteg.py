@@ -26,6 +26,7 @@ from varats.utils.git_commands import update_all_submodules
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
+    TestResult,
     ctest_run_testsuite,
     ctest_get_test_names,
 )
@@ -195,9 +196,10 @@ class HyTeg(VProject):
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+    ) -> tp.Dict[str, TestResult]:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, test_to_exclude
+        )

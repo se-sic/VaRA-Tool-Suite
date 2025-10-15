@@ -2,6 +2,7 @@
 import typing as tp
 from enum import Enum
 from pathlib import Path
+from unittest import TestResult
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
@@ -32,6 +33,7 @@ from varats.utils.git_util import (
 )
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
+    TestResult,
     ctest_run_testsuite,
     ctest_get_test_names,
 )
@@ -202,26 +204,19 @@ class Bzip2(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         build_dir, build_method = self.__getbuilddir()
-        if build_method == Bzip2.Bzip2BuildMethod.MAKE:
-            with local.cwd(build_dir):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        elif build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
+        if build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
             with local.cwd(build_dir):
                 with local.env(CC=str(cc_compiler)):
                     bb.watch(local["./autogen.sh"])()
                     bb.watch(local["./configure"])()
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            with local.cwd(build_dir):
 
+        elif build_method != Bzip2.Bzip2BuildMethod.MAKE:
+            with local.cwd(build_dir):
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake)("..")
 
-                bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
-                )
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
         with local.cwd(bzip2_source):
             verify_binaries(self)
 
@@ -232,15 +227,7 @@ class Bzip2(VProject):
         bzip2_repo = RepositoryHandle(bzip2_source)
 
         build_dir, build_method = self.__getbuilddir()
-        if build_method == Bzip2.Bzip2BuildMethod.MAKE or build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
-            with local.cwd(build_dir):
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            with local.cwd(build_dir):
-                bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
-                )
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
@@ -284,9 +271,10 @@ class Bzip2(VProject):
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+    ) -> tp.Dict[str, TestResult]:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, test_to_exclude
+        )

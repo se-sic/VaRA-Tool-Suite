@@ -112,10 +112,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
     def set_output_path(self, output_path: Path) -> None:
         self.__output_path = output_path
 
-    def parse_results(
-        result: tp.Dict[str, TestResult], result_filter: tp.Dict[TestResult,
-                                                                 bool]
-    ) -> bool:
+    def parse_results(self, result: tp.Dict[str, TestResult]) -> bool:
         result_filter = {
             TestResult.PASSED: True,
             TestResult.FAILED: False,
@@ -134,11 +131,11 @@ class RunTestSuite(ProjectStep):  # type: ignore
             )
         try:
             self.project.prepare_test_environment()
-            result_status, results = self.project.run_testsuite(
+            results = self.project.run_testsuite(
                 self.__output_path, self.__tests_to_run, self.__test_to_include,
                 self.__test_to_exclude
             )
-            status = self.__result_filter(results, self.__result_filter)
+            status = self.__result_filter(results)
             if status:
                 self.status = StepResult.OK
             else:

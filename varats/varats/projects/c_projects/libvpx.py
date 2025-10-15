@@ -30,6 +30,7 @@ from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
+    TestResult,
     ctest_run_testsuite,
     ctest_get_test_names,
     gtest_run_testsuite,
@@ -165,9 +166,8 @@ class Libvpx(VProject):
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+    ) -> tp.Dict[str, TestResult]:
         """Run the testsuite."""
         libvpx_source = local.path(self.source_of_primary)
         test_source = local.path(self.source_of_primary) / "build_tests"
@@ -176,11 +176,10 @@ class Libvpx(VProject):
             "*TestLarge*", "*/LevelTest.*Large*",
             "VP9/DatarateTestVP9LargeVBR.*", "VP9Large*"
         ]
-        included_tests = ["C/YUVTemporalFilterTest.*"]
         return gtest_run_testsuite(
             libvpx_source,
             test_libvpx,
             test_report_path,
             tests_to_run,
-            tests_to_include=included_tests
+            tests_to_exclude=excluded_tests
         )

@@ -14,6 +14,7 @@ from benchbuild.utils import run
 
 from varats.project.project_domain import ProjectDomains
 from varats.utils.git_util import ShortCommitHash
+from varats.utils.testsuite_utils import TestResult
 
 if tp.TYPE_CHECKING:
     # pylint: disable=W0611
@@ -103,9 +104,8 @@ class SupportsTestSuites(Protocol):
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        test_to_include: tp.Optional[tp.Iterable[str]] = None,
         test_to_exclude: tp.Optional[tp.Iterable[str]] = None,
-    ) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, str]]]:
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """
         Run the test suite for this project.
 
@@ -113,12 +113,10 @@ class SupportsTestSuites(Protocol):
             test_report_path: Path to the test report file.
             tests_to_run: List of test cases to run.
                           If None, all tests will be run.
-            test_to_include: List of test cases to include.
             test_to_exclude: List of test cases to exclude.
 
         Returns:
-            True is no failing tests, False otherwise.
-            Additionally returns a dictionary mapping test names to respective status (e.g., 'passed', 'failed', 'skipped').
+            returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
         """
         ...
 
