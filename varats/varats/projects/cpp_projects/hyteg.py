@@ -162,9 +162,9 @@ class HyTeg(VProject):
 
         mkdir("-p", hyteg_source / "build")
 
-        #update_all_submodules(hyteg_source, recursive=True, init=True)
-        with local.cwd(hyteg_source):
-            local["git"]["submodule"]("update", "--init", "--recursive")
+        update_all_submodules(hyteg_source, recursive=True, init=True)
+        # with local.cwd(hyteg_source):
+        #     local["git"]["submodule"]("update", "--init", "--recursive")
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
