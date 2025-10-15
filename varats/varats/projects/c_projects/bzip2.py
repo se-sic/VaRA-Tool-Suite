@@ -271,10 +271,10 @@ class Bzip2(VProject):
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        test_to_exclude: tp.Optional[tp.Iterable[str]] = None
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Dict[str, TestResult]:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
         return ctest_run_testsuite(
-            build_dir, test_report_path, tests_to_run, test_to_exclude
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
         )
