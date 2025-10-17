@@ -7,7 +7,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-import ijson
+import ijson.backends.yajl2_c as ijson
 
 from varats.experiment.workload_util import WorkloadSpecificReportAggregate
 from varats.report.report import BaseReport, ReportAggregate
@@ -175,7 +175,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         self._patch_errors_from_file()
 
         with open(self.path, "rb") as f:
-            parser = ijson.parse(f)
+            parser = ijson.parse(f, use_float=True)
             trace_event: tp.Dict[str, str] = {}
             key = ""
             for prefix, event, value in parser:
