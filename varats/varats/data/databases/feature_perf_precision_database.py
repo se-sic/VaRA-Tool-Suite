@@ -141,14 +141,20 @@ class Profiler():
     """Profiler interface to add different profilers to the evaluation."""
 
     def __init__(
-        self, name: str, experiment: tp.Type[FeatureExperiment],
+        self,
+        name: str,
+        experiment: tp.Type[FeatureExperiment],
         overhead_experiment: tp.Type[FeatureExperiment],
-        report_type: tp.Type[BaseReport]
+        report_type: tp.Type[BaseReport],
+        relative_cut_off: float = 0.01,
+        absolute_cut_off: int = 100
     ) -> None:
         self.__name = name
         self.__experiment = experiment
         self.__overhead_experiment = overhead_experiment
         self.__report_type = report_type
+        self.__relative_cut_off = relative_cut_off
+        self.__absolute_cut_off = absolute_cut_off
 
     @property
     def name(self) -> str:
@@ -175,13 +181,27 @@ class Profiler():
     def relative_cut_off(self) -> float:
         """Returns the relative cut off in percent below which regressions
         should not be considered."""
-        return 0.01
+        return self.__relative_cut_off
 
     @property
     def absolute_cut_off(self) -> int:
         """Returns the absolute cut off in milliseconds below which regressions
         should not be considered."""
-        return 100
+        return self.__absolute_cut_off
+
+    def set_absolute_cut_off(self, cut_off: int) -> None:
+        """Sets the absolute cut off in milliseconds below which regressions
+        should not be considered."""
+        if cut_off <= 0:
+            raise ValueError("Cut off must be non-negative")
+        self.__absolute_cut_off = cut_off
+
+    def set_relative_cut_off(self, cut_off: float) -> None:
+        """Sets the relative cut off in percent below which regressions should
+        not be considered."""
+        if cut_off < 0 or cut_off > 1:
+            raise ValueError("Cut off must be between 0 and 1")
+        self.__relative_cut_off = cut_off
 
     def _is_significantly_different(
         self, old_values: tp.Sequence[tp.Union[float, int]],
@@ -359,7 +379,8 @@ class VXray(Profiler):
         new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
         opt_mr = multi_report.get_report_for_patch(patch_name)
         if not opt_mr:
-            raise NotImplementedError()
+            print(f"Missing TEF Report in {report_path} for patch {patch_name}")
+            return False
 
         for new_tef_report in opt_mr.reports():
             pim = get_feature_performance_from_tef_report(new_tef_report)
@@ -414,7 +435,10 @@ class PIMTracer(Profiler):
 
         opt_mr = multi_report.get_report_for_patch(patch_name)
         if not opt_mr:
-            raise NotImplementedError()
+            print(
+                f"Missing new PIM report in file {report_path} for patch {patch_name}"
+            )
+            return False
 
         new_acc_pim = self.__aggregate_pim_data(opt_mr.reports())
 
@@ -447,7 +471,10 @@ class EbpfTraceTEF(Profiler):
         new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
         opt_mr = multi_report.get_report_for_patch(patch_name)
         if not opt_mr:
-            raise NotImplementedError()
+            print(
+                f"Missing new EBPF report in file {report_path} for patch {patch_name}"
+            )
+            return False
 
         for new_tef_report in opt_mr.reports():
             pim = get_feature_performance_from_tef_report(new_tef_report)
