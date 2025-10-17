@@ -284,9 +284,9 @@ class PatchProvider(Provider):
 
     def __init__(self, project: tp.Type[Project], fetch_interval: int = 3600):
         super().__init__(project)
-        self.__fetch_interval = fetch_interval
+        self.fetch_interval = fetch_interval
 
-        self._update_local_patches_repo(fetch_interval)
+        self._update_local_patches_repo()
         repo = self._get_patches_repository()
 
         patches_project_dir = repo.worktree_path / self.project.NAME
@@ -302,7 +302,7 @@ class PatchProvider(Provider):
         # Update repository to have all upstream changes
         project_repo = get_local_project_repo(self.project.NAME)
 
-        if project_repo.last_fetch >= self.__fetch_interval:
+        if project_repo.last_fetch >= self.fetch_interval:
             fetch_repository(project_repo)
 
         for root, _, files in os.walk(patches_project_dir):
@@ -339,8 +339,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-        cls: tp.Type[ProviderType], project: tp.Type[Project],
-        fetch_interval: int
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
     ) -> 'PatchProvider':
         """
         Creates a provider instance for the given project.
@@ -352,7 +351,7 @@ class PatchProvider(Provider):
         Returns:
             a provider instance for the given project
         """
-        return PatchProvider(project, fetch_interval)
+        return PatchProvider(project)
 
     @classmethod
     def create_default_provider(
@@ -379,6 +378,6 @@ class PatchProvider(Provider):
 
         with lock_file(lock_path):
             patches_repo = self._get_patches_repository()
-            if patches_repo.last_fetch >= self.__fetch_interval:
+            if patches_repo.last_fetch >= self.fetch_interval:
                 self.patches_source.fetch()
                 pull_current_branch(patches_repo)
