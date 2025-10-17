@@ -34,6 +34,19 @@ from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
+REPORT_CACHE = {}
+
+
+def _get_mprtef_report_cached(
+    report_path: ReportFilepath
+) -> MultiPatchReport[TEFReportAggregate]:
+    if report_path not in REPORT_CACHE:
+        REPORT_CACHE[report_path] = MultiPatchReport(
+            report_path.full_path(), TEFReportAggregate
+        )
+
+    return REPORT_CACHE[report_path]
+
 
 def get_interactions_from_fr_string(interactions: str, sep: str = ",") -> str:
     """Convert the feature strings in a TEFReport from FR(x,y) to x*y, similar
@@ -366,9 +379,7 @@ class VXray(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        multi_report = MultiPatchReport(
-            report_path.full_path(), TEFReportAggregate
-        )
+        multi_report = _get_mprtef_report_cached(report_path)
 
         old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
         for old_tef_report in multi_report.get_baseline_report().reports():
@@ -458,9 +469,7 @@ class EbpfTraceTEF(Profiler):
         self, report_path: ReportFilepath, patch_name: str
     ) -> bool:
         """Checks if there was a regression between the old an new data."""
-        multi_report = MultiPatchReport(
-            report_path.full_path(), TEFReportAggregate
-        )
+        multi_report = _get_mprtef_report_cached(report_path)
 
         old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
         for old_tef_report in multi_report.get_baseline_report().reports():
