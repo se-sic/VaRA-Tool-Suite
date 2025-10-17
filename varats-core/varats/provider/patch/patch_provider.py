@@ -6,6 +6,7 @@ applied during an experiment to alter the state of the project.
 """
 
 import os
+import time
 import typing as tp
 import warnings
 from pathlib import Path
@@ -378,6 +379,6 @@ class PatchProvider(Provider):
 
         with lock_file(lock_path):
             patches_repo = self._get_patches_repository()
-            if patches_repo.last_fetch >= self.fetch_interval:
+            if (time.time() - patches_repo.last_fetch) >= self.fetch_interval:
                 self.patches_source.fetch()
                 pull_current_branch(patches_repo)
