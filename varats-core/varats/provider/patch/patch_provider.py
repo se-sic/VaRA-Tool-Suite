@@ -402,10 +402,11 @@ class PatchProvider(Provider):
         shallow=False
     )
 
-    def __init__(self, project: tp.Type[Project]):
+    def __init__(self, project: tp.Type[Project], fetch_interval: int = 3600):
         super().__init__(project)
+        self.__fetch_interval = fetch_interval
 
-        self._update_local_patches_repo()
+        self._update_local_patches_repo(fetch_interval)
         repo = self._get_patches_repository()
 
         patches_project_dir = repo.worktree_path / self.project.NAME
@@ -420,7 +421,9 @@ class PatchProvider(Provider):
 
         # Update repository to have all upstream changes
         project_repo = get_local_project_repo(self.project.NAME)
-        fetch_repository(project_repo)
+
+        if project_repo.last_fetch >= self.__fetch_interval:
+            fetch_repository(project_repo)
 
         for root, _, files in os.walk(patches_project_dir):
             for filename in files:
@@ -456,7 +459,8 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-        cls: tp.Type[ProviderType], project: tp.Type[Project]
+        cls: tp.Type[ProviderType], project: tp.Type[Project],
+        fetch_interval: int
     ) -> 'PatchProvider':
         """
         Creates a provider instance for the given project.
@@ -468,7 +472,7 @@ class PatchProvider(Provider):
         Returns:
             a provider instance for the given project
         """
-        return PatchProvider(project)
+        return PatchProvider(project, fetch_interval)
 
     @classmethod
     def create_default_provider(
@@ -490,10 +494,11 @@ class PatchProvider(Provider):
             Path(target_prefix()) / cls.patches_source.local
         )
 
-    @classmethod
-    def _update_local_patches_repo(cls) -> None:
+    def _update_local_patches_repo(self) -> None:
         lock_path = Path(target_prefix()) / "patch_provider.lock"
 
         with lock_file(lock_path):
-            cls.patches_source.fetch()
-            pull_current_branch(cls._get_patches_repository())
+            patches_repo = self._get_patches_repository()
+            if patches_repo.last_fetch >= self.__fetch_interval:
+                self.patches_source.fetch()
+                pull_current_branch(patches_repo)

@@ -2,6 +2,7 @@
 import abc
 import logging
 import re
+import time
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -178,6 +179,22 @@ class RepositoryHandle:
             self.__libgit_repo = pygit2.Repository(str(self.repo_path))
 
         return self.__libgit_repo
+
+    @property
+    def last_fetch(self) -> float:
+        """
+        Returns the time in seconds since the last fetch operation.
+
+        Returns:
+            timestamp of the last fetch operation in milliseconds since the time of the call
+            0 if no fetch has been performed yet
+        """
+        fetch_head = self.repo_path / ".git" / "FETCH_HEAD"
+        if not fetch_head.exists():
+            return 0.0
+
+        time_epoch = time.time()
+        return time_epoch - fetch_head.stat().st_mtime
 
     def maybe_pygit_commit(
         self, commit_hash: tp.Union[CommitHash, str]
