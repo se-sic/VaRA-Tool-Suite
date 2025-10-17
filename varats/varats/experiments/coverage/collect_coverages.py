@@ -7,6 +7,7 @@ running the project and collecting the coverage information.
 import json
 import textwrap
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import benchbuild as bb
@@ -21,6 +22,7 @@ from benchbuild.utils.actions import (
     Clean,
     Compile,
 )
+from plotly.express import line_map
 from plumbum import local, ProcessExecutionError
 
 from varats.data.reports.llvm_cov_report import (
@@ -162,7 +164,7 @@ class MergeCoverages(ProjectStep):  # type: ignore
         self.output_path = output_path
         self.prefix = output_prefix
 
-    def __aggregate_coverages(
+    def __aggregate_line_coverages(
         self, coverages_dir: Path
     ) -> tp.Dict[str, tp.List[CodeRegion]]:
         coverage_data = {}
@@ -221,6 +223,44 @@ class MergeCoverages(ProjectStep):  # type: ignore
                 coverage_data[str(file_name)] = file_coverages
 
         return coverage_data
+
+    def __collect_function_coverages(
+        self, raw_json_output: str
+    ) -> tp.Dict[str, tp.List[str]]:
+        function_coverage_data: tp.Dict[str, tp.List[str]] = defaultdict(list)
+        json_output = json.loads(raw_json_output)
+
+        for entry in json_output.get("data", []):
+            for function in entry.get("functions", []):
+                if function["count"] == 0:
+                    # Function not executed, irrelevant for us
+                    continue
+                # Extract name property of function
+                # TODO: Check how this works with C++ name mangling
+                function_name = function["name"]
+
+                # The name property may or may not contain the file name it occurs in
+                # But not the whole path
+                if ":" in function_name:
+                    file_name, function_name = function_name.split(
+                        ":", maxsplit=1
+                    )
+                else:
+                    # TODO: Figure out how to map the function in this case
+                    continue
+
+                # Try to map the file name to a full path to get the path relative to the project root
+                for name in function.get("filenames", []):
+                    if name.endswith(file_name):
+                        file_path = Path(name).relative_to(
+                            self.project.builddir
+                        )
+                        file_name = Path(*file_path.parts[1:])
+                        break
+
+                function_coverage_data[file_name].append(function_name)
+
+        return function_coverage_data
 
     def __collect_linked_libraries(
         self, binary_paths: tp.List[Path]
@@ -292,22 +332,58 @@ class MergeCoverages(ProjectStep):  # type: ignore
             "-show-instantiations=false", f"-output-dir={coverages_dir}"
         ]
 
-        cov_args += [f"-object={bin}" for bin in self.binary_paths]
+        cov_objects = [f"-object={bin}" for bin in self.binary_paths]
 
-        cov_args += [f"-object={lib}" for lib in linked_libs]
+        cov_objects += [f"-object={lib}" for lib in linked_libs]
 
-        llvm_cov = local["llvm-cov"][cov_args]
+        # Line based coverage information
+        llvm_cov = local["llvm-cov"][cov_args][cov_objects]
 
         try:
             bb.watch(llvm_cov)()
         except ProcessExecutionError:
             return StepResult.ERROR
 
-        coverage_data = self.__aggregate_coverages(coverages_dir)
+        line_coverage_data = self.__aggregate_line_coverages(coverages_dir)
+
+        cov_args = [
+            "export", f"-instr-profile={profdata_file}", "-skip-expansions"
+        ]
+
+        # Function based coverage information
+        llvm_cov = local["llvm-cov"][cov_args][cov_objects]
+
+        try:
+            _, out, err = bb.watch(llvm_cov)()
+        except ProcessExecutionError:
+            print(f"Error while executing llvm-cov export on {profdata_file}")
+            return StepResult.ERROR
+
+        function_coverage_data = self.__collect_function_coverages(out)
+
+        merged_coverage_data: tp.Dict[str, tp.Dict] = defaultdict(dict)
+
+        for file_name, line_coverages in line_coverage_data.items():
+            merged_coverage_data[file_name] = {
+                "lines": line_coverages,
+                "functions": function_coverage_data.get(file_name, [])
+            }
+
+        # Add function coverage data for files that have no line coverage
+        for file_name, function_coverages in function_coverage_data.items():
+            if file_name not in merged_coverage_data:
+                merged_coverage_data[file_name] = {
+                    "lines": [],
+                    "functions": function_coverages
+                }
+
         # Write the coverage data to a json file
         with open(self.output_path, "w") as json_file:
             json.dump(
-                coverage_data, json_file, indent=2, default=CodeRegion.to_json
+                merged_coverage_data,
+                json_file,
+                indent=2,
+                default=CodeRegion.to_json
             )
 
         return StepResult.OK

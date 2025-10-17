@@ -111,7 +111,7 @@ varats = "varats/varats"
 
 [tool.pytest.ini_options]
 testpaths = ["varats", "varats-core", "tests"]
-addopts = "--doctest-modules --doctest-continue-on-failure --ignore=varats/projects/c_projects/gzip.py"
+addopts = "--doctest-modules --doctest-continue-on-failure --ignore=varats/projects/c_projects/gzip.py --ignore=tmp"
 markers = [
     "slow: this test is slow."
 ]
