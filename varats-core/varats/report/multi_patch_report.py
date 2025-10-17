@@ -1,5 +1,6 @@
 """MultiPatchReport to group together similar reports that where produced for
 differently patched projects."""
+import pickle
 import shutil
 import tempfile
 import typing as tp
@@ -7,6 +8,7 @@ from pathlib import Path
 
 from varats.provider.patch.patch_provider import Patch
 from varats.report.report import ReportTy, BaseReport
+from varats.utils.settings import vara_cfg
 
 
 class MultiPatchReport(
@@ -17,6 +19,53 @@ class MultiPatchReport(
 
     def __init__(self, path: Path, report_type: tp.Type[ReportTy]) -> None:
         super().__init__(path)
+
+        if not self.__load_from_data_cache():
+            self.__load_from_report_path(report_type)
+
+            # Update data cache
+            self.__save_to_data_cache()
+
+    def __get_cached_path(self) -> Path:
+        original_path = self.path
+        # The original path should have the prefix 'vara_cfg()["results"]'
+        # The data_cache path is the same but with the prefix 'vara_cfg()["data_cache"]'
+        data_cache_path = str(original_path).replace(
+            str(vara_cfg()["result_dir"]), str(vara_cfg()["data_cache"])
+        )
+
+        # Report path contain a UUID that changes with every run
+        # Replace it with a fixed string to ensure that the cache is reused
+        data_cache_path = data_cache_path.replace(self.filename.uuid, "cached")
+
+        return Path(data_cache_path)
+
+    def __load_from_data_cache(self) -> bool:
+        original_path = self.path
+        # The original path should have the prefix 'vara_cfg()["results"]'
+        # The data_cache path is the same but with the prefix 'vara_cfg()["data_cache"]'
+        data_cache_path = self.__get_cached_path()
+
+        if not data_cache_path.exists():
+            return False
+
+        # Compare whether the data cache version is newer than the original
+        if data_cache_path.stat().st_mtime <= original_path.stat().st_mtime:
+            # Data cache is older than original, do not load
+            print("Data cache is outdated. Updating data cache.")
+            return False
+
+        # Load from data cache
+        print("Loading report from data cache:", data_cache_path)
+        with open(data_cache_path, 'rb') as f:
+            tmp_dict = pickle.load(f)
+
+        self.__dict__.update(tmp_dict)
+
+        return True
+
+    def __load_from_report_path(self, report_type: tp.Type[ReportTy]) -> None:
+        path = self.path
         self.__patched_reports: tp.Dict[str, ReportTy] = {}
         self.__base = None
 
@@ -36,6 +85,20 @@ class MultiPatchReport(
                 raise AssertionError(
                     f"Reports where missing in the file {path=}"
                 )
+
+    def __save_to_data_cache(self) -> None:
+        original_path = self.path
+        # The original path should have the prefix 'vara_cfg()["results"]'
+        # The data_cache path is the same but with the prefix 'vara_cfg()["data_cache"]'
+        data_cache_path = self.__get_cached_path()
+
+        # Ensure that the parent directory exists
+        data_cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save to data cache
+        print("Saving report to data cache:", data_cache_path)
+        with open(data_cache_path, 'wb') as f:
+            pickle.dump(self.__dict__, f)
 
     def get_baseline_report(self) -> ReportTy:
         return self.__base
