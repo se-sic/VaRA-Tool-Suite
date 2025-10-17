@@ -501,7 +501,11 @@ class Baseline(Profiler):
         old_time = time_reports.get_baseline_report()
         new_time = time_reports.get_report_for_patch(patch_name)
         if not new_time:
-            raise LookupError(f"Missing new time report in file {report_path}")
+            print(
+                f"Missing new time report for '{patch_name}' in file {report_path}"
+            )
+            return False
+            #raise LookupError(f"Missing new time report in file {report_path}")
 
         # Cut off regressions smaller than 100ms
         req_diff = self.absolute_cut_off / 1000
