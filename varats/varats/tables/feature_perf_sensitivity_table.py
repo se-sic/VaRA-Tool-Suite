@@ -120,19 +120,11 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             print(
                 f"Processing case study '{case_study.project_name}' ({idx1+1}/{len(case_studies)})"
             )
-            if case_study.project_name not in [
-                "SynthDARecursion", "SynthIPTemplate"
-            ]:
-                continue
             rev = case_study.revisions[0]
             project_name = case_study.project_name
 
             total_num_patches = defaultdict(int)
             regressed_num_regressions = defaultdict(int)
-
-            patch_provider = PatchProvider.get_provider_for_project(
-                case_study.project_cls
-            )
 
             config_ids = case_study.get_config_ids_for_revision(rev)
             for idx2, config_id in enumerate(config_ids):
