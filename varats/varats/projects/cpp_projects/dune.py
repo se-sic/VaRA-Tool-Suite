@@ -23,7 +23,8 @@ from varats.project.project_util import (
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_commands import update_all_submodules
+from varats.utils.git_util import ShortCommitHash, RepositoryHandle
 from varats.utils.testsuite_utils import (
     ctest_get_test_names,
     ctest_run_testsuite,
@@ -241,6 +242,10 @@ class DunePerfRegression(VProject):
         """Prepare the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
 
+        update_all_submodules(
+            RepositoryHandle(version_source), recursive=True, init=True
+        )
+
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
@@ -330,7 +335,7 @@ class DunePerfRegression(VProject):
                 module_build_dir = version_source / module / "build-cmake"
                 overall_result &= ctest_run_testsuite(
                     module_build_dir, module_test_report,
-                    tests_per_module[module]
+                    tests_per_module[module], tests_to_exclude
                 )
 
         if test_report_path:

@@ -74,13 +74,11 @@ def ctest_run_testsuite(
             test_regex = '|'.join([
                 "^" + re.escape(name) for name in tests_to_run
             ])
-            # test_regex = f"^{test_regex}$" #only for the first test..
 
             if tests_to_exclude:
                 exclude_regex = '|'.join([
                     "^" + re.escape(name) for name in tests_to_exclude
                 ])
-                #exclude_regex = f"^{exclude_regex}$"
             ctest_cmd = ctest_cmd["-R", test_regex, "-E", exclude_regex]
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
