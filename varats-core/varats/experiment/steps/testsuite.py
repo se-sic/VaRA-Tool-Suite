@@ -83,10 +83,10 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self,
         project: VProject,
         output_path: tp.Optional[Path] = None,
-        result_filter: tp.Optional[tp.Callable[[tp.Dict[str, TestResult]],
-                                               bool]] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
-        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None,
+        result_filter: tp.Optional[tp.Callable[[tp.Dict[str, TestResult]],
+                                               bool]] = None
     ):
         """
         Initialize the test-suite step.
@@ -99,7 +99,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
         if result_filter is None:
-            self.__result_filter = RunTestSuite.parse_results
+            self.__result_filter = RunTestSuite._parse_results
         self.__result_filter = result_filter
         self.__tests_to_run = tests_to_run
         self.__tests_to_exclude = tests_to_exclude
@@ -111,7 +111,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
     def set_output_path(self, output_path: Path) -> None:
         self.__output_path = output_path
 
-    def parse_results(self, result: tp.Dict[str, TestResult]) -> bool:
+    def _parse_results(self, result: tp.Dict[str, TestResult]) -> bool:
         result_filter = {
             TestResult.PASSED: True,
             TestResult.FAILED: False,

@@ -167,7 +167,7 @@ class Libvpx(VProject):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Dict[str, TestResult]:
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """Run the testsuite."""
         libvpx_source = local.path(self.source_of_primary)
         test_source = local.path(self.source_of_primary) / "build_tests"
@@ -178,5 +178,5 @@ class Libvpx(VProject):
             test_libvpx,
             test_report_path,
             tests_to_run,
-            tests_to_exclude=tests_to_exclude,
+            tests_to_exclude,
         )

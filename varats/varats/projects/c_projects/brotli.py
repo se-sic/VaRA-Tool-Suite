@@ -29,6 +29,7 @@ from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_run_testsuite,
     ctest_get_test_names,
+    TestResult,
 )
 
 
@@ -197,7 +198,7 @@ class Brotli(VProject):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """
         Executes the test suite for brotli.
 
@@ -216,7 +217,9 @@ class Brotli(VProject):
                 "Test suites are only supported for revisions using CMake."
             )
 
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )
 
     def compile(self) -> None:
         """Compile the project."""

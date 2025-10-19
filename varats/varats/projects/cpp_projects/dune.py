@@ -28,6 +28,7 @@ from varats.utils.git_util import ShortCommitHash, RepositoryHandle
 from varats.utils.testsuite_utils import (
     ctest_get_test_names,
     ctest_run_testsuite,
+    TestResult,
 )
 
 
@@ -302,7 +303,7 @@ class DunePerfRegression(VProject):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """Run the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
 

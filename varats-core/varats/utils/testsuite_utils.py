@@ -47,7 +47,7 @@ def ctest_run_testsuite(
     test_report_path: tp.Optional[Path] = None,
     tests_to_run: tp.Optional[tp.Iterable[str]] = None,
     tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, TestResult]]]:
+) -> tp.Optional[tp.Dict[str, TestResult]]:
     """
     Run a test suite using ctest.
 
@@ -83,26 +83,7 @@ def ctest_run_testsuite(
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
-    results: tp.Dict[str, TestResult] = {}
-    test_xml = JUnitXml.fromfile(test_report_path)
-    for suite in test_xml:
-        suite: junitparser.TestSuite
-        suite_name = suite.name if suite.name else "<unknown>"
-
-        for case in suite:
-            case: junitparser.TestCase
-            case_name = case.name if case.name else "<unknown>"
-
-            if case.is_passed:
-                status = TestResult.PASSED
-            elif case.is_skipped:
-                status = TestResult.SKIPPED
-            elif case.is_failure or case.is_error:
-                status = TestResult.FAILED
-            else:
-                status = TestResult.UNKNOWN
-
-            results[f"{suite_name}.{case_name}"] = status
+    results = parse_xml(test_report_path)
 
     return results
 
@@ -140,7 +121,7 @@ def gtest_run_testsuite(
     test_report_path: tp.Optional[Path] = None,
     tests_to_run: tp.Optional[tp.Iterable[str]] = None,
     tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Tuple[bool, tp.Optional[tp.Dict[str, TestResult]]]:
+) -> tp.Optional[tp.Dict[str, TestResult]]:
     """Run the testsuite."""
     excluded_tests = ":".join(tests_to_exclude)
 
@@ -171,8 +152,15 @@ def gtest_run_testsuite(
 
     # TODO: need to figure out how to get all the passed test and fail test
     # look at the json file that is generated
+    results = parse_xml(output_file)
+
+    return results
+
+
+def parse_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
+    """Parse the xml test report and return the test results."""
     results: tp.Dict[str, TestResult] = {}
-    test_xml = JUnitXml.fromfile(output_file)
+    test_xml = JUnitXml.fromfile(xml_path)
     for suite in test_xml:
         suite: junitparser.TestSuite
         suite_name = suite.name if suite.name else "<unknown>"
