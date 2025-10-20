@@ -5,7 +5,8 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
-from benchbuild.utils import cmd, mkdir
+from benchbuild.utils import cmd
+from benchbuild.utils.cmd import mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
