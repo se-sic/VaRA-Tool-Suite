@@ -117,6 +117,11 @@ class FeaturePerfPrecisionTable(Table, table_name="fperf_precision"):
 
         for case_study in case_studies:
             for patch_name in get_patch_names(case_study):
+                if not (
+                    patch_name.endswith("1000") or
+                    patch_name.endswith("1000ms")
+                ):
+                    continue
                 rev = case_study.revisions[0]
                 project_name = case_study.project_name
 

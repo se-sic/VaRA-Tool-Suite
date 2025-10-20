@@ -15,6 +15,9 @@ from varats.data.databases.feature_perf_precision_database import (
     PIMTracer,
     EbpfTraceTEF,
 )
+from varats.data.reports.tef_feature_identifier_report import (
+    TEFFeatureIdentifierReport,
+)
 from varats.experiments.vara.feature_perf_precision import (
     MPRTimeReportAggregate,
     BlackBoxBaselineRunner,
@@ -22,6 +25,7 @@ from varats.experiments.vara.feature_perf_precision import (
     PIMProfileRunner,
     EbpfTraceTEFProfileRunner,
 )
+from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.paper.paper_config import get_loaded_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.provider.patch.patch_provider import PatchProvider
@@ -110,6 +114,29 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             **kwargs
         )
 
+    def __get_affectable_patches(self, project, config_id: int):
+        reports = get_processed_revisions_files(
+            project.project_name,
+            TEFFeatureIdentifier,
+            TEFFeatureIdentifierReport,
+            get_case_study_file_name_filter(project),
+            config_id=config_id
+        )
+
+        if len(reports) != 1:
+            print(
+                f"Expected exactly one TEFFeatureIdentifierReport for project '{project}' and config_id '{config_id}', but found {len(reports)}."
+            )
+            return []
+
+        id_report = TEFFeatureIdentifierReport(reports[0].full_path())
+
+        patches = id_report.patches_containing_region(["__VARA__DETECT__"])
+
+        patch_names = [patch[0].removesuffix("detect") for patch in patches]
+
+        return patch_names
+
     def __by_severity(self):
         profilers = self.PROFILERS
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -163,7 +190,18 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
                 patch_names = get_patch_names(case_study)
 
+                affectable_patches = self.__get_affectable_patches(
+                    case_study, config_id
+                )
+
+                patch_names = [
+                    p_name for p_name in patch_names
+                    if any([p_name.startswith(p) for p in affectable_patches])
+                ]
+
                 for patch_name in patch_names:
+                    # TODO: Only consider patches that actually can introduce a regression
+                    # TODO: Discuss with Florian: Determine that from the TEFFeatureIdentifierReport or through manual labelling?
                     severity_regex = r".*(1|10|100|1000)(ms)?$"
 
                     match = re.search(severity_regex, patch_name)
@@ -178,6 +216,8 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                     severity = f"{patch_severity}ms"
 
                     abs_cut_off = 100
+                    if patch_severity < 1000:
+                        abs_cut_off = 10
                     if patch_severity < 100:
                         abs_cut_off = 1
                         rel_cut_off = 0.0

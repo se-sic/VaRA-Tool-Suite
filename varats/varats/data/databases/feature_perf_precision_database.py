@@ -40,12 +40,16 @@ REPORT_CACHE = {}
 def _get_mprtef_report_cached(
     report_path: ReportFilepath
 ) -> MultiPatchReport[TEFReportAggregate]:
-    if report_path not in REPORT_CACHE:
-        REPORT_CACHE[report_path] = MultiPatchReport(
-            report_path.full_path(), TEFReportAggregate
+    if report_path.full_path() not in REPORT_CACHE:
+        REPORT_CACHE[
+            report_path.full_path()
+        ] = MultiPatchReport(report_path.full_path(), TEFReportAggregate)
+    else:
+        print(
+            f"Using internally cached TEF report for {report_path.full_path()}"
         )
 
-    return REPORT_CACHE[report_path]
+    return REPORT_CACHE[report_path.full_path()]
 
 
 def get_interactions_from_fr_string(interactions: str, sep: str = ",") -> str:

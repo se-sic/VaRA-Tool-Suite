@@ -406,7 +406,7 @@ class PatchProvider(Provider):
         super().__init__(project)
         self.__fetch_interval = fetch_interval
 
-        self._update_local_patches_repo(fetch_interval)
+        self._update_local_patches_repo()
         repo = self._get_patches_repository()
 
         patches_project_dir = repo.worktree_path / self.project.NAME
@@ -459,8 +459,7 @@ class PatchProvider(Provider):
 
     @classmethod
     def create_provider_for_project(
-        cls: tp.Type[ProviderType], project: tp.Type[Project],
-        fetch_interval: int
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
     ) -> 'PatchProvider':
         """
         Creates a provider instance for the given project.
@@ -472,7 +471,7 @@ class PatchProvider(Provider):
         Returns:
             a provider instance for the given project
         """
-        return PatchProvider(project, fetch_interval)
+        return PatchProvider(project)
 
     @classmethod
     def create_default_provider(
