@@ -5,7 +5,7 @@ from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
-from benchbuild.utils import cmd
+from benchbuild.utils import cmd, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
@@ -323,24 +323,28 @@ class DunePerfRegression(VProject):
                 continue
             tests_per_module[module].append(test_name)
 
-        overall_result = True
+        combined_results: tp.Dict[str, TestResult] = {}
+        results_folder = self.builddir / "results"
+        mkdir("-p", results_folder)
+        for module in DunePerfRegression.__DUNE_MODULES:
+            if module == "dune-pdelab":
+                # skip the pdalab module as building tests fails
+                continue
 
-        aggregated_results = self.builddir / "aggregated_test_results.zip"
-        with ZippedReportFolder(aggregated_results) as zip_folder:
-            for module in DunePerfRegression.__DUNE_MODULES:
-                if module == "dune-pdelab":
-                    # skip the pdalab module as building tests fails
-                    continue
+            module_test_report = results_folder / f"{module}-tests.xml"
+            module_build_dir = version_source / module / "build-cmake"
+            result = ctest_run_testsuite(
+                module_build_dir, module_test_report, tests_per_module[module],
+                tests_to_exclude
+            )
+            if result is not None:
+                combined_results.update({
+                    f"{module}-{test_name}": test_result
+                    for test_name, test_result in result.items()
+                })
 
-                module_test_report = Path(zip_folder) / f"{module}-tests.xml"
-                module_build_dir = version_source / module / "build-cmake"
-                overall_result &= ctest_run_testsuite(
-                    module_build_dir, module_test_report,
-                    tests_per_module[module], tests_to_exclude
-                )
+        # if test_report_path:
+        #     # Move the aggregated test results to the specified path
+        #     shutil.copy(aggregated_results, test_report_path)
 
-        if test_report_path:
-            # Move the aggregated test results to the specified path
-            shutil.copy(aggregated_results, test_report_path)
-
-        return overall_result
+        return combined_results
