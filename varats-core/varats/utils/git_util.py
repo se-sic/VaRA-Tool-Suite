@@ -184,6 +184,21 @@ class RepositoryHandle:
 
         return self.__libgit_repo
 
+    @property
+    def last_fetch(self) -> float:
+        """
+        Returns the time of the last fetch in seconds since epoch.
+
+        Returns:
+            timestamp of the last fetch operation in seconds since epoch, or
+            0 if no fetch has been performed yet
+        """
+        fetch_head = self.repo_path / ".git" / "FETCH_HEAD"
+        if not fetch_head.exists():
+            return 0.0
+
+        return fetch_head.stat().st_mtime
+
     def maybe_pygit_commit(
         self, commit_hash: tp.Union[CommitHash, str]
     ) -> tp.Optional[pygit2.Commit]:
