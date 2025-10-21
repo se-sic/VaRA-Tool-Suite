@@ -105,7 +105,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             Fast Downward requires tests to be built to also collect the test
             names. Therefore, this method just calls the prepare method.
         """
-        self.prepare_test_environment()
+        pass
 
     def run_testsuite(
         self,
