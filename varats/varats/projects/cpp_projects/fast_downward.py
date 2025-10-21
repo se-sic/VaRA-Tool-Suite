@@ -84,11 +84,6 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
-
-        update_all_submodules(
-            RepositoryHandle(version_source), init=True, recursive=True
-        )
-
         mkdir("-p", version_source / "builds/release")
         mkdir("-p", version_source / "builds/debug")
 
