@@ -136,7 +136,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             ])
             test_runner = test_runner["-k", f"not ({exclude_regex})"]
 
-        if test_report_path:
+        if test_report_path is None:
             test_report_path = version_source / "builds/results.xml"
         test_runner = test_runner["--junitxml", test_report_path]
 
