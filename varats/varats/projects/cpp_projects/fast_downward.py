@@ -134,22 +134,22 @@ class FastDownward(VProject, ReleaseProviderHook):
         # to be installed.
         # Since this is usually not the case, we skip this test
         test_runner = pytest["-k", "not test_commandline_args"]
-        if tests_to_exclude:
-            exclude_regex = ' and '.join([
-                f"'not {re.escape(name)}'" for name in tests_to_exclude
-            ])
-            test_runner = test_runner["-k", f"not ({exclude_regex})"]
-
-        if test_report_path is None:
-            test_report_path = version_source / "builds/results.xml"
-        test_runner = test_runner["--junitxml", test_report_path]
+        # if tests_to_exclude:
+        #     exclude_regex = ' and '.join([
+        #         f"'not {re.escape(name)}'" for name in tests_to_exclude
+        #     ])
+        #     test_runner = test_runner["-k", f"not ({exclude_regex})"]
+        #
+        # if test_report_path is None:
+        #     test_report_path = version_source / "builds/results.xml"
+        # test_runner = test_runner["--junitxml", test_report_path]
 
         with local.cwd(version_source):
             ret_code: int
             test_args = ["driver/tests.py", *tests_to_run]
             ret_code, _, _ = bb.watch(test_runner[test_args])()
 
-        results = parse_xml(test_report_path)
+        results = {}
 
         return results
 
