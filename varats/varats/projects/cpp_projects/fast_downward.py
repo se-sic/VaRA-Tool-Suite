@@ -24,7 +24,12 @@ from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.utils.git_util import FullCommitHash, ShortCommitHash
+from varats.utils.git_commands import update_all_submodules
+from varats.utils.git_util import (
+    FullCommitHash,
+    ShortCommitHash,
+    RepositoryHandle,
+)
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import TestResult, parse_xml
 
@@ -79,6 +84,10 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
+
+        update_all_submodules(
+            RepositoryHandle(version_source), init=True, recursive=True
+        )
 
         mkdir("-p", version_source / "builds/release")
         mkdir("-p", version_source / "builds/debug")
