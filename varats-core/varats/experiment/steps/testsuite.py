@@ -98,9 +98,10 @@ class RunTestSuite(ProjectStep):  # type: ignore
         super().__init__(project)
         self.__output_path = output_path
         self.__tests_to_run = tests_to_run
-        if result_filter is None:
-            self.__result_filter = RunTestSuite._parse_results
-        self.__result_filter = result_filter
+        if result_filter is not None:
+            self.__result_filter = result_filter
+        else:
+            self.__result_filter = self._parse_results
         self.__tests_to_run = tests_to_run
         self.__tests_to_exclude = tests_to_exclude
 
