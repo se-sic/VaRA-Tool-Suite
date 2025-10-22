@@ -28,6 +28,7 @@ from varats.project.varats_project import VProject
 from varats.provider.architecture.architecture_model_provider import (
     ArchitectureModelProvider,
 )
+from varats.provider.feature.feature_model_provider import FeatureModelNotFound
 from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 
@@ -143,9 +144,10 @@ class ArchitectureModelReportExperiment(VersionExperiment, shorthand="AMRE"):
         model_provider = ArchitectureModelProvider.create_provider_for_project(
             project
         )
-
+        if model_provider is None:
+            raise FeatureModelNotFound(project, None)
         project.cflags += [
-            f"-fvara-am-path={model_provider.get_architecture_model_path(project)}",
+            f"-fvara-am-path={model_provider.get_architecture_model_path()}",
             "-Xclang",
             "-disable-llvm-optzns",
             "-O1",

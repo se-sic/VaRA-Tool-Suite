@@ -1,4 +1,5 @@
 import typing as tp
+from collections import namedtuple
 from functools import reduce
 from pyexpat import features
 
@@ -17,7 +18,10 @@ from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableFormat, TableGenerator
-from varats.tables.design_structure_matrix import DesignStructureMatrix, DSM
+from varats.tables.design_structure_matrix import (
+    DesignStructureMatrix,
+    InternalDSM,
+)
 from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 
 
@@ -61,49 +65,49 @@ def fat_report_to_table(
     return df
 
 
+fat_dependency_attributes = namedtuple(
+    'fat_dependency', ['weight', 'incoming_features', 'region_features']
+)
+
+
 def fat_report_to_DSM(
-    fat_report: FeatureArchitectureTaintReport, detect_inductions=False
-) -> DSM:
-    entries, features = get_all_regions_tuples(fat_report)
-    dsm = DSM(
+    fat_report: FeatureArchitectureTaintReport
+) -> InternalDSM:
+    dsm = InternalDSM(
         fat_report.filename.commit_hash.hash, fat_report.filename.project_name
     )
-    incoming_feature_uid_dict: tp.Dict[str, int] = {}
-    feature_region_uid_dict: tp.Dict[str, int] = {}
-    region_uid_dict: tp.Dict[str, tp.Tuple[int, int]] = {}
-    conntections: tp.Dict[tp.Tuple[str, str], tp.Set[int]] = {}
-    for f in features:
-        uid = dsm.add_interface("in_coming_features", f, f[:2])
-        incoming_feature_uid_dict[f] = uid
-        uid = dsm.add_interface("feature_regions", f, f[:2])
-        feature_region_uid_dict[f] = uid
-    for r in entries:
-        uids = dsm.add_entry(r)
-        region_uid_dict[r] = uids
+    dependencies: tp.Dict[tp.Tuple[str, str], fat_dependency_attributes] = {}
     for function in fat_report.function_entries.values():
         for region in function.interactions:
             for in_region, in_features in region.incommingRegions.items():
                 feature_set = set(in_features)
-                if conntections.get((in_region, function.file_name)) is None:
-                    conntections[(in_region, function.file_name)] = set()
-                conntections[(in_region, function.file_name)] = (
-                    conntections[(in_region, function.file_name)].union(
-                        set([incoming_feature_uid_dict[f]
-                             for f in feature_set] + [
-                                 feature_region_uid_dict[f]
-                                 for f in region.features
-                             ])
+                if dependencies.get((in_region, function.file_name)) is None:
+                    dependencies[(in_region, function.file_name)
+                                ] = fat_dependency_attributes(
+                                    len(in_features), feature_set,
+                                    set(region.features)
+                                )
+                else:
+                    existing = dependencies[(in_region, function.file_name)]
+                    dependencies[
+                        (in_region, function.file_name)
+                    ] = fat_dependency_attributes(
+                        existing.weight + len(in_features),
+                        existing.incoming_features.union(feature_set),
+                        existing.region_features.union(set(region.features))
                     )
-                )
-    for (src, dst), interface_uids in conntections.items():
-        if not detect_inductions or incoming_feature_uid_dict[
-            "root"] not in interface_uids or feature_region_uid_dict[
-                "root"] not in interface_uids:
-            dsm.add_connection(
-                region_uid_dict[src][1],
-                region_uid_dict[dst][0],
-                interfaces=interface_uids
-            )
+    for (src, dst), attributes in dependencies.items():
+        dsm.add_dependency(
+            src,
+            dst,
+            "Feature Taint",
+            weight=attributes.weight,
+            attributes={
+                "Incoming Features": list(attributes.incoming_features),
+                "Region Features": list(attributes.region_features)
+            }
+        )
+        dsm.add_dependency(src, dst, "Cochange", weight=attributes.weight)
     return dsm
 
 
@@ -141,16 +145,13 @@ class FeatureArchitectureDsm(DesignStructureMatrix, table_name="Fat_DSM"):
         self,
         table_config: tp.Any,
         report_path: ReportFilepath,
-        detect_inductions: bool = False,
         **table_kwargs: tp.Any,
     ) -> None:
         super().__init__(table_config, **table_kwargs)
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
         self.revision = report_path.report_filename.commit_hash
         self.data = fat_report_to_table(self.report)
-        self.dsm = fat_report_to_DSM(
-            self.report, detect_inductions=detect_inductions
-        )
+        self.dsm = fat_report_to_DSM(self.report)
 
 
 class FeatureArchitectureTaintTableGenerator(
@@ -183,32 +184,6 @@ class FeatureArchitectureTaintDSMGenerator(
         return [
             FeatureArchitectureDsm(
                 self.table_config, path, **self.table_kwargs
-            ) for path in get_processed_revisions_files(
-                self.table_kwargs["case_study"].project_name,
-                FeatureArchitectureTaintReportExperiment,
-                FeatureArchitectureTaintReport,
-                file_name_filter=get_case_study_file_name_filter(
-                    self.table_kwargs["case_study"]
-                ),
-                only_newest=True
-            )
-        ]
-
-
-class FeatureArchitectureTaintInductionDSMGenerator(
-    TableGenerator,
-    generator_name="fat-induction-dsm",
-    options=[REQUIRE_CASE_STUDY]
-):
-    """Table generator for Feature Architecture Taint Table."""
-
-    def generate(self) -> tp.List[Table]:
-        return [
-            FeatureArchitectureDsm(
-                self.table_config,
-                path,
-                detect_inductions=True,
-                **self.table_kwargs
             ) for path in get_processed_revisions_files(
                 self.table_kwargs["case_study"].project_name,
                 FeatureArchitectureTaintReportExperiment,

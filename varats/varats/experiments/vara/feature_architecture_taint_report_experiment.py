@@ -138,7 +138,7 @@ class FeatureArchitectureTaintReportExperiment(
         )
         if am_provider is None:
             raise FeatureModelNotFound(project, None)
-        am_path = am_provider.get_architecture_model_path(project)
+        am_path = am_provider.get_architecture_model_path()
         project.cflags += [
             "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
             "-fvara-arch", f"-fvara-am-path={am_path}", "-Xclang",
