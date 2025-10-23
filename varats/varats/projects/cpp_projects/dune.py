@@ -340,10 +340,14 @@ class DunePerfRegression(VProject):
             )
             if result is not None:
                 combined_results.update({
-                    f"{module}-{test_name}": test_result
+                    f"{module}#{test_name}": test_result
                     for test_name, test_result in result.items()
                 })
 
+        # The following tests FAILED:
+        #          39 - debugaligntest (SEGFAULT)
+
+        # look at
         # if test_report_path:
         #     # Move the aggregated test results to the specified path
         #     shutil.copy(aggregated_results, test_report_path)

@@ -118,7 +118,8 @@ class RunTestSuite(ProjectStep):  # type: ignore
             TestResult.FAILED: False,
             TestResult.SKIPPED: True,
             TestResult.TIMEOUT: False,
-            TestResult.DISABLED: True
+            TestResult.DISABLED: True,
+            TestResult.UNKNOWN: False,
         }
         return all(
             result_filter.get(status) == True for status in result.values()

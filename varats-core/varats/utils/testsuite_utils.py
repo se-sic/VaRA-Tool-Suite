@@ -83,7 +83,7 @@ def ctest_run_testsuite(
 
         ret_code, _, _ = bb.watch(ctest_cmd)()
 
-    results = parse_xml(test_report_path)
+    results = parse_junit_xml(test_report_path)
 
     return results
 
@@ -154,12 +154,12 @@ def gtest_run_testsuite(
 
     # TODO: need to figure out how to get all the passed test and fail test
     # look at the json file that is generated
-    results = parse_xml(output_file)
+    results = parse_junit_xml(output_file)
 
     return results
 
 
-def parse_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
+def parse_junit_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
     """Parse the xml test report and return the test results."""
     results: tp.Dict[str, TestResult] = {}
     test_xml = JUnitXml.fromfile(xml_path.absolute().__str__())

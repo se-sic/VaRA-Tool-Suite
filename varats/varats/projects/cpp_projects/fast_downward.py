@@ -31,7 +31,7 @@ from varats.utils.git_util import (
     RepositoryHandle,
 )
 from varats.utils.settings import bb_cfg
-from varats.utils.testsuite_utils import TestResult, parse_xml
+from varats.utils.testsuite_utils import TestResult, parse_junit_xml
 
 
 class FastDownward(VProject, ReleaseProviderHook):
@@ -149,7 +149,7 @@ class FastDownward(VProject, ReleaseProviderHook):
             test_args = ["driver/tests.py", *tests_to_run]
             ret_code, _, _ = bb.watch(test_runner[test_args])()
 
-        results = parse_xml(test_report_path)
+        results = parse_junit_xml(test_report_path)
 
         return results
 
