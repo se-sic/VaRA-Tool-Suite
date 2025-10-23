@@ -123,6 +123,8 @@ def gtest_run_testsuite(
     tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
 ) -> tp.Optional[tp.Dict[str, TestResult]]:
     """Run the testsuite."""
+    if tests_to_exclude is None:
+        tests_to_exclude = []
     excluded_tests = ":".join(tests_to_exclude)
 
     output_file: Path
