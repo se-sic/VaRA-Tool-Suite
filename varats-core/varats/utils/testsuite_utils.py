@@ -133,7 +133,7 @@ def gtest_run_testsuite(
     else:
         output_file = build_dir / "results.json"
 
-    gtest_out = "--gtest_output=json:" + output_file
+    gtest_out = "--gtest_output=json:" + output_file.__str__()
 
     if tests_to_run:
         included_tests = ":".join(tests_to_run)
@@ -162,7 +162,7 @@ def gtest_run_testsuite(
 def parse_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
     """Parse the xml test report and return the test results."""
     results: tp.Dict[str, TestResult] = {}
-    test_xml = JUnitXml.fromfile(xml_path)
+    test_xml = JUnitXml.fromfile(xml_path.absolute().__str__())
     for suite in test_xml:
         suite: junitparser.TestSuite
         suite_name = suite.name if suite.name else "<unknown>"
