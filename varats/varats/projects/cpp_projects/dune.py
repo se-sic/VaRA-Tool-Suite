@@ -324,32 +324,32 @@ class DunePerfRegression(VProject):
                 continue
             tests_per_module[module].append(test_name)
 
+        aggregated_results = self.builddir / "aggregated_test_results.zip"
         combined_results: tp.Dict[str, TestResult] = {}
-        results_folder = self.builddir / "results"
-        mkdir("-p", results_folder)
-        for module in DunePerfRegression.__DUNE_MODULES:
-            if module == "dune-pdelab":
-                # skip the pdalab module as building tests fails
-                continue
+        # results_folder = self.builddir / "results"
+        # mkdir("-p", results_folder)
+        with ZippedReportFolder(aggregated_results) as zip_folder:
+            for module in DunePerfRegression.__DUNE_MODULES:
+                if module == "dune-pdelab":
+                    # skip the pdalab module as building tests fails
+                    continue
 
-            module_test_report = results_folder / f"{module}-tests.xml"
-            module_build_dir = version_source / module / "build-cmake"
-            result = ctest_run_testsuite(
-                module_build_dir, module_test_report, tests_per_module[module],
-                tests_to_exclude
-            )
-            if result is not None:
-                combined_results.update({
-                    f"{module}#{test_name}": test_result
-                    for test_name, test_result in result.items()
-                })
+                module_test_report = Path(zip_folder) / f"{module}-tests.xml"
+                module_build_dir = version_source / module / "build-cmake"
+                result = ctest_run_testsuite(
+                    module_build_dir, module_test_report,
+                    tests_per_module[module], tests_to_exclude
+                )
 
-        # The following tests FAILED:
-        #          39 - debugaligntest (SEGFAULT)
+                if result is not None:
+                    combined_results.update({
+                        f"{module}#{test_name}": test_result
+                        for test_name, test_result in result.items()
+                    })
 
         # look at
-        # if test_report_path:
-        #     # Move the aggregated test results to the specified path
-        #     shutil.copy(aggregated_results, test_report_path)
+        if test_report_path:
+            # Move the aggregated test results to the specified path
+            shutil.copy(aggregated_results, test_report_path)
 
         return combined_results
