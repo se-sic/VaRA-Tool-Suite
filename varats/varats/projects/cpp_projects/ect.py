@@ -72,3 +72,11 @@ class Ect(VProject):
 
         with local.cwd(ect_source):
             verify_binaries(self)
+
+    def recompile(self) -> None:
+        ect_source = local.path(self.source_of_primary)
+
+        mkdir(ect_source / "build")
+        with local.cwd(ect_source / "build"):
+
+            bb.watch(make)()
