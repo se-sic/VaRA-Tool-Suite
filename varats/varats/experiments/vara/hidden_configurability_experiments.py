@@ -30,6 +30,7 @@ from varats.experiment.experiment_util import (
     ZippedExperimentSteps,
     ZippedReportFolder,
     get_config_reverse_patch_steps,
+    WithEnvironment,
 )
 from varats.experiment.steps.combinators import OutputAdapter, AlwaysOk
 from varats.experiment.steps.patch import ApplyPatch, RevertPatch
@@ -84,8 +85,6 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
     def analyze(self) -> actions.StepResult:
         """This step detects hidden configurability points in the project."""
-        print("Running HiddenConfigurabilityDetector")
-
         binary = self.project.binaries[0]
 
         result_file = create_new_success_result_filepath(
@@ -159,7 +158,10 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         "examples",
     ]
 
-    __PROJECT_SPECIFIC_IGNORED_PATTERNS = {"HyTeg": ["eigen/"]}
+    __PROJECT_SPECIFIC_IGNORED_PATTERNS = {
+        "HyTeg": ["eigen/"],
+        "7-Zip": ["Windows/", "UI/"]
+    }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
         super().__init__(project=project)
@@ -295,7 +297,9 @@ class FindHiddenConfigurationPoints(VersionExperiment, shorthand="HCP"):
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = bb_ext.compiler.RunCompiler(
             project, self
-        ) << WithUnlimitedStackSize()
+        ) << WithUnlimitedStackSize() << WithEnvironment({
+            "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
+        })
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(

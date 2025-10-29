@@ -285,6 +285,23 @@ class WithUnlimitedStackSize(base.Extension):  # type: ignore
         )
 
 
+class WithEnvironment(base.Extension):  # type: ignore
+    """Sets environment variables for the wrapped command."""
+
+    def __init__(
+        self, env_vars: tp.Dict[str, str], *extensions: tp.Any, **kwargs: tp.Any
+    ) -> None:
+        super().__init__(*extensions, **kwargs)
+        self._env_vars = env_vars
+
+    def __call__(
+        self, binary_command: BoundCommand, *args: tp.Any, **kwargs: tp.Any
+    ) -> tp.Any:
+        return self.call_next(
+            binary_command.with_env(**self._env_vars), *args, **kwargs
+        )
+
+
 VersionType = tp.TypeVar('VersionType')
 
 
