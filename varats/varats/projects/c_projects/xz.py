@@ -70,7 +70,8 @@ class Xz(VProject):
                     "download/v0.6.0"
             },
             files=[
-                "countries-land-1km.geo.json", "countries-land-250m.geo.json"
+                "countries-land-1km.geo.json", "countries-land-250m.geo.json",
+                "countries-land-10m.geo.json"
             ]
         )
     ]
@@ -109,6 +110,23 @@ class Xz(VProject):
                 label="countries-land-250m",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
                 requires_all_args={"--compress"},
+            )
+        ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
+                "-9e",
+                "--compress",
+                "--threads=1",
+                "--format=xz",
+                "-vv",
+                # Use output_param to ensure input file
+                # gets appended after all arguments.
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-10m.geo.json"),
+                label="countries-land-250m",
+                creates=["geo-maps/countries-land-10m.geo.json.xz"],
             )
         ],
     }
@@ -167,6 +185,11 @@ class Xz(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
+
+    def recompile(self):
+        xz_version_source = local.path(self.source_of_primary)
+        with local.cwd(xz_version_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
