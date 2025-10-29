@@ -66,9 +66,10 @@ class SevenZip(VProject):
             VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
                 ConfigParams(),
+                "geo-maps/countries-land-100m.geo.json.7z",
                 "--",
                 "geo-maps/countries-land-100m.geo.json",
-                label="med_geo",
+                label="countries-100m-geo",
                 creates=[
                     "geo-maps/countries-land-100m.geo.json.7z",
                 ],
@@ -80,9 +81,10 @@ class SevenZip(VProject):
             VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
                 ConfigParams(),
+                "geo-maps/countries-land-10m.geo.json.7z",
                 "--",
                 "geo-maps/countries-land-10m.geo.json",
-                label="med_geo",
+                label="countries-10m-geo",
                 creates=[
                     "geo-maps/countries-land-10m.geo.json.7z",
                 ],
@@ -94,9 +96,10 @@ class SevenZip(VProject):
             VCommand(
                 SourceRoot("7zip") / RSBinary("7zz"),
                 ConfigParams(),
+                "geo-maps/countries-land-1m.geo.json.7z",
                 "--",
                 "geo-maps/countries-land-1m.geo.json",
-                label="med_geo",
+                label="countries-1m-geo",
                 creates=[
                     "geo-maps/countries-land-1m.geo.json.7z",
                 ],
