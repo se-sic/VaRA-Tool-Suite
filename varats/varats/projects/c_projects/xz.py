@@ -146,7 +146,6 @@ class Xz(VProject):
         binary_map.specify_binary(
             'src/xz/.libs/xz',
             BinaryType.EXECUTABLE,
-            override_entry_point='src/xz/xz',
             only_valid_in=RevisionRange("880c330938", "master")
         )
 
