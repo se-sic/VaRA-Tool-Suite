@@ -131,9 +131,9 @@ def gtest_run_testsuite(
     if test_report_path:
         output_file = test_report_path.absolute()
     else:
-        output_file = build_dir / "results.json"
+        output_file = build_dir / "results.xml"
 
-    gtest_out = "--gtest_output=xml:" + output_file.__str__()
+    gtest_out = "--gtest_output=xml:" + str(output_file)
 
     if tests_to_run:
         included_tests = ":".join(tests_to_run)
