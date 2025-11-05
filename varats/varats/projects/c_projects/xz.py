@@ -4,7 +4,7 @@ import typing as tp
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
-from benchbuild.utils.cmd import autoreconf, make
+from benchbuild.utils.cmd import autoreconf, make, ninja
 from benchbuild.utils.revision_ranges import (
     block_revisions,
     GoodBadSubgraph,
@@ -54,7 +54,7 @@ class Xz(VProject):
         ])(
             PaperConfigSpecificGit(
                 project_name='xz',
-                remote="https://github.com/xz-mirror/xz.git",
+                remote="https://github.com/tukaani-project/xz",
                 local="xz",
                 refspec="origin/HEAD",
                 limit=None,
@@ -131,6 +131,10 @@ class Xz(VProject):
         ],
     }
 
+    _CMAKE_VERSIONS = RevisionRange(
+        "8d26b72915e0d373f898b55935505857c30dbdb3", "HEAD"
+    )
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -146,7 +150,13 @@ class Xz(VProject):
         binary_map.specify_binary(
             'src/xz/.libs/xz',
             BinaryType.EXECUTABLE,
-            only_valid_in=RevisionRange("880c330938", "master")
+            only_valid_in=RevisionRange("880c330938", "32412bd2a4")
+        )
+
+        binary_map.specify_binary(
+            'build/xz',
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("8d26b72915", "HEAD")
         )
 
         return binary_map[revision]
@@ -171,19 +181,31 @@ class Xz(VProject):
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
-        with local.cwd(xz_version_source):
-            with local.env(CC=str(clang)):
-                bb.watch(autoreconf)("--install")
-                configure = bb.watch(local["./configure"])
+        if xz_version in self._CMAKE_VERSIONS:
+            build_dir = xz_version_source / "build"
+            local["mkdir"]("-p", build_dir)
+            with local.cwd(build_dir):
+                with local.env(CC=str(clang)):
+                    cmake = local["cmake"]
+                    cmake("..", "-G", "Ninja")
 
-                if xz_version in revisions_wo_dynamic_linking:
-                    configure("--enable-dynamic=yes")
-                else:
-                    configure()
-
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(ninja)()
 
             verify_binaries(self)
+        else:
+            with local.cwd(xz_version_source):
+                with local.env(CC=str(clang)):
+                    bb.watch(autoreconf)("--install")
+                    configure = bb.watch(local["./configure"])
+
+                    if xz_version in revisions_wo_dynamic_linking:
+                        configure("--enable-dynamic=yes")
+                    else:
+                        configure()
+
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+                verify_binaries(self)
 
     def recompile(self):
         xz_version_source = local.path(self.source_of_primary)

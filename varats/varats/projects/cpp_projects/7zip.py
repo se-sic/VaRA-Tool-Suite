@@ -116,7 +116,7 @@ class SevenZip(VProject):
         binary_map = RevisionBinaryMap(get_local_project_repo(SevenZip.NAME))
 
         binary_map.specify_binary(
-            'CPP/7zip/Bundles/Alone2/b/c/7zz',
+            'CPP/7zip/Bundles/Alone2/_o/7zz',
             BinaryType.EXECUTABLE,
         )
         return binary_map[revision]
@@ -135,8 +135,7 @@ class SevenZip(VProject):
         with local.cwd(zip7_source / "CPP" / "7zip" / "Bundles" / "Alone2"):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(make)(
-                    "-f", "../../cmpl_clang.mak", "-j",
-                    get_number_of_jobs(bb_cfg())
+                    "-f", "makefile.gcc", "-j", get_number_of_jobs(bb_cfg())
                 )
 
         with local.cwd(zip7_source):

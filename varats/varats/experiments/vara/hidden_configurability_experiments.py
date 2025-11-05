@@ -160,7 +160,10 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
 
     __PROJECT_SPECIFIC_IGNORED_PATTERNS = {
         "HyTeg": ["eigen/"],
-        "7-Zip": ["Windows/", "UI/"]
+        "7-Zip": ["Windows/", "UI/"],
+        "brotli": ["csharp/", "go/", "java/", "js/", "python/", "research/"],
+        "xz": ["debug/", "doc/", "windows/"],
+        "lepton": ["dependencies/", "test_suite/"]
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
