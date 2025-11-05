@@ -258,7 +258,7 @@ class MergeCoverages(ProjectStep):  # type: ignore
                         file_name = Path(*file_path.parts[1:])
                         break
 
-                function_coverage_data[file_name].append(function_name)
+                function_coverage_data[str(file_name)].append(function_name)
 
         return function_coverage_data
 
@@ -354,7 +354,7 @@ class MergeCoverages(ProjectStep):  # type: ignore
         llvm_cov = local["llvm-cov"][cov_args][cov_objects]
 
         try:
-            _, out, err = bb.watch(llvm_cov)()
+            out = llvm_cov()
         except ProcessExecutionError:
             print(f"Error while executing llvm-cov export on {profdata_file}")
             return StepResult.ERROR
@@ -411,6 +411,8 @@ class CollectBinaryCoverages(FeatureExperiment, shorthand="CBC"):
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
                                      << run.WithTimeout()
+
+        # TODO: Check how to export compile_commands.json with these extensions
 
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report
