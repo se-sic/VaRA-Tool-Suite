@@ -551,4 +551,6 @@ def default_cmake_compile(project: VProject) -> None:
             make = local["make"]
             bb.watch(cmake)("..")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-    verify_binaries(project)
+
+    with local.cwd(version_source):
+        verify_binaries(project)

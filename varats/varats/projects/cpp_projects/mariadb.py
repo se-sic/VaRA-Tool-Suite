@@ -45,8 +45,7 @@ class MariaDB(VProject):
     ) -> tp.List[ProjectBinaryWrapper]:
         binary_map = RevisionBinaryMap(get_local_project_repo(MariaDB.NAME))
 
-        # TODO: Add actual binaries when available
-        binary_map.specify_binary("MISSING", BinaryType.EXECUTABLE)
+        binary_map.specify_binary("build/sql/mariadbd", BinaryType.EXECUTABLE)
 
         return binary_map[revision]
 
