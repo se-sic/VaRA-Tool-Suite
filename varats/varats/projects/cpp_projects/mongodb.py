@@ -64,7 +64,13 @@ class MongoDB(VProject):
         binary_map = RevisionBinaryMap(get_local_project_repo(MongoDB.NAME))
 
         # TODO: please add correct binary names
-        binary_map.specify_binary("MISSING", BinaryType.EXECUTABLE)
+        binary_map.specify_binary(
+            "bazel-bin/install-mongod/bin/mongod",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "230828c095dccb1e04aeb5ebd0ba632461e13b4c", "HEAD"
+            )
+        )
 
         return binary_map[revision]
 
