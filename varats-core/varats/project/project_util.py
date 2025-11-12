@@ -12,9 +12,11 @@ import pygit2
 from _operator import attrgetter
 from benchbuild.source import Git
 from benchbuild.utils.revision_ranges import AbstractRevisionRange
+from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 
+from varats.project.varats_project import VProject
 from varats.utils.git_util import (
     RepositoryHandle,
     FullCommitHash,
@@ -534,3 +536,19 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         for name in dirs:
             if name == ".gitted":
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
+
+
+def default_cmake_compile(project: VProject) -> None:
+    version_source = local.path(project.source_of_primary)
+    build_dir = version_source / "build"
+    build_dir.mkdir(exist_ok=True)
+    cc_compiler = bb.compiler.cc(project)
+    cxx_compiler = bb.compiler.cxx(project)
+
+    with local.cwd(build_dir):
+        with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+            cmake = local["cmake"]
+            make = local["make"]
+            bb.watch(cmake)("..")
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+    verify_binaries(project)
