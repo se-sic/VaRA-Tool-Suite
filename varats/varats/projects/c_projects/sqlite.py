@@ -1,4 +1,5 @@
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.settings import get_number_of_jobs
@@ -10,6 +11,7 @@ from varats.project.project_util import (
     RevisionBinaryMap,
     get_local_project_repo,
     BinaryType,
+    verify_binaries,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
@@ -18,13 +20,13 @@ from varats.utils.settings import bb_cfg
 
 
 class SQLite(VProject):
-    NAME = "SQLite"
+    NAME = "sqlite"
     GROUP = "c_projects"
     DOMAIN = ProjectDomains.DATABASE
 
     SOURCE = [
         PaperConfigSpecificGit(
-            project_name="SQLite",
+            project_name="sqlite",
             remote="https://github.com/sqlite/sqlite",
             local="sqlite",
             refspec="origin/HEAD",
@@ -42,16 +44,23 @@ class SQLite(VProject):
 
         binary_map.specify_binary("build/sqlite3", BinaryType.EXECUTABLE)
 
+        return binary_map[revision]
+
     def compile(self) -> None:
         sqlite_source = self.source_of(self.primary_source)
         cc_compiler = bb.compiler.cc(self)
+        build_dir = Path(sqlite_source) / "build"
+        build_dir.mkdir(exist_ok=True)
 
-        with local.cwd(sqlite_source / "build"), local.env(CC=str(cc_compiler)):
+        with local.cwd(build_dir), local.env(CC=str(cc_compiler)):
             configure = local["../configure"]
             make = local["make"]
 
             configure("--enable-all")
             make("sqlite3", "-j", get_number_of_jobs(bb_cfg()))
+
+        with local.cwd(sqlite_source):
+            verify_binaries(self)
 
     def recompile(self) -> None:
         sqlite_source = self.source_of(self.primary_source)
