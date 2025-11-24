@@ -2,10 +2,17 @@
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.command import WorkloadSet, SourceRoot
+from benchbuild.source import HTTPMultiple
 from benchbuild.utils.cmd import make, cmake, mkdir
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.workload_util import (
+    WorkloadCategory,
+    RSBinary,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -15,6 +22,8 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.sources import FeatureSource
+from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 
@@ -38,12 +47,41 @@ class Ect(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
+        ),
+        FeatureSource(),
+        HTTPMultiple(
+            local="enwik",
+            remote={"1.0": "https://mattmahoney.net/dc/"},
+            files=["enwik8.zip", "enwik9.zip"]
         )
     ]
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
     ).run('apt', 'install', '-y', 'nasm', 'git', 'cmake', 'make')
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.MEDIUM): [
+            VCommand(
+                SourceRoot("ect") / RSBinary("ect"),
+                ConfigParams(),
+                "-zip",
+                "enwik/enwik8.zip",
+                label="enwik8",
+            ),
+            # TODO: Decompression workload ?
+        ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            VCommand(
+                SourceRoot("ect") / RSBinary("ect"),
+                ConfigParams(),
+                "-zip",
+                "enwik/enwik9.zip",
+                label="enwik9",
+            ),
+            # TODO: Decompression workload ?
+        ],
+    }
 
     @staticmethod
     def binaries_for_revision(
@@ -72,3 +110,11 @@ class Ect(VProject):
 
         with local.cwd(ect_source):
             verify_binaries(self)
+
+    def recompile(self) -> None:
+        ect_source = local.path(self.source_of_primary)
+
+        mkdir(ect_source / "build")
+        with local.cwd(ect_source / "build"):
+
+            bb.watch(make)()

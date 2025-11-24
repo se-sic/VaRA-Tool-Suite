@@ -6,8 +6,11 @@ benchbuild interface with tool suite specific functions.
 """
 import typing as tp
 from abc import abstractmethod
+from pathlib import Path
+from typing import Protocol, runtime_checkable
 
-import benchbuild as bb
+from benchbuild.project import Project
+from benchbuild.utils import run
 
 from varats.project.project_domain import ProjectDomains
 from varats.utils.git_util import ShortCommitHash
@@ -17,9 +20,35 @@ if tp.TYPE_CHECKING:
     from varats.project.project_util import ProjectBinaryWrapper
 
 
-class VProject(bb.Project):  # type: ignore
+class VProject(Project):  # type: ignore
     """VaRA-TS project abstraction, extending the interface which is required
     from benchbuild."""
+
+    def __init_subclass__(cls, *args, **kwargs) -> None:
+        super().__init_subclass__(*args, **kwargs)
+
+        # Additions required for TestSuite Protocol
+        if hasattr(cls, 'prepare_test_environment'):
+            f_prepare_tests = run.in_builddir()(
+                run.store_config(cls.prepare_test_environment)
+            )
+            setattr(cls, 'prepare_test_environment', f_prepare_tests)
+
+        if hasattr(cls, 'build_tests'):
+            f_build_tests = run.in_builddir()(run.store_config(cls.build_tests))
+            setattr(cls, 'build_tests', f_build_tests)
+
+        if hasattr(cls, 'run_testsuite'):
+            f_run_testsuite = run.in_builddir()(
+                run.store_config(cls.run_testsuite)
+            )
+            setattr(cls, 'run_testsuite', f_run_testsuite)
+
+        if hasattr(cls, 'get_test_names'):
+            f_get_test_names = run.in_builddir()(
+                run.store_config(cls.get_test_names)
+            )
+            setattr(cls, 'get_test_names', f_get_test_names)
 
     DOMAIN: ProjectDomains
 
@@ -45,3 +74,56 @@ class VProject(bb.Project):  # type: ignore
         Returns:
             list of project binaries
         """
+
+
+@runtime_checkable
+class SupportsTestSuites(Protocol):
+    """Interface for projects that support test suites."""
+
+    def prepare_test_environment(self) -> None:
+        """
+        Prepare the test environment for this project.
+
+        After running this method, the test environment should be prepared such
+        that tests are discoverable for the get_test_names() method. This does
+        not necessarily mean that the tests are built yet.
+        """
+        ...
+
+    def build_tests(self) -> None:
+        """
+        Build the tests for this project.
+
+        Should be called after prepare_test_environment() to build the tests.
+        Once this method is called, the tests should be built and ready to run.
+        """
+        ...
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """
+        Run the test suite for this project.
+
+        Args:
+            test_report_path: Path to the test report file.
+            tests_to_run: List of test cases to run.
+                          If None, all tests will be run.
+
+        Returns:
+            True is all tests passed, False otherwise.
+        """
+        ...
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Returns a list of tests that can be run for this project in the current
+        revision and configuration. Requires that prepare_test_environment() was
+        called before.
+
+        Returns:
+             A list of tests available for this project.
+        """
+        ...

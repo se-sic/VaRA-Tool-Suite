@@ -1,18 +1,23 @@
 """Utility module for handling git repos."""
 import abc
 import logging
+import os
 import re
 import typing as tp
 from enum import Enum
+from importlib.metadata import files
 from pathlib import Path
 from types import TracebackType
 
+import benchbuild.source
+import plumbum as pb
 import pygit2
-from benchbuild.utils.cmd import git, grep
+from benchbuild.utils.cmd import git, grep, mkdir
 from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
 
 from varats.utils.exceptions import unwrap
+from varats.utils.filesystem_util import lock_file
 
 if tp.TYPE_CHECKING:
     from benchbuild.utils.revision_ranges import AbstractRevisionRange
@@ -178,6 +183,21 @@ class RepositoryHandle:
             self.__libgit_repo = pygit2.Repository(str(self.repo_path))
 
         return self.__libgit_repo
+
+    @property
+    def last_fetch(self) -> float:
+        """
+        Returns the time of the last fetch in seconds since epoch.
+
+        Returns:
+            timestamp of the last fetch operation in seconds since epoch, or
+            0 if no fetch has been performed yet
+        """
+        fetch_head = self.repo_path / ".git" / "FETCH_HEAD"
+        if not fetch_head.exists():
+            return 0.0
+
+        return fetch_head.stat().st_mtime
 
     def maybe_pygit_commit(
         self, commit_hash: tp.Union[CommitHash, str]
@@ -1015,3 +1035,81 @@ class RepositoryAtCommit():
         exc_traceback: tp.Optional[TracebackType]
     ) -> None:
         self.__repo.checkout(self.__initial_head)
+
+
+class GitFileSource(benchbuild.source.Git):
+    """
+    A source to provide one or multiple files that are stored in a Git
+    repository.
+
+    From the motivation similar to the HTTPMultiple source. Common uses may be
+    the use of benchmark/example workload repositories
+    """
+
+    def __init__(
+        self,
+        remote: str,
+        local: str,
+        revision: str,
+        files: tp.Iterable[str],
+        refspec: str = "HEAD"
+    ) -> None:
+        # Initiate the project with the whole history
+        super().__init__(
+            remote, local, refspec=refspec, limit=None, shallow=False
+        )
+        #TODO: Add possibility to specify target name by passing tuples?
+        self.__files = files
+        self.__revision = revision
+
+    @property
+    def revision(self) -> str:
+        return self.__revision
+
+    def version(self, target_dir: str, version: str = "") -> pb.LocalPath:
+        """
+        Fetches the defined files for a given version to the target directory.
+
+        :param target_dir:
+        :param version:
+        :return:
+        """
+        if len(version) == 0:
+            version = self.revision
+
+        prefix = benchbuild.source.base.target_prefix()
+        flat_local = self.local.replace(os.sep, '-')
+        file_lock = f".{flat_local}.lock"
+
+        # Guard simultaneous access of multiple projects with the same defined local
+        with lock_file(pb.local.path(prefix) / file_lock):
+            src_loc = self.fetch()
+            tgt_subdir = f'{self.local}@{version}/'
+            tgt_loc = pb.local.path(target_dir) / tgt_subdir
+
+            repo = RepositoryHandle(src_loc)
+
+            # Checkout the requested version, store current head to restore later
+            initial_commit = repo.pygit_repo.head
+            repo("checkout", version)
+
+            # Create target directory
+            mkdir("-p", tgt_loc)
+            cp = pb.local["cp"]
+
+            with pb.local.cwd(src_loc):
+                #TODO: Add support for globs?
+                for file in self.__files:
+                    flat_file = file.replace(os.sep, "-")
+                    cp(file, tgt_loc / flat_file)
+
+            repo.pygit_repo.checkout(initial_commit)
+
+        pb.local["ln"]('-sf', tgt_loc, pb.local.path(target_dir) / self.local)
+
+        return tgt_loc
+
+    def versions(self) -> tp.List[benchbuild.source.base.Variant]:
+        versions = super().versions()
+
+        return [v for v in versions if v.version == self.__revision]

@@ -4,7 +4,7 @@ import typing as tp
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
-from benchbuild.utils.cmd import autoreconf, make
+from benchbuild.utils.cmd import autoreconf, make, ninja
 from benchbuild.utils.revision_ranges import (
     block_revisions,
     GoodBadSubgraph,
@@ -54,7 +54,7 @@ class Xz(VProject):
         ])(
             PaperConfigSpecificGit(
                 project_name='xz',
-                remote="https://github.com/xz-mirror/xz.git",
+                remote="https://github.com/tukaani-project/xz",
                 local="xz",
                 refspec="origin/HEAD",
                 limit=None,
@@ -70,7 +70,8 @@ class Xz(VProject):
                     "download/v0.6.0"
             },
             files=[
-                "countries-land-1km.geo.json", "countries-land-250m.geo.json"
+                "countries-land-1km.geo.json", "countries-land-250m.geo.json",
+                "countries-land-10m.geo.json"
             ]
         )
     ]
@@ -111,7 +112,28 @@ class Xz(VProject):
                 requires_all_args={"--compress"},
             )
         ],
+        WorkloadSet(WorkloadCategory.LARGE): [
+            VCommand(
+                SourceRoot("xz") / RSBinary("xz"),
+                "-k",
+                "-9e",
+                "--compress",
+                "--threads=1",
+                "--format=xz",
+                "-vv",
+                # Use output_param to ensure input file
+                # gets appended after all arguments.
+                output_param=["{output}"],
+                output=SourceRoot("geo-maps/countries-land-10m.geo.json"),
+                label="countries-land-250m",
+                creates=["geo-maps/countries-land-10m.geo.json.xz"],
+            )
+        ],
     }
+
+    _CMAKE_VERSIONS = RevisionRange(
+        "8d26b72915e0d373f898b55935505857c30dbdb3", "HEAD"
+    )
 
     @staticmethod
     def binaries_for_revision(
@@ -128,8 +150,13 @@ class Xz(VProject):
         binary_map.specify_binary(
             'src/xz/.libs/xz',
             BinaryType.EXECUTABLE,
-            override_entry_point='src/xz/xz',
-            only_valid_in=RevisionRange("880c330938", "master")
+            only_valid_in=RevisionRange("880c330938", "32412bd2a4")
+        )
+
+        binary_map.specify_binary(
+            'build/xz',
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("8d26b72915", "HEAD")
         )
 
         return binary_map[revision]
@@ -154,19 +181,36 @@ class Xz(VProject):
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
-        with local.cwd(xz_version_source):
-            with local.env(CC=str(clang)):
-                bb.watch(autoreconf)("--install")
-                configure = bb.watch(local["./configure"])
+        if xz_version in self._CMAKE_VERSIONS:
+            build_dir = xz_version_source / "build"
+            local["mkdir"]("-p", build_dir)
+            with local.cwd(build_dir):
+                with local.env(CC=str(clang)):
+                    cmake = local["cmake"]
+                    cmake("..", "-G", "Ninja")
 
-                if xz_version in revisions_wo_dynamic_linking:
-                    configure("--enable-dynamic=yes")
-                else:
-                    configure()
-
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(ninja)()
 
             verify_binaries(self)
+        else:
+            with local.cwd(xz_version_source):
+                with local.env(CC=str(clang)):
+                    bb.watch(autoreconf)("--install")
+                    configure = bb.watch(local["./configure"])
+
+                    if xz_version in revisions_wo_dynamic_linking:
+                        configure("--enable-dynamic=yes")
+                    else:
+                        configure()
+
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+                verify_binaries(self)
+
+    def recompile(self):
+        xz_version_source = local.path(self.source_of_primary)
+        with local.cwd(xz_version_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

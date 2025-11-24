@@ -6,14 +6,20 @@ applied during an experiment to alter the state of the project.
 """
 
 import os
+import time
 import typing as tp
+import uuid
 import warnings
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import benchbuild as bb
+import jinja2
 import yaml
 from benchbuild.project import Project
 from benchbuild.source.base import target_prefix
+from benchbuild.utils.actions import ProjectStep
+from jinja2 import TemplateNotFound, TemplateError, Template
 from yaml import YAMLError
 
 from varats.project.project_util import get_local_project_repo
@@ -41,7 +47,9 @@ class Patch:
         valid_revisions: tp.Optional[tp.Set[CommitHash]] = None,
         tags: tp.Optional[tp.Set[str]] = None,
         feature_tags: tp.Optional[tp.Set[str]] = None,
-        regression_severity: tp.Optional[int] = None
+        regression_severity: tp.Optional[int] = None,
+        arguments: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        rendered_name: tp.Optional[str] = None,
     ):
         """
         Args:
@@ -63,6 +71,8 @@ class Patch:
         self.tags: tp.Optional[tp.Set[str]] = tags
         self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
         self.regression_severity: tp.Optional[int] = regression_severity
+        self.arguments: tp.Optional[tp.Dict[str, tp.Any]] = arguments
+        self.__rendered_name: tp.Optional[str] = rendered_name
 
     @staticmethod
     def from_yaml(yaml_path: Path) -> 'Patch':
@@ -77,6 +87,12 @@ class Patch:
         # Convert to full qualified path, as we know that path is relative to
         # the yaml info file.
         path = yaml_path.parent / path
+
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"Patch file '{path}' for patch '{shortname}' does not exist."
+                f" ({project_name})"
+            )
 
         tags = yaml_dict.get("tags")
         feature_tags = yaml_dict.get("feature_tags")
@@ -136,9 +152,33 @@ class Patch:
         else:
             regression_severity = None
 
+        arguments: tp.Optional[tp.Dict[str, tp.Any]]
+        if "arguments" in yaml_dict:
+            # Entries in arguments look like this:
+            # arguments:
+            #   - val1
+            #   - val2: 10
+            #
+            # In this example, val1 has no default value and val2 has a default
+            # value of 10
+            arguments = {}
+            for arg in yaml_dict["arguments"]:
+                if isinstance(arg, str):
+                    arguments[arg] = None
+                else:
+                    for key, value in arg.items():
+                        arguments[key] = value
+        else:
+            arguments = None
+
+        if "rendered_name" in yaml_dict:
+            rendered_name = yaml_dict["rendered_name"]
+        else:
+            rendered_name = None
+
         return Patch(
             project_name, shortname, description, path, include_revisions, tags,
-            feature_tags, regression_severity
+            feature_tags, regression_severity, arguments, rendered_name
         )
 
     def __repr__(self) -> str:
@@ -157,6 +197,70 @@ class Patch:
 
         return str_representation
 
+    def render(
+        self,
+        project_step: tp.Optional[ProjectStep] = None,
+        **kwargs: tp.Any
+    ) -> Path:
+        """
+        Renders the patch with the given arguments.
+
+        Args:
+            kwargs: Arguments to render the patch with
+            project_step: Optionally the project step this patch is rendered for
+
+        Returns:
+            Path to the rendered patch
+        """
+        if not self.arguments:
+            return self.path
+
+        render_args = {
+            name: value
+            for name, value in self.arguments.items()
+            if value is not None
+        }
+        for key, value in kwargs.items():
+            #TODO: Emit warning if key is not in self.arguments
+            render_args[key] = value
+
+        # Render the patch with the arguments
+        loader = jinja2.FileSystemLoader(searchpath=Path(self.path).parent)
+        env = jinja2.Environment(
+            loader=loader,
+            keep_trailing_newline=True,
+            undefined=jinja2.StrictUndefined
+        )
+
+        try:
+            template = env.get_template(Path(self.path).name)
+        except TemplateNotFound as e:
+            #TODO: Discuss what error we want to raise here
+            raise TemplateError(
+                f"Could not find template file '{self.path}'"
+            ) from e
+
+        try:
+            rendered = template.render(render_args)
+        except TemplateError:
+            # TODO: Discuss what error we want to raise here
+            raise
+        # Create a temporary patch file with the rendered arguments
+        if project_step:
+            # Generate a random name for the patch file
+            rendered_path = (
+                project_step.project.builddir /
+                f"{self.rendered_name(**render_args)}-{uuid.uuid4()}.patch"
+            )
+            with open(str(rendered_path), "wb") as f:
+                f.write(rendered.encode())
+        else:
+            with NamedTemporaryFile(delete=False) as tmp_file:
+                tmp_file.write(rendered.encode())
+                rendered_path = tmp_file.name
+
+        return Path(rendered_path)
+
     def __hash__(self) -> int:
         hash_args = [self.shortname, self.path]
         if self.tags:
@@ -165,6 +269,22 @@ class Patch:
             hash_args += tuple(self.feature_tags)
 
         return hash(tuple(hash_args))
+
+    def rendered_name(self, **kwargs: tp.Any) -> str:
+        if not self.arguments or self.__rendered_name is None:
+            return self.shortname
+
+        render_args = {
+            name: value
+            for name, value in self.arguments.items()
+            if value is not None
+        }
+        for key, value in kwargs.items():
+            #TODO: Emit warning if key is not in self.arguments
+            render_args[key] = value
+
+        template = Template(self.__rendered_name)
+        return template.render(render_args)
 
 
 class PatchSet:
@@ -277,13 +397,14 @@ class PatchProvider(Provider):
     patches_source = bb.source.Git(
         remote=patches_repository,
         local="patch-configurations",
-        refspec="origin/HEAD",
+        refspec="origin/f-HiddenVariability",
         limit=None,
         shallow=False
     )
 
-    def __init__(self, project: tp.Type[Project]):
+    def __init__(self, project: tp.Type[Project], fetch_interval: int = 3600):
         super().__init__(project)
+        self.fetch_interval = fetch_interval
 
         self._update_local_patches_repo()
         repo = self._get_patches_repository()
@@ -300,7 +421,9 @@ class PatchProvider(Provider):
 
         # Update repository to have all upstream changes
         project_repo = get_local_project_repo(self.project.NAME)
-        fetch_repository(project_repo)
+
+        if project_repo.last_fetch >= self.fetch_interval:
+            fetch_repository(project_repo)
 
         for root, _, files in os.walk(patches_project_dir):
             for filename in files:
@@ -370,10 +493,11 @@ class PatchProvider(Provider):
             Path(target_prefix()) / cls.patches_source.local
         )
 
-    @classmethod
-    def _update_local_patches_repo(cls) -> None:
+    def _update_local_patches_repo(self) -> None:
         lock_path = Path(target_prefix()) / "patch_provider.lock"
 
         with lock_file(lock_path):
-            cls.patches_source.fetch()
-            pull_current_branch(cls._get_patches_repository())
+            patches_repo = self._get_patches_repository()
+            if (time.time() - patches_repo.last_fetch) >= self.fetch_interval:
+                self.patches_source.fetch()
+                pull_current_branch(patches_repo)

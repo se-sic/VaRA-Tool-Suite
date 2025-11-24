@@ -148,6 +148,12 @@ class Gzip(VProject, ReleaseProviderHook):
         with local.cwd(gzip_version_source):
             verify_binaries(self)
 
+    def recompile(self):
+        gzip_version_source = local.path(self.source_of_primary)
+
+        with local.cwd(gzip_version_source / "build"):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
     @classmethod
     def get_release_revisions(
         cls, release_type: ReleaseType

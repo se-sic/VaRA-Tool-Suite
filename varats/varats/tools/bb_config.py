@@ -107,6 +107,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
+        'varats.experiments.base.just_test',
         'varats.experiments.base.time_workloads',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.phasar.ide_linear_constant_experiment',
@@ -129,6 +130,7 @@ def update_experiments(bb_cfg: s.Configuration) -> None:
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.vara.feature_region_verifier_experiment',
         'varats.experiments.vara.hot_function_experiment',
+        'varats.experiments.coverage.collect_coverages',
     ]
 
 

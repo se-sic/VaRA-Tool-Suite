@@ -1,14 +1,19 @@
 """Project file for zeromq."""
 import typing as tp
+from pathlib import Path
 
-import benchbuild.extensions as bb
+import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import WorkloadCategory, RSBinary
+from varats.experiment.workload_util import (
+    WorkloadCategory,
+    RSBinary,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -18,10 +23,15 @@ from varats.project.project_util import (
     verify_binaries,
     RevisionBinaryMap,
 )
+from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_get_test_names,
+    ctest_run_testsuite,
+)
 
 
 class Libzmq(VProject):
@@ -41,7 +51,8 @@ class Libzmq(VProject):
             refspec="origin/HEAD",
             limit=None,
             shallow=False
-        )
+        ),
+        FeatureSource()
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
@@ -49,17 +60,29 @@ class Libzmq(VProject):
         'libsodium-dev', 'pkg-config'
     )
 
+    COUNT_ARGS = [f"{2**x}" for x in range(3, 20)]
+
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
-                SourceRoot("libzmq_git") / RSBinary(f"{binary}"),
-                message_size,
-                "100000",
-                label=f"bench-{binary.replace('_','-')}-{message_size}"
+                SourceRoot("libzmq_git") / RSBinary("inproc_thr"),
+                ConfigParams(),
+                "10000000",
+                label=f"bench-inproc-thr",
+                requires_any_args=set(COUNT_ARGS),
+            ),
+            VCommand(
+                SourceRoot("libzmq_git") / RSBinary("inproc_lat"),
+                ConfigParams(),
+                "1000000",
+                label=f"bench-inproc-lat",
+                requires_any_args=set(COUNT_ARGS),
+            ),
+            VCommand(
+                SourceRoot("libzmq_git") / RSBinary("benchmark_radix_tree"),
+                label="bench-radix-tree",
+                requires_all_args={"radix"},
             )
-            for message_size in [2**e
-                                 for e in range(3, 20)]
-            for binary in ["inproc_thr", "inproc_lat"]
         ]
     }
 
@@ -93,7 +116,7 @@ class Libzmq(VProject):
         cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
 
-        mkdir(libzmq_version_source / "build")
+        mkdir["-p"](libzmq_version_source / "build")
         with local.cwd(libzmq_version_source / "build"):
             with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
@@ -113,3 +136,37 @@ class Libzmq(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Zeromq", "Libzmq")]
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the testsuite."""
+        version_source = local.path(self.source_of_primary)
+
+        cc_compiler = bb.compiler.cc(self)
+        cpp_compiler = bb.compiler.cxx(self)
+
+        mkdir("-p", version_source / "build")
+
+        with local.cwd(version_source / "build"):
+            with local.env(CC=str(cc_compiler), CXX=str(cpp_compiler)):
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")
+
+    def build_tests(self) -> None:
+        """Build the tests."""
+        libzmq_version_source = local.path(self.source_of_primary)
+
+        with local.cwd(libzmq_version_source / "build"):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        """Run the testsuite."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
