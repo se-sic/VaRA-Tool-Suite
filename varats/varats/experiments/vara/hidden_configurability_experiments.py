@@ -379,6 +379,65 @@ PATCH_VARIATIONS = {
             "sample_rate", [x for x in range(10, 20) if x != 13] +
             [13 * i for i in range(2, 6)]
         ),
+        "one_symbol_histogram": (
+            "one_symbol_histogram",
+            [3, 6, 9, 10, 11, 13, 14, 15, 18] + [x * 12 for x in range(2, 6)]
+        ),
+        "two_symbol_histogram": (
+            "two_symbol_histogram",
+            [12, 14, 16, 18, 22, 24, 26, 28] + [x * 20 for x in range(2, 6)]
+        ),
+        "three_symbol_histogram": (
+            "three_symbol_histogram",
+            [20, 22, 24, 26, 30, 32, 34, 36] + [x * 28 for x in range(2, 6)]
+        ),
+        "four_symbol_histogram": (
+            "four_symbol_histogram",
+            [30, 33, 35, 36, 38, 39, 42, 44] + [x * 37 for x in range(2, 6)]
+        ),
+        "max_literal_histograms": (
+            "max_literal_histograms",
+            [25, 50, 75, 125, 150, 175, 200] + [x * 100 for x in range(3, 7)]
+        ),
+        "max_command_histograms": (
+            "max_command_histograms", [10, 20, 30, 40, 60, 70, 80, 90, 100] +
+            [x * 50 for x in range(3, 7)]
+        ),
+        "literal_stride_length": (
+            "literal_stride_length",
+            [30, 40, 50, 60, 80, 90, 100, 110] + [x * 70 for x in range(2, 6)]
+        ),
+        "command_stride_length": (
+            "command_stride_length", [15, 20, 25, 30, 35, 45, 50, 55, 60, 65] +
+            [x * 40 for x in range(2, 6)]
+        ),
+        "distance_stride_length": (
+            "distance_stride_length", [15, 20, 25, 30, 35, 45, 50, 55, 60, 65] +
+            [x * 40 for x in range(2, 6)]
+        ),
+        "symbols_per_literal_histogram": (
+            "symbols_per_literal_histogram",
+            [400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650] +
+            [x * 544 for x in range(2, 6)]
+        ),
+        "symbols_per_command_histogram": (
+            "symbols_per_command_histogram",
+            [400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650] +
+            [x * 530 for x in range(2, 6)]
+        ),
+        "symbols_per_distance_histogram": (
+            "symbols_per_distance_histogram",
+            [400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650] +
+            [x * 544 for x in range(2, 6)]
+        ),
+        "min_length_block_splitting": (
+            "min_length_block_splitting",
+            [2**x for x in range(2, 13) if 2**x != 128]
+        ),
+        "iter_mul_refining": (
+            "iter_mul_refining",
+            [x for x in range(3, 11)] + [x * 10 for x in range(2, 6)]
+        ),
     },
     "DunePerfRegression": {
         "hexa_gitter_refinement": (
@@ -413,6 +472,21 @@ PATCH_VARIATIONS = {
         "pred_stride": ("pred_stride", [4, 8, 16, 32, 128]),
         "pred_stride_rd": ("pred_stride", [4, 8, 16, 32, 128])
     },
+    "7zip": {
+        "min_block_size": (
+            "min_block_size_kb",
+            [x for x in range(2, 11)] + [2**x for x in range(4, 11)]
+        ),
+        "num_threads_max": ("num_threads", [2**x for x in range(1, 10)]),
+        "start_string_capacity":
+            ("start_string_capacity", [2**x for x in range(1, 9) if 2**x != 4]),
+    },
+    "xz": {
+        "enc_chunk_max":
+            ("enc_chunk_max", [2**x for x in range(7, 18) if 2**x != 16384]),
+        "dec_chunk_max":
+            ("dec_chunk_max", [2**x for x in range(7, 18) if 2**x != 16384]),
+    }
 }
 
 _PROJECT_WORKLOADS = {
