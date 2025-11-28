@@ -1,5 +1,7 @@
 """Project file for xz."""
 import typing as tp
+from pathlib import Path
+from typing import Iterable
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
@@ -29,6 +31,10 @@ from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_get_test_names,
+    ctest_run_testsuite,
+)
 
 
 class Xz(VProject):
@@ -215,3 +221,47 @@ class Xz(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("tukaani", "xz")]
+
+    # TestSuite protocol
+    def prepare_test_environment(self) -> None:
+        xz_version = ShortCommitHash(self.version_of_primary)
+        xz_version_source = local.path(self.source_of_primary)
+
+        if xz_version not in self._CMAKE_VERSIONS:
+            raise NotImplementedError(
+                "Testsuite protocol is currently only implemented for "
+                "CMake based builds."
+            )
+
+        clang = bb.compiler.cc(self)
+
+        build_dir = xz_version_source / "build"
+        build_dir.mkdir(parents=True, exist_ok=True)
+        with local.cwd(build_dir):
+            with local.env(CC=str(clang)):
+                cmake = local["cmake"]
+                cmake("..", "-G", "Ninja")
+
+    def build_tests(self) -> None:
+        build_dir = local.path(self.source_of_primary) / "build"
+
+        with local.cwd(build_dir):
+            # No specific target for tests, so just build everything
+            bb.watch(ninja)()
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None
+    ) -> bool:
+        build_dir = local.path(self.source_of_primary) / "build"
+
+        return ctest_run_testsuite(
+            build_dir,
+            test_report_path=test_report_path,
+            tests_to_run=tests_to_run
+        )
+
+    def get_test_names(self) -> Iterable[str]:
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_get_test_names(build_dir)
