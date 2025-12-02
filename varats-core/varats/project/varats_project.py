@@ -8,6 +8,7 @@ import typing as tp
 from abc import abstractmethod
 
 import benchbuild as bb
+from benchbuild.utils import run
 
 from varats.project.project_domain import ProjectDomains
 from varats.utils.git_util import ShortCommitHash
@@ -22,6 +23,14 @@ class VProject(bb.Project):  # type: ignore
     from benchbuild."""
 
     DOMAIN: ProjectDomains
+
+    def __init_subclass__(cls, *args, **kwargs) -> None:
+        super().__init_subclass__(*args, **kwargs)
+
+        # Additions required for recompile
+        if hasattr(cls, 'recompile'):
+            f_recompile = run.in_builddir()(run.store_config(cls.recompile))
+            setattr(cls, 'recompile', f_recompile)
 
     @property
     def binaries(self) -> tp.List['ProjectBinaryWrapper']:

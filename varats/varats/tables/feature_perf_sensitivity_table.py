@@ -7,6 +7,8 @@ from ijson import IncompleteJSONError
 from matplotlib import pyplot as plt
 from pylatex import Document, Package
 
+from varats.base.configuration import PatchConfiguration
+from varats.data.cache_helper import load_cached_df_or_none
 from varats.data.databases.feature_perf_precision_database import (
     get_patch_names,
     Profiler,
@@ -20,13 +22,10 @@ from varats.data.reports.tef_feature_identifier_report import (
 )
 from varats.experiments.vara.feature_perf_precision import (
     MPRTimeReportAggregate,
-    BlackBoxBaselineRunner,
-    TEFProfileRunner,
-    PIMProfileRunner,
-    EbpfTraceTEFProfileRunner,
 )
 from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
-from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper.case_study import CaseStudy
+from varats.paper.paper_config import get_loaded_paper_config, get_paper_config
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.revision.revisions import get_processed_revisions_files
@@ -34,6 +33,7 @@ from varats.table.table import Table
 from varats.table.table_utils import dataframe_to_table
 from varats.table.tables import TableGenerator, TableFormat
 from varats.tables.feature_perf_precision import cmap_map
+from varats.utils.config import load_configuration_map_for_case_study
 
 
 class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
@@ -46,8 +46,24 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         # Data aggregation
         df = pd.DataFrame()
-        table_rows = self.__by_severity()
-        df = pd.concat([df, pd.DataFrame(table_rows)])
+        table_rows = self.__dummy_data()
+        dummy_df = pd.concat([df, pd.DataFrame(table_rows)])
+
+        dtypes = {col: dtype for col, dtype in dummy_df.dtypes.items()}
+
+        df = load_cached_df_or_none(
+            "fperf_sensitivity_table", "feature_perf_sensitivity", dtypes
+        )
+        if df is None or True:
+            print(
+                "No cached data found, computing sensitivity table from scratch."
+            )
+            df = pd.DataFrame()
+            table_rows = self.__by_severity()
+            df = pd.concat([df, pd.DataFrame(table_rows)])
+            #cache_dataframe("fperf_sensitivity_table", "feature_perf_sensitivity", df)
+        else:
+            print("Loaded cached data for sensitivity table.")
 
         columns_names = ["CaseStudy", "# Regressions"]
 
@@ -72,9 +88,10 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         style: pd.io.formats.style.Styler = df.style
         kwargs: tp.Dict[str, tp.Any] = {}
         if table_format.is_latex():
+            # LaTeX specific styling
             kwargs["hrules"] = True
             kwargs["convert_css"] = True
-            column_format = "lr"
+            column_format = "clr"
             column_format += "ccccc" * len(self.PROFILERS)
             kwargs["column_format"] = column_format
             kwargs["multicol_align"] = "c"
@@ -84,8 +101,8 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         On the left, we show the total amount of regressed program variants that are considered for each regression severity.
         Furthermore, the table depicts for each profiler the relative amount of regressions that were detected.
         """
-            style.format(precision=2)
 
+            # color map
             ryg_map = plt.get_cmap('RdYlGn')
             ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
 
@@ -98,6 +115,56 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                 vmax=1.0
             )
 
+            # Conversion for categories and multi-row
+            def cs_category_grouping(cs_name: str) -> str:
+                if cs_name.startswith("SynthSA"):
+                    return "Static Analysis"
+
+                if cs_name.startswith("SynthDA"
+                                     ) or cs_name.startswith("SynthOV"):
+                    return "Dynamic Analysis"
+
+                if cs_name.startswith("SynthFeature"):
+                    return "Configurability"
+
+                if cs_name.startswith("SynthCT"
+                                     ) or cs_name.startswith("SynthIP"):
+                    return "Implementation Pattern"
+
+                return "Real-World"
+
+            df[('   ', 'Category')
+              ] = df[(' ', 'CaseStudy')].apply(cs_category_grouping)
+
+            # Sort by category and case study name, but ensure that "Real-World" is first
+            def category_sort_key(cat: str) -> tp.Tuple[int, str]:
+                if cat.startswith("Real-"):
+                    return (0, cat)
+                return (1, cat)
+
+            df.sort_values(
+                by=[('   ', 'Category'), (' ', 'CaseStudy')],
+                inplace=True,
+                key=lambda s: s.map(category_sort_key)
+            )
+
+            def add_multirow_column(df: pd.DataFrame) -> pd.DataFrame:
+                df.insert(0, ('    ', ' '), "")
+
+                for cat, idx in df.groupby(('   ', 'Category')).groups.items():
+                    first_idx = idx[0]
+                    label = f"\\tiny{{{cat}}}"
+                    label = f"\\rotatebox{{90}}{{{label}}}"
+                    df.at[first_idx,
+                          ('    ',
+                           ' ')] = f"\\multirow{{{len(idx)}}}{{*}}{{{label}}}"
+
+                return df
+
+            df = add_multirow_column(df)
+            df.drop(columns=[('   ', 'Category')], inplace=True)
+
+            style.format(precision=2)
             style.hide()
 
         def add_extras(doc: Document) -> None:
@@ -134,6 +201,34 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
         patches = id_report.patches_containing_region(["__VARA__DETECT__"])
 
         patch_names = [patch[0].removesuffix("detect") for patch in patches]
+
+        return patch_names
+
+    def __get_affectable_patches_manual(
+        self, case_study: CaseStudy, config_id: int
+    ):
+        patch_provider = PatchProvider.get_provider_for_project(
+            case_study.project_cls
+        )
+
+        patches = patch_provider.get_patches_for_revision(
+            case_study.revisions[0].to_short_commit_hash()
+        )
+        patches = patches["perf_prec"]
+        patches = patches.none_of("region_identifier")
+
+        # Identify feature tags for current configuration
+        config_map = load_configuration_map_for_case_study(
+            get_paper_config(), case_study, PatchConfiguration
+        )
+        config = config_map.get_configuration(config_id)
+        feature_tags = {opt.value for opt in config.options()}
+
+        patches = patches.any_of_features(feature_tags)
+
+        patch_names = [p.shortname.removesuffix("regression") for p in patches]
+
+        # TODO: Remove suffixes from shortnames if necessary
 
         return patch_names
 
@@ -190,7 +285,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
                 patch_names = get_patch_names(case_study)
 
-                affectable_patches = self.__get_affectable_patches(
+                affectable_patches = self.__get_affectable_patches_manual(
                     case_study, config_id
                 )
 
@@ -249,6 +344,23 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
                 new_row["# Regressions"] = int(total_num_patches[k])
                 new_row[k] = regressed_num_regressions[k] / total_num_patches[k]
 
+            table_rows.append(new_row)
+
+        return table_rows
+
+    def __dummy_data(self):
+        table_rows = []
+
+        case_studies = [
+            cs.project_name
+            for cs in get_loaded_paper_config().get_all_case_studies()
+        ]
+
+        for cs in case_studies:
+            new_row = {'CaseStudy': cs, '# Regressions': 20.0}
+            for p in self.PROFILERS:
+                for severity in ["1ms", "10ms", "100ms", "1000ms"]:
+                    new_row[f"{p.name}_{severity}"] = 0.5
             table_rows.append(new_row)
 
         return table_rows
