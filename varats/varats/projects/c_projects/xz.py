@@ -91,11 +91,9 @@ class Xz(VProject):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
+                "-f",
                 "-k",
-                # Use output_param to ensure input file
-                # gets appended after all arguments.
-                output_param=["{output}"],
-                output=SourceRoot("geo-maps/countries-land-1km.geo.json"),
+                "geo-maps/countries-land-1km.geo.json",
                 label="countries-land-1km",
                 creates=["geo-maps/countries-land-1km.geo.json.xz"]
             )
@@ -103,16 +101,14 @@ class Xz(VProject):
         WorkloadSet(WorkloadCategory.MEDIUM): [
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
+                "-f",
                 "-k",
                 "-9e",
                 "--compress",
                 "--threads=1",
                 "--format=xz",
                 "-vv",
-                # Use output_param to ensure input file
-                # gets appended after all arguments.
-                output_param=["{output}"],
-                output=SourceRoot("geo-maps/countries-land-250m.geo.json"),
+                "geo-maps/countries-land-250m.geo.json",
                 label="countries-land-250m",
                 creates=["geo-maps/countries-land-250m.geo.json.xz"],
                 requires_all_args={"--compress"},
@@ -121,25 +117,27 @@ class Xz(VProject):
         WorkloadSet(WorkloadCategory.LARGE): [
             VCommand(
                 SourceRoot("xz") / RSBinary("xz"),
+                "-f",
                 "-k",
                 "-9e",
                 "--compress",
                 "--threads=1",
                 "--format=xz",
                 "-vv",
-                # Use output_param to ensure input file
-                # gets appended after all arguments.
-                output_param=["{output}"],
-                output=SourceRoot("geo-maps/countries-land-10m.geo.json"),
-                label="countries-land-250m",
+                "geo-maps/countries-land-10m.geo.json",
+                label="countries-land-10m",
                 creates=["geo-maps/countries-land-10m.geo.json.xz"],
             )
         ],
     }
 
-    _CMAKE_VERSIONS = RevisionRange(
-        "8d26b72915e0d373f898b55935505857c30dbdb3", "HEAD"
-    )
+    def __init__(self, revision):
+        super().__init__(revision)
+        xz_repo = get_local_project_repo(self.NAME)
+        self._CMAKE_VERSIONS = get_all_revisions_between(
+            xz_repo, "8d26b72915e0d373f898b55935505857c30dbdb3", "HEAD",
+            ShortCommitHash
+        )
 
     @staticmethod
     def binaries_for_revision(
@@ -174,7 +172,7 @@ class Xz(VProject):
         """Compile the project."""
         xz_repo = get_local_project_repo(self.NAME)
         xz_version_source = local.path(self.source_of_primary)
-        xz_version = self.version_of_primary
+        xz_version = ShortCommitHash(self.version_of_primary)
 
         # dynamic linking is off by default until
         # commit f9907503f882a745dce9d84c2968f6c175ba966a
@@ -187,7 +185,12 @@ class Xz(VProject):
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
+
+        print(f"{xz_version=}")
+        print(f"{self._CMAKE_VERSIONS=}")
+
         if xz_version in self._CMAKE_VERSIONS:
+            print("Using CMake build system for xz at revision ")
             build_dir = xz_version_source / "build"
             local["mkdir"]("-p", build_dir)
             with local.cwd(build_dir):
@@ -197,8 +200,10 @@ class Xz(VProject):
 
                 bb.watch(ninja)()
 
-            verify_binaries(self)
+            with local.cwd(xz_version_source):
+                verify_binaries(self)
         else:
+            print("Using Autotools build system for xz at revision ")
             with local.cwd(xz_version_source):
                 with local.env(CC=str(clang)):
                     bb.watch(autoreconf)("--install")

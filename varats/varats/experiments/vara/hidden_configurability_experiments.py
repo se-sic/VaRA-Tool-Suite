@@ -482,10 +482,10 @@ PATCH_VARIATIONS = {
             ("start_string_capacity", [2**x for x in range(1, 9) if 2**x != 4]),
     },
     "xz": {
-        "enc_chunk_max":
-            ("enc_chunk_max", [2**x for x in range(7, 18) if 2**x != 16384]),
-        "dec_chunk_max":
-            ("dec_chunk_max", [2**x for x in range(7, 18) if 2**x != 16384]),
+        "enc_chunk_size":
+            ("enc_chunk_size", [2**x for x in range(7, 18) if 2**x != 16384]),
+        "dec_chunk_size":
+            ("dec_chunk_size", [2**x for x in range(7, 18) if 2**x != 16384]),
     }
 }
 
@@ -496,7 +496,9 @@ _PROJECT_WORKLOADS = {
     "FastDownward": ["data-network-opt18-py", "sokoban-sat08-py"],
     "libvpx": ["nocturne-1080p"],
     "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
-    "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"]
+    "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"],
+    "xz": ["countries-land-250m", "countries-land-10m"],
+    "7zip": ["countries-100m-geo", "countries-10m-geo"],
 }
 
 
@@ -534,12 +536,10 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                             "time_report", prj_command.command, rep, ".txt"
                         )
 
-                        pb_cmd = prj_command.command.as_plumbum(
+                        run_cmd = prj_command.command.as_plumbum_wrapped_with(
+                            local["time"]["-v", "-o", f"{time_report_file}"],
                             project=self.project
                         )
-                        run_cmd = local["time"]["-v", "-o",
-                                                f"{time_report_file}",
-                                                pb_cmd.formulate()]
 
                         with cleanup(prj_command):
                             bb.watch(run_cmd)()
@@ -711,6 +711,9 @@ class TestPatchVariations(FeatureExperiment, shorthand="TPV"):
         )
 
         patch_provider = PatchProvider.get_provider_for_project(type(project))
+        print(
+            f"{patch_provider.get_patches_for_revision(ShortCommitHash(project.version_of_primary))=}"
+        )
         patches = patch_provider.get_patches_for_revision(
             ShortCommitHash(project.version_of_primary)
         )["hidden-config"]
