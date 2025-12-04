@@ -553,13 +553,20 @@ def AsOutputFolderStep(property_name: str):
             )
 
         def call_with_output_folder(self, tmp_dir: Path) -> StepResult:
-            original_output = getattr(self, property_name)
+            # Special handling for private properties
+            if property_name.startswith("__"):
+                mangled_name = f"_{cls.__name__}{property_name}"
+                property_name_to_use = mangled_name
+            else:
+                property_name_to_use = property_name
+
+            original_output = getattr(self, property_name_to_use)
             if original_output is None:
                 raise ValueError(f"The property {property_name} is None.")
             if not isinstance(original_output, Path):
                 raise ValueError(f"The property {property_name} is not a Path.")
 
-            self.__dict__[property_name] = tmp_dir / original_output.name
+            self.__dict__[property_name_to_use] = tmp_dir / original_output.name
 
             return self()
 
