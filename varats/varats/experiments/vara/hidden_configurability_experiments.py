@@ -497,8 +497,8 @@ _PROJECT_WORKLOADS = {
     "libvpx": ["nocturne-1080p"],
     "libzmq": ["bench-inproc-lat", "bench-inproc-thr", "bench-radix-tree"],
     "brotli": ["geo-maps-countries-land-1km", "geo-maps-countries-land-2km5"],
-    "xz": ["countries-land-250m", "countries-land-10m"],
-    "7zip": ["countries-100m-geo", "countries-10m-geo"],
+    "xz": ["countries-land-10m", "countries-land-250m"],
+    "7zip": ["countries-10m-geo", "countries-100m-geo"],
 }
 
 

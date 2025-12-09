@@ -36,7 +36,7 @@ from varats.utils.git_util import calc_repo_loc
 from varats.utils.testsuite_utils import TestStatus
 
 
-class HiddenVariabilityOverviewTable(Table, table_name="hidden_var_overview"):
+class HiddenVariabilityOverviewTable(Table, table_name="hv_overview"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -106,7 +106,7 @@ class HiddenVariabilityOverviewTable(Table, table_name="hidden_var_overview"):
 
 class HiddenVariabilityOverviewTableGenerator(
     TableGenerator,
-    generator_name="hidden-var-overview",
+    generator_name="hv-overview",
     options=[
         make_cli_option(
             "--hide-zero",
@@ -173,7 +173,7 @@ class HVProjectOverviewTableGenerator(
         return [HVProjectOverviewTable(self.table_config, **self.table_kwargs)]
 
 
-class HCPerfTable(Table, table_name="hc_perf_overview"):
+class HCPerfDetailTable(Table, table_name="hc_perf_detail"):
 
     @property
     def name(self) -> str:
@@ -254,9 +254,9 @@ class HCPerfTable(Table, table_name="hc_perf_overview"):
         )
 
 
-class HCPerfGenerator(
+class HCPerfDetailGenerator(
     TableGenerator,
-    generator_name="hc_perf_overview",
+    generator_name="hc_perf_detail",
     options=[
         make_cli_option(
             "--case-studies",
@@ -267,7 +267,7 @@ class HCPerfGenerator(
 ):
 
     def generate(self) -> tp.List[Table]:
-        return [HCPerfTable(self.table_config, **self.table_kwargs)]
+        return [HCPerfDetailTable(self.table_config, **self.table_kwargs)]
 
 
 def _is_equivalent(base_results, patched_results) -> bool:
@@ -535,3 +535,111 @@ class ConfigAlternativesGenerator(
                 self.table_config, **self.table_kwargs
             )
         ]
+
+
+_ACTIVE_HV_PROJECTS = [
+    "Ect", "lrzip", "7zip", "brotli", "bzip2", "xz", "lepton"
+]
+
+
+class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        table_rows = []
+
+        for cs in case_studies:
+            if cs.project_name not in _ACTIVE_HV_PROJECTS or cs.project_name not in PATCH_VARIATIONS:
+                print(
+                    f"Skipping {cs.project_name} as it is not an active HV subject system"
+                )
+                continue
+            cs_data = aggregate_data(cs, None)
+
+            # For each row, we want to summarize the performance impact
+            # of all configuration opportunities
+
+            # Columns: Project Name, |A| (Number of alternatives), Metric, |S| (Number of significant performance impacts), |S+| (Number of significant positive impacts), |S-| (Number of significant negative impacts), Impact Range (min, max)
+
+            # For simplicity, we only consider one workload per project here
+            workload = _PROJECT_WORKLOADS[cs.project_name][0]
+
+            if cs_data.empty:
+                continue
+
+            # Filter CS datat based on bianry-wl column
+            # No exact string match possible so we test if workload is a substring
+            cs_data = cs_data[
+                cs_data["binary-wl"].apply(lambda x: workload in x)]
+
+            # Filter out baseline rows
+            cs_data = cs_data[cs_data["config_opportunity"] != "__baseline__"]
+
+            metrics = cs_data["metric"].unique()
+
+            for metric in metrics:
+                metric_data = cs_data[cs_data["metric"] == metric]
+
+                new_row = {
+                    "Name": cs.project_name,
+                    "|A|": 0,
+                    "Metric": metric,
+                    "|S|": 0,
+                    "|S+|": 0,
+                    "|S-|": 0,
+                    "Impact Range": (None, None),
+                }
+
+                for config_opportunity in metric_data["config_opportunity"
+                                                     ].unique():
+                    opportunity_data = metric_data[
+                        metric_data["config_opportunity"] == config_opportunity]
+
+                    # Filter all rows where the significance pvalue is < 0.05
+                    # Each row has a object where the pvalue is stored in a field named pvalue
+                    significant_impacts = opportunity_data[opportunity_data[
+                        "significance"].apply(lambda x: x.pvalue < 0.05)]
+
+                    new_row["|A|"] += len(
+                        opportunity_data["variation"].unique()
+                    )
+                    new_row["|S|"] += len(significant_impacts)
+                    if not significant_impacts.empty:
+                        means = significant_impacts["value_relative"].apply(
+                            np.mean
+                        )
+                        new_row["|S+|"] += int((means > 0).sum())
+                        new_row["|S-|"] += int((means > 0).sum())
+
+                        new_row["Impact Range"] = (
+                            min(new_row["Impact Range"][0], means.min())
+                            if new_row["Impact Range"][0] is not None else
+                            means.min(),
+                            max(new_row["Impact Range"][1], means.max())
+                            if new_row["Impact Range"][1] is not None else
+                            means.max()
+                        )
+
+                # Convert Impact Range to normal floats
+                new_row["Impact Range"] = (
+                    float(new_row["Impact Range"][0])
+                    if new_row["Impact Range"][0] is not None else "N/A",
+                    float(new_row["Impact Range"][1])
+                    if new_row["Impact Range"][1] is not None else "N/A"
+                )
+
+                table_rows.append(new_row)
+
+        df = pd.DataFrame(table_rows).set_index("Name")
+        df.sort_index(inplace=True)
+
+        return dataframe_to_table(df, table_format, wrap_table=wrap_table)
+
+
+class HCPerfSummaryGenerator(
+    TableGenerator, generator_name="hc_perf_summary", options=[]
+):
+
+    def generate(self) -> tp.List[Table]:
+        return [HCPerfSummaryTable(self.table_config, **self.table_kwargs)]

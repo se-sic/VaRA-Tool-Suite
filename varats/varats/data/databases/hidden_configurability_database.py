@@ -185,7 +185,7 @@ def create_config_opportunities_value_map(
 
     for patch_name, config_opportunity in patches.items():
         arg_name, values = config_opportunity
-        result[f'{patch_name}/{arg_name.replace("_", "-")}'] = {
+        result[arg_name] = {
             variation_value_to_str(value): value for value in values
         }
 
