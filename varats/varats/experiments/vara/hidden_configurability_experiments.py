@@ -474,10 +474,10 @@ PATCH_VARIATIONS = {
     },
     "7zip": {
         "min_block_size": (
-            "min_block_size_kb",
+            "min_block_size",
             [x for x in range(2, 11)] + [2**x for x in range(4, 11)]
         ),
-        "num_threads_max": ("num_threads", [2**x for x in range(1, 10)]),
+        "num_threads_max": ("num_threads_max", [2**x for x in range(1, 10)]),
         "start_string_capacity":
             ("start_string_capacity", [2**x for x in range(1, 9) if 2**x != 4]),
     },
@@ -542,7 +542,8 @@ class TimePatchedWorkloadsStep(AnalysisProjectStepBase):
                         )
 
                         with cleanup(prj_command):
-                            bb.watch(run_cmd)()
+                            #bb.watch(run_cmd)()
+                            run_cmd()
 
         return StepResult.OK
 
