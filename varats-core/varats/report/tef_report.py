@@ -244,3 +244,105 @@ class WorkloadSpecificTEFReportAggregate(
             TEFReport,
             get_workload_label,
         )
+
+
+def get_feature_performance_from_tef_report(
+    tef_report: TEFReport,
+) -> tp.Dict[str, int]:
+    """Extract feature performance from a TEFReport."""
+    open_events: tp.List[TraceEvent] = []
+
+    feature_performances: tp.Dict[str, int] = {}
+
+    def get_matching_event(
+        open_events: tp.List[TraceEvent], closing_event: TraceEvent
+    ) -> tp.Optional[TraceEvent]:
+        for event in open_events:
+            if (
+                event.uuid == closing_event.uuid and
+                event.pid == closing_event.pid and
+                event.tid == closing_event.tid
+            ):
+                open_events.remove(event)
+                return event
+
+        LOG.debug(
+            f"Could not find matching start for Event {repr(closing_event)}."
+        )
+
+        return None
+
+    found_missing_open_event = False
+    for trace_event in tef_report.trace_events:
+        if trace_event.category == "Feature":
+            if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
+                # insert event at the top of the list
+                open_events.insert(0, trace_event)
+            elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
+                opening_event = get_matching_event(open_events, trace_event)
+                if not opening_event:
+                    found_missing_open_event = True
+                    continue
+
+                end_timestamp = trace_event.timestamp
+                begin_timestamp = opening_event.timestamp
+
+                # Subtract feature duration from parent duration such that
+                # it is not counted twice, similar to behavior in
+                # Performance-Influence models.
+                interactions = [event.name for event in open_events]
+                if open_events:
+                    # Parent is equivalent to interaction of all open
+                    # events.
+                    interaction_string = get_interactions_from_fr_string(
+                        ",".join(interactions)
+                    )
+                    if interaction_string in feature_performances:
+                        feature_performances[interaction_string] -= (
+                            end_timestamp - begin_timestamp
+                        )
+                    else:
+                        feature_performances[interaction_string] = -(
+                            end_timestamp - begin_timestamp
+                        )
+
+                interaction_string = get_interactions_from_fr_string(
+                    ",".join(interactions + [trace_event.name])
+                )
+
+                current_performance = feature_performances.get(
+                    interaction_string, 0
+                )
+                feature_performances[interaction_string] = (
+                    current_performance + end_timestamp - begin_timestamp
+                )
+
+    if open_events:
+        LOG.error("Not all events have been correctly closed.")
+        LOG.debug(f"Events = {open_events}.")
+
+    if found_missing_open_event:
+        LOG.error("Not all events have been correctly opened.")
+
+    return feature_performances
+
+
+def get_interactions_from_fr_string(interactions: str, sep: str = ",") -> str:
+    """Convert the feature strings in a TEFReport from FR(x,y) to x*y, similar
+    to the format used by SPLConqueror."""
+    interactions = (
+        interactions.replace("FR", "").replace("(", "").replace(")", "")
+    )
+    interactions_list = interactions.split(sep)
+
+    # Features cannot interact with itself, so remove duplicates
+    interactions_list = list(set(interactions_list))
+
+    # Ignore interactions with base, but do not remove base if it's the only
+    # feature
+    if "Base" in interactions_list and len(interactions_list) > 1:
+        interactions_list.remove("Base")
+
+    interactions_str = "*".join(interactions_list)
+
+    return interactions_str

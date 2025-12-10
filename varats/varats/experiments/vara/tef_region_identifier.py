@@ -7,9 +7,6 @@ import benchbuild.extensions as bb_ext
 from benchbuild.utils import actions
 from benchbuild.utils.actions import Step, StepResult, ProjectStep
 
-from varats.data.databases.feature_perf_precision_database import (
-    get_feature_performance_from_tef_report,
-)
 from varats.data.reports.tef_feature_identifier_report import (
     TEFFeatureIdentifierReport,
 )
@@ -37,6 +34,7 @@ from varats.project.varats_project import VProject
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
+from varats.report.tef_report import get_feature_performance_from_tef_report
 from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
 
