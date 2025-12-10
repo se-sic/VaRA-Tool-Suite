@@ -22,6 +22,7 @@ from varats.data.databases.feature_perf_precision_database import (
     compute_profiler_predictions,
     load_precision_data,
     load_overhead_data,
+    load_precision_whitebox_data,
 )
 from varats.data.metrics import ConfusionMatrix
 from varats.paper.case_study import CaseStudy
@@ -615,4 +616,120 @@ class FeaturePerfMetricsOverviewTableGenerator(
             FeaturePerfMetricsOverviewTable(
                 self.table_config, **self.table_kwargs
             )
+        ]
+
+
+class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
+
+    @staticmethod
+    def _prepare_data_table(
+        case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+    ):
+        table_rows = []
+        precision_df = load_precision_whitebox_data(case_studies, profilers)
+
+        for cs in case_studies:
+            cs_df = precision_df[precision_df["CaseStudy"] == cs.project_name]
+            new_row = {'CaseStudy': cs.project_name}
+
+            for profiler in profilers:
+                prof_df = cs_df[cs_df["Profiler"] == profiler.name]
+
+                new_row[f"{profiler.name}_precision"] = prof_df[f"precision"
+                                                               ].mean()
+                new_row[f"{profiler.name}_recall"] = prof_df[f"recall"].mean()
+                new_row['# f-Regressions'] = prof_df["RegressedFeatures"].sum()
+
+            table_rows.append(new_row)
+
+        return pd.DataFrame(table_rows)
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+        case_studies = [
+            cs for cs in case_studies if cs.project_name not in
+            ["DunePerfRegression", "SynthFeatureInteraction"]
+        ]
+        profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
+
+        df = self._prepare_data_table(case_studies, profilers)
+        df.sort_values(["CaseStudy"], inplace=True)
+
+        column_names = ["CaseStudy", "# f-Regressions"]
+
+        for p in profilers:
+            column_names.append(f"{p.name}_precision")
+            column_names.append(f"{p.name}_recall")
+
+        df = df.reindex(columns=column_names)
+
+        print(f"{df.to_string()}")
+
+        symb_regressed_features = "$\\mathbb{F}$"
+        symb_precision = "\\textsc{PPV}"
+        symb_recall = "\\textsc{TPR}"
+
+        column_setup = [(' ', "CaseStudy"), ('', symb_regressed_features)]
+
+        for p in profilers:
+            column_setup.append((p.name, symb_precision))
+            column_setup.append((p.name, symb_recall))
+
+        df.columns = pd.MultiIndex.from_tuples(column_setup)
+
+        # Table config
+        style: pd.io.formats.style.Styler = df.style
+        kwargs: tp.Dict[str, tp.Any] = {}
+        if table_format.is_latex():
+            kwargs["hrules"] = True
+            kwargs["convert_css"] = True
+            kwargs["column_format"] = "l|r" + ("|rr" * len(profilers))
+            kwargs["multicol_align"] = "|c"
+            # pylint: disable=line-too-long
+            kwargs[
+                "caption"
+            ] = f"""Summary of precision and recall of different white-box profilers
+            with regard to attributing feature-specific regressions to the correct features. For each case study, we
+            show the total number of regressed features ({symb_regressed_features}) across all configurations. For each profiler,
+            we list the means of precision ({symb_precision}) and recall ({symb_recall}) across all patch lists.
+            """
+            # pylint: enable=line-too-long
+            profiler_subset = [(p.name, s)
+                               for p in profilers
+                               for s in [symb_precision, symb_recall]]
+
+            style.format(precision=2, subset=profiler_subset)
+
+            ryg_map = plt.get_cmap('RdYlGn')
+            ryg_map = cmap_map(lambda x: x / 1.2 + 0.2, ryg_map)
+
+            style.background_gradient(
+                cmap=ryg_map, subset=profiler_subset, vmin=0.0, vmax=1.0
+            )
+
+            style.hide()
+
+        def add_extras(doc: Document) -> None:
+            doc.packages.append(Package("amsmath"))
+            doc.packages.append(Package("amssymb"))
+
+        return dataframe_to_table(
+            df,
+            table_format,
+            style=style,
+            wrap_table=wrap_table,
+            wrap_landscape=True,
+            document_decorator=add_extras,
+            **kwargs
+        )
+
+
+class FeaturePerfWBPrecisionTableGenerator(
+    TableGenerator, generator_name="fperf-wb-precision", options=[]
+):
+    """Generator for 'FeaturePerfWBPrecisionTable'."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            FeaturePerfWBPrecisionTable(self.table_config, **self.table_kwargs)
         ]

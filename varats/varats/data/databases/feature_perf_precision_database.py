@@ -16,7 +16,12 @@ from varats.data.reports.performance_influence_trace_report import (
     PerfInfluenceTraceReport,
     PerfInfluenceTraceReportAggregate,
 )
+from varats.data.reports.tef_feature_identifier_report import (
+    TEFFeatureIdentifierReport,
+)
+#from varats.data.reports.tef_feature_identifier_report import TEFFeatureIdentifierReport
 from varats.experiments.vara.feature_experiment import FeatureExperiment
+from varats.experiments.vara.tef_region_identifier import TEFFeatureIdentifier
 from varats.jupyterhelper.file import load_mpr_time_report_aggregate
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
@@ -28,6 +33,8 @@ from varats.report.tef_report import (
     TraceEvent,
     TraceEventType,
     TEFReportAggregate,
+    get_feature_performance_from_tef_report,
+    get_interactions_from_fr_string,
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import FullCommitHash
@@ -50,108 +57,6 @@ def _get_mprtef_report_cached(
         )
 
     return REPORT_CACHE[report_path.full_path()]
-
-
-def get_interactions_from_fr_string(interactions: str, sep: str = ",") -> str:
-    """Convert the feature strings in a TEFReport from FR(x,y) to x*y, similar
-    to the format used by SPLConqueror."""
-    interactions = (
-        interactions.replace("FR", "").replace("(", "").replace(")", "")
-    )
-    interactions_list = interactions.split(sep)
-
-    # Features cannot interact with itself, so remove duplicates
-    interactions_list = list(set(interactions_list))
-
-    # Ignore interactions with base, but do not remove base if it's the only
-    # feature
-    if "Base" in interactions_list and len(interactions_list) > 1:
-        interactions_list.remove("Base")
-
-    interactions_str = "*".join(interactions_list)
-
-    return interactions_str
-
-
-def get_feature_performance_from_tef_report(
-    tef_report: TEFReport,
-) -> tp.Dict[str, int]:
-    """Extract feature performance from a TEFReport."""
-    open_events: tp.List[TraceEvent] = []
-
-    feature_performances: tp.Dict[str, int] = {}
-
-    def get_matching_event(
-        open_events: tp.List[TraceEvent], closing_event: TraceEvent
-    ) -> tp.Optional[TraceEvent]:
-        for event in open_events:
-            if (
-                event.uuid == closing_event.uuid and
-                event.pid == closing_event.pid and
-                event.tid == closing_event.tid
-            ):
-                open_events.remove(event)
-                return event
-
-        LOG.debug(
-            f"Could not find matching start for Event {repr(closing_event)}."
-        )
-
-        return None
-
-    found_missing_open_event = False
-    for trace_event in tef_report.trace_events:
-        if trace_event.category == "Feature":
-            if trace_event.event_type == TraceEventType.DURATION_EVENT_BEGIN:
-                # insert event at the top of the list
-                open_events.insert(0, trace_event)
-            elif trace_event.event_type == TraceEventType.DURATION_EVENT_END:
-                opening_event = get_matching_event(open_events, trace_event)
-                if not opening_event:
-                    found_missing_open_event = True
-                    continue
-
-                end_timestamp = trace_event.timestamp
-                begin_timestamp = opening_event.timestamp
-
-                # Subtract feature duration from parent duration such that
-                # it is not counted twice, similar to behavior in
-                # Performance-Influence models.
-                interactions = [event.name for event in open_events]
-                if open_events:
-                    # Parent is equivalent to interaction of all open
-                    # events.
-                    interaction_string = get_interactions_from_fr_string(
-                        ",".join(interactions)
-                    )
-                    if interaction_string in feature_performances:
-                        feature_performances[interaction_string] -= (
-                            end_timestamp - begin_timestamp
-                        )
-                    else:
-                        feature_performances[interaction_string] = -(
-                            end_timestamp - begin_timestamp
-                        )
-
-                interaction_string = get_interactions_from_fr_string(
-                    ",".join(interactions + [trace_event.name])
-                )
-
-                current_performance = feature_performances.get(
-                    interaction_string, 0
-                )
-                feature_performances[interaction_string] = (
-                    current_performance + end_timestamp - begin_timestamp
-                )
-
-    if open_events:
-        LOG.error("Not all events have been correctly closed.")
-        LOG.debug(f"Events = {open_events}.")
-
-    if found_missing_open_event:
-        LOG.error("Not all events have been correctly opened.")
-
-    return feature_performances
 
 
 class Profiler():
@@ -972,5 +877,278 @@ def load_overhead_data(
                 new_row['overhead_fs_outputs'] = np.nan
 
             table_rows.append(new_row)
+
+    return pd.DataFrame(table_rows)
+
+
+def get_regressed_features_gt(
+    base_features: tp.Iterable[str],
+    ground_truth_report: TEFFeatureIdentifierReport, patches: tp.Iterable[str]
+) -> tp.Dict[str, bool]:
+    ground_truth = {}
+
+    for feature in base_features:
+        ground_truth[feature] = False
+
+    for patch_name in patches:
+        detect_patch_name = patch_name[:-len("1000ms")] + "detect"
+        for regions, _ in ground_truth_report.regions_for_patch(
+            detect_patch_name
+        ):
+            if "__VARA__DETECT__" not in regions:
+                continue
+
+            actual_regions = regions - {"__VARA__DETECT__"}
+
+            interaction_string = get_interactions_from_fr_string(
+                ",".join(actual_regions)
+            )
+
+            # If this combination occurred in the ground truth experiment this means it should regress
+            ground_truth[interaction_string] = True
+
+    return ground_truth
+
+
+def _precise_pim_feature_regression_check(
+    baseline_pim: tp.DefaultDict[str, tp.List[int]],
+    current_pim: tp.DefaultDict[str, tp.List[int]],
+    profiler: Profiler,
+) -> tp.DefaultDict[str, bool]:
+    is_regression = {}
+
+    for feature, old_values in baseline_pim.items():
+        if feature in current_pim:
+            if feature == "Base":
+                # The regression should be identified in actual feature code
+                is_regression[feature] = False
+                continue
+
+            new_values = current_pim[feature]
+
+            # Skip features that seem not to be relevant for regressions testing
+            if not profiler._is_feature_relevant(old_values, new_values):
+                is_regression[feature] = False
+                continue
+
+            ttest_res = ttest_ind(old_values, new_values)
+
+            if ttest_res.pvalue < 0.05:
+                is_regression[feature] = True
+        else:
+            if np.mean(old_values) > profiler.absolute_cut_off:
+                print(
+                    f"Could not find feature {feature} in new trace. "
+                    f"({np.mean(old_values)}us lost)"
+                )
+            # TODO: how to handle this?
+            # raise NotImplementedError()
+            # is_regression = True
+
+    return is_regression
+
+
+def get_feature_regressions_xray(
+    report_path: ReportFilepath, patch_name: str, profiler: VXray
+) -> tp.Dict[str, bool]:
+    """Gets the predicted regressed features from the xray report."""
+    multi_report = MultiPatchReport(report_path.full_path(), TEFReportAggregate)
+    old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+    for old_tef_report in multi_report.get_baseline_report().reports():
+        pim = get_feature_performance_from_tef_report(old_tef_report)
+        for feature, value in pim.items():
+            old_acc_pim[feature].append(value)
+
+    new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+    opt_mr = multi_report.get_report_for_patch(patch_name)
+    if not opt_mr:
+        #raise NotImplementedError()
+        print(f"{patch_name=};{report_path.report_filename.project_name=}")
+        return dict()
+
+    for new_tef_report in opt_mr.reports():
+        pim = get_feature_performance_from_tef_report(new_tef_report)
+        for feature, value in pim.items():
+            new_acc_pim[feature].append(value)
+
+    return _precise_pim_feature_regression_check(
+        old_acc_pim, new_acc_pim, profiler
+    )
+
+
+def get_feature_regressions_pim(
+    report_path: ReportFilepath, patch_name: str, profiler: PIMTracer
+) -> tp.Dict[str, bool]:
+    """Gets the predicted regressed features from the pimtracer report."""
+    multi_report = MultiPatchReport(
+        report_path.full_path(), PerfInfluenceTraceReportAggregate
+    )
+
+    old_acc_pim = profiler._PIMTracer__aggregate_pim_data(
+        multi_report.get_baseline_report().reports()
+    )
+
+    opt_mr = multi_report.get_report_for_patch(patch_name)
+    if not opt_mr:
+        # raise NotImplementedError()
+        print(f"{patch_name=};{report_path.report_filename.project_name=}")
+        return dict()
+
+    new_acc_pim = profiler._PIMTracer__aggregate_pim_data(opt_mr.reports())
+
+    return _precise_pim_feature_regression_check(
+        old_acc_pim, new_acc_pim, profiler
+    )
+
+
+def get_feature_regressions_ebpf(
+    report_path: ReportFilepath, patch_name: str, profiler: EbpfTraceTEF
+) -> tp.Dict[str, bool]:
+    """Gets the predicted regressed features from the ebpf report."""
+    multi_report = MultiPatchReport(report_path.full_path(), TEFReportAggregate)
+    old_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+    for old_tef_report in multi_report.get_baseline_report().reports():
+        pim = get_feature_performance_from_tef_report(old_tef_report)
+        for feature, value in pim.items():
+            old_acc_pim[feature].append(value)
+
+    new_acc_pim: tp.DefaultDict[str, tp.List[int]] = defaultdict(list)
+    opt_mr = multi_report.get_report_for_patch(patch_name)
+    if not opt_mr:
+        # raise NotImplementedError()
+        print(f"{patch_name=};{report_path.report_filename.project_name=}")
+        return dict()
+
+    for new_tef_report in opt_mr.reports():
+        pim = get_feature_performance_from_tef_report(new_tef_report)
+        for feature, value in pim.items():
+            new_acc_pim[feature].append(value)
+
+    return _precise_pim_feature_regression_check(
+        old_acc_pim, new_acc_pim, profiler
+    )
+
+
+_PROFILER_FEATURE_REGRESSIONS = {
+    "WXray": get_feature_regressions_xray,
+    "PIMTracer": get_feature_regressions_pim,
+    "eBPFTrace": get_feature_regressions_ebpf
+}
+
+
+def load_precision_whitebox_data(
+    case_studies: tp.List[CaseStudy], profilers: tp.List[Profiler]
+) -> pd.DataFrame:
+    table_rows = []
+
+    for cs in case_studies:
+        rev = cs.revisions[0]
+
+        for config_id in cs.get_config_ids_for_revision(rev):
+            # Load ground truth data
+            ground_truth_report_files = get_processed_revisions_files(
+                cs.project_name,
+                TEFFeatureIdentifier,
+                TEFFeatureIdentifierReport,
+                get_case_study_file_name_filter(cs),
+                config_id=config_id
+            )
+
+            profiler_report_files = {}
+
+            # Load these once so we don't have to do it for every patch list
+            for profiler in profilers:
+                report_files = get_processed_revisions_files(
+                    cs.project_name,
+                    profiler.experiment,
+                    profiler.report_type,
+                    get_case_study_file_name_filter(cs),
+                    config_id=config_id
+                )
+
+                if len(report_files) != 1:
+                    print(
+                        f"Should only be one ({profiler.name=},{cs.project_name=},{config_id=})"
+                    )
+                    continue
+                    # raise AssertionError("Should only be one")
+
+                profiler_report_files[profiler] = (
+                    MultiPatchReport(
+                        report_files[0].full_path(),
+                        PerfInfluenceTraceReportAggregate
+                        if profiler.name == "PIMTracer" else TEFReportAggregate
+                    ), report_files[0]
+                )
+
+            if len(ground_truth_report_files) != 1:
+                print("Invalid number of reports from TEFIdentifier")
+                continue
+
+            ground_truth_report = TEFFeatureIdentifierReport(
+                ground_truth_report_files[0].full_path()
+            )
+
+            for patch in ground_truth_report.patch_names:
+                relevant_patch = patch.removesuffix("detect") + "1000ms"
+                for profiler in profilers:
+                    report_file, rpf = profiler_report_files[profiler]
+
+                    all_features = []
+
+                    if profiler.name == "PIMTracer":
+                        base_report: tp.Iterable[
+                            PerfInfluenceTraceReportAggregate
+                        ] = report_file.get_baseline_report().reports()
+                        for pim_report in base_report:
+                            pim_report: PerfInfluenceTraceReport
+                            all_features = [
+                                f.interaction
+                                for f in pim_report.region_interaction_entries
+                            ]
+                    else:
+                        base_report = report_file.get_baseline_report().reports(
+                        )
+                        for tef_report in base_report:
+                            pim = get_feature_performance_from_tef_report(
+                                tef_report
+                            )
+                            all_features.extend(pim.keys())
+
+                    all_features = list(set(all_features))
+
+                    regressed_features_gt = get_regressed_features_gt(
+                        all_features, ground_truth_report, [relevant_patch]
+                    )
+
+                    regressed_features_predicted = _PROFILER_FEATURE_REGRESSIONS[
+                        profiler.name](rpf, relevant_patch, profiler)
+
+                    new_row = {
+                        'CaseStudy': cs.project_name,
+                        'Patch': relevant_patch,
+                        'ConfigID': config_id,
+                        'Profiler': profiler.name
+                    }
+
+                    results = ConfusionMatrix(
+                        map_to_positive_config_ids(regressed_features_gt),
+                        map_to_positive_config_ids(regressed_features_gt),
+                        map_to_positive_config_ids(
+                            regressed_features_predicted
+                        ),
+                        map_to_positive_config_ids(
+                            regressed_features_predicted
+                        )
+                    )
+
+                    new_row[f"precision"] = results.precision()
+                    new_row[f"recall"] = results.recall()
+                    new_row[f"baccuracy"] = results.balanced_accuracy()
+                    new_row[f"RegressedFeatures"] = len(
+                        map_to_positive_config_ids(regressed_features_gt)
+                    )
+
+                    table_rows.append(new_row)
 
     return pd.DataFrame(table_rows)
