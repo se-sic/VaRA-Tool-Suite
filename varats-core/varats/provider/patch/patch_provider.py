@@ -67,8 +67,9 @@ class Patch:
         self.path: Path = path
         self.valid_revisions: tp.Set[
             CommitHash] = valid_revisions if valid_revisions else set()
-        self.tags: tp.Optional[tp.Set[str]] = tags
-        self.feature_tags: tp.Optional[tp.Set[str]] = feature_tags
+        self.tags: tp.Optional[tp.Set[str]] = set(tags) if tags else None
+        self.feature_tags: tp.Optional[
+            tp.Set[str]] = set(feature_tags) if feature_tags else None
         self.regression_severity: tp.Optional[int] = regression_severity
         self.arguments: tp.Optional[tp.Dict[str, tp.Any]
                                    ] = arguments if arguments else dict()
@@ -376,6 +377,42 @@ class PatchSet:
         result: tp.Set[Patch] = set()
         for patch in self:
             if patch.feature_tags and tag_set.issubset(patch.feature_tags):
+                result.add(patch)
+
+        return PatchSet(result)
+
+    def none_of(self, tags: tp.Union[str, tp.Iterable[str]]) -> "PatchSet":
+        """Returns a patch set with patches containing none of the given
+        tags."""
+        # Trick to handle just a single tag being passed
+        if isinstance(tags, str):
+            tags = {tags}
+        else:
+            tags = set(tags)
+
+        result: tp.Set[Patch] = set()
+        for patch in self:
+            if not patch.tags or patch.tags.isdisjoint(tags):
+                result.add(patch)
+
+        return PatchSet(result)
+
+    def none_of_features(
+        self, feature_tags: tp.Union[str, tp.Iterable[str]]
+    ) -> "PatchSet":
+        """Returns a patch set with patches containing none of the given feature
+        tags."""
+        # Trick to handle just a single tag being passed
+        if isinstance(feature_tags, str):
+            feature_tags = {feature_tags}
+        else:
+            feature_tags = set(feature_tags)
+
+        result: tp.Set[Patch] = set()
+        for patch in self:
+            if not patch.feature_tags or patch.feature_tags.isdisjoint(
+                feature_tags
+            ):
                 result.add(patch)
 
         return PatchSet(result)
