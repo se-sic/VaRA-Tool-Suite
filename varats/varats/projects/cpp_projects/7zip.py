@@ -32,6 +32,16 @@ from varats.utils.settings import bb_cfg
 class SevenZip(VProject):
     """Compression and decompression tool SevenZip (fetched by Git)"""
 
+    __SOURCE_FILES = [
+        "countries-land-1m.geo.json", "countries-land-10m.geo.json",
+        "countries-land-100m.geo.json", "countries-land-10km.geo.json",
+        "countries-land-1km.geo.json", "countries-land-250m.geo.json",
+        "countries-land-25m.geo.json", "countries-land-2km5.geo.json",
+        "countries-land-2m5.geo.json", "countries-land-500m.geo.json",
+        "countries-land-50m.geo.json", "countries-land-5km.geo.json",
+        "countries-land-5m.geo.json"
+    ]
+
     NAME = '7zip'
     GROUP = 'cpp_projects'
     DOMAIN = ProjectDomains.COMPRESSION
@@ -53,10 +63,7 @@ class SevenZip(VProject):
                     "https://github.com/simonepri/geo-maps/releases/"
                     "download/v0.6.0"
             },
-            files=[
-                "countries-land-1m.geo.json", "countries-land-10m.geo.json",
-                "countries-land-100m.geo.json"
-            ]
+            files=__SOURCE_FILES
         ),
         # TODO: Compressed Data for decompression workload ?
     ]
@@ -144,3 +151,17 @@ class SevenZip(VProject):
     def recompile(self) -> None:
         """Recompile the project."""
         self.compile()
+
+    # Testsuite Protocol
+    def prepare_test_environment(self) -> None:
+        # Nothing required
+        pass
+
+    def build_tests(self) -> None:
+        self.compile()
+
+    def run_testsuite(self) -> bool:
+        pass
+
+    def get_test_names(self) -> tp.List[str]:
+        return self.__SOURCE_FILES
