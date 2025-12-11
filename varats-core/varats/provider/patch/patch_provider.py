@@ -247,6 +247,15 @@ class Patch:
             raise
         # Create a temporary patch file with the rendered arguments
         if project_step:
+            r_name = self.rendered_name(**render_args)
+            # Check whether we already have a patch file starting with the same name in the builddir
+            existing_patches = list(
+                project_step.project.builddir.glob(f"{r_name}-*.patch")
+            )
+            if existing_patches:
+                # Patch name rendering with arguments should be consistent, so we can reuse existing files
+                return existing_patches[0]
+
             # Generate a random name for the patch file
             rendered_path = (
                 project_step.project.builddir /
