@@ -76,3 +76,48 @@ class Redis(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Redislabs", "Redis")]
+
+    def prepare_test_environment(self) -> None:
+        redis_source = local.path(self.source_of_primary)
+
+        clang = bb.compiler.cc(self)
+        with local.cwd(redis_source):
+            with local.env(CC=str(clang)):
+                bb.watch(make)("test", "-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        redis_source = local.path(self.source_of_primary)
+
+        clang = bb.compiler.cc(self)
+        with local.cwd(redis_source):
+            with local.env(CC=str(clang)):
+                runtest = local["./runtest"]
+                ret_code, out, err = bb.watch(runtest)("--list-tests")
+
+        test_names = out.splitlines()
+        return test_names
+
+    def build_tests(self) -> None:
+        pass
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        # redis_source = local.path(self.source_of_primary)
+        # clang = bb.compiler.cc(self)
+        #
+        # args: tp.List[str] = []
+        # if tests_to_run:
+        #     for test in tests_to_run:
+        #         args.extend(["--only", test])
+        #
+        # with local.cwd(redis_source):
+        #     with local.env(CC=str(clang)):
+        #         runtest = local["./runtest"]
+        #         ret_code, out, err = bb.watch(runtest)(*args)
+        pass

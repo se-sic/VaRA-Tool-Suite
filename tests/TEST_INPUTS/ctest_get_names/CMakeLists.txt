@@ -8,4 +8,5 @@ add_test(NAME time COMMAND "/usr/bin/timedatectl")
 add_test(NAME fail COMMAND "/usr/bin/false")
 
 # timeout test
-add_test(NAME timeout COMMAND "/usr/bin/timeout 10 ping 8.8.8.8")
+add_test(NAME timeout COMMAND "sleep" 5)
+set_tests_properties(timeout PROPERTIES TIMEOUT 1)
