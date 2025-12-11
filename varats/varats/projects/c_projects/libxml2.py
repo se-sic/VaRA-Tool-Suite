@@ -21,6 +21,11 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+    TestResult,
+)
 
 
 class Libxml2(VProject):
@@ -83,3 +88,37 @@ class Libxml2(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Xmlsoft", "Libxml2")]
+
+    def prepare_test_environment(self) -> None:
+        libxml2_version_source = Path(self.source_of_primary)
+        libxml2_versions_wo_cmake = GoodBadSubgraph([
+            "01791d57d650e546a915522e57c079157a5bb395"
+        ], ["2a2c38f3a35f415e7f407e171c07bb48bda0711e"], "No CmakeList")
+        libxml2_version = self.version_of_primary
+        c_compiler = bb.compiler.cc(self)
+        with local.cwd(libxml2_version_source):
+            with local.env(CC=str(c_compiler)):
+                if libxml2_version in libxml2_versions_wo_cmake:
+                    bb.watch(local["./configure"])
+                else:
+                    bb.watch(cmake)("-G", "Unix Makefiles", ".")
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        libxml2_version_source = Path(self.source_of_primary)
+        return ctest_get_test_names(libxml2_version_source)
+
+    def build_tests(self) -> None:
+        libxml2_version_source = Path(self.source_of_primary)
+        with local.cwd(libxml2_version_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        build_dir = Path(self.source_of_primary)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )

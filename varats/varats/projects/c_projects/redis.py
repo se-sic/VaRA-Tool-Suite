@@ -1,5 +1,6 @@
 """Project file for redis."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
@@ -19,6 +20,11 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+    TestResult,
+)
 
 
 class Redis(VProject):
@@ -78,14 +84,7 @@ class Redis(VProject):
         return [("Redislabs", "Redis")]
 
     def prepare_test_environment(self) -> None:
-        redis_source = local.path(self.source_of_primary)
-
-        clang = bb.compiler.cc(self)
-        with local.cwd(redis_source):
-            with local.env(CC=str(clang)):
-                bb.watch(make)("test", "-j", get_number_of_jobs(bb_cfg()))
-
-            verify_binaries(self)
+        pass
 
     def get_test_names(self) -> tp.Iterable[str]:
         redis_source = local.path(self.source_of_primary)
@@ -100,7 +99,14 @@ class Redis(VProject):
         return test_names
 
     def build_tests(self) -> None:
-        pass
+        redis_source = local.path(self.source_of_primary)
+
+        clang = bb.compiler.cc(self)
+        with local.cwd(redis_source):
+            with local.env(CC=str(clang)):
+                bb.watch(make)("test", "-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
 
     def run_testsuite(
         self,

@@ -4,7 +4,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake
+from benchbuild.utils.cmd import cmake, make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -26,6 +26,11 @@ from varats.provider.release.release_provider import (
 )
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+    TestResult,
+)
 
 
 class Z3(VProject, ReleaseProviderHook):
@@ -92,3 +97,50 @@ class Z3(VProject, ReleaseProviderHook):
         return [(FullCommitHash(h), tag)
                 for h, tag in tagged_commits
                 if re.match(minor_release_regex, tag)]
+
+    def prepare_test_environment(self) -> None:
+        z3_source = Path(self.source_of(self.primary_source))
+
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        (z3_source / "build").mkdir(parents=True, exist_ok=True)
+
+        with local.cwd(z3_source / "build"):
+            with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                bb.watch(cmake)("-G", "Unix Makefiles", "../")
+
+            bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
+
+    def build_tests(self) -> None:
+        z3_source = Path(self.source_of(self.primary_source))
+
+        (z3_source / "build").mkdir(parents=True, exist_ok=True)
+
+        with local.cwd(z3_source / "build"):
+            bb.watch(make)("test-z3", "-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        z3_source = Path(self.source_of(self.primary_source))
+        z3_build = z3_source / "build"
+
+        test_names = []
+        with local.cwd(z3_build):
+            runtests = local["./test-z3"]
+            ret_code, out, err = bb.watch(runtests)()
+
+        modules = out.split("Module names:")[1]
+        for line in modules.splitlines():
+            test_name = line.strip()
+            if test_name:
+                test_names.append(test_name)
+
+        return test_names
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        pass

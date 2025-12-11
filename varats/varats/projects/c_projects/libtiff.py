@@ -1,5 +1,6 @@
 """Project file for libtiff."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
@@ -24,6 +25,11 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+    TestResult,
+)
 
 
 class Libtiff(VProject):
@@ -140,3 +146,31 @@ class Libtiff(VProject):
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Libtiff", "Libtiff")]
+
+    def prepare_test_environment(self) -> None:
+        libtiff_version_source = local.path(self.source_of(self.primary_source))
+
+        c_compiler = bb.compiler.cc(self)
+        with local.cwd(libtiff_version_source):
+            with local.env(CC=str(c_compiler)):
+                bb.watch(local["./autogen.sh"])()
+                configure = bb.watch(local["./configure"])
+                configure()
+            verify_binaries(self)
+
+    def build_tests(self) -> None:
+        libtiff_version_source = local.path(self.source_of(self.primary_source))
+
+        with local.cwd(libtiff_version_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        pass
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        pass

@@ -1,5 +1,6 @@
 """Project file for x264."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
@@ -20,6 +21,11 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    ctest_run_testsuite,
+    ctest_get_test_names,
+    TestResult,
+)
 
 
 class X264(VProject):
@@ -93,3 +99,20 @@ class X264(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
+
+    def prepare_test_environment(self) -> None:
+        pass
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        pass
+
+    def build_tests(self) -> None:
+        pass
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        pass
