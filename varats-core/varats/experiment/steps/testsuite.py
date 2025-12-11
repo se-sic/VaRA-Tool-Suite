@@ -140,8 +140,16 @@ class RunTestSuite(ProjectStep):  # type: ignore
             )
             status = self.__result_filter(results)
             if status:
+
+                def encode_test_result(obj: tp.Any) -> tp.Any:
+                    if isinstance(obj, TestResult):
+                        return obj.name
+                    raise TypeError(
+                        f"Object of type {obj.__class__.__name__} is not JSON serializable"
+                    )
+
                 with open(self.__output_path, 'w') as f:
-                    json.dump(results, f)
+                    json.dump(results, f, default=encode_test_result)
                 self.status = StepResult.OK
             else:
                 self.status = StepResult.ERROR
