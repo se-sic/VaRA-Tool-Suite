@@ -34,6 +34,7 @@ from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_get_test_names,
     ctest_run_testsuite,
+    TestResult,
 )
 
 
@@ -257,14 +258,16 @@ class Xz(VProject):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         build_dir = local.path(self.source_of_primary) / "build"
 
         return ctest_run_testsuite(
             build_dir,
             test_report_path=test_report_path,
-            tests_to_run=tests_to_run
+            tests_to_run=tests_to_run,
+            tests_to_exclude=tests_to_exclude
         )
 
     def get_test_names(self) -> Iterable[str]:

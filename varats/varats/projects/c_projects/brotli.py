@@ -38,6 +38,7 @@ from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_run_testsuite,
     ctest_get_test_names,
+    TestResult,
 )
 
 

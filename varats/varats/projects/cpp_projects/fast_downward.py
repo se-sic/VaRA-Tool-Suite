@@ -37,6 +37,7 @@ from varats.provider.release.release_provider import (
 from varats.utils.config import get_config, get_extra_config_options
 from varats.utils.git_util import FullCommitHash, ShortCommitHash, GitFileSource
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import TestResult, parse_junit_xml
 
 
 class _FDParameterRenderer:
