@@ -538,7 +538,7 @@ class ConfigAlternativesGenerator(
 
 
 _ACTIVE_HV_PROJECTS = [
-    "Ect", "lrzip", "7zip", "brotli", "bzip2", "xz", "lepton"
+    "Ect", "lrzip", "7zip", "brotli", "bzip2", "xz", "lepton", "libzmq"
 ]
 
 
@@ -567,6 +567,10 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
 
             if cs_data.empty:
                 continue
+
+            if cs.project_name == "libzmq":
+                # Special case for libzmq as the workload names are a bit inconsistent
+                workload = "bench-inproc"
 
             # Filter CS datat based on bianry-wl column
             # No exact string match possible so we test if workload is a substring
@@ -610,7 +614,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                             np.mean
                         )
                         new_row["|S+|"] += int((means > 0).sum())
-                        new_row["|S-|"] += int((means > 0).sum())
+                        new_row["|S-|"] += int((means < 0).sum())
 
                         new_row["Impact Range"] = (
                             min(new_row["Impact Range"][0], means.min())

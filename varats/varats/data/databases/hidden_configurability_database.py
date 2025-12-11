@@ -7,6 +7,7 @@ import pandas as pd
 from scipy.stats import ttest_ind
 
 from varats.data.reports.hidden_configurability_report import MPRTimeWLAggregate
+from varats.experiments.base.run_workloads import RunWorkloads
 from varats.experiments.vara.hidden_configurability_experiments import (
     TimePatchedWorkloads,
     PATCH_VARIATIONS,
@@ -14,6 +15,7 @@ from varats.experiments.vara.hidden_configurability_experiments import (
 )
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.projects.cpp_projects.libzmq import LibZMQMPReport
 from varats.report.gnu_time_report import WLTimeReportAggregate
 from varats.revision.revisions import get_processed_revisions_files
 
@@ -44,6 +46,130 @@ def get_configuration_points(report_file: MPRTimeWLAggregate) -> tp.List[str]:
 
 
 def get_data_for_single_config(
+    cs: CaseStudy, config_id: tp.Optional[int] = None
+) -> pd.DataFrame:
+    # Case distinction for specific projects
+    if cs.project_name == "libzmq":
+        return _get_data_single_config_libzmq(cs, config_id)
+
+    return _get_data_single_config_default(cs, config_id)
+
+
+def _get_data_single_config_libzmq(
+    cs, config_id: tp.Optional[int] = None
+) -> pd.DataFrame:
+    # Load all result files from RunAllWorkloads experiment
+    result_files = get_processed_revisions_files(
+        "libzmq",
+        RunWorkloads,
+        RunWorkloads.report_spec().main_report,
+        get_case_study_file_name_filter(cs),
+        config_id=config_id,
+        only_newest=False,
+    )
+
+    if len(result_files) == 0:
+        print(f"No results found for {cs.project_name} ({config_id=})")
+        return pd.DataFrame()
+
+    data_rows = []
+    base_values = {}
+
+    for result_file in result_files:
+        # Load report as LibZMQMPReport
+        report: LibZMQMPReport = LibZMQMPReport(result_file.full_path())
+
+        # Parse base reports
+        for base_report in report.all_baseline_reports():
+            if "inproc_lat" in base_report.filename.filename:
+                metric = "latency"
+                data_rows.append({
+                    "binary-wl": f"bench-inproc-lat",
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
+                    "metric": metric,
+                    "value": base_report.latencies,
+                    "config_id": config_id,
+                })
+
+                base_values[metric] = np.mean(base_report.latencies)
+            elif "inproc_thr" in base_report.filename.filename:
+                data_rows.extend([{
+                    "binary-wl": f"bench-inproc-thr",
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
+                    "metric": "throughput_msg",
+                    "value": base_report.throughputs_msg,
+                    "config_id": config_id
+                }, {
+                    "binary-wl": f"bench-inproc-thr",
+                    "config_opportunity": "__baseline__",
+                    "variation": None,
+                    "metric": "throughput_mb",
+                    "value": base_report.throughputs_mb,
+                    "config_id": config_id
+                }])
+
+                base_values["throughput_msg"] = np.mean(
+                    base_report.throughputs_msg
+                )
+                base_values["throughput_mb"] = np.mean(
+                    base_report.throughputs_mb
+                )
+
+        def extract_variation(patch_name: str) -> str:
+            # patch names follow the pattern "<patch_name>_<base_file_name>_<config_point>=<value>"
+            # We want to extract <value>
+            name_path = Path(patch_name).stem
+            split_leftover_fn = name_path.partition("_")
+            config_part = split_leftover_fn[-1]
+            config_point = config_part.split('=')
+            return config_point[1]
+
+        for patch_name in report.get_patch_names():
+            patched_report = report.get_report_for_patch(patch_name)
+
+            variation = extract_variation(patch_name)
+
+            if "inproc_lat" in patched_report.filename.filename:
+                metric = "latency"
+                data_rows.append({
+                    "binary-wl": f"bench-inproc-lat",
+                    "config_opportunity": "hwm",
+                    "variation": variation,
+                    "metric": metric,
+                    "value": patched_report.latencies,
+                    "value_relative": [(t / base_values[metric]) - 1
+                                       for t in patched_report.latencies],
+                    "config_id": config_id,
+                })
+            elif "inproc_thr" in patched_report.filename.filename:
+                data_rows.extend([{
+                    "binary-wl": f"bench-inproc-thr",
+                    "config_opportunity": "hwm",
+                    "variation": variation,
+                    "metric": "throughput_msg",
+                    "value": patched_report.throughputs_msg,
+                    "value_relative": [(t / base_values["throughput_msg"]) - 1
+                                       for t in patched_report.throughputs_msg],
+                    "config_id": config_id
+                }, {
+                    "binary-wl": f"bench-inproc-thr",
+                    "config_opportunity": "hwm",
+                    "variation": variation,
+                    "metric": "throughput_mb",
+                    "value": patched_report.throughputs_mb,
+                    "value_relative": [(t / base_values["throughput_mb"]) - 1
+                                       for t in patched_report.throughputs_mb],
+                    "config_id": config_id
+                }])
+
+        result = pd.DataFrame.from_records(data_rows)
+
+        return result
+
+
+def _get_data_single_config_default(
     cs: CaseStudy, config_id: tp.Optional[int] = None
 ) -> pd.DataFrame:
     result_files = get_processed_revisions_files(
@@ -144,6 +270,10 @@ def aggregate_data(
     if config_ids is None:
         config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
 
+        if cs.project_name == "libzmq":
+            # Only consider config ID 0 for libzmq for now
+            config_ids = [0]
+
     if len(config_ids) == 0:
         config_ids = [None]
 
@@ -160,10 +290,6 @@ def aggregate_data(
         """Map string values to numerical values."""
         if row["config_opportunity"] == "__baseline__":
             return row
-
-        # Quick fix for ZMQ
-        if cs.project_name == "libzmq":
-            row["config_opportunity"] = "hwm_template/hwm"
 
         row["variation"] = str_val_map[row["config_opportunity"]][str(
             row["variation"]
@@ -205,7 +331,7 @@ def add_significance_values(df: pd.DataFrame) -> pd.DataFrame:
         if (row["config_opportunity"] == "__baseline__"):
             return None
         baseline_value = baseline_df.loc[row["binary-wl"], row["metric"],
-                                         row["config_id"]]
+                                         row["config_id"]][0]
         return ttest_ind(baseline_value, row["value"])
 
     df["significance"] = df.apply(is_significant, axis=1)
