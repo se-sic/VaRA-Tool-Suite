@@ -3,6 +3,7 @@ Project Steps for interacting with the TestSuite protocol.
 
 This allows to prepare, build and run test suites for projects
 """
+import json
 import textwrap
 import typing as tp
 from pathlib import Path
@@ -73,6 +74,18 @@ class BuildTestSuite(ProjectStep):  # type: ignore
         )
 
 
+def _parse_results(result: tp.Dict[str, TestResult]) -> bool:
+    result_filter = {
+        TestResult.PASSED: True,
+        TestResult.FAILED: False,
+        TestResult.SKIPPED: True,
+        TestResult.TIMEOUT: False,
+        TestResult.DISABLED: True,
+        TestResult.UNKNOWN: False,
+    }
+    return all(result_filter.get(status) == True for status in result.values())
+
+
 @AsOutputFolderStep("__output_path")
 class RunTestSuite(ProjectStep):  # type: ignore
     """Experiment step to run the test suite on a project."""
@@ -103,7 +116,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         if result_filter is not None:
             self.__result_filter = result_filter
         else:
-            self.__result_filter = self._parse_results
+            self.__result_filter = _parse_results
         self.__tests_to_run = tests_to_run
         self.__tests_to_exclude = tests_to_exclude
 
@@ -114,19 +127,6 @@ class RunTestSuite(ProjectStep):  # type: ignore
     def set_output_path(self, output_path: Path) -> None:
         self.__output_path = output_path
 
-    def _parse_results(self, result: tp.Dict[str, TestResult]) -> bool:
-        result_filter = {
-            TestResult.PASSED: True,
-            TestResult.FAILED: False,
-            TestResult.SKIPPED: True,
-            TestResult.TIMEOUT: False,
-            TestResult.DISABLED: True,
-            TestResult.UNKNOWN: False,
-        }
-        return all(
-            result_filter.get(status) == True for status in result.values()
-        )
-
     def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
             raise TypeError(
@@ -135,10 +135,13 @@ class RunTestSuite(ProjectStep):  # type: ignore
         try:
             self.project.prepare_test_environment()
             results = self.project.run_testsuite(
-                self.__output_path, self.__tests_to_run, self.__tests_to_exclude
+                tests_to_run=self.__tests_to_run,
+                tests_to_exclude=self.__tests_to_exclude
             )
             status = self.__result_filter(results)
             if status:
+                with open(self.__output_path, 'w') as f:
+                    json.dump(results, f)
                 self.status = StepResult.OK
             else:
                 self.status = StepResult.ERROR
