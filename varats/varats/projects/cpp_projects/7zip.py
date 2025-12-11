@@ -27,6 +27,7 @@ from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import TestResult
 
 
 class SevenZip(VProject):
@@ -160,7 +161,12 @@ class SevenZip(VProject):
     def build_tests(self) -> None:
         self.compile()
 
-    def run_testsuite(self) -> bool:
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         pass
 
     def get_test_names(self) -> tp.List[str]:
