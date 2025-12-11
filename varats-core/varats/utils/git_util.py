@@ -12,7 +12,7 @@ from types import TracebackType
 import benchbuild.source
 import plumbum as pb
 import pygit2
-from benchbuild.utils.cmd import git, grep, mkdir
+from benchbuild.utils.cmd import git, grep
 from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
 

@@ -284,8 +284,9 @@ class Brotli(VProject):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """
         Executes the test suite for brotli.
 
@@ -304,7 +305,9 @@ class Brotli(VProject):
                 "Test suites are only supported for revisions using CMake."
             )
 
-        return ctest_run_testsuite(build_dir, test_report_path, tests_to_run)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )
 
     def compile(self) -> None:
         """Compile the project."""

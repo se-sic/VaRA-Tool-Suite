@@ -6,6 +6,7 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils import cmd
+from benchbuild.utils.cmd import mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
@@ -23,10 +24,12 @@ from varats.project.project_util import (
 from varats.project.sources import FeatureSource
 from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_commands import update_all_submodules
+from varats.utils.git_util import ShortCommitHash, RepositoryHandle
 from varats.utils.testsuite_utils import (
     ctest_get_test_names,
     ctest_run_testsuite,
+    TestResult,
 )
 
 
@@ -241,6 +244,10 @@ class DunePerfRegression(VProject):
         """Prepare the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
 
+        update_all_submodules(
+            RepositoryHandle(version_source), recursive=True, init=True
+        )
+
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
 
@@ -255,14 +262,12 @@ class DunePerfRegression(VProject):
 
     def build_tests(self) -> None:
         """Build the tests for all subprojects."""
-        print("Running Build Tests for Dune...")
         version_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(version_source):
             dunecontrol = cmd['./dune-common/bin/dunecontrol']
 
             for module in DunePerfRegression.__DUNE_MODULES:
-                print(f"Running for module {module}...")
                 if module == "dune-pdelab":
                     # skip the pdelab module as building tests fails
                     continue
@@ -297,8 +302,9 @@ class DunePerfRegression(VProject):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """Run the testsuite for the project."""
         version_source = local.path(self.source_of(self.primary_source))
 
@@ -318,26 +324,32 @@ class DunePerfRegression(VProject):
                 continue
             tests_per_module[module].append(test_name)
 
-        overall_result = True
-
         aggregated_results = self.builddir / "aggregated_test_results.zip"
+        combined_results: tp.Dict[str, TestResult] = {}
+        # results_folder = self.builddir / "results"
+        # mkdir("-p", results_folder)
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for module in DunePerfRegression.__DUNE_MODULES:
                 if module == "dune-pdelab":
                     # skip the pdelab module as building tests fails
                     continue
 
-                module_test_report = Path(zip_folder) / f"{module}.xml"
+                module_test_report = Path(zip_folder) / f"{module}-tests.xml"
                 module_build_dir = version_source / module / "build-cmake"
-                overall_result &= ctest_run_testsuite(
+                result = ctest_run_testsuite(
                     module_build_dir, module_test_report,
-                    tests_per_module[module]
+                    tests_per_module[module], tests_to_exclude
                 )
 
+                if result is not None:
+                    combined_results.update({
+                        f"{module}#{test_name}": test_result
+                        for test_name, test_result in result.items()
+                    })
+
+        # look at
         if test_report_path:
             # Move the aggregated test results to the specified path
-            shutil.copy(
-                aggregated_results, test_report_path.with_suffix(".zip")
-            )
+            shutil.copy(aggregated_results, test_report_path)
 
-        return overall_result
+        return combined_results

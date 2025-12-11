@@ -1,11 +1,13 @@
 """Project file for xz."""
 import typing as tp
+from enum import Enum
 from pathlib import Path
+from unittest import TestResult
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
-from benchbuild.utils.cmd import cmake, make
+from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.revision_ranges import RevisionRange, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -34,6 +36,11 @@ from varats.utils.git_util import (
     RepositoryHandle,
 )
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import (
+    TestResult,
+    ctest_run_testsuite,
+    ctest_get_test_names,
+)
 
 
 class Bzip2(VProject):
@@ -98,6 +105,11 @@ class Bzip2(VProject):
                           ).run('apt', 'install', '-y', 'autoconf', 'automake')
         ), (_MAKE_VERSIONS, get_base_image(ImageBase.DEBIAN_10))
     ]
+
+    class Bzip2BuildMethod(Enum):
+        MAKE = 0
+        AUTOTOOLS = 1
+        CMAKE = 2
 
     WORKLOADS = {
         WorkloadSet(WorkloadCategory.MEDIUM): [
@@ -166,39 +178,51 @@ class Bzip2(VProject):
     def run_tests(self) -> None:
         pass
 
-    def compile(self) -> None:
-        """Compile the project."""
-        bzip2_source = Path(self.source_of_primary)
-        bzip2_version = ShortCommitHash(self.version_of_primary)
+    def __getbuilddir(self) -> tp.Tuple[Path, Bzip2BuildMethod]:
+        """Get the build directory and build method."""
+        bzip2_source = local.path(self.source_of_primary)
         bzip2_repo = RepositoryHandle(bzip2_source)
-        cc_compiler = bb.compiler.cc(self)
-        cxx_compiler = bb.compiler.cxx(self)
+        bzip2_version = ShortCommitHash(self.version_of_primary)
 
+        run_dir: Path
+        build_method: Bzip2.Bzip2BuildMethod
         if bzip2_version in typed_revision_range(
             bzip2_repo, Bzip2._MAKE_VERSIONS, ShortCommitHash
         ):
-            with local.cwd(bzip2_source):
-                with local.env(CC=str(cc_compiler)):
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            run_dir = bzip2_source
+            build_method = Bzip2.Bzip2BuildMethod.MAKE
         elif bzip2_version in typed_revision_range(
             bzip2_repo, Bzip2._AUTOTOOLS_VERSIONS, ShortCommitHash
         ):
-            with local.cwd(bzip2_source):
+            run_dir = bzip2_source
+            build_method = Bzip2.Bzip2BuildMethod.AUTOTOOLS
+        else:
+            run_dir = bzip2_source / "build"
+            build_method = Bzip2.Bzip2BuildMethod.CMAKE
+
+        mkdir("-p", run_dir)
+        return run_dir, build_method
+
+    def compile(self) -> None:
+        """Compile the project."""
+        bzip2_source = Path(self.source_of_primary)
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        build_dir, build_method = self.__getbuilddir()
+        if build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
+            with local.cwd(build_dir):
                 with local.env(CC=str(cc_compiler)):
                     bb.watch(local["./autogen.sh"])()
                     bb.watch(local["./configure"])()
-                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            (bzip2_source / "build").mkdir(parents=True, exist_ok=True)
-            with local.cwd(bzip2_source / "build"):
 
+        elif build_method != Bzip2.Bzip2BuildMethod.MAKE:
+            with local.cwd(build_dir):
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake)("..")
 
-                bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
-                )
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
         with local.cwd(bzip2_source):
             verify_binaries(self)
 
@@ -208,16 +232,55 @@ class Bzip2(VProject):
         bzip2_version = ShortCommitHash(self.version_of_primary)
         bzip2_repo = RepositoryHandle(bzip2_source)
 
-        if bzip2_version in typed_revision_range(
-            bzip2_repo, Bzip2._MAKE_VERSIONS, ShortCommitHash
-        ) or bzip2_version in typed_revision_range(
-            bzip2_repo, Bzip2._AUTOTOOLS_VERSIONS, ShortCommitHash
-        ):
-            with local.cwd(bzip2_source / "build"):
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-        else:
-            with local.cwd(bzip2_source / "build"):
-                bb.watch(cmake)(
-                    "--build", ".", "--config", "Release", "-j",
-                    get_number_of_jobs(bb_cfg())
-                )
+        build_dir, build_method = self.__getbuilddir()
+        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def prepare_test_environment(self) -> None:
+        """Prepare the testsuite."""
+        bzip2_source = Path(self.source_of_primary)
+        bzip2_version = ShortCommitHash(self.version_of_primary)
+
+        cpp_compiler = bb.compiler.cxx(self)
+        cc_compiler = bb.compiler.cc(self)
+
+        build_dir, build_method = self.__getbuilddir()
+
+        if build_method != Bzip2.Bzip2BuildMethod.CMAKE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+
+        with local.cwd(bzip2_source / "build"):
+            with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
+                bb.watch(cmake)("test", "-G", "Unix Makefiles", "..")
+
+    def build_tests(self) -> None:
+        """Build the tests."""
+        bzip2_version_source = local.path(self.source_of_primary)
+
+        build_dir, build_method = self.__getbuilddir()
+
+        if build_method != Bzip2.Bzip2BuildMethod.CMAKE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+
+        with local.cwd(bzip2_version_source / "build"):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """Get the test names."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_get_test_names(build_dir)
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        """Run the testsuite."""
+        build_dir = local.path(self.source_of_primary) / "build"
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )

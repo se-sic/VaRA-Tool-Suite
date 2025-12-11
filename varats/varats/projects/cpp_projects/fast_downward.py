@@ -410,8 +410,9 @@ class FastDownward(VProject, ReleaseProviderHook):
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
-        tests_to_run: tp.Optional[tp.Iterable[str]] = None
-    ) -> bool:
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
         """
         Run the test suite for fast downward.
 
@@ -433,16 +434,24 @@ class FastDownward(VProject, ReleaseProviderHook):
         # to be installed.
         # Since this is usually not the case, we skip this test
         test_runner = pytest["-k", "not test_commandline_args"]
+        if tests_to_exclude:
+            exclude_regex = ' and '.join([
+                f"'not {re.escape(name)}'" for name in tests_to_exclude
+            ])
+            test_runner = test_runner["-k", f"not ({exclude_regex})"]
 
-        if test_report_path:
-            test_runner = test_runner["--junitxml", test_report_path]
+        if test_report_path is None:
+            test_report_path = version_source / "builds/results.xml"
+        test_runner = test_runner["--junitxml", test_report_path]
 
         with local.cwd(version_source):
             ret_code: int
             test_args = ["driver/tests.py", *tests_to_run]
             ret_code, _, _ = bb.watch(test_runner[test_args])()
 
-        return ret_code == 0
+        results = parse_junit_xml(test_report_path)
+
+        return results
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
