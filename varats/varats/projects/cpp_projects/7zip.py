@@ -6,7 +6,7 @@ import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.source import HTTPMultiple
 from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
 from varats.experiment.workload_util import (
     RSBinary,
@@ -167,7 +167,76 @@ class SevenZip(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        pass
+        test_results: tp.Dict[str, TestResult] = {}
+
+        for test_name in self.get_test_names():
+            if tests_to_run and test_name not in tests_to_run:
+                continue
+            if tests_to_exclude and test_name in tests_to_exclude:
+                continue
+
+            source_file = Path("geo-maps") / test_name
+            result = self.__end_to_end_test(source_file)
+            test_results[test_name] = result
+
+        return test_results
 
     def get_test_names(self) -> tp.List[str]:
         return self.__SOURCE_FILES
+
+    def __end_to_end_test(self, file: Path) -> TestResult:
+        """
+        Run an end-to-end test for the given file.
+
+        The end-to-end test compresses and then decompresses the file and checks
+        if the original file is restored correctly.
+        """
+        print("Running end-to-end test for", file)
+        binary = self.binaries[0]
+
+        compressed_file = file.with_suffix(file.suffix + ".7z")
+
+        # Compress the file
+        compress_cmd = local[f"7zip/{binary.path}"]["a",
+                                                    str(compressed_file),
+                                                    str(file)]
+
+        try:
+            compress_cmd()
+        except ProcessExecutionError as pe:
+            print("Error during compression of", file)
+            print(pe)
+            return TestResult.FAILED
+
+        # Check integrity of the compressed file
+        test_cmd = local[f"7zip/{binary.path}"]["t", str(compressed_file)]
+        try:
+            test_cmd()
+        except ProcessExecutionError:
+            print("Integrity test failed for", compressed_file)
+            return TestResult.FAILED
+
+        # Decompress the file
+        Path("decompressed").mkdir(parents=True, exist_ok=True)
+        decompressed_file = Path("decompressed") / file
+        decompressed_file.parent.mkdir(parents=True, exist_ok=True)
+        decompress_cmd = local[f"7zip/{binary.path}"]["x",
+                                                      str(compressed_file),
+                                                      "-o" + "decompressed"]
+
+        try:
+            decompress_cmd()
+        except ProcessExecutionError:
+            print("Error during decompression of", compressed_file)
+            return TestResult.FAILED
+
+        # Verify that the decompressed file matches the original
+        if not file.read_bytes() == decompressed_file.read_bytes():
+            print("Decompressed file does not match original for", file)
+            return TestResult.FAILED
+
+        # Cleanup
+        compressed_file.unlink(missing_ok=True)
+        decompressed_file.unlink(missing_ok=True)
+
+        return TestResult.PASSED
