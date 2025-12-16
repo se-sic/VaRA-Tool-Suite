@@ -33,7 +33,7 @@ from varats.ts_utils.click_param_types import (
     create_multi_case_study_choice,
 )
 from varats.utils.git_util import calc_repo_loc
-from varats.utils.testsuite_utils import TestStatus
+from varats.utils.testsuite_utils import TestResult
 
 
 class HiddenVariabilityOverviewTable(Table, table_name="hv_overview"):
@@ -280,8 +280,8 @@ def _is_equivalent(base_results, patched_results) -> bool:
 
         # We are mostly interested in cases where the base test passed,
         # but the patched test failed in some way
-        if base_status == TestStatus.PASSED and patched_status in {
-            TestStatus.FAILED, TestStatus.TIMEOUT, TestStatus.UNKNOWN
+        if base_status == TestResult.PASSED and patched_status in {
+            TestResult.FAILED, TestResult.TIMEOUT, TestResult.UNKNOWN
         }:
             return False
 
@@ -333,11 +333,11 @@ class ConfigAlternativesValidityTable(
 
                 if status == "RUN":
                     if "failures" in case:
-                        results[f"{suite_name}.{case_name}"] = TestStatus.FAILED
+                        results[f"{suite_name}.{case_name}"] = TestResult.FAILED
                     else:
-                        results[f"{suite_name}.{case_name}"] = TestStatus.PASSED
+                        results[f"{suite_name}.{case_name}"] = TestResult.PASSED
                 elif status == "NOTRUN":
-                    results[f"{suite_name}.{case_name}"] = TestStatus.NOT_RUN
+                    results[f"{suite_name}.{case_name}"] = TestResult.NOT_RUN
 
         for ignored_test in self.__TEST_TO_IGNORE.get(
             self.table_kwargs["case_study"].project_name, []
@@ -362,13 +362,13 @@ class ConfigAlternativesValidityTable(
                 case_name = case.name if case.name else "<unknown>"
 
                 if case.is_passed:
-                    status = TestStatus.PASSED
+                    status = TestResult.PASSED
                 elif case.is_skipped:
-                    status = TestStatus.SKIPPED
+                    status = TestResult.SKIPPED
                 elif case.is_failure or case.is_error:
-                    status = TestStatus.FAILED
+                    status = TestResult.FAILED
                 else:
-                    status = TestStatus.UNKNOWN
+                    status = TestResult.UNKNOWN
 
                 results[f"{suite_name}.{case_name}"] = status
 
@@ -440,7 +440,7 @@ class ConfigAlternativesValidityTable(
                 "same_as_baseline": True
             }
 
-            for status in TestStatus:
+            for status in TestResult:
                 # Count the number of tests that passed, failed, etc.
                 row[f"{status.value}"] = sum(
                     1 for test in baseline_results.values() if test == status
@@ -469,7 +469,7 @@ class ConfigAlternativesValidityTable(
                         _is_equivalent(baseline_results, patched_results)
                 }
 
-                for status in TestStatus:
+                for status in TestResult:
                     # Count the number of tests that passed, failed, etc.
                     row[f"{status.value}"] = sum(
                         1 for test in patched_results.values() if test == status
