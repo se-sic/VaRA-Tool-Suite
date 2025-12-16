@@ -5,14 +5,13 @@ import os
 import re
 import typing as tp
 from enum import Enum
-from importlib.metadata import files
 from pathlib import Path
 from types import TracebackType
 
 import benchbuild.source
 import plumbum as pb
 import pygit2
-from benchbuild.utils.cmd import git, grep
+from benchbuild.utils.cmd import git, grep, mkdir
 from plumbum import TF, RETCODE
 from plumbum.commands.base import BoundCommand
 

@@ -185,6 +185,11 @@ def _get_data_single_config_default(
         print(f"No results found for {cs.project_name} ({config_id=})")
         return pd.DataFrame()
 
+    if cs.project_name == "DunePerfRegression":
+        result_files = [
+            rf for rf in result_files if "yasp_q2_3d" in str(rf.full_path())
+        ]
+
     data_rows = []
 
     base_times = {}
@@ -270,8 +275,16 @@ def aggregate_data(
     if config_ids is None:
         config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
 
-        if cs.project_name == "libzmq":
+        if cs.project_name in ["libzmq"]:
             # Only consider config ID 0 for libzmq for now
+            config_ids = [13]
+
+        if cs.project_name == "DunePerfRegression":
+            # Only consider config ID 1 for DunePerfRegression for now
+            config_ids = [8]
+
+        if cs.project_name == "FastDownward":
+            # Only consider config ID 1 for FastDownward for now
             config_ids = [0]
 
     if len(config_ids) == 0:
@@ -311,9 +324,22 @@ def create_config_opportunities_value_map(
 
     for patch_name, config_opportunity in patches.items():
         arg_name, values = config_opportunity
-        result[arg_name] = {
-            variation_value_to_str(value): value for value in values
-        }
+        if cs.project_name == "DunePerfRegression":
+            result[f"{patch_name}_{arg_name}"] = {
+                variation_value_to_str(value): value for value in values
+            }
+        elif cs.project_name == "FastDownward":
+            result[f"{patch_name}"] = {
+                variation_value_to_str(value): value for value in values
+            }
+        else:
+            result[arg_name] = {
+                variation_value_to_str(value): value for value in values
+            }
+
+    if cs.project_name == "FastDownward":
+        # Special case for FastDownward where we have multiple config opportunities
+        result["preconditions"] = result["preconditions_to_test"]
 
     return result
 

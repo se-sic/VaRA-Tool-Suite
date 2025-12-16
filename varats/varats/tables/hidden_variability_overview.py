@@ -538,7 +538,8 @@ class ConfigAlternativesGenerator(
 
 
 _ACTIVE_HV_PROJECTS = [
-    "Ect", "lrzip", "7zip", "brotli", "bzip2", "xz", "lepton", "libzmq"
+    "Ect", "lrzip", "7zip", "brotli", "bzip2", "xz", "lepton", "libzmq",
+    "DunePerfRegression", "FastDownward"
 ]
 
 
