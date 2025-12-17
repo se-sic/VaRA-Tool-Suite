@@ -50,6 +50,13 @@ def get_data_for_single_config(
 ) -> pd.DataFrame:
     # Case distinction for specific projects
     if cs.project_name == "libzmq":
+        df1 = _get_data_single_config_default(cs, config_id)
+        # Change all occurrences of config_opportunity "hwm" to "sndbuf"
+        df1.loc[df1["config_opportunity"] == "default_hwm",
+                "config_opportunity"] = "hwm"
+
+        df2 = _get_data_single_config_libzmq(cs, config_id)
+        return pd.concat([df1, df2], ignore_index=True)
         return _get_data_single_config_libzmq(cs, config_id)
 
     return _get_data_single_config_default(cs, config_id)
@@ -270,22 +277,11 @@ def _get_data_single_config_default(
 def aggregate_data(
     cs: CaseStudy, config_ids: tp.Optional[tp.List[int]]
 ) -> pd.DataFrame:
+
     result_df = pd.DataFrame()
 
     if config_ids is None:
         config_ids = cs.get_config_ids_for_revision(cs.revisions[0])
-
-        if cs.project_name in ["libzmq"]:
-            # Only consider config ID 0 for libzmq for now
-            config_ids = [13]
-
-        if cs.project_name == "DunePerfRegression":
-            # Only consider config ID 1 for DunePerfRegression for now
-            config_ids = [8]
-
-        if cs.project_name == "FastDownward":
-            # Only consider config ID 1 for FastDownward for now
-            config_ids = [0]
 
     if len(config_ids) == 0:
         config_ids = [None]

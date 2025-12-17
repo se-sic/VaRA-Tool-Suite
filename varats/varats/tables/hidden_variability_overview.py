@@ -558,6 +558,17 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                 continue
             cs_data = aggregate_data(cs, None)
 
+            # Filter to single config ID for projects with multiple
+            __cs_configs = {
+                "libzmq": [13],
+                "DunePerfRegression": [8],
+                "FastDownward": [0],
+            }
+            if cs.project_name in __cs_configs:
+                cs_data = cs_data[cs_data["config_id"].isin(
+                    __cs_configs[cs.project_name]
+                )]
+
             # For each row, we want to summarize the performance impact
             # of all configuration opportunities
 
