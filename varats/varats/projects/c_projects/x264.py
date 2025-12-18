@@ -101,13 +101,43 @@ class X264(VProject):
             verify_binaries(self)
 
     def prepare_test_environment(self) -> None:
-        pass
+        x264_repo = get_local_project_repo(self.NAME)
+        x264_version_source = local.path(self.source_of_primary)
+        x264_version = ShortCommitHash(self.version_of_primary)
 
+        fpic_revisions = get_all_revisions_between(
+            x264_repo,
+            "5dc0aae2f900064d1f58579929a2285ab289a436",
+            "290de9638e5364c37316010ac648a6c959f6dd26",
+            ShortCommitHash,
+        )
+        ldflags_revisions = get_all_revisions_between(
+            x264_repo,
+            "6490f4398d9e28e65d7517849e729e14eede8c5b",
+            "275ef5332dffec445a0c5a78dbc00c3e0766011d",
+            ShortCommitHash,
+        )
+
+        if x264_version in fpic_revisions:
+            self.cflags += ["-fPIC"]
+
+        clang = bb.compiler.cc(self)
+        with local.cwd(x264_version_source):
+            with local.env(CC=str(clang)):
+                configure_flags = ["--disable-asm"]
+                if x264_version in ldflags_revisions:
+                    configure_flags.append("--extra-ldflags=\"-static\"")
+                bb.watch(local["./configure"])(configure_flags)
+
+    # Do i just create my own test?
     def get_test_names(self) -> tp.Iterable[str]:
         pass
 
     def build_tests(self) -> None:
-        pass
+        x264_version_source = local.path(self.source_of_primary)
+
+        with local.cwd(x264_version_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def run_testsuite(
         self,
