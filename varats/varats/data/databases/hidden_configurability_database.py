@@ -248,7 +248,7 @@ def _get_data_single_config_default(
                 data_rows.extend([{
                     "binary-wl": f"{binary}/{wl}",
                     "config_opportunity": f"{cp[0]}",
-                    "variation": cp[1],
+                    "variation": cp[1].strip("_"),
                     "metric": "wall_clock_time",
                     "value": patch_report.measurements_wall_clock_time(wl),
                     "value_relative": [
@@ -259,7 +259,7 @@ def _get_data_single_config_default(
                 }, {
                     "binary-wl": f"{binary}/{wl}",
                     "config_opportunity": f"{cp[0]}",
-                    "variation": cp[1],
+                    "variation": cp[1].strip("_"),
                     "metric": "max_resident_size",
                     "value": patch_report.max_resident_sizes(wl),
                     "value_relative": [
@@ -324,7 +324,7 @@ def create_config_opportunities_value_map(
             result[f"{patch_name}_{arg_name}"] = {
                 variation_value_to_str(value): value for value in values
             }
-        elif cs.project_name == "FastDownward":
+        elif cs.project_name in ["FastDownward"]:
             result[f"{patch_name}"] = {
                 variation_value_to_str(value): value for value in values
             }
@@ -336,6 +336,14 @@ def create_config_opportunities_value_map(
     if cs.project_name == "FastDownward":
         # Special case for FastDownward where we have multiple config opportunities
         result["preconditions"] = result["preconditions_to_test"]
+
+    if cs.project_name == "libvpx":
+        result["min_filter_pick"] = result["min_filter_level"]
+        result["min_filter_search"] = result["min_filter_level"]
+        result["pred_stride_rd"] = result["pred_stride"]
+        result["vp9_enc_block_size"] = result["block_size"]
+        result["one_pass_cq_adjust"] = result["cq_adjust"]
+        result["two_pass_cq_adjust"] = result["cq_adjust"]
 
     return result
 

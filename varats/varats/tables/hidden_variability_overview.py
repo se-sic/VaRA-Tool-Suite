@@ -539,7 +539,7 @@ class ConfigAlternativesGenerator(
 
 _ACTIVE_HV_PROJECTS = [
     "Ect", "lrzip", "7zip", "brotli", "bzip2", "xz", "lepton", "libzmq",
-    "DunePerfRegression", "FastDownward"
+    "DunePerfRegression", "FastDownward", "libvpx"
 ]
 
 
@@ -563,6 +563,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                 "libzmq": [13],
                 "DunePerfRegression": [8],
                 "FastDownward": [0],
+                "libvpx": [0],
             }
             if cs.project_name in __cs_configs:
                 cs_data = cs_data[cs_data["config_id"].isin(

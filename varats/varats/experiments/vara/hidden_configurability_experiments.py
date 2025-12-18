@@ -645,8 +645,10 @@ class TimePatchedWorkloads(FeatureExperiment, shorthand="TPWL"):
                                 binary,
                                 file_name=MPRTimeWLAggregate.
                                 create_patched_report_name(
-                                    patch, binary.name, **{arg_name: value}
-                                ),
+                                    patch, binary.name, **{
+                                        arg_name: value
+                                    }
+                                ).replace('.', ''),
                                 report_file_ending=".txt",
                                 reps=NUM_REPETITIONS
                             )
