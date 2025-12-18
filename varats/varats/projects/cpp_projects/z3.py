@@ -137,10 +137,14 @@ class Z3(VProject, ReleaseProviderHook):
 
         return test_names
 
+    # maybe ask lukas, how i want to wrap this up
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        pass
+        z3_source = Path(self.source_of(self.primary_source))
+
+        with local.cwd(z3_source / "build"):
+            bb.watch(make)("test-z3", "-j", get_number_of_jobs(bb_cfg()))
