@@ -605,7 +605,7 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                     "|S|": 0,
                     "|S+|": 0,
                     "|S-|": 0,
-                    "Impact Range": (None, None),
+                    "Range": (None, None),
                 }
 
                 for config_opportunity in metric_data["config_opportunity"
@@ -629,27 +629,34 @@ class HCPerfSummaryTable(Table, table_name="hc_perf_summary"):
                         new_row["|S+|"] += int((means > 0).sum())
                         new_row["|S-|"] += int((means < 0).sum())
 
-                        new_row["Impact Range"] = (
-                            min(new_row["Impact Range"][0], means.min())
-                            if new_row["Impact Range"][0] is not None else
-                            means.min(),
-                            max(new_row["Impact Range"][1], means.max())
-                            if new_row["Impact Range"][1] is not None else
-                            means.max()
+                        new_row["Range"] = (
+                            min(new_row["Range"][0], means.min())
+                            if new_row["Range"][0] is not None else means.min(),
+                            max(new_row["Range"][1], means.max())
+                            if new_row["Range"][1] is not None else means.max()
                         )
 
                 # Convert Impact Range to normal floats
-                new_row["Impact Range"] = (
-                    float(new_row["Impact Range"][0])
-                    if new_row["Impact Range"][0] is not None else "N/A",
-                    float(new_row["Impact Range"][1])
-                    if new_row["Impact Range"][1] is not None else "N/A"
+                new_row["Range"] = (
+                    float(new_row["Range"][0]) if new_row["Range"][0]
+                    is not None else "N/A", float(new_row["Range"][1])
+                    if new_row["Range"][1] is not None else "N/A"
                 )
 
                 table_rows.append(new_row)
 
         df = pd.DataFrame(table_rows).set_index("Name")
+
+        # Convert Range column to percentages
+        def format_range(
+            range_tuple: tp.Tuple[tp.Union[float, str], tp.Union[float, str]]
+        ) -> str:
+            if range_tuple[0] == "N/A" or range_tuple[1] == "N/A":
+                return "N/A"
+            return f"({range_tuple[0]:.2%}, {range_tuple[1]:.2%})"
+
         df.sort_index(inplace=True)
+        df["Range"] = df["Range"].apply(format_range)
 
         return dataframe_to_table(df, table_format, wrap_table=wrap_table)
 
