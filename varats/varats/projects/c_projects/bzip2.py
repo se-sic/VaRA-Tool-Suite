@@ -2,7 +2,6 @@
 import typing as tp
 from enum import Enum
 from pathlib import Path
-from unittest import TestResult
 
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
@@ -204,36 +203,51 @@ class Bzip2(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         build_dir, build_method = self.__getbuilddir()
-        if build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
+        if build_method == Bzip2.Bzip2BuildMethod.MAKE:
+            with local.cwd(build_dir):
+                with local.env(CC=str(cc_compiler)):
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        elif build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
             with local.cwd(build_dir):
                 with local.env(CC=str(cc_compiler)):
                     bb.watch(local["./autogen.sh"])()
                     bb.watch(local["./configure"])()
-
-        elif build_method != Bzip2.Bzip2BuildMethod.MAKE:
+                    bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        else:
             with local.cwd(build_dir):
+
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake)("..")
 
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(cmake)(
+                    "--build", ".", "--config", "Release", "-j",
+                    get_number_of_jobs(bb_cfg())
+                )
+        with local.cwd(bzip2_source):
+            verify_binaries(self)
 
         with local.cwd(bzip2_source):
             verify_binaries(self)
 
     def recompile(self) -> None:
         """Recompile the project."""
-        bzip2_source = Path(self.source_of_primary)
-        bzip2_version = ShortCommitHash(self.version_of_primary)
-        bzip2_repo = RepositoryHandle(bzip2_source)
 
         build_dir, build_method = self.__getbuilddir()
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        if (
+            build_method
+            in [Bzip2.Bzip2BuildMethod.MAKE, Bzip2.Bzip2BuildMethod.AUTOTOOLS]
+        ):
+            with local.cwd(build_dir):
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        else:
+            with local.cwd(build_dir):
+                bb.watch(cmake)(
+                    "--build", ".", "--config", "Release", "-j",
+                    get_number_of_jobs(bb_cfg())
+                )
 
     def prepare_test_environment(self) -> None:
         """Prepare the testsuite."""
-        bzip2_source = Path(self.source_of_primary)
-        bzip2_version = ShortCommitHash(self.version_of_primary)
-
         cpp_compiler = bb.compiler.cxx(self)
         cc_compiler = bb.compiler.cc(self)
 
@@ -244,14 +258,12 @@ class Bzip2(VProject):
                 "Test suites are only supported for revisions using CMake."
             )
 
-        with local.cwd(bzip2_source / "build"):
+        with local.cwd(build_dir):
             with local.env(CXX=str(cpp_compiler), CC=str(cc_compiler)):
                 bb.watch(cmake)("test", "-G", "Unix Makefiles", "..")
 
     def build_tests(self) -> None:
         """Build the tests."""
-        bzip2_version_source = local.path(self.source_of_primary)
-
         build_dir, build_method = self.__getbuilddir()
 
         if build_method != Bzip2.Bzip2BuildMethod.CMAKE:
@@ -259,7 +271,7 @@ class Bzip2(VProject):
                 "Test suites are only supported for revisions using CMake."
             )
 
-        with local.cwd(bzip2_version_source / "build"):
+        with local.cwd(build_dir):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
@@ -272,7 +284,7 @@ class Bzip2(VProject):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+    ) -> tp.Dict[str, TestResult]:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
         return ctest_run_testsuite(

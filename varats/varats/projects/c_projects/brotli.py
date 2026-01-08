@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, mkdir, make, ctest
+from benchbuild.utils.cmd import cmake, mkdir, make
 from benchbuild.utils.revision_ranges import (
     RevisionRange,
     block_revisions,

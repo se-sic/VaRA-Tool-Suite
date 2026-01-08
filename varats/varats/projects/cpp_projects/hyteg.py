@@ -8,7 +8,6 @@ import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import ninja, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
-from github.Repository import Repository
 from plumbum import local
 
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
@@ -25,7 +24,6 @@ from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
 from varats.utils.git_util import ShortCommitHash, RepositoryHandle
-from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     TestResult,
     ctest_run_testsuite,

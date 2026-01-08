@@ -106,7 +106,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__tests_to_exclude = tests_to_exclude
 
     @property
-    def output_path(self) -> Path:
+    def output_path(self) -> tp.Optional[Path]:
         return self.__output_path
 
     def set_output_path(self, output_path: Path) -> None:
@@ -121,9 +121,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
             TestResult.DISABLED: True,
             TestResult.UNKNOWN: False,
         }
-        return all(
-            result_filter.get(status) == True for status in result.values()
-        )
+        return all(result_filter.get(status) for status in result.values())
 
     def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):

@@ -24,12 +24,7 @@ from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.utils.git_commands import update_all_submodules
-from varats.utils.git_util import (
-    FullCommitHash,
-    ShortCommitHash,
-    RepositoryHandle,
-)
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import TestResult, parse_junit_xml
 
@@ -105,7 +100,6 @@ class FastDownward(VProject, ReleaseProviderHook):
             Fast Downward requires tests to be built to also collect the test
             names. Therefore, this method just calls the prepare method.
         """
-        pass
 
     def run_testsuite(
         self,
@@ -145,9 +139,8 @@ class FastDownward(VProject, ReleaseProviderHook):
         test_runner = test_runner["--junitxml", test_report_path]
 
         with local.cwd(version_source):
-            ret_code: int
             test_args = ["driver/tests.py", *tests_to_run]
-            ret_code, _, _ = bb.watch(test_runner[test_args])()
+            _, _, _ = bb.watch(test_runner[test_args])()
 
         results = parse_junit_xml(test_report_path)
 
@@ -191,7 +184,7 @@ class FastDownward(VProject, ReleaseProviderHook):
 
         with local.cwd(version_source / "builds/release"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("../../src", f"-DCMAKE_BUILD_TYPE=Release")
+                bb.watch(cmake)("../../src", "-DCMAKE_BUILD_TYPE=Release")
 
             bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 

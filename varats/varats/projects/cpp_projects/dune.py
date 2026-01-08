@@ -6,7 +6,6 @@ from pathlib import Path
 import benchbuild as bb
 from benchbuild.command import SourceRoot, WorkloadSet
 from benchbuild.utils import cmd
-from benchbuild.utils.cmd import mkdir
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
@@ -326,8 +325,7 @@ class DunePerfRegression(VProject):
 
         aggregated_results = self.builddir / "aggregated_test_results.zip"
         combined_results: tp.Dict[str, TestResult] = {}
-        # results_folder = self.builddir / "results"
-        # mkdir("-p", results_folder)
+
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for module in DunePerfRegression.__DUNE_MODULES:
                 if module == "dune-pdelab":

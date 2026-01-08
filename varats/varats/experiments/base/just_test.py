@@ -2,10 +2,8 @@
 import typing as tp
 from pathlib import Path
 
-from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult
 
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
