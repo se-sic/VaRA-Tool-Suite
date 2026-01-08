@@ -25,7 +25,7 @@ class VProject(Project):  # type: ignore
     """VaRA-TS project abstraction, extending the interface which is required
     from benchbuild."""
 
-    def __init_subclass__(cls, *args, **kwargs) -> None:
+    def __init_subclass__(cls, *args, **kwargs) -> None:  # type: ignore
         """Initialize subclass by wrapping testsuite related methods to be
         run."""
         super().__init_subclass__(*args, **kwargs)
