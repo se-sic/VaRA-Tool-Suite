@@ -10,11 +10,13 @@ from pathlib import Path
 import benchbuild as bb
 import pygit2
 from _operator import attrgetter
+from benchbuild.command import Command
 from benchbuild.source import Git
 from benchbuild.utils.revision_ranges import AbstractRevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.commands.base import BoundCommand
+from typing_extensions import Protocol, runtime_checkable
 
 from varats.project.varats_project import VProject
 from varats.utils.git_util import (
@@ -554,3 +556,36 @@ def default_cmake_compile(project: VProject) -> None:
 
     with local.cwd(version_source):
         verify_binaries(project)
+
+
+@runtime_checkable
+class SupportsBenchbase(Protocol):
+
+    def get_database_name(self) -> str:
+        """Get the name of the database associated with this project."""
+        ...
+
+    def get_benchbase_profile_name(self) -> str:
+        """Get the BenchBase profile name for this project."""
+        ...
+
+    def get_database_connection_string(self) -> str:
+        """Get the connection string for the database associated with this
+        project."""
+        ...
+
+    def database_binary(self) -> ProjectBinaryWrapper:
+        """Get the binary used to interact with the database associated with
+        this project."""
+        ...
+
+    def start_database_server(self) -> None:
+        """Start the database server."""
+        ...
+
+    def stop_database_server(self) -> None:
+        """Stop the database server."""
+        ...
+
+    def render_workload_config(self, workload: str, configuration):
+        ...

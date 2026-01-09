@@ -22,7 +22,6 @@ from benchbuild.utils.actions import (
     Clean,
     Compile,
 )
-from plotly.express import line_map
 from plumbum import local, ProcessExecutionError
 
 from varats.data.reports.llvm_cov_report import (

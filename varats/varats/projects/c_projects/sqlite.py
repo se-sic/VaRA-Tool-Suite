@@ -12,6 +12,7 @@ from varats.project.project_util import (
     get_local_project_repo,
     BinaryType,
     verify_binaries,
+    ProjectBinaryWrapper,
 )
 from varats.project.sources import FeatureSource
 from varats.project.varats_project import VProject
@@ -71,3 +72,40 @@ class SQLite(VProject):
 
     def run_tests(self) -> None:
         pass
+
+    # SupportsBenchbase protocol:
+    def get_database_name(self) -> str:
+        """Get the name of the database associated with this project."""
+        return "sqlite"
+
+    def get_benchbase_profile_name(self) -> str:
+        """Get the BenchBase profile name for this project."""
+        return self.get_database_name()
+
+    def get_database_connection_string(self) -> str:
+        """Get the connection string for the database associated with this
+        project."""
+        return "jdbc:sqlite:benchbase.db"
+
+    def database_binary(self) -> ProjectBinaryWrapper:
+        """Get the binary used to interact with the database associated with
+        this project."""
+        # We do not need a binary to benchmark sqlite with BenchBase, so we create a dummy one.
+        dummy_binary = ProjectBinaryWrapper(
+            binary_name="sqlite",
+            binary_type=BinaryType.EXECUTABLE,
+            path_to_binary=Path("/bin/true")
+        )
+
+    def start_database_server(self) -> None:
+        """Start the database server."""
+        # Nothing to do
+        return
+
+    def stop_database_server(self) -> None:
+        """Stop the database server."""
+        # Nothing to do
+        return
+
+    def render_workload_config(self, workload: str, configuration):
+        ...
