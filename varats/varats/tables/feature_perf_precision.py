@@ -388,9 +388,10 @@ class FeaturePerfOverheadComparisionTable(Table, table_name="fperf_overhead"):
 
         # Rename columns
         # pylint: disable=anomalous-backslash-in-string
-        overhead_time_c_name = "$\Delta$ Time $(\%)$"
-        overhead_memory_c_name = "$\Delta$ Mem $(\%)$"
-        overhead_memory_val_c_name = "$\Delta$ Mem $(Kbyte)$"
+        # TODO[Reeba]: use raw strings
+        overhead_time_c_name = r"$\Delta$ Time $(\%)$"
+        overhead_memory_c_name = r"$\Delta$ Mem $(\%)$"
+        overhead_memory_val_c_name = r"$\Delta$ Mem $(Kbyte)$"
         # pylint: enable=anomalous-backslash-in-string
         pivot_df = pivot_df.rename(
             columns={
