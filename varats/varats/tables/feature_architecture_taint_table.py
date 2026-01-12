@@ -107,7 +107,6 @@ def fat_report_to_DSM(
                 "Region Features": list(attributes.region_features)
             }
         )
-        dsm.add_dependency(src, dst, "Cochange", weight=attributes.weight)
     return dsm
 
 
@@ -150,7 +149,6 @@ class FeatureArchitectureDsm(DesignStructureMatrix, table_name="Fat_DSM"):
         super().__init__(table_config, **table_kwargs)
         self.report = FeatureArchitectureTaintReport(report_path.full_path())
         self.revision = report_path.report_filename.commit_hash
-        self.data = fat_report_to_table(self.report)
         self.dsm = fat_report_to_DSM(self.report)
 
 

@@ -63,7 +63,7 @@ class ArchitectureTaintResultFunctionEntry:
 
     def __str__(self) -> str:
         str_representation = f"{self.name} ({self.demangled_name})\n"
-        for region, amount in self.__inst.items():
+        for region, amount in self.interactions.items():
             str_representation += f"  - {region}: {amount}\n"
         return str_representation
 

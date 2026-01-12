@@ -75,8 +75,8 @@ class FeatureArchitectureTaintAnalysis(actions.ProjectStep):  # type: ignore
             )
 
             opt_params = [
-                "--enable-new-pm=0", "-vara-AD", "-vara-PTFD", "-vara-PTFDD",
-                "-vara-FBFD", "-vara-FATR", "-vara-use-phasar",
+                "--enable-new-pm=0", "-vara-AD", "-vara-PTFDD", "-vara-FBFD",
+                "-vara-FATR", "-vara-use-phasar",
                 f"-vara-report-outfile={result_file}",
                 get_cached_bc_file_path(
                     self.project, binary, [
@@ -141,8 +141,7 @@ class FeatureArchitectureTaintReportExperiment(
         am_path = am_provider.get_architecture_model_path()
         project.cflags += [
             "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}",
-            "-fvara-arch", f"-fvara-am-path={am_path}", "-Xclang",
-            "-disable-llvm-optzns", "-O1", "-g0"
+            "-fvara-arch", "-Xclang", "-disable-llvm-optzns", "-O1", "-g0"
         ]
         project.compile = get_default_compile_error_wrapped(
             self.get_handle(), project, self.REPORT_SPEC.main_report

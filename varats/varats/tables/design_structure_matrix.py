@@ -6,18 +6,17 @@ import click
 
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.architecture.architecture_model_provider import (
+    ArchitectureModel,
     ArchitectureModelProvider,
 )
 from varats.table.table import Table
 from varats.table.tables import TableConfig, TableFormat, TableGenerator
 from varats.ts_utils.cli_util import make_cli_option
-"""
-Internal representation of a Design Structure Matrix
-Used as an interface between reports and different DSM tools
-"""
 
 
 class InternalDSM:
+    """Internal representation of a Design Structure Matrix Used as an interface
+    between reports and different DSM tools."""
     name: str
     project: str
     dependencies: tp.List["InternalDSM.Dependency"]
@@ -392,6 +391,43 @@ class DV8DSM:
         return json.dumps(out_dict)
 
 
+def architecture_model_to_DV8_clustering(
+    project: str, architecture_model: ArchitectureModel
+) -> str:
+    out_dict: dict[str, tp.Any] = {
+        "@schemaVersion": "1.0",
+        "name": f"{project}_ArchitectureModel_Clustering",
+    }
+    groups: tp.Dict[str, dict[str, tp.Any]] = {}
+    for module, locations in architecture_model.modules.items():
+        group = {
+            "@type":
+                "group",
+            "name":
+                module,
+            "nested": [{
+                "@type": "item",
+                "name": str.join("/",
+                                 loc.file.split('/')[1:])
+            } for loc in locations]
+        }
+        groups[module] = group
+    for package, modules in architecture_model.packages.items():
+        group = {
+            "@type": "group",
+            "name": package,
+            "nested": [
+                groups[module] for module in modules if module in groups
+            ]
+        }
+        for module in modules:
+            if module in groups:
+                del groups[module]
+        groups[package] = group
+    out_dict["structure"] = [group for _, group in groups.items()]
+    return json.dumps(out_dict, indent=4)
+
+
 class DesignStructureMatrix(Table, table_name=None):
 
     dsm: InternalDSM
@@ -417,6 +453,29 @@ class ArchitectureModelDSMTable(DesignStructureMatrix, table_name="DV8_DSM"):
         json_string = dv8_matrix.read()
         self.dsm = InternalDSM.from_dv8_json_string(json_string, project_name)
         self.dsm.apply_architecture_model()
+
+
+class ArchitectureModelDV8Clustering(Table, table_name="DV8_Clust"):
+
+    def __init__(
+        self, table_config: tp.Any, project_name: str, **table_kwargs: tp.Any
+    ) -> None:
+        super().__init__(table_config, **table_kwargs)
+
+        self.project_name = project_name
+
+    def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
+        project = get_project_cls_by_name(self.project_name)
+        provider = ArchitectureModelProvider.create_provider_for_project(
+            project
+        )
+        if provider is None:
+            raise ValueError(
+                f"No architecture model found for project {self.project_name}"
+            )
+        return architecture_model_to_DV8_clustering(
+            self.project_name, provider.get_architecture_model()
+        )
 
 
 class ArchitectureModelDSMTableGenerator(
@@ -449,5 +508,30 @@ class ArchitectureModelDSMTableGenerator(
             ArchitectureModelDSMTable(
                 self.table_config, self.table_kwargs["dv8_matrix"],
                 self.table_kwargs["project_name"]
+            )
+        ]
+
+
+class ArchitectureModelDV8ClusterGenerator(
+    TableGenerator,
+    generator_name="DV8_Clx",
+    options=[
+        make_cli_option(
+            "-p",
+            "--project-name",
+            type=str,
+            required=True,
+            metavar="project_name",
+            help="The project name the dv8 matrix is for."
+        )
+    ]
+):
+    """Table generator for generating a Design Structure Matrix from a dv8
+    matrix file."""
+
+    def generate(self) -> tp.List[Table]:
+        return [
+            ArchitectureModelDV8Clustering(
+                self.table_config, self.table_kwargs["project_name"]
             )
         ]
