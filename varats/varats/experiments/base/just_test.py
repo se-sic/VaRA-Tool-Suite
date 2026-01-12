@@ -5,6 +5,7 @@ from pathlib import Path
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
+from varats.data.reports.testsuite_report import TestsuiteReport
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -54,7 +55,7 @@ class JustTest(VersionExperiment, shorthand="JT"):
         )
 
         result_file = create_new_success_result_filepath(
-            self.get_handle(), PlainTextReport, project, fake_binary,
+            self.get_handle(), TestsuiteReport, project, fake_binary,
             get_current_config_id(project)
         )
 

@@ -10,6 +10,7 @@ from pathlib import Path
 from benchbuild.utils.actions import ProjectStep, StepResult
 from plumbum import ProcessExecutionError
 
+from varats.data.reports.testsuite_report import TestsuiteReport
 from varats.project.varats_project import VProject, SupportsTestSuites
 from varats.utils.testsuite_utils import TestResult
 
@@ -82,7 +83,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
     def __init__(
         self,
         project: VProject,
-        output_path: tp.Optional[Path] = None,
+        output_path: Path,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None,
         result_filter: tp.Optional[tp.Callable[[tp.Dict[str, TestResult]],
@@ -138,6 +139,12 @@ class RunTestSuite(ProjectStep):  # type: ignore
                 self.status = StepResult.OK
             else:
                 self.status = StepResult.ERROR
+
+            # Create report for test results saved as json
+            TestsuiteReport.create_report_from_results(
+                results, self.__output_path
+            )
+
         except ProcessExecutionError:
             self.status = StepResult.ERROR
 
