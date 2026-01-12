@@ -1,9 +1,10 @@
 """Project file for libtiff."""
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, mkdir, cmake
 from benchbuild.utils.revision_ranges import (
     block_revisions,
     GoodBadSubgraph,
@@ -23,7 +24,7 @@ from varats.project.project_util import (
     RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_run_testsuite,
@@ -96,6 +97,9 @@ class Libtiff(VProject):
             ),
             SingleRevision(
                 "d4bef27ee8361ee2d8aae6c30c7074d2547ee2f0", "Bug in Libtiff"
+            ),
+            SingleRevision(
+                "5b90af247ea3801ce93ec0922b8b81396caa885d", "Cmake introduced"
             )
         ])(
             PaperConfigSpecificGit(
@@ -114,6 +118,10 @@ class Libtiff(VProject):
         'autotools-dev', 'libtool', 'pkg-config'
     )
 
+    class LibtiffBuildMethod(Enum):
+        CONFIGURE = 0
+        CMAKE = 1
+
     @staticmethod
     def binaries_for_revision(
         revision: ShortCommitHash
@@ -125,6 +133,28 @@ class Libtiff(VProject):
         )
 
         return binary_map[revision]
+
+    def __get_build_dir(self) -> tp.Tuple[Path, LibtiffBuildMethod]:
+        """Get the build directory and the build method."""
+        libtiff_version_source = local.path(self.source_of(self.primary_source))
+        libtiff_repo = get_local_project_repo(self.NAME)
+        libtiff_version = ShortCommitHash(self.version_of_primary)
+        configure_revisions = get_all_revisions_between(
+            libtiff_repo, "0ef31e1f62aa7a8b1c488a59c4930775ee0046e4",
+            "5b90af247ea3801ce93ec0922b8b81396caa885d", ShortCommitHash
+        )
+        run_dir: Path
+        build_method: Libtiff.LibtiffBuildMethod
+        if libtiff_version in configure_revisions:
+            build_method = Libtiff.LibtiffBuildMethod.CONFIGURE
+            run_dir = libtiff_version_source
+        else:
+            build_method = Libtiff.LibtiffBuildMethod.CMAKE
+            run_dir = libtiff_version_source / "out"
+
+        mkdir("-p", run_dir)
+
+        return run_dir, build_method
 
     def run_tests(self) -> None:
         pass
@@ -148,24 +178,37 @@ class Libtiff(VProject):
         return [("Libtiff", "Libtiff")]
 
     def prepare_test_environment(self) -> None:
-        libtiff_version_source = local.path(self.source_of(self.primary_source))
-
         c_compiler = bb.compiler.cc(self)
-        with local.cwd(libtiff_version_source):
-            with local.env(CC=str(c_compiler)):
-                bb.watch(local["./autogen.sh"])()
-                configure = bb.watch(local["./configure"])
-                configure()
+        cxx_compiler = bb.compiler.cxx(self)
+        build_dir, method = self.__get_build_dir()
+        if method != Libtiff.LibtiffBuildMethod.CONFIGURE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+        else:
+            with local.cwd(build_dir):
+                with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
+                    bb.watch(cmake["..", "-G", "Unix Makefiles"])()
             verify_binaries(self)
 
     def build_tests(self) -> None:
-        libtiff_version_source = local.path(self.source_of(self.primary_source))
-
-        with local.cwd(libtiff_version_source):
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+        build_dir, method = self.__get_build_dir()
+        if method == Libtiff.LibtiffBuildMethod.CONFIGURE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+        else:
+            with local.cwd(build_dir):
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
-        pass
+        build_dir, method = self.__get_build_dir()
+        if method != Libtiff.LibtiffBuildMethod.CMAKE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+
+        return ctest_get_test_names(build_dir)
 
     def run_testsuite(
         self,
@@ -173,4 +216,13 @@ class Libtiff(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        pass
+        build_dir, method = self.__get_build_dir()
+
+        if method != Libtiff.LibtiffBuildMethod.CMAKE:
+            raise NotImplementedError(
+                "Test suites are only supported for revisions using CMake."
+            )
+
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )
