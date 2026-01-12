@@ -1,3 +1,5 @@
+"""Report for testsuite results."""
+
 import json
 import typing as tp
 from pathlib import Path
@@ -36,12 +38,9 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
             A dictionary containing the test results.
         """
         with open(path, 'r') as f:
-            data = json.load(f)
+            data: tp.Dict[str, str] = json.load(f)
 
-        # Convert string keys back to TestResult enum
-        for test_name, result_str in data.items():
-            data[test_name] = TestResult[result_str]
-        return data
+        return {test: TestResult[result] for test, result in data.items()}
 
     def __init__(self, path: Path):
         super().__init__(path)
