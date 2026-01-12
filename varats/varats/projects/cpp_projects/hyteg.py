@@ -164,8 +164,6 @@ class HyTeg(VProject):
         update_all_submodules(
             RepositoryHandle(hyteg_source), recursive=True, init=True
         )
-        # with local.cwd(hyteg_source):
-        #     local["git"]["submodule"]("update", "--init", "--recursive")
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
