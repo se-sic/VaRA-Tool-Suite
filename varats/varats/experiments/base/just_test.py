@@ -30,7 +30,7 @@ class JustTest(VersionExperiment, shorthand="JT"):
 
     NAME = "JustTest"
 
-    REPORT_SPEC = ReportSpecification(PlainTextReport)
+    REPORT_SPEC = ReportSpecification(TestsuiteReport)
 
     def actions_for_project(
         self, project: VProject
