@@ -181,7 +181,7 @@ class Libtiff(VProject):
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
         build_dir, method = self.__get_build_dir()
-        if method != Libtiff.LibtiffBuildMethod.CONFIGURE:
+        if method != Libtiff.LibtiffBuildMethod.CMAKE:
             raise NotImplementedError(
                 "Test suites are only supported for revisions using CMake."
             )
@@ -193,7 +193,7 @@ class Libtiff(VProject):
 
     def build_tests(self) -> None:
         build_dir, method = self.__get_build_dir()
-        if method == Libtiff.LibtiffBuildMethod.CONFIGURE:
+        if method != Libtiff.LibtiffBuildMethod.CMAKE:
             raise NotImplementedError(
                 "Test suites are only supported for revisions using CMake."
             )
