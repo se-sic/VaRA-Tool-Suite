@@ -166,7 +166,7 @@ class Z3(VProject, ReleaseProviderHook):
                 with local.cwd(z3_source / "build"):
                     local["./test-z3"](test, f" > {test_report}")
 
-                f = open(test_report, "r")
+                f = open(test_report)
                 res = f.read()
                 f.close()
                 if "PASS" in res:
