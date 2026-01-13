@@ -149,7 +149,10 @@ class Z3(VProject, ReleaseProviderHook):
         if not tests_to_run:
             tests_to_run = self.get_test_names()
         results: tp.Dict[str, TestResult] = {}
-        aggregated_results = test_report_path / "aggregated_test_results.zip"
+        if test_report_path:
+            aggregated_results = test_report_path / "aggregated_test_results.zip"
+        else:
+            aggregated_results = z3_source / "aggregated_test_results.zip"
 
         runtest: List[str] = []
         if not tests_to_exclude is None:
@@ -160,10 +163,8 @@ class Z3(VProject, ReleaseProviderHook):
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for test in tests_to_run:
                 test_report = Path(zip_folder) / f"{test}-tests.txt"
-                test_redirect = f"> {test_report}"
-
                 with local.cwd(z3_source / "build"):
-                    local["./test-z3"](test, test_redirect)
+                    local["./test-z3"](test, f" > {test_report}")
 
                 f = open(test_report, "r")
                 res = f.read()
