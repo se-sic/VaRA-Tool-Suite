@@ -2,6 +2,7 @@
 import re
 import typing as tp
 from pathlib import Path
+from typing import List
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake, make
@@ -150,11 +151,13 @@ class Z3(VProject, ReleaseProviderHook):
         results: tp.Dict[str, TestResult] = {}
         aggregated_results = test_report_path / "aggregated_test_results.zip"
 
+        runtest: List[str] = []
+        for test in tests_to_run:
+            if not test in tests_to_exclude:
+                runtest.append(test)
+
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for test in tests_to_run:
-                if test in tests_to_exclude:
-                    continue
-
                 test_report = Path(zip_folder) / f"{test}-tests.txt"
                 test_redirect = f"> {test_report}"
 
