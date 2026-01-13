@@ -19,7 +19,7 @@ from varats.project.project_util import (
     RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     ctest_run_testsuite,
@@ -91,10 +91,12 @@ class Libxml2(VProject):
 
     def prepare_test_environment(self) -> None:
         libxml2_version_source = Path(self.source_of_primary)
-        libxml2_versions_wo_cmake = GoodBadSubgraph([
-            "01791d57d650e546a915522e57c079157a5bb395"
-        ], ["2a2c38f3a35f415e7f407e171c07bb48bda0711e"], "No CmakeList")
-        libxml2_version = self.version_of_primary
+        libxml2_repo = get_local_project_repo(self.NAME)
+        libxml2_versions_wo_cmake = get_all_revisions_between(
+            libxml2_repo, "01791d57d650e546a915522e57c079157a5bb395",
+            "2a2c38f3a35f415e7f407e171c07bb48bda0711e", ShortCommitHash
+        )
+        libxml2_version = ShortCommitHash(self.version_of_primary)
         c_compiler = bb.compiler.cc(self)
         with local.cwd(libxml2_version_source):
             with local.env(CC=str(c_compiler)):
