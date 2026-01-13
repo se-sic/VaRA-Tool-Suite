@@ -114,16 +114,32 @@ class Redis(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        # redis_source = local.path(self.source_of_primary)
-        # clang = bb.compiler.cc(self)
-        #
-        # args: tp.List[str] = []
-        # if tests_to_run:
-        #     for test in tests_to_run:
-        #         args.extend(["--only", test])
-        #
-        # with local.cwd(redis_source):
-        #     with local.env(CC=str(clang)):
-        #         runtest = local["./runtest"]
-        #         ret_code, out, err = bb.watch(runtest)(*args)
-        pass
+        redis_source = local.path(self.source_of_primary)
+
+        args: tp.List[str] = []
+        if tests_to_run:
+            for test in tests_to_run:
+                args.extend(["--single", test])
+
+        with local.cwd(redis_source):
+            runtest = local["./runtest"]
+            ret_code, out, err = bb.watch(runtest)(*args)
+
+        res = out.split("The End")[1]
+
+        result = self.parse_res(res)
+
+        return result
+
+    def parse_res(self, tests: tp.Optional[tp.Iterable[str]]):
+        results: tp.Dict[str, TestResult] = {}
+        for line in tests.splitlines():
+            if tests and not any(test in line for test in tests):
+                continue
+            if " - " in line:
+                test_name = line.split()[1]
+                results[test_name] = TestResult.PASSED
+            elif "FAIL" in line:
+                test_name = line.split()[0]
+                results[test_name] = TestResult.FAILED
+        return results
