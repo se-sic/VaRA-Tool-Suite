@@ -168,6 +168,7 @@ class Z3(VProject, ReleaseProviderHook):
                     ret_code, res, _ = bb.watch(
                         local["./test-z3"][test, f" | tee {test_report}"]
                     )()
+                print(res)
 
                 if "PASS" in res:
                     results[test] = TestResult.PASSED
