@@ -9,6 +9,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
+from varats.experiment.experiment_util import ZippedReportFolder
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -137,7 +138,6 @@ class Z3(VProject, ReleaseProviderHook):
 
         return test_names
 
-    # maybe ask lukas, how i want to wrap this up
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
@@ -145,6 +145,28 @@ class Z3(VProject, ReleaseProviderHook):
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
         z3_source = Path(self.source_of(self.primary_source))
+        if not tests_to_run:
+            return None
+        results: tp.Dict[str, TestResult] = {}
+        aggregated_results = test_report_path / "aggregated_test_results.zip"
 
-        with local.cwd(z3_source / "build"):
-            bb.watch(make)("test-z3", "-j", get_number_of_jobs(bb_cfg()))
+        with ZippedReportFolder(aggregated_results) as zip_folder:
+            for test in tests_to_run:
+                if test in tests_to_exclude:
+                    continue
+
+                test_report = Path(zip_folder) / f"{test}-tests.txt"
+                test_redirect = f"> {test_report}"
+
+                with local.cwd(z3_source / "build"):
+                    local["./test-z3", test, test_redirect]()
+
+                f = open(test_report, "r")
+                res = f.read()
+                f.close()
+                if "PASS" in res:
+                    results[test] = TestResult.PASSED
+                else:
+                    results[test] = TestResult.FAILED
+
+        return results
