@@ -161,6 +161,7 @@ class Z3(VProject, ReleaseProviderHook):
                 if not test in tests_to_exclude:
                     runtest.append(test)
 
+        print(f"Tests to run: {runtest}")
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for test in runtest:
                 test_report = Path(zip_folder) / f"{test}-tests.txt"
