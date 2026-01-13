@@ -189,7 +189,6 @@ class Libtiff(VProject):
             with local.cwd(build_dir):
                 with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake["..", "-G", "Unix Makefiles"])()
-            verify_binaries(self)
 
     def build_tests(self) -> None:
         build_dir, method = self.__get_build_dir()
@@ -200,6 +199,7 @@ class Libtiff(VProject):
         else:
             with local.cwd(build_dir):
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                verify_binaries(self)
 
     def get_test_names(self) -> tp.Iterable[str]:
         build_dir, method = self.__get_build_dir()
