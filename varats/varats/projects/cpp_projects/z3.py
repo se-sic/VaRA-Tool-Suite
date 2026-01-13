@@ -156,7 +156,7 @@ class Z3(VProject, ReleaseProviderHook):
             aggregated_results = z3_source / "aggregated_test_results.zip"
 
         runtest: List[str] = []
-        if not tests_to_exclude is None:
+        if tests_to_exclude:
             for test in tests_to_run:
                 if not test in tests_to_exclude:
                     runtest.append(test)
