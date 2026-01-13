@@ -163,16 +163,13 @@ class Z3(VProject, ReleaseProviderHook):
         else:
             runtest = list(tests_to_run)
 
-        print(f"Tests to run: {runtest}")
         with ZippedReportFolder(aggregated_results) as zip_folder:
             for test in runtest:
                 test_report = Path(zip_folder) / f"{test}-tests.txt"
-                print(f"Running test: {test}")
                 with local.cwd(z3_source / "build"):
                     ret_code, res, _ = bb.watch(
                         local["./test-z3"][test, f" | tee {test_report}"]
                     )()
-                print(res)
 
                 if "PASS" in res:
                     results[test] = TestResult.PASSED
