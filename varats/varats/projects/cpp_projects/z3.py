@@ -147,7 +147,7 @@ class Z3(VProject, ReleaseProviderHook):
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
         z3_source = Path(self.source_of(self.primary_source))
         if not tests_to_run:
-            all_tests = self.get_test_names()
+            tests_to_run = self.get_test_names()
         results: tp.Dict[str, TestResult] = {}
         if test_report_path:
             aggregated_results = test_report_path / "aggregated_test_results.zip"
