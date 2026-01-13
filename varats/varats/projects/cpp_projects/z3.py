@@ -163,7 +163,7 @@ class Z3(VProject, ReleaseProviderHook):
                 test_redirect = f"> {test_report}"
 
                 with local.cwd(z3_source / "build"):
-                    local["./test-z3", test, test_redirect]()
+                    local["./test-z3"](test, test_redirect)
 
                 f = open(test_report, "r")
                 res = f.read()
