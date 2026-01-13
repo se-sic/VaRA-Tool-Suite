@@ -164,11 +164,10 @@ class Z3(VProject, ReleaseProviderHook):
             for test in tests_to_run:
                 test_report = Path(zip_folder) / f"{test}-tests.txt"
                 with local.cwd(z3_source / "build"):
-                    local["./test-z3"](test, f" > {test_report}")
+                    ret_code, res, _ = bb.watch(
+                        local["./test-z3"][test, f" > {test_report}"]
+                    )()
 
-                f = open(test_report)
-                res = f.read()
-                f.close()
                 if "PASS" in res:
                     results[test] = TestResult.PASSED
                 else:
