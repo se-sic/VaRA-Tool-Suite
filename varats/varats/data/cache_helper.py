@@ -173,6 +173,10 @@ def build_cached_report_table(
             create_cache_entry_data, data_entry
         )
         updated_entry.set_index(CACHE_ID_COL, inplace=True)
+        # TODO[temporary]: updated_entry.cache_timestamp has str values, which is in line with the __create_cache_entry function,
+        #  timestamps are expected to be strings but when new_df is sourced from optional_cached_df, the cache_timestamp column has int values.
+        # this is because of empty dataframe does not specify the timestamp column and its type. 
+        # TODO[temporary]: this is a future warning for incompatible dtypes. Need to figure out that this is just a test case issue, and if so, fix the test case.
         new_df.update(updated_entry)
     new_df.reset_index(inplace=True)
 
