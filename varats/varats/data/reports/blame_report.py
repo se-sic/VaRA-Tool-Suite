@@ -3,7 +3,7 @@ import logging
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 
@@ -871,13 +871,13 @@ def generate_time_delta_distribution_tuples(
                 continue
 
             base_commit = commit_lookup(interaction.base_taint.commit)
-            base_c_time = datetime.fromtimestamp(base_commit.commit_time, datetime.UTC)
+            base_c_time = datetime.fromtimestamp(base_commit.commit_time, timezone.utc)
 
             def translate_to_time_deltas2(
                 commit: pygit2.Commit,
                 base_time: datetime = base_c_time
             ) -> int:
-                other_c_time = datetime.fromtimestamp(commit.commit_time, datetime.UTC)
+                other_c_time = datetime.fromtimestamp(commit.commit_time, timezone.utc)
                 return abs((base_time - other_c_time).days)
 
             author_list = map_commits(
