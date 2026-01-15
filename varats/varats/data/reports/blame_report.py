@@ -871,13 +871,17 @@ def generate_time_delta_distribution_tuples(
                 continue
 
             base_commit = commit_lookup(interaction.base_taint.commit)
-            base_c_time = datetime.fromtimestamp(base_commit.commit_time, datetime.UTC)
+            base_c_time = datetime.fromtimestamp(
+                base_commit.commit_time, datetime.UTC
+            )
 
             def translate_to_time_deltas2(
                 commit: pygit2.Commit,
                 base_time: datetime = base_c_time
             ) -> int:
-                other_c_time = datetime.fromtimestamp(commit.commit_time, datetime.UTC)
+                other_c_time = datetime.fromtimestamp(
+                    commit.commit_time, datetime.UTC
+                )
                 return abs((base_time - other_c_time).days)
 
             author_list = map_commits(

@@ -119,8 +119,10 @@ def _prepare_cig_plotly(
         if not commit:
             return False
         # make filter configurable
-        return datetime.fromtimestamp(commit.commit_time, datetime.UTC
-                                      ) >= datetime(2015, 1, 1, tzinfo=datetime.UTC)
+        return datetime.fromtimestamp(commit.commit_time,
+                                      datetime.UTC) >= datetime(
+                                          2015, 1, 1, tzinfo=datetime.UTC
+                                      )
 
     nodes: tp.List[tp.Tuple[NodeTy, NodeInfoTy]] = []
     node_meta: tp.Dict[NodeTy, CommitRepoPair] = {}
@@ -324,7 +326,9 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
             return bool(commit_lookup(node))
 
         def commit_time(node: CommitRepoPair) -> datetime:
-            return datetime.fromtimestamp(commit_lookup(node).commit_time, tz=datetime.UTC)
+            return datetime.fromtimestamp(
+                commit_lookup(node).commit_time, tz=datetime.UTC
+            )
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in cig.nodes:
