@@ -119,6 +119,7 @@ def _prepare_cig_plotly(
         if not commit:
             return False
         # make filter configurable
+        
         #TODO: Not covered by tests, should be added
 
         return datetime.fromtimestamp(commit.commit_time, timezone.utc
