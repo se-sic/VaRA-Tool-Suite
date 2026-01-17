@@ -227,26 +227,28 @@ class TestTEFReportParser(unittest.TestCase):
                 # Text mode: return StringIO with string
                 text_data = data if isinstance(data, str) else data.decode()
                 file_obj = io.StringIO(text_data)
-                
+
                 # Track writes to update stored content
                 original_write = file_obj.write
                 written_lines = []
-                
+
                 def write_wrapper(content):
                     written_lines.append(content)
                     return original_write(content)
-                
+
                 file_obj.write = write_wrapper
                 file_obj.written_lines = written_lines
-                
+
                 original_close = file_obj.close
+
                 def close_wrapper():
                     if written_lines:
                         combined = ''.join(written_lines)
                         file_data['content'] = combined  # Keep as string
                     return original_close()
+
                 file_obj.close = close_wrapper
-                
+
                 return file_obj
 
         with mock.patch('builtins.open', side_effect=mock_open_side_effect):
