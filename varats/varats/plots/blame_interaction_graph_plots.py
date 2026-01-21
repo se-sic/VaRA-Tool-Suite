@@ -120,8 +120,6 @@ def _prepare_cig_plotly(
             return False
         # make filter configurable
 
-        #TODO[temporary]: Not covered by tests, should be added
-
         return datetime.fromtimestamp(commit.commit_time,
                                       timezone.utc) >= datetime(
                                           2015, 1, 1, tzinfo=timezone.utc
@@ -329,8 +327,6 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
             return bool(commit_lookup(node))
 
         def commit_time(node: CommitRepoPair) -> datetime:
-            #TODO[temporary]: Not covered by tests, should be added
-
             return datetime.fromtimestamp(
                 commit_lookup(node).commit_time, tz=timezone.utc
             )
