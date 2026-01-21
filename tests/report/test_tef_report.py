@@ -215,6 +215,7 @@ class TestTEFReportParser(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Load and prepare TEF report."""
+
         def mock_open_side_effect(path, mode='r', *args, **kwargs):
             data = TRACE_EVENT_FORMAT_OUTPUT
             if 'b' in mode:
