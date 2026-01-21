@@ -102,8 +102,7 @@ class BenchBaseReport(BaseReport, shorthand="BBR", file_type="zip"):
                         benchmark=summary_json['Benchmark Type'],
                         latencies=latencies,
                         throughput=summary_json['Throughput (requests/second)'],
-                        goodput=summary_json[
-                            'Goodput (successful requests/second)'],
+                        goodput=summary_json['Goodput (requests/second)'],
                         scale_factor=summary_json['scalefactor'],
                         terminals=summary_json['terminals'],
                         num_requests=summary_json['Measured Requests'],
