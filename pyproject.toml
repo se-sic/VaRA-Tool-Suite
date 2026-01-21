@@ -1,6 +1,6 @@
 [project]
 name = "varats"
-version = "14.0.0"
+version = "14.1.0"
 dependencies = [
   "Jinja2>=3.1.2",
   "PyDriller>=2.4.1",
