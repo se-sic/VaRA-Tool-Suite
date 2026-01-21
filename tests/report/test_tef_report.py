@@ -215,18 +215,14 @@ class TestTEFReportParser(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Load and prepare TEF report."""
-        file_data = {'content': TRACE_EVENT_FORMAT_OUTPUT}
-
         def mock_open_side_effect(path, mode='r', *args, **kwargs):
-            data = file_data['content']
+            data = TRACE_EVENT_FORMAT_OUTPUT
             if 'b' in mode:
                 # Binary mode: encode string to bytes, return BytesIO
                 bytes_data = data.encode() if isinstance(data, str) else data
                 return io.BytesIO(bytes_data)
             else:
-                # Text mode: use mock_open for standard file operations
-                text_data = data if isinstance(data, str) else data.decode()
-                return mock.mock_open(read_data=text_data)()
+                return mock.mock_open(read_data=data)()
 
         with mock.patch('builtins.open', side_effect=mock_open_side_effect):
             cls.report = TEFReport(Path("fake_file_path"))
