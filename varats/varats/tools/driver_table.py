@@ -28,6 +28,7 @@ from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 
 LOG = logging.getLogger(__name__)
 
+
 class TableCLI(click.Group):
     """Command factory for tables."""
 
