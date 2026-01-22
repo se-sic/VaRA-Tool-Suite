@@ -55,9 +55,12 @@ class Poppler(VProject):
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'cmake', 'libfreetype6-dev',
-        'libfontconfig-dev', 'libjpeg-dev', 'qt5-default', 'libopenjp2-7-dev'
+        'libfontconfig-dev', 'libjpeg-dev', 'qt5-default', 'libopenjp2-7-dev',
+        'libnss3-dev', 'libnspr4-dev', 'libtiff-dev', 'libcairo2-dev',
+        'libboost-dev', 'liblcms2-dev', 'libcurl4-openssl-dev',
+        'libpoppler-qt6-dev'
     )
 
     @staticmethod
@@ -90,7 +93,6 @@ class Poppler(VProject):
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Poppler", "Poppler")]
 
-    # discuss with Lukas
     def prepare_test_environment(self) -> None:
         poppler_version_source = local.path(self.source_of(self.primary_source))
 
@@ -98,13 +100,15 @@ class Poppler(VProject):
         cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(poppler_version_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", ".")
+                bb.watch(cmake
+                        )("-DENABLE_GPGME=OFF", "-G", "Unix Makefiles", ".")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
 
     def get_test_names(self) -> tp.Iterable[str]:
-        pass
+        poppler_2_version_source = Path(self.source_of_primary)
+        return ctest_get_test_names(poppler_2_version_source)
 
     def build_tests(self) -> None:
         poppler_version_source = local.path(self.source_of(self.primary_source))
@@ -118,4 +122,7 @@ class Poppler(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        pass
+        build_dir = Path(self.source_of_primary)
+        return ctest_run_testsuite(
+            build_dir, test_report_path, tests_to_run, tests_to_exclude
+        )
