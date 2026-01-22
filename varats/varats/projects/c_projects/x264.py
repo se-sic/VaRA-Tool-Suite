@@ -10,7 +10,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.experiment.workload_util import RSBinary, WorkloadCategory
+from varats.experiment.workload_util import (
+    RSBinary,
+    WorkloadCategory,
+    ConfigParams,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -76,20 +80,11 @@ class X264(VProject):
         WorkloadSet(WorkloadCategory.EXAMPLE): [
             VCommand(
                 SourceRoot("x264") / RSBinary("x264"),
-                "--preset medium",
-                "--crf 24",
-                "--frames 300",
-                "--threads auto",
-                # Use output_param to ensure input file
-                # gets appended after all arguments.
-                output_param=["{output}"],
-                output=SourceRoot(
+                ConfigParams(),
+                SourceRoot(
                     "Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.y4m"
                 ),
-                label="1080-medium-preset",
-                creates=[
-                    "Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.y4m"
-                ]
+                label="1080-medium-preset"
             )
         ]
     }

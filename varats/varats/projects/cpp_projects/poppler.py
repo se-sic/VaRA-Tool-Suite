@@ -99,9 +99,12 @@ class Poppler(VProject):
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(poppler_version_source):
+            # git clone the test data look in the ci-pipeline
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(cmake
-                        )("-DENABLE_GPGME=OFF", "-G", "Unix Makefiles", ".")
+                bb.watch(cmake)(
+                    "-DENABLE_GPGME=OFF", "-DTESTDATADIR=$PWD/../test-data",
+                    "-G", "Unix Makefiles", "."
+                )
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
