@@ -21,7 +21,8 @@ from varats.project.project_util import (
     RevisionBinaryMap,
     HTTP7z,
 )
-from varats.project.varats_project import VProject, VCommand
+from varats.project.varats_command import VCommand
+from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
