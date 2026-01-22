@@ -8,9 +8,11 @@ from itertools import chain
 from pathlib import Path
 
 import benchbuild as bb
+import plumbum as pb
 import pygit2
 from _operator import attrgetter
-from benchbuild.source import Git
+from benchbuild.source import Git, HTTP
+from benchbuild.utils.cmd import cp, ln, wget, tar, mkdir, mv
 from benchbuild.utils.revision_ranges import AbstractRevisionRange
 from plumbum import local
 from plumbum.commands.base import BoundCommand
@@ -534,3 +536,46 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         for name in dirs:
             if name == ".gitted":
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
+
+
+class HTTP7z(HTTP):
+    """Fetch and download source via http and auto-unpack using GNU tar."""
+
+    def version(self, target_dir: str, version: str) -> pb.LocalPath:
+        """
+        Setup the given version of this HTTPUntar source.
+
+        This will fetch the given version from the remote source and unpack the
+        archive into the build directory using tar.
+
+        The location matches the behavior of other sources. However, you need
+        to consider that benchbuild will return a directory instead of a file path.
+
+        When using workloads, you can refer to a directory with the SourceRootRenderer using
+        ``benchbuild.command.source_root``.
+
+        Example:
+            You specify a remote version 1.0 of an archive compression.tar.gz and
+            a local name of "compression.tar.gz".
+            The build directory will look as follows:
+
+            <builddir>/1.0-compression.dir/
+            <builddir>/1.0-compression.tar.gz
+            <builddir>/compression.tar.gz -> ./1.0-compression.tar.dir
+
+            The content of the archive is found in the directory compression.tar.gz.
+            Your workloads need to make sure to reference this directory (e.g. using tokens),
+            e.g., ``source_root("compression.tar.gz")``
+        """
+        archive_path = super().version(target_dir, version)
+        _7Zip = local["7z"]
+        target_name = str(pb.local.path(archive_path).with_suffix(".dir"))
+        target_path = pb.local.path(target_dir) / target_name
+        active_loc = pb.local.path(target_dir) / self.local
+
+        mkdir(target_path)
+        _7Zip("-x", "-C", target_path, "-f", archive_path)
+
+        ln('-sf', target_path, active_loc)
+
+        return target_path
