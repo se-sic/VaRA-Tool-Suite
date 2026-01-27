@@ -14,6 +14,7 @@ LOG = logging.getLogger(__name__)
 
 CACHE_ID_COL = 'cache_revision'
 CACHE_TIMESTAMP_COL = 'cache_timestamp'
+CACHE_COL_TYPES = {CACHE_ID_COL: 'str', CACHE_TIMESTAMP_COL: 'str'}
 
 
 def get_data_file_path(data_id: str, project_name: str) -> Path:

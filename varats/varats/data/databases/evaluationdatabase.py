@@ -9,6 +9,7 @@ from varats.data.cache_helper import get_data_file_path
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.utils.git_util import ShortCommitHash
+from varats.data.cache_helper import CACHE_COL_TYPES
 
 AvailableColumns = tp.TypeVar("AvailableColumns")
 
@@ -27,6 +28,7 @@ class EvaluationDatabase(abc.ABC):
 
     CACHE_ID: str
     COLUMN_TYPES = {"revision": 'str', "time_id": 'int32'}
+    COLUMN_TYPES.update(CACHE_COL_TYPES)
     COLUMNS: tp.List[str]
 
     @classmethod
