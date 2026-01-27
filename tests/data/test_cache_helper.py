@@ -23,11 +23,11 @@ class TestCacheHelper(unittest.TestCase):
         "c": ("c", 1),
         "c2": ("c", 2),
     }
-    column_types={
+    column_types = {
         "entry": 'str',
     }
     column_types.update(CACHE_COL_TYPES)
-    
+
     @run_in_test_environment()
     def test_get_data_file_path(self):
         path = get_data_file_path("foo", "tmux")

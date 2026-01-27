@@ -5,11 +5,10 @@ import typing as tp
 import pandas as pd
 from pygtrie import CharTrie
 
-from varats.data.cache_helper import get_data_file_path
+from varats.data.cache_helper import get_data_file_path, CACHE_COL_TYPES
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.utils.git_util import ShortCommitHash
-from varats.data.cache_helper import CACHE_COL_TYPES
 
 AvailableColumns = tp.TypeVar("AvailableColumns")
 
