@@ -27,7 +27,11 @@ class EvaluationDatabase(abc.ABC):
 
     CACHE_ID: str
     COLUMN_TYPES = {"revision": 'str', "time_id": 'int32'}
-    COLUMN_TYPES.update(CACHE_COL_TYPES)
+    # TODO: Might need to add "COLUMN_TYPES.update(CACHE_COL_TYPES)" 
+    # as Pandas Future Warning for incompatible dtypes can occur 
+    # if we are reading cached df that has timestamp as int
+    # but currently adding it is failing some tests
+
     COLUMNS: tp.List[str]
 
     @classmethod
