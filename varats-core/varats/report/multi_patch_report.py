@@ -56,7 +56,7 @@ class MultiPatchReport(
             return False
 
         # Load from data cache
-        print("Loading report from data cache:", data_cache_path)
+        #print("Loading report from data cache:", data_cache_path)
         with open(data_cache_path, 'rb') as f:
             tmp_dict = pickle.load(f)
 
@@ -96,7 +96,7 @@ class MultiPatchReport(
         data_cache_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Save to data cache
-        print("Saving report to data cache:", data_cache_path)
+        #print("Saving report to data cache:", data_cache_path)
         with open(data_cache_path, 'wb') as f:
             pickle.dump(self.__dict__, f)
 

@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from pylatex import Document, Package
 
 from varats.base.configuration import PatchConfiguration
-from varats.data.cache_helper import load_cached_df_or_none
+from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe
 from varats.data.databases.feature_perf_precision_database import (
     get_patch_names,
     Profiler,
@@ -108,10 +108,11 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
             style.background_gradient(
                 cmap=ryg_map,
-                subset=[
-                    (p.name, s) for p in self.PROFILERS for s in self.SEVERITIES
-                ],
-                vmin=0.0,
+                subset=[(p.name, s)
+                        for p in self.PROFILERS
+                        for s in self.SEVERITIES
+                        if p.name != "Base"],
+                vmin=-1.0,
                 vmax=1.0
             )
 
@@ -285,7 +286,7 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
 
                 patch_names = get_patch_names(case_study)
 
-                affectable_patches = self.__get_affectable_patches_manual(
+                affectable_patches = self.__get_affectable_patches(
                     case_study, config_id
                 )
 
@@ -343,6 +344,17 @@ class FeaturePerfSensitivityTable(Table, table_name="fperf_sensitivity"):
             for k in total_num_patches:
                 new_row["# Regressions"] = int(total_num_patches[k])
                 new_row[k] = regressed_num_regressions[k] / total_num_patches[k]
+
+            # Option: Show profiler improvements over baseline?
+            for p in profilers:
+                if p.name == "Base":
+                    continue
+                for severity in ["1ms", "10ms", "100ms", "1000ms"]:
+                    key = f"{p.name}_{severity}"
+                    if key not in new_row:
+                        continue
+
+                    new_row[key] -= new_row[f"Base_{severity}"]
 
             table_rows.append(new_row)
 

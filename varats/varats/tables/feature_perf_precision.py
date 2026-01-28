@@ -646,10 +646,10 @@ class FeaturePerfWBPrecisionTable(Table, table_name="fperf-wb-precision"):
 
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        case_studies = [
-            cs for cs in case_studies if cs.project_name not in
-            ["DunePerfRegression", "SynthFeatureInteraction"]
-        ]
+        #        case_studies = [
+        #            cs for cs in case_studies if cs.project_name not in
+        #            ["DunePerfRegression", "SynthFeatureInteraction"]
+        #        ]
         profilers: tp.List[Profiler] = [VXray(), PIMTracer(), EbpfTraceTEF()]
 
         df = self._prepare_data_table(case_studies, profilers)
