@@ -32,6 +32,18 @@ class MongoDB(VProject):
 
     Classified as a NoSQL database program, MongoDB uses JSON-like documents
     with optional schemas.
+
+    Note for cluster usage:
+    For compilation, newer versions of MongoDB require bazel to be
+    installed. The installation script provided by MongoDB does not work
+    properly in our cluster environments, as it installs bazel to the user's
+    home directory which is not available on cluster nodes. Therefore, ensure
+    that bazel is already installed to a location accessible on the cluster nodes and
+    is available in the PATH. (E.g. /scratch/<user>/bin)
+    Additionally, bazel by default uses ~/.cache for caching build artifacts.
+    This location is also not available on cluster nodes. To avoid issues,
+    set the XDG_CACHE_HOME environment variable to an accessible location (e.g.
+    /scratch/... or /tmp/...) in your slurm scripts.
     """
 
     NAME = 'mongodb'
@@ -106,7 +118,10 @@ class MongoDB(VProject):
                     # to the users home directory which e.g. is not available on cluster nodes.
                     # Thus, we assume that bazel is already installed and can be found in PATH.
                     bazel = local["bazel"]
-                    bazel = bazel["build", "install-mongod"]
+                    bazel = bazel[
+                        "build",
+                        f"--local_resources=cpu={get_number_of_jobs(bb_cfg())}",
+                        "install-mongod"]
 
                     bb.watch(bazel)()
                 else:
