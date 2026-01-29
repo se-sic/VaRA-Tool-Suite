@@ -1,4 +1,3 @@
-import benchbuild as bb
 from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 

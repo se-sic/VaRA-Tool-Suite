@@ -5,8 +5,8 @@ from pathlib import Path
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 
+from varats.data.reports.test_names_report import TestNamesReport
 from varats.data.reports.testsuite_report import TestsuiteReport
-from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     get_default_compile_error_wrapped,
@@ -73,7 +73,7 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
     """Collects test names from the test suite."""
 
     NAME = "CollectTestNames"
-    REPORT_SPEC = ReportSpecification(PlainTextReport)
+    REPORT_SPEC = ReportSpecification(TestNamesReport)
 
     project: VProject
 
@@ -98,7 +98,7 @@ class CollectTestNames(VersionExperiment, shorthand="CTN"):
         )
 
         result_file = create_new_success_result_filepath(
-            self.get_handle(), PlainTextReport, project, fake_binary,
+            self.get_handle(), TestNamesReport, project, fake_binary,
             get_current_config_id(project)
         )
 
