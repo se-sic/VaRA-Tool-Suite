@@ -19,6 +19,7 @@ from varats.project.project_util import (
     RevisionBinaryMap,
 )
 from varats.project.varats_project import VProject
+from varats.utils.git_commands import download_repo, update_all_submodules
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
@@ -54,14 +55,15 @@ class Poppler(VProject):
             )
         )
     ]
+    TEST_DATA_URL = "https://gitlab.freedesktop.org/poppler/test.git"
 
     # libcurl4-openssl-dev git ca-certificates locales libgtk-3-dev libbrotli-dev libboost-container-dev qt6-base-dev (from their pipeline)
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'cmake', 'libfreetype6-dev',
-        'libfontconfig-dev', 'libjpeg-dev', 'qt5-default', 'libopenjp2-7-dev',
-        'libnss3-dev', 'libnspr4-dev', 'libtiff-dev', 'libcairo2-dev',
-        'libboost-dev', 'liblcms2-dev', 'libcurl4-openssl-dev',
-        'libpoppler-qt6-dev'
+        'libfontconfig-dev', 'libjpeg-dev', 'libopenjp2-7-dev', 'libnss3-dev',
+        'libnspr4-dev', 'libtiff-dev', 'libcairo2-dev', 'libboost-dev',
+        'liblcms2-dev', 'libcurl4-openssl-dev', 'libpoppler-qt6-dev', 'git',
+        'ca-certificates', 'locales', 'openssl', 'pkg-config', 'build-essential'
     )
 
     @staticmethod
@@ -94,7 +96,7 @@ class Poppler(VProject):
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Poppler", "Poppler")]
 
-    # $ git clone --branch ${CI_COMMIT_REF_NAME} --depth 1 ${TEST_DATA_URL} test-data || git clone --depth 1 ${UPSTREAM_TEST_DATA_URL} test-data
+    # $ git clone --branch ${CI_COMMIT_REF_NAME} --depth 1 ${TEST_DATA_URL} test-data || git clone --depth 1 https://gitlab.freedesktop.org/poppler/test.git test-data
     # Cloning into 'test-data'...
     # $ mkdir -p build && cd build
     # $ cmake -G Ninja -DTESTDATADIR=$PWD/../test-data -DCMAKE_PREFIX_PATH=$PWD/gnupg -DENABLE_UNSTABLE_API_ABI_HEADERS=ON -DVERIFY_PUBLIC_PRIVATE_HEADERS=true ..
@@ -103,6 +105,9 @@ class Poppler(VProject):
         poppler_version_source = local.path(self.source_of(self.primary_source))
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
+
+        mkdir("-p", poppler_version_source / "test-data")
+        download_repo(poppler_version_source / "test-data", self.TEST_DATA_URL)
 
         mkdir("-p", poppler_version_source / "build")
         poppler_build = poppler_version_source / "build"
@@ -119,8 +124,8 @@ class Poppler(VProject):
             verify_binaries(self)
 
     def get_test_names(self) -> tp.Iterable[str]:
-        poppler_2_version_source = Path(self.source_of_primary)
-        return ctest_get_test_names(poppler_2_version_source)
+        poppler_version_source = Path(self.source_of_primary)
+        return ctest_get_test_names(poppler_version_source)
 
     def build_tests(self) -> None:
         poppler_version_source = local.path(self.source_of(self.primary_source))
