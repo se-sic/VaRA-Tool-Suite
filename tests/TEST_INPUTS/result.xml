@@ -11,48 +11,48 @@
 	<testcase name="compress_sample1.ref" classname="compress_sample1.ref" time="0.0424357" status="run">
 		<properties/>
 		<system-out>
-Running:  /home/blubub/Uni/hiwi/testing/bzip2/build/bzip2 -1
-  with 98696 bytes of input from /home/blubub/Uni/hiwi/testing/bzip2/tests/sample1.ref
+Running:  /bzip2 -1
+  with 98696 bytes of input from /sample1.ref
 
 </system-out>
 	</testcase>
 	<testcase name="compress_sample2.ref" classname="compress_sample2.ref" time="0.0517015" status="run">
 		<properties/>
 		<system-out>
-Running:  /home/blubub/Uni/hiwi/testing/bzip2/build/bzip2 -2
-  with 212340 bytes of input from /home/blubub/Uni/hiwi/testing/bzip2/tests/sample2.ref
+Running:  /bzip2 -2
+  with 212340 bytes of input from /sample2.ref
 
 </system-out>
 	</testcase>
 	<testcase name="compress_sample3.ref" classname="compress_sample3.ref" time="0.050955" status="run">
 		<properties/>
 		<system-out>
-Running:  /home/blubub/Uni/hiwi/testing/bzip2/build/bzip2 -3
-  with 120244 bytes of input from /home/blubub/Uni/hiwi/testing/bzip2/tests/sample3.ref
+Running:  /bzip2 -3
+  with 120244 bytes of input from /sample3.ref
 
 </system-out>
 	</testcase>
 	<testcase name="decompress_sample1.ref" classname="decompress_sample1.ref" time="0.0471169" status="run">
 		<properties/>
 		<system-out>
-Running:  /home/blubub/Uni/hiwi/testing/bzip2/build/bzip2 -d
-  with 98696 bytes of input from /home/blubub/Uni/hiwi/testing/bzip2/tests/sample1.ref
+Running:  /bzip2 -d
+  with 98696 bytes of input from /sample1.ref
 
 </system-out>
 	</testcase>
 	<testcase name="decompress_sample2.ref" classname="decompress_sample2.ref" time="0.0581628" status="run">
 		<properties/>
 		<system-out>
-Running:  /home/blubub/Uni/hiwi/testing/bzip2/build/bzip2 -d
-  with 212340 bytes of input from /home/blubub/Uni/hiwi/testing/bzip2/tests/sample2.ref
+Running:  /bzip2 -d
+  with 212340 bytes of input from /sample2.ref
 
 </system-out>
 	</testcase>
 	<testcase name="decompress_sample3.ref" classname="decompress_sample3.ref" time="0.0567219" status="run">
 		<properties/>
 		<system-out>
-Running:  /home/blubub/Uni/hiwi/testing/bzip2/build/bzip2 -ds
-  with 120244 bytes of input from /home/blubub/Uni/hiwi/testing/bzip2/tests/sample3.ref
+Running:  /bzip2 -ds
+  with 120244 bytes of input from /sample3.ref
 
 </system-out>
 	</testcase>
