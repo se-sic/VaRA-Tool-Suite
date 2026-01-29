@@ -569,7 +569,7 @@ class HTTP7z(HTTP):
         """
         archive_path = super().version(target_dir, version)
         _7Zip = local["7z"]
-        target_name = str(pb.local.path(archive_path).with_suffix("7z"))
+        target_name = str(pb.local.path(archive_path).with_suffix(".dir"))
         target_path = pb.local.path(target_dir) / target_name
         active_loc = pb.local.path(target_dir) / self.local
 
