@@ -69,7 +69,7 @@ def cache_dataframe(
         dataframe: pandas dataframe to store
     """
     file_path = get_data_file_path(data_id, project_name)
-    # TODO: we should add quoting = csv.QUOTE_NONNUMERIC here, 
+    # TODO: we should add quoting = csv.QUOTE_NONNUMERIC here,
     # so that int/float casted to str are written as strings in csv
     dataframe.to_csv(str(file_path), compression='infer')
 
