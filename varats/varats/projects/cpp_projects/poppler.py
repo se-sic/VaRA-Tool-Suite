@@ -3,7 +3,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, make
+from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -55,6 +55,7 @@ class Poppler(VProject):
         )
     ]
 
+    # libcurl4-openssl-dev git ca-certificates locales libgtk-3-dev libbrotli-dev libboost-container-dev qt6-base-dev (from their pipeline)
     CONTAINER = get_base_image(ImageBase.DEBIAN_12).run(
         'apt', 'install', '-y', 'cmake', 'libfreetype6-dev',
         'libfontconfig-dev', 'libjpeg-dev', 'qt5-default', 'libopenjp2-7-dev',
@@ -93,17 +94,25 @@ class Poppler(VProject):
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("Poppler", "Poppler")]
 
+    # $ git clone --branch ${CI_COMMIT_REF_NAME} --depth 1 ${TEST_DATA_URL} test-data || git clone --depth 1 ${UPSTREAM_TEST_DATA_URL} test-data
+    # Cloning into 'test-data'...
+    # $ mkdir -p build && cd build
+    # $ cmake -G Ninja -DTESTDATADIR=$PWD/../test-data -DCMAKE_PREFIX_PATH=$PWD/gnupg -DENABLE_UNSTABLE_API_ABI_HEADERS=ON -DVERIFY_PUBLIC_PRIVATE_HEADERS=true ..
+    # $ ninja - j ${FDO_CI_CONCURRENT}
     def prepare_test_environment(self) -> None:
         poppler_version_source = local.path(self.source_of(self.primary_source))
-
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
-        with local.cwd(poppler_version_source):
+
+        mkdir("-p", poppler_version_source / "build")
+        poppler_build = poppler_version_source / "build"
+
+        with local.cwd(poppler_build):
             # git clone the test data look in the ci-pipeline
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)(
                     "-DENABLE_GPGME=OFF", "-DTESTDATADIR=$PWD/../test-data",
-                    "-G", "Unix Makefiles", "."
+                    "-G", "Unix Makefiles", ".."
                 )
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -116,7 +125,7 @@ class Poppler(VProject):
     def build_tests(self) -> None:
         poppler_version_source = local.path(self.source_of(self.primary_source))
 
-        with local.cwd(poppler_version_source):
+        with local.cwd(poppler_version_source / "build"):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def run_testsuite(
