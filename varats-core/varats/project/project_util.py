@@ -539,11 +539,11 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
 
 
 class HTTP7z(HTTP):
-    """Fetch and download source via http and auto-unpack using GNU tar."""
+    """Fetch and download source via http and auto-unpack using GNU 7Zip."""
 
     def version(self, target_dir: str, version: str) -> pb.LocalPath:
         """
-        Setup the given version of this HTTPUntar source.
+        Setup the given version of this 7Zip source.
 
         This will fetch the given version from the remote source and unpack the
         archive into the build directory using tar.
@@ -569,7 +569,7 @@ class HTTP7z(HTTP):
         """
         archive_path = super().version(target_dir, version)
         _7Zip = local["7z"]
-        target_name = str(pb.local.path(archive_path).with_suffix(".dir"))
+        target_name = str(pb.local.path(archive_path).with_suffix("7z"))
         target_path = pb.local.path(target_dir) / target_name
         active_loc = pb.local.path(target_dir) / self.local
 
