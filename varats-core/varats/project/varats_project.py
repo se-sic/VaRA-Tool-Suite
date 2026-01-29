@@ -25,7 +25,9 @@ class VProject(Project):  # type: ignore
     """VaRA-TS project abstraction, extending the interface which is required
     from benchbuild."""
 
-    def __init_subclass__(cls, *args, **kwargs) -> None:
+    def __init_subclass__(cls, *args, **kwargs) -> None:  # type: ignore
+        """Initialize subclass by wrapping testsuite related methods to be
+        run."""
         super().__init_subclass__(*args, **kwargs)
 
         # Additions required for TestSuite Protocol
@@ -89,7 +91,6 @@ class SupportsTestSuites(Protocol):
         that tests are discoverable for the get_test_names() method. This does
         not necessarily mean that the tests are built yet.
         """
-        ...
 
     def build_tests(self) -> None:
         """
@@ -98,14 +99,13 @@ class SupportsTestSuites(Protocol):
         Should be called after prepare_test_environment() to build the tests.
         Once this method is called, the tests should be built and ready to run.
         """
-        ...
 
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+    ) -> tp.Dict[str, TestResult]:
         """
         Run the test suite for this project.
 
@@ -113,12 +113,11 @@ class SupportsTestSuites(Protocol):
             test_report_path: Path to the test report file.
             tests_to_run: List of test cases to run.
                           If None, all tests will be run.
-            test_to_exclude: List of test cases to exclude.
+            tests_to_exclude: List of test cases to exclude.
 
         Returns:
-            returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
+            A dictionary mapping test names to respective result.
         """
-        ...
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
@@ -129,4 +128,3 @@ class SupportsTestSuites(Protocol):
         Returns:
              A list of tests available for this project.
         """
-        ...

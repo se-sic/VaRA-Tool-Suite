@@ -2,11 +2,10 @@
 import typing as tp
 from pathlib import Path
 
-from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.actions import StepResult
 
+from varats.data.reports.testsuite_report import TestsuiteReport
 from varats.data.reports.text_report import PlainTextReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
@@ -31,7 +30,7 @@ class JustTest(VersionExperiment, shorthand="JT"):
 
     NAME = "JustTest"
 
-    REPORT_SPEC = ReportSpecification(PlainTextReport)
+    REPORT_SPEC = ReportSpecification(TestsuiteReport)
 
     def actions_for_project(
         self, project: VProject
@@ -56,7 +55,7 @@ class JustTest(VersionExperiment, shorthand="JT"):
         )
 
         result_file = create_new_success_result_filepath(
-            self.get_handle(), PlainTextReport, project, fake_binary,
+            self.get_handle(), TestsuiteReport, project, fake_binary,
             get_current_config_id(project)
         )
 

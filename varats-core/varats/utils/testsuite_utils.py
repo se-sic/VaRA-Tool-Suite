@@ -11,11 +11,12 @@ from plumbum import local, ProcessExecutionError
 
 
 class TestResult(Enum):
-    PASSED = 0,
-    FAILED = 1,
-    SKIPPED = 2,
-    TIMEOUT = 3,
-    DISABLED = 4,
+    """Enum for possible test results."""
+    PASSED = 0
+    FAILED = 1
+    SKIPPED = 2
+    TIMEOUT = 3
+    DISABLED = 4
     UNKNOWN = 5
 
 
@@ -47,7 +48,7 @@ def ctest_run_testsuite(
     test_report_path: tp.Optional[Path] = None,
     tests_to_run: tp.Optional[tp.Iterable[str]] = None,
     tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-) -> tp.Optional[tp.Dict[str, TestResult]]:
+) -> tp.Dict[str, TestResult]:
     """
     Run a test suite using ctest.
 
@@ -74,14 +75,15 @@ def ctest_run_testsuite(
             test_regex = '|'.join([
                 "^" + re.escape(name) for name in tests_to_run
             ])
+            ctest_cmd = ctest_cmd["-R", test_regex]
 
-            if tests_to_exclude:
-                exclude_regex = '|'.join([
-                    "^" + re.escape(name) for name in tests_to_exclude
-                ])
-            ctest_cmd = ctest_cmd["-R", test_regex, "-E", exclude_regex]
+        if tests_to_exclude:
+            exclude_regex = '|'.join([
+                "^" + re.escape(name) for name in tests_to_exclude
+            ])
+            ctest_cmd = ctest_cmd["-E", exclude_regex]
 
-        ret_code, _, _ = bb.watch(ctest_cmd)()
+        bb.watch(ctest_cmd)()
 
     results = parse_junit_xml(test_report_path)
 
@@ -127,6 +129,10 @@ def gtest_run_testsuite(
         tests_to_exclude = []
     excluded_tests = ":".join(tests_to_exclude)
 
+    if tests_to_run is None:
+        tests_to_run = []
+    included_tests = ":".join(tests_to_run)
+
     output_file: Path
     if test_report_path:
         output_file = test_report_path.absolute()
@@ -135,25 +141,12 @@ def gtest_run_testsuite(
 
     gtest_out = "--gtest_output=xml:" + str(output_file)
 
-    if tests_to_run:
-        included_tests = ":".join(tests_to_run)
-        with local.cwd(build_dir):
-            ret_code, out, err = bb.watch(
-                local[test_bin]
-                [f"--gtest_filter={included_tests}-{excluded_tests}", gtest_out]
-            )()
-    else:
-        with local.cwd(build_dir):
-            # Run all tests except the excluded ones
-            ret_code, out, err = bb.watch(
-                local[test_bin][f"--gtest_filter=-{excluded_tests}", gtest_out]
-            )()
+    with local.cwd(build_dir):
+        bb.watch(
+            local[test_bin][f"--gtest_filter={included_tests}-{excluded_tests}",
+                            gtest_out]
+        )()
 
-    # if ret_code != 0:  # Should be correct but need to test after this
-    #     return False, None
-
-    # TODO: need to figure out how to get all the passed test and fail test
-    # look at the json file that is generated
     results = parse_junit_xml(output_file)
 
     return results
@@ -162,13 +155,13 @@ def gtest_run_testsuite(
 def parse_junit_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
     """Parse the xml test report and return the test results."""
     results: tp.Dict[str, TestResult] = {}
-    test_xml = JUnitXml.fromfile(xml_path.absolute().__str__())
+    test_xml = JUnitXml.fromfile(str(xml_path.absolute()))
+    suite: junitparser.TestSuite
     for suite in test_xml:
-        suite: junitparser.TestSuite
         suite_name = suite.name if suite.name else "<unknown>"
 
+        case: junitparser.TestCase
         for case in suite:
-            case: junitparser.TestCase
             case_name = case.name if case.name else "<unknown>"
 
             if case.is_passed:

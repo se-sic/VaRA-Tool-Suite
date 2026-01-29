@@ -10,6 +10,7 @@ from pathlib import Path
 from benchbuild.utils.actions import ProjectStep, StepResult
 from plumbum import ProcessExecutionError
 
+from varats.data.reports.testsuite_report import TestsuiteReport
 from varats.project.varats_project import VProject, SupportsTestSuites
 from varats.utils.testsuite_utils import TestResult
 
@@ -82,7 +83,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
     def __init__(
         self,
         project: VProject,
-        output_path: tp.Optional[Path] = None,
+        output_path: Path,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None,
         result_filter: tp.Optional[tp.Callable[[tp.Dict[str, TestResult]],
@@ -106,7 +107,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
         self.__tests_to_exclude = tests_to_exclude
 
     @property
-    def output_path(self) -> Path:
+    def output_path(self) -> tp.Optional[Path]:
         return self.__output_path
 
     def set_output_path(self, output_path: Path) -> None:
@@ -121,9 +122,7 @@ class RunTestSuite(ProjectStep):  # type: ignore
             TestResult.DISABLED: True,
             TestResult.UNKNOWN: False,
         }
-        return all(
-            result_filter.get(status) == True for status in result.values()
-        )
+        return all(result_filter.get(status) for status in result.values())
 
     def __call__(self) -> StepResult:
         if not isinstance(self.project, SupportsTestSuites):
@@ -131,7 +130,6 @@ class RunTestSuite(ProjectStep):  # type: ignore
                 f"Project {self.project.name} does not support testing."
             )
         try:
-            self.project.prepare_test_environment()
             results = self.project.run_testsuite(
                 self.__output_path, self.__tests_to_run, self.__tests_to_exclude
             )
@@ -140,6 +138,12 @@ class RunTestSuite(ProjectStep):  # type: ignore
                 self.status = StepResult.OK
             else:
                 self.status = StepResult.ERROR
+
+            # Create report for test results saved as json
+            TestsuiteReport.create_report_from_results(
+                results, self.__output_path
+            )
+
         except ProcessExecutionError:
             self.status = StepResult.ERROR
 

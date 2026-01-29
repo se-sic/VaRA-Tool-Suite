@@ -8,7 +8,6 @@ import benchbuild as bb
 from benchbuild.command import WorkloadSet, SourceRoot
 from benchbuild.utils.cmd import ninja, cmake, mkdir
 from benchbuild.utils.revision_ranges import SingleRevision
-from github.Repository import Repository
 from plumbum import local
 
 from varats.experiment.workload_util import WorkloadCategory, RSBinary
@@ -25,7 +24,6 @@ from varats.project.varats_command import VCommand
 from varats.project.varats_project import VProject
 from varats.utils.git_commands import update_all_submodules
 from varats.utils.git_util import ShortCommitHash, RepositoryHandle
-from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import (
     TestResult,
     ctest_run_testsuite,
@@ -166,8 +164,6 @@ class HyTeg(VProject):
         update_all_submodules(
             RepositoryHandle(hyteg_source), recursive=True, init=True
         )
-        # with local.cwd(hyteg_source):
-        #     local["git"]["submodule"]("update", "--init", "--recursive")
 
         cc_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
@@ -202,7 +198,7 @@ class HyTeg(VProject):
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
-    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+    ) -> tp.Dict[str, TestResult]:
         """Run the testsuite."""
         build_dir = local.path(self.source_of_primary) / "build"
         return ctest_run_testsuite(
