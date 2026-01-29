@@ -574,7 +574,7 @@ class HTTP7z(HTTP):
         active_loc = pb.local.path(target_dir) / self.local
 
         mkdir(target_path)
-        _7Zip("-x", "-C", target_path, "-f", archive_path)
+        _7Zip("x", str(archive_path), f"-o{target_path}")
 
         ln('-sf', target_path, active_loc)
 

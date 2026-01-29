@@ -59,7 +59,7 @@ class X264(VProject):
             )
         ),
         HTTP7z(
-            local="Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.7z",
+            local="Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M",
             remote={
                 "1.0":
                     "http://ultravideo.cs.tut.fi/video/"
@@ -81,7 +81,9 @@ class X264(VProject):
             VCommand(
                 SourceRoot("x264") / RSBinary("x264"),
                 ConfigParams(),
-                SourceRoot("Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M"),
+                SourceRoot(
+                    "Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.y4m"
+                ),
                 label="1080-medium-preset"
             )
         ]
