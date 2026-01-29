@@ -59,7 +59,7 @@ class X264(VProject):
             )
         ),
         HTTP7z(
-            local="Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M",
+            local="Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.7z",
             remote={
                 "1.0":
                     "http://ultravideo.cs.tut.fi/video/"
@@ -67,7 +67,7 @@ class X264(VProject):
             }
         ),
         HTTP7z(
-            local="Bosphorus_3840x2160_120fps_420_8bit_YUV_Y4M",
+            local="Bosphorus_3840x2160_120fps_420_8bit_YUV_Y4M.7z",
             remote={
                 "1.0":
                     "http://ultravideo.cs.tut.fi/video/"
