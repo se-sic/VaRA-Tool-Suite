@@ -82,7 +82,7 @@ class X264(VProject):
                 SourceRoot("x264") / RSBinary("x264"),
                 ConfigParams(),
                 SourceRoot(
-                    "Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.y4m"
+                    "Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M/Bosphorus_1920x1080_120fps_420_8bit_YUV.y4m"
                 ),
                 label="1080-medium-preset"
             )
