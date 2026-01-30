@@ -85,6 +85,7 @@ def __create_cache_entry(
     new_df, entry_id, entry_timestamp = create_df_from_report(data)
     new_df[CACHE_ID_COL] = entry_id
     new_df[CACHE_TIMESTAMP_COL] = entry_timestamp
+
     return new_df
 
 
@@ -119,11 +120,13 @@ def build_cached_report_table(
     # mypy needs this
     empty_df = create_empty_df()
     df_types = empty_df.dtypes.to_dict()
+    df_types.update(CACHE_COL_TYPES)
     optional_cached_df = load_cached_df_or_none(data_id, project_name, df_types)
     if optional_cached_df is None:
         cached_df = empty_df
         cached_df[CACHE_ID_COL] = ""
         cached_df[CACHE_TIMESTAMP_COL] = ""
+        cached_df = cached_df.astype(df_types)
     else:
         cached_df = optional_cached_df
 
