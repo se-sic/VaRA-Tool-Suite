@@ -1,5 +1,6 @@
 """Project file for postgres."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.settings import get_number_of_jobs
@@ -86,7 +87,10 @@ class PostgreSQL(VProject):
     def run_tests(self) -> None:
         pass
 
-    # SupportsBenchbase protocol
+    ##############################
+    # SupportsBenchbase protocol #
+    ##############################
+
     def get_database_name(self) -> str:
         """Get the name of the database associated with this project."""
         return "postgres"
@@ -98,7 +102,7 @@ class PostgreSQL(VProject):
     def get_database_connection_string(self) -> str:
         """Get the connection string for the database associated with this
         project."""
-        return "dbc:postgresql://localhost:5432/benchbase"
+        return "jdbc:postgresql://localhost:5432/benchbase"
 
     def database_binary(
         self, revision: ShortCommitHash
@@ -145,7 +149,9 @@ class PostgreSQL(VProject):
         except ProcessExecutionError:
             print("Error stopping PostgreSQL server")
 
-    def render_workload_config(self, workload: str, configuration):
+    def render_workload_config(
+        self, workload: str, configuration: tp.Map[str, tp.Union[bool, str]]
+    ) -> Path:
         assert (isinstance(self, SupportsBenchbase))
 
         return self.BENCHBASE_WORKLOAD_CONFIG_DIR / "postgres" / f"sample_{workload}_config.xml"

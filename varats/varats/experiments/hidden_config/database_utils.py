@@ -1,4 +1,5 @@
 import os
+import typing as tp
 from pathlib import Path
 
 from typing_extensions import runtime_checkable, Protocol
@@ -38,5 +39,7 @@ class SupportsBenchbase(Protocol):
         """Stop the database server."""
         ...
 
-    def render_workload_config(self, workload: str, configuration) -> Path:
+    def render_workload_config(
+        self, workload: str, configuration: tp.Map[str, tp.Union[bool, str]]
+    ) -> Path:
         ...
