@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from typing_extensions import runtime_checkable, Protocol
 
 from varats.project.project_util import ProjectBinaryWrapper
@@ -5,6 +8,9 @@ from varats.project.project_util import ProjectBinaryWrapper
 
 @runtime_checkable
 class SupportsBenchbase(Protocol):
+    BENCHBASE_WORKLOAD_CONFIG_DIR: Path = Path(
+        os.path.dirname(__file__)
+    ) / 'benchbase_config_templates'
 
     def get_database_name(self) -> str:
         """Get the name of the database associated with this project."""
@@ -32,5 +38,5 @@ class SupportsBenchbase(Protocol):
         """Stop the database server."""
         ...
 
-    def render_workload_config(self, workload: str, configuration):
+    def render_workload_config(self, workload: str, configuration) -> Path:
         ...

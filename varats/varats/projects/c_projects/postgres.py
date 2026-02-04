@@ -3,8 +3,9 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.settings import get_number_of_jobs
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
+from varats.experiments.hidden_config.database_utils import SupportsBenchbase
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -12,6 +13,7 @@ from varats.project.project_util import (
     RevisionBinaryMap,
     get_local_project_repo,
     BinaryType,
+    ProjectBinaryWrapper,
 )
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
@@ -83,3 +85,67 @@ class PostgreSQL(VProject):
 
     def run_tests(self) -> None:
         pass
+
+    # SupportsBenchbase protocol
+    def get_database_name(self) -> str:
+        """Get the name of the database associated with this project."""
+        return "postgres"
+
+    def get_benchbase_profile_name(self) -> str:
+        """Get the BenchBase profile name for this project."""
+        return "postgres"
+
+    def get_database_connection_string(self) -> str:
+        """Get the connection string for the database associated with this
+        project."""
+        return "dbc:postgresql://localhost:5432/benchbase"
+
+    def database_binary(
+        self, revision: ShortCommitHash
+    ) -> ProjectBinaryWrapper:
+        """Get the binary used to interact with the database associated with
+        this project."""
+        return [
+            b for b in self.binaries_for_revision(revision)
+            if b.name == "postgres"
+        ][0]
+
+    def start_database_server(self) -> None:
+        """Start the database server."""
+        # Multiple steps are required:
+        # initdb to initialize the database cluster
+        # pg_ctl to start the server
+        # createdb to create the benchmark database
+        # Finally, ./pgctl start to start the server
+        install_dir = local.path(self.source_of_primary) / "install"
+        initdb = local[install_dir / "bin" / "initdb"]
+        pg_ctl = local[install_dir / "bin" / "pg_ctl"]
+        createdb = local[install_dir / "bin" / "createdb"]
+
+        # Create a password file for the 'admin' user
+        local["echo"]("password") > ".pgpass"
+
+        try:
+            bb.watch(initdb)(
+                "-D", "pgdata", "-U", "admin", "-A", "password",
+                "--pwdfile=.pgpass"
+            )
+            bb.watch(pg_ctl)("start", "-D", "pgdata", "-l", "pglog")
+            bb.watch(createdb)("-U", "postgres", "benchbase")
+        except ProcessExecutionError:
+            print("Error initializing PostgreSQL database cluster")
+
+    def stop_database_server(self) -> None:
+        """Stop the database server."""
+        install_dir = local.path(self.source_of_primary) / "install"
+        pg_ctl = local[install_dir / "bin" / "pg_ctl"]
+
+        try:
+            bb.watch(pg_ctl)("stop", "-D", "pgdata")
+        except ProcessExecutionError:
+            print("Error stopping PostgreSQL server")
+
+    def render_workload_config(self, workload: str, configuration):
+        assert (isinstance(self, SupportsBenchbase))
+
+        return self.BENCHBASE_WORKLOAD_CONFIG_DIR / "postgres" / f"sample_{workload}_config.xml"

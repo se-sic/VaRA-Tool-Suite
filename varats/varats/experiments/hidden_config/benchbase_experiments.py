@@ -86,7 +86,10 @@ class RunBenchbase(ProjectStep):
         ):
             for workload in self.__WORKLOADS:
                 print(f"Running workload: {workload}")
-                workload_config = self.project.render_workload_config(workload)
+                config = ...
+                workload_config = self.project.render_workload_config(
+                    workload, config
+                )
 
                 run_cmd = local["java"]["-jar", "benchbase.jar", "-b", workload,
                                         "-c", workload_config, "--create=true",
