@@ -9,8 +9,8 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
 )
+from varats.experiments.hidden_config.database_utils import SupportsBenchbase
 from varats.experiments.vara.feature_experiment import FeatureExperiment
-from varats.project.project_util import SupportsBenchbase
 from varats.project.varats_project import VProject
 from varats.projects.c_projects.postgres import PostgreSQL
 from varats.projects.c_projects.sqlite import SQLite
@@ -86,7 +86,8 @@ class RunBenchbase(ProjectStep):
         ):
             for workload in self.__WORKLOADS:
                 print(f"Running workload: {workload}")
-                config = ...
+                # TODO: Customize configuration
+                config = {}
                 workload_config = self.project.render_workload_config(
                     workload, config
                 )
@@ -120,6 +121,9 @@ class RunBenchbase(ProjectStep):
                     )
                     self.status = StepResult.ERROR
                     return self.status
+
+        self.status = StepResult.OK
+        return self.status
 
     def __str__(self, indent: int = 0) -> str:
         return " " * indent + f"* {self.project.name}: Run BenchBase"

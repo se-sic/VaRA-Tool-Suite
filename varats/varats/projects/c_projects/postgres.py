@@ -150,7 +150,7 @@ class PostgreSQL(VProject):
             print("Error stopping PostgreSQL server")
 
     def render_workload_config(
-        self, workload: str, configuration: tp.Map[str, tp.Union[bool, str]]
+        self, workload: str, configuration: tp.Dict[str, tp.Union[bool, str]]
     ) -> Path:
         assert (isinstance(self, SupportsBenchbase))
 
