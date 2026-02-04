@@ -216,7 +216,16 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             )
             return report_data
 
-        coverage_report = LLVMCoverageReport(coverage_reports[0].full_path())
+        try:
+            coverage_report = LLVMCoverageReport(
+                coverage_reports[0].full_path()
+            )
+        except:
+            print(
+                f"Failed to load coverage report for {self.project.name} from "
+                f"{coverage_reports[0].full_path()}"
+            )
+            return report_data
         for _, points in report_data.items():
             for point in points:
                 # For each point create a map from files to lines they are used at
