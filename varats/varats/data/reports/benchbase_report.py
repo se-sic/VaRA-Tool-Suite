@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import xmltodict
 
-from varats.report.report import BaseReport
+from varats.report.report import BaseReport, ReportAggregate
 
 
 @dataclass
@@ -186,3 +186,16 @@ class BenchBaseReport(BaseReport, shorthand="BBR", file_type="zip"):
         """Get the summary for a specific workload."""
         result = self.__results.get(workload, None)
         return result.summary if result else None
+
+
+class BenchBaseReportAggregate(
+    ReportAggregate[BenchBaseReport],
+    shorthand=BenchBaseReport.SHORTHAND + ReportAggregate.SHORTHAND,
+    file_type=ReportAggregate.FILE_TYPE
+):
+    """Aggregate multiple BenchBase reports into a single report."""
+
+    def __init__(self, path: Path):
+        super().__init__(path, BenchBaseReport)
+
+        # TODO: Ensure that all reports have the same set of workloads

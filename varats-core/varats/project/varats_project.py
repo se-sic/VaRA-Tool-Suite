@@ -113,7 +113,7 @@ class SupportsTestSuites(Protocol):
             test_report_path: Path to the test report file.
             tests_to_run: List of test cases to run.
                           If None, all tests will be run.
-            test_to_exclude: List of test cases to exclude.
+            tests_to_exclude: List of test cases to exclude.
 
         Returns:
             returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').

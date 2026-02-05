@@ -1,4 +1,5 @@
 """Project file for postgres."""
+import shutil
 import typing as tp
 from pathlib import Path
 
@@ -6,7 +7,10 @@ import benchbuild as bb
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local, ProcessExecutionError
 
-from varats.experiments.hidden_config.database_utils import SupportsBenchbase
+from varats.experiments.hidden_config.database_utils import (
+    SupportsBenchbase,
+    BENCHBASE_WORKLOAD_CONFIG_DIR,
+)
 from varats.paper.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
@@ -19,6 +23,7 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
+from varats.utils.testsuite_utils import TestResult
 
 
 class PostgreSQL(VProject):
@@ -127,15 +132,20 @@ class PostgreSQL(VProject):
         createdb = local[install_dir / "bin" / "createdb"]
 
         # Create a password file for the 'admin' user
-        local["echo"]("password") > ".pgpass"
+        passwd_file = Path(".passwdfile")
+        (local["echo"]["password"] > ".pgpass")()
+        (local["echo"]["*:*:*:admin:password"] > str(passwd_file.absolute()))()
+
+        passwd_file.chmod(0o600)
 
         try:
-            bb.watch(initdb)(
-                "-D", "pgdata", "-U", "admin", "-A", "password",
-                "--pwdfile=.pgpass"
-            )
-            bb.watch(pg_ctl)("start", "-D", "pgdata", "-l", "pglog")
-            bb.watch(createdb)("-U", "postgres", "benchbase")
+            with local.env(PGPASSFILE=Path(".passwdfile").absolute()):
+                bb.watch(initdb)(
+                    "-D", "pgdata", "-U", "admin", "-A", "password",
+                    "--pwfile=.pgpass"
+                )
+                bb.watch(pg_ctl)("start", "-D", "pgdata", "-l", "pglog")
+                bb.watch(createdb)("-U", "admin", "benchbase")
         except ProcessExecutionError:
             print("Error initializing PostgreSQL database cluster")
 
@@ -149,9 +159,18 @@ class PostgreSQL(VProject):
         except ProcessExecutionError:
             print("Error stopping PostgreSQL server")
 
+        pg_data_dir = local.path("pgdata")
+        shutil.rmtree(pg_data_dir, ignore_errors=True)
+
+        Path(".passwdfile").unlink(missing_ok=True)
+        Path(".pgpass").unlink(missing_ok=True)
+
     def render_workload_config(
         self, workload: str, configuration: tp.Dict[str, tp.Union[bool, str]]
     ) -> Path:
         assert (isinstance(self, SupportsBenchbase))
 
-        return self.BENCHBASE_WORKLOAD_CONFIG_DIR / "postgres" / f"sample_{workload}_config.xml"
+        return Path(
+            BENCHBASE_WORKLOAD_CONFIG_DIR / "postgres" /
+            f"sample_{workload}_config.xml"
+        )
