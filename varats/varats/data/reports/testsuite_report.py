@@ -23,9 +23,11 @@ class TestsuiteReport(BaseReport, shorthand="TSR", file_type="json"):
             test_results: A dictionary containing test results.
             path: The path where the report should be saved.
         """
-
-        with open(path, 'w') as f:
-            json.dump(test_results, f, indent=4)
+        test_results_str: tp.Dict[str, str] = {
+            name: result.name for name, result in test_results.items()
+        }
+        with open(path, "w") as f:
+            json.dump(test_results_str, f, indent=4)
 
     @staticmethod
     def load_results_from_report(path: Path) -> tp.Dict[str, TestResult]:
