@@ -230,7 +230,7 @@ class Bzip2(VProject):
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def prepare_test_environment(self) -> None:
-        """Prepare the testsuite."""
+        """Prepare the testsuite for bzip2."""
         bzip2_source = Path(self.source_of_primary)
         bzip2_version = ShortCommitHash(self.version_of_primary)
 
@@ -249,7 +249,7 @@ class Bzip2(VProject):
                 bb.watch(cmake)("test", "-G", "Unix Makefiles", "..")
 
     def build_tests(self) -> None:
-        """Build the tests."""
+        """Build the tests for bzip2."""
         bzip2_version_source = local.path(self.source_of_primary)
 
         build_dir, build_method = self.__getbuilddir()
@@ -263,7 +263,12 @@ class Bzip2(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
-        """Get the test names."""
+        """
+        Get the test names for the project.
+
+        Returns:
+            A list of test names available in the project.
+        """
         build_dir = local.path(self.source_of_primary) / "build"
         return ctest_get_test_names(build_dir)
 
@@ -273,7 +278,18 @@ class Bzip2(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        """Run the testsuite."""
+        """
+        Run the test suite for bzip2.
+
+        Args:
+            test_report_path: Path to store the detailed test results in.
+            tests_to_run: List of test cases to run. If None, all tests will be
+                          run.
+            tests_to_exclude: List of test cases to exclude.
+
+        Returns:
+            A dictionary mapping test names to their results enum.
+        """
         build_dir = local.path(self.source_of_primary) / "build"
         return ctest_run_testsuite(
             build_dir, test_report_path, tests_to_run, tests_to_exclude

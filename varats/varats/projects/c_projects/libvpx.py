@@ -146,6 +146,7 @@ class Libvpx(VProject):
             bb.watch(make)("testdata", "-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self):
+        """Build the tests for libvpx."""
         libvpx_source = local.path(self.source_of_primary)
         test_source = libvpx_source / "build_tests"
 
@@ -153,9 +154,11 @@ class Libvpx(VProject):
             bb.watch(make)("test_libvpx", "-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
-        """Get the test names
-            Returns:
-                A list of test names available in the test directory.
+        """
+        Get the test names for the project.
+
+        Returns:
+            A list of test names available in the project.
         """
         test_source = local.path(self.source_of_primary) / "build_tests"
         test_executable = test_source / "test_libvpx"
@@ -168,7 +171,18 @@ class Libvpx(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
-        """Run the testsuite."""
+        """
+        Run the test suite for libvpx.
+
+        Args:
+            test_report_path: Path to store the detailed test results in.
+            tests_to_run: List of test cases to run. If None, all tests will be
+                          run.
+            tests_to_exclude: List of test cases to exclude.
+
+        Returns:
+            A dictionary mapping test names to their results enum.
+        """
         libvpx_source = local.path(self.source_of_primary)
         test_source = local.path(self.source_of_primary) / "build_tests"
         test_libvpx = test_source / "test_libvpx"

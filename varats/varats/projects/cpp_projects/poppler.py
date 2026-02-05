@@ -102,6 +102,7 @@ class Poppler(VProject):
     # $ cmake -G Ninja -DTESTDATADIR=$PWD/../test-data -DCMAKE_PREFIX_PATH=$PWD/gnupg -DENABLE_UNSTABLE_API_ABI_HEADERS=ON -DVERIFY_PUBLIC_PRIVATE_HEADERS=true ..
     # $ ninja - j ${FDO_CI_CONCURRENT}
     def prepare_test_environment(self) -> None:
+        """Prepare the test environment for poppler."""
         poppler_version_source = local.path(self.source_of(self.primary_source))
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)
@@ -123,15 +124,22 @@ class Poppler(VProject):
 
             verify_binaries(self)
 
-    def get_test_names(self) -> tp.Iterable[str]:
-        poppler_version_source = Path(self.source_of_primary)
-        return ctest_get_test_names(poppler_version_source)
-
     def build_tests(self) -> None:
+        """Build the tests for poppler."""
         poppler_version_source = local.path(self.source_of(self.primary_source))
 
         with local.cwd(poppler_version_source / "build"):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Get the test names for the project.
+
+        Returns:
+            A list of test names available in the project.
+        """
+        poppler_version_source = Path(self.source_of_primary)
+        return ctest_get_test_names(poppler_version_source)
 
     def run_testsuite(
         self,
@@ -139,6 +147,18 @@ class Poppler(VProject):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        """
+        Run the test suite for poppler.
+
+        Args:
+            test_report_path: Path to store the detailed test results in.
+            tests_to_run: List of test cases to run. If None, all tests will be
+                          run.
+            tests_to_exclude: List of test cases to exclude.
+
+        Returns:
+            A dictionary mapping test names to their results enum.
+        """
         build_dir = Path(self.source_of_primary)
         return ctest_run_testsuite(
             build_dir, test_report_path, tests_to_run, tests_to_exclude

@@ -101,6 +101,7 @@ class Z3(VProject, ReleaseProviderHook):
                 if re.match(minor_release_regex, tag)]
 
     def prepare_test_environment(self) -> None:
+        """Prepare the test environment for z3."""
         z3_source = Path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)
@@ -115,6 +116,7 @@ class Z3(VProject, ReleaseProviderHook):
             bb.watch(cmake)("--build", ".", "-j", get_number_of_jobs(bb_cfg()))
 
     def build_tests(self) -> None:
+        """Build the tests for z3."""
         z3_source = Path(self.source_of(self.primary_source))
 
         (z3_source / "build").mkdir(parents=True, exist_ok=True)
@@ -123,6 +125,12 @@ class Z3(VProject, ReleaseProviderHook):
             bb.watch(make)("test-z3", "-j", get_number_of_jobs(bb_cfg()))
 
     def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Get the test names for the project.
+
+        Returns:
+            A list of test names available in the project.
+        """
         z3_source = Path(self.source_of(self.primary_source))
         z3_build = z3_source / "build"
 
@@ -145,6 +153,18 @@ class Z3(VProject, ReleaseProviderHook):
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        """
+        Run the test suite for z3.
+
+        Args:
+            test_report_path: Path to store the detailed test results in.
+            tests_to_run: List of test cases to run. If None, all tests will be
+                          run.
+            tests_to_exclude: List of test cases to exclude.
+
+        Returns:
+            A dictionary mapping test names to their results enum.
+        """
         z3_source = Path(self.source_of(self.primary_source))
         if not tests_to_run:
             tests_to_run = self.get_test_names()

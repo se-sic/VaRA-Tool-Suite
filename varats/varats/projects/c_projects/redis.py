@@ -86,7 +86,30 @@ class Redis(VProject):
     def prepare_test_environment(self) -> None:
         pass
 
+    def build_tests(self) -> None:
+        """
+        Build the tests for redis.
+
+        Note:
+            as redis uses a custom test suite, the test environment are
+            already prepared and only need to be built.
+        """
+        redis_source = local.path(self.source_of_primary)
+
+        clang = bb.compiler.cc(self)
+        with local.cwd(redis_source):
+            with local.env(CC=str(clang)):
+                bb.watch(make)("test", "-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
+
     def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Get the test names for the project.
+
+        Returns:
+            A list of test names available in the project.
+        """
         redis_source = local.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
@@ -98,22 +121,28 @@ class Redis(VProject):
         test_names = out.splitlines()
         return test_names
 
-    def build_tests(self) -> None:
-        redis_source = local.path(self.source_of_primary)
-
-        clang = bb.compiler.cc(self)
-        with local.cwd(redis_source):
-            with local.env(CC=str(clang)):
-                bb.watch(make)("test", "-j", get_number_of_jobs(bb_cfg()))
-
-            verify_binaries(self)
-
     def run_testsuite(
         self,
         test_report_path: tp.Optional[Path] = None,
         tests_to_run: tp.Optional[tp.Iterable[str]] = None,
         tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
     ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        """
+        Run the test suite for redis.
+
+        Args:
+            test_report_path: Path to store the detailed test results in.
+            tests_to_run: List of test cases to run. If None, all tests will be
+                          run.
+            tests_to_exclude: List of test cases to exclude.
+
+        Returns:
+            A dictionary mapping test names to their results enum.
+
+        Note:
+            The redis provided test suite is somewhat broken when run with
+            VaRA-TS beecause of length of path for certain port.
+        """
         redis_source = local.path(self.source_of_primary)
 
         args: tp.List[str] = []
@@ -132,6 +161,15 @@ class Redis(VProject):
         return result
 
     def parse_res(self, tests: tp.Optional[tp.Iterable[str]]):
+        """
+        " Parse the test results from redis test suite.
+
+        Args:
+            tests: Optional list of test names to filter for.
+
+        Returns:
+            A dictionary mapping test names to their results enum.
+        """
         results: tp.Dict[str, TestResult] = {}
         for line in tests.splitlines():
             if tests and not any(test in line for test in tests):
