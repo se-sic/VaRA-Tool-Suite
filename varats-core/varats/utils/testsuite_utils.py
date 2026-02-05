@@ -89,9 +89,15 @@ def ctest_run_testsuite(
 
 
 def gtest_get_test_names(build_dir: Path, test_bin: str) -> tp.Iterable[str]:
-    """Get the test names
-        Returns:
-            A list of test names available in the test directory.
+    """
+    Get list of test names from a gtest binary.
+
+    Args:
+        build_dir: Path to the build directory to execute the test binary in
+        test_bin: Path to the test binary to execute
+
+    Returns:
+        A list of test names available in the test directory.
     """
     test_path = build_dir / test_bin
     try:
@@ -122,7 +128,19 @@ def gtest_run_testsuite(
     tests_to_run: tp.Optional[tp.Iterable[str]] = None,
     tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
 ) -> tp.Optional[tp.Dict[str, TestResult]]:
-    """Run the testsuite."""
+    """
+    Run the testsuite using a gtest binary.
+
+    Args:
+        build_dir: Path to the build directory to execute the test binary in
+        test_bin: Path to the test binary to execute
+        test_report_path: Path to write the test report file to.
+        tests_to_run: List of test cases to run. If None, all tests will be run.
+        tests_to_exclude: List of test cases to exclude.
+
+    Returns:
+        A dictionary with test names as keys and their results as values.
+    """
     if tests_to_exclude is None:
         tests_to_exclude = []
     excluded_tests = ":".join(tests_to_exclude)
@@ -160,7 +178,14 @@ def gtest_run_testsuite(
 
 
 def parse_junit_xml(xml_path: Path) -> tp.Dict[str, TestResult]:
-    """Parse the xml test report and return the test results."""
+    """
+    Parse a junit xml test report and return the test results.
+    Args:
+        xml_path: Path to the junit xml file.
+
+    Returns:
+        A dictionary with test names as keys and their results as values.
+    """
     results: tp.Dict[str, TestResult] = {}
     test_xml = JUnitXml.fromfile(xml_path.absolute().__str__())
     for suite in test_xml:

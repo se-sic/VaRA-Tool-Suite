@@ -94,6 +94,11 @@ class RunTestSuite(ProjectStep):  # type: ignore
         Args:
           project: Project to run the test-suite on
           output_path: Path to write the test report file to
+          tests_to_run: List of test cases to run. If None, all tests will be run.
+          tests_to_exclude: List of test cases to exclude.
+          result_filter: Function to filter the test results. If None, a default
+                         filter is used that considers PASSED, SKIPPED and DISABLED
+                         as successful results.
         """
         super().__init__(project)
         self.__output_path = output_path
