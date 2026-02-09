@@ -73,7 +73,7 @@ class PostgreSQL(VProject):
                 configure = local["../configure"]
                 make = local["make"]
 
-                bb.watch(configure)(f"--prefix={install_dir}")
+                bb.watch(configure)(f"--prefix={install_dir}", "--enable-debug")
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
                 bb.watch(make)("install")
 
@@ -91,6 +91,80 @@ class PostgreSQL(VProject):
 
     def run_tests(self) -> None:
         pass
+
+    ###############################
+    # SupportsTestSuites protocol #
+    ###############################
+    def prepare_test_environment(self) -> None:
+        """
+        Prepare the test environment for this project.
+
+        After running this method, the test environment should be prepared such
+        that tests are discoverable for the get_test_names() method. This does
+        not necessarily mean that the tests are built yet.
+        """
+        version_source = local.path(self.source_of_primary)
+
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
+        build_dir = version_source / "build-tests"
+        install_dir = version_source / "install-tests"
+        build_dir.mkdir(parents=True, exist_ok=True)
+        install_dir.mkdir(parents=True, exist_ok=True)
+
+        with local.cwd(version_source):
+            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
+                meson = local["meson"]
+                bb.watch(meson)("setup", f"--prefix={install_dir}", build_dir)
+
+    def build_tests(self) -> None:
+        """
+        Build the tests for this project.
+
+        Should be called after prepare_test_environment() to build the tests.
+        Once this method is called, the tests should be built and ready to run.
+        """
+        # No further steps required, as meson setup already configures the tests
+        pass
+
+    def run_testsuite(
+        self,
+        test_report_path: tp.Optional[Path] = None,
+        tests_to_run: tp.Optional[tp.Iterable[str]] = None,
+        tests_to_exclude: tp.Optional[tp.Iterable[str]] = None
+    ) -> tp.Optional[tp.Dict[str, TestResult]]:
+        """
+        Run the test suite for this project.
+
+        Args:
+            test_report_path: Path to the test report file.
+            tests_to_run: List of test cases to run.
+                          If None, all tests will be run.
+            tests_to_exclude: List of test cases to exclude.
+
+        Returns:
+            returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
+        """
+        ...
+
+    def get_test_names(self) -> tp.Iterable[str]:
+        """
+        Returns a list of tests that can be run for this project in the current
+        revision and configuration. Requires that prepare_test_environment() was
+        called before.
+
+        Returns:
+             A list of tests available for this project.
+        """
+        version_source = local.path(self.source_of_primary)
+        build_dir = version_source / "build-tests"
+
+        with local.cwd(build_dir):
+            meson_test = local["meson"]["test", "--list"]
+            output = bb.watch(meson_test)().strip()
+            test_names = output.splitlines()
+            return test_names
 
     ##############################
     # SupportsBenchbase protocol #

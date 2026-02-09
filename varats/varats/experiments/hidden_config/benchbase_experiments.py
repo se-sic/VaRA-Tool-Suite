@@ -2,30 +2,44 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild as bb
-from benchbuild.extensions import compiler, run
+from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.actions import Step, Compile, ProjectStep, StepResult
 from plumbum import local, ProcessExecutionError
 
-from varats.data.reports.benchbase_report import (
-    BenchBaseReport,
-    BenchBaseReportAggregate,
+from varats.data.reports.benchbase_report import BenchBaseReportAggregate
+from varats.data.reports.llvm_cov_report import (
+    LLVMCoverageReport,
+    MWLCoverageReport,
 )
 from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_new_success_result_filepath,
     AsOutputFolderStep,
     ZippedExperimentSteps,
+    get_config_patch_steps,
+    get_config_reverse_patch_steps,
 )
-from varats.experiment.workload_util import create_workload_specific_filename
+from varats.experiments.coverage.collect_coverages import (
+    CollectCoverage,
+    MergeCoverages,
+    BuildWithCoverage,
+)
 from varats.experiments.hidden_config.database_utils import SupportsBenchbase
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.project.varats_project import VProject
 from varats.projects.c_projects.postgres import PostgreSQL
 from varats.projects.c_projects.sqlite import SQLite
 from varats.projects.cpp_projects.mariadb import MariaDB
-from varats.report.report import ReportFilepath, ReportSpecification
+from varats.provider.patch.patch_provider import PatchProvider
+from varats.report.report import ReportSpecification
 from varats.utils.config import get_current_config_id
 from varats.utils.git_util import ShortCommitHash
+
+_WORKLOADS = [
+    "tpcc",
+    "tpch",
+    "auctionmark",
+]
 
 
 class BuildBenchbase(ProjectStep):
@@ -47,7 +61,8 @@ class BuildBenchbase(ProjectStep):
 
         with local.cwd(self.project.builddir):
             try:
-                git("clone", "--depth", 1, benchbase_repo_url)
+                if not Path("benchbase").exists():
+                    git("clone", "--depth", 1, benchbase_repo_url)
             except ProcessExecutionError as e:
                 print(f"Error cloning BenchBase repository: {e}")
                 self.status = StepResult.ERROR
@@ -75,10 +90,45 @@ class BuildBenchbase(ProjectStep):
         self.status = StepResult.OK
         return self.status
 
+    def __str__(self, indent: int = 0) -> str:
+        return " " * indent + f"* {self.project.name}: Build BenchBase"
+
 
 @AsOutputFolderStep("result_file")
 class RunBenchbase(ProjectStep):
     """Runs the BenchBase benchmark suite."""
+
+    @classmethod
+    def _run_benchbase(
+        cls, project: tp.Union[VProject, SupportsBenchbase], workload: str
+    ) -> StepResult:
+        benchbase_exec_dir = project.builddir / "benchbase" / "target" / f"benchbase-{project.get_benchbase_profile_name()}"
+
+        with local.cwd(benchbase_exec_dir):
+            print(f"Running workload: {workload}")
+            # TODO: Customize configuration
+            config = {}
+            workload_config = project.render_workload_config(workload, config)
+
+            run_cmd = local["java"]["-jar", "benchbase.jar", "-b", workload,
+                                    "-c", workload_config, "--create=true",
+                                    "--load=true", "--execute=true"]
+
+            try:
+                # Start the database server
+                project.start_database_server()
+
+                # Run the benchmark
+                bb.watch(run_cmd)()
+
+                # Stop the database server after benchmark
+                project.stop_database_server()
+            except ProcessExecutionError as e:
+                print(f"Error running BenchBase workload '{workload}': {e}")
+                status = StepResult.ERROR
+                return status
+
+        return StepResult.OK
 
     __DB_PROFILES = {
         MariaDB: "mariadb",
@@ -86,17 +136,13 @@ class RunBenchbase(ProjectStep):
         SQLite: "sqlite",
     }
 
-    __WORKLOADS = [
-        "tpcc",
-        "tpch",
-        "auctionmark",
-    ]
-
     def __init__(
-        self, project: tp.Union[VProject, SupportsBenchbase], result_file: Path
+        self, project: tp.Union[VProject, SupportsBenchbase], result_file: Path,
+        workload: str
     ):
         super().__init__(project)
         self.result_file = result_file
+        self.__workload = workload
 
     def __call__(self) -> tp.Any:
         if not isinstance(self.project, SupportsBenchbase):
@@ -106,53 +152,17 @@ class RunBenchbase(ProjectStep):
 
         self.project: tp.Union[VProject, SupportsBenchbase]
 
-        benchbase_repo_url = "https://github.com/cmu-db/benchbase.git"
-        git = local["git"]
+        benchbase_exec_dir = self.project.builddir / "benchbase" / "target" / f"benchbase-{self.project.get_benchbase_profile_name()}"
 
-        with local.cwd(self.project.builddir):
-            with local.cwd(
-                f"benchbase/target/benchbase-{self.project.get_benchbase_profile_name()}"
-            ):
-                for workload in self.__WORKLOADS:
-                    print(f"Running workload: {workload}")
-                    # TODO: Customize configuration
-                    config = {}
-                    workload_config = self.project.render_workload_config(
-                        workload, config
-                    )
-
-                    run_cmd = local["java"]["-jar", "benchbase.jar", "-b",
-                                            workload, "-c", workload_config,
-                                            "--create=true", "--load=true",
-                                            "--execute=true"]
-
-                    try:
-                        # Start the database server
-                        self.project.start_database_server()
-
-                        # Run the benchmark
-                        bb.watch(run_cmd)()
-
-                        # Stop the database server after benchmark
-                        self.project.stop_database_server()
-                    except ProcessExecutionError as e:
-                        print(
-                            f"Error running BenchBase workload '{workload}': {e}"
-                        )
-                        self.status = StepResult.ERROR
-                        return self.status
-
-                    # Zip up results
-                    try:
-                        with local.cwd("results"):
-                            local["zip"]["-r", "-D",
-                                         self.result_file.absolute(), "."]()
-                    except ProcessExecutionError as e:
-                        print(
-                            f"Error zipping results for workload '{workload}': {e}"
-                        )
-                        self.status = StepResult.ERROR
-                        return self.status
+        self._run_benchbase(self.project, self.__workload)
+        # Zip up results
+        try:
+            with local.cwd(benchbase_exec_dir / "results"):
+                local["zip"]["-r", "-D", self.result_file.absolute(), "."]()
+        except ProcessExecutionError as e:
+            print(f"Error zipping results: {e}")
+            self.status = StepResult.ERROR
+            return self.status
 
         self.status = StepResult.OK
         return self.status
@@ -200,10 +210,145 @@ class BenchbaseBenchmark(FeatureExperiment, shorthand="BBB"):
             BuildBenchbase(project),
             ZippedExperimentSteps(
                 result_path, [
-                    RunBenchbase(project, Path(f"rep_{r}.zip"))
+                    RunBenchbase(project, Path(f"rep_{r}.zip"), wl)
                     for r in range(self._REPS)
+                    for wl in _WORKLOADS
                 ]
             )
         ]
 
         return analysis_actions
+
+
+class BenchbaseHiddenConfig(FeatureExperiment, shorthand="BBHC"):
+    """Runs the BenchBase benchmark suite with a hidden configuration."""
+
+    NAME = "BenchbaseHiddenConfig"
+    DESCRIPTION = "Run the BenchBase benchmark suite with a hidden configuration"
+    REPORT_SPEC = ReportSpecification(
+        ...
+    )  # TODO: Proper MPReport for benchbase
+
+    def actions_for_project(self,
+                            project: VProject) -> tp.MutableSequence[Step]:
+        if not isinstance(project, SupportsBenchbase):
+            raise TypeError(
+                f"Project {project.name} does not support benchbase."
+            )
+
+        project: tp.Union[VProject, SupportsBenchbase]
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self)
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+                                     << run.WithTimeout()
+
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        patch_provider = PatchProvider.get_provider_for_project(type(project))
+        patches = patch_provider.get_patches_for_revision(
+            ShortCommitHash(project.version_of_primary)
+        )["hidden-config"]
+
+        analysis_actions = get_config_patch_steps(project)
+
+        analysis_actions.append(Compile(project))
+        analysis_actions.append(BuildBenchbase(project))
+
+        # TODO: Implement patch steps
+        db_binary = project.database_binary(
+            ShortCommitHash(project.version_of_primary)
+        )
+
+        analysis_actions.extend += get_config_reverse_patch_steps(project)
+
+
+class BenchbaseCoverage(FeatureExperiment, shorthand="BBC"):
+    """Runs the BenchBase benchmark suite with coverage instrumentation."""
+
+    NAME = "BenchbaseCoverage"
+    DESCRIPTION = "Run the BenchBase benchmark suite with coverage instrumentation"
+    REPORT_SPEC = ReportSpecification(LLVMCoverageReport, MWLCoverageReport)
+
+    def actions_for_project(self,
+                            project: VProject) -> tp.MutableSequence[Step]:
+        if not isinstance(project, SupportsBenchbase):
+            raise TypeError(
+                f"Project {project.name} does not support benchbase."
+            )
+
+        project: tp.Union[VProject, SupportsBenchbase]
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+                                    << time.RunWithTime()
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+                                     << run.WithTimeout()
+
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.REPORT_SPEC.main_report
+        )
+
+        project.cflags.extend([
+            "-fprofile-instr-generate", "-fcoverage-mapping"
+        ])
+
+        db_binary = project.database_binary(
+            ShortCommitHash(project.version_of_primary)
+        )
+
+        result_file = create_new_success_result_filepath(
+            self.get_handle(), self.REPORT_SPEC.main_report, project, db_binary,
+            get_current_config_id(project)
+        )
+
+        steps: tp.MutableSequence[Step] = [
+            BuildWithCoverage(project, project.compile),
+            BuildBenchbase(project),
+            #MergeCoverages(project,db_binary.path, "coverages",
+            #               "benchbase", result_file.full_path())
+        ]
+
+        prefixes = []
+        zipped_steps = []
+
+        bin_path = Path(project.source_of_primary) / db_binary.path
+
+        for workload in _WORKLOADS:
+
+            def bound_run():
+                RunBenchbase._run_benchbase(project, workload)
+
+            wl_result_file = f"{db_binary.name}_{workload}_0.zip"
+
+            zipped_steps.extend([
+                CollectCoverage(project, bound_run, workload),
+                MergeCoverages(
+                    project, bin_path.absolute(), f"{workload}", f"{workload}",
+                    Path(wl_result_file)
+                )
+            ])
+
+            prefixes.append(workload)
+
+        agg_result_file = create_new_success_result_filepath(
+            self.get_handle(), MWLCoverageReport, project, db_binary,
+            get_current_config_id(project)
+        )
+
+        steps.append(ZippedExperimentSteps(agg_result_file, zipped_steps))
+
+        steps.append(
+            MergeCoverages(
+                project, bin_path.absolute(), prefixes, "benchbase-cov",
+                result_file.full_path().absolute()
+            )
+        )
+
+        return steps

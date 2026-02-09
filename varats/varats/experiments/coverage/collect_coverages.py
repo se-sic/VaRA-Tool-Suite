@@ -314,7 +314,8 @@ class MergeCoverages(ProjectStep):  # type: ignore
         # Merge the coverage information
         profdata_cmd = local["llvm-profdata"]["merge", "-sparse",
                                               *coverage_raw_files, "-o",
-                                              str(profdata_file)]
+                                              str(profdata_file),
+                                              "--failure-mode=all"]
 
         try:
             bb.watch(profdata_cmd)()
