@@ -117,7 +117,7 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """
         with local.cwd(SZZUnleashed.source_location() / "szzunleashed"):
             stdout = gradle("-p", "szz", "properties")
-            version_pattern = re.compile("version:\\s+([\\d.]*)")
+            version_pattern = re.compile(r"version:\\s+([\\d.]*)")
             match = version_pattern.search(stdout)
             if not match:
                 raise AssertionError("Could not determine project version")

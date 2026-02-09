@@ -159,7 +159,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
             data = f.read()
 
         with open(self.path, "w") as f:
-            remove_lost_events = re.compile('Lost \d+ events')
+            remove_lost_events = re.compile(r'Lost \d+ events')
             for line in data.splitlines():
                 if "Lost" in line:
                     LOG.error(
