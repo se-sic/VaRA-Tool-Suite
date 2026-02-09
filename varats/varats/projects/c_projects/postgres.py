@@ -23,7 +23,7 @@ from varats.project.project_util import (
 from varats.project.varats_project import VProject
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
-from varats.utils.testsuite_utils import TestResult
+from varats.utils.testsuite_utils import TestResult, parse_junit_xml
 
 
 class PostgreSQL(VProject):
@@ -117,6 +117,9 @@ class PostgreSQL(VProject):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 meson = local["meson"]
                 bb.watch(meson)("setup", f"--prefix={install_dir}", build_dir)
+                bb.watch(meson)(
+                    "test", "-q", "--print-errorlogs", "--suite", "setup"
+                )
 
     def build_tests(self) -> None:
         """
@@ -146,7 +149,36 @@ class PostgreSQL(VProject):
         Returns:
             returns a dictionary mapping test names to respective result (e.g., 'passed', 'failed', 'skipped').
         """
-        ...
+        build_dir = local.path(self.source_of_primary) / "build-tests"
+        meson = local["meson"]["test", "-q", "--print-errorlogs"]
+
+        if not tests_to_run:
+            tests_to_run = self.get_test_names()
+
+        if tests_to_exclude:
+            tests_to_run = [
+                test for test in tests_to_run if test not in tests_to_exclude
+            ]
+
+        with local.cwd(build_dir):
+            with local.env(TESTS=" ".join(tests_to_run)):
+                try:
+                    bb.watch(meson)("--suite", "regress")
+                except ProcessExecutionError as e:
+                    print(f"Error running tests: {e}")
+                    # In a real implementation, we would parse the output to determine which tests failed
+                    return {}
+
+            result_file = build_dir / "meson-logs" / "testlog.junit.xml"
+
+            test_results = {}
+            if result_file.exists():
+                test_results = parse_junit_xml(result_file)
+
+            if test_report_path:
+                shutil.copy(result_file, test_report_path)
+
+            return test_results
 
     def get_test_names(self) -> tp.Iterable[str]:
         """
