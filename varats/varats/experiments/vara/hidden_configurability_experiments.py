@@ -51,7 +51,22 @@ from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
 )
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
-from varats.project.varats_project import VProject, SupportsTestSuites
+from varats.project.varats_project import VProject
+from varats.projects.c_projects.brotli import Brotli
+from varats.projects.c_projects.bzip2 import Bzip2
+from varats.projects.c_projects.gzip import Gzip
+from varats.projects.c_projects.lrzip import Lrzip
+from varats.projects.c_projects.postgres import PostgreSQL
+from varats.projects.c_projects.sqlite import SQLite
+from varats.projects.c_projects.xz import Xz
+from varats.projects.cpp_projects.duckdb import DuckDB
+from varats.projects.cpp_projects.dune import DunePerfRegression
+from varats.projects.cpp_projects.ect import Ect
+from varats.projects.cpp_projects.fast_downward import FastDownward
+from varats.projects.cpp_projects.hyteg import HyTeg
+from varats.projects.cpp_projects.lepton import Lepton
+from varats.projects.cpp_projects.mariadb import MariaDB
+from varats.projects.cpp_projects.sevenZip import SevenZip
 from varats.provider.patch.patch_provider import PatchProvider
 from varats.report.multi_patch_report import MultiPatchReport
 from varats.report.report import ReportSpecification
@@ -159,11 +174,24 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
     ]
 
     __PROJECT_SPECIFIC_IGNORED_PATTERNS = {
-        "HyTeg": ["eigen/"],
-        "7-Zip": ["Windows/", "UI/"],
-        "brotli": ["csharp/", "go/", "java/", "js/", "python/", "research/"],
-        "xz": ["debug/", "doc/", "windows/"],
-        "lepton": ["dependencies/", "test_suite/"]
+        HyTeg.NAME: ["eigen/"],
+        SevenZip.NAME: ["Windows/", "UI/"],
+        Brotli.NAME: ["csharp/", "go/", "java/", "js/", "python/", "research/"],
+        Xz.NAME: ["debug/", "doc/", "windows/"],
+        Lepton.NAME: ["dependencies/", "test_suite/"],
+        Ect.NAME: [
+            "libpng/", "leanify/", "lodepng/", "miniz/", "mozijpeg/",
+            "optipng/", "zlib/", "zopfli/"
+        ],
+        Lrzip.NAME: ["libzpaq/", "lzo/", "lzma/", "m4/"],
+        Bzip2.NAME: [],
+        Gzip.NAME: ["m4"],
+        MariaDB.NAME: ["dbug/", "wsrep-lib/", "zlib/"],
+        SQLite.NAME: [],
+        PostgreSQL.NAME: [],
+        DuckDB.NAME: ["benchmark/", "extensions/", "third_party/"],
+        FastDownward.NAME: [],
+        DunePerfRegression.NAME: ["dune-performance-regression/"],
     }
 
     def __init__(self, project: VProject, experiment_handle: ExperimentHandle):
