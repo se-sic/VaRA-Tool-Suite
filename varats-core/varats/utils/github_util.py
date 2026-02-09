@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 from benchbuild.project import Project
 from benchbuild.source import primary
-from github import Github
+from github import Auth, Github
 from github.GithubObject import GithubObject
 
 from varats.utils.settings import vara_cfg
@@ -31,7 +31,7 @@ def get_github_instance() -> Github:
         a Github instance
     """
     if (access_token := str(vara_cfg()["provider"]["github_access_token"])):
-        return Github(access_token)
+        return Github(auth=Auth.Token(access_token))
     return Github()
 
 

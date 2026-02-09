@@ -386,7 +386,7 @@ def __gen_per_year(
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
-class SmoothPlotCLI(click.MultiCommand):
+class SmoothPlotCLI(click.Group):
     """Command factory for plots."""
 
     def __init__(self, **attrs: tp.Any):
