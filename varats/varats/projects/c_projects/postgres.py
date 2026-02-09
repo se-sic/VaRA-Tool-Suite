@@ -26,6 +26,14 @@ from varats.utils.settings import bb_cfg
 from varats.utils.testsuite_utils import TestResult, parse_junit_xml
 
 
+def _normalise_test_name(test_name: str) -> str:
+    # Test names output by postgres xml are in a weird format.
+    # We attempt to fix it to be consistent across runs
+    test_name = test_name.strip(" ms")
+    test_name = test_name.rsplit(" ", 1)[0]
+    return test_name.replace(" ", "")
+
+
 class PostgreSQL(VProject):
     """PostgreSQL is a powerful, open source object-relational database
     system."""
@@ -116,10 +124,11 @@ class PostgreSQL(VProject):
         with local.cwd(version_source):
             with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 meson = local["meson"]
-                bb.watch(meson)("setup", f"--prefix={install_dir}", build_dir)
-                bb.watch(meson)(
-                    "test", "-q", "--print-errorlogs", "--suite", "setup"
-                )
+                bb.watch(meson)("setup", build_dir)
+                with local.cwd(build_dir):
+                    bb.watch(meson)(
+                        "test", "-q", "--print-errorlogs", "--suite", "setup"
+                    )
 
     def build_tests(self) -> None:
         """
@@ -155,25 +164,30 @@ class PostgreSQL(VProject):
         if not tests_to_run:
             tests_to_run = self.get_test_names()
 
-        if tests_to_exclude:
-            tests_to_run = [
-                test for test in tests_to_run if test not in tests_to_exclude
-            ]
+        if tests_to_exclude or tests_to_run:
+            print(
+                "Including and excluding specific tests is currently not supported for PostgreSQL."
+            )
+            #tests_to_run = [
+            #    test for test in tests_to_run if test not in tests_to_exclude
+            #]
 
         with local.cwd(build_dir):
-            with local.env(TESTS=" ".join(tests_to_run)):
-                try:
-                    bb.watch(meson)("--suite", "regress")
-                except ProcessExecutionError as e:
-                    print(f"Error running tests: {e}")
-                    # In a real implementation, we would parse the output to determine which tests failed
-                    return {}
+            try:
+                bb.watch(meson)("--suite", "regress")
+            except ProcessExecutionError as e:
+                print(f"Error running tests: {e}")
+                return {}
 
-            result_file = build_dir / "meson-logs" / "testlog.junit.xml"
+            result_file = Path(build_dir / "meson-logs" / "testlog.junit.xml")
 
             test_results = {}
             if result_file.exists():
                 test_results = parse_junit_xml(result_file)
+                test_results = {
+                    _normalise_test_name(name): result
+                    for name, result in test_results.items()
+                }
 
             if test_report_path:
                 shutil.copy(result_file, test_report_path)
@@ -194,9 +208,9 @@ class PostgreSQL(VProject):
 
         with local.cwd(build_dir):
             meson_test = local["meson"]["test", "--list"]
-            output = bb.watch(meson_test)().strip()
+            output = bb.watch(meson_test)()[1].strip()
             test_names = output.splitlines()
-            return test_names
+            return test_names[1:]
 
     ##############################
     # SupportsBenchbase protocol #
