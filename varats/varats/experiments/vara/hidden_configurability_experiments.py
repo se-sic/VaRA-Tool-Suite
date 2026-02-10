@@ -104,7 +104,7 @@ class HiddenConfigurabilityDetector(actions.ProjectStep):  #type: ignore
 
         result_file = create_new_success_result_filepath(
             self.__experiment_handle, HiddenConfigurabilityReport, self.project,
-            binary
+            binary, get_current_config_id(self.project)
         )
 
         project_directory = self.project.source_of_primary
@@ -282,6 +282,17 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         #pprint.pprint(report_data)
         return report_data
 
+    def __filter_literal_bin_operations(self, report_data: dict) -> dict:
+        # Filter literal bin operations based on operand
+        __LITERAL_BIN_OP_KEY = "LiteralComp"
+
+        for point in report_data.get(__LITERAL_BIN_OP_KEY, []):
+            if point["Operator"] not in [
+                "==", "!=", "<", ">", "<=", ">=", "+=", "-=", "*=", "/="
+            ]:
+                point["tags"] = getattr(point, "tags",
+                                        []) + ["Excluded (Operand)"]
+
     def filter(self) -> actions.StepResult:
         # Load the report
         reports = get_processed_revisions_files(
@@ -308,6 +319,8 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
         report_data = self.__filter_ignored_patterns(report_data)
 
         report_data = self.__filter_coverage_based(report_data)
+
+        report_data = self.__filter_literal_bin_operations(report_data)
 
         result_filename = create_new_success_result_filepath(
             self.__experiment_handle, HiddenConfigurabilityReport, self.project,
