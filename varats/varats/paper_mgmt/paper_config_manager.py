@@ -3,10 +3,10 @@ this module provides functionality to visualize the status of case studies or to
 package a whole paper config into a zip folder."""
 
 import re
+import tarfile
 import typing as tp
 from collections import defaultdict
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
 
 from plumbum import colors
 
@@ -406,14 +406,12 @@ def package_paper_config(
             case_study_files_to_include.append(cs_file)
 
     vara_root = Path(str(vara_cfg()['config_file'])).parent
-    with ZipFile(
-        output_file, "w", compression=ZIP_DEFLATED, compresslevel=9
-    ) as pc_zip:
+    with tarfile.open(output_file, "w:gz") as pc_zip:
         for file_path in files_to_store:
-            pc_zip.write(file_path.resolve().relative_to(vara_root))
+            pc_zip.add(file_path.resolve().relative_to(vara_root))
 
         for case_study_file in case_study_files_to_include:
-            pc_zip.write(case_study_file.resolve().relative_to(vara_root))
+            pc_zip.add(case_study_file.resolve().relative_to(vara_root))
 
 
 def _combine_tagged_revs_for_experiment(

@@ -133,9 +133,6 @@ no_implicit_optional = true
 check_untyped_defs = true
 warn_redundant_casts = true
 warn_unreachable = true
-plugins = [
-  "numpy.typing.mypy_plugin"
-]
 
 [[tool.mypy.overrides]]
 module = [

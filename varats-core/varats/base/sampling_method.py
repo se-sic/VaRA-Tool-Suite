@@ -1,38 +1,39 @@
 """This module provides different sampling-method interface classes."""
 import abc
 import json
-import typing as tp
+from collections.abc import Callable
 from enum import Enum
-
-if tp.TYPE_CHECKING:
-    import numpy.typing as npt
-    import numpy as np
+from typing import Any, TYPE_CHECKING, TypeVar, TypeAlias, TypeGuard, cast
 
 from varats.base.configuration import Configuration
 
-SamplingMethodSubType = tp.TypeVar('SamplingMethodSubType')
+if TYPE_CHECKING:
+    import numpy as np
 
 
-class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
+class SamplingMethodBase(abc.ABC):
     """
     Represents the sampling configuration added as a base class to all sampling
     methods.
 
     This class is designed to make the configuration of a sampling method
-    persitable.
+    persistable.
     """
 
     CONFIG_TYPE_NAME = 'sampling_method'
 
-    _methods: tp.Dict[str, tp.Type[SamplingMethodSubType]] = {}
+    _methods: dict[str, type['SamplingMethodBase']] = {}
+
+    def __init__(self, **kwargs: Any) -> None:
+        pass
 
     @classmethod
-    def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
+    def __init_subclass__(cls, *args: Any, **kwargs: Any) -> None:
         super().__init_subclass__(*args, **kwargs)
         cls._methods[cls.name()] = cls
 
     @classmethod
-    def sampling_method_names(cls) -> tp.List[str]:
+    def sampling_method_names(cls) -> list[str]:
         """
         Returns a list of all registered sampling method names.
 
@@ -43,12 +44,12 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
     @classmethod
     def get_sampling_method_type(
         cls, sampling_method_name: str
-    ) -> tp.Type[SamplingMethodSubType]:
-        """Maps the name of a `SamplingMethod` to the concret type."""
+    ) -> type['SamplingMethodBase']:
+        """Maps the name of a `SamplingMethod` to the concrete type."""
         return cls._methods[sampling_method_name]
 
     @classmethod
-    def sampling_method_types(cls) -> tp.List[tp.Type[SamplingMethodSubType]]:
+    def sampling_method_types(cls) -> list[type['SamplingMethodBase']]:
         """
         Returns a list of all registered sampling method types.
 
@@ -57,9 +58,29 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
         return list(cls._methods.values())
 
     @staticmethod
+    def create_sampling_method(
+        sampling_method_name: str, **kwargs: Any
+    ) -> 'SamplingMethodBase':
+        """
+        Factory function for creating sampling methods.
+
+        Args:
+            sampling_method_name: name of the sampling method
+            kwargs: additional arguments passed to the sampling method's
+                    constructor and configuration function
+
+        Returns: instantiated `SamplingMethod`
+        """
+        sampling_method_cls = SamplingMethodBase.get_sampling_method_type(
+            sampling_method_name
+        )
+        sampling_method = sampling_method_cls(**kwargs)
+        return sampling_method
+
+    @staticmethod
     def create_sampling_method_from_config_str(
         config_str: str
-    ) -> SamplingMethodSubType:
+    ) -> 'SamplingMethodBase':
         """
         Recreates a configured `SamplingMethod` from a config string.
 
@@ -69,25 +90,12 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
         Returns: reinitialized `SamplingMethod`
         """
         loaded_dict = json.loads(config_str.replace('\'', "\""))
-
-        sm_type: tp.Type[SamplingMethodSubType] = SamplingMethodBase[
-            SamplingMethodSubType].get_sampling_method_type(
-                loaded_dict[SamplingMethodBase.CONFIG_TYPE_NAME]
-            )
-
-        sm_obj: SamplingMethodSubType = sm_type()
-        if not issubclass(type(sm_obj), SamplingMethodBase):
-            raise AssertionError(
-                "Sampling methods can only be created for classes which "
-                "implement the SamplingMethodBase interface."
-            )
-        # sm_obj is always a subtype of SamplingMethodBase
-        tp.cast(# pylint: disable=W0212
-            'SamplingMethodBase[SamplingMethodSubType]', sm_obj
-        )._configure_sampling_method(  # pylint: disable=W0212
-            loaded_dict
+        sampling_method_name = loaded_dict.pop(
+            SamplingMethodBase.CONFIG_TYPE_NAME
         )
-        return sm_obj
+        return SamplingMethodBase.create_sampling_method(
+            sampling_method_name, **loaded_dict
+        )
 
     @classmethod
     def name(cls) -> str:
@@ -109,9 +117,9 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
 
         return str(partial_config)
 
-    def _extend_config(self) -> tp.Dict[str, tp.Any]:  # pylint: disable=R0201
+    def _extend_config(self) -> dict[str, Any]:  # pylint: disable=R0201
         """
-        Returns a configuration dict with config values from the sub class that
+        Returns a configuration dict with config values from the subclass that
         should be persisted.
 
         Implementations in subclasses should always call
@@ -119,32 +127,22 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
         """
         return {}
 
-    def _configure_sampling_method(self, config: tp.Dict[str, str]) -> None:
-        """
-        Configures the `SamplingMethod` according to the provided config.
 
-        Args:
-            config: for the `SamplingMethod`
-
-        Returns: configured `SamplingMethod`
-        """
+SampleType = TypeVar('SampleType')
+SampleArray: TypeAlias = 'np.ndarray[tuple[int], np.dtype[np.float64]]'
+SamplingMethod: TypeAlias = SamplingMethodBase
 
 
-SamplingMethod = SamplingMethodBase[tp.Any]
-
-SampleType = tp.TypeVar('SampleType')
-
-
-class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
+class NormalSamplingMethod(SamplingMethodBase):
     """Abstract base class for normal sampling methods that sample following a
     certain probability distribution."""
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
 
-    def _extend_config(self) -> tp.Dict[str, tp.Any]:
+    def _extend_config(self) -> dict[str, Any]:
         """
-        Returns a configuration dict with config values from the sub class that
+        Returns a configuration dict with config values from the subclass that
         should be persisted.
 
         Implementations in subclasses should always call
@@ -153,22 +151,17 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         partial_config = super()._extend_config()
         return partial_config
 
-    def _configure_sampling_method(self, config: tp.Dict[str, str]) -> None:
-        """
-        Configures the `SamplingMethod` according to the provided config.
-
-        Args:
-            config: for the `SamplingMethod`
-
-        Returns: configured `SamplingMethod`
-        """
-        # We don't extend the config with own options, therefore, we don't have
-        # to configure anything here.
+    @classmethod
+    def get_normal_sampling_method_type(
+        cls, sampling_method_name: str
+    ) -> type['NormalSamplingMethod']:
+        """Maps the name of a `NormalSamplingMethod` to the concrete type."""
+        return cast(
+            type[NormalSamplingMethod], cls._methods[sampling_method_name]
+        )
 
     @classmethod
-    def normal_sampling_method_types(
-        cls
-    ) -> tp.List[tp.Type['NormalSamplingMethod']]:
+    def normal_sampling_method_types(cls) -> list[type['NormalSamplingMethod']]:
         """
         Returns a list of all registered normal sampling method types.
 
@@ -176,15 +169,21 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         """
         return list(
             filter(
-                lambda ty: ty is not NormalSamplingMethod and
-                issubclass(ty, NormalSamplingMethod), cls._methods.values()
+                NormalSamplingMethod.__is_normal_sampling_method,
+                cls._methods.values()
             )
         )
 
+    @staticmethod
+    def __is_normal_sampling_method(
+        sampling_method_type: type[SamplingMethodBase]
+    ) -> TypeGuard[type['NormalSamplingMethod']]:
+        return sampling_method_type is not NormalSamplingMethod and issubclass(
+            sampling_method_type, NormalSamplingMethod
+        )
+
     @abc.abstractmethod
-    def gen_distribution_function(
-        self
-    ) -> tp.Callable[[int], 'npt.NDArray[np.float64]']:
+    def gen_distribution_function(self) -> Callable[[int], SampleArray]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -193,8 +192,8 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
             according to the selected distribution
         """
 
-    def sample_n(self, data: tp.List[SampleType],
-                 num_samples: int) -> tp.List[SampleType]:
+    def sample_n(self, data: list[SampleType],
+                 num_samples: int) -> list[SampleType]:
         """
         Return a list of n unique samples. If the list to sample is smaller than
         the number of samples the full list is returned.
@@ -223,9 +222,7 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 class UniformSamplingMethod(NormalSamplingMethod):
     """SampleMethod based on the uniform distribution."""
 
-    def gen_distribution_function(
-        self
-    ) -> tp.Callable[[int], 'npt.NDArray[np.float64]']:
+    def gen_distribution_function(self) -> Callable[[int], SampleArray]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -234,9 +231,9 @@ class UniformSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def uniform(num_samples: int) -> 'npt.NDArray[np.float64]':
+        def uniform(num_samples: int) -> SampleArray:
             import numpy as np  # pylint: disable=import-outside-toplevel
-            return np.random.uniform(0, 1.0, num_samples)
+            return np.asarray(np.random.uniform(0, 1.0, num_samples))
 
         return uniform
 
@@ -244,9 +241,7 @@ class UniformSamplingMethod(NormalSamplingMethod):
 class HalfNormalSamplingMethod(NormalSamplingMethod):
     """SampleMethod based on a half-normal distribution."""
 
-    def gen_distribution_function(
-        self
-    ) -> tp.Callable[[int], 'npt.NDArray[np.float64]']:
+    def gen_distribution_function(self) -> Callable[[int], SampleArray]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -255,15 +250,57 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def halfnormal(num_samples: int) -> 'npt.NDArray[np.float64]':
+        def halfnormal(num_samples: int) -> SampleArray:
             # pylint: disable=import-outside-toplevel
             from scipy.stats import halfnorm
-            return tp.cast(
-                'npt.NDArray[np.float64]',
-                halfnorm.rvs(scale=1, size=num_samples)
-            )
+            return np.asarray(halfnorm.rvs(scale=1, size=num_samples))
 
         return halfnormal
+
+
+class EveryNSamplingMethod(SamplingMethodBase):
+    """SampleMethod sampling every n-th revision."""
+
+    def __init__(self, step: int, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.__step = step
+
+    def _extend_config(self) -> dict[str, Any]:
+        partial_config = super()._extend_config()
+        partial_config["step"] = self.__step
+        return partial_config
+
+    def gen_distribution_function(self) -> Callable[[int], SampleArray]:
+        """
+        Generate a distribution function for the specified sampling method.
+
+        Returns:
+            a callable that allows the caller to draw ``n`` numbers
+            according to the selected distribution
+        """
+
+        def every_nth(num_samples: int) -> SampleArray:
+            import numpy as np  # pylint: disable=import-outside-toplevel
+            return np.arange(
+                0, num_samples * self.__step, self.__step, dtype=np.float64
+            )
+
+        return every_nth
+
+    def sample_n(self, data: list[SampleType],
+                 num_samples: int) -> list[SampleType]:
+        """
+        Return a list of n unique samples. If the list to sample is smaller than
+        the number of samples the full list is returned.
+
+        Args:
+            data: list to sample from
+            num_samples: number of samples to choose
+
+        Returns: list of sampled items
+        """
+        end = min(num_samples * self.__step, len(data))
+        return list(reversed(data))[0:end:self.__step]
 
 
 class SamplingStrategy(abc.ABC):  # @Kalti: better name? Sampling heuristic?
@@ -313,17 +350,20 @@ class Solver(Enum):
     Z3 = 1
 
 
-class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
+class FeatureSamplingMethod(SamplingMethodBase):
     """Abstract base class for feature-sampling methods that sample
     configurations from a feature model based on different sampling
     strategies."""
 
-    def __init__(self, solver: Solver = Solver.NO_SOLVER) -> None:
+    def __init__(
+        self, solver: Solver = Solver.NO_SOLVER, **kwargs: Any
+    ) -> None:
+        super().__init__(**kwargs)
         self.__solver = solver
 
-    def _extend_config(self) -> tp.Dict[str, tp.Any]:
+    def _extend_config(self) -> dict[str, Any]:
         """
-        Returns a configuration dict with config values from the sub class that
+        Returns a configuration dict with config values from the subclass that
         should be persisted.
 
         Implementations in subclasses should always call
@@ -333,29 +373,15 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
         partial_config["solver"] = self.__solver
         return partial_config
 
-    def _configure_sampling_method(self, config: tp.Dict[str, str]) -> None:
-        """
-        Configures the `SamplingMethod` according to the provided config.
-
-        Args:
-            config: for the `SamplingMethod`
-
-        Returns: configured `SamplingMethod`
-        """
-        # TODO (ChristianKaltenecker): add impl to initialize solver from
-        # config + add way to persist solver type and solver configuration in
-        # the config
-        raise NotImplementedError
-
     @property
     def solver(self) -> Solver:
         return self.__solver
 
     @abc.abstractmethod
     def sample(
-        self, feature_model: tp.Any, partial_config: tp.Optional[Configuration],
-        strategy: tp.Optional[SamplingStrategy]
-    ) -> tp.List[Configuration]:
+        self, feature_model: Any, partial_config: Configuration | None,
+        strategy: SamplingStrategy | None
+    ) -> list[Configuration]:
         """
         Sample a list of `Configurations` from a given `FeatureModel` according
         to a given strategy.
