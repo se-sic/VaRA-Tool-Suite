@@ -19,7 +19,7 @@ Projects describe how a software project should be configured and build, e.g., `
 ### Install dependencies
 To use the VaRA Tool Suite, make sure you have the necessary packages installed.
 For ubuntu, you can use the following command to install them (your system has to
-have at least `python3.6`):
+have at least `python3.11`):
 
 ```bash
 sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev git
