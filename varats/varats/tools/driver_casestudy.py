@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 from plumbum import FG, colors, local
 
-from varats.base.sampling_method import NormalSamplingMethod
+from varats.base.sampling_method import NormalSamplingMethod, SamplingMethodBase
 from varats.data.discover_reports import initialize_reports
 from varats.experiment.experiment_util import VersionExperiment
 from varats.experiments.szz.pydriller_szz_experiment import (
@@ -299,9 +299,7 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 @__casestudy_gen.command("select_sample")
 @click.argument(
     "distribution",
-    type=click.Choice([
-        x.name() for x in NormalSamplingMethod.normal_sampling_method_types()
-    ])
+    type=click.Choice(SamplingMethodBase.sampling_method_names())
 )
 @click.option(
     "--end", help="End of the commit range (inclusive)", default="HEAD"
@@ -313,6 +311,9 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
     "--num-rev", type=int, default=10, help="Number of revisions to select."
 )
 @click.option(
+    "--step", type=int, default=1, help="Step used with EveryNSamplingMethod."
+)
+@click.option(
     "--only-code-commits",
     is_flag=True,
     help="Only consider code changes when sampling."
@@ -320,17 +321,16 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 @click.pass_context
 def __gen_sample(
     ctx: click.Context, distribution: str, end: str, start: str, num_rev: int,
-    only_code_commits: bool
+    step: int, only_code_commits: bool
 ) -> None:
     """
     Add revisions based on a sampling Distribution.
 
     Distribution: The sampling method to use
     """
-    sampling_method: NormalSamplingMethod = NormalSamplingMethod \
-        .get_sampling_method_type(
+    sampling_method = NormalSamplingMethod.get_normal_sampling_method_type(
         distribution
-    )()
+    )(step=step)
 
     project_repo = get_local_project_repo(ctx.obj['project'])
     if end != "HEAD" and not is_commit_hash(end):
