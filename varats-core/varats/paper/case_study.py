@@ -528,8 +528,21 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     for raw_stage in raw_case_study['stages']:
         hash_id_tuples: tp.List[CSEntry] = []
         for raw_hash_id_tuple in raw_stage['revisions']:
-            if 'config_ids' in raw_hash_id_tuple:
-                config_ids = [int(x) for x in raw_hash_id_tuple['config_ids']]
+            if raw_config_ids := raw_hash_id_tuple.get('config_ids', None):
+                if raw_config_ids == "all":
+                    config_ids = load_configuration_map_from_case_study_file(
+                        file_path
+                    ).ids()
+                else:
+                    config_ids = []
+                    for x in raw_hash_id_tuple['config_ids']:
+                        if isinstance(x, str):
+                            parts = x.split("..")
+                            begin = int(parts[0])
+                            end = int(parts[1])
+                            config_ids.extend(range(begin, end + 1))
+                        else:
+                            config_ids.append(int(x))
             else:
                 config_ids = []
 

@@ -50,7 +50,10 @@ def _do_feature_perf_cs_collection_compile(
 
     with local.cwd(feature_perf_repo.worktree_path / "build"):
         with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
-            bb.watch(cmake)("..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON")
+            bb.watch(cmake)(
+                "..", "-G", "Unix Makefiles", f"-D{cmake_flag}=ON",
+                "-DFPCSC_USE_LIBCXX=OFF"
+            )
 
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
@@ -63,6 +66,134 @@ def _do_feature_perf_cs_collection_recompile(project: VProject) -> None:
 
     with local.cwd(feature_perf_source / "build"):
         bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+
+class SynthFeatureInteraction(VProject):
+    """Synthetic case-study project for testing detection of feature
+    interactions."""
+
+    NAME = 'SynthFeatureInteraction'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="SynthFeatureInteraction",
+            refspec="origin/master",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("SynthFeatureInteraction")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("SynthFeatureInteraction") /
+                RSBinary("FeatureInteraction"),
+                ConfigParams(),
+                label="FeatureInteraction-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_repo(SynthFeatureInteraction.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/FeatureInteraction",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("96848fadf1", "master")
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_SYNTHFEATUREINTERACTION"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
+
+
+class PrimeNumbers(VProject):
+    """Synthetic case-study project for testing detection of feature
+    interactions."""
+
+    NAME = 'PrimeNumbers'
+    GROUP = 'perf_tests'
+    DOMAIN = ProjectDomains.TEST
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            local="PrimeNumbers",
+            refspec="origin/f-perf-stat-example",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("PrimeNumbers")
+        ),
+        FeatureSource()
+    ]
+
+    WORKLOADS = {
+        WorkloadSet(WorkloadCategory.EXAMPLE): [
+            VCommand(
+                SourceRoot("PrimeNumbers") / RSBinary("PrimeNumbers"),
+                ConfigParams(),
+                label="PrimeNumbers-no-input"
+            )
+        ]
+    }
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_12)
+
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
+        binary_map = RevisionBinaryMap(
+            get_local_project_repo(PrimeNumbers.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/PrimeNumbers",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange(
+                "90cb6aec2a8abac249926a6bb4a1416ba65b550d",
+                "f-perf-stat-example"
+            )
+        )
+
+        return binary_map[revision]
+
+    def run_tests(self) -> None:
+        pass
+
+    def compile(self) -> None:
+        """Compile the project."""
+        _do_feature_perf_cs_collection_compile(
+            self, "FPCSC_ENABLE_PROJECT_PRIMENUMBERS"
+        )
+
+    def recompile(self) -> None:
+        """Recompile the project."""
+        _do_feature_perf_cs_collection_recompile(self)
 
 
 class FeaturePerfCSCollection(VProject):
