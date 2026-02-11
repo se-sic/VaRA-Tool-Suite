@@ -4,7 +4,7 @@ Getting Started
 Installing VaRA Tool-Suite
 --------------------------
 
-To use the VaRA Tool-Suite, your system has to have at least `python3.7`. Make sure you have the necessary packages installed.
+To use the VaRA Tool-Suite, your system has to have at least `python3.11`. Make sure you have the necessary packages installed.
 
 For ubuntu:
 
