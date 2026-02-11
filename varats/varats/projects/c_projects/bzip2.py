@@ -210,18 +210,17 @@ class Bzip2(VProject):
         cxx_compiler = bb.compiler.cxx(self)
 
         build_dir, build_method = self.__getbuilddir()
-        if build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
-            with local.cwd(build_dir):
+        with local.cwd(build_dir):
+            if build_method == Bzip2.Bzip2BuildMethod.AUTOTOOLS:
                 with local.env(CC=str(cc_compiler)):
                     bb.watch(local["./autogen.sh"])()
                     bb.watch(local["./configure"])()
 
-        elif build_method != Bzip2.Bzip2BuildMethod.MAKE:
-            with local.cwd(build_dir):
+            elif build_method != Bzip2.Bzip2BuildMethod.MAKE:
                 with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                     bb.watch(cmake)("..")
 
-        bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(bzip2_source):
             verify_binaries(self)

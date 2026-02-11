@@ -46,6 +46,10 @@ from varats.experiment.workload_util import (
     WorkloadCategory,
 )
 from varats.experiments.coverage.collect_coverages import CollectBinaryCoverages
+from varats.experiments.hidden_config.benchbase_experiments import (
+    BenchbaseCoverage,
+)
+from varats.experiments.hidden_config.database_utils import SupportsBenchbase
 from varats.experiments.vara.feature_experiment import FeatureExperiment
 from varats.experiments.vara.feature_perf_precision import (
     AnalysisProjectStepBase,
@@ -231,9 +235,14 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
 
     def __filter_coverage_based(self, report_data: dict) -> dict:
         # Filter points that are not covered according to coverage report
+        if isinstance(self.project, SupportsBenchbase):
+            exp_type = BenchbaseCoverage
+        else:
+            exp_type = CollectBinaryCoverages
+
         coverage_reports = get_processed_revisions_files(
             self.project.name,
-            CollectBinaryCoverages,
+            exp_type,
             LLVMCoverageReport,
             config_id=get_current_config_id(self.project)
         )
@@ -292,6 +301,8 @@ class FilterHiddenConfigurabilityPoints(actions.ProjectStep):  #type: ignore
             ]:
                 point["tags"] = getattr(point, "tags",
                                         []) + ["Excluded (Operand)"]
+
+        return report_data
 
     def filter(self) -> actions.StepResult:
         # Load the report
