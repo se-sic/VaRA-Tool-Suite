@@ -6,9 +6,10 @@ from typing import runtime_checkable, Protocol
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.utils.git_util import ShortCommitHash
 
+BENCHBASE_EXTRA_FILES_DIR: Path = Path(os.path.dirname(__file__)) / 'benchbase'
 BENCHBASE_WORKLOAD_CONFIG_DIR: Path = Path(
     os.path.dirname(__file__)
-) / 'benchbase_config_templates'
+) / 'benchbase' / 'config_templates'
 
 
 @runtime_checkable

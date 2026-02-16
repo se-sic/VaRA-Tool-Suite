@@ -38,6 +38,8 @@ from varats.utils.testsuite_utils import TestResult
 
 class HiddenVariabilityOverviewTable(Table, table_name="hv_overview"):
 
+    __EXCLUSION_REASONS = ["Filename", "Coverage", "Operand"]
+
     def tabulate(self, table_format: TableFormat, wrap_table: bool) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
@@ -67,33 +69,44 @@ class HiddenVariabilityOverviewTable(Table, table_name="hv_overview"):
 
             new_row = {
                 "Case Study": case_study.project_name,
-                "Total (Unfiltered)": report.get_num_configurability_points(),
+                "Total (Unfiltered)": 0,
                 "Excluded (Filename)": 0,
                 "Excluded (Coverage)": 0,
                 "Total (Filtered)": 0
             }
 
             for kind in config_points:
-                filename_excluded = len([
-                    point for point in config_points[kind]
-                    if "Excluded (Filename)" in point.tags
-                ])
-                coverage_excluded = len([
-                    point for point in config_points[kind]
-                    if "Excluded (Coverage)" in point.tags
-                ])
-                relevant_points = len([
-                    point for point in config_points[kind]
-                    if "Excluded (Filename)" not in point.tags and
-                    "Excluded (Coverage)" not in point.tags
-                ])
-                new_row["Excluded (Filename)"] += filename_excluded
-                new_row["Excluded (Coverage)"] += coverage_excluded
-                new_row["Total (Filtered)"] += relevant_points
+                points = [
+                    p for p in config_points[kind]
+                    if "Excluded (Operand)" not in p.tags
+                ]
+
+                new_row["Total (Unfiltered)"] += len(points)
+
+                fname_excluded = 0
+                cov_excluded = 0
+                rel_pts = 0
+
+                for point in points:
+                    if "Excluded (Filename)" in point.tags:
+                        fname_excluded += 1
+
+                    if "Excluded (Coverage)" in point.tags:
+                        cov_excluded += 1
+
+                    if (
+                        "Excluded (Filename)" not in point.tags and
+                        "Excluded (Coverage)" not in point.tags
+                    ):
+                        rel_pts += 1
+
+                new_row["Excluded (Filename)"] += fname_excluded
+                new_row["Excluded (Coverage)"] += cov_excluded
+                new_row["Total (Filtered)"] += rel_pts
 
                 new_row[
                     kind
-                ] = f"{len(config_points[kind])}/{filename_excluded}/{coverage_excluded}/{relevant_points}"
+                ] = f"{len(points)}/{fname_excluded}/{cov_excluded}/{rel_pts}"
 
             table_data.append(new_row)
 
@@ -106,7 +119,7 @@ class HiddenVariabilityOverviewTable(Table, table_name="hv_overview"):
 
 class HiddenVariabilityOverviewTableGenerator(
     TableGenerator,
-    generator_name="hv-overview",
+    generator_name="hv_overview",
     options=[
         make_cli_option(
             "--hide-zero",
