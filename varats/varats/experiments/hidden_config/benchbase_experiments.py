@@ -311,8 +311,6 @@ class BenchbaseCoverage(FeatureExperiment, shorthand="BBC"):
         steps: tp.MutableSequence[Step] = [
             BuildWithCoverage(project, project.compile),
             BuildBenchbase(project),
-            #MergeCoverages(project,db_binary.path, "coverages",
-            #               "benchbase", result_file.full_path())
         ]
 
         prefixes = []

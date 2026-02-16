@@ -1,0 +1,3 @@
+CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON *.* TO 'admin'@'localhost' WITH GRANT OPTION;
+CREATE DATABASE IF NOT EXISTS `benchbase`;
