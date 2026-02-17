@@ -6,7 +6,9 @@ from pathlib import Path
 from time import sleep
 
 import benchbuild as bb
+import jinja2
 from benchbuild.utils.settings import get_number_of_jobs
+from jinja2 import TemplateNotFound, TemplateError
 from plumbum import local, BG
 
 from varats.experiments.hidden_config.database_utils import (
@@ -48,7 +50,8 @@ class MariaDB(VProject):
         )
     ]
 
-    def __init__(self):
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
+        super().__init__(*args, **kwargs)
         self.__server_handle: tp.Optional[subprocess.Popen] = None
 
     @staticmethod
@@ -119,14 +122,37 @@ class MariaDB(VProject):
 
         defaults_file_path.unlink(missing_ok=True)
 
-        with defaults_file_path.open("w") as defaults_file:
-            defaults_file.write("[client-server]\n")
-            defaults_file.write(
-                f"socket = {build_dir.absolute() / 'mariadb.sock'}\n"
-            )
-            defaults_file.write("\n\n")
-            defaults_file.write("[mariadb]\n")
-            defaults_file.write(f"datadir = {build_dir.absolute() / 'data'}\n")
+        # Load the template defaults file and render with jinja2
+        template_defaults_file = BENCHBASE_EXTRA_FILES_DIR / "db_config_files" / "mariadb.cnf"
+        # Render the patch with the arguments
+        loader = jinja2.FileSystemLoader(
+            searchpath=template_defaults_file.parent
+        )
+        env = jinja2.Environment(
+            loader=loader,
+            keep_trailing_newline=True,
+            undefined=jinja2.StrictUndefined
+        )
+
+        try:
+            template = env.get_template(template_defaults_file.name)
+        except TemplateNotFound as e:
+            raise TemplateError(
+                f"Could not find template file '{template_defaults_file}'"
+            ) from e
+
+        try:
+            render_args = {
+                "socket_path": f"/tmp/{self.run_uuid}-mariadb.sock",
+                "data_dir": str(build_dir / "data"),
+            }
+            rendered = template.render(render_args)
+        except TemplateError:
+            # TODO: Discuss what error we want to raise here
+            raise
+
+        with defaults_file_path.open("w") as f:
+            f.write(rendered)
 
         return defaults_file_path
 
@@ -137,28 +163,32 @@ class MariaDB(VProject):
 
         install_db = local[build_dir / "scripts" / "mariadb-install-db"][
             "--srcdir=..", f"--defaults-file={defaults_file.absolute()}",
-            "--auth-root-authentication=normal"]
+            "--auth-root-authentication-method=normal"]
+        with local.cwd(build_dir):
+            bb.watch(install_db)()
 
-        bb.watch(install_db)()
+            server_binary = local[
+                build_dir / "sql" /
+                "mariadbd"][f"--defaults-file={defaults_file.absolute()}"]
 
-        server_binary = local[build_dir / "sql" / "mariadbd"
-                             ]["--defaults-file={defaults_file.absolute()}"]
-        self.__server_handle = server_binary.popen()
+            tmp_log_file = build_dir / "mariadb_server.log"
+            f = tmp_log_file.open("w")
 
-        client_binary = local[build_dir / "client" / "mariadb"][
-            "--defaults-file={defaults_file.absolute()}", "--user=root"]
+            self.__server_handle = server_binary.popen(stdout=f, stderr=f)
 
-        # Copy create script to build directory
-        create_script_path = build_dir / "create_benchbase_db.sql"
-        shutil.copy(
-            BENCHBASE_EXTRA_FILES_DIR / "db_config_files" /
-            "mariadb_create.sql", create_script_path
-        )
+            client_binary = local[build_dir / "client" / "mariadb"][
+                f"--defaults-file={defaults_file.absolute()}", "--user=root"]
 
-        # Wait for a couple of seconds to ensure the server has started
-        sleep(5)
-        bb.watch(client_binary
-                )('--execute="source {create_script_path.absolute()};"')
+            # Copy create script to build directory
+            create_script_path = build_dir / "create_benchbase_db.sql"
+            shutil.copy(
+                BENCHBASE_EXTRA_FILES_DIR / "db_config_files" /
+                "mariadb_create.sql", create_script_path
+            )
+
+            # Wait for a couple of seconds to ensure the server has started
+            sleep(5)
+            bb.watch(client_binary)('-e', "source create_benchbase_db.sql;")
 
     def stop_database_server(self) -> None:
         """Stop the database server."""

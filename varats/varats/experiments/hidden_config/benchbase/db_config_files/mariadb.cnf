@@ -1,0 +1,6 @@
+[client-server]
+socket = {{ socket_path }}
+
+[mariadb]
+datadir = {{ data_dir }}
+default_time_zone = "+00:00"
