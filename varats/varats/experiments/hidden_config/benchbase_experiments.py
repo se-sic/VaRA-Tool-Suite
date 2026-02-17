@@ -120,15 +120,15 @@ class RunBenchbase(ProjectStep):
 
                 # Run the benchmark
                 bb.watch(run_cmd)()
-
-                # Stop the database server after benchmark
-                project.stop_database_server()
+                status = StepResult.OK
             except ProcessExecutionError as e:
                 print(f"Error running BenchBase workload '{workload}': {e}")
                 status = StepResult.ERROR
-                return status
+            finally:
+                # Stop the database server after benchmark
+                project.stop_database_server()
 
-        return StepResult.OK
+            return status
 
     __DB_PROFILES = {
         MariaDB: "mariadb",
@@ -168,7 +168,7 @@ class RunBenchbase(ProjectStep):
         return self.status
 
     def __str__(self, indent: int = 0) -> str:
-        return " " * indent + f"* {self.project.name}: Run BenchBase (Workloads: {', '.join(self.__WORKLOADS)})"
+        return " " * indent + f"* {self.project.name}: Run BenchBase (Workloads: {', '.join(_WORKLOADS)})"
 
 
 class BenchbaseBenchmark(FeatureExperiment, shorthand="BBB"):
